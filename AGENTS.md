@@ -23,6 +23,12 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `test/` | tests | yes | no |
 | `sandbox/`, `tmp/` | output of automated tests | no | no |
 
+## Commands
+
+- `npm run build`: compile `src/` into `dist/`.
+- `npm test`: run the tests.
+- `npm link`: install the development build as the global `rpg` command.
+
 ## Development vs game
 
 1. **No "magic" names for game files in the repo.** Nothing under `packs/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.

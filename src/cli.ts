@@ -1,10 +1,7 @@
 #!/usr/bin/env node
-import { getVersion } from "./version.js";
+import { main } from "./main.js";
 
-const [arg] = process.argv.slice(2);
-
-if (arg === "--version" || arg === "-v") {
-  console.log(getVersion());
-} else {
-  console.log(`rpg-engine ${getVersion()}: work in progress, no commands yet.`);
-}
+const { output, exitCode } = await main(process.argv.slice(2));
+if (exitCode === 0) console.log(output);
+else console.error(output);
+process.exitCode = exitCode;
