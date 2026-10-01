@@ -54,6 +54,7 @@ describe("physical dice", () => {
 describe("digital dice", () => {
     it("stays within the faces of the dice", () => {
         const random = defaultContext().random;
+
         for (let index = 0; index < 1000; index++) {
             const d20 = rollDice("1d20", { random }).total;
             const fudge = rollDice("4dF", { random }).total;

@@ -1,7 +1,8 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 
 /** What a command needs from the outside world: tests replace it to get repeatable results. */
-export interface Context {
+export interface Context
+{
     /** Folder of the campaign the command works on. */
     folder: string;
     /** Rolls one digital die: an integer from 1 to `sides`. */
@@ -13,7 +14,8 @@ export interface Context {
     newSalt(): string;
 }
 
-export function defaultContext(folder = process.cwd()): Context {
+export function defaultContext(folder = process.cwd()): Context
+{
     return {
         folder,
         random: (sides) => randomInt(1, sides + 1),

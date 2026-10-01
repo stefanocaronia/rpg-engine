@@ -23,7 +23,8 @@ beforeEach(() => {
 
 afterEach(() => rmSync(folder, { recursive: true, force: true }));
 
-function loggedEvents() {
+function loggedEvents()
+{
     return readFileSync(join(folder, "events.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
 }
 

@@ -2,7 +2,8 @@ import type { z } from "zod";
 import type { Context } from "./context.js";
 
 /** A command is defined once: the CLI, and later the MCP server and the dashboard API, are generated from it. */
-export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unknown> {
+export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unknown>
+{
     name: string;
     description: string;
     input: Schema;
@@ -13,6 +14,7 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
     format(result: Result): string;
 }
 
-export function defineCommand<Schema extends z.ZodObject, Result>(command: Command<Schema, Result>): Command<Schema, Result> {
+export function defineCommand<Schema extends z.ZodObject, Result>(command: Command<Schema, Result>): Command<Schema, Result>
+{
     return command;
 }

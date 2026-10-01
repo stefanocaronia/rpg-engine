@@ -27,6 +27,8 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 
 - `npm run build`: compile `src/` into `dist/`.
 - `npm test`: run the tests.
+- `npm run format`: format the code (ESLint fixes, then dprint).
+- `npm run lint`: check the formatting, as CI does.
 - `npm link`: install the development build as the global `rpg` command.
 
 ## Development vs game
@@ -51,12 +53,16 @@ Clean, compact, ordered code that is easy to understand.
 - SOLID: one responsibility per module and function; add behaviour with new modules and commands instead of bending working ones; inject what comes from outside (randomness, time, folders) through `Context`.
 - No over-engineering: the simplest code that solves today's need, with no speculative options, layers or abstractions.
 
+**Formatting** (applied by `npm run format` and on save in VS Code with the recommended extensions; checked by `npm run lint` and CI)
+- 4-space indentation (2 in JSON and YAML, as npm writes them), lines up to 240 characters, double quotes, semicolons.
+- Braces on their own line for classes, interfaces, functions and methods; on the same line for `if`, `else`, loops, `switch`, `try` and arrow functions, with `} else {` on one line.
+- Braces always, even around a single statement.
+- A blank line before and after every block statement (`if`, loops, `switch`, `try`); never more than one blank line in a row.
+
 **Code**
-- 4-space indentation (2 in JSON and YAML, as npm writes them): see `.editorconfig`.
 - Extract a function when a block becomes complex or is needed twice; prefer well-named functions to sections marked by comments.
 - Clear, descriptive names; no abbreviations or cryptic names (`context`, not `ctx`), except loop indexes.
 - camelCase for variables, functions and constants; PascalCase for types, interfaces and classes, without an `I` prefix; no underscores or hyphens in identifiers. File names in kebab-case.
-- Always use braces for `if`, `else`, `for` and `while`, even on one line.
 - Public API first in a file, private helpers below it.
 - Let TypeScript infer local types; annotate parameters and return types of exported functions.
 - Comments in English, one or two lines at most: the code should explain itself. A one-line `/** */` on exported functions and types when the name is not enough.
