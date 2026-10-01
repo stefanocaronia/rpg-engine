@@ -3,7 +3,8 @@ dist/
 sandbox/
 tmp/
 
-# Local agent tooling
+# Local tooling
+/.obsidian/
 /.claude/
 /.codex/
 /.gemini/
