@@ -19,7 +19,9 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `project/` | project docs (Italian) | no | no |
 | `docs/` | user guide | yes | no |
 | `src/` | core, CLI, MCP server, dashboard | yes | built into `dist/` |
-| `packs/` | built-in modules (e.g. `5e`) and the game instructions | yes | yes |
+| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required | yes | yes |
+| `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules): optional | yes | yes |
+| `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
 | `sandbox/`, `tmp/` | output of automated tests | no | no |
 
@@ -33,14 +35,14 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 
 ## Development vs game
 
-1. **No "magic" names for game files in the repo.** Nothing under `packs/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
+1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/` or `extensions/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
 2. **Playtests with an AI run in a campaign outside the repo.** Claude Code also reads the `CLAUDE.md` files of parent folders, so inside the repo development and game instructions would mix.
 
 ## Architecture rules
 
 - **Keep it simple.** The core only does what an AI is weak at: memory, dice, bookkeeping, time, secrets, text lookup.
 - **Don't encode game rules.** Ruling is the AI's job, with the exact text at hand.
-- **Core or module?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a module, as data; module code only when data is not enough.
+- **Core, system or extension?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a system or an extension, as data; their code only when data is not enough.
 - Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and logs an event.
 
 ## Coding guidelines

@@ -17,7 +17,9 @@
   },
   "files": [
     "dist",
-    "packs"
+    "systems",
+    "extensions",
+    "instructions"
   ],
   "scripts": {
     "build": "tsc",
