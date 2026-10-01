@@ -1,0 +1,17 @@
+node_modules/
+dist/
+sandbox/
+tmp/
+
+# Local agent tooling
+/.claude/
+/.codex/
+/.gemini/
+/.agents/
+
+# Secrets never go in the repo
+.env
+.env.*
+
+# Project docs (spec, plan): local only, not on GitHub
+/project/
