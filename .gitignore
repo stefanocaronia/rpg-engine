@@ -5,6 +5,7 @@ tmp/
 /events.jsonl
 
 # Local tooling
+/.codegraph/
 /.obsidian/
 /.claude/
 /.codex/

@@ -41,6 +41,35 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - **Core or module?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a module, as data; module code only when data is not enough.
 - Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and logs an event.
 
+## Coding guidelines
+
+Clean, compact, ordered code that is easy to understand.
+
+**Design first**
+- Think the architecture before writing code: which module owns the change, its public API, its dependencies. For anything non-trivial, propose the design to the maintainer and wait for approval.
+- Each module (a folder under `src/`, such as `dice/`) does one job, exposes a small API from its `index.ts` and depends only on core utilities: never on commands, the CLI or other modules. Commands are the glue between modules.
+- SOLID: one responsibility per module and function; add behaviour with new modules and commands instead of bending working ones; inject what comes from outside (randomness, time, folders) through `Context`.
+- No over-engineering: the simplest code that solves today's need, with no speculative options, layers or abstractions.
+
+**Code**
+- 4-space indentation (2 in JSON and YAML, as npm writes them): see `.editorconfig`.
+- Extract a function when a block becomes complex or is needed twice; prefer well-named functions to sections marked by comments.
+- Clear, descriptive names; no abbreviations or cryptic names (`context`, not `ctx`), except loop indexes.
+- camelCase for variables, functions and constants; PascalCase for types, interfaces and classes, without an `I` prefix; no underscores or hyphens in identifiers. File names in kebab-case.
+- Always use braces for `if`, `else`, `for` and `while`, even on one line.
+- Public API first in a file, private helpers below it.
+- Let TypeScript infer local types; annotate parameters and return types of exported functions.
+- Comments in English, one or two lines at most: the code should explain itself. A one-line `/** */` on exported functions and types when the name is not enough.
+- Error messages say what went wrong and how to fix it: an AI reads them.
+- Use our core utilities before writing new helpers.
+- Test every module through its public API, with randomness and time injected.
+
+## Tools and checks
+
+- **CodeGraph** (`@colbymchenry/codegraph`, optional, set up per person): when `.codegraph/` exists, use it before Grep/Read chains for structure questions (who calls X, what Y reaches, what breaks if Z changes), then confirm in the file. After editing, run `codegraph sync .` before asking it about the changed files. Agents never run `init`, `index` or `uninit` for the maintainer.
+- **Jev** (`mcp__jev__*`, optional, set up per person): before a commit, `jev_gate` with the diff, the claims of the commit message and the real test output; before reporting results, `jev_verify` the claims against the evidence. Fix or drop unsupported claims. Without Jev, say so and go on.
+- **Regression check after every addition or change**: build and run all tests; check the callers and impact of every changed symbol with CodeGraph; review the diff for regressions, unhandled `undefined`, nondeterminism, simplicity and these guidelines, and fix what you find. When it matters, give the maintainer a short checklist to verify the behaviour.
+
 ## Conventions
 
 - TypeScript on Node ≥ 22; zod; vitest; few dependencies.

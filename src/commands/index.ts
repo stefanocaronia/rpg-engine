@@ -1,4 +1,4 @@
-import type { Command } from "../registry.js";
+import type { Command } from "../core/registry.js";
 import { roll } from "./roll.js";
 
 /** Every command of rpg-engine. */
