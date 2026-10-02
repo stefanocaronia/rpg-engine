@@ -49,7 +49,7 @@ async function runCommand(command: AnyCommand, args: string[], context: Context)
     const parsed = command.input.safeParse(input);
 
     if (!parsed.success) {
-        throw new Error(`Invalid input for "${command.name}":\n${z.prettifyError(parsed.error)}`);
+        throw new Error(`Invalid input for "${command.name}":\n${z.prettifyError(parsed.error)}\nUsage: ${usage(command)}`);
     }
 
     const result = await command.run(parsed.data, context);
@@ -67,11 +67,13 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
         }
     }
 
-    const parsed = parseArgs({ args, options, allowPositionals: true, strict: true });
+    const parsed = parseArgs({ args, options, allowPositionals: true, strict: true, tokens: true });
 
     if (parsed.positionals.length > positionals.length) {
         throw new Error(`Unexpected argument: ${parsed.positionals.slice(positionals.length).join(" ")}`);
     }
+
+    checkRepeatedOptions(parsed.tokens, options);
 
     const input: Record<string, unknown> = {};
 
@@ -87,6 +89,24 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
         }
     });
     return { input, asJson: parsed.values.json === true };
+}
+
+/** An option that takes one value must not be given twice: the first value would be lost without a word. */
+function checkRepeatedOptions(tokens: { kind: string; name?: string; }[], options: Record<string, { multiple?: boolean; }>): void
+{
+    const given: string[] = [];
+
+    for (const token of tokens) {
+        if (token.kind !== "option" || token.name === undefined || options[token.name]?.multiple === true) {
+            continue;
+        }
+
+        if (given.includes(token.name)) {
+            throw new Error(`Give --${token.name} only once.`);
+        }
+
+        given.push(token.name);
+    }
 }
 
 function inputFields(command: AnyCommand): [string, z.ZodType][]
@@ -125,12 +145,16 @@ function generalHelp(): string
 function commandHelp(command: AnyCommand): string
 {
     const positionals = command.positionals ?? [];
-    const usage = ["rpg", command.name, ...positionals.map((name) => `<${name}>`), "[options]"].join(" ");
     const optionLines = inputFields(command).map(([name, field]) => {
         const flag = positionals.includes(name) ? `<${name}>` : `--${name}${isBoolean(field) ? "" : " <value>"}${isList(field) ? "..." : ""}`;
         return `  ${flag.padEnd(20)} ${field.description ?? ""}`;
     });
-    return [usage, "", command.description, "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");
+    return [usage(command), "", command.description, "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");
+}
+
+function usage(command: AnyCommand): string
+{
+    return ["rpg", command.name, ...(command.positionals ?? []).map((name) => `<${name}>`), "[options]"].join(" ");
 }
 
 function success(output: string): CommandLineResult

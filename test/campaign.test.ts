@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -40,10 +40,14 @@ describe("rpg init", () => {
         expect(result.output).toBe(`Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system. Set it with: rpg config <setting> <value>`);
     });
 
-    it("refuses a second campaign in the same folder or inside another one", async () => {
-        await runCommandLine(["init"], context);
-        expect((await runCommandLine(["init"], context)).output).toContain("is already a campaign");
-        expect((await runCommandLine(["init", "world/inner"], context)).output).toContain("a campaign cannot hold another one");
+    it("refuses a second campaign in the same folder, inside another one or around another one", async () => {
+        mkdirSync(join(folder, "campagne", "vecchia"), { recursive: true });
+        writeFileSync(join(folder, "campagne", "vecchia", "campaign.yaml"), "name: Vecchia\n");
+        expect((await runCommandLine(["init", "campagne"], context)).output).toContain(`holds the campaign in ${join(folder, "campagne", "vecchia")}`);
+
+        await runCommandLine(["init", "nuova"], context);
+        expect((await runCommandLine(["init", "nuova"], context)).output).toContain("is already a campaign");
+        expect((await runCommandLine(["init", "nuova/world/inner"], context)).output).toContain("a campaign cannot hold another one");
     });
 
     it("checks the settings before creating anything", async () => {
@@ -67,13 +71,29 @@ describe("rpg config", () => {
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
         expect(result.output).toBe("language: it\n\nStill missing: system. Set it with: rpg config <setting> <value>");
-        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with "rpg config <setting> <value>".\nname: Guadoscuro\nlanguage: it\n`);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readEventLog(folder).at(-1)).toMatchObject({ type: "config-changed", visibility: "public", data: { setting: "language", value: "it" } });
     });
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(`There is no setting "colour". The settings are: name, language, system.`);
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
+    });
+
+    it("writes nothing when the settings would still not be valid", async () => {
+        const handWritten = "name: Guadoscuro\nlanguage: Italiano\n";
+        writeFileSync(join(folder, "campaign.yaml"), handWritten);
+        const result = await runCommandLine(["config", "system", "5e"], context);
+        expect(result.exitCode).toBe(1);
+        expect(result.output).toContain("Fix it with the config command, or by hand.");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(handWritten);
+        expect(readEventLog(folder).map((event) => event.type)).toEqual(["campaign-created"]);
+        expect((await runCommandLine(["config", "language", "it"], context)).exitCode).toBe(0);
+    });
+
+    it("says to fix by hand a campaign.yaml that holds no settings", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), "solo del testo\n");
+        expect((await runCommandLine(["config"], context)).output).toBe(`campaign.yaml must hold settings, such as "name: ..."; fix it by hand.`);
     });
 });
 
@@ -88,7 +108,7 @@ describe("finding the campaign", () => {
     it("refuses to work outside a campaign", async () => {
         const result = await runCommandLine(["roll", "1d6"], context);
         expect(result.exitCode).toBe(1);
-        expect(result.output).toContain(`Create one with "rpg init"`);
+        expect(result.output).toContain("Create one with the init command");
         expect(existsSync(join(folder, "events.jsonl"))).toBe(false);
     });
 });

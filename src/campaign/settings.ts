@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Document, parseDocument } from "yaml";
+import { type Document, isMap, parseDocument } from "yaml";
 import { z } from "zod";
 import { campaignFileName } from "./find-campaign.ts";
 
@@ -14,21 +14,15 @@ export const settingsSchema = z.object({
 export type CampaignSettings = z.infer<typeof settingsSchema>;
 export type SettingName = keyof typeof settingsSchema.shape;
 
-/** The settings that rpg config shows and changes. */
+/** The settings that the config command shows and changes. */
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 export function readSettings(root: string): CampaignSettings
 {
-    const parsed = settingsSchema.safeParse(readSettingsDocument(root).toJS() ?? {});
-
-    if (!parsed.success) {
-        throw new Error(`${campaignFileName} is not valid:\n${z.prettifyError(parsed.error)}\nFix it with "rpg config <setting> <value>", or by hand.`);
-    }
-
-    return parsed.data;
+    return validateSettings(readSettingsDocument(root).toJS() ?? {});
 }
 
-/** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. */
+/** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the settings would not be valid. */
 export function changeSetting(root: string, name: string, value: string): CampaignSettings
 {
     const setting = checkSettingName(name);
@@ -40,24 +34,15 @@ export function changeSetting(root: string, name: string, value: string): Campai
 
     const document = readSettingsDocument(root);
     document.set(setting, parsed.data);
+    const settings = validateSettings(document.toJS());
     writeFileSync(join(root, campaignFileName), String(document), "utf8");
-    return readSettings(root);
+    return settings;
 }
 
 /** The settings that are still missing: the AI asks the player for them. */
 export function missingSettings(settings: CampaignSettings): SettingName[]
 {
     return settingNames.filter((name) => settings[name] === undefined);
-}
-
-/** Says which settings are missing and how to set them; empty when none is. */
-export function missingSettingsNote(missing: string[]): string
-{
-    if (missing.length === 0) {
-        return "";
-    }
-
-    return `Still missing: ${missing.join(", ")}. Set ${missing.length === 1 ? "it" : "them"} with: rpg config <setting> <value>`;
 }
 
 export function checkSettingName(name: string): SettingName
@@ -69,12 +54,27 @@ export function checkSettingName(name: string): SettingName
     return name as SettingName;
 }
 
+function validateSettings(values: unknown): CampaignSettings
+{
+    const parsed = settingsSchema.safeParse(values);
+
+    if (!parsed.success) {
+        throw new Error(`${campaignFileName} is not valid:\n${z.prettifyError(parsed.error)}\nFix it with the config command, or by hand.`);
+    }
+
+    return parsed.data;
+}
+
 function readSettingsDocument(root: string): Document
 {
     const document = parseDocument(readFileSync(join(root, campaignFileName), "utf8"));
 
     if (document.errors.length > 0) {
-        throw new Error(`${campaignFileName} is not valid YAML: ${document.errors[0].message}`);
+        throw new Error(`${campaignFileName} is not valid YAML; fix it by hand: ${document.errors[0].message}`);
+    }
+
+    if (document.contents !== null && !isMap(document.contents)) {
+        throw new Error(`${campaignFileName} must hold settings, such as "name: ..."; fix it by hand.`);
     }
 
     return document;

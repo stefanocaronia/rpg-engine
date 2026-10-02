@@ -1,9 +1,10 @@
 import { basename, resolve } from "node:path";
 import { z } from "zod";
-import { createCampaign, missingSettings, missingSettingsNote } from "../campaign/index.ts";
+import { createCampaign, missingSettings } from "../campaign/index.ts";
 import { appendEvent } from "../core/event-log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { createWorld } from "../pages/index.ts";
+import { missingSettingsNote } from "./notes.ts";
 
 export const init = defineCommand({
     name: "init",

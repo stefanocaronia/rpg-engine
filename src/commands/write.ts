@@ -3,6 +3,7 @@ import { requireCampaign } from "../campaign/index.ts";
 import { appendEvent } from "../core/event-log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { loadWorld, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
+import { skippedPagesNote } from "./notes.ts";
 
 export const write = defineCommand({
     name: "write",
@@ -34,7 +35,8 @@ export const write = defineCommand({
         }
 
         const set = input.set === undefined ? undefined : readAssignments(input.set);
-        const { page, created } = writePage(loadWorld(root), reference.name, input.type, { set, unset: input.unset, text: input.text, section, append: input.append });
+        const world = loadWorld(root);
+        const { page, created } = writePage(world, reference.name, input.type, { set, unset: input.unset, text: input.text, section, append: input.append });
         const text = input.text === undefined ? undefined : input.append ? "added" : "written";
         appendEvent(root, {
             id: context.newId(),
@@ -43,7 +45,7 @@ export const write = defineCommand({
             visibility: "hidden",
             data: { page: page.name, type: page.type, set, unset: input.unset, section, text },
         });
-        return { page: page.name, type: page.type, path: page.path, created, set: Object.keys(set ?? {}), unset: input.unset ?? [], section, text };
+        return { page: page.name, type: page.type, path: page.path, created, set: Object.keys(set ?? {}), unset: input.unset ?? [], section, text, problems: world.problems };
     },
 
     format(result)
@@ -54,7 +56,8 @@ export const write = defineCommand({
             result.unset.length > 0 ? `removed ${result.unset.join(", ")}` : "",
             result.text === "written" ? `wrote ${where}` : result.text === "added" ? `added to ${where}` : "",
         ].filter((change) => change !== "");
-        return `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})${changes.length > 0 ? `: ${changes.join("; ")}` : ""}.`;
+        const summary = `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})${changes.length > 0 ? `: ${changes.join("; ")}` : ""}.`;
+        return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 

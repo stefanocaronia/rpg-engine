@@ -4,7 +4,8 @@ import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
 
-const forbiddenCharacters = /[\\/:*?"<>|#^[\]]/;
+const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;
+const longestName = 120;
 
 /** A page of the world: one thing with a name. It describes only itself; who has it or knows it is written on their own pages. */
 export interface Page
@@ -27,6 +28,8 @@ export interface World
     /** The campaign folder. */
     root: string;
     pages: Page[];
+    /** Why some files could not be read as pages: the other pages still work. */
+    problems: string[];
 }
 
 export interface PageMatch
@@ -55,33 +58,35 @@ export function loadWorld(root: string): World
 {
     const worldPath = join(root, worldFolderName);
     const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
-    const pages = entries
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-        .map((entry) => readPage(root, join(entry.parentPath, entry.name)))
-        .sort((first, second) => (first.path < second.path ? -1 : 1));
+    const pages: Page[] = [];
+    const problems: string[] = [];
+
+    for (const entry of entries.filter((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name))) {
+        try {
+            pages.push(readPage(root, join(entry.parentPath, entry.name)));
+        } catch (error) {
+            problems.push(error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    pages.sort((first, second) => (first.path < second.path ? -1 : 1));
     checkUniqueNames(pages);
-    return { root, pages };
+    return { root, pages, problems };
 }
 
-/** The page with this name, ignoring case. */
+/** The page with this name, ignoring case and Unicode normalization. */
 export function findPage(world: World, name: string): Page | undefined
 {
-    const wanted = name.toLowerCase();
-    return world.pages.find((page) => page.name.toLowerCase() === wanted);
+    const wanted = comparable(name);
+    return world.pages.find((page) => comparable(page.name) === wanted);
 }
 
-/** Splits "Page", "Page#Section" or a link such as "[[Page#Section|label]]" into the page's name and the section. */
+/** Splits "Page", "Page#Section" or a link such as "[[Page#Section|label]]" into the page's name and the section; "Page#" gives an empty section. */
 export function parsePageReference(reference: string): { name: string; section?: string; }
 {
     const inner = reference.trim().replace(/^\[\[(.*)\]\]$/, "$1").replace(/\|.*$/, "");
     const hash = inner.indexOf("#");
-
-    if (hash === -1) {
-        return { name: inner.trim() };
-    }
-
-    const section = inner.slice(hash + 1).trim();
-    return { name: inner.slice(0, hash).trim(), section: section === "" ? undefined : section };
+    return hash === -1 ? { name: inner.trim() } : { name: inner.slice(0, hash).trim(), section: inner.slice(hash + 1).trim() };
 }
 
 /** Pages of a type, or with a text in their name, fields or text; ignores case. */
@@ -109,8 +114,8 @@ export function searchPages(world: World, query: { text?: string; type?: PageTyp
 /** The other pages that link to `page`, and where. */
 export function backlinks(world: World, page: Page): Backlink[]
 {
-    const target = page.name.toLowerCase();
-    const linksHere = (text: string): boolean => linkedPages(text).some((name) => name.toLowerCase() === target);
+    const target = comparable(page.name);
+    const linksHere = (text: string): boolean => linkedPages(text).some((name) => comparable(name) === target);
     const found: Backlink[] = [];
 
     for (const other of world.pages.filter((candidate) => candidate !== page)) {
@@ -131,8 +136,8 @@ export function backlinks(world: World, page: Page): Backlink[]
 /** Page names become file names and link targets, so some characters are not allowed. */
 export function checkPageName(name: string): void
 {
-    if (name === "" || name.trim() !== name || name.endsWith(".") || forbiddenCharacters.test(name)) {
-        throw new Error(`"${name}" cannot be a page name. Names become file names and links: leave out \\ / : * ? " < > | # ^ [ ], spaces at the ends and a final dot.`);
+    if (name === "" || name.length > longestName || name.trim() !== name || name.endsWith(".") || forbiddenCharacters.test(name)) {
+        throw new Error(`"${name}" cannot be a page name. Names become file names and links: at most ${longestName} characters, without \\ / : * ? " < > | # ^ [ ], line breaks, spaces at the ends or a final dot.`);
     }
 }
 
@@ -143,7 +148,7 @@ export function readPage(root: string, fullPath: string): Page
     const parts = path.split("/");
     const file = splitPageFile(readFileSync(fullPath, "utf8"));
     return {
-        name: basename(fullPath, ".md"),
+        name: basename(fullPath).replace(/\.md$/i, "").normalize("NFC"),
         type: parts.length > 2 ? typeOfFolder(parts[1]) : undefined,
         path,
         fields: readFields(file.frontmatter, path),
@@ -151,18 +156,24 @@ export function readPage(root: string, fullPath: string): Page
     };
 }
 
+/** Names compare ignoring case and the way accents are encoded (macOS writes them decomposed). */
+function comparable(name: string): string
+{
+    return name.normalize("NFC").toLowerCase();
+}
+
 function checkUniqueNames(pages: Page[]): void
 {
     const seen = new Map<string, Page>();
 
     for (const page of pages) {
-        const other = seen.get(page.name.toLowerCase());
+        const other = seen.get(comparable(page.name));
 
         if (other !== undefined) {
-            throw new Error(`Two pages have the same name: ${other.path} and ${page.path}. Rename one of them: names must be unique in the campaign.`);
+            throw new Error(`Two pages have the same name: ${other.path} and ${page.path}. Rename one of them by hand: names must be unique in the campaign.`);
         }
 
-        seen.set(page.name.toLowerCase(), page);
+        seen.set(comparable(page.name), page);
     }
 }
 

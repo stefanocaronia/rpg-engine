@@ -20,7 +20,8 @@ describe("architecture", () => {
             for (const fileName of readdirSync(folder)) {
                 const source = readFileSync(new URL(fileName, folder), "utf8");
 
-                for (const [, imported] of source.matchAll(/from\s+"([^"]+)"/g)) {
+                // from "x", import "x" and import("x")
+                for (const [, imported] of source.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)) {
                     const allowed = imported.startsWith("./") || imported.startsWith("../core/") || !imported.startsWith(".");
                     expect(allowed, `${module}/${fileName} imports ${imported}`).toBe(true);
                 }

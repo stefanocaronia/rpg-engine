@@ -134,7 +134,7 @@ describe("pages written by hand", () => {
         expect((await rpg("show", "la nebbia")).output).toBe("La nebbia (free page) · world/La nebbia.md\n\nNon si alza da giorni.");
 
         writeFileSync(join(folder, "world", "items", "La nebbia.md"), "");
-        expect((await rpg("find")).output).toBe("Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them: names must be unique in the campaign.");
+        expect((await rpg("find")).output).toBe("Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by hand: names must be unique in the campaign.");
     });
 });
 
@@ -148,6 +148,12 @@ describe("field values", () => {
         expect(readFieldValue("[a, b]")).toEqual(["a", "b"]);
         expect(readFieldValue("{ value: 7, max: 12 }")).toEqual({ value: 7, max: 12 });
         expect(readFieldValue("nella cripta: #2")).toBe("nella cripta: #2");
-        expect(() => readFieldValue("[a, b")).toThrow("Cannot read the value");
+        expect(readFieldValue("[[Rossi, Mario]], [[Varro]]")).toEqual(["[[Rossi, Mario]]", "[[Varro]]"]);
+    });
+
+    it("keeps as plain text what does not read as YAML", () => {
+        expect(readFieldValue("[[La cripta]], piano inferiore")).toBe("[[La cripta]], piano inferiore");
+        expect(readFieldValue(`"Il Vecchio" disse`)).toBe(`"Il Vecchio" disse`);
+        expect(readFieldValue("[a, b")).toBe("[a, b");
     });
 });

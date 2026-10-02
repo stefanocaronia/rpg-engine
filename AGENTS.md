@@ -23,6 +23,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules): optional | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
+| `playtests/` | playtest scenarios: player profiles, starting points, checklists | yes | no |
 | `sandbox/`, `tmp/` | output of automated tests | no | no |
 
 ## Commands
@@ -35,7 +36,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 
 ## Development vs game
 
-1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/` or `extensions/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
+1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/`, `extensions/` or `playtests/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
 2. **Playtests with an AI run in a campaign outside the repo.** Claude Code also reads the `CLAUDE.md` files of parent folders, so inside the repo development and game instructions would mix.
 
 ## Architecture rules
@@ -43,7 +44,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - **Keep it simple.** The core only does what an AI is weak at: memory, dice, bookkeeping, time, maps and positions, secrets, text lookup.
 - **Don't encode game rules.** Ruling is the AI's job, with the exact text at hand.
 - **Core, system or extension?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a system or an extension, as data; their code only when data is not enough.
-- **Data is object-oriented and SOLID.** Each page describes only itself. A relation lives in whoever holds it: who owns or knows something keeps the list, with links, in its frontmatter; a thing never records who has or knows it. Systems and extensions add types and fields without changing the core ones.
+- **Data is object-oriented and SOLID.** Each page describes only itself. A relation lives in whoever holds it: who contains, owns or knows something keeps the list, with links, in its frontmatter; a thing never records where it is, who has it or who knows it. The engine works out where a thing is by climbing its containers. Systems and extensions add types and fields without changing the core ones.
 - Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and, when it changes something, logs an event.
 
 ## Coding guidelines

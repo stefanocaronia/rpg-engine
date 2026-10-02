@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { changeSetting, checkSettingName, missingSettings, missingSettingsNote, readSettings, requireCampaign, settingNames } from "../campaign/index.ts";
+import { changeSetting, checkSettingName, missingSettings, readSettings, requireCampaign, settingNames } from "../campaign/index.ts";
 import { appendEvent } from "../core/event-log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { missingSettingsNote } from "./notes.ts";
 
 export const config = defineCommand({
     name: "config",

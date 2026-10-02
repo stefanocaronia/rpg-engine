@@ -28,7 +28,7 @@ export function requireCampaign(folder: string): string
     const root = findCampaign(folder);
 
     if (root === undefined) {
-        throw new Error(`There is no campaign here: no ${campaignFileName} in ${resolve(folder)} or in the folders above it. Create one with "rpg init", or run rpg from inside a campaign folder.`);
+        throw new Error(`There is no campaign here: no ${campaignFileName} in ${resolve(folder)} or in the folders above it. Create one with the init command, or work from inside a campaign folder.`);
     }
 
     return root;

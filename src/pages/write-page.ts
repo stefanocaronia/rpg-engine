@@ -1,11 +1,11 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { writeText } from "./markdown.ts";
 import { changeFields, joinPageFile, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { checkPageName, findPage, type Page, readPage, type World } from "./world.ts";
 
-const fieldNamePattern = /^[A-Za-z][\w-]*$/;
+const fieldNamePattern = /^\p{L}[\p{L}\p{N}_-]*$/u;
 
 /** What to change on a page: fields to set or remove, and text for the whole page or for one section. */
 export interface PageChange
@@ -24,7 +24,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
 {
     const existing = findPage(world, name);
     checkChange(existing, type, change);
-    const path = existing?.path ?? newPagePath(name, type);
+    const path = existing?.path ?? newPagePath(world, name, type);
     const fullPath = join(world.root, path);
     const file = existing === undefined ? { body: "" } : splitPageFile(readFileSync(fullPath, "utf8"));
     const changesFields = change.set !== undefined || change.unset !== undefined;
@@ -45,6 +45,10 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
         throw new Error(`Nothing to write on ${existing.name}: give fields to set or to remove, or text.`);
     }
 
+    if (change.section?.trim() === "") {
+        throw new Error("Give the title of the section, or leave the section out to write the whole text.");
+    }
+
     for (const name of Object.keys(change.set ?? {})) {
         if (!fieldNamePattern.test(name)) {
             throw new Error(`"${name}" cannot be a field name: start with a letter, and use only letters, digits, - and _.`);
@@ -58,12 +62,19 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
     }
 }
 
-function newPagePath(name: string, type: PageType | undefined): string
+function newPagePath(world: World, name: string, type: PageType | undefined): string
 {
     if (type === undefined) {
         throw new Error(`There is no page named ${name}. To create it, give its type: ${pageTypeNames.join(", ")}.`);
     }
 
     checkPageName(name);
-    return `${worldFolderName}/${pageTypes[type]}/${name}.md`;
+    const path = `${worldFolderName}/${pageTypes[type]}/${name}.md`;
+
+    if (existsSync(join(world.root, path))) {
+        const problem = world.problems.find((candidate) => candidate.includes(path));
+        throw new Error(`${path} already exists, but it cannot be read as a page${problem === undefined ? "" : `: ${problem}`}. Fix it or remove it by hand.`);
+    }
+
+    return path;
 }
