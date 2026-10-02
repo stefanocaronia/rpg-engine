@@ -1,5 +1,10 @@
 import type { Command } from "../core/registry.ts";
+import { config } from "./config.ts";
+import { find } from "./find.ts";
+import { init } from "./init.ts";
 import { roll } from "./roll.ts";
+import { show } from "./show.ts";
+import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [roll];
+export const commands: Command<any, any>[] = [init, config, write, show, find, roll];

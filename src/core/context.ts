@@ -3,7 +3,7 @@ import { randomBytes, randomInt, randomUUID } from "node:crypto";
 /** What a command needs from the outside world: tests replace it to get repeatable results. */
 export interface Context
 {
-    /** Folder of the campaign the command works on. */
+    /** Folder the command runs in: commands look for the campaign here and in the folders above. */
     folder: string;
     /** Rolls one digital die: an integer from 1 to `sides`. */
     random(sides: number): number;

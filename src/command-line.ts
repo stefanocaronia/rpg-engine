@@ -59,11 +59,11 @@ async function runCommand(command: AnyCommand, args: string[], context: Context)
 function readArguments(command: AnyCommand, args: string[]): { input: Record<string, unknown>; asJson: boolean; }
 {
     const positionals = command.positionals ?? [];
-    const options: Record<string, { type: "string" | "boolean"; }> = { json: { type: "boolean" } };
+    const options: Record<string, { type: "string" | "boolean"; multiple?: boolean; }> = { json: { type: "boolean" } };
 
     for (const [name, field] of inputFields(command)) {
         if (!positionals.includes(name)) {
-            options[name] = { type: isBoolean(field) ? "boolean" : "string" };
+            options[name] = { type: isBoolean(field) ? "boolean" : "string", multiple: isList(field) };
         }
     }
 
@@ -96,13 +96,24 @@ function inputFields(command: AnyCommand): [string, z.ZodType][]
 
 function isBoolean(field: z.ZodType): boolean
 {
+    return baseType(field) === "boolean";
+}
+
+/** A list option can be given more than once, as in --set a=1 --set b=2. */
+function isList(field: z.ZodType): boolean
+{
+    return baseType(field) === "array";
+}
+
+function baseType(field: z.ZodType): string
+{
     let definition = field.def as { type: string; innerType?: z.ZodType; };
 
     while (definition.innerType && ["optional", "default", "nullable"].includes(definition.type)) {
         definition = definition.innerType.def as typeof definition;
     }
 
-    return definition.type === "boolean";
+    return definition.type;
 }
 
 function generalHelp(): string
@@ -116,7 +127,7 @@ function commandHelp(command: AnyCommand): string
     const positionals = command.positionals ?? [];
     const usage = ["rpg", command.name, ...positionals.map((name) => `<${name}>`), "[options]"].join(" ");
     const optionLines = inputFields(command).map(([name, field]) => {
-        const flag = positionals.includes(name) ? `<${name}>` : `--${name}${isBoolean(field) ? "" : " <value>"}`;
+        const flag = positionals.includes(name) ? `<${name}>` : `--${name}${isBoolean(field) ? "" : " <value>"}${isList(field) ? "..." : ""}`;
         return `  ${flag.padEnd(20)} ${field.description ?? ""}`;
     });
     return [usage, "", command.description, "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");

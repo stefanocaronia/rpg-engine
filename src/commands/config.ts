@@ -1,0 +1,34 @@
+import { z } from "zod";
+import { changeSetting, checkSettingName, missingSettings, missingSettingsNote, readSettings, requireCampaign, settingNames } from "../campaign/index.ts";
+import { appendEvent } from "../core/event-log.ts";
+import { defineCommand } from "../core/registry.ts";
+
+export const config = defineCommand({
+    name: "config",
+    description: "Show the campaign settings and what is still missing, or change one setting.",
+    positionals: ["setting", "value"],
+    input: z.object({
+        setting: z.string().optional().describe(`setting to show or change: ${settingNames.join(", ")}`),
+        value: z.string().optional().describe("new value of the setting"),
+    }),
+
+    run(input, context)
+    {
+        const root = requireCampaign(context.folder);
+        const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
+
+        if (input.setting !== undefined && input.value !== undefined) {
+            changeSetting(root, input.setting, input.value);
+            appendEvent(root, { id: context.newId(), at: context.now().toISOString(), type: "config-changed", visibility: "public", data: { setting: input.setting, value: input.value } });
+        }
+
+        const settings = readSettings(root);
+        return { settings: Object.fromEntries(shown.map((name) => [name, settings[name]])), missing: missingSettings(settings) };
+    },
+
+    format(result)
+    {
+        const lines = Object.entries(result.settings).map(([name, value]) => `${name}: ${value ?? "(missing)"}`);
+        return [lines.join("\n"), missingSettingsNote(result.missing)].filter((block) => block !== "").join("\n\n");
+    },
+});

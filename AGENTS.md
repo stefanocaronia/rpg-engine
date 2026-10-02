@@ -44,7 +44,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - **Don't encode game rules.** Ruling is the AI's job, with the exact text at hand.
 - **Core, system or extension?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a system or an extension, as data; their code only when data is not enough.
 - **Data is object-oriented and SOLID.** Each page describes only itself. A relation lives in whoever holds it: who owns or knows something keeps the list, with links, in its frontmatter; a thing never records who has or knows it. Systems and extensions add types and fields without changing the core ones.
-- Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and logs an event.
+- Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and, when it changes something, logs an event.
 
 ## Coding guidelines
 
@@ -82,7 +82,7 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Conventions
 
-- TypeScript on Node ≥ 22; zod; vitest; few dependencies.
+- TypeScript on Node ≥ 22; zod; yaml; vitest; few dependencies.
 - Code, comments, commit messages, public docs, command names, file names and config keys in English; game content in the campaign language.
 - Secret parts of a page go in a `> [!secret]` block (Obsidian callout).
 - Tests use Ironsworn (CC-BY-4.0) next to `5e`, to keep the core generic.

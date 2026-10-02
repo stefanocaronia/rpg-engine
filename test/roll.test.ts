@@ -1,44 +1,39 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { makeTempFolder, readEventLog, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
 
 beforeEach(() => {
-    folder = mkdtempSync(join(tmpdir(), "rpg-test-"));
-    let idCount = 0;
-    context = {
-        folder,
-        random: () => 4,
-        now: () => new Date("2026-10-02T10:00:00Z"),
-        newId: () => `id${++idCount}`,
-        newSalt: () => "salt",
-    };
+    folder = makeTempFolder();
+    context = testContext(folder);
+    // A bare campaign, so that the first roll gets the id id1.
+    writeFileSync(join(folder, "campaign.yaml"), "name: Test\n");
 });
 
-afterEach(() => rmSync(folder, { recursive: true, force: true }));
+afterEach(() => removeFolder(folder));
 
 function loggedEvents()
 {
-    return readFileSync(join(folder, "events.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    return readEventLog(folder);
 }
 
 describe("rpg roll", () => {
     it("rolls digital dice and logs the roll", async () => {
-        const result = await runCommandLine(["roll", "2d6+1", "--why", "damage", "--who", "Galdrak"], context);
-        expect(result).toEqual({ exitCode: 0, output: "id1 Galdrak, damage: 2d6+1 = 9 [4, 4] + 1" });
+        const result = await runCommandLine(["roll", "2d6+1", "--why", "damage", "--who", "Lena"], context);
+        expect(result).toEqual({ exitCode: 0, output: "id1 Lena, damage: 2d6+1 = 9 [4, 4] + 1" });
         expect(loggedEvents()).toEqual([
             {
                 id: "id1",
                 at: "2026-10-02T10:00:00.000Z",
                 type: "roll",
                 visibility: "public",
-                data: { notation: "2d6+1", total: 9, result: "2d6+1 = 9 [4, 4] + 1", why: "damage", who: "Galdrak", physical: false },
+                data: { notation: "2d6+1", total: 9, result: "2d6+1 = 9 [4, 4] + 1", why: "damage", who: "Lena", physical: false },
             },
         ]);
     });

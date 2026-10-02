@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendEvent, readEvents } from "../core/event-log.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -29,12 +30,14 @@ export const roll = defineCommand({
 
     run(input, context): RollOutput
     {
+        const root = requireCampaign(context.folder);
+
         if (input.reveal !== undefined) {
             if (input.notation !== undefined) {
                 throw new Error("Give either a dice notation or --reveal <id>, not both.");
             }
 
-            return revealHiddenRoll(input.reveal, context);
+            return revealHiddenRoll(input.reveal, root, context);
         }
 
         if (input.notation === undefined) {
@@ -57,7 +60,7 @@ export const roll = defineCommand({
             Object.assign(data, { proof, fingerprint: shownFingerprint });
         }
 
-        appendEvent(context.folder, { id, at: context.now().toISOString(), type: "roll", visibility: input.hidden ? "hidden" : "public", data });
+        appendEvent(root, { id, at: context.now().toISOString(), type: "roll", visibility: input.hidden ? "hidden" : "public", data });
         return { kind: "roll", id, text: diceRoll.text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint };
     },
 
@@ -76,9 +79,9 @@ export const roll = defineCommand({
     },
 });
 
-function revealHiddenRoll(rollId: string, context: Context): RollOutput
+function revealHiddenRoll(rollId: string, root: string, context: Context): RollOutput
 {
-    const events = readEvents(context.folder);
+    const events = readEvents(root);
     const hiddenRoll = events.find((event) => event.id === rollId && event.type === "roll" && event.visibility === "hidden");
 
     if (!hiddenRoll) {
@@ -89,7 +92,7 @@ function revealHiddenRoll(rollId: string, context: Context): RollOutput
     const alreadyRevealed = events.some((event) => event.type === "reveal" && event.data.roll === rollId);
 
     if (!alreadyRevealed) {
-        appendEvent(context.folder, { id: context.newId(), at: context.now().toISOString(), type: "reveal", visibility: "public", data: { roll: rollId, proof } });
+        appendEvent(root, { id: context.newId(), at: context.now().toISOString(), type: "reveal", visibility: "public", data: { roll: rollId, proof } });
     }
 
     return { kind: "reveal", id: rollId, text: String(hiddenRoll.data.result), proof, sha256: sha256(proof), fingerprint: String(hiddenRoll.data.fingerprint) };
