@@ -1,9 +1,9 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
-import { commands } from "./commands/index.js";
-import { type Context, defaultContext } from "./core/context.js";
-import type { Command } from "./core/registry.js";
-import { getVersion } from "./core/version.js";
+import { commands } from "./commands/index.ts";
+import { type Context, defaultContext } from "./core/context.ts";
+import type { Command } from "./core/registry.ts";
+import { getVersion } from "./core/version.ts";
 
 export interface CommandLineResult
 {

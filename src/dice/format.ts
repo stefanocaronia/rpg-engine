@@ -1,4 +1,4 @@
-import type { Die, RollBreakdown } from "./evaluate.js";
+import type { Die, RollBreakdown } from "./evaluate.ts";
 
 /** One line such as `2d20kh1+5 = 19 [14, (7)] + 5`: dropped dice in parentheses, rerolls `1->6`, successes `8*`. */
 export function formatRoll(notation: string, breakdown: RollBreakdown): string

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { getVersion } from "../src/core/version.js";
+import { getVersion } from "../src/core/version.ts";
 
 describe("getVersion", () => {
     it("returns the version from package.json", () => {

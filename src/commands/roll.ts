@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { Context } from "../core/context.js";
-import { appendEvent, readEvents } from "../core/event-log.js";
-import { defineCommand } from "../core/registry.js";
-import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.js";
+import type { Context } from "../core/context.ts";
+import { appendEvent, readEvents } from "../core/event-log.ts";
+import { defineCommand } from "../core/registry.ts";
+import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 const faceValues = z.preprocess(

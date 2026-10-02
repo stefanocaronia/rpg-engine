@@ -1,6 +1,6 @@
-import { dieName, digitalFaces, evaluateTerms, physicalFaces, type RollBreakdown } from "./evaluate.js";
-import { formatRoll } from "./format.js";
-import { DiceError, minimumDice, parseNotation, type Term } from "./notation.js";
+import { dieName, digitalFaces, evaluateTerms, physicalFaces, type RollBreakdown } from "./evaluate.ts";
+import { formatRoll } from "./format.ts";
+import { DiceError, minimumDice, parseNotation, type Term } from "./notation.ts";
 
 /** Where the faces come from: the digital generator, or the faces the player rolled with physical dice. */
 export type FaceSource = { random(sides: number): number; } | { values: number[]; };

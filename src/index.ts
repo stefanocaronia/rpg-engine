@@ -1,1 +1,1 @@
-export { getVersion } from "./core/version.js";
+export { getVersion } from "./core/version.ts";

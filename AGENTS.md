@@ -67,6 +67,7 @@ Clean, compact, ordered code that is easy to understand.
 - camelCase for variables, functions and constants; PascalCase for types, interfaces and classes, without an `I` prefix; no underscores or hyphens in identifiers. File names in kebab-case.
 - Public API first in a file, private helpers below it.
 - Let TypeScript infer local types; annotate parameters and return types of exported functions.
+- Relative imports use the `.ts` extension; the build rewrites them to `.js`.
 - Comments in English, one or two lines at most: the code should explain itself. A one-line `/** */` on exported functions and types when the name is not enough.
 - Error messages say what went wrong and how to fix it: an AI reads them.
 - Use our core utilities before writing new helpers.

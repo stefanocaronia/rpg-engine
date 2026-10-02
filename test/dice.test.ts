@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { defaultContext } from "../src/core/context.js";
-import { DiceError, rollDice } from "../src/dice/index.js";
+import { defaultContext } from "../src/core/context.ts";
+import { DiceError, rollDice } from "../src/dice/index.ts";
 
 describe("dice notation", () => {
     it.each([

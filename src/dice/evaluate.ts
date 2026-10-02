@@ -1,4 +1,4 @@
-import { DiceError, type DiceTerm, matches, type Term } from "./notation.js";
+import { DiceError, type DiceTerm, matches, type Term } from "./notation.ts";
 
 export interface Die
 {

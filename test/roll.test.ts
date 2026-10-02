@@ -3,8 +3,8 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.js";
-import type { Context } from "../src/core/context.js";
+import { runCommandLine } from "../src/command-line.ts";
+import type { Context } from "../src/core/context.ts";
 
 let folder: string;
 let context: Context;
