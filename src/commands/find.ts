@@ -6,7 +6,11 @@ import { skippedPagesNote } from "./notes.ts";
 
 export const find = defineCommand({
     name: "find",
-    description: "Find pages of the world by a text in their name, fields or text, or by type.",
+    description: "Find pages of the world. "
+        + "It looks for a text in their names, fields and text, ignoring case, or lists the pages of a type. "
+        + "Use it when you do not know a page's exact name, and before creating a page, to check that it does not exist under another name. "
+        + 'Example: text "lanterna"; or type place.',
+    group: "game",
     positionals: ["text"],
     input: z.object({
         text: z.string().optional().describe("text to look for, ignoring case; every page if left out"),

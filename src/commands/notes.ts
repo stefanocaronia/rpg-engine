@@ -7,7 +7,7 @@ export function missingSettingsNote(missing: string[]): string
         return "";
     }
 
-    return `Still missing: ${missing.join(", ")}. Set ${missing.length === 1 ? "it" : "them"} with: rpg config <setting> <value>`;
+    return `Still missing: ${missing.join(", ")}. Ask the player, then set ${missing.length === 1 ? "it" : "each one"} with the config command (setting and value).`;
 }
 
 /** Lists the files of the world that could not be read as pages; empty when there are none. */

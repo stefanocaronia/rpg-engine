@@ -1,12 +1,15 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
 import { campaignFileName, findCampaign } from "./find-campaign.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
-/** Creates a campaign in `folder`: campaign.yaml, state.yaml and the sessions folder. Returns the campaign's full path. */
-export function createCampaign(folder: string, settings: CampaignSettings): string
+/**
+ * Creates a campaign in `folder`: campaign.yaml, state.yaml, the sessions folder, and the .mcp.json through which AI hosts such as Claude Code find the rpg tools.
+ * `platform` is the operating system, as Node names it. Returns the campaign's full path.
+ */
+export function createCampaign(folder: string, settings: CampaignSettings, platform: string): string
 {
     const root = resolve(folder);
     checkNoOtherCampaign(root);
@@ -16,10 +19,30 @@ export function createCampaign(folder: string, settings: CampaignSettings): stri
         throw new Error(`The campaign settings are not valid:\n${z.prettifyError(parsed.error)}`);
     }
 
+    const mcpConfig = mcpConfigWithRpg(root, platform);
     mkdirSync(join(root, "sessions"), { recursive: true });
     writeFileSync(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`, "utf8");
     writeFileSync(join(root, "state.yaml"), "# The present of the game, kept by rpg: date and current scene.\n", "utf8");
+    writeFileSync(join(root, ".mcp.json"), JSON.stringify(mcpConfig, null, 2) + "\n", "utf8");
     return root;
+}
+
+/** The folder's .mcp.json with the rpg server added; other servers already listed stay. On Windows a host must start rpg through cmd. */
+function mcpConfigWithRpg(root: string, platform: string): { mcpServers?: Record<string, unknown>; }
+{
+    const path = join(root, ".mcp.json");
+    let config: { mcpServers?: Record<string, unknown>; } = {};
+
+    if (existsSync(path)) {
+        try {
+            config = JSON.parse(readFileSync(path, "utf8"));
+        } catch {
+            throw new Error(`${path} is not valid JSON, so the rpg server cannot be added to it. Fix it or remove it by hand, then create the campaign again.`);
+        }
+    }
+
+    const rpg = platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
+    return { ...config, mcpServers: { ...config.mcpServers, rpg } };
 }
 
 /** A campaign cannot sit inside another one, nor hold one. */

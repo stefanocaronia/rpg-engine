@@ -17,13 +17,19 @@ type RollOutput =
 
 export const roll = defineCommand({
     name: "roll",
-    description: "Roll dice and log the roll. Pass the faces of physical dice with --values; hide a roll from the player with --hidden.",
+    description: "Roll dice and log the roll. "
+        + "Give what the roll is for and, if it belongs to someone, whose it is. "
+        + "When the player rolls physical dice, pass the faces they rolled as values. "
+        + "When the player must not see the result, make it hidden and tell the player only the fingerprint; reveal shows a hidden roll's proof later. "
+        + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
+        + 'Example: notation 1d20+3, why "notice the trap", who Elia.',
+    group: "game",
     positionals: ["notation"],
     input: z.object({
         notation: z.string().optional().describe("dice to roll: 1d20+5, 2d20kh1, 4d6dl1, 2d6ro<=2, 1d6!, 6d10>=8, 4dF, d%"),
         why: z.string().optional().describe("what the roll is for"),
         who: z.string().optional().describe("character the roll belongs to; leave it out for a free roll of the master"),
-        values: faceValues.optional().describe("faces rolled by the player with physical dice, comma separated (--values=-1,0,1 for negative faces)"),
+        values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
         hidden: z.boolean().optional().describe("only the master sees the result; the player gets a fingerprint"),
         reveal: z.string().optional().describe("id of a hidden roll to reveal"),
     }),
@@ -34,14 +40,14 @@ export const roll = defineCommand({
 
         if (input.reveal !== undefined) {
             if (input.notation !== undefined) {
-                throw new Error("Give either a dice notation or --reveal <id>, not both.");
+                throw new Error("Give either the dice to roll or the id of a hidden roll to reveal, not both.");
             }
 
             return revealHiddenRoll(input.reveal, root, context);
         }
 
         if (input.notation === undefined) {
-            throw new Error("Give the dice to roll, for example: rpg roll 1d20+5");
+            throw new Error("Give the dice to roll, for example 1d20+5.");
         }
 
         if (input.values && input.hidden) {

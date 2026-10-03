@@ -160,7 +160,8 @@ function sameValue(item: unknown, value: unknown): boolean
     return (isScalar(item) ? item.value : item) === value;
 }
 
-function holdsNestedList(value: unknown): boolean
+/** Whether a value holds a list inside a list, which a field cannot hold. */
+export function holdsNestedList(value: unknown): boolean
 {
     if (Array.isArray(value)) {
         return value.some((item) => Array.isArray(item) || holdsNestedList(item));

@@ -1,13 +1,16 @@
 import type { z } from "zod";
 import type { Context } from "./context.ts";
 
-/** A command is defined once: the CLI, and later the MCP server and the dashboard API, are generated from it. */
+/** A command is defined once: the command line, the MCP server and later the dashboard API are generated from it. */
 export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unknown>
 {
     name: string;
+    /** Written for an AI: what the command does (the first sentence, shown in the list of commands), when to use it, an example. */
     description: string;
+    /** Commands that set up the campaign, or that are used while playing. */
+    group: "campaign" | "game";
     input: Schema;
-    /** Fields the CLI takes as positional arguments, in order. */
+    /** Fields the command line takes as positional arguments, in order. */
     positionals?: string[];
     run(input: z.infer<Schema>, context: Context): Result | Promise<Result>;
     /** Plain-text rendering of the result. */

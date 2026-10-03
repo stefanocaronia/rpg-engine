@@ -39,7 +39,7 @@ describe("rpg init", () => {
 
     it("says how to set what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
-        expect(result.output).toBe(`Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system. Set it with: rpg config <setting> <value>`);
+        expect(result.output).toBe(`Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system. Ask the player, then set it with the config command (setting and value).`);
     });
 
     it("refuses a second campaign in the same folder, inside another one or around another one", async () => {
@@ -50,6 +50,26 @@ describe("rpg init", () => {
         await runCommandLine(["init", "nuova"], context);
         expect((await runCommandLine(["init", "nuova"], context)).output).toContain("is already a campaign");
         expect((await runCommandLine(["init", "nuova/world/inner"], context)).output).toContain("a campaign cannot hold another one");
+    });
+
+    it("writes the .mcp.json through which an AI host finds the tools, in the form each system needs", async () => {
+        await runCommandLine(["init", "linux"], context);
+        expect(JSON.parse(readFileSync(join(folder, "linux", ".mcp.json"), "utf8"))).toEqual({ mcpServers: { rpg: { command: "rpg", args: ["mcp"] } } });
+
+        await runCommandLine(["init", "windows"], { ...testContext(folder), platform: "win32" });
+        expect(JSON.parse(readFileSync(join(folder, "windows", ".mcp.json"), "utf8"))).toEqual({ mcpServers: { rpg: { command: "cmd", args: ["/c", "rpg", "mcp"] } } });
+    });
+
+    it("keeps the other servers of an existing .mcp.json, and refuses a broken one before creating anything", async () => {
+        mkdirSync(join(folder, "con-altri"));
+        writeFileSync(join(folder, "con-altri", ".mcp.json"), JSON.stringify({ mcpServers: { altro: { command: "altro" } } }));
+        await runCommandLine(["init", "con-altri"], context);
+        expect(JSON.parse(readFileSync(join(folder, "con-altri", ".mcp.json"), "utf8")).mcpServers).toEqual({ altro: { command: "altro" }, rpg: { command: "rpg", args: ["mcp"] } });
+
+        mkdirSync(join(folder, "rotto"));
+        writeFileSync(join(folder, "rotto", ".mcp.json"), "{ non è json");
+        expect((await runCommandLine(["init", "rotto"], context)).output).toContain(".mcp.json is not valid JSON");
+        expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
     });
 
     it("checks the settings before creating anything", async () => {
@@ -67,12 +87,12 @@ describe("rpg config", () => {
 
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
-        expect(result.output).toBe("name: Guadoscuro\nlanguage: (missing)\nsystem: (missing)\n\nStill missing: language, system. Set them with: rpg config <setting> <value>");
+        expect(result.output).toBe("name: Guadoscuro\nlanguage: (missing)\nsystem: (missing)\n\nStill missing: language, system. Ask the player, then set each one with the config command (setting and value).");
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe("language: it\n\nStill missing: system. Set it with: rpg config <setting> <value>");
+        expect(result.output).toBe("language: it\n\nStill missing: system. Ask the player, then set it with the config command (setting and value).");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });

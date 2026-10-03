@@ -52,12 +52,26 @@ describe("MCP server", () => {
         expect(readFileSync(join(folder, "world", "items", "Appunti.md"), "utf8")).toBe(`${text}\n`);
     });
 
+    it("takes fields as an object, so lists of links need no quoting", async () => {
+        await call("init", { name: "Guadoscuro" });
+        await call("write", { page: "Lena", type: "character", set: { role: "companion", knows: ["[[Varro]]", "[[Il mulino#Le chiuse]]"] } });
+        await call("write", { page: "Lena", add: { knows: "[[Mirta]]" } });
+        expect(JSON.parse((await runCommandLine(["show", "Lena", "--json"], testContext(folder))).output).fields).toEqual({ role: "companion", knows: ["[[Varro]]", "[[Il mulino#Le chiuse]]", "[[Mirta]]"] });
+        expect(await call("write", { page: "Lena", set: { knows: [["[[Pietro]]"], ["[[Rosa]]"]] } })).toEqual({ text: expect.stringContaining("would hold a list inside a list"), isError: true });
+    });
+
     it("reports a failure as a tool error with the command's message", async () => {
         expect(await call("show", { page: "Varro" })).toEqual({ text: expect.stringContaining("There is no campaign here"), isError: true });
     });
 
     it("is explained on the command line, where it is the only command of its kind", async () => {
-        expect((await runCommandLine(["--help"], testContext(folder))).output).toContain("mcp      Start the MCP server");
-        expect((await runCommandLine(["mcp", "--help"], testContext(folder))).output).toContain("The host starts it, with no options.");
+        expect((await runCommandLine(["--help"], testContext(folder))).output).toContain("mcp      Start the MCP server for an AI host.");
+        expect((await runCommandLine(["mcp", "--help"], testContext(folder))).output).toContain("the host starts it, with no options.");
+    });
+
+    it("lists the commands in two groups, with the first sentence of each description", async () => {
+        const help = (await runCommandLine(["--help"], testContext(folder))).output;
+        expect(help).toContain("Campaign:\n  init     Create a new campaign.\n  config   Show or change the campaign settings.\n  mcp      Start the MCP server for an AI host.");
+        expect(help).toContain("Game:\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.");
     });
 });

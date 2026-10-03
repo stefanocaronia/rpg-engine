@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { repeatedNames, writeText } from "./markdown.ts";
-import { changeFields, type FieldChange, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
+import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { checkStandardFields, containerFields } from "./standard-fields.ts";
 import { checkPageName, findPage, holdersOf, linksIn, type Page, readPage, type World } from "./world.ts";
@@ -67,6 +67,12 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
     for (const name of [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {})]) {
         if (!fieldNamePattern.test(name)) {
             throw new Error(`"${name}" cannot be a field name: start with a letter, and use only letters, digits, - and _.`);
+        }
+    }
+
+    for (const [name, value] of [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})]) {
+        if (holdsNestedList(value)) {
+            throw new Error(`"${name}" would hold a list inside a list, which a field cannot hold. Give a list of links or text, such as ["[[A]]", "[[B]]"].`);
         }
     }
 

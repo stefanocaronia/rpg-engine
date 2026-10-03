@@ -6,7 +6,11 @@ import { missingSettingsNote } from "./notes.ts";
 
 export const config = defineCommand({
     name: "config",
-    description: "Show the campaign settings and what is still missing, or change one setting.",
+    description: "Show or change the campaign settings. "
+        + "Without a setting it shows them all and says which are still missing; with a setting and a value it changes that one. "
+        + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
+        + "Example: setting language, value it.",
+    group: "campaign",
     positionals: ["setting", "value"],
     input: z.object({
         setting: z.string().optional().describe(`setting to show or change: ${settingNames.join(", ")}`),

@@ -14,7 +14,7 @@ export interface CommandLineResult
 type AnyCommand = Command<any, any>;
 
 // The one command that exists only on the command line: cli.ts starts the server when it comes alone.
-const mcpDescription = "Start the MCP server, through which an AI host uses these commands as tools. The host starts it, with no options.";
+const mcpDescription = "Start the MCP server for an AI host. Through it the host uses these commands as tools; the host starts it, with no options.";
 
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
 export async function runCommandLine(argv: string[], context: Context = defaultContext()): Promise<CommandLineResult>
@@ -126,27 +126,52 @@ function isBoolean(field: z.ZodType): boolean
     return baseType(field) === "boolean";
 }
 
-/** A list option can be given more than once, as in --set a=1 --set b=2. */
+/** A list option can be given more than once, as in --set a=1 --set b=2; a field that also takes an object, through MCP, is a list here. */
 function isList(field: z.ZodType): boolean
 {
-    return baseType(field) === "array";
+    const definition = baseDefinition(field);
+    return definition.type === "array" || (definition.type === "union" && (definition.options ?? []).some(isList));
 }
 
 function baseType(field: z.ZodType): string
 {
-    let definition = field.def as { type: string; innerType?: z.ZodType; };
+    return baseDefinition(field).type;
+}
+
+function baseDefinition(field: z.ZodType): { type: string; innerType?: z.ZodType; options?: z.ZodType[]; }
+{
+    let definition = field.def as { type: string; innerType?: z.ZodType; options?: z.ZodType[]; };
 
     while (definition.innerType && ["optional", "default", "nullable"].includes(definition.type)) {
         definition = definition.innerType.def as typeof definition;
     }
 
-    return definition.type;
+    return definition;
 }
 
+/** The commands in two groups, each with the first sentence of its description. */
 function generalHelp(): string
 {
-    const commandLines = [...commands.map((command) => `  ${command.name.padEnd(8)} ${command.description}`), `  ${"mcp".padEnd(8)} ${mcpDescription}`];
-    return [`rpg-engine ${getVersion()}`, "", "Commands:", ...commandLines, "", "Run `rpg <command> --help` for its options."].join("\n");
+    const line = (name: string, description: string): string => `  ${name.padEnd(8)} ${firstSentence(description)}`;
+    const groupLines = (group: string): string[] => commands.filter((command) => command.group === group).map((command) => line(command.name, command.description));
+    return [
+        `rpg-engine ${getVersion()}`,
+        "",
+        "Campaign:",
+        ...groupLines("campaign"),
+        line("mcp", mcpDescription),
+        "",
+        "Game:",
+        ...groupLines("game"),
+        "",
+        "Run `rpg <command> --help` for its options.",
+    ].join("\n");
+}
+
+function firstSentence(text: string): string
+{
+    const end = text.indexOf(". ");
+    return end === -1 ? text : text.slice(0, end + 1);
 }
 
 function commandHelp(command: AnyCommand): string

@@ -5,17 +5,25 @@ import { defineCommand } from "../core/registry.ts";
 import { loadWorld, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
 import { skippedPagesNote } from "./notes.ts";
 
+// Fields arrive as field=value strings from a command line, or as an object through MCP.
+const fieldValues = z.union([z.array(z.string()), z.record(z.string(), z.unknown())]);
+
 export const write = defineCommand({
     name: "write",
-    description: "Create or change a page of the world: its fields and its text. The world's pages are written only with this command.",
+    description: "Create or change a page of the world. "
+        + "The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, a change, something a character learns. "
+        + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
+        + "A list field changes one item at a time with add and remove. "
+        + 'Example: page Varro, type character, set role=npc, text "An alchemist who wants his daughter back."',
+    group: "game",
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("name of the page; Page#Name writes one section or one secret"),
         type: z.enum(pageTypeNames).optional().describe(`type of a new page: ${pageTypeNames.join(", ")}`),
-        set: z.array(z.string()).optional().describe("field=value to set, repeatable: a link is [[Page]], links are [[A]], [[B]], a list is [a, b]"),
-        unset: z.array(z.string()).optional().describe("field to remove, repeatable"),
-        add: z.array(z.string()).optional().describe("field=value to add to a list, repeatable, such as knows=[[Varro]]"),
-        remove: z.array(z.string()).optional().describe("field=value to remove from a list, repeatable"),
+        set: fieldValues.optional().describe('fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]'),
+        unset: z.array(z.string()).optional().describe("fields to remove, repeatable"),
+        add: fieldValues.optional().describe("items to add to list fields: field=value, repeatable, such as knows=[[Varro]], or an object"),
+        remove: fieldValues.optional().describe("items to remove from list fields: field=value, repeatable, or an object"),
         text: z.string().optional().describe("text of the introduction, the part before the first heading; or of the section or secret given"),
         section: z.string().optional().describe("section or secret to write; a missing section is added at the end"),
         append: z.boolean().optional().describe("add the text at the end instead of replacing"),
@@ -27,18 +35,18 @@ export const write = defineCommand({
         const reference = parsePageReference(input.page);
 
         if (input.section !== undefined && reference.section !== undefined) {
-            throw new Error("Give the section either in the page name (Page#Section) or with --section, not both.");
+            throw new Error("Give the section either in the page name (Page#Section) or as section, not both.");
         }
 
         const section = input.section ?? reference.section;
 
         if ((section !== undefined || input.append) && input.text === undefined) {
-            throw new Error("Give the text to write with --text.");
+            throw new Error("Give the text to write.");
         }
 
-        const set = input.set === undefined ? undefined : readAssignments(input.set);
-        const add = input.add === undefined ? undefined : readListAssignments(input.add);
-        const remove = input.remove === undefined ? undefined : readListAssignments(input.remove);
+        const set = input.set === undefined ? undefined : readFields(input.set);
+        const add = input.add === undefined ? undefined : readListItems(input.add);
+        const remove = input.remove === undefined ? undefined : readListItems(input.remove);
         const mode = input.text === undefined ? undefined : input.append ? "append" : "replace";
         const world = loadWorld(root);
         const { page, created, changed } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append });
@@ -69,33 +77,37 @@ export const write = defineCommand({
     },
 });
 
-/** Reads field=value pairs; the value is read as a link, links, a number, true or false, a list, or text. */
-function readAssignments(assignments: string[]): Record<string, unknown>
+/** Fields from field=value pairs, each value read as a link, links, a number, true or false, a list or text; or from an object, as they are. */
+function readFields(fields: string[] | Record<string, unknown>): Record<string, unknown>
 {
-    const fields: Record<string, unknown> = {};
+    if (!Array.isArray(fields)) {
+        return fields;
+    }
 
-    for (const assignment of assignments) {
+    const read: Record<string, unknown> = {};
+
+    for (const assignment of fields) {
         const separator = assignment.indexOf("=");
         const value = assignment.slice(separator + 1).trim();
 
         if (separator <= 0 || value === "") {
-            throw new Error(`Write a field as field=value, not "${assignment}". To remove a field, use --unset.`);
+            throw new Error(`Write a field as field=value, not "${assignment}". To remove a field, use unset.`);
         }
 
-        fields[assignment.slice(0, separator).trim()] = readFieldValue(value);
+        read[assignment.slice(0, separator).trim()] = readFieldValue(value);
     }
 
-    return fields;
+    return read;
 }
 
-/** Reads field=value pairs for lists: each value gives one item, or several when it is a list of links or a list. */
-function readListAssignments(assignments: string[]): Record<string, unknown[]>
+/** Items for list fields: each value gives one item, or several when it is a list. */
+function readListItems(fields: string[] | Record<string, unknown>): Record<string, unknown[]>
 {
-    const lists: Record<string, unknown[]> = {};
+    const items: Record<string, unknown[]> = {};
 
-    for (const [name, value] of Object.entries(readAssignments(assignments))) {
-        lists[name] = Array.isArray(value) ? value : [value];
+    for (const [name, value] of Object.entries(readFields(fields))) {
+        items[name] = Array.isArray(value) ? value : [value];
     }
 
-    return lists;
+    return items;
 }

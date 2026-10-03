@@ -15,6 +15,7 @@ export function testContext(folder: string): Context
         newId: () => `id${++idCount}`,
         newSalt: () => "salt",
         actor: "master",
+        platform: "linux",
     };
 }
 

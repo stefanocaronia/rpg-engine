@@ -80,11 +80,11 @@ describe("rpg write", () => {
             [["write", "varro", "--type", "place"], "Varro already exists, as a character (world/characters/Varro.md): leave the type out to change it, or pick another name."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
             [["write", "Varro"], "Nothing to write on Varro: give fields to set, add or remove, or text."],
-            [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use --unset.`],
+            [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use unset.`],
             [["write", "Varro", "--set", "1st=x"], `"1st" cannot be a field name`],
-            [["write", "Varro", "--section", "I piani"], "Give the text to write with --text."],
-            [["write", "Varro#I piani", "--section", "I piani", "--text", "x"], "Give the section either in the page name (Page#Section) or with --section, not both."],
-            [["show", "Nessuno"], "There is no page named Nessuno. Look for it with: rpg find <text>"],
+            [["write", "Varro", "--section", "I piani"], "Give the text to write."],
+            [["write", "Varro#I piani", "--section", "I piani", "--text", "x"], "Give the section either in the page name (Page#Section) or as section, not both."],
+            [["show", "Nessuno"], "There is no page named Nessuno. Look for it with the find command."],
         ];
 
         for (const [args, message] of refusals) {

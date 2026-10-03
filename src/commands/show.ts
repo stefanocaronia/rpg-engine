@@ -6,7 +6,11 @@ import { skippedPagesNote } from "./notes.ts";
 
 export const show = defineCommand({
     name: "show",
-    description: "Show a page of the world, or one of its sections or secrets, where it is, and the pages that link to it.",
+    description: "Show a page of the world, or one of its sections or secrets. "
+        + "It also says where the thing is and which pages link to it. "
+        + "Use it before describing anything that already exists, so that what you say matches what is written. "
+        + 'Example: page "La cripta"; or page "La cripta#Ossario" for one section.',
+    group: "game",
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("name of the page; Page#Name shows one section or one secret"),
@@ -24,7 +28,7 @@ export const show = defineCommand({
         const page = findPage(world, reference.name);
 
         if (page === undefined) {
-            throw new Error(`There is no page named ${reference.name}. Look for it with: rpg find <text>`);
+            throw new Error(`There is no page named ${reference.name}. Look for it with the find command.`);
         }
 
         const text = reference.section === undefined ? page.body : readSection(page.body, reference.section);
