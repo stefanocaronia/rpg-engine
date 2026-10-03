@@ -85,7 +85,7 @@ describe("MCP server", () => {
         const help = (await runCommandLine(["--help"], testContext(folder))).output;
         expect(help).toContain("Campaign:\n  init     Create a new campaign.\n  config   Show or change the campaign settings.\n  mcp      Start the MCP server for an AI host.");
         expect(help).toContain(
-            "Game:\n  status   Show the campaign's state and your instructions as game master.\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.\n  change   Change a counter on a page: hit points, uses, ammunition, supply, a progress track.",
+            "Game:\n  status   Show the campaign's state and your instructions as game master.\n  validate Check the whole campaign and say how to fix each problem.\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.\n  change   Change a counter on a page: hit points, uses, ammunition, supply, a progress track.",
         );
     });
 });

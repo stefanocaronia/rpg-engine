@@ -37,21 +37,27 @@ export function isStandardField(type: PageType | undefined, name: string): boole
 /** Checks the standard fields among `names`, the ones a write changed. The other fields are free. */
 export function checkStandardFields(type: PageType | undefined, fields: Record<string, unknown>, names: string[]): void
 {
-    const rules = { ...commonRules, ...(type === undefined ? {} : typeRules[type]) };
-
-    for (const name of names.filter((candidate) => candidate in rules && candidate in fields)) {
-        const problem = problemWith(fields[name], rules[name]);
+    for (const name of names) {
+        const problem = standardFieldProblem(type, fields, name);
 
         if (problem !== undefined) {
-            throw new Error(`"${name}" ${problem}`);
+            throw new Error(problem);
         }
     }
+}
+
+/** What is wrong with a standard field, such as "status" must be one of…; undefined when it is right, missing or not standard. */
+export function standardFieldProblem(type: PageType | undefined, fields: Record<string, unknown>, name: string): string | undefined
+{
+    const rules = { ...commonRules, ...(type === undefined ? {} : typeRules[type]) };
+    const problem = name in rules && name in fields ? problemWith(fields[name], rules[name]) : undefined;
+    return problem === undefined ? undefined : `"${name}" ${problem}`;
 }
 
 function problemWith(value: unknown, rule: Rule): string | undefined
 {
     if (typeof rule !== "string") {
-        return rule.includes(String(value)) ? undefined : `must be one of: ${rule.join(", ")}.`;
+        return typeof value === "string" && rule.includes(value) ? undefined : `must be one of: ${rule.join(", ")}.`;
     }
 
     switch (rule) {

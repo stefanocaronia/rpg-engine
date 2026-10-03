@@ -5,6 +5,7 @@ import { readCounter } from "../counters/index.ts";
 import { masterInstructions } from "../instructions/index.ts";
 import { isPartyMember, isStandardField, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { missingSettingsNote } from "./notes.ts";
+import { campaignProblems } from "./problems.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
 const shownNames = 3;
@@ -51,7 +52,7 @@ export const status = defineCommand({
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
             openQuests: pagesWith(world, "quest", "open"),
             plannedEvents: pagesWith(world, "event", "planned"),
-            unreadable: world.problems.length,
+            problems: campaignProblems(root, world).length,
             instructions: masterInstructions(),
         };
     },
@@ -69,7 +70,7 @@ export const status = defineCommand({
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             namesLine("Open quests", result.openQuests, "find text open, type quest"),
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
-            result.unreadable === 0 ? "" : `${result.unreadable} ${result.unreadable === 1 ? "file" : "files"} could not be read as pages: find lists them.`,
+            result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
         return [state.filter((line) => line !== "").join("\n"), `# Your instructions\n\n${result.instructions}`].join("\n\n");
     },

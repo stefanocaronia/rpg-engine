@@ -47,7 +47,15 @@ export function readFields(frontmatter: string | undefined, path: string): Recor
         return {};
     }
 
-    const fields: unknown = parseFrontmatter(frontmatter, path).toJS() ?? {};
+    const document = parseFrontmatter(frontmatter, path);
+    let fields: unknown;
+
+    try {
+        fields = document.toJS() ?? {};
+    } catch (error) {
+        // Such as an alias to an anchor that is not there.
+        throw new Error(`The frontmatter of ${path} is not valid YAML; fix it by hand: ${String(error instanceof Error ? error.message : error).split("\n")[0]}`);
+    }
 
     if (typeof fields !== "object" || Array.isArray(fields)) {
         throw new Error(`The frontmatter of ${path} must hold fields, such as "name: value". Fix it by hand.`);
@@ -179,7 +187,8 @@ function parseFrontmatter(frontmatter: string, path: string): Document
     const document = parseDocument(frontmatter);
 
     if (document.errors.length > 0) {
-        throw new Error(`The frontmatter of ${path} is not valid YAML; fix it by hand: ${document.errors[0].message}`);
+        // Only the first line of the parser's message: the rest quotes the file, which may hold secrets.
+        throw new Error(`The frontmatter of ${path} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`);
     }
 
     return document;

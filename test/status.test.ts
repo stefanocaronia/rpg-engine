@@ -83,7 +83,7 @@ describe("rpg status", () => {
     it("counts the files it cannot read, without showing what is in them", async () => {
         writeFileSync(join(folder, "world", "characters", "Lidia.md"), "---\n> [!secret] La sorella\nÈ viva.\n---\n");
         const output = await state();
-        expect(output).toContain("1 file could not be read as pages: find lists them.");
+        expect(output).toContain("1 problem in the campaign: validate lists them, with how to fix each.");
         expect(output).not.toContain("sorella");
     });
 

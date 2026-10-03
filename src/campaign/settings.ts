@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Document, isMap, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
 import { z } from "zod";
+import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { campaignFileName } from "./find-campaign.ts";
 
@@ -100,6 +101,22 @@ export function changeListSetting(root: string, name: string, change: { add?: st
     return true;
 }
 
+/** What is wrong in campaign.yaml, one problem for each setting, with how to fix it. */
+export function checkSettings(root: string): Problem[]
+{
+    const fix = "fix campaign.yaml by hand (a list is written as [item, item]), or set a single value with the config command";
+    let values: unknown;
+
+    try {
+        values = readSettingsDocument(root).toJS() ?? {};
+    } catch (error) {
+        return [{ path: campaignFileName, message: error instanceof Error ? error.message : String(error) }];
+    }
+
+    const parsed = settingsSchema.safeParse(values);
+    return parsed.success ? [] : parsed.error.issues.map((issue) => ({ path: campaignFileName, message: `${issue.path.join(".") || "the settings"}: ${issue.message}.`, fix }));
+}
+
 /** The settings that are still missing: the AI asks the player for them. */
 export function missingSettings(settings: CampaignSettings): SettingName[]
 {
@@ -162,7 +179,8 @@ function readSettingsDocument(root: string): Document
     const document = parseDocument(readFileSync(join(root, campaignFileName), "utf8"));
 
     if (document.errors.length > 0) {
-        throw new Error(`${campaignFileName} is not valid YAML; fix it by hand: ${document.errors[0].message}`);
+        // Only the first line of the parser's message: the rest quotes the file.
+        throw new Error(`${campaignFileName} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`);
     }
 
     if (document.contents !== null && !isMap(document.contents)) {

@@ -13,6 +13,7 @@ For every campaign and game; the system's guide and each extension in use add th
 ## 2. Tools
 
 - `status`: before your first reply in every chat, and after every summary: the campaign's state and these instructions.
+- `validate`: when status reports problems; fix each as it says.
 - `find`, `show`: read a page before describing anything that already exists.
 - `write`: record every new fact at once.
 - `roll`: every roll, with its reason and whose it is.

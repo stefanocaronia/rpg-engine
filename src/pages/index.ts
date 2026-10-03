@@ -1,4 +1,5 @@
 // The pages of the world: one markdown file with a YAML frontmatter for each thing with a name.
+export { checkWorld } from "./check.ts";
 export { readSection, secretNames, sectionTitles } from "./markdown.ts";
 export { formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames } from "./page-types.ts";

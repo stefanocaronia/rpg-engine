@@ -3,7 +3,14 @@ import { comparableText } from "../core/text.ts";
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
 const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
 const fencePattern = /^[ \t]*(```|~~~)/;
-const linkPattern = /\[\[([^\]|#^]+)(?:[#^][^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+const linkPattern = /\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+
+/** Where a link points: a page, and a section or secret of it. */
+export interface Link
+{
+    page: string;
+    section?: string;
+}
 
 interface Heading
 {
@@ -102,9 +109,15 @@ export function writeText(text: string, newText: string, options: { section?: st
 /** The pages a text links to, as in [[Page]], [[Page#Section]], [[Page|label]] or [[folder/Page.md]]. Links in code blocks do not count. */
 export function linkedPages(text: string): string[]
 {
+    return links(text).map((link) => link.page);
+}
+
+/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code blocks do not count. */
+export function links(text: string): Link[]
+{
     const lines = text.split("\n");
     const code = codeLines(lines);
-    return lines.flatMap((line, index) => (code[index] ? [] : [...line.matchAll(linkPattern)].map((match) => linkTarget(match[1]))));
+    return lines.flatMap((line, index) => (code[index] ? [] : [...line.matchAll(linkPattern)].map((match) => linkOf(match[1], match[2]))));
 }
 
 /** Removes the blank lines at the start and the white space at the end. */
@@ -234,8 +247,10 @@ function codeLines(lines: string[]): boolean[]
     });
 }
 
-/** The page a link points to: [[folder/Page.md]], and [[Page\|label]] as written in tables, point to Page. */
-function linkTarget(target: string): string
+/** The page and section a link points to: [[folder/Page.md]], and [[Page\|label]] as written in tables, point to Page. */
+function linkOf(target: string, section: string | undefined): Link
 {
-    return (target.replace(/\\$/, "").split("/").at(-1) ?? "").replace(/\.md$/i, "").trim();
+    const page = (target.replace(/\\$/, "").split("/").at(-1) ?? "").replace(/\.md$/i, "").trim();
+    const title = section?.replace(/\\$/, "").trim();
+    return title === undefined || title === "" ? { page } : { page, section: title };
 }

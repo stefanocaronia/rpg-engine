@@ -135,12 +135,14 @@ describe("rpg find", () => {
 });
 
 describe("pages written by hand", () => {
-    it("reads free pages, and refuses two pages with the same name", async () => {
+    it("reads free pages, and stops at a name that two pages share", async () => {
         writeFileSync(join(folder, "world", "La nebbia.md"), "Non si alza da giorni.\n");
         expect((await rpg("show", "la nebbia")).output).toBe("La nebbia (free page) · world/La nebbia.md\n\nNon si alza da giorni.");
 
         writeFileSync(join(folder, "world", "items", "La nebbia.md"), "");
-        expect((await rpg("find")).output).toBe("Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by hand: names must be unique in the campaign.");
+        expect((await rpg("find")).output).toBe("La nebbia (free page)\nLa nebbia (item)");
+        expect((await rpg("show", "la nebbia")).output).toBe("Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by hand: names must be unique in the campaign.");
+        expect((await rpg("write", "La nebbia", "--set", "fitta=true")).exitCode).toBe(1);
     });
 });
 

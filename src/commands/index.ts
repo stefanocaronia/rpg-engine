@@ -6,7 +6,8 @@ import { init } from "./init.ts";
 import { roll } from "./roll.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
+import { validate } from "./validate.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, status, write, show, find, roll, change];
+export const commands: Command<any, any>[] = [init, config, status, validate, write, show, find, roll, change];

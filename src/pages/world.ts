@@ -72,15 +72,20 @@ export function loadWorld(root: string): World
     }
 
     pages.sort((first, second) => (first.path < second.path ? -1 : 1));
-    checkUniqueNames(pages);
     return { root, pages, problems };
 }
 
-/** The page with this name, ignoring case and Unicode normalization. */
+/** The page with this name, ignoring case and Unicode normalization. Two pages with that name stop the command: no write may pick one of them. */
 export function findPage(world: World, name: string): Page | undefined
 {
     const wanted = comparableText(name);
-    return world.pages.find((page) => comparableText(page.name) === wanted);
+    const found = world.pages.filter((page) => comparableText(page.name) === wanted);
+
+    if (found.length > 1) {
+        throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by hand: names must be unique in the campaign.`);
+    }
+
+    return found[0];
 }
 
 /** Splits "Page", "Page#Section" or a link such as "[[Page#Section|label]]" into the page's name and the section; "Page#" gives an empty section. */
@@ -175,6 +180,24 @@ export function linksIn(value: unknown): string[]
     return textsIn(value).flatMap(linkedPages);
 }
 
+/** Every text in a field value: the value itself, or the texts in a list or a map. */
+export function textsIn(value: unknown): string[]
+{
+    if (typeof value === "string") {
+        return [value];
+    }
+
+    if (Array.isArray(value)) {
+        return value.flatMap(textsIn);
+    }
+
+    if (value !== null && typeof value === "object") {
+        return Object.values(value).flatMap(textsIn);
+    }
+
+    return [];
+}
+
 /** Page names become file names and link targets, so some characters are not allowed. */
 export function checkPageName(name: string): void
 {
@@ -196,22 +219,6 @@ export function readPage(root: string, fullPath: string): Page
         fields: readFields(file.frontmatter, path),
         body: file.body,
     };
-}
-
-/** Page names are unique ignoring case and the way accents are encoded (macOS writes them decomposed). */
-function checkUniqueNames(pages: Page[]): void
-{
-    const seen = new Map<string, Page>();
-
-    for (const page of pages) {
-        const other = seen.get(comparableText(page.name));
-
-        if (other !== undefined) {
-            throw new Error(`Two pages have the same name: ${other.path} and ${page.path}. Rename one of them by hand: names must be unique in the campaign.`);
-        }
-
-        seen.set(comparableText(page.name), page);
-    }
 }
 
 function fieldExcerpt(page: Page, text: string): string | undefined
@@ -236,21 +243,4 @@ function textExcerpt(page: Page, text: string): string | undefined
 function shorten(text: string): string
 {
     return text.length > 120 ? `${text.slice(0, 119)}…` : text;
-}
-
-function textsIn(value: unknown): string[]
-{
-    if (typeof value === "string") {
-        return [value];
-    }
-
-    if (Array.isArray(value)) {
-        return value.flatMap(textsIn);
-    }
-
-    if (value !== null && typeof value === "object") {
-        return Object.values(value).flatMap(textsIn);
-    }
-
-    return [];
 }
