@@ -15,8 +15,8 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 ## Prepare
 
 1. Commit everything, and `npm link` once: the run refuses uncommitted changes, builds `dist/` from the commit and checks that the global `rpg` is that build.
-2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with a neutral name and no `&`, such as `F:\rpg-campaigns\guadoscuro-1`: the master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
-3. Pick an output folder outside the repo, the home folder and the campaign, such as `F:\rpg-runs\01-guadoscuro-2026-10-04`.
+2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with no `&`: one folder per run, `F:\sviluppo\runs\rpg-engine\<date>\<n>\`, such as `F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro`. The master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
+3. Put the output folder next to the campaign, such as `F:\sviluppo\runs\rpg-engine\2026-10-03\1\results`: a run folder can then be deleted or archived whole.
 4. Try it first on a throwaway campaign and output folder, with `--max 1 --hard 2`.
 
 ## Run
@@ -24,9 +24,9 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 From the repo, in a terminal of your own rather than inside a Claude Code session:
 
 ```
-node playtests/run-playtest.mjs --campaign F:\rpg-campaigns\guadoscuro-1 --profile playtests/players/marco.md --out F:\rpg-runs\01-guadoscuro-2026-10-04 --session 1 --first "Ciao! Possiamo cominciare?" --max 50
-node playtests/run-playtest.mjs --campaign F:\rpg-campaigns\guadoscuro-1 --profile playtests/players/marco.md --out F:\rpg-runs\01-guadoscuro-2026-10-04 --session 2 --first "Ciao, riprendiamo?" --max 15
-node playtests/run-playtest.mjs --profile playtests/players/marco.md --out F:\rpg-runs\01-guadoscuro-2026-10-04 --questionnaire playtests/questionnaire.md
+node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --session 1 --first "Ciao! Possiamo cominciare?" --max 50
+node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --session 2 --first "Ciao, riprendiamo?" --max 15
+node playtests/run-playtest.mjs --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --questionnaire playtests/questionnaire.md
 ```
 
 Each session is a new master chat; the player keeps one chat for the whole run. The organizer's notes reach only the player and are kept in `dialogue.md`: the opening of each evening and, once, at `--max` player messages, that it is getting late. A session stops when the player ends it, at `--hard` messages (default `--max` + 10), on an error, or when the master's session passes `--budget` dollars (default 15).

@@ -9,7 +9,7 @@ Player: `players/marco.md`. This file never goes into the campaign: the clue map
 Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell):
 
 ```
-$campaign = "F:\rpg-campaigns\guadoscuro-1"
+$campaign = "F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro"
 rpg init $campaign --name "La nebbia di Guadoscuro"
 Copy-Item -Recurse -Force playtests\01-guadoscuro\world\* $campaign\world
 Copy-Item instructions\core.md $campaign\AGENTS.md
