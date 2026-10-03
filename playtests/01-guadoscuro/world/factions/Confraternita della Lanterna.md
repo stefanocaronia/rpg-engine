@@ -1,0 +1,1 @@
+Una dozzina di uomini e donne di [[Guadoscuro]], con il mantello grigio e una lanterna ricamata sul petto. Da generazioni custodiscono la [[Lanterna della cappella]] e la accendono ogni notte sulla piazza; da quando è sparita, cercano un colpevole da bruciare.
