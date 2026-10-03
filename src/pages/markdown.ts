@@ -1,3 +1,5 @@
+import { comparableText } from "../core/text.ts";
+
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
 const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
 const fencePattern = /^[ \t]*(```|~~~)/;
@@ -33,7 +35,7 @@ export function secretNames(text: string): string[]
 export function repeatedNames(text: string): string[]
 {
     const names = [...sectionTitles(text), ...secretNames(text)];
-    const keys = names.map((name) => name.toLowerCase());
+    const keys = names.map(comparableText);
     return names.filter((name, index) => keys.indexOf(keys[index]) === index && keys.lastIndexOf(keys[index]) !== index);
 }
 
@@ -45,36 +47,56 @@ export function readSection(text: string, title: string): string | undefined
     return range === undefined ? undefined : trimBlankLines(lines.slice(range.start, range.end).join("\n"));
 }
 
+/** How text is written: in place of the old text, added at its end, or, empty, removing a section or secret. */
+export type TextMode = "replace" | "append" | "remove";
+
 /**
- * Replaces, or adds to, the introduction (the text before the first heading), a section's own text (its subsections stay) or a secret block.
- * A missing section is added at the end, at the page's top heading level.
+ * Writes the introduction (the text before the first heading), a section's own text (its subsections stay) or a secret block.
+ * Secret blocks inside a rewritten text stay, after the new text. A missing section is added at the end: at the page's top heading level, or as a secret block.
  */
-export function writeText(text: string, newText: string, options: { section?: string; append?: boolean; }): string
+export function writeText(text: string, newText: string, options: { section?: string; mode: TextMode; secret?: boolean; }): string
 {
     const lines = text.split("\n");
-    const combine = (oldText: string): string => (options.append ? joinBlocks(oldText, newText) : newText);
 
     if (options.section === undefined) {
-        const end = headingsOf(lines)[0]?.line ?? lines.length;
-        return joinBlocks(combine(lines.slice(0, end).join("\n")), lines.slice(end).join("\n"));
+        const introduction = { start: 0, end: headingsOf(lines)[0]?.line ?? lines.length };
+        return joinBlocks(newContent(lines, introduction, newText, options.mode), lines.slice(introduction.end).join("\n"));
     }
 
-    const section = findSection(lines, options.section, "own");
+    const title = options.section.trim();
+    const section = findSection(lines, title, "own");
 
     if (section !== undefined) {
-        const content = lines.slice(section.start + 1, section.end).join("\n");
-        return joinBlocks(lines.slice(0, section.start).join("\n"), lines[section.start], combine(content), lines.slice(section.end).join("\n"));
+        if (options.secret) {
+            throw new Error(`"${title}" is a section, not a secret: write it without secret, or give the secret another name.`);
+        }
+
+        if (options.mode === "remove") {
+            return removeSection(lines, title, section);
+        }
+
+        const content = newContent(lines, { start: section.start + 1, end: section.end }, newText, options.mode);
+        return joinBlocks(lines.slice(0, section.start).join("\n"), lines[section.start], content, lines.slice(section.end).join("\n"));
     }
 
-    const secret = findSecret(lines, options.section);
+    const secret = findSecret(lines, title);
 
     if (secret !== undefined) {
+        if (options.mode === "remove") {
+            return joinBlocks(lines.slice(0, secret.start).join("\n"), lines.slice(secret.end).join("\n"));
+        }
+
         const content = lines.slice(secret.start + 1, secret.end).map((line) => line.replace(/^>[ \t]?/, "")).join("\n");
-        const quoted = trimBlankLines(combine(content)).split("\n").map((line) => (line === "" ? ">" : `> ${line}`));
+        const quoted = quoteLines(options.mode === "append" ? joinBlocks(content, newText) : newText);
         return [...lines.slice(0, secret.start + 1), ...quoted, ...lines.slice(secret.end)].join("\n");
     }
 
-    return joinBlocks(text, `${"#".repeat(topHeadingLevel(lines))} ${options.section.trim()}`, newText);
+    if (options.mode === "remove") {
+        throw new Error(`There is no section or secret "${title}" to remove: show the page to see their names, or give some text to create it.`);
+    }
+
+    const block = options.secret ? [`> [!secret] ${title}`, ...quoteLines(newText)].join("\n") : `${"#".repeat(topHeadingLevel(lines))} ${title}\n\n${newText}`;
+    return joinBlocks(text, block);
 }
 
 /** The pages a text links to, as in [[Page]], [[Page#Section]], [[Page|label]] or [[folder/Page.md]]. Links in code blocks do not count. */
@@ -91,6 +113,40 @@ export function trimBlankLines(text: string): string
     return text.replace(/^(?:[ \t]*\n)+/, "").trimEnd();
 }
 
+/** The new text of a range: added to the old one, or in its place, keeping the secret blocks that the new text does not write again. */
+function newContent(lines: string[], range: Range, newText: string, mode: TextMode): string
+{
+    if (mode === "append") {
+        return joinBlocks(lines.slice(range.start, range.end).join("\n"), newText);
+    }
+
+    const rewritten = secretNames(newText).map(comparableText);
+    const kept = secretsWithin(lines, range).filter((secret) => !rewritten.includes(comparableText(secret.title)));
+    return joinBlocks(newText, ...kept.map((secret) => lines.slice(secret.start, secret.end).join("\n")));
+}
+
+/** Removes a section with its own text; one with subsections or secrets is refused, so that nothing ends up elsewhere or is lost. */
+function removeSection(lines: string[], title: string, own: Range): string
+{
+    if (findSection(lines, title, "whole")?.end !== own.end) {
+        throw new Error(`"${title}" has subsections: remove them first, then the section.`);
+    }
+
+    const [secret] = secretsWithin(lines, { start: own.start + 1, end: own.end });
+
+    if (secret !== undefined) {
+        throw new Error(`"${title}" holds the secret "${secret.title}": remove or move it first, then the section.`);
+    }
+
+    return joinBlocks(lines.slice(0, own.start).join("\n"), lines.slice(own.end).join("\n"));
+}
+
+/** Text as the quoted lines of a secret block. */
+function quoteLines(text: string): string[]
+{
+    return trimBlankLines(text).split("\n").map((line) => (line === "" ? ">" : `> ${line}`));
+}
+
 function joinBlocks(...blocks: string[]): string
 {
     return blocks.map(trimBlankLines).filter((block) => block !== "").join("\n\n");
@@ -100,7 +156,7 @@ function joinBlocks(...blocks: string[]): string
 function findSection(lines: string[], title: string, scope: "whole" | "own"): Range | undefined
 {
     const headings = headingsOf(lines);
-    const index = headings.findIndex((heading) => heading.title.toLowerCase() === title.trim().toLowerCase());
+    const index = headings.findIndex((heading) => comparableText(heading.title) === comparableText(title.trim()));
 
     if (index === -1) {
         return undefined;
@@ -111,9 +167,14 @@ function findSection(lines: string[], title: string, scope: "whole" | "own"): Ra
     return { start: heading.line, end: next?.line ?? lines.length };
 }
 
+function secretsWithin(lines: string[], range: Range): (Range & { title: string; })[]
+{
+    return secretsOf(lines).filter((secret) => secret.start >= range.start && secret.start < range.end);
+}
+
 function findSecret(lines: string[], title: string): Range | undefined
 {
-    return secretsOf(lines).find((secret) => secret.title.toLowerCase() === title.trim().toLowerCase());
+    return secretsOf(lines).find((secret) => comparableText(secret.title) === comparableText(title.trim()));
 }
 
 function topHeadingLevel(lines: string[]): number
@@ -149,7 +210,7 @@ function secretsOf(lines: string[]): (Range & { title: string; })[]
         if (match) {
             let end = index + 1;
 
-            while (end < lines.length && lines[end].startsWith(">")) {
+            while (end < lines.length && lines[end].startsWith(">") && !secretPattern.test(lines[end])) {
                 end++;
             }
 

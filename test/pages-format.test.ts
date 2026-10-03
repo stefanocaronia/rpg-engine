@@ -53,7 +53,61 @@ describe("introduction, sections and secrets", () => {
     it("keeps the names of sections and secrets unique in a page", async () => {
         await rpg("write", "Varro", "--type", "character", "--text", "## Il motivo\n\nLa figlia.");
         const result = await rpg("write", "Varro", "--append", "--text", "> [!secret] Il motivo\n> Altro.");
-        expect(result.output).toBe(`Varro would have two sections or secrets named "Il motivo": names must be unique in a page. To change that section, write Varro#Il motivo.`);
+        expect(result.output).toBe(`Varro already has a section or secret named "Il motivo", and names must be unique in a page. To change it, write Varro#Il motivo; for a new one, pick another name.`);
+        expect((await rpg("write", "Teo", "--type", "character", "--text", "## Dup\n\nUno.\n\n## Dup\n\nDue.")).output).toBe(`The text names "Dup" twice: give each section or secret of Teo its own name.`);
+    });
+
+    it("keeps the secrets inside a text that is written again", async () => {
+        await rpg("write", "Bruna", "--type", "character", "--text", "Traghettatrice.");
+        await rpg("write", "Bruna#Il debito", "--secret", "--text", "Deve soldi a Varro.");
+        await rpg("write", "Bruna", "--text", "Traghettatrice anziana.");
+        expect(pageFile("world/characters/Bruna.md")).toBe("Traghettatrice anziana.\n\n> [!secret] Il debito\n> Deve soldi a Varro.\n");
+
+        await rpg("write", "Corvo", "--type", "character", "--text", "## Cosa vuole\n\nOro.");
+        await rpg("write", "Corvo#Il tradimento", "--secret", "--text", "Vende la città.");
+        await rpg("write", "Corvo#Cosa vuole", "--text", "Oro e potere.");
+        expect(pageFile("world/characters/Corvo.md")).toBe("## Cosa vuole\n\nOro e potere.\n\n> [!secret] Il tradimento\n> Vende la città.\n");
+
+        await rpg("write", "Corvo#Cosa vuole", "--text", "Potere.\n\n> [!secret] Il tradimento\n> Vende il porto.");
+        expect(pageFile("world/characters/Corvo.md")).toBe("## Cosa vuole\n\nPotere.\n\n> [!secret] Il tradimento\n> Vende il porto.\n");
+    });
+
+    it("refuses section names with the secret mark anywhere or with line breaks", async () => {
+        await rpg("write", "Varro", "--type", "character", "--text", "Alchimista.");
+        expect((await rpg("write", "Varro#> [!secret] Piano", "--text", "x")).output).toBe("Give only the secret's name, as Page#Name, and add secret to create it: the [!secret] mark is written for you.");
+        expect((await rpg("write", "Varro", "--section", "Piano\nsegreto", "--text", "x")).output).toBe("A section or secret name must be one line: write the name without line breaks.");
+    });
+
+    it("tells two secrets apart when nothing separates them", async () => {
+        await rpg("write", "Varro", "--type", "character", "--text", "> [!secret] Uno\n> Primo.\n> [!secret] Due\n> Secondo.");
+        await rpg("write", "Varro#Uno", "--text=");
+        expect(pageFile("world/characters/Varro.md")).toBe("> [!secret] Due\n> Secondo.\n");
+    });
+
+    it("creates a missing secret as a secret block, and refuses the mark in its name", async () => {
+        await rpg("write", "Varro", "--type", "character", "--text", "Alchimista.\n\n## Cosa vuole\n\nLa figlia.");
+        expect((await rpg("write", "Varro#La cripta", "--secret", "--text", "Si nasconde sotto il mulino.\n\nCon la lanterna.")).output).toBe(`Updated Varro (character, world/characters/Varro.md): wrote "La cripta".`);
+        expect(pageFile("world/characters/Varro.md")).toBe("Alchimista.\n\n## Cosa vuole\n\nLa figlia.\n\n> [!secret] La cripta\n> Si nasconde sotto il mulino.\n>\n> Con la lanterna.\n");
+
+        expect((await rpg("write", "Varro#Cosa vuole", "--secret", "--text", "Altro.")).output).toBe(`"Cosa vuole" is a section, not a secret: write it without secret, or give the secret another name.`);
+        expect((await rpg("write", "Varro#[!secret] Il piano", "--text", "Altro.")).output).toBe("Give only the secret's name, as Page#Name, and add secret to create it: the [!secret] mark is written for you.");
+        expect((await rpg("write", "Varro", "--secret", "--text", "Altro.")).output).toBe("Give the secret's name, as Page#Name, to write a secret.");
+    });
+
+    it("removes a section or a secret with empty text", async () => {
+        await rpg("write", "Varro", "--type", "character", "--text", "Alchimista.\n\n## Cosa vuole\n\nLa figlia.\n\n> [!secret] La cripta\n> Sotto il mulino.\n\n## Il passato\n\nUn maestro.\n\n### Gli studi\n\nA Corvara.");
+        expect((await rpg("write", "Varro#La cripta", "--text=")).output).toBe(`Updated Varro (character, world/characters/Varro.md): removed "La cripta".`);
+        expect((await rpg("write", "Varro#Cosa vuole", "--text=")).output).toBe(`Updated Varro (character, world/characters/Varro.md): removed "Cosa vuole".`);
+        expect(pageFile("world/characters/Varro.md")).toBe("Alchimista.\n\n## Il passato\n\nUn maestro.\n\n### Gli studi\n\nA Corvara.\n");
+
+        expect((await rpg("write", "Varro#Il passato", "--text=")).output).toBe(`"Il passato" has subsections: remove them first, then the section.`);
+        expect((await rpg("write", "Varro#Il tesoro", "--text=")).output).toBe(`There is no section or secret "Il tesoro" to remove: show the page to see their names, or give some text to create it.`);
+        expect((await rpg("write", "Varro#Gli studi", "--append", "--text=")).output).toBe("Give the text to add. To remove a section or secret, write empty text without append.");
+    });
+
+    it("refuses to remove a section that holds a secret", async () => {
+        await rpg("write", "Varro", "--type", "character", "--text", "## Cosa vuole\n\nLa figlia.\n\n> [!secret] La cripta\n> Sotto il mulino.");
+        expect((await rpg("write", "Varro#Cosa vuole", "--text=")).output).toBe(`"Cosa vuole" holds the secret "La cripta": remove or move it first, then the section.`);
     });
 });
 

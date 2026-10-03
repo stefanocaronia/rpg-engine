@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { repeatedNames, writeText } from "./markdown.ts";
+import { comparableText } from "../core/text.ts";
+import { repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { checkStandardFields, containerFields } from "./standard-fields.ts";
@@ -16,19 +17,22 @@ export interface PageChange extends FieldChange
     section?: string;
     /** Add `text` at the end instead of replacing. */
     append?: boolean;
+    /** Create the missing `section` as a secret block, `> [!secret] Name`, instead of a heading. */
+    secret?: boolean;
 }
 
 /** Writes a page: creates it when there is no page with that name and `type` is given, then applies the change. A change that leaves the page as it was writes nothing. */
-export function writePage(world: World, name: string, type: PageType | undefined, change: PageChange): { page: Page; created: boolean; changed: boolean; }
+export function writePage(world: World, name: string, type: PageType | undefined, change: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; }
 {
     const existing = findPage(world, name);
     checkChange(existing, type, change);
+    const mode = textMode(change);
     const path = existing?.path ?? newPagePath(world, name, type);
     const fullPath = join(world.root, path);
     const file = existing === undefined ? { body: "" } : splitPageFile(readFileSync(fullPath, "utf8"));
     const changedFields = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
     const frontmatter = changedFields.length > 0 || change.unset !== undefined ? changeFields(file.frontmatter, change, path) : file.frontmatter;
-    const body = change.text === undefined ? file.body : writeText(file.body, change.text, change);
+    const body = change.text === undefined || mode === undefined ? file.body : writeText(file.body, change.text, { section: change.section, mode, secret: change.secret });
     checkNames(name, file.body, body);
 
     if (changedFields.length > 0) {
@@ -40,12 +44,26 @@ export function writePage(world: World, name: string, type: PageType | undefined
     const newText = joinPageFile({ frontmatter, body });
 
     if (existing !== undefined && newText === joinPageFile(file)) {
-        return { page: existing, created: false, changed: false };
+        return { page: existing, created: false, changed: false, mode };
     }
 
     mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, newText, "utf8");
-    return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true };
+    return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true, mode };
+}
+
+/** How a change writes its text: added at the end, in place of the old text, or, empty for a section or secret, removing it. */
+function textMode(change: PageChange): TextMode | undefined
+{
+    if (change.text === undefined) {
+        return undefined;
+    }
+
+    if (change.append) {
+        return "append";
+    }
+
+    return change.section !== undefined && change.text.trim() === "" ? "remove" : "replace";
 }
 
 function checkChange(existing: Page | undefined, type: PageType | undefined, change: PageChange): void
@@ -62,6 +80,22 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
 
     if (change.section?.trim() === "") {
         throw new Error("Give the title of the section, or leave the section out to write the introduction.");
+    }
+
+    if (/\[!secret\]/i.test(change.section ?? "")) {
+        throw new Error("Give only the secret's name, as Page#Name, and add secret to create it: the [!secret] mark is written for you.");
+    }
+
+    if (/[\r\n]/.test(change.section ?? "")) {
+        throw new Error("A section or secret name must be one line: write the name without line breaks.");
+    }
+
+    if (change.secret && change.section === undefined) {
+        throw new Error("Give the secret's name, as Page#Name, to write a secret.");
+    }
+
+    if (change.append && change.text?.trim() === "") {
+        throw new Error("Give the text to add. To remove a section or secret, write empty text without append.");
     }
 
     for (const name of [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {})]) {
@@ -86,12 +120,23 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
 /** Sections and secrets need unique names within a page, so that Page#Name always finds one place. */
 function checkNames(page: string, oldBody: string, newBody: string): void
 {
-    const alreadyRepeated = repeatedNames(oldBody).map((name) => name.toLowerCase());
-    const repeated = repeatedNames(newBody).filter((name) => !alreadyRepeated.includes(name.toLowerCase()));
+    const alreadyRepeated = repeatedNames(oldBody).map(comparableText);
+    const [repeated] = repeatedNames(newBody).filter((name) => !alreadyRepeated.includes(comparableText(name)));
 
-    if (repeated.length > 0) {
-        throw new Error(`${page} would have two sections or secrets named "${repeated[0]}": names must be unique in a page. To change that section, write ${page}#${repeated[0]}.`);
+    if (repeated === undefined) {
+        return;
     }
+
+    if (sectionAndSecretNames(oldBody).includes(comparableText(repeated))) {
+        throw new Error(`${page} already has a section or secret named "${repeated}", and names must be unique in a page. To change it, write ${page}#${repeated}; for a new one, pick another name.`);
+    }
+
+    throw new Error(`The text names "${repeated}" twice: give each section or secret of ${page} its own name.`);
+}
+
+function sectionAndSecretNames(body: string): string[]
+{
+    return [...sectionTitles(body), ...secretNames(body)].map(comparableText);
 }
 
 /** A thing can be in one place only: a place's contents or a character's inventory cannot list what another page already holds. */

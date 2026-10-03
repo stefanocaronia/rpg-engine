@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
+import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
@@ -78,8 +79,8 @@ export function loadWorld(root: string): World
 /** The page with this name, ignoring case and Unicode normalization. */
 export function findPage(world: World, name: string): Page | undefined
 {
-    const wanted = comparable(name);
-    return world.pages.find((page) => comparable(page.name) === wanted);
+    const wanted = comparableText(name);
+    return world.pages.find((page) => comparableText(page.name) === wanted);
 }
 
 /** Splits "Page", "Page#Section" or a link such as "[[Page#Section|label]]" into the page's name and the section; "Page#" gives an empty section. */
@@ -90,14 +91,14 @@ export function parsePageReference(reference: string): { name: string; section?:
     return hash === -1 ? { name: inner.trim() } : { name: inner.slice(0, hash).trim(), section: inner.slice(hash + 1).trim() };
 }
 
-/** Pages of a type, or with a text in their name, fields or text; ignores case. */
+/** Pages of a type, or with a text in their name, fields or text; ignores case and the way accents are encoded. */
 export function searchPages(world: World, query: { text?: string; type?: PageType; }): PageMatch[]
 {
-    const text = query.text?.trim().toLowerCase() ?? "";
+    const text = comparableText(query.text?.trim() ?? "");
     const matches: PageMatch[] = [];
 
     for (const page of world.pages.filter((candidate) => query.type === undefined || candidate.type === query.type)) {
-        if (text === "" || page.name.toLowerCase().includes(text)) {
+        if (text === "" || comparableText(page.name).includes(text)) {
             matches.push({ page });
             continue;
         }
@@ -115,8 +116,8 @@ export function searchPages(world: World, query: { text?: string; type?: PageTyp
 /** The other pages that link to `page`, and where. */
 export function backlinks(world: World, page: Page): Backlink[]
 {
-    const target = comparable(page.name);
-    const pointsHere = (name: string): boolean => comparable(name) === target;
+    const target = comparableText(page.name);
+    const pointsHere = (name: string): boolean => comparableText(name) === target;
     const found: Backlink[] = [];
 
     for (const other of world.pages.filter((candidate) => candidate !== page)) {
@@ -152,8 +153,8 @@ export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[
 /** The pages whose contents or inventory list the page named `name`. */
 export function holdersOf(world: World, name: string): Page[]
 {
-    const target = comparable(name);
-    return world.pages.filter((page) => containerFields.some((field) => linksIn(page.fields[field]).some((linked) => comparable(linked) === target)));
+    const target = comparableText(name);
+    return world.pages.filter((page) => containerFields.some((field) => linksIn(page.fields[field]).some((linked) => comparableText(linked) === target)));
 }
 
 /** The pages that a field's value links to. */
@@ -185,24 +186,19 @@ export function readPage(root: string, fullPath: string): Page
     };
 }
 
-/** Names compare ignoring case and the way accents are encoded (macOS writes them decomposed). */
-function comparable(name: string): string
-{
-    return name.normalize("NFC").toLowerCase();
-}
-
+/** Page names are unique ignoring case and the way accents are encoded (macOS writes them decomposed). */
 function checkUniqueNames(pages: Page[]): void
 {
     const seen = new Map<string, Page>();
 
     for (const page of pages) {
-        const other = seen.get(comparable(page.name));
+        const other = seen.get(comparableText(page.name));
 
         if (other !== undefined) {
             throw new Error(`Two pages have the same name: ${other.path} and ${page.path}. Rename one of them by hand: names must be unique in the campaign.`);
         }
 
-        seen.set(comparable(page.name), page);
+        seen.set(comparableText(page.name), page);
     }
 }
 
@@ -211,7 +207,7 @@ function fieldExcerpt(page: Page, text: string): string | undefined
     for (const [name, value] of Object.entries(page.fields)) {
         const shown = typeof value === "string" ? value : JSON.stringify(value);
 
-        if (shown.toLowerCase().includes(text)) {
+        if (comparableText(shown).includes(text)) {
             return shorten(`${name}: ${shown}`);
         }
     }
@@ -221,7 +217,7 @@ function fieldExcerpt(page: Page, text: string): string | undefined
 
 function textExcerpt(page: Page, text: string): string | undefined
 {
-    const line = page.body.split("\n").find((candidate) => candidate.toLowerCase().includes(text));
+    const line = page.body.split("\n").find((candidate) => comparableText(candidate).includes(text));
     return line === undefined ? undefined : shorten(line.trim());
 }
 

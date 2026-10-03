@@ -5,6 +5,9 @@ import { defineCommand } from "../core/registry.ts";
 import { loadWorld, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
 import { skippedPagesNote } from "./notes.ts";
 
+// How the output names each way of writing text.
+const textChanges = { replace: "wrote", append: "added to", remove: "removed" };
+
 // Fields arrive as field=value strings from a command line, or as an object through MCP.
 const fieldValues = z.union([z.array(z.string()), z.record(z.string(), z.unknown())]);
 
@@ -13,6 +16,7 @@ export const write = defineCommand({
     description: "Create or change a page of the world. "
         + "The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, a change, something a character learns. "
         + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
+        + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
         + "A list field changes one item at a time with add and remove. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",
@@ -25,8 +29,9 @@ export const write = defineCommand({
         add: fieldValues.optional().describe("items to add to list fields: field=value, repeatable, such as knows=[[Bruna]], or an object"),
         remove: fieldValues.optional().describe("items to remove from list fields: field=value, repeatable, or an object"),
         text: z.string().optional().describe("text of the introduction, the part before the first heading; or of the section or secret given"),
-        section: z.string().optional().describe("section or secret to write; a missing section is added at the end"),
+        section: z.string().optional().describe("section or secret to write; a missing one is added at the end of the page, as a secret if secret is given; empty text removes it"),
         append: z.boolean().optional().describe("add the text at the end instead of replacing"),
+        secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
     }),
 
     run(input, context)
@@ -47,12 +52,11 @@ export const write = defineCommand({
         const set = input.set === undefined ? undefined : readFields(input.set);
         const add = input.add === undefined ? undefined : readListItems(input.add);
         const remove = input.remove === undefined ? undefined : readListItems(input.remove);
-        const mode = input.text === undefined ? undefined : input.append ? "append" : "replace";
         const world = loadWorld(root);
-        const { page, created, changed } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append });
+        const { page, created, changed, mode } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
-            const data = { page: page.name, type: page.type, set, unset: input.unset, add, remove, section, text: input.text, mode };
+            const data = { page: page.name, type: page.type, set, unset: input.unset, add, remove, section, secret: input.secret, text: input.text, mode };
             appendLogEntry(root, newLogEntry(context, created ? "page-created" : "page-updated", "hidden", data));
         }
 
@@ -68,14 +72,18 @@ export const write = defineCommand({
             result.unset.length > 0 ? `removed ${result.unset.join(", ")}` : "",
             result.add.length > 0 ? `added to ${result.add.join(", ")}` : "",
             result.remove.length > 0 ? `removed from ${result.remove.join(", ")}` : "",
-            result.mode === "replace" ? `wrote ${where}` : result.mode === "append" ? `added to ${where}` : "",
+            result.mode === undefined ? "" : `${textChanges[result.mode]} ${where}`,
         ].filter((change) => change !== "");
-        const summary = !result.changed
-            ? `Nothing changed on ${result.page}: it already reads like that.`
-            : `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})${changes.length > 0 ? `: ${changes.join("; ")}` : ""}.`;
+        const summary = result.changed ? changeSummary(result, changes) : `Nothing changed on ${result.page}: it already reads like that.`;
         return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+function changeSummary(result: { page: string; type?: string; path: string; created: boolean; }, changes: string[]): string
+{
+    const what = `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})`;
+    return changes.length > 0 ? `${what}: ${changes.join("; ")}.` : `${what}.`;
+}
 
 /** Fields from field=value pairs, each value read as a link, links, a number, true or false, a list or text; or from an object, as they are. */
 function readFields(fields: string[] | Record<string, unknown>): Record<string, unknown>
