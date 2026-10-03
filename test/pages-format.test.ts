@@ -71,6 +71,14 @@ describe("lists", () => {
         expect((await rpg("write", "Elia", "--add", "nota=altro")).output).toBe(`"nota" is not a list, so nothing can be added to it.`);
     });
 
+    it("keeps every item when the same list field comes more than once", async () => {
+        await rpg("write", "Elia", "--type", "character", "--add", "knows=[[Varro]]", "--add", "knows=[[Varro#La figlia]]", "--add", "knows=[[Mirta]]");
+        expect(await shownFields("Elia")).toEqual({ knows: ["[[Varro]]", "[[Varro#La figlia]]", "[[Mirta]]"] });
+
+        await rpg("write", "Elia", "--remove", "knows=[[Varro]]", "--remove", "knows=[[Mirta]]");
+        expect(await shownFields("Elia")).toEqual({ knows: ["[[Varro#La figlia]]"] });
+    });
+
     it("refuses a list inside a list, and says how to write it", async () => {
         const result = await rpg("write", "Elia", "--type", "character", "--set", "knows=[[[Pietro]], [[Rosa]]]");
         expect(result.output).toContain("would be a list inside a list, which a field cannot hold. For a list of links write [[A]], [[B]]");

@@ -11,7 +11,7 @@ export const init = defineCommand({
     description: "Create a new campaign. "
         + "It makes the settings, the present, the log, the sessions, the folders of the world, and the .mcp.json through which an AI host such as Claude Code finds these tools. "
         + "Use it once, when the player starts a new campaign; then ask the player for the settings that are still missing and set them with config. "
-        + 'Example: name "La nebbia di Guadoscuro", language it, system 5e.',
+        + 'Example: name "The Salt Isles", language en, system 5e.',
     group: "campaign",
     positionals: ["folder"],
     input: z.object({

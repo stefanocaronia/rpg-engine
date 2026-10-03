@@ -9,7 +9,7 @@ export const show = defineCommand({
     description: "Show a page of the world, or one of its sections or secrets. "
         + "It also says where the thing is and which pages link to it. "
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
-        + 'Example: page "La cripta"; or page "La cripta#Ossario" for one section.',
+        + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
     group: "game",
     positionals: ["page"],
     input: z.object({

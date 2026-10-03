@@ -57,7 +57,7 @@ describe("rpg roll", () => {
     it("hides a roll behind a fingerprint and reveals it", async () => {
         const hidden = await runCommandLine(["roll", "1d20", "--hidden", "--why", "ambush"], context);
         expect(hidden.output).toContain("only for the master: 1d20 = 4 [4]");
-        const shownFingerprint = /fingerprint: ([0-9a-f]{16})/.exec(hidden.output)![1];
+        const shownFingerprint = /asks for it: ([0-9a-f]{16})/.exec(hidden.output)![1];
 
         const revealed = await runCommandLine(["roll", "--reveal", "id1"], context);
         const proof = /Proof: (.*)/.exec(revealed.output)![1];
