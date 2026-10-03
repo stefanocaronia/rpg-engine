@@ -9,6 +9,8 @@ export interface LogEntry
     id: string;
     /** Real time, ISO 8601. */
     at: string;
+    /** The game date, such as day 2, 14:10, once the game has one. */
+    date?: string;
     type: string;
     /** Who acted: the master, the player or a companion. */
     by: string;
@@ -19,10 +21,10 @@ export interface LogEntry
 
 const logFileName = "log.jsonl";
 
-/** A new line for the log, stamped with a new id, the real time and who acts. */
-export function newLogEntry(context: Context, type: string, visibility: LogEntry["visibility"], data: Record<string, unknown>): LogEntry
+/** A new line for the log, stamped with a new id, the real time, the game date when there is one, and who acts. */
+export function newLogEntry(context: Context, type: string, visibility: LogEntry["visibility"], data: Record<string, unknown>, date?: string): LogEntry
 {
-    return { id: context.newId(), at: context.now().toISOString(), type, by: context.actor, visibility, data };
+    return { id: context.newId(), at: context.now().toISOString(), date, type, by: context.actor, visibility, data };
 }
 
 export function appendLogEntry(folder: string, entry: LogEntry): void

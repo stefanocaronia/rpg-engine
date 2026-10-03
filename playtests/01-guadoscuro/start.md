@@ -32,7 +32,7 @@ Each master session stops past `--budget` 15 $ (default). Then the questionnaire
 
 ## The pages
 
-The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page describes only itself; where a thing is comes from its container's `contains`; every secret is in its block. An NPC's `knows` lists every secret of other pages it knows, plus the hidden pages it knows of (the crypt, a planned event); NPCs without one know none. Event dates count from the character's arrival in Guadoscuro. A change to the pages goes in the run's report, since runs are compared.
+The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page describes only itself; where a thing is comes from its container's `contains`; every secret is in its block. An NPC's `knows` lists every secret of other pages it knows, plus the hidden pages it knows of (the crypt, a planned event); NPCs without one know none. Event dates are game dates: day 1 is the day the character arrives in Guadoscuro. A change to the pages goes in the run's report, since runs are compared.
 
 - **Places** (14), with what they contain:
   - Guadoscuro: Agnese, Nina; Locanda del Guado (Gaspare, Rosa); Cappella (Fratello Odo); Emporio (Tobia); Casa di Varro (Diario di Varro); Capanno di Matteo (Lena).
@@ -45,10 +45,10 @@ The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page 
 
 | Event | Date on its page | Whose plan | What changes it |
 |---|---|---|---|
-| Sparizione di Rosa | la prima notte dopo l'arrivo del personaggio | Varro#Il piano | if Rosa is guarded, the drowned try anyway and flee from resistance |
-| La nebbia si infittisce | il giorno dopo l'arrivo del personaggio | Varro#Il piano | |
-| La marcia della Confraternita | due giorni dopo l'arrivo del personaggio, all'alba | Fratello Odo#La marcia | a day later if Odo gets the proof of who takes people, or is confronted with the fire |
-| Il rituale della luna nuova | la notte di due giorni dopo l'arrivo del personaggio, dopo la marcia dell'alba, con la luna nuova | Varro#Il piano | Il rituale della luna nuova#Come si ferma; Varro#Cosa lo ferma |
+| Sparizione di Rosa | day 1, 23:00 | Varro#Il piano | if Rosa is guarded, the drowned try anyway and flee from resistance |
+| La nebbia si infittisce | day 2, 06:00 | Varro#Il piano | |
+| La marcia della Confraternita | day 3, 06:00 | Fratello Odo#La marcia | a day later if Odo gets the proof of who takes people, or is confronted with the fire |
+| Il rituale della luna nuova | day 3, 23:00 | Varro#Il piano | Il rituale della luna nuova#Come si ferma; Varro#Cosa lo ferma |
 
 Triggers by situation: Ossario#I dormienti (they rise for anyone but Varro), Corridoio della cripta#La trappola, Mulino abbandonato#La combinazione (left lever down wakes the ossuary; all three down raise the water).
 

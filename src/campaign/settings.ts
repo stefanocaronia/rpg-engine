@@ -1,10 +1,12 @@
-import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Document, isMap, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
+import { type Document, isScalar, isSeq, type YAMLSeq } from "yaml";
 import { z } from "zod";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
+import { readYamlFile, readYamlValues, writeYamlFile } from "../core/yaml-file.ts";
 import { campaignFileName } from "./find-campaign.ts";
+
+const settingsHold = 'settings, such as "name: ..."';
 
 /** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
 export const settingsSchema = z.object({
@@ -26,7 +28,7 @@ export const listSettingNames = settingNames.filter((name) => settingsSchema.sha
 
 export function readSettings(root: string): CampaignSettings
 {
-    return validateSettings(readSettingsDocument(root).toJS() ?? {});
+    return validateSettings(readYamlValues(join(root, campaignFileName), settingsHold));
 }
 
 /** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the setting already has that value, or if the settings would not be valid. Returns whether it changed. */
@@ -108,7 +110,7 @@ export function checkSettings(root: string): Problem[]
     let values: unknown;
 
     try {
-        values = readSettingsDocument(root).toJS() ?? {};
+        values = readYamlValues(join(root, campaignFileName), settingsHold);
     } catch (error) {
         return [{ path: campaignFileName, message: error instanceof Error ? error.message : String(error) }];
     }
@@ -154,7 +156,7 @@ function listNode(document: Document, setting: SettingName): YAMLSeq
 function saveSettings(root: string, document: Document): void
 {
     validateSettings(document.toJS());
-    writeFileSync(join(root, campaignFileName), document.toString({ lineWidth: 0 }), "utf8");
+    writeYamlFile(join(root, campaignFileName), document);
 }
 
 /** The same item of a list setting, ignoring case, accents written either way and the spaces around it. */
@@ -176,16 +178,5 @@ function validateSettings(values: unknown): CampaignSettings
 
 function readSettingsDocument(root: string): Document
 {
-    const document = parseDocument(readFileSync(join(root, campaignFileName), "utf8"));
-
-    if (document.errors.length > 0) {
-        // Only the first line of the parser's message: the rest quotes the file.
-        throw new Error(`${campaignFileName} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`);
-    }
-
-    if (document.contents !== null && !isMap(document.contents)) {
-        throw new Error(`${campaignFileName} must hold settings, such as "name: ..."; fix it by hand.`);
-    }
-
-    return document;
+    return readYamlFile(join(root, campaignFileName), settingsHold);
 }

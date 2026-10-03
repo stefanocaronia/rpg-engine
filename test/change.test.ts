@@ -99,7 +99,7 @@ describe("rpg change", () => {
     });
 
     it("never takes a fixed field for a counter", async () => {
-        await rpg("write", "Festa", "--type", "event", "--set", "date=12/05", "--set", "status=planned");
+        await rpg("write", "Festa", "--type", "event", "--set", "date=12/05", "--set", "status=happened");
         expect((await rpg("write", "Festa", "--set", "date=13/05")).exitCode).toBe(0);
         expect((await rpg("change", "Festa", "date", "--to", "14/05")).output).toBe("date is a fixed field of Festa, not a counter: change it with write.");
     });

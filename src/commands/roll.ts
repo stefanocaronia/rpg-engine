@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { appendLogEntry, newLogEntry, readLog } from "../core/log.ts";
+import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.ts";
+import { newDatedLogEntry } from "./game-time.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 const faceValues = z.preprocess(
@@ -57,7 +58,7 @@ export const roll = defineCommand({
         const physical = input.values !== undefined;
         const diceRoll = rollDice(input.notation, input.values ? { values: input.values } : { random: context.random });
         const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: input.why, who: input.who, physical };
-        const entry = newLogEntry(context, "roll", input.hidden ? "hidden" : "public", data);
+        const entry = newDatedLogEntry(root, context, "roll", input.hidden ? "hidden" : "public", data);
         let shownFingerprint: string | undefined;
 
         if (input.hidden) {
@@ -98,7 +99,7 @@ function revealHiddenRoll(rollId: string, root: string, context: Context): RollO
     const alreadyRevealed = log.some((entry) => entry.type === "roll-revealed" && entry.data.roll === rollId);
 
     if (!alreadyRevealed) {
-        appendLogEntry(root, newLogEntry(context, "roll-revealed", "public", { roll: rollId, proof }));
+        appendLogEntry(root, newDatedLogEntry(root, context, "roll-revealed", "public", { roll: rollId, proof }));
     }
 
     return { kind: "reveal", id: rollId, text: String(hiddenRoll.data.result), proof, sha256: sha256(proof), fingerprint: String(hiddenRoll.data.fingerprint) };

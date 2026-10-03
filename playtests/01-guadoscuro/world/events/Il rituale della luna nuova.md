@@ -1,5 +1,5 @@
 ---
-date: la notte di due giorni dopo l'arrivo del personaggio, dopo la marcia dell'alba, con la luna nuova
+date: day 3, 23:00
 place: "[[Sala del rituale]]"
 status: planned
 ---

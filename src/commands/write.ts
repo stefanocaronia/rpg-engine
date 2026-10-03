@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
-import { appendLogEntry, newLogEntry } from "../core/log.ts";
+import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { findPage, isStandardField, loadWorld, type Page, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
+import { findPage, isStandardField, loadWorld, misspelledFieldProblem, newPageFields, type Page, type PageType, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
+import { newDatedLogEntry, plannedEventDateProblem } from "./game-time.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 // How the output names each way of writing text.
@@ -55,12 +56,15 @@ export const write = defineCommand({
         const add = input.add === undefined ? undefined : readListItems(input.add);
         const remove = input.remove === undefined ? undefined : readListItems(input.remove);
         const world = loadWorld(root);
-        checkCounters(findPage(world, reference.name), set);
+        const existing = findPage(world, reference.name);
+        checkFieldNames(existing?.type ?? input.type, [set, add, remove]);
+        checkCounters(existing, set);
+        checkPlannedEventDate(existing, input.type, set, input.unset);
         const { page, created, changed, mode } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
             const data = { page: page.name, type: page.type, set, unset: input.unset, add, remove, section, secret: input.secret, text: input.text, mode };
-            appendLogEntry(root, newLogEntry(context, created ? "page-created" : "page-updated", "hidden", data));
+            appendLogEntry(root, newDatedLogEntry(root, context, created ? "page-created" : "page-updated", "hidden", data));
         }
 
         const fieldChanges = { set: Object.keys(set ?? {}), unset: input.unset ?? [], add: Object.keys(add ?? {}), remove: Object.keys(remove ?? {}) };
@@ -82,6 +86,16 @@ export const write = defineCommand({
     },
 });
 
+/** A standard field written in another case, such as Status, would be a field the engine does not read: refused before any other check. */
+function checkFieldNames(type: PageType | undefined, changes: (Record<string, unknown> | undefined)[]): void
+{
+    const problem = changes.flatMap((change) => Object.keys(change ?? {})).map((name) => misspelledFieldProblem(type, name)).find((found) => found !== undefined);
+
+    if (problem !== undefined) {
+        throw new Error(problem);
+    }
+}
+
 /** A counter written as current/max changes only with change, which keeps its limits and logs why (D-92). */
 function checkCounters(page: Page | undefined, set: Record<string, unknown> | undefined): void
 {
@@ -100,6 +114,24 @@ function checkCounters(page: Page | undefined, set: Record<string, unknown> | un
 
         const target = newCounter === undefined ? "a value" : formatCounter(newCounter);
         throw new Error(`${existing} is a counter: use change, page "${page.name}", field ${existing}, to ${target} (or by an amount). To make it something else, unset it, then set it.`);
+    }
+}
+
+/** A planned event comes due at its date, so a write that sets its date or status cannot leave a date the engine does not read (D-100). */
+function checkPlannedEventDate(page: Page | undefined, type: PageType | undefined, set: Record<string, unknown> | undefined, unset: string[] | undefined): void
+{
+    const changed = [...Object.keys(set ?? {}), ...(unset ?? [])];
+
+    if (!changed.includes("date") && !changed.includes("status")) {
+        return;
+    }
+
+    const before = page?.fields ?? (type === undefined ? {} : newPageFields(type));
+    const fields = Object.fromEntries(Object.entries({ ...before, ...set }).filter(([name]) => !unset?.includes(name)));
+    const problem = plannedEventDateProblem(page?.type ?? type, fields);
+
+    if (problem !== undefined) {
+        throw new Error(problem);
     }
 }
 

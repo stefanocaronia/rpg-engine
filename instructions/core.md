@@ -18,13 +18,14 @@ For every campaign and game; the system's guide and each extension in use add th
 - `write`: record every new fact at once.
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up).
+- `advance`: whenever time passes in the story, before you narrate it. At the first scene, set the starting date with `to`, at the scene's hour (dusk: `day 1, 18:00`). When it stops at an event, do as it says: what the characters see or hear is a scene, the rest happens off screen and leaves traces.
 - `config`: settings and what is still missing: ask the player.
 
 ## 3. The world's pages
 
 - Every named thing has a page: character, place, faction, quest, item, event, topic, or creature (a kind, such as Wolf). Names are unique; other names go in `aliases`.
 - A page describes only itself. Whoever holds something lists it: a place `contains` places, characters and items; a character has an `inventory`; a quest has its goals as checkboxes. `show` works out where a thing is.
-- Fixed fields: `role` (pc, companion, npc), `creature`, `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened), an event's `date` and `place`, `tags`. Any other field is free, on the page it belongs to.
+- Fixed fields: `role` (pc, companion, npc), `creature`, `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened/cancelled for an event; a new quest or event starts planned), an event's `date` (when planned, a game date: `day 3, 06:00`; none while it waits for a situation) and `place`, `tags`. Any other field is free, on the page it belongs to.
 - What is counted is a field on whoever has it: `hp: 12/12`, `uses: 1/1`, `arrows: 20`; never a count inside a text. Change it with `change`, never with `write`.
 - Links: `[[Name]]`, `[[Name#Section]]`.
 - Text: an introduction, sections, and secrets (`> [!secret] Name`). Knowing a page is not knowing its secrets.
@@ -60,6 +61,7 @@ For every campaign and game; the system's guide and each extension in use add th
 11. The player ends the session, whenever they want. No routine questions: only if you noticed something did not work, ask briefly, with multiple choice or a 1–10 score.
 12. Be a fan of the characters, without favoritism: earned consequences stand, disliked choices go unpunished. Enemies act by their intelligence and motives.
 13. Narrate outcomes yourself, reading the dice into the story (why a blow did no harm). Sometimes let the player narrate, such as the final blow on a major enemy. Defined effects, such as spells, are yours to describe.
+14. Tell time and how long things take the way the world measures it: dawn, the third bell, nightfall, a candle's length. Exact hours and minutes only where the world has clocks; the game date stays behind the scenes.
 
 ## 7. Living world
 

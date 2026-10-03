@@ -1,0 +1,172 @@
+import { z } from "zod";
+import { changeState, requireCampaign } from "../campaign/index.ts";
+import { appendLogEntry } from "../core/log.ts";
+import { defineCommand } from "../core/registry.ts";
+import { isEmptyField, loadWorld } from "../pages/index.ts";
+import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
+import { type DatedEvent, dueAdvice, eventText, isDated, newDatedLogEntry, plannedEvents, presentDate } from "./game-time.ts";
+import { skippedPagesNote } from "./notes.ts";
+
+/** What advance did, as its output tells it. */
+interface Advance
+{
+    /** Undefined when this advance set the date the game starts on. */
+    from?: string;
+    to: string;
+    passed: number;
+    wanted: number;
+    /** The events it stopped at. */
+    due: string[];
+    /** Events whose date had already come, still planned. */
+    stillDue: string[];
+    next?: string;
+    /** Planned events whose date is not a game date: time does not stop at them. */
+    unreadable: string[];
+    /** Files of the world that could not be read as pages. */
+    skipped: string[];
+}
+
+export const advance = defineCommand({
+    name: "advance",
+    description: "Let time pass in the story, whenever it does, before you narrate it: by a duration, such as 10m, 4h or 1d 6h, or to a later game date, such as day 3, 06:00. "
+        + "At the first scene, set the date the game starts on with to, at the scene's hour. Time never goes back. "
+        + "It stops at the first planned event that comes due, names it and says how to play it. "
+        + 'Example: by 8h, why "a night at the inn".',
+    group: "game",
+    input: z.object({
+        by: z.string().optional().describe("how much time passes, in days, hours and minutes: 10m, 4h, 1d 6h"),
+        to: z.string().optional().describe("the game date to reach, such as day 3, 06:00 (day 3 alone is its midnight); the first one sets when play starts, at the hour of the first scene, such as day 1, 18:00"),
+        why: z.string().optional().describe("what the time is spent on"),
+    }),
+
+    run(input, context): Advance
+    {
+        const root = requireCampaign(context.folder);
+        const request = readRequest(input);
+        const now = presentDate(root);
+        const world = loadWorld(root);
+        const events = plannedEvents(world);
+        const dated = events.filter(isDated);
+        const why = input.why?.trim() === "" ? undefined : input.why;
+        const notes = { unreadable: events.filter((event) => !isDated(event) && !isEmptyField(event.page.fields.date)).map((event) => event.page.name), skipped: world.problems };
+
+        if (now === undefined) {
+            if ("by" in request) {
+                throw new Error('The game has no date yet: set the date it starts on with to, such as to "day 1, 18:00".');
+            }
+
+            const start = formatGameDate(request.to);
+            changeState(root, { date: start });
+            appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { to: start, why }));
+            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueBy(dated, request.to), next: nextAfter(dated, request.to), ...notes };
+        }
+
+        const end = "by" in request ? addDuration(now, request.by) : request.to;
+
+        if (end.day > lastGameDay) {
+            throw new Error(`${input.by} would go past day ${lastGameDay}, the last game date the engine counts: let less time pass.`);
+        }
+
+        const wanted = minutesBetween(now, end);
+
+        if (wanted < 0) {
+            throw new Error(`${formatGameDate(end)} is before now, ${formatGameDate(now)}: time never goes back.`);
+        }
+
+        const stop = dated.find((event) => minutesBetween(now, event.date) > 0 && minutesBetween(now, event.date) <= wanted);
+        const passed = stop === undefined ? wanted : minutesBetween(now, stop.date);
+        const reached = addDuration(now, passed);
+        const result = {
+            from: formatGameDate(now),
+            to: formatGameDate(reached),
+            passed,
+            wanted,
+            due: stop === undefined ? [] : dated.filter((event) => minutesBetween(stop.date, event.date) === 0).map((event) => eventText(event, reached)),
+            stillDue: dueBy(dated, now),
+            next: stop === undefined ? nextAfter(dated, reached) : undefined,
+            ...notes,
+        };
+
+        if (passed > 0) {
+            changeState(root, { date: result.to });
+            appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { from: result.from, to: result.to, requested: input.by ?? input.to, why }));
+        }
+
+        return result;
+    },
+
+    format(result)
+    {
+        const rest = result.wanted - result.passed;
+        return [
+            movedLine(result, rest),
+            result.due.length === 0 ? "" : `Due: ${result.due.join(" · ")}. ${dueAdvice(result.due.length)}${rest > 0 ? ` Then advance the other ${formatDuration(rest)}, if they are still doing what they were.` : ""}`,
+            stillDueLine(result.stillDue, result.due.length > 0),
+            result.next === undefined ? "" : `Next: ${result.next}.`,
+            result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
+            skippedPagesNote(result.skipped),
+        ].filter((line) => line !== "").join("\n");
+    },
+});
+
+function readRequest(input: { by?: string; to?: string; }): { by: number; } | { to: GameDate; }
+{
+    if ((input.by === undefined) === (input.to === undefined)) {
+        throw new Error("Give one of by (how much time passes, such as 8h or 1d 6h) or to (the game date to reach, such as day 3, 06:00).");
+    }
+
+    if (input.by !== undefined) {
+        const minutes = readDuration(input.by);
+
+        if (minutes === undefined) {
+            throw new Error(`"${input.by}" is not a duration: write days, hours and minutes in this order, such as 10m, 4h or 1d 6h.`);
+        }
+
+        return { by: minutes };
+    }
+
+    const date = readGameDate(input.to);
+
+    if (date === undefined) {
+        throw new Error(`"${input.to}" is not a game date: write it as day 3, 06:00, or day 3.`);
+    }
+
+    return { to: date };
+}
+
+/** The first line: where time went, and where it stopped short of what was asked. */
+function movedLine(result: Advance, rest: number): string
+{
+    if (result.from === undefined) {
+        return `The game starts on ${result.to}.`;
+    }
+
+    if (result.passed === 0) {
+        return `Nothing changed: it is already ${result.to}.`;
+    }
+
+    return `${result.from} → ${result.to}${rest > 0 ? `: stopped after ${formatDuration(result.passed)} of ${formatDuration(result.wanted)}` : ""}.`;
+}
+
+/** The events whose date has come by `date`. */
+function dueBy(events: DatedEvent[], date: GameDate): string[]
+{
+    return events.filter((event) => minutesBetween(date, event.date) <= 0).map((event) => eventText(event, date));
+}
+
+/** The first events after `date`: all those at the same moment. */
+function nextAfter(events: DatedEvent[], date: GameDate): string | undefined
+{
+    const next = events.find((event) => minutesBetween(date, event.date) > 0);
+    return next === undefined ? undefined : events.filter((event) => minutesBetween(next.date, event.date) === 0).map((event) => eventText(event, date)).join(" · ");
+}
+
+/** The events already due before this advance; with new ones due too, the advice above covers them. */
+function stillDueLine(events: string[], afterDue: boolean): string
+{
+    if (events.length === 0) {
+        return "";
+    }
+
+    return afterDue ? `Still due as well: ${events.join(" · ")}.` : `Still due: ${events.join(" · ")}. ${dueAdvice(events.length)}`;
+}

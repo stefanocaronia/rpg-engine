@@ -1,5 +1,5 @@
 ---
-date: la prima notte dopo l'arrivo del personaggio
+date: day 1, 23:00
 place: "[[Guadoscuro]]"
 status: planned
 ---

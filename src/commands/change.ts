@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
-import { appendLogEntry, newLogEntry } from "../core/log.ts";
+import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
 import { concernsPlayer, findPage, isStandardField, loadWorld, type Page, parsePageReference, type World, writePage } from "../pages/index.ts";
+import { newDatedLogEntry } from "./game-time.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 // Whole numbers arrive as text from a command line and as numbers through MCP; other text stays an error instead of becoming a number.
@@ -53,7 +54,7 @@ export const change = defineCommand({
             writePage(world, page.name, undefined, { set: { [field]: formatCounter(after) } });
             const why = input.why?.trim() === "" ? undefined : input.why;
             const data = { page: page.name, field, before: formatCounter(before), after: formatCounter(after), ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond, why };
-            appendLogEntry(root, newLogEntry(context, "counter-changed", concernsPlayer(world, page) ? "public" : "hidden", data));
+            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", concernsPlayer(world, page) ? "public" : "hidden", data));
         }
 
         return { page: page.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note: limitNote(after, beyond), changed, problems: world.problems };

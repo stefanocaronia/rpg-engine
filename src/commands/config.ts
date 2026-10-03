@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { changeListSetting, changeSetting, checkSettingName, listSettingNames, missingSettings, readSettings, requireCampaign, type SettingName, settingNames } from "../campaign/index.ts";
-import { appendLogEntry, newLogEntry } from "../core/log.ts";
+import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { newDatedLogEntry } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
 
 export const config = defineCommand({
@@ -32,9 +33,9 @@ export const config = defineCommand({
         const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
 
         if (input.setting !== undefined && listChange && changeListSetting(root, input.setting, { add: input.add, remove: input.remove })) {
-            appendLogEntry(root, newLogEntry(context, "config-changed", "public", { setting: input.setting, add: input.add, remove: input.remove }));
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, add: input.add, remove: input.remove }));
         } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, input.value)) {
-            appendLogEntry(root, newLogEntry(context, "config-changed", "public", { setting: input.setting, value: input.value }));
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
         }
 
         const settings = readSettings(root);

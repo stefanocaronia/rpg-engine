@@ -59,6 +59,32 @@ describe("rpg status", () => {
         ].join("\n"));
     });
 
+    it("shows the game date, the events that are due, and the planned ones in order, with how long until then", async () => {
+        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
+        await rpg("write", "Il drago si sveglia", "--type", "event");
+        await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned", "--set", "date=day 2, 23:00");
+        await rpg("write", "Sparizione di Rosa", "--type", "event", "--set", "status=planned", "--set", "date=day 1, 23:00");
+        await rpg("write", "La fiera", "--type", "event", "--set", "status=planned", "--set", "date=day 3, 06:00");
+        await rpg("write", "La festa", "--type", "event", "--set", "status=cancelled", "--set", "date=day 1, 20:00");
+        expect(await state()).toBe(
+            [
+                "Guadoscuro",
+                "Still missing: language, system. Ask the player, then set each one with the config command (setting and value).",
+                "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
+                "PC: Ennio",
+                "Planned events: Sparizione di Rosa (day 1, 23:00) · Il rituale (day 2, 23:00) · La fiera (day 3, 06:00), and 1 more: find text planned, type event",
+            ].join("\n"),
+        );
+
+        await rpg("advance", "--to", "day 1, 23:00");
+        expect(await state()).toContain([
+            "Now: day 1, 23:00",
+            "PC: Ennio",
+            "Due: Sparizione di Rosa (day 1, 23:00). If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Set its status (happened or cancelled), or give it a later date if the story moves it.",
+            "Planned events: Il rituale (day 2, 23:00, in 1d) · La fiera (day 3, 06:00, in 1d 7h) · Il drago si sveglia",
+        ].join("\n"));
+    });
+
     it("shows three names per list and says how to find the rest", async () => {
         await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
         await rpg("write", "Chiusa", "--type", "quest", "--set", "status=done");

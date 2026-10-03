@@ -1,3 +1,4 @@
+import { comparableText } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
 
 const linkPattern = /^\[\[[^\]]+\]\]$/;
@@ -11,12 +12,13 @@ const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", knows: "links", factions: "links", status: ["alive", "dead"] },
     place: { contains: "list" },
     quest: { status: ["planned", "open", "done", "failed"] },
-    event: { date: "text", place: "link", status: ["planned", "happened"] },
+    event: { date: "text", place: "link", status: ["planned", "happened", "cancelled"] },
 };
 
 // What a new page of a type holds when the write that creates it leaves the field out.
 const defaultFields: Partial<Record<PageType, Record<string, unknown>>> = {
     quest: { status: "planned" },
+    event: { status: "planned" },
 };
 
 /** The fields a new page of this type starts with, unless they are given. */
@@ -46,12 +48,43 @@ export function checkStandardFields(type: PageType | undefined, fields: Record<s
     }
 }
 
-/** What is wrong with a standard field, such as "status" must be one of…; undefined when it is right, missing or not standard. */
+/** What is wrong with a standard field, such as "status" must be one of…, or a field named like one in another case, such as Status; undefined when it is right, missing or not standard. */
 export function standardFieldProblem(type: PageType | undefined, fields: Record<string, unknown>, name: string): string | undefined
 {
-    const rules = { ...commonRules, ...(type === undefined ? {} : typeRules[type]) };
-    const problem = name in rules && name in fields ? problemWith(fields[name], rules[name]) : undefined;
-    return problem === undefined ? undefined : `"${name}" ${problem}`;
+    const rules = rulesOf(type);
+
+    if (!(name in fields)) {
+        return undefined;
+    }
+
+    const misspelled = misspelledFieldProblem(type, name);
+    const problem = name in rules && !isEmptyField(fields[name]) ? problemWith(fields[name], rules[name]) : undefined;
+    return misspelled ?? (problem === undefined ? undefined : `"${name}" ${problem}`);
+}
+
+/** The standard field that `name` writes in another case or with accents written another way, such as status for Status; undefined otherwise. */
+export function misspelledStandardField(type: PageType | undefined, name: string): string | undefined
+{
+    const rules = rulesOf(type);
+    return name in rules ? undefined : Object.keys(rules).find((standard) => comparableText(standard) === comparableText(name));
+}
+
+/** Why a field named like a standard one in another case is not read, such as Status; undefined for any other name. */
+export function misspelledFieldProblem(type: PageType | undefined, name: string): string | undefined
+{
+    const standard = misspelledStandardField(type, name);
+    return standard === undefined ? undefined : `"${name}" is the standard field ${standard} written another way, so the engine does not read it: write it as ${standard}.`;
+}
+
+/** Whether a field holds nothing: missing, or empty, as Obsidian writes a property without a value. An empty field counts as missing. */
+export function isEmptyField(value: unknown): boolean
+{
+    return value === undefined || value === null || (typeof value === "string" && value.trim() === "");
+}
+
+function rulesOf(type: PageType | undefined): Record<string, Rule>
+{
+    return { ...commonRules, ...(type === undefined ? {} : typeRules[type]) };
 }
 
 function problemWith(value: unknown, rule: Rule): string | undefined

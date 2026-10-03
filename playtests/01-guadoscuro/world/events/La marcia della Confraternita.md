@@ -1,5 +1,5 @@
 ---
-date: due giorni dopo l'arrivo del personaggio, all'alba
+date: day 3, 06:00
 place: "[[Mulino abbandonato]]"
 status: planned
 ---

@@ -1,7 +1,7 @@
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
-import { containerFields, standardFieldProblem } from "./standard-fields.ts";
+import { containerFields, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { linksIn, type Page, textsIn, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
@@ -52,7 +52,9 @@ function fieldProblems(page: Page): Problem[]
 {
     return Object.keys(page.fields).flatMap((field) => {
         const problem = standardFieldProblem(page.type, page.fields, field);
-        return problem === undefined ? [] : [{ path: page.path, message: problem, fix: `write ${page.name}, set ${field} again with an allowed value` }];
+        const standard = misspelledStandardField(page.type, field);
+        const fix = standard === undefined ? `write ${page.name}, set ${field} again with an allowed value` : `write ${page.name}, unset ${field} and write its value again as ${standard}`;
+        return problem === undefined ? [] : [{ path: page.path, message: problem, fix }];
     });
 }
 

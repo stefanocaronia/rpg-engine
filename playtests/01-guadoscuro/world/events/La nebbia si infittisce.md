@@ -1,5 +1,5 @@
 ---
-date: il giorno dopo l'arrivo del personaggio
+date: day 2, 06:00
 place: "[[Palude]]"
 status: planned
 ---
