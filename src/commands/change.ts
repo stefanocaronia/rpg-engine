@@ -1,12 +1,27 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
-import { appendLogEntry } from "../core/log.ts";
+import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
-import { concernsPlayer, findPage, isStandardField, loadWorld, type Page, parsePageReference, type World, writePage } from "../pages/index.ts";
+import { concernsPlayer, findPage, isStandardField, loadWorld, parsePageReference, type World, writePage } from "../pages/index.ts";
+import type { Scene } from "../scene/index.ts";
+import { copyCounters, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { countersText } from "./page-counters.ts";
+
+/** What holds a counter: a page, or a copy of a creature in the open scene (D-110). */
+interface CounterHolder
+{
+    name: string;
+    kind: "page" | "copy";
+    fields: Record<string, unknown>;
+    /** Fields with a fixed meaning, which are never counters. */
+    isFixed(field: string): boolean;
+    write(field: string, value: number | string): void;
+    visibility: LogEntry["visibility"];
+}
 
 // Whole numbers arrive as text from a command line and as numbers through MCP; other text stays an error instead of becoming a number.
 const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]?\d+$/.test(value.trim()) ? Number(value) : value), z.number().int());
@@ -33,31 +48,31 @@ export const change = defineCommand({
     {
         const root = requireCampaign(context.folder);
         const world = loadWorld(root);
-        const page = pageNamed(world, input.page);
-        const field = fieldName(page, input.field);
-        const before = readCounter(page.fields[field]);
+        const holder = holderNamed(root, world, input.page);
+        const field = fieldName(holder, input.field);
+        const before = readCounter(holder.fields[field]);
 
         if (before === undefined) {
-            throw new Error(notCounterMessage(page, field));
+            throw new Error(notCounterMessage(holder, field));
         }
 
-        const counterChange = readChange(input, before, page.name, field);
+        const counterChange = readChange(input, before, holder.name, field);
         const { counter: after, beyond } = changeCounter(before, counterChange);
 
         if (!isSafeCounter(after)) {
-            throw new Error(`${field} on ${page.name} would be too large to count exactly. Nothing changed.`);
+            throw new Error(`${field} on ${holder.name} would be too large to count exactly. Nothing changed.`);
         }
 
         const changed = formatCounter(after) !== formatCounter(before);
 
         if (changed) {
-            writePage(world, page.name, undefined, { set: { [field]: formatCounter(after) } });
+            holder.write(field, formatCounter(after));
             const why = input.why?.trim() === "" ? undefined : input.why;
-            const data = { page: page.name, field, before: formatCounter(before), after: formatCounter(after), ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond, why };
-            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", concernsPlayer(world, page) ? "public" : "hidden", data));
+            const data = { page: holder.name, copy: holder.kind === "copy" ? true : undefined, field, before: formatCounter(before), after: formatCounter(after), ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond, why };
+            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
         }
 
-        return { page: page.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note: limitNote(after, beyond), changed, problems: world.problems };
+        return { page: holder.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note: limitNote(after, beyond), changed, problems: world.problems };
     },
 
     format(result)
@@ -68,8 +83,8 @@ export const change = defineCommand({
     },
 });
 
-/** The page a counter is on, given by name or as a link. */
-function pageNamed(world: World, name: string): Page
+/** What holds the counter, given by name or as a link: a copy in the open scene first, then a page. */
+function holderNamed(root: string, world: World, name: string): CounterHolder
 {
     const reference = parsePageReference(name);
 
@@ -77,23 +92,77 @@ function pageNamed(world: World, name: string): Page
         throw new Error(`Give the page without #${reference.section}: a counter is a field of the page, such as page ${reference.name}, field hp.`);
     }
 
+    // A scene that cannot be read holds no copies here; validate reports it.
+    const { scene, problem } = readOpenScene(root);
+    const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), reference.name);
+
     const page = findPage(world, reference.name);
 
-    if (page === undefined) {
-        throw new Error(`There is no page named ${reference.name}. Look for it with the find command.`);
+    if (scene !== undefined && copy !== undefined) {
+        if (page !== undefined) {
+            throw new Error(`${copy} is both a copy in the open scene and a page, so it is not clear which one to change. Close the scene, which removes the copy, or rename the page. Nothing changed.`);
+        }
+
+        return copyHolder(root, scene, copy);
     }
 
-    return page;
+    if (page === undefined) {
+        const copies = scene === undefined ? "" : ", nor a copy of that name in the open scene";
+        const unreadable = problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
+        throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}`);
+    }
+
+    if (problem !== undefined && page.type === "creature") {
+        throw new Error(`${page.name} is a creature, and the open scene, which may hold its copies, cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
+    }
+
+    checkNotCopied(scene, page.name);
+
+    return {
+        name: page.name,
+        kind: "page",
+        fields: page.fields,
+        isFixed: (field) => isStandardField(page.type, field),
+        write: (field, value) => writePage(world, page.name, undefined, { set: { [field]: value } }),
+        visibility: concernsPlayer(world, page) ? "public" : "hidden",
+    };
 }
 
-/** The page's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters the page holds. */
-function fieldName(page: Page, name: string): string
+/** A creature with copies in the open scene keeps the counters each new copy starts with: a hit meant for a copy must not land on it. */
+function checkNotCopied(scene: Scene | undefined, name: string): void
 {
-    const keys = Object.keys(page.fields);
+    const copies = Object.entries(scene?.copies ?? {}).filter(([, copy]) => comparableText(parsePageReference(copy.creature).name) === comparableText(name));
+
+    if (copies.length > 0) {
+        const listed = copies.map(([copy, fields]) => {
+            const counters = countersText(copyCounters(fields));
+            return counters === "" ? copy : `${copy} (${counters})`;
+        });
+        throw new Error(`${name} has copies in the open scene: ${listed.join(", ")}. Change a copy; ${name}'s page holds the counters each new copy starts with. Nothing changed.`);
+    }
+}
+
+/** A copy of a creature in the open scene: its counters live in state.yaml, and only the master sees them change. */
+function copyHolder(root: string, scene: Scene, copy: string): CounterHolder
+{
+    return {
+        name: copy,
+        kind: "copy",
+        fields: scene.copies[copy],
+        isFixed: (field) => field === "creature",
+        write: (field, value) => updateScene(root, [[["copies", copy, field], value]]),
+        visibility: "hidden",
+    };
+}
+
+/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters it holds. */
+function fieldName(holder: CounterHolder, name: string): string
+{
+    const keys = Object.keys(holder.fields);
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
 
-    if (found !== undefined && isStandardField(page.type, found)) {
-        throw new Error(`${found} is a fixed field of ${page.name}, not a counter: change it with write.`);
+    if (found !== undefined && holder.isFixed(found)) {
+        throw new Error(holder.kind === "copy" ? `${found} is the creature ${holder.name} copies, not a counter.` : `${found} is a fixed field of ${holder.name}, not a counter: change it with write.`);
     }
 
     if (found !== undefined) {
@@ -101,22 +170,25 @@ function fieldName(page: Page, name: string): string
     }
 
     const counters = keys.flatMap((key) => {
-        const counter = isStandardField(page.type, key) ? undefined : readCounter(page.fields[key]);
+        const counter = holder.isFixed(key) ? undefined : readCounter(holder.fields[key]);
         return counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];
     });
     const held = counters.length > 0 ? `Its counters: ${counters.join(", ")}.` : "It has no counters.";
-    throw new Error(`${page.name} has no field "${name}". ${held} To add one, use write, such as set ${name}=12/12.`);
+    const add = holder.kind === "copy"
+        ? "A copy takes the counters written on its creature when it enters the scene: write the counter on the creature, then bring copies in again with scene add."
+        : `To add one, use write, such as set ${name}=12/12.`;
+    throw new Error(`${holder.name} has no field "${name}". ${held} ${add}`);
 }
 
-function notCounterMessage(page: Page, field: string): string
+function notCounterMessage(holder: CounterHolder, field: string): string
 {
-    const value = page.fields[field];
+    const value = holder.fields[field];
 
     if (typeof value === "string" && readCounterText(value) !== undefined) {
-        return `${field} on ${page.name} is the text "${value}": write it without quotes, such as ${field}: ${value}, to make it a counter.`;
+        return `${field} on ${holder.name} is the text "${value}": write it without quotes, such as ${field}: ${value}, to make it a counter.`;
     }
 
-    return `${field} on ${page.name} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
+    return `${field} on ${holder.name} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
 }
 
 function readChange(input: { by?: number; spend?: number; to?: number | string; }, counter: Counter, page: string, field: string): CounterChange

@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { readCounter } from "../counters/index.ts";
-import { isPartyMember, isStandardField, loadWorld, locate, type Page, type World } from "../pages/index.ts";
+import { isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate, minutesBetween } from "../time/index.ts";
+import { type ClosedScene, closedScenes, copyCounters, readOpenScene } from "./game-scene.ts";
 import { dueAdvice, eventText, isDated, type PlannedEvent, plannedEvents, problemText, readPresent } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
+import { countersText, pageCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
@@ -26,7 +28,7 @@ export const status = defineCommand({
     name: "status",
     description: "Show where the game stands. "
         + "It gives the campaign's settings, the player character and companions with their counters and whereabouts, who is with them, open quests, "
-        + "the game date, the events due and planned, problems. "
+        + "the game date, the events due and planned, the open scene and the last ones, problems. "
         + "Call it right after instructions at the start of every chat and after a summary, and whenever you need to check where things stand. "
         + "It shows names and numbers only: read pages with show. Read-only, no parameters.",
     group: "game",
@@ -48,6 +50,7 @@ export const status = defineCommand({
         const now = present.date;
         const events = plannedEvents(world);
         const isDue = (event: PlannedEvent): boolean => now !== undefined && isDated(event) && minutesBetween(now, event.date) <= 0;
+        const closed = closedScenes(root);
         return {
             campaign: [settings.name, settings.language, settings.system].filter((part) => part !== undefined),
             missing: missingSettings(settings),
@@ -57,6 +60,9 @@ export const status = defineCommand({
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
+            scene: sceneText(readOpenScene(root).scene),
+            lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
+            sceneCounts: sceneCounts(closed),
             openQuests: pagesWith(world, "quest", "open"),
             now: now === undefined ? undefined : formatGameDate(now),
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
@@ -70,15 +76,18 @@ export const status = defineCommand({
     format(result)
     {
         const lead = result.players[0]?.name;
-        const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${countersText(member)}`;
+        const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${memberCounters(member)}`;
         const state = [
             result.campaign.join(" · "),
             missingSettingsNote(result.missing),
             boundariesLine(result.lines, result.veils),
             timeLine(result),
-            ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${countersText(member)}`)),
+            ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
+            result.scene === undefined ? "" : `Scene: ${result.scene}`,
+            result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
+            result.sceneCounts === "" ? "" : `Scenes so far: ${result.sceneCounts}`,
             dueLine(result.dueEvents),
             namesLine("Open quests", result.openQuests, "find text open, type quest"),
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
@@ -124,7 +133,7 @@ function whereabouts(member: Member): string
     return member.where.length === 0 ? "" : `, in ${member.where.join(" › ")}`;
 }
 
-function countersText(member: Member): string
+function memberCounters(member: Member): string
 {
     return member.counters.length === 0 ? "" : `: ${member.counters.join(" · ")}`;
 }
@@ -132,7 +141,7 @@ function countersText(member: Member): string
 /** "hp 5/12": the counters on a page as they are written, its fixed fields left out. */
 function countersOf(page: Page): string[]
 {
-    return Object.keys(page.fields).filter((field) => !isStandardField(page.type, field) && readCounter(page.fields[field]) !== undefined).map((field) => `${field} ${String(page.fields[field]).trim()}`);
+    return Object.entries(pageCounters(page)).map(([field, value]) => `${field} ${String(value).trim()}`);
 }
 
 /** The planned events whose date has come: the master plays them first. */
@@ -140,6 +149,36 @@ function dueLine(events: string[]): string
 {
     const line = namesLine("Due", events, "find text planned, type event");
     return line === "" ? "" : `${line}. ${dueAdvice(events.length)}`;
+}
+
+/** "Scontro all'ossario (combat) at Ossario; round 1, Lena's turn; copies: Annegato 1: hp 22/22; Annegato 2: hp 13/22". */
+function sceneText(scene: Scene | undefined): string | undefined
+{
+    if (scene === undefined) {
+        return undefined;
+    }
+
+    const place = scene.place === undefined ? "" : ` at ${parsePageReference(scene.place).name}`;
+    const characters = scene.with.length === 0 ? "" : `, with ${scene.with.map((link) => parsePageReference(link).name).join(", ")}`;
+    const turn = scene.turn === undefined ? "" : `; round ${scene.round ?? 1}, ${scene.turn}'s turn`;
+    const copies = Object.entries(scene.copies).map(([name, copy]) => {
+        const counters = countersText(copyCounters(copy));
+        return counters === "" ? name : `${name}: ${counters}`;
+    });
+    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}`;
+}
+
+/** "4 social, 2 exploration, 1 combat": the closed scenes by type, most first, then in the order of the list of types. */
+function sceneCounts(scenes: ClosedScene[]): string
+{
+    const counts = new Map<string, number>();
+
+    for (const scene of scenes) {
+        counts.set(scene.type, (counts.get(scene.type) ?? 0) + 1);
+    }
+
+    const rank = (type: string): number => (sceneTypes as readonly string[]).indexOf(type);
+    return [...counts].sort((first, second) => second[1] - first[1] || rank(first[0]) - rank(second[0])).map(([type, count]) => `${count} ${type}`).join(", ");
 }
 
 function pagesWith(world: World, type: Page["type"], wanted: string): string[]

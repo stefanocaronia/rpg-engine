@@ -32,9 +32,10 @@ export function appendLogEntry(folder: string, entry: LogEntry): void
     appendFileSync(join(folder, logFileName), JSON.stringify(entry) + "\n", "utf8");
 }
 
+/** The entries of the log; lines that are not entries, such as lines edited by hand, are left out: checkLog reports them. */
 export function readLog(folder: string): LogEntry[]
 {
-    return logLines(folder).filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as LogEntry);
+    return logLines(folder).filter((line) => line.trim() !== "" && entryProblem(line) === undefined).map((line) => JSON.parse(line) as LogEntry);
 }
 
 /** The lines of the log that are not log entries, such as lines edited by hand. */
@@ -56,7 +57,8 @@ function entryProblem(line: string): string | undefined
 {
     try {
         const entry = JSON.parse(line) as Partial<LogEntry>;
-        return typeof entry.id === "string" && typeof entry.type === "string" && typeof entry.at === "string" ? undefined : "is not an entry: it needs id, at and type";
+        const hasData = typeof entry.data === "object" && entry.data !== null && !Array.isArray(entry.data);
+        return typeof entry.id === "string" && typeof entry.type === "string" && typeof entry.at === "string" && hasData ? undefined : "is not an entry: it needs id, at, type and data";
     } catch {
         return "is not valid JSON";
     }

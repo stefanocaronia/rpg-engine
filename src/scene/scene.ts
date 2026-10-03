@@ -1,0 +1,66 @@
+import { z } from "zod";
+import { comparableText } from "../core/text.ts";
+
+/** The kinds of scene, so that the master can see the variety of the game (D-39, D-111). */
+export const sceneTypes = ["combat", "social", "exploration", "travel", "rest", "other"] as const;
+
+/** A numbered copy of a creature in the scene, such as Annegato 1: the creature it copies, and its counters. */
+export type SceneCopy = { creature: string; } & Record<string, unknown>;
+
+/** The open scene (D-113): who is in it, the copies of creatures, and the order of turns when the game has one. */
+export interface Scene
+{
+    title: string;
+    type: string;
+    /** A link to the place, such as [[Ossario]]. */
+    place?: string;
+    /** The game date the scene opened. */
+    opened?: string;
+    /** Links to the characters in the scene. */
+    with: string[];
+    copies: Record<string, SceneCopy>;
+    order?: string[];
+    round?: number;
+    turn?: string;
+}
+
+// Loose: keys written by hand in the scene stay.
+const sceneSchema = z.looseObject({
+    title: z.string().min(1),
+    type: z.enum(sceneTypes),
+    place: z.string().optional(),
+    opened: z.string().optional(),
+    with: z.array(z.string()).default([]),
+    copies: z.record(z.string(), z.looseObject({ creature: z.string() })).default({}),
+    order: z.array(z.string()).min(1).optional(),
+    round: z.number().int().positive().optional(),
+    turn: z.string().optional(),
+});
+
+/** The open scene, checked; a scene written wrongly by hand fails with what is wrong. */
+export function readScene(value: unknown): Scene
+{
+    const parsed = sceneSchema.safeParse(value);
+
+    if (!parsed.success) {
+        throw new Error(`${parsed.error.issues.map((issue) => `${issue.path.join(".") || "scene"}: ${issue.message}`).join("; ")}.`);
+    }
+
+    return parsed.data as Scene;
+}
+
+/** Names for `count` new copies of a creature, numbered after the copies of it that `taken` already holds: Annegato 3, Annegato 4. */
+export function copyNames(creature: string, count: number, taken: string[]): string[]
+{
+    const prefix = `${comparableText(creature)} `;
+    const used = taken.map(comparableText).filter((name) => name.startsWith(prefix)).map((name) => Number(name.slice(prefix.length))).filter(Number.isSafeInteger);
+    const last = Math.max(0, ...used);
+    return Array.from({ length: count }, (_, index) => `${creature} ${last + index + 1}`);
+}
+
+/** The turn after the current one, and the round: after the last in the order comes the first, in the next round. */
+export function nextTurn(order: string[], turn: string | undefined, round: number): { turn: string; round: number; }
+{
+    const index = turn === undefined ? -1 : order.findIndex((name) => comparableText(name) === comparableText(turn));
+    return index === order.length - 1 ? { turn: order[0], round: round + 1 } : { turn: order[index + 1], round };
+}

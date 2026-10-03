@@ -20,6 +20,7 @@ For every campaign and game; the system's guide and each extension in use add th
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up).
 - `advance`: whenever time passes in the story, before you narrate it. At the first scene, set the starting date with `to`, at the scene's hour (dusk: `day 1, 18:00`). When it stops at an event, do as it says: what the characters see or hear is a scene, the rest happens off screen and leaves traces.
+- `scene`: open one when a scene starts (combat, social, exploration, travel, rest or other), with everyone in it; enemies of a kind enter as numbered copies, such as `Annegato 1`, with the counters written on the creature, changed with `change` (the numbers are for you, not the player). Inside a scene too, `advance` before you narrate time passing. Close it with a summary of one or two sentences, as the player saw it.
 - `config`: settings and what is still missing: ask the player.
 
 ## 3. The world's pages
