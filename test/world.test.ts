@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { readFieldValue } from "../src/pages/index.ts";
-import { makeTempFolder, readEventLog, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 // The pages come from the test adventure, "La nebbia di Guadoscuro".
 let folder: string;
@@ -76,7 +76,7 @@ describe("rpg write", () => {
 
         const refusals: [string[], string][] = [
             [["write", "Varro", "--unset", "role"], `Varro has no field "role" to remove.`],
-            [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item."],
+            [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item, event, topic, creature."],
             [["write", "varro", "--type", "place"], "Varro already exists, as a character (world/characters/Varro.md): leave the type out to change it, or pick another name."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
             [["write", "Varro"], "Nothing to write on Varro: give fields to set or to remove, or text."],
@@ -94,13 +94,19 @@ describe("rpg write", () => {
         }
     });
 
-    it("logs page changes as hidden events", async () => {
+    it("logs everything a write changes, text included, as hidden lines", async () => {
         await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--text", "Un alchimista.");
         await rpg("write", "Varro#Il motivo", "--append", "--text", "La figlia.");
-        expect(readEventLog(folder).slice(1)).toEqual([
-            { id: "id2", at: "2026-10-02T10:00:00.000Z", type: "page-created", visibility: "hidden", data: { page: "Varro", type: "character", set: { role: "npc" }, text: "written" } },
-            { id: "id3", at: "2026-10-02T10:00:00.000Z", type: "page-updated", visibility: "hidden", data: { page: "Varro", type: "character", section: "Il motivo", text: "added" } },
+        expect(readLogFile(folder).slice(1)).toEqual([
+            { id: "id2", at: "2026-10-02T10:00:00.000Z", type: "page-created", by: "master", visibility: "hidden", data: { page: "Varro", type: "character", set: { role: "npc" }, text: "Un alchimista.", mode: "replace" } },
+            { id: "id3", at: "2026-10-02T10:00:00.000Z", type: "page-updated", by: "master", visibility: "hidden", data: { page: "Varro", type: "character", section: "Il motivo", text: "La figlia.", mode: "append" } },
         ]);
+    });
+
+    it("writes nothing, and logs nothing, when the page already reads like that", async () => {
+        await rpg("write", "Varro", "--type", "character", "--set", "role=npc");
+        expect((await rpg("write", "Varro", "--set", "role=npc")).output).toBe("Nothing changed on Varro: it already reads like that.");
+        expect(readLogFile(folder).map((entry) => entry.type)).toEqual(["campaign-created", "page-created"]);
     });
 
     it("explains its options", async () => {

@@ -1,7 +1,7 @@
 import { basename, resolve } from "node:path";
 import { z } from "zod";
 import { createCampaign, missingSettings } from "../campaign/index.ts";
-import { appendEvent } from "../core/event-log.ts";
+import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { createWorld } from "../pages/index.ts";
 import { missingSettingsNote } from "./notes.ts";
@@ -23,7 +23,7 @@ export const init = defineCommand({
         const settings = { name: input.name ?? basename(folder), language: input.language, system: input.system };
         const root = createCampaign(folder, settings);
         createWorld(root);
-        appendEvent(root, { id: context.newId(), at: context.now().toISOString(), type: "campaign-created", visibility: "public", data: settings });
+        appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
         return { root, name: settings.name, missing: missingSettings(settings) };
     },
 

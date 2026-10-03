@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readEventLog, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -20,7 +20,7 @@ afterEach(() => removeFolder(folder));
 
 function loggedEvents()
 {
-    return readEventLog(folder);
+    return readLogFile(folder);
 }
 
 describe("rpg roll", () => {
@@ -32,6 +32,7 @@ describe("rpg roll", () => {
                 id: "id1",
                 at: "2026-10-02T10:00:00.000Z",
                 type: "roll",
+                by: "master",
                 visibility: "public",
                 data: { notation: "2d6+1", total: 9, result: "2d6+1 = 9 [4, 4] + 1", why: "damage", who: "Lena", physical: false },
             },
@@ -66,7 +67,7 @@ describe("rpg roll", () => {
         await runCommandLine(["roll", "--reveal", "id1"], context);
         expect(loggedEvents().map((event) => [event.type, event.visibility])).toEqual([
             ["roll", "hidden"],
-            ["reveal", "public"],
+            ["roll-revealed", "public"],
         ]);
     });
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { changeSetting, checkSettingName, missingSettings, readSettings, requireCampaign, settingNames } from "../campaign/index.ts";
-import { appendEvent } from "../core/event-log.ts";
+import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { missingSettingsNote } from "./notes.ts";
 
@@ -18,9 +18,8 @@ export const config = defineCommand({
         const root = requireCampaign(context.folder);
         const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
 
-        if (input.setting !== undefined && input.value !== undefined) {
-            changeSetting(root, input.setting, input.value);
-            appendEvent(root, { id: context.newId(), at: context.now().toISOString(), type: "config-changed", visibility: "public", data: { setting: input.setting, value: input.value } });
+        if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, input.value)) {
+            appendLogEntry(root, newLogEntry(context, "config-changed", "public", { setting: input.setting, value: input.value }));
         }
 
         const settings = readSettings(root);

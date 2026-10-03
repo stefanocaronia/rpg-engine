@@ -45,7 +45,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - **Don't encode game rules.** Ruling is the AI's job, with the exact text at hand.
 - **Core, system or extension?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a system or an extension, as data; their code only when data is not enough.
 - **Data is object-oriented and SOLID.** Each page describes only itself. A relation lives in whoever holds it: who contains, owns or knows something keeps the list, with links, in its frontmatter; a thing never records where it is, who has it or who knows it. The engine works out where a thing is by climbing its containers. Systems and extensions add types and fields without changing the core ones.
-- Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and, when it changes something, logs an event.
+- Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and, when it changes something, writes a line to the log.
 
 ## Coding guidelines
 

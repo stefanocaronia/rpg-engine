@@ -12,6 +12,8 @@ export interface Context
     newId(): string;
     /** A new random salt for a hidden roll. */
     newSalt(): string;
+    /** Who acts: the master, the player or a companion. For now always the master. */
+    actor: string;
 }
 
 export function defaultContext(folder = process.cwd()): Context
@@ -22,5 +24,6 @@ export function defaultContext(folder = process.cwd()): Context
         now: () => new Date(),
         newId: () => randomUUID().replaceAll("-", "").slice(0, 8),
         newSalt: () => randomBytes(16).toString("hex"),
+        actor: "master",
     };
 }

@@ -5,6 +5,9 @@ export const pageTypes = {
     faction: "factions",
     quest: "quests",
     item: "items",
+    event: "events",
+    topic: "topics",
+    creature: "creatures",
 } as const;
 
 export type PageType = keyof typeof pageTypes;

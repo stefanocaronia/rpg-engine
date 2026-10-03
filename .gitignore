@@ -2,7 +2,7 @@ node_modules/
 dist/
 sandbox/
 tmp/
-/events.jsonl
+/log.jsonl
 
 # Local tooling
 /.codegraph/

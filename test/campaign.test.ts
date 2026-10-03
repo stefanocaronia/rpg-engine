@@ -3,7 +3,7 @@ import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readEventLog, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -22,11 +22,13 @@ describe("rpg init", () => {
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
         expect(result.output).toContain("Still missing: language, system.");
 
-        for (const path of ["campaign.yaml", "state.yaml", "events.jsonl", "sessions", "world/characters", "world/places", "world/factions", "world/quests", "world/items"]) {
+        const typeFolders = ["characters", "places", "factions", "quests", "items", "events", "topics", "creatures"].map((type) => `world/${type}`);
+
+        for (const path of ["campaign.yaml", "state.yaml", "log.jsonl", "sessions", ...typeFolders]) {
             expect(existsSync(join(folder, path)), path).toBe(true);
         }
 
-        expect(readEventLog(folder)).toEqual([{ id: "id1", at: "2026-10-02T10:00:00.000Z", type: "campaign-created", visibility: "public", data: { name: "La nebbia di Guadoscuro" } }]);
+        expect(readLogFile(folder)).toEqual([{ id: "id1", at: "2026-10-02T10:00:00.000Z", type: "campaign-created", by: "master", visibility: "public", data: { name: "La nebbia di Guadoscuro" } }]);
     });
 
     it("names the campaign after its folder and takes the settings it is given", async () => {
@@ -72,7 +74,13 @@ describe("rpg config", () => {
         const result = await runCommandLine(["config", "language", "it"], context);
         expect(result.output).toBe("language: it\n\nStill missing: system. Set it with: rpg config <setting> <value>");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
-        expect(readEventLog(folder).at(-1)).toMatchObject({ type: "config-changed", visibility: "public", data: { setting: "language", value: "it" } });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
+    });
+
+    it("writes no line when a setting already has that value", async () => {
+        await runCommandLine(["config", "language", "it"], context);
+        await runCommandLine(["config", "language", "it"], context);
+        expect(readLogFile(folder).map((entry) => entry.type)).toEqual(["campaign-created", "config-changed"]);
     });
 
     it("refuses unknown settings and invalid values", async () => {
@@ -87,7 +95,7 @@ describe("rpg config", () => {
         expect(result.exitCode).toBe(1);
         expect(result.output).toContain("Fix it with the config command, or by hand.");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(handWritten);
-        expect(readEventLog(folder).map((event) => event.type)).toEqual(["campaign-created"]);
+        expect(readLogFile(folder).map((event) => event.type)).toEqual(["campaign-created"]);
         expect((await runCommandLine(["config", "language", "it"], context)).exitCode).toBe(0);
     });
 
@@ -102,13 +110,13 @@ describe("finding the campaign", () => {
         await runCommandLine(["init"], context);
         const inner = testContext(join(folder, "world", "places"));
         expect((await runCommandLine(["roll", "1d6"], inner)).exitCode).toBe(0);
-        expect(readEventLog(folder).at(-1)).toMatchObject({ type: "roll" });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll" });
     });
 
     it("refuses to work outside a campaign", async () => {
         const result = await runCommandLine(["roll", "1d6"], context);
         expect(result.exitCode).toBe(1);
         expect(result.output).toContain("Create one with the init command");
-        expect(existsSync(join(folder, "events.jsonl"))).toBe(false);
+        expect(existsSync(join(folder, "log.jsonl"))).toBe(false);
     });
 });

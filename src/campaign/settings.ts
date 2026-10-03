@@ -22,8 +22,8 @@ export function readSettings(root: string): CampaignSettings
     return validateSettings(readSettingsDocument(root).toJS() ?? {});
 }
 
-/** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the settings would not be valid. */
-export function changeSetting(root: string, name: string, value: string): CampaignSettings
+/** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the setting already has that value, or if the settings would not be valid. Returns whether it changed. */
+export function changeSetting(root: string, name: string, value: string): boolean
 {
     const setting = checkSettingName(name);
     const parsed = settingsSchema.shape[setting].safeParse(value);
@@ -33,10 +33,15 @@ export function changeSetting(root: string, name: string, value: string): Campai
     }
 
     const document = readSettingsDocument(root);
+
+    if (document.get(setting) === parsed.data) {
+        return false;
+    }
+
     document.set(setting, parsed.data);
-    const settings = validateSettings(document.toJS());
+    validateSettings(document.toJS());
     writeFileSync(join(root, campaignFileName), String(document), "utf8");
-    return settings;
+    return true;
 }
 
 /** The settings that are still missing: the AI asks the player for them. */

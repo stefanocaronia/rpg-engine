@@ -19,8 +19,8 @@ export interface PageChange
     append?: boolean;
 }
 
-/** Writes a page: creates it when there is no page with that name and `type` is given, then applies the change. */
-export function writePage(world: World, name: string, type: PageType | undefined, change: PageChange): { page: Page; created: boolean; }
+/** Writes a page: creates it when there is no page with that name and `type` is given, then applies the change. A change that leaves the page as it was writes nothing. */
+export function writePage(world: World, name: string, type: PageType | undefined, change: PageChange): { page: Page; created: boolean; changed: boolean; }
 {
     const existing = findPage(world, name);
     checkChange(existing, type, change);
@@ -30,9 +30,15 @@ export function writePage(world: World, name: string, type: PageType | undefined
     const changesFields = change.set !== undefined || change.unset !== undefined;
     const frontmatter = changesFields ? changeFields(file.frontmatter, change.set ?? {}, change.unset ?? [], path) : file.frontmatter;
     const body = change.text === undefined ? file.body : writeText(file.body, change.text, change);
+    const newText = joinPageFile({ frontmatter, body });
+
+    if (existing !== undefined && newText === joinPageFile(file)) {
+        return { page: existing, created: false, changed: false };
+    }
+
     mkdirSync(dirname(fullPath), { recursive: true });
-    writeFileSync(fullPath, joinPageFile({ frontmatter, body }), "utf8");
-    return { page: readPage(world.root, fullPath), created: existing === undefined };
+    writeFileSync(fullPath, newText, "utf8");
+    return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true };
 }
 
 function checkChange(existing: Page | undefined, type: PageType | undefined, change: PageChange): void

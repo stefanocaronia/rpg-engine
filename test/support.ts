@@ -2,9 +2,9 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Context } from "../src/core/context.ts";
-import type { GameEvent } from "../src/core/event-log.ts";
+import type { LogEntry } from "../src/core/log.ts";
 
-/** A context with dice that always show 4, a fixed time and ids id1, id2…, working in `folder`. */
+/** A context with dice that always show 4, a fixed time and ids id1, id2…, working in `folder` as the master. */
 export function testContext(folder: string): Context
 {
     let idCount = 0;
@@ -14,6 +14,7 @@ export function testContext(folder: string): Context
         now: () => new Date("2026-10-02T10:00:00Z"),
         newId: () => `id${++idCount}`,
         newSalt: () => "salt",
+        actor: "master",
     };
 }
 
@@ -27,7 +28,7 @@ export function removeFolder(folder: string): void
     rmSync(folder, { recursive: true, force: true });
 }
 
-export function readEventLog(folder: string): GameEvent[]
+export function readLogFile(folder: string): LogEntry[]
 {
-    return readFileSync(join(folder, "events.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as GameEvent);
+    return readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as LogEntry);
 }

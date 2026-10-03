@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
-import { appendEvent } from "../core/event-log.ts";
+import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { loadWorld, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
 import { skippedPagesNote } from "./notes.ts";
@@ -35,17 +35,16 @@ export const write = defineCommand({
         }
 
         const set = input.set === undefined ? undefined : readAssignments(input.set);
+        const mode = input.text === undefined ? undefined : input.append ? "append" : "replace";
         const world = loadWorld(root);
-        const { page, created } = writePage(world, reference.name, input.type, { set, unset: input.unset, text: input.text, section, append: input.append });
-        const text = input.text === undefined ? undefined : input.append ? "added" : "written";
-        appendEvent(root, {
-            id: context.newId(),
-            at: context.now().toISOString(),
-            type: created ? "page-created" : "page-updated",
-            visibility: "hidden",
-            data: { page: page.name, type: page.type, set, unset: input.unset, section, text },
-        });
-        return { page: page.name, type: page.type, path: page.path, created, set: Object.keys(set ?? {}), unset: input.unset ?? [], section, text, problems: world.problems };
+        const { page, created, changed } = writePage(world, reference.name, input.type, { set, unset: input.unset, text: input.text, section, append: input.append });
+
+        if (changed) {
+            const data = { page: page.name, type: page.type, set, unset: input.unset, section, text: input.text, mode };
+            appendLogEntry(root, newLogEntry(context, created ? "page-created" : "page-updated", "hidden", data));
+        }
+
+        return { page: page.name, type: page.type, path: page.path, created, changed, set: Object.keys(set ?? {}), unset: input.unset ?? [], section, mode, problems: world.problems };
     },
 
     format(result)
@@ -54,9 +53,11 @@ export const write = defineCommand({
         const changes = [
             result.set.length > 0 ? `set ${result.set.join(", ")}` : "",
             result.unset.length > 0 ? `removed ${result.unset.join(", ")}` : "",
-            result.text === "written" ? `wrote ${where}` : result.text === "added" ? `added to ${where}` : "",
+            result.mode === "replace" ? `wrote ${where}` : result.mode === "append" ? `added to ${where}` : "",
         ].filter((change) => change !== "");
-        const summary = `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})${changes.length > 0 ? `: ${changes.join("; ")}` : ""}.`;
+        const summary = !result.changed
+            ? `Nothing changed on ${result.page}: it already reads like that.`
+            : `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})${changes.length > 0 ? `: ${changes.join("; ")}` : ""}.`;
         return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });

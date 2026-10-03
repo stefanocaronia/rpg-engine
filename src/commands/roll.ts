@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { appendEvent, readEvents } from "../core/event-log.ts";
+import { appendLogEntry, newLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.ts";
 
@@ -50,18 +50,18 @@ export const roll = defineCommand({
 
         const physical = input.values !== undefined;
         const diceRoll = rollDice(input.notation, input.values ? { values: input.values } : { random: context.random });
-        const id = context.newId();
-        const data: Record<string, unknown> = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: input.why, who: input.who, physical };
+        const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: input.why, who: input.who, physical };
+        const entry = newLogEntry(context, "roll", input.hidden ? "hidden" : "public", data);
         let shownFingerprint: string | undefined;
 
         if (input.hidden) {
-            const proof = createProof(id, diceRoll.text, context.newSalt());
+            const proof = createProof(entry.id, diceRoll.text, context.newSalt());
             shownFingerprint = fingerprint(proof);
-            Object.assign(data, { proof, fingerprint: shownFingerprint });
+            Object.assign(entry.data, { proof, fingerprint: shownFingerprint });
         }
 
-        appendEvent(root, { id, at: context.now().toISOString(), type: "roll", visibility: input.hidden ? "hidden" : "public", data });
-        return { kind: "roll", id, text: diceRoll.text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint };
+        appendLogEntry(root, entry);
+        return { kind: "roll", id: entry.id, text: diceRoll.text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint };
     },
 
     format(output)
@@ -81,18 +81,18 @@ export const roll = defineCommand({
 
 function revealHiddenRoll(rollId: string, root: string, context: Context): RollOutput
 {
-    const events = readEvents(root);
-    const hiddenRoll = events.find((event) => event.id === rollId && event.type === "roll" && event.visibility === "hidden");
+    const log = readLog(root);
+    const hiddenRoll = log.find((entry) => entry.id === rollId && entry.type === "roll" && entry.visibility === "hidden");
 
     if (!hiddenRoll) {
         throw new Error(`There is no hidden roll with id ${rollId}.`);
     }
 
     const proof = String(hiddenRoll.data.proof);
-    const alreadyRevealed = events.some((event) => event.type === "reveal" && event.data.roll === rollId);
+    const alreadyRevealed = log.some((entry) => entry.type === "roll-revealed" && entry.data.roll === rollId);
 
     if (!alreadyRevealed) {
-        appendEvent(root, { id: context.newId(), at: context.now().toISOString(), type: "reveal", visibility: "public", data: { roll: rollId, proof } });
+        appendLogEntry(root, newLogEntry(context, "roll-revealed", "public", { roll: rollId, proof }));
     }
 
     return { kind: "reveal", id: rollId, text: String(hiddenRoll.data.result), proof, sha256: sha256(proof), fingerprint: String(hiddenRoll.data.fingerprint) };
