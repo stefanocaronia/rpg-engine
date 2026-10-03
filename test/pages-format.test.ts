@@ -143,7 +143,7 @@ describe("standard fields", () => {
     it("checks the standard fields and leaves the others free", async () => {
         expect((await rpg("write", "Varro", "--type", "character", "--set", "role=boss")).output).toBe(`"role" must be one of: pc, companion, npc.`);
         expect((await rpg("write", "Varro", "--type", "character", "--set", "knows=Mirta")).output).toBe(`"knows" must be a list of links, such as [[A]], [[B]].`);
-        expect((await rpg("write", "Salvare i rapiti", "--type", "quest", "--set", "status=aperta")).output).toBe(`"status" must be one of: open, done, failed.`);
+        expect((await rpg("write", "Salvare i rapiti", "--type", "quest", "--set", "status=aperta")).output).toBe(`"status" must be one of: planned, open, done, failed.`);
         expect((await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "umore=cupo", "--set", "status=dead")).exitCode).toBe(0);
     });
 });

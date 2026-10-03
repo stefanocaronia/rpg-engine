@@ -10,12 +10,29 @@ const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", knows: "links", factions: "links", status: ["alive", "dead"] },
     place: { contains: "list" },
-    quest: { status: ["open", "done", "failed"] },
+    quest: { status: ["planned", "open", "done", "failed"] },
     event: { date: "text", place: "link", status: ["planned", "happened"] },
 };
 
+// What a new page of a type holds when the write that creates it leaves the field out.
+const defaultFields: Partial<Record<PageType, Record<string, unknown>>> = {
+    quest: { status: "planned" },
+};
+
+/** The fields a new page of this type starts with, unless they are given. */
+export function newPageFields(type: PageType): Record<string, unknown>
+{
+    return defaultFields[type] ?? {};
+}
+
 /** The fields that list what a page holds: a place's contents and a character's inventory. */
 export const containerFields = ["contains", "inventory"];
+
+/** Whether a field has a fixed meaning on pages of this type, such as an event's date: such a field is never a counter. */
+export function isStandardField(type: PageType | undefined, name: string): boolean
+{
+    return name in commonRules || (type !== undefined && name in (typeRules[type] ?? {}));
+}
 
 /** Checks the standard fields among `names`, the ones a write changed. The other fields are free. */
 export function checkStandardFields(type: PageType | undefined, fields: Record<string, unknown>, names: string[]): void

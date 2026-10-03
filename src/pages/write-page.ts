@@ -4,10 +4,10 @@ import { comparableText } from "../core/text.ts";
 import { repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
-import { checkStandardFields, containerFields } from "./standard-fields.ts";
+import { checkStandardFields, containerFields, newPageFields } from "./standard-fields.ts";
 import { checkPageName, findPage, holdersOf, linksIn, type Page, readPage, type World } from "./world.ts";
 
-const fieldNamePattern = /^\p{L}[\p{L}\p{N}_-]*$/u;
+const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
 export interface PageChange extends FieldChange
@@ -22,10 +22,11 @@ export interface PageChange extends FieldChange
 }
 
 /** Writes a page: creates it when there is no page with that name and `type` is given, then applies the change. A change that leaves the page as it was writes nothing. */
-export function writePage(world: World, name: string, type: PageType | undefined, change: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; }
+export function writePage(world: World, name: string, type: PageType | undefined, requested: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; }
 {
     const existing = findPage(world, name);
-    checkChange(existing, type, change);
+    checkChange(existing, type, requested);
+    const change = existing === undefined && type !== undefined ? { ...requested, set: { ...newPageFields(type), ...requested.set } } : requested;
     const mode = textMode(change);
     const path = existing?.path ?? newPagePath(world, name, type);
     const fullPath = join(world.root, path);

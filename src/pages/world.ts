@@ -150,6 +150,13 @@ export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[
     return { chain, alsoIn };
 }
 
+/** Whether the player may see what happens to a page: their character, the companions, what they carry, the open quests (D-93). */
+export function concernsPlayer(world: World, page: Page): boolean
+{
+    const playable = (candidate: Page): boolean => candidate.fields.role === "pc" || candidate.fields.role === "companion";
+    return playable(page) || (page.type === "quest" && page.fields.status === "open") || locate(world, page).chain.some(playable);
+}
+
 /** The pages whose contents or inventory list the page named `name`. */
 export function holdersOf(world: World, name: string): Page[]
 {

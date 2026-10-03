@@ -2,7 +2,9 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { loadWorld, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
+import { comparableText } from "../core/text.ts";
+import { formatCounter, readCounter } from "../counters/index.ts";
+import { findPage, isStandardField, loadWorld, type Page, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 // How the output names each way of writing text.
@@ -53,6 +55,7 @@ export const write = defineCommand({
         const add = input.add === undefined ? undefined : readListItems(input.add);
         const remove = input.remove === undefined ? undefined : readListItems(input.remove);
         const world = loadWorld(root);
+        checkCounters(findPage(world, reference.name), set);
         const { page, created, changed, mode } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
@@ -78,6 +81,27 @@ export const write = defineCommand({
         return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** A counter written as current/max changes only with change, which keeps its limits and logs why (D-92). */
+function checkCounters(page: Page | undefined, set: Record<string, unknown> | undefined): void
+{
+    if (page === undefined || set === undefined) {
+        return;
+    }
+
+    for (const [field, value] of Object.entries(set)) {
+        const existing = Object.keys(page.fields).find((key) => comparableText(key) === comparableText(field));
+        const counter = existing === undefined || isStandardField(page.type, existing) ? undefined : readCounter(page.fields[existing]);
+        const newCounter = readCounter(value);
+
+        if (counter?.max === undefined || (existing === field && newCounter !== undefined && formatCounter(newCounter) === formatCounter(counter))) {
+            continue;
+        }
+
+        const target = newCounter === undefined ? "a value" : formatCounter(newCounter);
+        throw new Error(`${existing} is a counter: use change, page "${page.name}", field ${existing}, to ${target} (or by an amount). To make it something else, unset it, then set it.`);
+    }
+}
 
 function changeSummary(result: { page: string; type?: string; path: string; created: boolean; }, changes: string[]): string
 {

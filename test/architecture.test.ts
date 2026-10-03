@@ -10,7 +10,7 @@ const modules = readdirSync(sourceFolder, { withFileTypes: true })
 
 describe("architecture", () => {
     it("finds the modules", () => {
-        expect(modules).toEqual(expect.arrayContaining(["campaign", "dice", "pages"]));
+        expect(modules).toEqual(expect.arrayContaining(["campaign", "dice", "pages", "counters"]));
     });
 
     it("keeps every module independent: it imports only its own files, the core utilities, Node and packages", () => {

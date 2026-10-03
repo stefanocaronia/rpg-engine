@@ -40,11 +40,11 @@ async function shownFields(page: string): Promise<Record<string, unknown>>
 describe("page files", () => {
     it("keeps a text that starts with --- as text", async () => {
         // On a command line, a value that starts with a dash goes after =.
-        expect((await rpg("write", "Diario", "--type", "quest", "--text=---\n\nA\n\n---\n\nB")).exitCode).toBe(0);
-        expect(pageFile("world/quests/Diario.md")).toBe("---\n---\n\n---\n\nA\n\n---\n\nB\n");
-        expect((await rpg("show", "Diario")).output).toBe("Diario (quest) · world/quests/Diario.md\n\n---\n\nA\n\n---\n\nB");
+        expect((await rpg("write", "Diario", "--type", "topic", "--text=---\n\nA\n\n---\n\nB")).exitCode).toBe(0);
+        expect(pageFile("world/topics/Diario.md")).toBe("---\n---\n\n---\n\nA\n\n---\n\nB\n");
+        expect((await rpg("show", "Diario")).output).toBe("Diario (topic) · world/topics/Diario.md\n\n---\n\nA\n\n---\n\nB");
         expect((await rpg("write", "Diario", "--set", "stato=aperta")).exitCode).toBe(0);
-        expect(pageFile("world/quests/Diario.md")).toBe("---\nstato: aperta\n---\n\n---\n\nA\n\n---\n\nB\n");
+        expect(pageFile("world/topics/Diario.md")).toBe("---\nstato: aperta\n---\n\n---\n\nA\n\n---\n\nB\n");
     });
 
     it("reads .MD files, a BOM, CRLF line ends and names with decomposed accents", async () => {
