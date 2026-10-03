@@ -9,7 +9,7 @@ import { startInstructions } from "./instructions/index.ts";
 
 type AnyCommand = Command<any, any>;
 
-/** The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send the host to status. */
+/** The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send the host to instructions, then status. */
 export function createMcpServer(context: Context = defaultContext()): McpServer
 {
     const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });

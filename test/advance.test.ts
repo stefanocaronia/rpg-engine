@@ -192,7 +192,6 @@ describe("the game date elsewhere", () => {
 
             const status = (await rpg("status")).output;
             expect(status, broken).toContain("1 problem in the campaign: validate lists them, with how to fix each.");
-            expect(status, broken).toContain("# Your instructions");
             expect(status, broken).not.toContain("Now:");
         }
 

@@ -152,7 +152,8 @@ function baseDefinition(field: z.ZodType): { type: string; innerType?: z.ZodType
 /** The commands in two groups, each with the first sentence of its description. */
 function generalHelp(): string
 {
-    const line = (name: string, description: string): string => `  ${name.padEnd(8)} ${firstSentence(description)}`;
+    const width = Math.max(...commands.map((command) => command.name.length));
+    const line = (name: string, description: string): string => `  ${name.padEnd(width)} ${firstSentence(description)}`;
     const groupLines = (group: string): string[] => commands.filter((command) => command.group === group).map((command) => line(command.name, command.description));
     return [
         `rpg-engine ${getVersion()}`,

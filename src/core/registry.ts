@@ -12,7 +12,7 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
     input: Schema;
     /** The command changes nothing: hosts may run it without asking. */
     readOnly?: boolean;
-    /** Hosts load the tool at once instead of on demand: for the one the AI calls first. */
+    /** Hosts load the tool at once instead of on demand: for the ones the AI calls at the start of every chat. */
     alwaysLoad?: boolean;
     /** Fields the command line takes as positional arguments, in order. */
     positionals?: string[];

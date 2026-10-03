@@ -40,14 +40,18 @@ describe("MCP server", () => {
         expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "add", "remove", "text", "section", "append", "secret"]);
     });
 
-    it("sends the host to status, marks the tools that change nothing, and loads status at once", async () => {
-        expect(client.getInstructions()).toContain("call `status`");
+    it("sends the host to instructions, then status, marks the tools that change nothing, and loads both at once", async () => {
+        expect(client.getInstructions()).toContain("call `instructions` (how to be its game master), then `status`");
         expect(client.getInstructions()!.length).toBeLessThan(512);
 
         const { tools } = await client.listTools();
         const tool = (name: string) => tools.find((candidate) => candidate.name === name);
-        expect(tool("status")?.annotations?.readOnlyHint).toBe(true);
-        expect(tool("status")?._meta).toEqual({ "anthropic/alwaysLoad": true });
+
+        for (const name of ["instructions", "status"]) {
+            expect(tool(name)?.annotations?.readOnlyHint, name).toBe(true);
+            expect(tool(name)?._meta, name).toEqual({ "anthropic/alwaysLoad": true });
+        }
+
         expect(tool("show")?.annotations?.readOnlyHint).toBe(true);
         expect(tool("write")?.annotations).toBeUndefined();
     });
@@ -76,16 +80,19 @@ describe("MCP server", () => {
         expect(await call("show", { page: "Varro" })).toEqual({ text: expect.stringContaining("There is no campaign here"), isError: true });
     });
 
+    it("gives the instructions even where there is no campaign, so that the master can always read them", async () => {
+        expect(await call("instructions", {})).toEqual({ text: expect.stringMatching(/^# Game master: core instructions/), isError: false });
+    });
+
     it("is explained on the command line, where it is the only command of its kind", async () => {
-        expect((await runCommandLine(["--help"], testContext(folder))).output).toContain("mcp      Start the MCP server for an AI host.");
+        expect((await runCommandLine(["--help"], testContext(folder))).output).toContain("mcp          Start the MCP server for an AI host.");
         expect((await runCommandLine(["mcp", "--help"], testContext(folder))).output).toContain("the host starts it, with no options.");
     });
 
     it("lists the commands in two groups, with the first sentence of each description", async () => {
         const help = (await runCommandLine(["--help"], testContext(folder))).output;
-        expect(help).toContain("Campaign:\n  init     Create a new campaign.\n  config   Show or change the campaign settings.\n  mcp      Start the MCP server for an AI host.");
-        expect(help).toContain(
-            "Game:\n  status   Show the campaign's state and your instructions as game master.\n  validate Check the whole campaign and say how to fix each problem.\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.\n  change   Change a counter on a page: hit points, uses, ammunition, supply, a progress track.",
-        );
+        expect(help).toContain("Campaign:\n  init         Create a new campaign.\n  config       Show or change the campaign settings.\n  mcp          Start the MCP server for an AI host.");
+        expect(help).toContain("Game:\n  instructions Your instructions as game master, in full: how to run this campaign and use these tools.\n  status       Show where the game stands.\n");
+        expect(help).toContain("  validate     Check the whole campaign and say how to fix each problem.\n  write        Create or change a page of the world.");
     });
 });

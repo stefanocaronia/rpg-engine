@@ -12,7 +12,8 @@ For every campaign and game; the system's guide and each extension in use add th
 
 ## 2. Tools
 
-- `status`: before your first reply in every chat, and after every summary: the campaign's state and these instructions.
+- `instructions`: before your first reply in every chat, and after every summary: these instructions.
+- `status`: right after `instructions`, and whenever you need to check where things stand: the campaign's state.
 - `validate`: when status reports problems; fix each as it says.
 - `find`, `show`: read a page before describing anything that already exists.
 - `write`: record every new fact at once.

@@ -23,14 +23,13 @@ function rpg(...args: string[])
 
 async function state(): Promise<string>
 {
-    return (await rpg("status")).output.split("\n\n# Your instructions")[0];
+    return (await rpg("status")).output;
 }
 
 describe("rpg status", () => {
-    it("says what is missing before the game starts, and gives the full instructions", async () => {
-        const output = (await rpg("status")).output;
-        expect(output.split("\n\n# Your instructions")[0]).toBe("Guadoscuro\nStill missing: language, system. Ask the player, then set each one with the config command (setting and value).\nNo player character yet.");
-        expect(output).toContain(`# Your instructions\n\n${readFileSync(new URL("../instructions/core.md", import.meta.url), "utf8").trim()}`);
+    it("says what is missing before the game starts, and leaves the instructions to their own command", async () => {
+        expect(await state()).toBe("Guadoscuro\nStill missing: language, system. Ask the player, then set each one with the config command (setting and value).\nNo player character yet.");
+        expect((await rpg("instructions")).output).toBe(readFileSync(new URL("../instructions/core.md", import.meta.url), "utf8").replace(/\r\n/g, "\n").trim());
     });
 
     it("shows the party, where they are, their counters and who is with them", async () => {

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { readCounter } from "../counters/index.ts";
-import { masterInstructions } from "../instructions/index.ts";
 import { isPartyMember, isStandardField, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { formatGameDate, minutesBetween } from "../time/index.ts";
 import { dueAdvice, eventText, isDated, type PlannedEvent, plannedEvents, problemText, readPresent } from "./game-time.ts";
@@ -25,8 +24,10 @@ interface Member
 
 export const status = defineCommand({
     name: "status",
-    description: "Show the campaign's state and your instructions as game master. "
-        + "Call it before your first reply in every chat, and again after the conversation has been summarized. "
+    description: "Show where the game stands. "
+        + "It gives the campaign's settings, the player character and companions with their counters and whereabouts, who is with them, open quests, "
+        + "the game date, the events due and planned, problems. "
+        + "Call it right after instructions at the start of every chat and after a summary, and whenever you need to check where things stand. "
         + "It shows names and numbers only: read pages with show. Read-only, no parameters.",
     group: "game",
     readOnly: true,
@@ -63,7 +64,6 @@ export const status = defineCommand({
             dueEvents: events.filter(isDue).map((event) => eventText(event, now)),
             plannedEvents: events.filter((event) => !isDue(event)).map((event) => eventText(event, now)),
             problems: campaignProblems(root, world).length,
-            instructions: masterInstructions(),
         };
     },
 
@@ -84,7 +84,7 @@ export const status = defineCommand({
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
-        return [state.filter((line) => line !== "").join("\n"), `# Your instructions\n\n${result.instructions}`].join("\n\n");
+        return state.filter((line) => line !== "").join("\n");
     },
 });
 
