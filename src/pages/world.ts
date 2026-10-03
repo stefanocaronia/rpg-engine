@@ -3,6 +3,7 @@ import { basename, join, relative, sep } from "node:path";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
+import { containerFields } from "./standard-fields.ts";
 
 const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;
 const longestName = 120;
@@ -115,13 +116,13 @@ export function searchPages(world: World, query: { text?: string; type?: PageTyp
 export function backlinks(world: World, page: Page): Backlink[]
 {
     const target = comparable(page.name);
-    const linksHere = (text: string): boolean => linkedPages(text).some((name) => comparable(name) === target);
+    const pointsHere = (name: string): boolean => comparable(name) === target;
     const found: Backlink[] = [];
 
     for (const other of world.pages.filter((candidate) => candidate !== page)) {
-        const places = Object.entries(other.fields).filter(([, value]) => textsIn(value).some(linksHere)).map(([name]) => name);
+        const places = Object.entries(other.fields).filter(([, value]) => linksIn(value).some(pointsHere)).map(([name]) => name);
 
-        if (linksHere(other.body)) {
+        if (linkedPages(other.body).some(pointsHere)) {
             places.push("text");
         }
 
@@ -131,6 +132,34 @@ export function backlinks(world: World, page: Page): Backlink[]
     }
 
     return found;
+}
+
+/** Where a page is: the page that holds it, the one that holds that, and so on, climbing places' contents and characters' inventories. `alsoIn` lists other holders, which should not exist. */
+export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[]; }
+{
+    const chain: Page[] = [];
+    let holders = holdersOf(world, page.name);
+    const alsoIn = holders.slice(1);
+
+    while (holders.length > 0 && holders[0] !== page && !chain.includes(holders[0])) {
+        chain.push(holders[0]);
+        holders = holdersOf(world, holders[0].name);
+    }
+
+    return { chain, alsoIn };
+}
+
+/** The pages whose contents or inventory list the page named `name`. */
+export function holdersOf(world: World, name: string): Page[]
+{
+    const target = comparable(name);
+    return world.pages.filter((page) => containerFields.some((field) => linksIn(page.fields[field]).some((linked) => comparable(linked) === target)));
+}
+
+/** The pages that a field's value links to. */
+export function linksIn(value: unknown): string[]
+{
+    return textsIn(value).flatMap(linkedPages);
 }
 
 /** Page names become file names and link targets, so some characters are not allowed. */

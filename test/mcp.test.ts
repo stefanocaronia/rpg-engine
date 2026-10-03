@@ -37,7 +37,7 @@ describe("MCP server", () => {
 
         const write = tools.find((tool) => tool.name === "write");
         expect(write?.description).toBe(commands.find((command) => command.name === "write")?.description);
-        expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "text", "section", "append"]);
+        expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "add", "remove", "text", "section", "append"]);
     });
 
     it("answers with the same text as the command line", async () => {

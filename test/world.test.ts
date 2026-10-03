@@ -31,7 +31,7 @@ function pageFile(path: string): string
 describe("rpg write", () => {
     it("creates a page in the folder of its type, with fields and text", async () => {
         const result = await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "location=[[La cripta]]", "--text", "Un alchimista che vuole riavere la figlia.");
-        expect(result.output).toBe("Created Varro (character, world/characters/Varro.md): set role, location; wrote the text.");
+        expect(result.output).toBe("Created Varro (character, world/characters/Varro.md): set role, location; wrote the introduction.");
         expect(pageFile("world/characters/Varro.md")).toBe(`---\nrole: npc\nlocation: "[[La cripta]]"\n---\n\nUn alchimista che vuole riavere la figlia.\n`);
     });
 
@@ -45,14 +45,14 @@ describe("rpg write", () => {
         await rpg("write", "Varro#Il motivo", "--text", "La febbre.");
         expect(pageFile("world/characters/Varro.md")).toBe("Un alchimista.\n\nVive nella cripta.\n\n## Il motivo\n\nLa febbre.\n\n## I piani\n\nIl rituale alla luna nuova.\n");
         expect((await rpg("show", "Varro#Il motivo")).output).toBe("Varro#Il motivo (character) · world/characters/Varro.md\n\n## Il motivo\n\nLa febbre.");
-        expect((await rpg("show", "Varro#Il nome")).output).toBe(`Varro has no section "Il nome". Its sections are: Il motivo, I piani.`);
+        expect((await rpg("show", "Varro#Il nome")).output).toBe(`Varro has no section or secret "Il nome". Its sections are: Il motivo, I piani.`);
     });
 
     it("keeps what was written by hand when it changes a field", async () => {
         writeFileSync(join(folder, "world", "places", "Il mulino.md"), "---\n# aperta o chiusa, da sinistra\nchiuse: [chiusa, chiusa, chiusa]\nstato: abbandonato\n---\nUn mulino sul fiume.\n\n```\n# non è un titolo\n```\n");
         await rpg("write", "Il mulino", "--set", "stato=in rovina");
         expect(pageFile("world/places/Il mulino.md")).toBe("---\n# aperta o chiusa, da sinistra\nchiuse: [chiusa, chiusa, chiusa]\nstato: in rovina\n---\n\nUn mulino sul fiume.\n\n```\n# non è un titolo\n```\n");
-        expect((await rpg("show", "Il mulino#non è un titolo")).output).toBe(`Il mulino has no section "non è un titolo". It has no sections.`);
+        expect((await rpg("show", "Il mulino#non è un titolo")).output).toBe(`Il mulino has no section or secret "non è un titolo". It has no sections or secrets.`);
     });
 
     it("links pages, and shows who links to a page", async () => {
@@ -79,7 +79,7 @@ describe("rpg write", () => {
             [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item, event, topic, creature."],
             [["write", "varro", "--type", "place"], "Varro already exists, as a character (world/characters/Varro.md): leave the type out to change it, or pick another name."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
-            [["write", "Varro"], "Nothing to write on Varro: give fields to set or to remove, or text."],
+            [["write", "Varro"], "Nothing to write on Varro: give fields to set, add or remove, or text."],
             [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use --unset.`],
             [["write", "Varro", "--set", "1st=x"], `"1st" cannot be a field name`],
             [["write", "Varro", "--section", "I piani"], "Give the text to write with --text."],

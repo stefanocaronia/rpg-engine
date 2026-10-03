@@ -1,4 +1,5 @@
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
+const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
 const fencePattern = /^[ \t]*(```|~~~)/;
 const linkPattern = /\[\[([^\]|#^]+)(?:[#^][^\]|]*)?(?:\|[^\]]*)?\]\]/g;
 
@@ -9,38 +10,71 @@ interface Heading
     title: string;
 }
 
+/** A block of lines: from `start` up to, not including, `end`. */
+interface Range
+{
+    start: number;
+    end: number;
+}
+
 /** The titles of the sections in a markdown text. */
 export function sectionTitles(text: string): string[]
 {
     return headingsOf(text.split("\n")).map((heading) => heading.title);
 }
 
-/** A section: its heading and everything under it, subsections included, down to the next heading of the same or a higher level. Titles ignore case. */
+/** The names of the secret blocks, written `> [!secret] Name`, in a markdown text. */
+export function secretNames(text: string): string[]
+{
+    return secretsOf(text.split("\n")).map((secret) => secret.title);
+}
+
+/** Names that a text gives to more than one section or secret, ignoring case; each is listed once, as first written. */
+export function repeatedNames(text: string): string[]
+{
+    const names = [...sectionTitles(text), ...secretNames(text)];
+    const keys = names.map((name) => name.toLowerCase());
+    return names.filter((name, index) => keys.indexOf(keys[index]) === index && keys.lastIndexOf(keys[index]) !== index);
+}
+
+/** A section with its subsections, down to the next heading of the same or a higher level, or a secret block. Names ignore case. */
 export function readSection(text: string, title: string): string | undefined
 {
     const lines = text.split("\n");
-    const range = findSection(lines, title, "whole");
+    const range = findSection(lines, title, "whole") ?? findSecret(lines, title);
     return range === undefined ? undefined : trimBlankLines(lines.slice(range.start, range.end).join("\n"));
 }
 
-/** Replaces the whole text or a section's own text (its subsections stay), or adds to it. A missing section is added at the end, at the page's top heading level. */
+/**
+ * Replaces, or adds to, the introduction (the text before the first heading), a section's own text (its subsections stay) or a secret block.
+ * A missing section is added at the end, at the page's top heading level.
+ */
 export function writeText(text: string, newText: string, options: { section?: string; append?: boolean; }): string
 {
-    if (options.section === undefined) {
-        return options.append ? joinBlocks(text, newText) : trimBlankLines(newText);
-    }
-
     const lines = text.split("\n");
-    const range = findSection(lines, options.section, "own");
+    const combine = (oldText: string): string => (options.append ? joinBlocks(oldText, newText) : newText);
 
-    if (range === undefined) {
-        return joinBlocks(text, `${"#".repeat(topHeadingLevel(lines))} ${options.section.trim()}`, newText);
+    if (options.section === undefined) {
+        const end = headingsOf(lines)[0]?.line ?? lines.length;
+        return joinBlocks(combine(lines.slice(0, end).join("\n")), lines.slice(end).join("\n"));
     }
 
-    const content = lines.slice(range.start + 1, range.end).join("\n");
-    const before = lines.slice(0, range.start).join("\n");
-    const after = lines.slice(range.end).join("\n");
-    return joinBlocks(before, lines[range.start], options.append ? joinBlocks(content, newText) : newText, after);
+    const section = findSection(lines, options.section, "own");
+
+    if (section !== undefined) {
+        const content = lines.slice(section.start + 1, section.end).join("\n");
+        return joinBlocks(lines.slice(0, section.start).join("\n"), lines[section.start], combine(content), lines.slice(section.end).join("\n"));
+    }
+
+    const secret = findSecret(lines, options.section);
+
+    if (secret !== undefined) {
+        const content = lines.slice(secret.start + 1, secret.end).map((line) => line.replace(/^>[ \t]?/, "")).join("\n");
+        const quoted = trimBlankLines(combine(content)).split("\n").map((line) => (line === "" ? ">" : `> ${line}`));
+        return [...lines.slice(0, secret.start + 1), ...quoted, ...lines.slice(secret.end)].join("\n");
+    }
+
+    return joinBlocks(text, `${"#".repeat(topHeadingLevel(lines))} ${options.section.trim()}`, newText);
 }
 
 /** The pages a text links to, as in [[Page]], [[Page#Section]], [[Page|label]] or [[folder/Page.md]]. Links in code blocks do not count. */
@@ -63,7 +97,7 @@ function joinBlocks(...blocks: string[]): string
 }
 
 /** The lines of a section: the whole of it, or only its own text, up to its first subsection. */
-function findSection(lines: string[], title: string, scope: "whole" | "own"): { start: number; end: number; } | undefined
+function findSection(lines: string[], title: string, scope: "whole" | "own"): Range | undefined
 {
     const headings = headingsOf(lines);
     const index = headings.findIndex((heading) => heading.title.toLowerCase() === title.trim().toLowerCase());
@@ -75,6 +109,11 @@ function findSection(lines: string[], title: string, scope: "whole" | "own"): { 
     const heading = headings[index];
     const next = headings.slice(index + 1).find((other) => scope === "own" || other.level <= heading.level);
     return { start: heading.line, end: next?.line ?? lines.length };
+}
+
+function findSecret(lines: string[], title: string): Range | undefined
+{
+    return secretsOf(lines).find((secret) => secret.title.toLowerCase() === title.trim().toLowerCase());
 }
 
 function topHeadingLevel(lines: string[]): number
@@ -96,6 +135,28 @@ function headingsOf(lines: string[]): Heading[]
         }
     });
     return headings;
+}
+
+/** The secret blocks: a `> [!secret] Name` line and the quoted lines after it. */
+function secretsOf(lines: string[]): (Range & { title: string; })[]
+{
+    const code = codeLines(lines);
+    const secrets: (Range & { title: string; })[] = [];
+
+    lines.forEach((line, index) => {
+        const match = code[index] ? null : secretPattern.exec(line);
+
+        if (match) {
+            let end = index + 1;
+
+            while (end < lines.length && lines[end].startsWith(">")) {
+                end++;
+            }
+
+            secrets.push({ start: index, end, title: match[1] });
+        }
+    });
+    return secrets;
 }
 
 /** Which lines belong to fenced code blocks, the fences included. */

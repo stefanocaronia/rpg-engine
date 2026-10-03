@@ -101,13 +101,13 @@ describe("sections", () => {
 
     it("ignores headings in code blocks fenced with ~~~", async () => {
         await rpg("write", "Torre", "--type", "place", "--text", "~~~\n# non è un titolo\n~~~");
-        expect((await rpg("show", "Torre#non è un titolo")).output).toBe(`Torre has no section "non è un titolo". It has no sections.`);
+        expect((await rpg("show", "Torre#non è un titolo")).output).toBe(`Torre has no section or secret "non è un titolo". It has no sections or secrets.`);
     });
 
     it("asks for a section title when it is empty", async () => {
         await rpg("write", "Varro", "--type", "character", "--text", "Un alchimista.");
-        expect((await rpg("write", "Varro#", "--text", "x")).output).toBe("Give the title of the section, or leave the section out to write the whole text.");
-        expect((await rpg("write", "Varro", "--section", "", "--text", "x")).output).toBe("Give the title of the section, or leave the section out to write the whole text.");
+        expect((await rpg("write", "Varro#", "--text", "x")).output).toBe("Give the title of the section, or leave the section out to write the introduction.");
+        expect((await rpg("write", "Varro", "--section", "", "--text", "x")).output).toBe("Give the title of the section, or leave the section out to write the introduction.");
         expect((await rpg("show", "Varro#")).output).toBe("Give the title of the section after #, or leave out the # to see the whole page.");
     });
 });

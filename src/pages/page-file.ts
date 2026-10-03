@@ -1,4 +1,4 @@
-import { Document, isMap, parseDocument, stringify } from "yaml";
+import { Document, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml";
 import { trimBlankLines } from "./markdown.ts";
 
 const singleLink = /^\[\[[^\]]+\]\]$/;
@@ -12,6 +12,15 @@ export interface PageFile
 {
     frontmatter?: string;
     body: string;
+}
+
+/** Fields to set or remove, and items to add to lists or remove from them. */
+export interface FieldChange
+{
+    set?: Record<string, unknown>;
+    unset?: string[];
+    add?: Record<string, unknown[]>;
+    remove?: Record<string, unknown[]>;
 }
 
 export function splitPageFile(text: string): PageFile
@@ -47,17 +56,25 @@ export function readFields(frontmatter: string | undefined, path: string): Recor
     return fields as Record<string, unknown>;
 }
 
-/** Sets and removes fields, and keeps the rest of the frontmatter, comments included, as it is. With no fields left, the frontmatter goes. */
-export function changeFields(frontmatter: string | undefined, set: Record<string, unknown>, unset: string[], path: string): string
+/** Applies a change to the fields and keeps the rest of the frontmatter, comments included, as it is. With no fields left, the frontmatter goes. */
+export function changeFields(frontmatter: string | undefined, change: FieldChange, path: string): string
 {
     const document = frontmatter === undefined ? new Document({}) : parseFrontmatter(frontmatter, path);
 
-    for (const [name, value] of Object.entries(set)) {
+    for (const [name, value] of Object.entries(change.set ?? {})) {
         document.set(name, value);
     }
 
-    for (const name of unset) {
+    for (const name of change.unset ?? []) {
         document.delete(name);
+    }
+
+    for (const [name, values] of Object.entries(change.add ?? {})) {
+        addToList(document, name, values);
+    }
+
+    for (const [name, values] of Object.entries(change.remove ?? {})) {
+        removeFromList(document, name, values);
     }
 
     return isMap(document.contents) && document.contents.items.length === 0 ? "" : document.toString(yamlStyle);
@@ -92,7 +109,68 @@ export function readFieldValue(text: string): unknown
 
     // What does not read as YAML stays plain text, as in "[[La cripta]], piano inferiore".
     const document = /^["'[{]/.test(value) ? parseDocument(value) : undefined;
-    return document === undefined || document.errors.length > 0 ? value : document.toJS();
+    const parsed: unknown = document === undefined || document.errors.length > 0 ? value : document.toJS();
+
+    if (holdsNestedList(parsed)) {
+        throw new Error(`${value} would be a list inside a list, which a field cannot hold. For a list of links write [[A]], [[B]]; to add one item to a list, use add.`);
+    }
+
+    return parsed;
+}
+
+function addToList(document: Document, name: string, values: unknown[]): void
+{
+    const list = document.get(name);
+
+    if (list === undefined) {
+        document.set(name, [...new Set(values)]);
+        return;
+    }
+
+    if (!isSeq(list)) {
+        throw new Error(`"${name}" is not a list, so nothing can be added to it.`);
+    }
+
+    for (const value of values.filter((candidate) => !list.items.some((item) => sameValue(item, candidate)))) {
+        list.add(document.createNode(value));
+    }
+}
+
+function removeFromList(document: Document, name: string, values: unknown[]): void
+{
+    const list = document.get(name);
+
+    if (!isSeq(list)) {
+        throw new Error(list === undefined ? `There is no "${name}" to remove from.` : `"${name}" is not a list, so nothing can be removed from it.`);
+    }
+
+    for (const value of values) {
+        const index = list.items.findIndex((item) => sameValue(item, value));
+
+        if (index === -1) {
+            throw new Error(`"${name}" does not hold ${String(value)}.`);
+        }
+
+        list.items.splice(index, 1);
+    }
+}
+
+function sameValue(item: unknown, value: unknown): boolean
+{
+    return (isScalar(item) ? item.value : item) === value;
+}
+
+function holdsNestedList(value: unknown): boolean
+{
+    if (Array.isArray(value)) {
+        return value.some((item) => Array.isArray(item) || holdsNestedList(item));
+    }
+
+    if (value !== null && typeof value === "object") {
+        return Object.values(value).some(holdsNestedList);
+    }
+
+    return false;
 }
 
 function parseFrontmatter(frontmatter: string, path: string): Document
