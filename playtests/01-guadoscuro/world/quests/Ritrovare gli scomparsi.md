@@ -1,5 +1,5 @@
 ---
-status: open
+status: planned
 ---
 
 [[Agnese]], la sindaca, cerca qualcuno che ritrovi chi è sparito nella nebbia, e promette l'argento del comune.

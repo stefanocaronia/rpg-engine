@@ -1,5 +1,5 @@
 ---
-status: open
+status: planned
 ---
 
 [[Fratello Odo]] vuole di nuovo sull'altare della [[Cappella]] la [[Lanterna della cappella]], rubata dieci notti fa.
