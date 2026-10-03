@@ -13,6 +13,9 @@ export interface CommandLineResult
 
 type AnyCommand = Command<any, any>;
 
+// The one command that exists only on the command line: cli.ts starts the server when it comes alone.
+const mcpDescription = "Start the MCP server, through which an AI host uses these commands as tools. The host starts it, with no options.";
+
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
 export async function runCommandLine(argv: string[], context: Context = defaultContext()): Promise<CommandLineResult>
 {
@@ -24,6 +27,10 @@ export async function runCommandLine(argv: string[], context: Context = defaultC
 
     if (commandName === "--version" || commandName === "-v") {
         return success(getVersion());
+    }
+
+    if (commandName === "mcp") {
+        return success(`rpg mcp\n\n${mcpDescription}`);
     }
 
     const command = commands.find((candidate) => candidate.name === commandName);
@@ -138,7 +145,7 @@ function baseType(field: z.ZodType): string
 
 function generalHelp(): string
 {
-    const commandLines = commands.map((command) => `  ${command.name.padEnd(8)} ${command.description}`);
+    const commandLines = [...commands.map((command) => `  ${command.name.padEnd(8)} ${command.description}`), `  ${"mcp".padEnd(8)} ${mcpDescription}`];
     return [`rpg-engine ${getVersion()}`, "", "Commands:", ...commandLines, "", "Run `rpg <command> --help` for its options."].join("\n");
 }
 

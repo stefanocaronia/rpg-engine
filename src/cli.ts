@@ -1,12 +1,20 @@
 #!/usr/bin/env node
 import { runCommandLine } from "./command-line.ts";
+import { startMcpServer } from "./mcp-server.ts";
 
-const { output, exitCode } = await runCommandLine(process.argv.slice(2));
+const args = process.argv.slice(2);
 
-if (exitCode === 0) {
-    console.log(output);
+// "rpg mcp" turns the process into a server for an AI host; everything else is a command.
+if (args.length === 1 && args[0] === "mcp") {
+    await startMcpServer();
 } else {
-    console.error(output);
-}
+    const { output, exitCode } = await runCommandLine(args);
 
-process.exitCode = exitCode;
+    if (exitCode === 0) {
+        console.log(output);
+    } else {
+        console.error(output);
+    }
+
+    process.exitCode = exitCode;
+}

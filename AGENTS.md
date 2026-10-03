@@ -83,7 +83,7 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Conventions
 
-- TypeScript on Node ≥ 22; zod; yaml; vitest; few dependencies.
+- TypeScript on Node ≥ 22; zod; yaml; the official MCP SDK; vitest; few dependencies.
 - Code, comments, commit messages, public docs, command names, file names and config keys in English; game content in the campaign language.
 - Secret parts of a page go in a `> [!secret]` block (Obsidian callout).
 - Tests use Ironsworn (CC-BY-4.0) next to `5e`, to keep the core generic.
