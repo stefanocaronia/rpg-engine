@@ -7,7 +7,7 @@ tmp/
 # Local tooling
 /.codegraph/
 /.obsidian/
-/.claude/
+/.claude
 /.codex/
 /.gemini/
 /.agents/
@@ -16,5 +16,5 @@ tmp/
 .env
 .env.*
 
-# Project docs (spec, plan): local only, not on GitHub
-/project/
+# The private repo: project docs and the colleagues (.claude links into it)
+/private/

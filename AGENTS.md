@@ -6,17 +6,18 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 
 ## Read first
 
-- `project/README.md`: index of the project docs (in Italian). `project/PLAN.md` says what comes next.
-- The project docs hold only what the maintainer has decided, written briefly. Proposals go to `project/DECISIONI.md` under "Da decidere" until the maintainer decides. No premature detail (code, examples, formats, diagrams) before the work it belongs to.
-- `project/IDEE.md`: the maintainer's idea inbox. When it has entries, fold each idea into the right document, delete it from `IDEE.md`, and tell the maintainer what changed.
-- `project/` is **local only** and gitignored on purpose: never force-add it. `project/archivio/` is history. If `project/` is missing (e.g. in a fresh clone), ask the maintainer.
+- `private/project/README.md`: index of the project docs (in Italian). `private/project/PLAN.md` says what comes next.
+- The project docs hold only what the maintainer has decided, written briefly. Proposals go to `private/project/DECISIONI.md` under "Da decidere" until the maintainer decides. No premature detail (code, examples, formats, diagrams) before the work it belongs to.
+- `private/project/IDEE.md`: the maintainer's idea inbox. When it has entries, fold each idea into the right document, delete it from `IDEE.md`, and tell the maintainer what changed.
+- `private/` is the maintainer's private repository, ignored by this one: the project docs (`private/project/`) and the colleagues (`private/.claude/`, which `.claude` links to). Commit it with `git -C private` from the root; to search it, give `private/` as the path. Never delete through the link (`rm -rf .claude/`), never `git stash --all`, and `git clean -ffdx` only with `-e private`. After moving or copying the repo, run `node private/link.mjs`. If `private/` is missing (e.g. in a fresh clone), ask the maintainer. `private/project/archivio/` is history.
 
 ## Layout
 
 | Path | Content | GitHub | npm |
 |---|---|---|---|
 | `AGENTS.md`, `CLAUDE.md` | this guide (`CLAUDE.md` only imports it) | yes | no |
-| `project/` | project docs (Italian) | no | no |
+| `private/` | the maintainer's private repository: project docs (`project/`, Italian) and the colleagues (`.claude/`) | no | no |
+| `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | user guide | yes | no |
 | `src/` | core, CLI, MCP server, dashboard | yes | built into `dist/` |
 | `systems/` | built-in game systems (e.g. `5e`): one per campaign, required | yes | yes |
@@ -80,6 +81,24 @@ Clean, compact, ordered code that is easy to understand.
 - **CodeGraph** (`@colbymchenry/codegraph`, optional, set up per person): when `.codegraph/` exists, use it before Grep/Read chains for structure questions (who calls X, what Y reaches, what breaks if Z changes), then confirm in the file. After editing, run `codegraph sync .` before asking it about the changed files. Agents never run `init`, `index` or `uninit` for the maintainer.
 - **Jev** (`mcp__jev__*`, optional, set up per person): before a commit, `jev_gate` with the diff, the claims of the commit message and the real test output; before reporting results, `jev_verify` the claims against the evidence. Fix or drop unsupported claims. Without Jev, say so and go on.
 - **Regression check after every addition or change**: build and run all tests; check the callers and impact of every changed symbol with CodeGraph; review the diff for regressions, unhandled `undefined`, nondeterminism, simplicity and these guidelines, and fix what you find. When it matters, give the maintainer a short checklist to verify the behaviour.
+
+## Colleagues
+
+Six experts review the work and discuss it with the maintainer. Each one is a file, `.claude/agents/<id>.md` (who they are, what they know, how they work), and a folder, `.claude/agent-memory/<id>/`, with `MEMORY.md`, their memory, and `todo.md`, one line per task (`- [ ] description`; done becomes `- [x]`, and ticked lines are removed in the next session). Memory and todo are edited, never rewritten: other sessions write to them too.
+
+| Who | Field | `<id>` |
+|---|---|---|
+| Giulia Ferri | the game master's craft, the instructions | `giulia-master` |
+| Andrea Moretti | rules as data, systems, licences | `andrea-regole` |
+| Sara Lombardi | game design: the experience, modes and options | `sara-design` |
+| Davide Russo | the player who does not program | `davide-giocatore` |
+| Elena Galli | AI agents: tools, MCP, instructions, hosts | `elena-agenti` |
+| Matteo Conti | code review | `matteo-codice` |
+
+- **The round.** At milestones (a step of the plan done, a playtest) Claude calls the colleagues the work concerns as subagents, with a narrow scope. They are read-only except their memory and todo, and their findings reach the maintainer as proposals, one at a time. Before calling one, Claude reads their memory and todo: if they already answered or have an idea on the matter, start from there and skip the call, unless the context has changed.
+- **Their todos.** Claude puts in each brief the todo lines that touch the scope, brings the open lines that concern the maintainer along with the findings, and after each decision ticks the lines it closes.
+- **The conversation.** "Voglio parlare con Matteo", and from then on Matteo answers, with their file, memory and todo; "voglio parlare con Matteo e Giulia" opens a meeting, "voglio parlare anche con Sara" adds someone. Every message starts with the speaker's name, [Matteo]; in a meeting whoever has something to say speaks, disagreement included. They talk instead of reporting, and they also write the files of their own field, with the usual rules. Claude stays out of the dialogue as a narrator, in italics and without a name: it says what happens (tools, files, errors), never the colleagues' opinions. "Torna Claude" or "riunione finita" ends it: each one updates memory and todo, and Claude is back.
+- **The hook.** `.claude/hooks/colleghi.mjs`, enabled in `.claude/settings.json`, enforces this: it recognises the phrases ("voglio / vorrei / fammi / posso parlare con", "parliamo con", "riunione con", "dev'essere presente"; "torna Claude", "riunione finita", "chiudiamo la riunione" to leave), puts the file, memory and todo of whoever joins into the context, reminds at every message who is speaking, and restores the colleagues after a compaction. Who is speaking is kept per session in `tmp/colleghi/`.
 
 ## Conventions
 
