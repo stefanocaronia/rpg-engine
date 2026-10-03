@@ -11,6 +11,7 @@ export const find = defineCommand({
         + "Use it when you do not know a page's exact name, and before creating a page, to check that it does not exist under another name. "
         + 'Example: text "lanterna"; or type place.',
     group: "game",
+    readOnly: true,
     positionals: ["text"],
     input: z.object({
         text: z.string().optional().describe("text to look for, ignoring case; every page if left out"),

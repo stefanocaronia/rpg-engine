@@ -150,11 +150,16 @@ export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[
     return { chain, alsoIn };
 }
 
+/** Whether a page is one of the player's party: their character or a companion. */
+export function isPartyMember(page: Page): boolean
+{
+    return page.fields.role === "pc" || page.fields.role === "companion";
+}
+
 /** Whether the player may see what happens to a page: their character, the companions, what they carry, the open quests (D-93). */
 export function concernsPlayer(world: World, page: Page): boolean
 {
-    const playable = (candidate: Page): boolean => candidate.fields.role === "pc" || candidate.fields.role === "companion";
-    return playable(page) || (page.type === "quest" && page.fields.status === "open") || locate(world, page).chain.some(playable);
+    return isPartyMember(page) || (page.type === "quest" && page.fields.status === "open") || locate(world, page).chain.some(isPartyMember);
 }
 
 /** The pages whose contents or inventory list the page named `name`. */

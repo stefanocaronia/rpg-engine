@@ -11,6 +11,7 @@ export const show = defineCommand({
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
         + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
     group: "game",
+    readOnly: true,
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("name of the page; Page#Name shows one section or one secret"),

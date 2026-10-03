@@ -40,6 +40,18 @@ describe("MCP server", () => {
         expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "add", "remove", "text", "section", "append", "secret"]);
     });
 
+    it("sends the host to status, marks the tools that change nothing, and loads status at once", async () => {
+        expect(client.getInstructions()).toContain("call `status`");
+        expect(client.getInstructions()!.length).toBeLessThan(512);
+
+        const { tools } = await client.listTools();
+        const tool = (name: string) => tools.find((candidate) => candidate.name === name);
+        expect(tool("status")?.annotations?.readOnlyHint).toBe(true);
+        expect(tool("status")?._meta).toEqual({ "anthropic/alwaysLoad": true });
+        expect(tool("show")?.annotations?.readOnlyHint).toBe(true);
+        expect(tool("write")?.annotations).toBeUndefined();
+    });
+
     it("answers with the same text as the command line", async () => {
         expect(await call("init", { name: "Guadoscuro", language: "it", system: "5e" })).toEqual({ text: `Created the campaign "Guadoscuro" in ${folder}.`, isError: false });
         expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia" })).text).toBe("id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2");
@@ -72,6 +84,8 @@ describe("MCP server", () => {
     it("lists the commands in two groups, with the first sentence of each description", async () => {
         const help = (await runCommandLine(["--help"], testContext(folder))).output;
         expect(help).toContain("Campaign:\n  init     Create a new campaign.\n  config   Show or change the campaign settings.\n  mcp      Start the MCP server for an AI host.");
-        expect(help).toContain("Game:\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.");
+        expect(help).toContain(
+            "Game:\n  status   Show the campaign's state and your instructions as game master.\n  write    Create or change a page of the world.\n  show     Show a page of the world, or one of its sections or secrets.\n  find     Find pages of the world.\n  roll     Roll dice and log the roll.\n  change   Change a counter on a page: hit points, uses, ammunition, supply, a progress track.",
+        );
     });
 });

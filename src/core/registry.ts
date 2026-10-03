@@ -10,6 +10,10 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
     /** Commands that set up the campaign, or that are used while playing. */
     group: "campaign" | "game";
     input: Schema;
+    /** The command changes nothing: hosts may run it without asking. */
+    readOnly?: boolean;
+    /** Hosts load the tool at once instead of on demand: for the one the AI calls first. */
+    alwaysLoad?: boolean;
     /** Fields the command line takes as positional arguments, in order. */
     positionals?: string[];
     run(input: z.infer<Schema>, context: Context): Result | Promise<Result>;

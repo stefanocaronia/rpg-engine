@@ -5,16 +5,17 @@ import { commands } from "./commands/index.ts";
 import { type Context, defaultContext } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import { getVersion } from "./core/version.ts";
+import { startInstructions } from "./instructions/index.ts";
 
 type AnyCommand = Command<any, any>;
 
-/** The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. */
+/** The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send the host to status. */
 export function createMcpServer(context: Context = defaultContext()): McpServer
 {
-    const server = new McpServer({ name: "rpg", version: getVersion() });
+    const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });
 
     for (const command of commands) {
-        server.registerTool(command.name, { description: command.description, inputSchema: command.input }, (input: unknown) => runTool(command, input, context));
+        server.registerTool(command.name, toolConfig(command), (input: unknown) => runTool(command, input, context));
     }
 
     return server;
@@ -24,6 +25,13 @@ export function createMcpServer(context: Context = defaultContext()): McpServer
 export async function startMcpServer(): Promise<void>
 {
     await createMcpServer().connect(new StdioServerTransport());
+}
+
+function toolConfig(command: AnyCommand)
+{
+    const annotations = command.readOnly ? { readOnlyHint: true } : undefined;
+    const meta = command.alwaysLoad ? { "anthropic/alwaysLoad": true } : undefined;
+    return { description: command.description, inputSchema: command.input, annotations, _meta: meta };
 }
 
 async function runTool(command: AnyCommand, input: unknown, context: Context): Promise<CallToolResult>
