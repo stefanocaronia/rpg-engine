@@ -4,7 +4,7 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { baseChain, isEmptyField, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { baseChain, findPage, isEmptyField, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 
@@ -81,6 +81,36 @@ export function copyLink(copy: SceneCopy): string
 export function copyCounters(world: World, copy: SceneCopy): Record<string, unknown>
 {
     return pageCounters(world, copyPage("copy", copy));
+}
+
+/**
+ * The copy in the open scene or the page that `name` names, the copy first (INH-14); refused, with how to find it, when there is none.
+ * `partHint` says why a part of a page, such as Ennio#Storia, cannot be meant.
+ */
+export function pageOrCopy(world: World, open: { scene?: Scene; problem?: Problem; }, name: string, partHint: (page: string) => string): { page: Page; copy?: string; }
+{
+    const reference = parsePageReference(name);
+
+    if (reference.section !== undefined) {
+        throw new Error(`Give the page without #${reference.section}: ${partHint(reference.name)}.`);
+    }
+
+    // A scene that cannot be read holds no copies here; validate reports it.
+    const copy = copyName(world, open.scene, reference.name);
+
+    if (open.scene !== undefined && copy !== undefined) {
+        return { page: copyPage(copy, open.scene.copies[copy]), copy };
+    }
+
+    const page = findPage(world, reference.name);
+
+    if (page === undefined) {
+        const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
+        const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
+        throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}`);
+    }
+
+    return { page };
 }
 
 /** The copy in the open scene that `name` names, ignoring case; undefined when none does. A page with the same name leaves unclear which one is meant: refused. */

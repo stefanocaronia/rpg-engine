@@ -399,3 +399,13 @@ describe("the gaps the second mutation run found", () => {
         ].join("\n"));
     });
 });
+
+describe("one item in a field that is always a list", () => {
+    it("is a list of that item, from the command line and through MCP", async () => {
+        expect(await ok("write", "Cantina", "--type", "place", "--set", "contains=[[Diario]]", "--set", "tags=buia")).toBe("Created Cantina (place, world/places/Cantina.md): set contains, tags.");
+        expect(readFileSync(join(folder, "world", "places", "Cantina.md"), "utf8")).toBe('---\ncontains:\n  - "[[Diario]]"\ntags:\n  - buia\n---\n');
+        write.run(write.input.parse({ page: "Ennio", set: { aliases: "il giovane" } }), context);
+        expect(readFileSync(join(folder, "world", "characters", "Ennio.md"), "utf8")).toContain("aliases:\n  - il giovane");
+        expect((await rpg("write", "Varro", "--set", "aliases=Il conte, il vecchio")).output).toContain('"aliases" must be a list');
+    });
+});

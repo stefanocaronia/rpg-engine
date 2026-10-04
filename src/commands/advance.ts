@@ -4,6 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isEmptyField, loadWorld } from "../pages/index.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
+import { endedByDate, endEffects } from "./game-effects.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
@@ -29,6 +30,8 @@ interface Advance
     skipped: string[];
     /** The scene still open after an hour or more: "Alla locanda (since day 1, 18:00)" (D-115). */
     openScene?: string;
+    /** The effects whose end in game time this advance reached (EFF-8). */
+    ended: string[];
     /** How many midnights this advance passed, and the clocks to move then (EVT-8). */
     newDays: number;
     clocks: string[];
@@ -69,7 +72,7 @@ export const advance = defineCommand({
             const start = formatGameDate(request.to);
             changeState(root, { date: start });
             appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { to: start, why }));
-            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next: nextAfter(dated, request.to), newDays: 0, clocks: [], ...notes };
+            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next: nextAfter(dated, request.to), ended: [], newDays: 0, clocks: [], ...notes };
         }
 
         const end = "by" in request ? addDuration(now, request.by) : request.to;
@@ -106,7 +109,8 @@ export const advance = defineCommand({
             appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { from: result.from, to: result.to, requested: input.by ?? input.to, why }));
         }
 
-        return result;
+        const ended = passed > 0 ? endEffects(root, context, world, readOpenScene(root).scene, (effect) => endedByDate(effect, reached), "time passed") : [];
+        return { ...result, ended };
     },
 
     format(result)
@@ -114,6 +118,7 @@ export const advance = defineCommand({
         const rest = result.wanted - result.passed;
         return [
             movedLine(result, rest),
+            result.ended.length === 0 ? "" : `Ended: ${result.ended.join(" · ")}.`,
             result.due.length === 0 ? "" : `Due: ${result.due.join(" · ")}. ${dueAdvice(result.due.length)}${rest > 0 ? ` Then advance the other ${formatDuration(rest)}, if they are still doing what they were.` : ""}`,
             stillDueLine(result.stillDue, result.due.length > 0),
             result.next === undefined ? "" : `Next: ${result.next}.`,

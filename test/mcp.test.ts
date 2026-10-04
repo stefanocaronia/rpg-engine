@@ -76,6 +76,13 @@ describe("MCP server", () => {
         expect(await call("write", { page: "Lena", set: { knows: [["[[Pietro]]"], ["[[Rosa]]"]] } })).toEqual({ text: expect.stringContaining("would hold a list inside a list"), isError: true });
     });
 
+    it("refuses a parameter a tool does not have, instead of leaving it out", async () => {
+        await call("init", { name: "Guadoscuro" });
+        await call("write", { page: "Lena", type: "character" });
+        expect(await call("effect", { action: "add", page: "Lena", name: "Benedizione", duration: "10 rounds" })).toEqual({ text: expect.stringContaining("duration"), isError: true });
+        expect(readFileSync(join(folder, "world", "characters", "Lena.md"), "utf8")).not.toContain("Benedizione");
+    });
+
     it("reports a failure as a tool error with the command's message", async () => {
         expect(await call("show", { page: "Varro" })).toEqual({ text: expect.stringContaining("There is no campaign here"), isError: true });
     });

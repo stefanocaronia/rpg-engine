@@ -2,7 +2,8 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { backlinks, baseChain, findPage, formatFields, inheritedByBase, loadWorld, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, textParts, type World } from "../pages/index.ts";
+import { backlinks, baseChain, findPage, formatFields, inheritedByBase, inheritedFields, loadWorld, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, textParts, type World } from "../pages/index.ts";
+import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { skippedPagesNote } from "./notes.ts";
 
@@ -54,6 +55,7 @@ export const show = defineCommand({
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
             fields: reference.section === undefined ? page.fields : undefined,
+            covered: coveredValues(world, page),
             derivesFrom: baseChain(world, page).map((base) => base.name),
             sectionFrom: part?.from,
             inherited: reference.section === undefined
@@ -75,6 +77,7 @@ export const show = defineCommand({
             result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: remove it from all but one.` : "",
             result.derivesFrom.length > 0 ? `Derives from: ${result.derivesFrom.join(" › ")}` : "",
             result.sectionFrom === undefined ? "" : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
+            result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`,
         ].filter((line) => line !== "").join("\n");
         const fields = result.fields !== undefined && Object.keys(result.fields).length > 0 ? `---\n${formatFields(result.fields)}\n---` : "";
         const inheritedFields = result.inherited.filter((group) => Object.keys(group.fields).length > 0).map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
@@ -83,6 +86,16 @@ export const show = defineCommand({
         return [header, fields, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** "ac 15 (13 without)": the values the page's effects give, each with the one it reads without them (EFF-10). */
+function coveredValues(world: World, page: Page): string[]
+{
+    const without = inheritedFields(world, page);
+    const withThem = effectiveFields(world, page);
+    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const fields = [...new Set(effectsOf(page).flatMap((effect) => effect.values.map(([field]) => field)))];
+    return fields.map((field) => `${field} ${String(read(withThem, field))} (${read(without, field) === undefined ? "none" : String(read(without, field))} without)`);
+}
 
 /** A section or secret of a page; when it has none by that name, the one of its nearest base that has it (INH-13). */
 function readPart(world: World, page: Page, name: string): { text: string; from?: string; }

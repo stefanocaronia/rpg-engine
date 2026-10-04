@@ -9,8 +9,8 @@ import { linksIn, type Page, type World } from "./world.ts";
 // On other types a field with that name means something else, such as the wolf of a trophy, and passes nothing on.
 const baseFields: Partial<Record<PageType, string>> = { character: "creature", creature: "creature" };
 
-// INH-8: never inherited, a closed list of the core: who a page is, and what it holds or knows. Fields a system declares are inherited.
-const neverInherited = new Set(["role", "status", "creature", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases"]);
+// INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, and what holds it for a while. Fields a system declares are inherited.
+const neverInherited = new Set(["role", "status", "creature", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
 
 // Pages by comparable name, built once for each loaded world: following a chain costs a lookup, however many pages there are (INH-16).
 const namesCache = new WeakMap<World, Map<string, Page[]>>();

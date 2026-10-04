@@ -31,7 +31,7 @@ function toolConfig(command: AnyCommand)
 {
     const annotations = command.readOnly ? { readOnlyHint: true } : undefined;
     const meta = command.alwaysLoad ? { "anthropic/alwaysLoad": true } : undefined;
-    return { description: command.description, inputSchema: command.input, annotations, _meta: meta };
+    return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
 async function runTool(command: AnyCommand, input: unknown, context: Context): Promise<CallToolResult>

@@ -19,6 +19,7 @@ For every campaign and game; the system's guide and each extension in use add th
 - `write`: record every new fact at once.
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up), to money (paid, received) and to an event's clock.
+- `effect`: every condition or effect on someone (frightened, a spell, a form), how long it lasts and who keeps it alive; it ends by itself. What must outlive it, such as hit points it adds, changes on the page.
 - `advance`: whenever time passes in the story, before you narrate it. At the first scene, set the starting date with `to`, at the scene's hour (dusk: `day 1, 18:00`). When it stops at an event, do as it says: what the characters see or hear is a scene, the rest happens off screen and leaves traces: write them where they will be found.
 - `scene`: open one when a scene starts (combat, social, exploration, travel, rest, challenge or other), with everyone in it, and close it when it ends, with a summary of one or two sentences, as the player saw it. Enemies of a kind enter as numbered copies, such as `Annegato 1`, changed with `change` (the numbers are for you, not the player); who goes, fled or fallen, `leave`s. Inside a scene too, `advance` before you narrate time passing.
 - `config`: settings and what is still missing: ask the player. A game with money whose system gives no coins needs `coins`.

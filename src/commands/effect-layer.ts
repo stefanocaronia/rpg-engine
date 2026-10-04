@@ -1,0 +1,80 @@
+// The values effects give for a while, as a layer over a page (D-123, EFF-3): read by every command that shows or changes a page's fields.
+import { comparableText } from "../core/text.ts";
+import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
+import { inheritedFields, type Page, readFieldValue, type World } from "../pages/index.ts";
+
+/** The effects field of a page or copy, written in any case (EFF-1). */
+export function effectsField(page: Page): unknown
+{
+    return Object.entries(page.fields).find(([field]) => comparableText(field) === "effects")?.[1];
+}
+
+/** The effects a page or copy holds; none when its field cannot be read, which validate reports and effect refuses to touch (EFF-12). */
+export function effectsOf(page: Page): Effect[]
+{
+    const read = readEffects(effectsField(page));
+    return "effects" in read ? read.effects : [];
+}
+
+/** The fields a page reads with its effects over them (EFF-3): from the newest effect that gives a field, then the page, then its bases. */
+export function effectiveFields(world: World, page: Page): Record<string, unknown>
+{
+    const fields = { ...inheritedFields(world, page) };
+
+    for (const effect of effectsOf(page)) {
+        for (const [field, value] of effect.values) {
+            fields[Object.keys(fields).find((key) => comparableText(key) === comparableText(field)) ?? field] = valueOf(value);
+        }
+    }
+
+    return fields;
+}
+
+/** The newest effect that gives a field to a page: change changes its value, not the page's (EFF-7). */
+export function effectGiving(page: Page, field: string): Effect | undefined
+{
+    return effectsOf(page).findLast((effect) => effect.values.some(([name]) => comparableText(name) === comparableText(field)));
+}
+
+/**
+ * "ac 13 → 15": the values an effect changes on a page, as they read before and after it; and "ac stays 17, from Scudo della fede" for a value
+ * another effect still gives, which was written while this one was on (EFF-3).
+ */
+export function valuesChanged(world: World, before: Page, after: Page, effect: Effect): string[]
+{
+    const was = effectiveFields(world, before);
+    const is = effectiveFields(world, after);
+    const read = (fields: Record<string, unknown>, field: string): string => String(Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? "none");
+
+    return effect.values.map(([field]) => field).flatMap((field) => {
+        if (read(was, field) !== read(is, field)) {
+            return [`${field} ${read(was, field)} → ${read(is, field)}`];
+        }
+
+        const other = effectGiving(after, field);
+        return other === undefined || comparableText(other.name) === comparableText(effect.name) ? [] : [`${field} stays ${read(is, field)}, from ${other.name}: check it`];
+    });
+}
+
+/** The effect with a new value for one of its fields, as change writes it (EFF-7). */
+export function withValue(effect: Effect, field: string, value: string): Effect
+{
+    return { ...effect, values: effect.values.map(([name, old]): [string, string] => [name, comparableText(name) === comparableText(field) ? value : old]) };
+}
+
+/** A page or copy with these effects instead of its own. */
+export function withEffects(page: Page, effects: Effect[]): Page
+{
+    const fields = Object.fromEntries(Object.entries(page.fields).filter(([field]) => comparableText(field) !== "effects"));
+    return { ...page, fields: effects.length === 0 ? fields : { ...fields, effects: effects.map(formatEffect) } };
+}
+
+/** A value of an effect as a page would hold it: a number, a link, a counter as text; text as it is when it does not read. */
+function valueOf(value: string): unknown
+{
+    try {
+        return readFieldValue(value);
+    } catch {
+        return value;
+    }
+}

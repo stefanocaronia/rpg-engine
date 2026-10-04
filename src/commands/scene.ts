@@ -7,6 +7,7 @@ import { comparableText, sameName, withArticle } from "../core/text.ts";
 import { findPage, isEmptyField, isInParty, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
+import { endedByTurn, endEffects, endsWithScene } from "./game-effects.ts";
 import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -57,9 +58,9 @@ interface Member
 type SceneResult =
     | { action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; }
     | { action: "add"; title: string; members: Member[]; ordered: boolean; }
-    | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; }
-    | ({ action: "order" | "next"; noTurn: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; };
+    | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
+    | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
+    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; };
 
 export const scene = defineCommand({
     name: "scene",
@@ -111,9 +112,9 @@ export const scene = defineCommand({
             case "leave":
                 return leave(root, world, input.who ?? [], context, current);
             case "order":
-                return setOrder(root, input.order ?? [], context, current);
+                return setOrder(root, world, input.order ?? [], context, current);
             default:
-                return passTurn(root, context, current);
+                return passTurn(root, world, context, current);
         }
     },
 
@@ -135,13 +136,13 @@ export const scene = defineCommand({
             case "leave": {
                 const turns = result.turns === undefined ? (result.noTurns ? "\nNo one takes turns now." : "") : `\n${turnText(result.turns)}`;
                 const left = result.left.map((member) => (Object.keys(member.counters).length === 0 ? member.name : `${member.name} (${countersText(member.counters)})`));
-                return `${left.join(", ")} left the scene.${turns}`;
+                return `${left.join(", ")} left the scene.${turns}${endedText(result.ended)}`;
             }
 
             case "order":
-                return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}`;
+                return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${endedText(result.ended)}`;
             case "next":
-                return turnText(result);
+                return `${turnText(result)}${endedText(result.ended)}`;
             default:
                 return closedText(result);
         }
@@ -272,11 +273,14 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     updateScene(root, changes);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies }));
     const left = leaving.map((name) => (name in copies ? { name, counters: copyCounters(world, copies[name]) } : { name, counters: {} }));
-    return { action: "leave", left, turns, noTurns: current.order !== undefined && turns === undefined };
+    // The copies that left are gone with their effects; the turn may have passed, and with it the end of some effects.
+    const remaining = { ...current, copies: Object.fromEntries(Object.entries(current.copies).filter(([name]) => !leaving.includes(name))) };
+    const ended = turns === undefined ? [] : endEffects(root, context, world, remaining, (effect) => endedByTurn(effect, turns.round, turns.turn, turns.order), "turn");
+    return { action: "leave", left, turns, noTurns: current.order !== undefined && turns === undefined, ended };
 }
 
 /** Who takes turns, in order; those left out take none. A new order in a running scene keeps the round, and the turn if its owner is still in it. */
-function setOrder(root: string, order: string[], context: Context, current: Scene): SceneResult
+function setOrder(root: string, world: World, order: string[], context: Context, current: Scene): SceneResult
 {
     const members = memberNames(current);
     const inScene = members.length === 0 ? "no one yet" : members.join(", ");
@@ -302,7 +306,8 @@ function setOrder(root: string, order: string[], context: Context, current: Scen
     const { round, turn } = keptTurn(current, named);
     updateScene(root, [[["order"], named], [["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: named }));
-    return { action: "order", order: named, round, turn, noTurn: members.filter((name) => !named.includes(name)) };
+    const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, named), "turn");
+    return { action: "order", order: named, round, turn, noTurn: members.filter((name) => !named.includes(name)), ended };
 }
 
 /**
@@ -325,7 +330,7 @@ function keptTurn(current: Scene, named: string[]): { round: number; turn: strin
     return after === undefined ? { round: round + 1, turn: named[0] } : { round, turn: after };
 }
 
-function passTurn(root: string, context: Context, current: Scene): SceneResult
+function passTurn(root: string, world: World, context: Context, current: Scene): SceneResult
 {
     if (current.order === undefined) {
         throw new Error("The scene has no order of turns: set it with scene order, after rolling for it if the game does.");
@@ -334,7 +339,9 @@ function passTurn(root: string, context: Context, current: Scene): SceneResult
     const { turn, round } = nextTurn(current.order, current.turn, current.round ?? 1);
     updateScene(root, [[["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, round, turn }));
-    return { action: "next", order: current.order, round, turn, noTurn: [] };
+    const order = current.order;
+    const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, order), "turn");
+    return { action: "next", order, round, turn, noTurn: [], ended };
 }
 
 /** Ends the scene; one that cannot be read is closed too, so that a scene written wrongly by hand never blocks the game. */
@@ -353,18 +360,20 @@ function close(root: string, world: World, summary: string, context: Context): S
     const present = readPresent(root).date;
     const closed = present === undefined ? undefined : formatGameDate(present);
     const raw = current === undefined ? rawScene(root) : undefined;
+    // Rounds exist only in the scene: the effects counted in them end with it, on the pages; the copies go with theirs.
+    const ended = endEffects(root, context, world, undefined, endsWithScene, "scene closed");
     saveScene(root, undefined);
 
     if (current === undefined) {
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...rawTitleAndType(raw), closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message };
+        return { action: "close", copies: [], unreadable: problem?.message, ended };
     }
 
     logCopies(root, context, current.title, current.copies);
     const left = current.left?.filter((name) => world.pages.some((page) => comparableText(page.name) === comparableText(name)));
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies) };
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended };
 }
 
 /** The title and type of a scene that cannot be read, as far as they can be, so that the log still holds a closed scene. */
@@ -376,17 +385,24 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; }): string
 {
     const advance = "Advance any time it took that you have not advanced yet.";
+    const ended = result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`;
 
     if (result.unreadable !== undefined) {
-        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}`;
+        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}`;
     }
 
     const rounds = result.rounds === undefined ? "" : ` after ${result.rounds} ${result.rounds === 1 ? "round" : "rounds"}`;
     const gone = result.copies.length === 0 ? "" : ` Copies gone: ${membersText(result.copies)}.`;
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}`;
+}
+
+/** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */
+function endedText(ended: string[]): string
+{
+    return ended.length === 0 ? "" : `\nEnded: ${ended.join(" · ")}.`;
 }
 
 /** The copies and what they changed go in a hidden line: the player does not see the enemies' numbers, nor the names of creatures in disguise. */

@@ -1,6 +1,8 @@
+import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Coin, formatAmount, readAmount } from "../money/index.ts";
-import { inheritedFields, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
+import { isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
+import { effectiveFields, effectsOf } from "./effect-layer.ts";
 
 /**
  * The counters of a page as the outputs show them, such as hp 5/12: all those it holds, and those it inherits written as current/max (D-116, as for copies in D-110).
@@ -8,11 +10,12 @@ import { inheritedFields, isEmptyField, isStandardField, type Page, type World }
  */
 export function pageCounters(world: World, page: Page, coins?: Coin[]): Record<string, unknown>
 {
-    const own = new Set(Object.entries(page.fields).filter(([, value]) => !isEmptyField(value)).map(([field]) => field));
-    const counter = (field: string, value: unknown): boolean => !isStandardField(page.type, field) && readCounter(value) !== undefined && (own.has(field) || readCounter(value)?.max !== undefined);
+    const given = effectsOf(page).flatMap((effect) => effect.values.map(([field]) => field));
+    const own = new Set([...Object.entries(page.fields).filter(([, value]) => !isEmptyField(value)).map(([field]) => field), ...given].map(comparableText));
+    const counter = (field: string, value: unknown): boolean => !isStandardField(page.type, field) && readCounter(value) !== undefined && (own.has(comparableText(field)) || readCounter(value)?.max !== undefined);
 
     return Object.fromEntries(
-        Object.entries(inheritedFields(world, page)).flatMap(([field, value]): [string, unknown][] => {
+        Object.entries(effectiveFields(world, page)).flatMap(([field, value]): [string, unknown][] => {
             const purse = coins === undefined || isStandardField(page.type, field) ? undefined : readAmount(value, coins);
             return purse !== undefined && coins !== undefined ? [[field, formatAmount(purse, coins)]] : counter(field, value) ? [[field, value]] : [];
         }),

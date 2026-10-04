@@ -6,6 +6,7 @@ import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
+import { readEffects } from "../effects/index.ts";
 import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
 import {
     baseValue,
@@ -49,6 +50,7 @@ import {
     writtenFieldName,
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
@@ -94,7 +96,7 @@ export const write = defineCommand({
         + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
         + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
         + "A list field changes one item at a time with add and remove. "
-        + "It also writes the fields of a copy in the open scene, such as a condition. "
+        + "It also writes the fields of a copy in the open scene; conditions and forms go with effect. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",
     positionals: ["page"],
@@ -128,7 +130,7 @@ export const write = defineCommand({
 
         const { coins, problem: coinsProblem } = campaignCoins(root);
         const fields: FieldChange = {
-            set: input.set === undefined ? undefined : asAmounts(readFields(input.set), coins),
+            set: input.set === undefined ? undefined : asAmounts(oneItemLists(readFields(input.set)), coins),
             unset: input.unset,
             add: input.add === undefined ? undefined : readListItems(input.add),
             remove: input.remove === undefined ? undefined : readListItems(input.remove),
@@ -139,11 +141,13 @@ export const write = defineCommand({
         const copy = copyName(world, open.scene, reference.name);
 
         if (open.scene !== undefined && copy !== undefined) {
+            checkNoEffects(fields, copyPage(copy, open.scene.copies[copy]));
             const written = writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section }, fields, coins);
             return { ...written, notes: [...written.notes, ...moneyNotes] };
         }
 
         const existing = findPage(world, reference.name);
+        checkNoEffects(fields, existing);
 
         if (existing === undefined && input.type === undefined) {
             const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
@@ -266,7 +270,7 @@ function checkCopyField(name: string, creature: string, field: string): void
     }
 
     if (isStandardField("creature", field) || misspelledStandardField("creature", field) !== undefined || isNeverInherited(field)) {
-        throw new Error(`${field} is not a field a copy holds: a copy holds only what differs from its creature, ${creature}, such as a counter, a condition or a form. ${promotion(name, creature, field)}`);
+        throw new Error(`${field} is not a field a copy holds: a copy holds only what differs from its creature, ${creature}, such as a counter (conditions and forms go with effect). ${promotion(name, creature, field)}`);
     }
 }
 
@@ -274,6 +278,22 @@ function checkCopyField(name: string, creature: string, field: string): void
 function promotion(name: string, creature: string, what: string): string
 {
     return `To give it ${what} of its own, make it a character: show it to read its values, let it leave with scene leave, write ${name} as a character with creature=${creature} and those values, then bring it back with scene add.`;
+}
+
+/** Effects change only with the effect command, which works out when they end and says what they change (EFF-6). */
+function checkNoEffects(change: FieldChange, page: Page | undefined): void
+{
+    // Effects that do not read can only be removed by hand, or with unset: effect will not write over them (EFF-12).
+    const unreadable = page !== undefined && "problem" in readEffects(effectsField(page));
+    const onlyUnset = Object.keys(change.set ?? {}).every((name) => comparableText(name) !== "effects") && [change.add, change.remove].every((items) => Object.keys(items ?? {}).every((name) => comparableText(name) !== "effects"));
+
+    if (unreadable && onlyUnset) {
+        return;
+    }
+
+    if (changedFieldNames(change).some((name) => comparableText(name) === "effects")) {
+        throw new Error('effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set ac=15; action end to take one away. Nothing changed.');
+    }
 }
 
 /** A standard field written in another case, such as Status, would be a field the engine does not read: refused before any other check. */
@@ -675,6 +695,13 @@ function readListItems(fields: string[] | Record<string, unknown>): Record<strin
     }
 
     return items;
+}
+
+/** A field that is always a list, given one item, such as contains=[[Locanda]] or tags=boss, holds a list of that one item; text with commas is left to the check that asks for a list. */
+function oneItemLists(set: Record<string, unknown>): Record<string, unknown>
+{
+    const isList = (name: string): boolean => listFieldNames.some((field) => comparableText(field) === comparableText(name));
+    return Object.fromEntries(Object.entries(set).map(([name, value]) => [name, isList(name) && typeof value === "string" && !value.includes(",") && value.trim() !== "" ? [value] : value]));
 }
 
 /** Text given through MCP to a field that is always a list, such as "[[A]], [[B]]", read as the command line reads it (D-136); any other value as it is. */

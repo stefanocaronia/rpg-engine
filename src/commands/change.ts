@@ -25,9 +25,11 @@ import {
     type World,
     writePage,
 } from "../pages/index.ts";
+import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
+import { saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
-import { checkNotCopied, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
+import { checkNotCopied, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
@@ -83,7 +85,7 @@ export const change = defineCommand({
         const root = requireCampaign(context.folder);
         const world = loadWorld(root);
         const holder = holderNamed(root, world, input.page);
-        const fields = inheritedFields(world, holder.page);
+        const fields = effectiveFields(world, holder.page);
         const { coins, problem } = campaignCoins(root);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
         const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins, clock), coins);
@@ -98,24 +100,33 @@ export const change = defineCommand({
         const changed = String(step.after) !== String(step.before);
         checkClock(holder.page, field, step.after);
         const written = ownField(holder.page, field) ?? field;
-        const base = baseValue(world, holder.page, field);
+        // A value an effect gives changes on the effect, under which the page keeps its own (EFF-7).
+        const layer = effectGiving(holder.page, field);
+        const base = layer === undefined ? baseValue(world, holder.page, field) : undefined;
         const backToBase = changed && base !== undefined && step.same(base.value);
-        const followers = changed && holder.kind === "page" ? followersOf(world, holder.page, field) : [];
-        const keepers = changed && holder.kind === "page" ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
+        const followers = changed && holder.kind === "page" && layer === undefined ? followersOf(world, holder.page, field) : [];
+        const keepers = changed && holder.kind === "page" && layer === undefined ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
 
         let after: Page | undefined;
 
         if (changed) {
             // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
             const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
-            after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
+
+            if (layer === undefined) {
+                after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
+            } else {
+                const effects = effectsOf(holder.page).map((effect) => (effect.name === layer.name ? withValue(effect, field, String(step.after)) : effect));
+                saveEffects(root, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
+            }
+
             const why = input.why?.trim() === "" ? undefined : input.why;
-            const data = { page, copy: holder.kind === "copy" ? true : undefined, field, before: step.before, after: step.after, ...step.amount, why };
+            const data = { page, copy: holder.kind === "copy" ? true : undefined, field, effect: layer?.name, before: step.before, after: step.after, ...step.amount, why };
             appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
             logFollowers(root, world, context, followers, { field, before: step.before, after: step.after });
         }
 
-        const note = [step.note, backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
+        const note = [layer === undefined ? "" : `in ${layer.name}`, step.note, backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
         // Only an event's clock sets anything off when it changes (EVT-4).
         const due = after !== undefined && isCounterField(after.type, field) ? fireEvents(root, context, world, withPage(world, holder.page, after), readPresent(root).date).due : [];
         const result = { page, field, before: String(step.before), after: String(step.after), total: step.total, note, changed, due, problems: world.problems };
@@ -251,35 +262,20 @@ function coinNames(coins: Coin[]): string
 /** What holds the counter, given by name or as a link: a copy in the open scene first, then a page. */
 function holderNamed(root: string, world: World, name: string): CounterHolder
 {
-    const reference = parsePageReference(name);
-
-    if (reference.section !== undefined) {
-        throw new Error(`Give the page without #${reference.section}: a counter is a field of the page, such as page ${reference.name}, field hp.`);
-    }
-
-    // A scene that cannot be read holds no copies here; validate reports it.
     const open = readOpenScene(root);
-    const copy = copyName(world, open.scene, reference.name);
+    const found = pageOrCopy(world, open, name, (page) => `a counter is a field of the page, such as page ${page}, field hp`);
+    const copy = found.copy;
 
-    if (open.scene !== undefined && copy !== undefined) {
-        const copies = open.scene.copies;
-
+    if (copy !== undefined) {
         const write = (fields: Record<string, number | string | undefined>): undefined => {
             updateScene(root, Object.entries(fields).map(([field, value]) => [["copies", copy, field], value]));
             return undefined;
         };
 
-        return { page: copyPage(copy, copies[copy]), kind: "copy", write, visibility: "hidden" };
+        return { page: found.page, kind: "copy", write, visibility: "hidden" };
     }
 
-    const page = findPage(world, reference.name);
-
-    if (page === undefined) {
-        const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
-        const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
-        throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}`);
-    }
-
+    const page = found.page;
     checkNotCopied(world, open, page);
     return {
         page,

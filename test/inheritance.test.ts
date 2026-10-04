@@ -211,7 +211,7 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
             [["write", "Annegato 2", "--set", "creature=[[Lupo]]"], "creature is what Annegato 2 copies, and it does not change: to bring in another creature, add a copy of it with scene add."],
             [
                 ["write", "Annegato 2", "--add", "tags=bagnato"],
-                "tags is not a field a copy holds: a copy holds only what differs from its creature, [[Annegato]], such as a counter, a condition or a form. To give it tags of its own, make it a character: show it to read its values, let it leave with scene leave, write Annegato 2 as a character with creature=[[Annegato]] and those values, then bring it back with scene add.",
+                "tags is not a field a copy holds: a copy holds only what differs from its creature, [[Annegato]], such as a counter (conditions and forms go with effect). To give it tags of its own, make it a character: show it to read its values, let it leave with scene leave, write Annegato 2 as a character with creature=[[Annegato]] and those values, then bring it back with scene add.",
             ],
             [
                 ["write", "Annegato 2", "--set", "hp=5/22"],

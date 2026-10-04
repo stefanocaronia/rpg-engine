@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
+import { comparableText } from "../core/text.ts";
 import type { Coin } from "../money/index.ts";
 import { isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
+import { effectsOf } from "./effect-layer.ts";
+import { effectText, keptEffects } from "./game-effects.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
-import { type ClosedScene, closedScenes, copyCounters, readOpenScene } from "./game-scene.ts";
+import { type ClosedScene, closedScenes, copyCounters, copyPage, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -25,6 +28,8 @@ interface Member
     /** Whether the member is where the first player character is. */
     withLead: boolean;
     counters: string[];
+    /** Its effects, with their end: "Spaventato (until round 3, Lena)". */
+    effects: string[];
 }
 
 export const status = defineCommand({
@@ -49,7 +54,14 @@ export const status = defineCommand({
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
         const withLead = (page: Page): boolean => place !== undefined && placeOf(world, page) === place;
         const { coins } = campaignCoins(root);
-        const member = (page: Page): Member => ({ name: characterName(page), where: locate(world, page).chain.map((holder) => holder.name), withLead: withLead(page), counters: countersOf(world, page, coins) });
+        const openScene = readOpenScene(root);
+        const member = (page: Page): Member => ({
+            name: characterName(page),
+            where: locate(world, page).chain.map((holder) => holder.name),
+            withLead: withLead(page),
+            counters: countersOf(world, page, coins),
+            effects: [...effectsOf(page).map(effectText), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
+        });
         const present = readPresent(root);
         const now = present.date;
         const events = plannedEvents(world);
@@ -65,7 +77,7 @@ export const status = defineCommand({
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
-            scene: sceneText(world, readOpenScene(root).scene),
+            scene: sceneText(world, openScene.scene),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
             openQuests: pagesWith(world, "quest", "open"),
@@ -142,7 +154,8 @@ function whereabouts(member: Member): string
 
 function memberCounters(member: Member): string
 {
-    return member.counters.length === 0 ? "" : `: ${member.counters.join(" · ")}`;
+    const shown = [...member.counters, ...member.effects];
+    return shown.length === 0 ? "" : `: ${shown.join(" · ")}`;
 }
 
 /** "hp 5/12": the counters on a page as they are written, its fixed fields left out. */
@@ -165,13 +178,26 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
     }
 
     const place = scene.place === undefined ? "" : ` at ${parsePageReference(scene.place).name}`;
-    const characters = scene.with.length === 0 ? "" : `, with ${scene.with.map((link) => parsePageReference(link).name).join(", ")}`;
+    const characters = scene.with.length === 0 ? "" : `, with ${scene.with.map((link) => sceneMemberText(world, parsePageReference(link).name)).join(", ")}`;
     const turn = scene.turn === undefined ? "" : `; round ${scene.round ?? 1}, ${scene.turn}'s turn`;
     const copies = Object.entries(scene.copies).map(([name, copy]) => {
-        const counters = countersText(copyCounters(world, copy));
+        const counters = [countersText(copyCounters(world, copy)), ...effectsOf(copyPage(name, copy)).map(effectText)].filter((part) => part !== "").join(" · ");
         return counters === "" ? name : `${name}: ${counters}`;
     });
     return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}`;
+}
+
+/** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */
+function sceneMemberText(world: World, name: string): string
+{
+    const page = world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
+
+    if (page === undefined || isPartyMember(page)) {
+        return name;
+    }
+
+    const shown = [countersText(pageCounters(world, page)), ...effectsOf(page).map(effectText)].filter((part) => part !== "");
+    return shown.length === 0 ? name : `${name} (${shown.join(" · ")})`;
 }
 
 /** "4 social, 2 exploration, 1 combat": the closed scenes by type, most first, then in the order of the list of types. */

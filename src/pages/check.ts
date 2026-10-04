@@ -113,6 +113,10 @@ function linkFix(page: Page, field: string | undefined, entry: string | undefine
         return `correct the link in the text of ${page.name}, or create what it points to`;
     }
 
+    if (field === "effects") {
+        return `end that effect with effect end, or create the page it links to`;
+    }
+
     return inList ? `write ${page.name}, remove ${field}=${entry}` : `write ${page.name}, set ${field} to a page that exists`;
 }
 
