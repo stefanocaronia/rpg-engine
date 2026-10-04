@@ -87,7 +87,9 @@ describe("rpg config", () => {
 
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
-        expect(result.output).toBe("name: Guadoscuro\nlanguage: (missing)\nsystem: (missing)\nlines: (none)\nveils: (none)\n\nStill missing: language, system. Ask the player, then set each one with the config command (setting and value).");
+        expect(result.output).toBe(
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing)\nlines: (none)\nveils: (none)\ncoins: (none: a game without money)\n\nStill missing: language, system. Ask the player, then set each one with the config command (setting and value).",
+        );
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
@@ -140,7 +142,7 @@ describe("rpg config", () => {
     });
 
     it("refuses unknown settings and invalid values", async () => {
-        expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(`There is no setting "colour". The settings are: name, language, system, lines, veils.`);
+        expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(`There is no setting "colour". The settings are: name, language, system, lines, veils, coins.`);
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });
 

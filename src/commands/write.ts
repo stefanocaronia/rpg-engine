@@ -2,9 +2,11 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
+import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import { type Counter, formatCounter, readCounter } from "../counters/index.ts";
+import { formatCounter, readCounter } from "../counters/index.ts";
+import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
 import {
     baseValue,
     changedFields,
@@ -45,6 +47,7 @@ import {
     writtenFieldName,
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, plannedEventDateProblem } from "./game-time.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
@@ -120,18 +123,21 @@ export const write = defineCommand({
             throw new Error("Give the text to write.");
         }
 
+        const { coins, problem: coinsProblem } = campaignCoins(root);
         const fields: FieldChange = {
-            set: input.set === undefined ? undefined : readFields(input.set),
+            set: input.set === undefined ? undefined : asAmounts(readFields(input.set), coins),
             unset: input.unset,
             add: input.add === undefined ? undefined : readListItems(input.add),
             remove: input.remove === undefined ? undefined : readListItems(input.remove),
         };
+        const moneyNotes = moneyNotesOf(reference.name, fields.set, coins, coinsProblem);
         const world = loadWorld(root);
         const open = readOpenScene(root);
         const copy = copyName(world, open.scene, reference.name);
 
         if (open.scene !== undefined && copy !== undefined) {
-            return writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section }, fields);
+            const written = writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section }, fields, coins);
+            return { ...written, notes: [...written.notes, ...moneyNotes] };
         }
 
         const existing = findPage(world, reference.name);
@@ -152,8 +158,8 @@ export const write = defineCommand({
                 checkNotCopied(world, open, existing);
             }
 
-            checkCounters(world, existing, fields.set);
-            checkClearedCounters(world, existing, ownFieldChange(world, existing, fields));
+            checkCounters(world, existing, fields.set, coins);
+            checkClearedCounters(world, existing, ownFieldChange(world, existing, fields), coins);
             checkLists(world, existing, fields);
         }
 
@@ -171,12 +177,12 @@ export const write = defineCommand({
 
         if (changed && existing !== undefined) {
             const self: [Page, Page][] = changedNames(existing, page).some((field) => comparableText(field) === "creature") ? [[existing, page]] : [];
-            logCounterChanges(root, context, world, now, [...self, ...followers.pages.map((follower): [Page, Page] => [follower, follower])]);
+            logCounterChanges(root, context, world, now, [...self, ...followers.pages.map((follower): [Page, Page] => [follower, follower])], coins);
         }
 
-        const notes = !changed ? [] : existing === undefined ? derivesFromNothingNote(now, page) : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page)];
+        const notes = !changed ? [] : existing === undefined ? derivesFromNothingNote(now, page) : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode };
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes, problems: world.problems };
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...notes, ...moneyNotes], problems: world.problems };
     },
 
     format(result)
@@ -197,7 +203,7 @@ export const write = defineCommand({
 });
 
 /** Writes the fields of a copy in the open scene (INH-14): only what differs from its creature, never its text, the creature it copies or fixed fields. */
-function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; }, requested: FieldChange): WriteResult
+function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; }, requested: FieldChange, coins: Coin[] | undefined): WriteResult
 {
     const creature = copyLink(scene.copies[name]);
 
@@ -219,9 +225,9 @@ function writeCopy(root: string, world: World, context: Context, scene: Scene, n
     checkFieldChange("creature", requested);
     checkValues(requested);
     const before = copyPage(name, scene.copies[name]);
-    checkCounters(world, before, requested.set);
+    checkCounters(world, before, requested.set, coins);
     const change = ownFieldChange(world, before, requested);
-    checkClearedCounters(world, before, change);
+    checkClearedCounters(world, before, change, coins);
     checkLists(world, before, requested);
 
     (requested.unset ?? []).forEach((field, index) => {
@@ -277,47 +283,77 @@ function checkFieldNames(type: PageType | undefined, change: FieldChange): void
 }
 
 /** A counter written as current/max changes only with change, which keeps its limits and logs why (D-92, INH-11). A value that is not a counter makes it something else: on a page that holds it alone, only after unset. */
-function checkCounters(world: World, page: Page, set: Record<string, unknown> | undefined): void
+function checkCounters(world: World, page: Page, set: Record<string, unknown> | undefined, coins: Coin[] | undefined): void
 {
     const fields = inheritedFields(world, page);
 
     for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
         const name = Object.keys(fields).find((key) => comparableText(key) === comparableText(field));
-        const counter = name === undefined || isStandardField(page.type, name) ? undefined : readCounter(fields[name]);
-        const newCounter = readCounter(value);
+        const current = name === undefined || isStandardField(page.type, name) ? undefined : guarded(fields[name], coins);
+        const next = current === undefined ? undefined : sameKind(current.kind, value, coins);
         const base = baseValue(world, page, field);
 
-        if (name === undefined || counter?.max === undefined || (newCounter !== undefined && formatCounter(newCounter) === formatCounter(counter)) || (newCounter === undefined && base !== undefined)) {
+        if (name === undefined || current === undefined || next === current.text || (next === undefined && base !== undefined)) {
             continue;
         }
 
-        throw new Error(counterMessage(page, name, newCounter, holdsField(page, name) ? undefined : base?.base, base !== undefined));
+        throw new Error(guardedMessage(page, name, current.kind, next, holdsField(page, name) ? undefined : base?.base, base !== undefined));
     }
 }
 
-function counterMessage(page: Page, field: string, newCounter: Counter | undefined, readFrom: Page | undefined, hasBase: boolean): string
+/** A value that changes only with change, as it is compared: a current/max counter (D-92) or money (MON-6); undefined for any other. */
+function guarded(value: unknown, coins: Coin[] | undefined): { kind: "counter" | "money"; text: string; } | undefined
 {
-    const use = `use change, page "${page.name}", field ${field}, to ${newCounter === undefined ? "a value" : formatCounter(newCounter)} (or by an amount)`;
-    const other = hasBase ? "To make it something else, set a value that is not a counter." : "To make it something else, unset it, then set it.";
-    return readFrom === undefined ? `${field} is a counter: ${use}. ${other}` : `${field} is a counter that ${page.name} reads from ${readFrom.name}: ${use}, which writes it on ${page.name} only. ${other}`;
+    const counter = readCounter(value);
+
+    if (counter?.max !== undefined) {
+        return { kind: "counter", text: String(formatCounter(counter)) };
+    }
+
+    const purse = coins === undefined ? undefined : readAmount(value, coins);
+    return purse === undefined || coins === undefined ? undefined : { kind: "money", text: formatAmount(purse, coins) };
+}
+
+/** A new value read as the kind it would replace: any counter for a counter, coins for money; undefined when it is something else. */
+function sameKind(kind: "counter" | "money", value: unknown, coins: Coin[] | undefined): string | undefined
+{
+    const counter = kind === "counter" ? readCounter(value) : undefined;
+    const purse = kind === "money" && coins !== undefined ? readAmount(value, coins) : undefined;
+    return counter !== undefined ? String(formatCounter(counter)) : purse !== undefined && coins !== undefined ? formatAmount(purse, coins) : undefined;
+}
+
+function guardedMessage(page: Page, field: string, kind: "counter" | "money", next: string | undefined, readFrom: Page | undefined, hasBase: boolean): string
+{
+    const what = kind === "counter" ? "a counter" : "money";
+    const other = hasBase ? `To make it something else, set a value that is not ${what}.` : "To make it something else, unset it, then set it.";
+
+    if (kind === "money") {
+        const from = readFrom === undefined ? "" : `, which it reads from ${readFrom.name},`;
+        const purse = next === undefined ? "sets the purse" : `"${next}" sets the purse`;
+        return `${page.name}'s ${field}${from} changes only with change, page "${page.name}", field ${field}: spend pays, by adds coins, to ${purse}${readFrom === undefined ? "" : `, on ${page.name} only`}. ${other}`;
+    }
+
+    const use = `use change, page "${page.name}", field ${field}, to ${next ?? "a value"} (or by an amount)`;
+    return readFrom === undefined ? `${field} is ${what}: ${use}. ${other}` : `${field} is ${what} that ${page.name} reads from ${readFrom.name}: ${use}, which writes it on ${page.name} only. ${other}`;
 }
 
 /**
  * Removing a counter that a base also holds as current/max would bring back the base's value with no line in the log: change does it, and logs it (INH-11).
  * `change` names the fields as the page writes them. The same field written twice in another case may lose one of the two: validate asks for it.
  */
-function checkClearedCounters(world: World, page: Page, change: FieldChange): void
+function checkClearedCounters(world: World, page: Page, change: FieldChange, coins: Coin[] | undefined): void
 {
     for (const own of (change.unset ?? []).filter((field) => Object.hasOwn(page.fields, field))) {
-        const counter = isStandardField(page.type, own) ? undefined : readCounter(page.fields[own]);
+        const current = isStandardField(page.type, own) ? undefined : guarded(page.fields[own], coins);
         const base = baseValue(world, page, own);
-        const baseCounter = base === undefined ? undefined : readCounter(base.value);
+        const fromBase = base === undefined ? undefined : guarded(base.value, coins);
         const alsoHeld = Object.keys(page.fields).some((other) => other !== own && comparableText(other) === comparableText(own) && !isEmptyField(page.fields[other]));
 
-        if (!alsoHeld && base !== undefined && counter?.max !== undefined && baseCounter?.max !== undefined) {
-            const value = formatCounter(baseCounter);
+        if (!alsoHeld && base !== undefined && current !== undefined && fromBase?.kind === current.kind) {
+            const value = current.kind === "counter" ? fromBase.text : `"${fromBase.text}"`;
+            const start = current.kind === "counter" ? `${own} on ${page.name} is a counter: without it,` : `Without ${own},`;
             throw new Error(
-                `${own} on ${page.name} is a counter: without it, ${page.name} would read ${value} from ${base.base.name}, with no line in the log. Use change, page "${page.name}", field ${own}, to ${value}: it takes the field off, and ${page.name} follows ${base.base.name} again.`,
+                `${start} ${page.name} would read ${fromBase.text} from ${base.base.name}, with no line in the log. Use change, page "${page.name}", field ${own}, to ${value}: it takes the field off, and ${page.name} follows ${base.base.name} again.`,
             );
         }
     }
@@ -392,7 +428,7 @@ function changedParts(before: string, after: string): string[]
  * One public line for each counter that a write changed through inheritance on a page that concerns the player: a page that follows the base written,
  * or the page itself when its creature changes. Its name, the field, before and after (INH-10, INH-11). Each page comes as it was and as it is.
  */
-function logCounterChanges(root: string, context: Context, world: World, now: World, pages: [Page, Page][]): void
+function logCounterChanges(root: string, context: Context, world: World, now: World, pages: [Page, Page][], coins: Coin[] | undefined): void
 {
     const concerns = playerConcerns(now);
 
@@ -400,14 +436,43 @@ function logCounterChanges(root: string, context: Context, world: World, now: Wo
         const old = inheritedFields(world, before);
 
         for (const [field, value] of Object.entries(inheritedFields(now, after)).filter(([name]) => !isStandardField(after.type, name))) {
-            const was = readCounter(readField(old, field));
-            const is = readCounter(value);
+            const was = countedText(readField(old, field), coins);
+            const is = countedText(value, coins);
 
-            if (was !== undefined && is !== undefined && formatCounter(was) !== formatCounter(is)) {
-                appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: after.name, field, before: formatCounter(was), after: formatCounter(is) }));
+            if (was !== undefined && is !== undefined && was !== is) {
+                appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: after.name, field, before: was, after: is }));
             }
         }
     }
+}
+
+/** A counter or money as the log writes it; undefined for any other value. */
+function countedText(value: unknown, coins: Coin[] | undefined): number | string | undefined
+{
+    const purse = coins === undefined ? undefined : readAmount(value, coins);
+    const counter = readCounter(value);
+    return purse !== undefined && coins !== undefined ? formatAmount(purse, coins) : counter === undefined ? undefined : formatCounter(counter);
+}
+
+/** Money given to set, written as the engine writes it (MON-2): from the coin worth most, by first names. */
+function asAmounts(set: Record<string, unknown>, coins: Coin[] | undefined): Record<string, unknown>
+{
+    return Object.fromEntries(
+        Object.entries(set).map(([field, value]) => {
+            const purse = coins === undefined ? undefined : readAmount(value, coins);
+            return [field, purse === undefined || coins === undefined ? value : formatAmount(purse, coins)];
+        }),
+    );
+}
+
+/** What a write should say about money: a value that names coins but does not read as money, and coins that cannot be read (MON-2, MON-8). */
+function moneyNotesOf(page: string, set: Record<string, unknown> | undefined, coins: Coin[] | undefined, problem: Problem | undefined): string[]
+{
+    const texts = Object.entries(set ?? {}).filter(([, value]) => typeof value === "string") as [string, string][];
+    const unread = coins === undefined ? [] : texts.filter(([, value]) => readAmount(value, coins) === undefined && namesCoins(value, coins));
+    const notes = unread.map(([field, value]) => `${field} on ${page} is "${value}", which is not money: write the coins one after the other, such as ${field}=12 ${coins?.[0].name ?? ""}, to count them.`);
+    const looksLikeMoney = texts.some(([, value]) => /\d+\s*\p{L}/u.test(value));
+    return problem !== undefined && looksLikeMoney ? [...notes, `The campaign's coins cannot be read, so no money is counted: ${problem.message} To fix it, ${problem.fix}.`] : notes;
 }
 
 /** A page created with a name that characters or creatures give as their creature, though it is not one: they derive from nothing (INH-2). */
@@ -438,7 +503,7 @@ function keepersNotes(now: World, before: Page, after: Page): string[]
 }
 
 /** After its creature changes, the values a page keeps that its new bases give otherwise: they may belong to the old one (D-125). */
-function ownValuesNote(now: World, before: Page, after: Page): string[]
+function ownValuesNote(now: World, before: Page, after: Page, coins: Coin[] | undefined): string[]
 {
     if (!changedNames(before, after).some((field) => comparableText(field) === "creature")) {
         return [];
@@ -453,8 +518,12 @@ function ownValuesNote(now: World, before: Page, after: Page): string[]
         return [];
     }
 
-    // A current/max counter goes back to the base's value with change; anything else is removed.
-    const back = kept.map(({ field, value, base }) => (readCounter(value)?.max !== undefined && readCounter(base.value)?.max !== undefined ? `change ${field} to ${valueText(base.value)}` : `unset ${field}`));
+    // A current/max counter or money goes back to the base's value with change; anything else is removed.
+    const back = kept.map(({ field, value, base }) => {
+        const mine = guarded(value, coins);
+        const theirs = guarded(base.value, coins);
+        return mine !== undefined && mine.kind === theirs?.kind ? `change ${field} to ${mine.kind === "money" ? `"${theirs.text}"` : theirs.text}` : `unset ${field}`;
+    });
     const listed = kept.map(({ field, value, base }) => `${field} ${valueText(value)} (${base.base.name} gives ${valueText(base.value)})`);
     return [`${after.name} keeps its own ${listed.join(", ")}. If they came from its old creature: ${back.join(", ")}.`];
 }

@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
+import type { Coin } from "../money/index.ts";
 import { isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate, minutesBetween } from "../time/index.ts";
+import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, readOpenScene } from "./game-scene.ts";
 import { dueAdvice, eventText, isDated, type PlannedEvent, plannedEvents, problemText, readPresent } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
@@ -45,7 +47,8 @@ export const status = defineCommand({
         const players = characters.filter((page) => page.fields.role === "pc");
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
         const withLead = (page: Page): boolean => place !== undefined && placeOf(world, page) === place;
-        const member = (page: Page): Member => ({ name: characterName(page), where: locate(world, page).chain.map((holder) => holder.name), withLead: withLead(page), counters: countersOf(world, page) });
+        const { coins } = campaignCoins(root);
+        const member = (page: Page): Member => ({ name: characterName(page), where: locate(world, page).chain.map((holder) => holder.name), withLead: withLead(page), counters: countersOf(world, page, coins) });
         const present = readPresent(root);
         const now = present.date;
         const events = plannedEvents(world);
@@ -139,9 +142,9 @@ function memberCounters(member: Member): string
 }
 
 /** "hp 5/12": the counters on a page as they are written, its fixed fields left out. */
-function countersOf(world: World, page: Page): string[]
+function countersOf(world: World, page: Page, coins: Coin[] | undefined): string[]
 {
-    return Object.entries(pageCounters(world, page)).map(([field, value]) => `${field} ${String(value).trim()}`);
+    return Object.entries(pageCounters(world, page, coins)).map(([field, value]) => `${field} ${String(value).trim()}`);
 }
 
 /** The planned events whose date has come: the master plays them first. */

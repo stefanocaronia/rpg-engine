@@ -5,7 +5,9 @@ import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
+import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../money/index.ts";
 import { baseChain, baseValue, concernsPlayer, findPage, followersOf, inheritedFields, isStandardField, keepersOf, loadWorld, ownField, type Page, parsePageReference, playerConcerns, type World, writePage } from "../pages/index.ts";
+import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
@@ -20,24 +22,39 @@ interface CounterHolder
     visibility: LogEntry["visibility"];
 }
 
-// Whole numbers arrive as text from a command line and as numbers through MCP; other text stays an error instead of becoming a number.
+/** One change worked out on a counter or on money, before it is written (D-92, MON-4). */
+interface Step
+{
+    before: number | string;
+    after: number | string;
+    /** How it was asked, for the log: by, spend or to, and how far it went beyond a limit. */
+    amount: Record<string, unknown>;
+    note: string;
+    /** For money: what the purse is worth in the first coin, when it holds other coins. */
+    total?: string;
+    /** Whether a base's value is the one the change leads to (INH-9). */
+    same(value: unknown): boolean;
+}
+
+// Whole numbers arrive as text from a command line and as numbers through MCP; other text, such as coins, stays text.
 const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]?\d+$/.test(value.trim()) ? Number(value) : value), z.number().int());
 
 export const change = defineCommand({
     name: "change",
-    description: "Change a counter on a page: hit points, uses, ammunition, supply, a progress track. "
+    description: "Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, coins. "
         + "A counter is a field written as a number (20, from 0 up) or as current/max (12/12, from 0 to the maximum); create it with write, then change it only with this command. "
         + "by adds or takes away and stops at a limit (damage, healing); spend takes what is paid or used up, and is refused when there is not enough; "
         + "to sets a value, max, or current/max (15/15 changes the maximum too), even outside the limits. "
+        + 'Money is a field written in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
         + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf".',
     group: "game",
     positionals: ["page", "field"],
     input: z.object({
-        page: z.string().describe("page that holds the counter"),
-        field: z.string().describe("the counter, such as hp"),
-        by: wholeNumber.optional().describe("how much to add, or to take away when negative; on the command line write --by=-7"),
-        spend: wholeNumber.optional().describe("how much is paid or used up"),
-        to: z.union([z.number().int(), z.string()]).optional().describe("the new value: a number, max, or current/max such as 15/15; on the command line write --to=-3"),
+        page: z.string().describe("page that holds the counter or the money"),
+        field: z.string().describe("the counter or the money, such as hp"),
+        by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; on the command line write --by=-7"),
+        spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins"),
+        to: z.union([z.number().int(), z.string()]).optional().describe("the new value: a number, max, current/max such as 15/15, or coins; on the command line write --to=-3"),
         why: z.string().optional().describe("what the change is for"),
     }),
 
@@ -47,61 +64,144 @@ export const change = defineCommand({
         const world = loadWorld(root);
         const holder = holderNamed(root, world, input.page);
         const fields = inheritedFields(world, holder.page);
-        const field = fieldName(world, holder, fields, input.field);
-        const before = readCounter(fields[field]);
+        const { coins, problem } = campaignCoins(root);
+        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins), coins);
+        const purse = coins === undefined ? undefined : readAmount(fields[field], coins);
+        const page = holder.page.name;
 
-        if (before === undefined) {
-            throw new Error(notCounterMessage(holder.page.name, field, fields[field]));
+        if (problem !== undefined && typeof fields[field] === "string" && /\d+\s*\p{L}/u.test(fields[field])) {
+            throw new Error(`${field} on ${page} looks like money, but the campaign's coins cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
         }
 
-        const counterChange = readChange(input, before, holder.page.name, field);
-        const { counter: after, beyond } = changeCounter(before, counterChange);
-
-        if (!isSafeCounter(after)) {
-            throw new Error(`${field} on ${holder.page.name} would be too large to count exactly. Nothing changed.`);
-        }
-
-        const changed = formatCounter(after) !== formatCounter(before);
+        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins);
+        const changed = String(step.after) !== String(step.before);
         const written = ownField(holder.page, field) ?? field;
         const base = baseValue(world, holder.page, field);
-        const baseCounter = base === undefined ? undefined : readCounter(base.value);
-        const backToBase = changed && base !== undefined && baseCounter !== undefined && formatCounter(baseCounter) === formatCounter(after);
+        const backToBase = changed && base !== undefined && step.same(base.value);
         const followers = changed && holder.kind === "page" ? followersOf(world, holder.page, field) : [];
         const keepers = changed && holder.kind === "page" ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
 
         if (changed) {
             // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
             const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
-            holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: formatCounter(after) });
+            holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
             const why = input.why?.trim() === "" ? undefined : input.why;
-            const data = {
-                page: holder.page.name,
-                copy: holder.kind === "copy" ? true : undefined,
-                field,
-                before: formatCounter(before),
-                after: formatCounter(after),
-                ...amountOf(counterChange),
-                beyond: beyond === 0 ? undefined : beyond,
-                why,
-            };
+            const data = { page, copy: holder.kind === "copy" ? true : undefined, field, before: step.before, after: step.after, ...step.amount, why };
             appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
-            logFollowers(root, world, context, followers, { field, before: formatCounter(before), after: formatCounter(after) });
+            logFollowers(root, world, context, followers, { field, before: step.before, after: step.after });
         }
 
-        const note = [limitNote(after, beyond), backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
-        const result = { page: holder.page.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note, changed, problems: world.problems };
-        return { ...result, followers: followers.map((page) => page.name), keepers };
+        const note = [step.note, backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
+        const result = { page, field, before: String(step.before), after: String(step.after), total: step.total, note, changed, problems: world.problems };
+        return { ...result, followers: followers.map((follower) => follower.name), keepers };
     },
 
     format(result)
     {
         const note = result.note === "" ? "" : `: ${result.note}`;
-        const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${result.after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${result.after}${note}.`;
+        const after = `${result.after}${result.total === undefined ? "" : ` (${result.total})`}`;
+        const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
         const followers = followersNote(result.followers, `since they read ${result.field} from ${result.page}`, "change", `${result.field} ${result.after}`);
         const lines = [summary, followers, keepersNote(result.keepers, result.field)].filter((line) => line !== "");
         return [lines.join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** A change to a counter: by, spend or to, within its limits (D-92). */
+function counterStep(input: { by?: number | string; spend?: number | string; to?: number | string; }, value: unknown, page: string, field: string, coins: Coin[] | undefined): Step
+{
+    const before = readCounter(value);
+
+    if (before === undefined) {
+        throw new Error(notCounterMessage(page, field, value, coins));
+    }
+
+    const counterChange = readChange(input, before, page, field, coins);
+    const { counter: after, beyond } = changeCounter(before, counterChange);
+
+    if (!isSafeCounter(after)) {
+        throw new Error(`${field} on ${page} would be too large to count exactly. Nothing changed.`);
+    }
+
+    const same = (base: unknown): boolean => {
+        const counter = readCounter(base);
+        return counter !== undefined && formatCounter(counter) === formatCounter(after);
+    };
+
+    return { before: formatCounter(before), after: formatCounter(after), amount: { ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond }, note: limitNote(after, beyond), same };
+}
+
+/** A change to money (MON-4, MON-5): coins received with by, paid with spend or a negative by, the purse set with to. */
+function moneyStep(input: { by?: number | string; spend?: number | string; to?: number | string; }, purse: Purse, coins: Coin[], page: string, field: string): Step
+{
+    const given = [input.by, input.spend, input.to].filter((part) => part !== undefined);
+
+    if (given.length !== 1) {
+        throw new Error('Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 sp".');
+    }
+
+    const asked = given[0];
+    const parameter = input.by !== undefined ? "by" : input.spend !== undefined ? "spend" : "to";
+    const signed = typeof asked === "string" ? readSignedAmount(asked, coins) : undefined;
+
+    if (signed === undefined || (parameter !== "by" && String(asked).trim().startsWith("-"))) {
+        const example = `${parameter === "by" ? "+" : ""}${Math.abs(Number(String(asked).trim())) || 5} ${coins[0].name}`;
+        const what = parameter === "by" ? "coins to add or, with a minus, to pay" : "coins";
+        throw new Error(`"${String(asked)}" is not ${what} for ${field} on ${page}: give coins of the campaign (${coinNames(coins)}), such as ${parameter} "${example}".`);
+    }
+
+    const paying = parameter === "spend" || (parameter === "by" && signed.sign === -1);
+
+    if (paying && totalOf(signed.purse, coins) === 0) {
+        throw new Error(`Give ${parameter} the coins paid, such as ${parameter} "${parameter === "by" ? "-" : ""}5 ${coins[0].name}".`);
+    }
+
+    const payment = paying ? payCoins(purse, signed.purse, coins) : undefined;
+
+    if (paying && payment === undefined) {
+        throw new Error(`${page} has ${field} ${formatAmount(purse, coins)} (${formatTotal(purse, coins)}): cannot pay ${formatAmount(signed.purse, coins)} (${formatTotal(signed.purse, coins)}). Nothing changed.`);
+    }
+
+    const after = payment?.purse ?? (parameter === "to" ? signed.purse : addCoins(purse, signed.purse));
+
+    if (!isSafePurse(after, coins)) {
+        throw new Error(`${field} on ${page} would be too large to count exactly. Nothing changed.`);
+    }
+
+    const text = (coinsGiven: Purse | undefined): string | undefined => (coinsGiven === undefined || Object.keys(coinsGiven).length === 0 ? undefined : formatAmount(coinsGiven, coins));
+    const handed = text(payment?.given);
+    const back = text(payment?.back);
+    const amount = formatAmount(signed.purse, coins);
+    const request = parameter === "to" ? { to: amount } : parameter === "spend" ? { spend: amount } : { by: `${signed.sign === -1 ? "-" : "+"}${amount}` };
+    const others = Object.keys(after).some((name) => name !== coins[0].name);
+
+    const same = (base: unknown): boolean => {
+        const basePurse = readAmount(base, coins);
+        return basePurse !== undefined && formatAmount(basePurse, coins) === formatAmount(after, coins);
+    };
+
+    return {
+        before: formatAmount(purse, coins),
+        after: formatAmount(after, coins),
+        amount: { ...request, given: handed, back },
+        note: back !== undefined ? `${handed} given, ${back} back` : handed === undefined ? "" : `paid with ${handed}`,
+        total: others ? formatTotal(after, coins) : undefined,
+        same,
+    };
+}
+
+/** The value a missing counter or purse is shown with, in the hint to add one: money that the page holds, when money was asked for; else 12/12. */
+function exampleValue(input: { by?: number | string; spend?: number | string; to?: number | string; }, coins: Coin[] | undefined): string
+{
+    const money = coins !== undefined && [input.by, input.spend, input.to].some((part) => typeof part === "string" && readSignedAmount(part, coins) !== undefined);
+    return money && coins !== undefined ? `10 ${coins[0].name} (what it holds, not the price)` : "12/12";
+}
+
+/** "gp/mo, pp, sp, cp": the coins of the campaign, by all their names. */
+function coinNames(coins: Coin[]): string
+{
+    return coins.map((coin) => coin.names.join("/")).join(", ");
+}
 
 /** What holds the counter, given by name or as a link: a copy in the open scene first, then a page. */
 function holderNamed(root: string, world: World, name: string): CounterHolder
@@ -153,8 +253,8 @@ function logFollowers(root: string, world: World, context: Context, followers: P
     }
 }
 
-/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters it holds and how to add one. */
-function fieldName(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string): string
+/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters and money it holds and how to add one. */
+function fieldName(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string, example: string, coins: Coin[] | undefined): string
 {
     const keys = Object.keys(fields);
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
@@ -169,12 +269,14 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
         return found;
     }
 
-    const counters = keys.flatMap((key) => {
-        const counter = isStandardField(page.type, key) ? undefined : readCounter(fields[key]);
-        return counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];
+    const held = keys.filter((key) => !isStandardField(page.type, key)).flatMap((key) => {
+        const counter = readCounter(fields[key]);
+        const purse = coins === undefined ? undefined : readAmount(fields[key], coins);
+        return purse !== undefined && coins !== undefined ? [`${key} ${formatAmount(purse, coins)}`] : counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];
     });
-    const held = counters.length > 0 ? `Its counters: ${counters.join(", ")}.` : "It has no counters.";
-    throw new Error(`${page.name} has no field "${name}". ${held} ${howToAdd(world, holder, name)}`);
+    const hasMoney = coins !== undefined && keys.some((key) => readAmount(fields[key], coins) !== undefined);
+    const listed = held.length > 0 ? `Its counters${hasMoney ? " and money" : ""}: ${held.join(", ")}.` : "It has no counters.";
+    throw new Error(`${page.name} has no field "${name}". ${listed} ${howToAdd(world, holder, name, example)}`);
 }
 
 /** The value a page reads for a field, written in any case. */
@@ -184,7 +286,7 @@ function counterOf(world: World, page: Page, field: string): unknown
 }
 
 /** How to add a counter that neither the page nor its bases hold; or why its base cannot be read. */
-function howToAdd(world: World, holder: CounterHolder, name: string): string
+function howToAdd(world: World, holder: CounterHolder, name: string, example: string): string
 {
     const page = holder.page;
     const link = typeof page.fields.creature === "string" ? page.fields.creature : undefined;
@@ -196,31 +298,55 @@ function howToAdd(world: World, holder: CounterHolder, name: string): string
     }
 
     if (base === undefined) {
-        return `To add one, use write, such as set ${name}=12/12.`;
+        return `To add one, use write, such as set ${name}=${example}.`;
     }
 
     if (holder.kind === "copy") {
-        return `To add one to ${page.name} alone, use write, such as set ${name}=12/12. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.`;
+        return `To add one to ${page.name} alone, use write, such as set ${name}=${example}. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.`;
     }
 
-    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=12/12, and everything that derives from ${base.name} takes it; or on ${page.name} alone.`;
+    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=${example}, and everything that derives from ${base.name} takes it; or on ${page.name} alone.`;
 }
 
-function notCounterMessage(page: string, field: string, value: unknown): string
+function notCounterMessage(page: string, field: string, value: unknown, coins: Coin[] | undefined): string
 {
     if (typeof value === "string" && readCounterText(value) !== undefined) {
         return `${field} on ${page} is the text "${value}": write it without quotes, such as ${field}: ${value}, to make it a counter.`;
     }
 
-    return `${field} on ${page} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
+    // Coins of the campaign after a number, such as "34 mo e 4 ma", meant money that does not read as an amount (MON-2).
+    if (typeof value === "string" && coins !== undefined && namesCoins(value, coins)) {
+        return `${field} on ${page} is "${value}", not money: write the coins one after the other, such as set ${field}=12 ${coins[0].name}.`;
+    }
+
+    const notCounter = `${field} on ${page} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
+    const word = typeof value === "string" ? /\d+\s*(\p{L}[\p{L}\p{M}]*)/u.exec(value)?.[1] : undefined;
+
+    if (word === undefined) {
+        return notCounter;
+    }
+
+    return coins === undefined
+        ? `${notCounter} If it is money, the campaign needs its coins: set them with config, naming them as written here (${word}), each with its value in the smallest.`
+        : `${notCounter} If it is money, ${word} is not a coin of the campaign (${coinNames(coins)}): write it with those, or give a coin that name too with config, such as ${coins[0].name}/${word}.`;
 }
 
-function readChange(input: { by?: number; spend?: number; to?: number | string; }, counter: Counter, page: string, field: string): CounterChange
+function readChange(input: { by?: number | string; spend?: number | string; to?: number | string; }, counter: Counter, page: string, field: string, coins: Coin[] | undefined): CounterChange
 {
     const given = [input.by, input.spend, input.to].filter((part) => part !== undefined);
 
     if (given.length !== 1) {
         throw new Error("Give one of by (damage, healing), spend (what is paid or used up) or to (a value, max, or current/max).");
+    }
+
+    if (typeof input.by === "string" || typeof input.spend === "string") {
+        const parameter = typeof input.by === "string" ? "by" : "spend";
+        // A plain number given coins may be money written without them; a current/max counter is no purse.
+        const coinsAsked = counter.max === undefined && coins !== undefined && readSignedAmount(String(input.by ?? input.spend), coins) !== undefined;
+        const money = coinsAsked && coins !== undefined
+            ? `${field} on ${page} is a number, not money: to count it in coins, set it with its coins, such as set ${field}=${counter.value} ${coins[0].name}; or give ${parameter} a whole number.`
+            : undefined;
+        throw new Error(money ?? `${field} on ${page} is a counter: give ${parameter} a whole number, such as ${parameter === "by" ? "by -7" : "spend 1"}.`);
     }
 
     if (input.by !== undefined) {

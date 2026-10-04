@@ -15,6 +15,8 @@ export const settingsSchema = z.object({
     system: z.string().min(1).optional().describe("game system of the campaign, such as 5e"),
     lines: z.array(z.string().min(1)).nullish().describe("what never appears in the game"),
     veils: z.array(z.string().min(1)).nullish().describe("what happens only off screen, without details"),
+    // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
+    coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
 }).loose();
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;
@@ -24,15 +26,28 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing. */
-export const listSettingNames = settingNames.filter((name) => settingsSchema.shape[name].safeParse([]).success);
+export const listSettingNames: SettingName[] = ["lines", "veils"];
+
+// Settings that only some games have: never asked for when missing.
+const optionalSettingNames: SettingName[] = ["coins"];
 
 export function readSettings(root: string): CampaignSettings
 {
     return validateSettings(readYamlValues(join(root, campaignFileName), settingsHold));
 }
 
-/** Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the setting already has that value, or if the settings would not be valid. Returns whether it changed. */
-export function changeSetting(root: string, name: string, value: string): boolean
+/** The coins as campaign.yaml writes them, unchecked and read on their own, so that a mistake in another setting does not hide them; the money module checks them (MON-1). */
+export function readCoinsSetting(root: string): unknown
+{
+    const values = readYamlValues(join(root, campaignFileName), settingsHold);
+    return values !== null && typeof values === "object" ? (values as Record<string, unknown>).coins : undefined;
+}
+
+/**
+ * Changes one setting and keeps the rest of campaign.yaml, comments included, as it is. Nothing is written if the setting already has that value, or if the settings would not be valid.
+ * Returns whether it changed. The value is text, or for coins the list already read.
+ */
+export function changeSetting(root: string, name: string, value: unknown): boolean
 {
     const setting = checkSettingName(name);
 
@@ -43,12 +58,12 @@ export function changeSetting(root: string, name: string, value: string): boolea
     const parsed = settingsSchema.shape[setting].safeParse(value);
 
     if (!parsed.success) {
-        throw new Error(`"${value}" is not a valid ${setting}:\n${z.prettifyError(parsed.error)}`);
+        throw new Error(`"${String(value)}" is not a valid ${setting}:\n${z.prettifyError(parsed.error)}`);
     }
 
     const document = readSettingsDocument(root);
 
-    if (document.get(setting) === parsed.data) {
+    if (JSON.stringify((document.toJS() as Record<string, unknown> | null)?.[setting]) === JSON.stringify(parsed.data)) {
         return false;
     }
 
@@ -122,7 +137,7 @@ export function checkSettings(root: string): Problem[]
 /** The settings that are still missing: the AI asks the player for them. */
 export function missingSettings(settings: CampaignSettings): SettingName[]
 {
-    return settingNames.filter((name) => !listSettingNames.includes(name) && settings[name] === undefined);
+    return settingNames.filter((name) => !listSettingNames.includes(name) && !optionalSettingNames.includes(name) && settings[name] === undefined);
 }
 
 export function checkSettingName(name: string): SettingName
