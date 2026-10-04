@@ -3,8 +3,10 @@ import { z } from "zod";
 import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
-import { findPage, isEmptyField, parsePageReference, type World } from "../pages/index.ts";
+import { comparableText, sameName } from "../core/text.ts";
+import { baseChain, isEmptyField, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
+import { countersText, pageCounters } from "./page-counters.ts";
 
 /** A scene that has been closed, as the log keeps it. */
 export interface ClosedScene
@@ -57,10 +59,66 @@ export function rawScene(root: string): unknown
     return readStateValues(root).scene;
 }
 
-/** A copy's counters: all its fields but the creature it copies. */
-export function copyCounters(copy: SceneCopy): Record<string, unknown>
+/** What a copy changed: all its fields but the creature it copies (D-110). */
+export function copyChanges(copy: SceneCopy): Record<string, unknown>
 {
     return Object.fromEntries(Object.entries(copy).filter(([field]) => field !== "creature"));
+}
+
+/** A copy seen as a page that derives from its creature (INH-14): what it changed are its fields, the scene is where it is written. */
+export function copyPage(name: string, copy: SceneCopy): Page
+{
+    return { name, type: "creature", path: "state.yaml", fields: { creature: copyLink(copy), ...copyChanges(copy) }, body: "" };
+}
+
+/** The creature a copy copies, as a link: one written by hand without brackets is a link all the same. */
+export function copyLink(copy: SceneCopy): string
+{
+    return `[[${parsePageReference(copy.creature).name}]]`;
+}
+
+/** A copy's counters as the outputs show them (INH-12): what it changed, and the current/max ones it reads from its creature. */
+export function copyCounters(world: World, copy: SceneCopy): Record<string, unknown>
+{
+    return pageCounters(world, copyPage("copy", copy));
+}
+
+/** The copy in the open scene that `name` names, ignoring case; undefined when none does. A page with the same name leaves unclear which one is meant: refused. */
+export function copyName(world: World, scene: Scene | undefined, name: string): string | undefined
+{
+    const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), name);
+
+    if (copy !== undefined && world.pages.some((page) => comparableText(page.name) === comparableText(copy))) {
+        throw new Error(`${copy} is both a copy in the open scene and a page, so it is not clear which one is meant. Close the scene, which removes the copy, or rename the page. Nothing changed.`);
+    }
+
+    return copy;
+}
+
+/**
+ * A creature whose copies are in the open scene, directly or through a variant, gives them what they do not change: what is meant for a copy must not land on it (INH-10, INH-11).
+ * A scene that cannot be read may hold copies of any creature.
+ */
+export function checkNotCopied(world: World, open: { scene?: Scene; problem?: Problem; }, page: Page): void
+{
+    if (open.problem !== undefined && page.type === "creature") {
+        throw new Error(`${page.name} is a creature, and the open scene, which may hold its copies, cannot be read: ${open.problem.message} To fix it, ${open.problem.fix}. Nothing changed.`);
+    }
+
+    const copies = open.scene === undefined ? [] : copiesReadingFrom(world, open.scene, page);
+
+    if (copies.length > 0) {
+        throw new Error(`${page.name} has copies in the open scene, which read from it what they do not change: ${copies.join(", ")}. Change a copy; to change ${page.name} for all, close the scene first. Nothing changed.`);
+    }
+}
+
+/** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */
+export function copiesReadingFrom(world: World, scene: Scene, page: Page): string[]
+{
+    return Object.entries(scene.copies).filter(([name, copy]) => baseChain(world, copyPage(name, copy)).includes(page)).map(([name, copy]) => {
+        const counters = countersText(copyCounters(world, copy));
+        return counters === "" ? name : `${name} (${counters})`;
+    });
 }
 
 /** Writes a whole new scene into state.yaml, or, undefined, removes it when the scene closes. */
@@ -103,13 +161,14 @@ export function sceneProblems(root: string, world: World): Problem[]
         return [];
     }
 
+    const exists = (name: string): boolean => world.pages.some((page) => comparableText(page.name) === comparableText(name));
     const links = [scene.place, ...scene.with, ...Object.values(scene.copies).map((copy) => copy.creature)].filter((link) => link !== undefined);
-    const missing = links.filter((link) => findPage(world, parsePageReference(link).name) === undefined).map((link) => ({
+    const missing = links.filter((link) => !exists(parsePageReference(link).name)).map((link) => ({
         path: "state.yaml",
         message: `The open scene links to ${link}, which does not exist.`,
         fix: "create that page, or close the scene and open it again",
     }));
-    const clashes = Object.keys(scene.copies).filter((name) => findPage(world, name) !== undefined).map((name) => ({
+    const clashes = Object.keys(scene.copies).filter(exists).map((name) => ({
         path: "state.yaml",
         message: `${name} is both a copy in the open scene and a page, so change cannot tell which one is meant.`,
         fix: "close the scene, which removes the copy, or rename the page",

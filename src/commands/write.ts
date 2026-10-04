@@ -1,12 +1,79 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
-import { formatCounter, readCounter } from "../counters/index.ts";
-import { findPage, isStandardField, loadWorld, misspelledFieldProblem, newPageFields, type Page, type PageType, pageTypeNames, parsePageReference, readFieldValue, writePage } from "../pages/index.ts";
+import { comparableText, withArticle } from "../core/text.ts";
+import { type Counter, formatCounter, readCounter } from "../counters/index.ts";
+import {
+    baseValue,
+    changedFields,
+    checkFieldChange,
+    derivedPages,
+    type FieldChange,
+    findPage,
+    followersOf,
+    holdsField,
+    inheritedFields,
+    introductionFollowersOf,
+    introductionText,
+    isEmptyField,
+    isNeverInherited,
+    isStandardField,
+    keepersOf,
+    linksIn,
+    loadWorld,
+    misspelledFieldProblem,
+    misspelledStandardField,
+    newBaseProblem,
+    newPageFields,
+    ownFieldChange,
+    type Page,
+    type PageType,
+    pageTypeNames,
+    parsePageReference,
+    playerConcerns,
+    readFieldValue,
+    removedFieldName,
+    sameAsBase,
+    sectionFollowersOf,
+    type TextMode,
+    textParts,
+    withPage,
+    type World,
+    writePage,
+    writtenFieldName,
+} from "../pages/index.ts";
+import type { Scene } from "../scene/index.ts";
+import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, plannedEventDateProblem } from "./game-time.ts";
-import { skippedPagesNote } from "./notes.ts";
+import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+
+/** What a write did, on a page or on a copy in the open scene. */
+interface WriteResult
+{
+    page: string;
+    type?: PageType;
+    path: string;
+    created: boolean;
+    changed: boolean;
+    set: string[];
+    /** Fields given the value the page reads from a base, which it holds no more: "ac again as Lupo" (D-125). */
+    again: string[];
+    unset: string[];
+    add: string[];
+    remove: string[];
+    section?: string;
+    mode?: TextMode;
+    /** For a copy in the open scene: the creature it copies. */
+    copyOf?: string;
+    /** The pages that changed with this one, and why (INH-11). */
+    followers: string[];
+    followersWhy: string;
+    /** What else the master should know: pages that keep their own value, values a page keeps after its creature changed. */
+    notes: string[];
+    problems: string[];
+}
 
 // How the output names each way of writing text.
 const textChanges = { replace: "wrote", append: "added to", remove: "removed" };
@@ -21,11 +88,12 @@ export const write = defineCommand({
         + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
         + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
         + "A list field changes one item at a time with add and remove. "
+        + "It also writes the fields of a copy in the open scene, such as a condition. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",
     positionals: ["page"],
     input: z.object({
-        page: z.string().describe("name of the page; Page#Name writes one section or one secret"),
+        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name writes one section or one secret"),
         type: z.enum(pageTypeNames).optional().describe(`type of a new page: ${pageTypeNames.join(", ")}`),
         set: fieldValues.optional().describe('fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]'),
         unset: z.array(z.string()).optional().describe("fields to remove, repeatable"),
@@ -37,7 +105,7 @@ export const write = defineCommand({
         secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
     }),
 
-    run(input, context)
+    run(input, context): WriteResult
     {
         const root = requireCampaign(context.folder);
         const reference = parsePageReference(input.page);
@@ -52,23 +120,63 @@ export const write = defineCommand({
             throw new Error("Give the text to write.");
         }
 
-        const set = input.set === undefined ? undefined : readFields(input.set);
-        const add = input.add === undefined ? undefined : readListItems(input.add);
-        const remove = input.remove === undefined ? undefined : readListItems(input.remove);
+        const fields: FieldChange = {
+            set: input.set === undefined ? undefined : readFields(input.set),
+            unset: input.unset,
+            add: input.add === undefined ? undefined : readListItems(input.add),
+            remove: input.remove === undefined ? undefined : readListItems(input.remove),
+        };
         const world = loadWorld(root);
+        const open = readOpenScene(root);
+        const copy = copyName(world, open.scene, reference.name);
+
+        if (open.scene !== undefined && copy !== undefined) {
+            return writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section }, fields);
+        }
+
         const existing = findPage(world, reference.name);
-        checkFieldNames(existing?.type ?? input.type, [set, add, remove]);
-        checkCounters(existing, set);
-        checkPlannedEventDate(existing, input.type, set, input.unset);
-        const { page, created, changed, mode } = writePage(world, reference.name, input.type, { set, unset: input.unset, add, remove, text: input.text, section, append: input.append, secret: input.secret });
+
+        if (existing === undefined && input.type === undefined) {
+            const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
+            const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it.";
+            throw new Error(`There is no page named ${reference.name}${copies}. To create it, give its type: ${pageTypeNames.join(", ")}.${unreadable}`);
+        }
+
+        const type = existing?.type ?? input.type;
+        checkFieldNames(type, fields);
+        checkFieldChange(type, fields);
+        checkValues(fields);
+
+        if (existing !== undefined) {
+            if (changedFieldNames(fields).some(passesOn)) {
+                checkNotCopied(world, open, existing);
+            }
+
+            checkCounters(world, existing, fields.set);
+            checkClearedCounters(world, existing, ownFieldChange(world, existing, fields));
+            checkLists(world, existing, fields);
+        }
+
+        checkBase(world, existing?.name ?? reference.name, type, fields.set);
+        checkPlannedEventDate(existing, input.type, fields.set, fields.unset);
+        const { page, created, changed, mode } = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
-            const data = { page: page.name, type: page.type, set, unset: input.unset, add, remove, section, secret: input.secret, text: input.text, mode };
+            const data = { page: page.name, type: page.type, ...fields, section, secret: input.secret, text: input.text, mode };
             appendLogEntry(root, newDatedLogEntry(root, context, created ? "page-created" : "page-updated", "hidden", data));
         }
 
-        const fieldChanges = { set: Object.keys(set ?? {}), unset: input.unset ?? [], add: Object.keys(add ?? {}), remove: Object.keys(remove ?? {}) };
-        return { page: page.name, type: page.type, path: page.path, created, changed, ...fieldChanges, section, mode, problems: world.problems };
+        const now = withPage(world, existing, page);
+        const followers = changed ? followersOfWrite(now, existing, page) : { pages: [], why: "" };
+
+        if (changed && existing !== undefined) {
+            const self: [Page, Page][] = changedNames(existing, page).some((field) => comparableText(field) === "creature") ? [[existing, page]] : [];
+            logCounterChanges(root, context, world, now, [...self, ...followers.pages.map((follower): [Page, Page] => [follower, follower])]);
+        }
+
+        const notes = !changed ? [] : existing === undefined ? derivesFromNothingNote(now, page) : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page)];
+        const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode };
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes, problems: world.problems };
     },
 
     format(result)
@@ -76,44 +184,153 @@ export const write = defineCommand({
         const where = result.section === undefined ? "the introduction" : `"${result.section}"`;
         const changes = [
             result.set.length > 0 ? `set ${result.set.join(", ")}` : "",
+            ...result.again,
             result.unset.length > 0 ? `removed ${result.unset.join(", ")}` : "",
             result.add.length > 0 ? `added to ${result.add.join(", ")}` : "",
             result.remove.length > 0 ? `removed from ${result.remove.join(", ")}` : "",
             result.mode === undefined ? "" : `${textChanges[result.mode]} ${where}`,
         ].filter((change) => change !== "");
         const summary = result.changed ? changeSummary(result, changes) : `Nothing changed on ${result.page}: it already reads like that.`;
-        return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        const followers = followersNote(result.followers, result.followersWhy, "write");
+        return [[summary, followers, ...result.notes].filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 
-/** A standard field written in another case, such as Status, would be a field the engine does not read: refused before any other check. */
-function checkFieldNames(type: PageType | undefined, changes: (Record<string, unknown> | undefined)[]): void
+/** Writes the fields of a copy in the open scene (INH-14): only what differs from its creature, never its text, the creature it copies or fixed fields. */
+function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; }, requested: FieldChange): WriteResult
 {
-    const problem = changes.flatMap((change) => Object.keys(change ?? {})).map((name) => misspelledFieldProblem(type, name)).find((found) => found !== undefined);
+    const creature = copyLink(scene.copies[name]);
+
+    if (input.type !== undefined) {
+        throw new Error(`${name} is a copy of ${creature} in the open scene, not a page: leave out type to write its fields, or give the new page another name.`);
+    }
+
+    if (input.text !== undefined || input.section !== undefined) {
+        throw new Error(`${name} is a copy of ${creature} in the open scene: it has no text of its own, only fields that differ from its creature, such as set frightened=true. ${promotion(name, creature, "text")}`);
+    }
+
+    const names = changedFieldNames(requested);
+
+    if (names.length === 0) {
+        throw new Error(`Nothing to write on ${name}: give fields to set, unset, add or remove.`);
+    }
+
+    names.forEach((field) => checkCopyField(name, creature, field));
+    checkFieldChange("creature", requested);
+    checkValues(requested);
+    const before = copyPage(name, scene.copies[name]);
+    checkCounters(world, before, requested.set);
+    const change = ownFieldChange(world, before, requested);
+    checkClearedCounters(world, before, change);
+    checkLists(world, before, requested);
+
+    (requested.unset ?? []).forEach((field, index) => {
+        if (!Object.hasOwn(before.fields, change.unset?.[index] ?? field)) {
+            const base = baseValue(world, before, field);
+            throw new Error(`${name} has no field "${field}" to remove${base === undefined ? "" : `: it reads ${base.name} from ${base.base.name}, and holds no value of its own`}.`);
+        }
+    });
+
+    const own = copyChanges(scene.copies[name]);
+    const written = changedFields(own, change);
+    const virtual = copyPage(name, { creature, ...written });
+    const touched = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
+    const after = Object.fromEntries(Object.entries(written).filter(([field]) => !touched.includes(field) || !sameAsBase(world, virtual, field)));
+    const changed = [...new Set([...Object.keys(own), ...Object.keys(after)])].filter((field) => JSON.stringify(own[field]) !== JSON.stringify(after[field]));
+
+    if (changed.length > 0) {
+        updateScene(root, changed.map((field) => [["copies", name, field], after[field]]));
+        appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: name, copy: true, ...requested }));
+    }
+
+    const result = { page: name, type: before.type, path: "state.yaml", created: false, changed: changed.length > 0, ...writtenNames(world, before, requested, copyPage(name, { creature, ...after })) };
+    return { ...result, copyOf: creature, followers: [], followersWhy: "", notes: [], problems: world.problems };
+}
+
+/** A copy holds only what it would otherwise read from its creature: not the creature it copies, nor fixed fields or relations (INH-8, INH-14). */
+function checkCopyField(name: string, creature: string, field: string): void
+{
+    if (comparableText(field) === "creature") {
+        throw new Error(`creature is what ${name} copies, and it does not change: to bring in another creature, add a copy of it with scene add.`);
+    }
+
+    if (isStandardField("creature", field) || misspelledStandardField("creature", field) !== undefined || isNeverInherited(field)) {
+        throw new Error(`${field} is not a field a copy holds: a copy holds only what differs from its creature, ${creature}, such as a counter, a condition or a form. ${promotion(name, creature, field)}`);
+    }
+}
+
+/** How a copy becomes a page of its own, to hold text, relations or a status: it leaves the scene and comes back as a character (D-110, INH-14). */
+function promotion(name: string, creature: string, what: string): string
+{
+    return `To give it ${what} of its own, make it a character: show it to read its values, let it leave with scene leave, write ${name} as a character with creature=${creature} and those values, then bring it back with scene add.`;
+}
+
+/** A standard field written in another case, such as Status, would be a field the engine does not read: refused before any other check. */
+function checkFieldNames(type: PageType | undefined, change: FieldChange): void
+{
+    const names = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
+    const problem = names.map((name) => misspelledFieldProblem(type, name)).find((found) => found !== undefined);
 
     if (problem !== undefined) {
         throw new Error(problem);
     }
 }
 
-/** A counter written as current/max changes only with change, which keeps its limits and logs why (D-92). */
-function checkCounters(page: Page | undefined, set: Record<string, unknown> | undefined): void
+/** A counter written as current/max changes only with change, which keeps its limits and logs why (D-92, INH-11). A value that is not a counter makes it something else: on a page that holds it alone, only after unset. */
+function checkCounters(world: World, page: Page, set: Record<string, unknown> | undefined): void
 {
-    if (page === undefined || set === undefined) {
-        return;
-    }
+    const fields = inheritedFields(world, page);
 
-    for (const [field, value] of Object.entries(set)) {
-        const existing = Object.keys(page.fields).find((key) => comparableText(key) === comparableText(field));
-        const counter = existing === undefined || isStandardField(page.type, existing) ? undefined : readCounter(page.fields[existing]);
+    for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
+        const name = Object.keys(fields).find((key) => comparableText(key) === comparableText(field));
+        const counter = name === undefined || isStandardField(page.type, name) ? undefined : readCounter(fields[name]);
         const newCounter = readCounter(value);
+        const base = baseValue(world, page, field);
 
-        if (counter?.max === undefined || (existing === field && newCounter !== undefined && formatCounter(newCounter) === formatCounter(counter))) {
+        if (name === undefined || counter?.max === undefined || (newCounter !== undefined && formatCounter(newCounter) === formatCounter(counter)) || (newCounter === undefined && base !== undefined)) {
             continue;
         }
 
-        const target = newCounter === undefined ? "a value" : formatCounter(newCounter);
-        throw new Error(`${existing} is a counter: use change, page "${page.name}", field ${existing}, to ${target} (or by an amount). To make it something else, unset it, then set it.`);
+        throw new Error(counterMessage(page, name, newCounter, holdsField(page, name) ? undefined : base?.base, base !== undefined));
+    }
+}
+
+function counterMessage(page: Page, field: string, newCounter: Counter | undefined, readFrom: Page | undefined, hasBase: boolean): string
+{
+    const use = `use change, page "${page.name}", field ${field}, to ${newCounter === undefined ? "a value" : formatCounter(newCounter)} (or by an amount)`;
+    const other = hasBase ? "To make it something else, set a value that is not a counter." : "To make it something else, unset it, then set it.";
+    return readFrom === undefined ? `${field} is a counter: ${use}. ${other}` : `${field} is a counter that ${page.name} reads from ${readFrom.name}: ${use}, which writes it on ${page.name} only. ${other}`;
+}
+
+/**
+ * Removing a counter that a base also holds as current/max would bring back the base's value with no line in the log: change does it, and logs it (INH-11).
+ * `change` names the fields as the page writes them. The same field written twice in another case may lose one of the two: validate asks for it.
+ */
+function checkClearedCounters(world: World, page: Page, change: FieldChange): void
+{
+    for (const own of (change.unset ?? []).filter((field) => Object.hasOwn(page.fields, field))) {
+        const counter = isStandardField(page.type, own) ? undefined : readCounter(page.fields[own]);
+        const base = baseValue(world, page, own);
+        const baseCounter = base === undefined ? undefined : readCounter(base.value);
+        const alsoHeld = Object.keys(page.fields).some((other) => other !== own && comparableText(other) === comparableText(own) && !isEmptyField(page.fields[other]));
+
+        if (!alsoHeld && base !== undefined && counter?.max !== undefined && baseCounter?.max !== undefined) {
+            const value = formatCounter(baseCounter);
+            throw new Error(
+                `${own} on ${page.name} is a counter: without it, ${page.name} would read ${value} from ${base.base.name}, with no line in the log. Use change, page "${page.name}", field ${own}, to ${value}: it takes the field off, and ${page.name} follows ${base.base.name} again.`,
+            );
+        }
+    }
+}
+
+/** A character or creature derives only from another creature, never in a loop (INH-2, INH-3). */
+function checkBase(world: World, name: string, type: PageType | undefined, set: Record<string, unknown> | undefined): void
+{
+    const link = set?.creature;
+    const problem = typeof link === "string" ? newBaseProblem(world, { name, type }, link) : undefined;
+
+    if (problem !== undefined) {
+        throw new Error(`${problem} Nothing changed.`);
     }
 }
 
@@ -135,16 +352,214 @@ function checkPlannedEventDate(page: Page | undefined, type: PageType | undefine
     }
 }
 
-function changeSummary(result: { page: string; type?: string; path: string; created: boolean; }, changes: string[]): string
+/**
+ * The pages that change with a page a write changed (INH-11): all those deriving from it when it is new or derives from another creature now;
+ * else those that read a field it changed, or show the section it wrote.
+ */
+function followersOfWrite(now: World, before: Page | undefined, after: Page): { pages: Page[]; why: string; }
 {
-    const what = `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})`;
+    if (after.type !== "creature") {
+        return { pages: [], why: "" };
+    }
+
+    const changed = [...new Set([...Object.keys(before?.fields ?? {}), ...Object.keys(after.fields)])].filter((field) => JSON.stringify(before?.fields[field]) !== JSON.stringify(after.fields[field]));
+
+    if (before === undefined || changed.some((field) => comparableText(field) === "creature")) {
+        return { pages: derivedPages(now, after), why: `since they derive from ${after.name}` };
+    }
+
+    const byField = changed.map((field) => ({ name: field, pages: followersOf(now, after, field) }));
+    const bySection = changedParts(before.body, after.body).map((part) => ({ name: part === "" ? "a secret without a name" : `#${part}`, pages: part === "" ? derivedPages(now, after) : sectionFollowersOf(now, after, part) }));
+    const byIntroduction = introductionText(before.body) === introductionText(after.body) ? [] : [{ name: "the introduction", pages: introductionFollowersOf(now, after) }];
+    const reasons = [...byField, ...bySection, ...byIntroduction].filter((reason) => reason.pages.length > 0);
+    const pages = new Set(reasons.flatMap((reason) => reason.pages));
+    return { pages: now.pages.filter((page) => pages.has(page)), why: `since they read ${reasons.map((reason) => reason.name).join(", ")} from ${after.name}` };
+}
+
+/** The names of the sections and secrets that a text has with another text, gained or no longer has; "" when its secrets without a name changed, which every derived page shows. */
+function changedParts(before: string, after: string): string[]
+{
+    const texts = (body: string): Map<string, string> => new Map(textParts(body).filter((part) => part.name !== "").map((part) => [comparableText(part.name), part.text]));
+    const unnamed = (body: string): string => textParts(body).filter((part) => part.name === "").map((part) => part.text).join("\n");
+    const old = texts(before);
+    const now = texts(after);
+    const names = new Map(textParts(`${before}\n\n${after}`).filter((part) => part.name !== "").map((part) => [comparableText(part.name), part.name]));
+    const named = [...names].filter(([key]) => old.get(key) !== now.get(key)).map(([, name]) => name);
+    return unnamed(before) === unnamed(after) ? named : [...named, ""];
+}
+
+/**
+ * One public line for each counter that a write changed through inheritance on a page that concerns the player: a page that follows the base written,
+ * or the page itself when its creature changes. Its name, the field, before and after (INH-10, INH-11). Each page comes as it was and as it is.
+ */
+function logCounterChanges(root: string, context: Context, world: World, now: World, pages: [Page, Page][]): void
+{
+    const concerns = playerConcerns(now);
+
+    for (const [before, after] of pages.filter(([, page]) => concerns(page))) {
+        const old = inheritedFields(world, before);
+
+        for (const [field, value] of Object.entries(inheritedFields(now, after)).filter(([name]) => !isStandardField(after.type, name))) {
+            const was = readCounter(readField(old, field));
+            const is = readCounter(value);
+
+            if (was !== undefined && is !== undefined && formatCounter(was) !== formatCounter(is)) {
+                appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: after.name, field, before: formatCounter(was), after: formatCounter(is) }));
+            }
+        }
+    }
+}
+
+/** A page created with a name that characters or creatures give as their creature, though it is not one: they derive from nothing (INH-2). */
+function derivesFromNothingNote(now: World, page: Page): string[]
+{
+    if (page.type === "creature") {
+        return [];
+    }
+
+    const linking = now.pages.filter((other) => (other.type === "creature" || other.type === "character") && linksIn(other.fields.creature).some((name) => comparableText(name) === comparableText(page.name)));
+    return linking.length === 0
+        ? []
+        : [`${linking.map((other) => other.name).join(", ")} name ${page.name} as their creature, but it is ${withArticle(page.type ?? "free page")}: they derive from nothing until creature links to a creature.`];
+}
+
+/** "Not changed, since they hold their own fiuto: Grigio (fiuto 2)": for each field a write changed on a base, the pages deriving from it that keep their own value. */
+function keepersNotes(now: World, before: Page, after: Page): string[]
+{
+    if (after.type !== "creature") {
+        return [];
+    }
+
+    return changedNames(before, after).flatMap((field) => {
+        const keepers = keepersOf(now, after, field).map((keeper) => `${keeper.name} (${field} ${valueText(readField(inheritedFields(now, keeper), field))})`);
+        const note = keepersNote(keepers, field);
+        return note === "" ? [] : [note];
+    });
+}
+
+/** After its creature changes, the values a page keeps that its new bases give otherwise: they may belong to the old one (D-125). */
+function ownValuesNote(now: World, before: Page, after: Page): string[]
+{
+    if (!changedNames(before, after).some((field) => comparableText(field) === "creature")) {
+        return [];
+    }
+
+    const kept = Object.entries(after.fields).filter(([field, value]) => !isEmptyField(value) && !isNeverInherited(field)).flatMap(([field, value]) => {
+        const base = baseValue(now, after, field);
+        return base === undefined || JSON.stringify(base.value) === JSON.stringify(value) ? [] : [{ field, value, base }];
+    });
+
+    if (kept.length === 0) {
+        return [];
+    }
+
+    // A current/max counter goes back to the base's value with change; anything else is removed.
+    const back = kept.map(({ field, value, base }) => (readCounter(value)?.max !== undefined && readCounter(base.value)?.max !== undefined ? `change ${field} to ${valueText(base.value)}` : `unset ${field}`));
+    const listed = kept.map(({ field, value, base }) => `${field} ${valueText(value)} (${base.base.name} gives ${valueText(base.value)})`);
+    return [`${after.name} keeps its own ${listed.join(", ")}. If they came from its old creature: ${back.join(", ")}.`];
+}
+
+/** The fields whose value a write changed on a page. */
+function changedNames(before: Page, after: Page): string[]
+{
+    return [...new Set([...Object.keys(before.fields), ...Object.keys(after.fields)])].filter((field) => JSON.stringify(before.fields[field]) !== JSON.stringify(after.fields[field]));
+}
+
+/** The value a page reads for a field, written in any case. */
+function readField(fields: Record<string, unknown>, field: string): unknown
+{
+    return Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+}
+
+/** A value as the outputs show it: a list as its items, anything else as written. */
+function valueText(value: unknown): string
+{
+    return Array.isArray(value) ? value.map(String).join(", ") : typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
+}
+
+/** Whether changing a field reaches the pages and copies deriving from a page: a field they inherit, or the creature it derives from. */
+function passesOn(field: string): boolean
+{
+    return !isNeverInherited(field) || comparableText(field) === "creature";
+}
+
+function changedFieldNames(change: FieldChange): string[]
+{
+    return [...Object.keys(change.set ?? {}), ...(change.unset ?? []), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
+}
+
+/** A field is given a value: an empty one would count as missing (INH-6), and removing a field is unset, which checks what it would bring back. */
+function checkValues(change: FieldChange): void
+{
+    const [empty] = Object.entries(change.set ?? {}).filter(([, value]) => isEmptyField(value));
+
+    if (empty !== undefined) {
+        throw new Error(`Give ${empty[0]} a value. To remove a field, use unset.`);
+    }
+}
+
+/** Items are added to or removed from a list: one that the page reads as something else, itself or from a base, is set whole first (INH-7). */
+function checkLists(world: World, page: Page, change: FieldChange): void
+{
+    const fields = inheritedFields(world, page);
+
+    for (const field of [...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})].filter((name) => !Object.hasOwn(change.set ?? {}, name))) {
+        const [name, value] = Object.entries(fields).find(([key]) => comparableText(key) === comparableText(field)) ?? [];
+
+        if (name !== undefined && !Array.isArray(value)) {
+            const base = holdsField(page, name) ? undefined : baseValue(world, page, name)?.base;
+            const from = base === undefined ? "" : `, which ${page.name} reads from ${base.name}`;
+            throw new Error(`${name} on ${page.name} is ${JSON.stringify(value)}${from}, not a list: items cannot be added to it or removed from it. To make it a list, set it whole, such as set ${name}=[a, b].`);
+        }
+    }
+}
+
+/**
+ * The names of the fields a write changed, as the page writes them (INH-5). A value equal to the base's is not written (D-125): it is no change, unless the page
+ * held another, which it holds no more ("ac again as Lupo").
+ */
+function writtenNames(world: World, page: Page | undefined, change: FieldChange, after: Page): { set: string[]; again: string[]; unset: string[]; add: string[]; remove: string[]; }
+{
+    const names = (fields: string[]): string[] => fields.map((field) => (page === undefined ? field : writtenFieldName(world, page, field)));
+    const removed = (change.unset ?? []).map((field) => (page === undefined ? field : removedFieldName(page, field)));
+    const [set, add, remove] = [Object.keys(change.set ?? {}), Object.keys(change.add ?? {}), Object.keys(change.remove ?? {})].map(names);
+    const now = withPage(world, page, after);
+    const base = (field: string): string | undefined => baseValue(now, after, field)?.base.name;
+    // What the page held and holds no more, without being removed: it reads it from a base again. What it was given and does not hold: it reads it from a base all the same.
+    const gone = page === undefined ? [] : Object.keys(page.fields).filter((field) => !isEmptyField(page.fields[field]) && !Object.hasOwn(after.fields, field) && !removed.includes(field) && base(field) !== undefined);
+    const asBase = [...set, ...add, ...remove].filter((field, index, all) => all.indexOf(field) === index && !gone.includes(field) && !Object.hasOwn(after.fields, field) && base(field) !== undefined);
+    const shown = (field: string): boolean => !gone.includes(field) && !asBase.includes(field);
+    return {
+        set: set.filter((field) => shown(field) && JSON.stringify(page?.fields[field]) !== JSON.stringify(after.fields[field])),
+        again: [...gone.map((field) => `${field} again as ${base(field)}`), ...asBase.map((field) => `${field} as ${base(field)}`)],
+        unset: removed,
+        add: add.filter(shown),
+        remove: remove.filter(shown),
+    };
+}
+
+function changeSummary(result: WriteResult, changes: string[]): string
+{
+    const what = result.copyOf === undefined ? `${result.created ? "Created" : "Updated"} ${result.page} (${result.type ?? "free page"}, ${result.path})` : `Updated ${result.page} (copy of ${result.copyOf} in the open scene)`;
     return changes.length > 0 ? `${what}: ${changes.join("; ")}.` : `${what}.`;
 }
 
 /** Fields from field=value pairs, each value read as a link, links, a number, true or false, a list or text; or from an object, as they are. */
 function readFields(fields: string[] | Record<string, unknown>): Record<string, unknown>
 {
-    return Array.isArray(fields) ? Object.fromEntries(fields.map(readAssignment)) : fields;
+    if (!Array.isArray(fields)) {
+        return fields;
+    }
+
+    // The same name twice would be lost in one object; the same field in another case is refused later, with the other changes.
+    const entries = fields.map(readAssignment);
+    const repeated = entries.find(([name], index) => entries.findIndex(([other]) => other === name) !== index);
+
+    if (repeated !== undefined) {
+        throw new Error(`The field ${repeated[0]} is given twice: give each field once.`);
+    }
+
+    return Object.fromEntries(entries);
 }
 
 /** Items for list fields: each value gives one item, or several when it is a list; the same field may come more than once. */

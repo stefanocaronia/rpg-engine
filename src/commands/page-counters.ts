@@ -1,10 +1,15 @@
 import { readCounter } from "../counters/index.ts";
-import { isStandardField, type Page } from "../pages/index.ts";
+import { inheritedFields, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 
-/** The counters on a page, as they are written, such as hp 5/12; fixed fields are never counters. */
-export function pageCounters(page: Page): Record<string, unknown>
+/**
+ * The counters of a page as the outputs show them, such as hp 5/12: all those it holds, and those it inherits written as current/max (D-116, as for copies in D-110).
+ * A statistic it inherits, such as ac 13, is read from its base.
+ */
+export function pageCounters(world: World, page: Page): Record<string, unknown>
 {
-    return Object.fromEntries(Object.entries(page.fields).filter(([field, value]) => !isStandardField(page.type, field) && readCounter(value) !== undefined));
+    const own = new Set(Object.entries(page.fields).filter(([, value]) => !isEmptyField(value)).map(([field]) => field));
+    const counter = (field: string, value: unknown): boolean => !isStandardField(page.type, field) && readCounter(value) !== undefined;
+    return Object.fromEntries(Object.entries(inheritedFields(world, page)).filter(([field, value]) => counter(field, value) && (own.has(field) || readCounter(value)?.max !== undefined)));
 }
 
 /** "hp 5/12 · arrows 18": counters as the outputs show them. */

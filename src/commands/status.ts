@@ -45,7 +45,7 @@ export const status = defineCommand({
         const players = characters.filter((page) => page.fields.role === "pc");
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
         const withLead = (page: Page): boolean => place !== undefined && placeOf(world, page) === place;
-        const member = (page: Page): Member => ({ name: characterName(page), where: locate(world, page).chain.map((holder) => holder.name), withLead: withLead(page), counters: countersOf(page) });
+        const member = (page: Page): Member => ({ name: characterName(page), where: locate(world, page).chain.map((holder) => holder.name), withLead: withLead(page), counters: countersOf(world, page) });
         const present = readPresent(root);
         const now = present.date;
         const events = plannedEvents(world);
@@ -60,7 +60,7 @@ export const status = defineCommand({
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
-            scene: sceneText(readOpenScene(root).scene),
+            scene: sceneText(world, readOpenScene(root).scene),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
             openQuests: pagesWith(world, "quest", "open"),
@@ -139,9 +139,9 @@ function memberCounters(member: Member): string
 }
 
 /** "hp 5/12": the counters on a page as they are written, its fixed fields left out. */
-function countersOf(page: Page): string[]
+function countersOf(world: World, page: Page): string[]
 {
-    return Object.entries(pageCounters(page)).map(([field, value]) => `${field} ${String(value).trim()}`);
+    return Object.entries(pageCounters(world, page)).map(([field, value]) => `${field} ${String(value).trim()}`);
 }
 
 /** The planned events whose date has come: the master plays them first. */
@@ -152,7 +152,7 @@ function dueLine(events: string[]): string
 }
 
 /** "Scontro all'ossario (combat) at Ossario; round 1, Lena's turn; copies: Annegato 1: hp 22/22; Annegato 2: hp 13/22". */
-function sceneText(scene: Scene | undefined): string | undefined
+function sceneText(world: World, scene: Scene | undefined): string | undefined
 {
     if (scene === undefined) {
         return undefined;
@@ -162,7 +162,7 @@ function sceneText(scene: Scene | undefined): string | undefined
     const characters = scene.with.length === 0 ? "" : `, with ${scene.with.map((link) => parsePageReference(link).name).join(", ")}`;
     const turn = scene.turn === undefined ? "" : `; round ${scene.round ?? 1}, ${scene.turn}'s turn`;
     const copies = Object.entries(scene.copies).map(([name, copy]) => {
-        const counters = countersText(copyCounters(copy));
+        const counters = countersText(copyCounters(world, copy));
         return counters === "" ? name : `${name}: ${counters}`;
     });
     return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}`;

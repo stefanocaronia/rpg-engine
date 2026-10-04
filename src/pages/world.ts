@@ -88,6 +88,12 @@ export function findPage(world: World, name: string): Page | undefined
     return found[0];
 }
 
+/** The world with a page as it is now written, in its place or added: for what depends on it, without reading every page again. */
+export function withPage(world: World, before: Page | undefined, after: Page): World
+{
+    return { ...world, pages: [...world.pages.filter((page) => page !== before), after] };
+}
+
 /** Splits "Page", "Page#Section" or a link such as "[[Page#Section|label]]" into the page's name and the section; "Page#" gives an empty section. */
 export function parsePageReference(reference: string): { name: string; section?: string; }
 {
@@ -165,6 +171,26 @@ export function isPartyMember(page: Page): boolean
 export function concernsPlayer(world: World, page: Page): boolean
 {
     return isPartyMember(page) || (page.type === "quest" && page.fields.status === "open") || locate(world, page).chain.some(isPartyMember);
+}
+
+/** Whether the player may see what happens to a page, worked out once for many pages: the same answer as concernsPlayer (D-93). */
+export function playerConcerns(world: World): (page: Page) => boolean
+{
+    const held = new Set<Page>(world.pages.filter(isPartyMember));
+    const queue = [...held];
+
+    for (let holder = queue.shift(); holder !== undefined; holder = queue.shift()) {
+        for (const name of containerFields.flatMap((field) => linksIn(holder.fields[field]))) {
+            const page = world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
+
+            if (page !== undefined && !held.has(page)) {
+                held.add(page);
+                queue.push(page);
+            }
+        }
+    }
+
+    return (page) => held.has(page) || (page.type === "quest" && page.fields.status === "open");
 }
 
 /** The pages whose contents or inventory list the page named `name`. */

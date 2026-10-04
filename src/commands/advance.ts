@@ -4,6 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isEmptyField, loadWorld } from "../pages/index.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
+import { readOpenScene } from "./game-scene.ts";
 import { type DatedEvent, dueAdvice, eventText, isDated, newDatedLogEntry, plannedEvents, presentDate } from "./game-time.ts";
 import { skippedPagesNote } from "./notes.ts";
 
@@ -24,7 +25,12 @@ interface Advance
     unreadable: string[];
     /** Files of the world that could not be read as pages. */
     skipped: string[];
+    /** The scene still open after an hour or more: "Alla locanda (since day 1, 18:00)" (D-115). */
+    openScene?: string;
 }
+
+// An hour or more passing usually ends a scene: then advance reminds that one is still open.
+const sceneReminderMinutes = 60;
 
 export const advance = defineCommand({
     name: "advance",
@@ -84,6 +90,7 @@ export const advance = defineCommand({
             due: stop === undefined ? [] : dated.filter((event) => minutesBetween(stop.date, event.date) === 0).map((event) => eventText(event, reached)),
             stillDue: dueBy(dated, now),
             next: stop === undefined ? nextAfter(dated, reached) : undefined,
+            openScene: passed >= sceneReminderMinutes ? openSceneText(root) : undefined,
             ...notes,
         };
 
@@ -103,6 +110,7 @@ export const advance = defineCommand({
             result.due.length === 0 ? "" : `Due: ${result.due.join(" · ")}. ${dueAdvice(result.due.length)}${rest > 0 ? ` Then advance the other ${formatDuration(rest)}, if they are still doing what they were.` : ""}`,
             stillDueLine(result.stillDue, result.due.length > 0),
             result.next === undefined ? "" : `Next: ${result.next}.`,
+            result.openScene === undefined ? "" : `A scene is still open: ${result.openScene}. Close it if this time ends it.`,
             result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
             skippedPagesNote(result.skipped),
         ].filter((line) => line !== "").join("\n");
@@ -132,6 +140,13 @@ function readRequest(input: { by?: string; to?: string; }): { by: number; } | { 
     }
 
     return { to: date };
+}
+
+/** "Alla locanda (since day 1, 18:00)": the open scene, if any; a scene that cannot be read is left to validate. */
+function openSceneText(root: string): string | undefined
+{
+    const { scene } = readOpenScene(root);
+    return scene === undefined ? undefined : `${scene.title}${scene.opened === undefined ? "" : ` (since ${scene.opened})`}`;
 }
 
 /** The first line: where time went, and where it stopped short of what was asked. */

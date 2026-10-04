@@ -46,6 +46,47 @@ export function repeatedNames(text: string): string[]
     return names.filter((name, index) => keys.indexOf(keys[index]) === index && keys.lastIndexOf(keys[index]) !== index);
 }
 
+/** The sections and secrets of a text, in order, each with its own text: a section's heading and lines up to the next heading, without the secrets in them, which are parts of their own. */
+export function textParts(text: string): { name: string; text: string; }[]
+{
+    const lines = text.split("\n");
+    const headings = headingsOf(lines);
+    const secrets = secretsOf(lines);
+    const inSecret = (index: number): boolean => secrets.some((secret) => index >= secret.start && index < secret.end);
+    const sections = headings.map((heading, index) => {
+        const own = lines.slice(heading.line, headings[index + 1]?.line ?? lines.length).filter((_, offset) => !inSecret(heading.line + offset));
+        return { start: heading.line, name: heading.title, text: trimBlankLines(own.join("\n").replace(/\n{3,}/g, "\n\n")) };
+    });
+    const blocks = secrets.map((secret) => ({ start: secret.start, name: secret.title, text: lines.slice(secret.start, secret.end).join("\n") }));
+    return [...sections, ...blocks].sort((first, second) => first.start - second.start).map(({ name, text: partText }) => ({ name, text: partText }));
+}
+
+/** The introduction of a text, before the first heading, without its secrets. */
+export function introductionText(text: string): string
+{
+    const lines = text.split("\n");
+    const end = headingsOf(lines)[0]?.line ?? lines.length;
+    const secrets = secretsOf(lines);
+    const own = lines.slice(0, end).filter((_, index) => !secrets.some((secret) => index >= secret.start && index < secret.end));
+    return trimBlankLines(own.join("\n").replace(/\n{3,}/g, "\n\n"));
+}
+
+/** The own text of a section, without its heading, subsections and secrets, or of a secret, without its mark and quotes; undefined when the text has no part with that name. */
+export function partContent(text: string, name: string): { secret: boolean; content: string; } | undefined
+{
+    const lines = text.split("\n");
+    const section = findSection(lines, name, "own");
+
+    if (section !== undefined) {
+        const secrets = secretsWithin(lines, { start: section.start + 1, end: section.end });
+        const own = lines.slice(section.start + 1, section.end).filter((_, offset) => !secrets.some((secret) => section.start + 1 + offset >= secret.start && section.start + 1 + offset < secret.end));
+        return { secret: false, content: trimBlankLines(own.join("\n").replace(/\n{3,}/g, "\n\n")) };
+    }
+
+    const secret = findSecret(lines, name);
+    return secret === undefined ? undefined : { secret: true, content: trimBlankLines(lines.slice(secret.start + 1, secret.end).map((line) => line.replace(/^>[ \t]?/, "")).join("\n")) };
+}
+
 /** A section with its subsections, down to the next heading of the same or a higher level, or a secret block. Names ignore case. */
 export function readSection(text: string, title: string): string | undefined
 {

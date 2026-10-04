@@ -1,11 +1,14 @@
 import { Document, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml";
 import { trimBlankLines } from "./markdown.ts";
+import { isEmptyField } from "./standard-fields.ts";
 
 const singleLink = /^\[\[[^\]]+\]\]$/;
 const linkList = /^\[\[[^\]]+\]\](?:\s*,\s*\[\[[^\]]+\]\])+$/;
 const anyLink = /\[\[[^\]]+\]\]/g;
 // Lists in brackets stay as [a, b], the way people write them, and long values stay on one line.
 const yamlStyle = { flowCollectionPadding: false, lineWidth: 0 };
+// A value that appears twice, such as the same list read from two fields, is written twice: never as an anchor and an alias, which is no list.
+const nodeOptions = { aliasDuplicateObjects: false };
 
 /** A page file: its YAML frontmatter, if any, and its markdown text. */
 export interface PageFile
@@ -68,9 +71,23 @@ export function readFields(frontmatter: string | undefined, path: string): Recor
 export function changeFields(frontmatter: string | undefined, change: FieldChange, path: string): string
 {
     const document = frontmatter === undefined ? new Document({}) : parseFrontmatter(frontmatter, path);
+    applyChange(document, change);
+    return isMap(document.contents) && document.contents.items.length === 0 ? "" : document.toString(yamlStyle);
+}
 
+/** Fields with a change applied, for fields kept outside a page file, such as a copy's in the scene. */
+export function changedFields(fields: Record<string, unknown>, change: FieldChange): Record<string, unknown>
+{
+    const document = new Document(fields, nodeOptions);
+    applyChange(document, change);
+    return (document.toJS() ?? {}) as Record<string, unknown>;
+}
+
+function applyChange(document: Document, change: FieldChange): void
+{
     for (const [name, value] of Object.entries(change.set ?? {})) {
-        document.set(name, value);
+        // As a node, so that items can be added to or removed from it in the same change.
+        document.set(name, document.createNode(value, nodeOptions));
     }
 
     for (const name of change.unset ?? []) {
@@ -84,8 +101,6 @@ export function changeFields(frontmatter: string | undefined, change: FieldChang
     for (const [name, values] of Object.entries(change.remove ?? {})) {
         removeFromList(document, name, values);
     }
-
-    return isMap(document.contents) && document.contents.items.length === 0 ? "" : document.toString(yamlStyle);
 }
 
 /** Fields written as YAML, to show them. */
@@ -130,7 +145,7 @@ function addToList(document: Document, name: string, values: unknown[]): void
 {
     const list = document.get(name);
 
-    if (list === undefined) {
+    if (isEmptyField(list)) {
         document.set(name, [...new Set(values)]);
         return;
     }
@@ -140,7 +155,7 @@ function addToList(document: Document, name: string, values: unknown[]): void
     }
 
     for (const value of values.filter((candidate) => !list.items.some((item) => sameValue(item, candidate)))) {
-        list.add(document.createNode(value));
+        list.add(document.createNode(value, nodeOptions));
     }
 }
 
@@ -149,7 +164,7 @@ function removeFromList(document: Document, name: string, values: unknown[]): vo
     const list = document.get(name);
 
     if (!isSeq(list)) {
-        throw new Error(list === undefined ? `There is no "${name}" to remove from.` : `"${name}" is not a list, so nothing can be removed from it.`);
+        throw new Error(isEmptyField(list) ? `There is no "${name}" to remove from.` : `"${name}" is not a list, so nothing can be removed from it.`);
     }
 
     for (const value of values) {

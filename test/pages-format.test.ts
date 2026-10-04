@@ -122,7 +122,7 @@ describe("lists", () => {
         expect((await rpg("write", "Elia", "--remove", "knows=[[Rosa]]")).output).toBe(`"knows" does not hold [[Rosa]].`);
 
         await rpg("write", "Elia", "--set", "nota=testo");
-        expect((await rpg("write", "Elia", "--add", "nota=altro")).output).toBe(`"nota" is not a list, so nothing can be added to it.`);
+        expect((await rpg("write", "Elia", "--add", "nota=altro")).output).toBe('nota on Elia is "testo", not a list: items cannot be added to it or removed from it. To make it a list, set it whole, such as set nota=[a, b].');
     });
 
     it("keeps every item when the same list field comes more than once", async () => {

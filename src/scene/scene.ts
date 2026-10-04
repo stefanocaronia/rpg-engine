@@ -2,9 +2,9 @@ import { z } from "zod";
 import { comparableText } from "../core/text.ts";
 
 /** The kinds of scene, so that the master can see the variety of the game (D-39, D-111). */
-export const sceneTypes = ["combat", "social", "exploration", "travel", "rest", "other"] as const;
+export const sceneTypes = ["combat", "social", "exploration", "travel", "rest", "challenge", "other"] as const;
 
-/** A numbered copy of a creature in the scene, such as Annegato 1: the creature it copies, and its counters. */
+/** A numbered copy of a creature in the scene, such as Annegato 1: the creature it copies, and only what it changed (D-110, INH-14). */
 export type SceneCopy = { creature: string; } & Record<string, unknown>;
 
 /** The open scene (D-113): who is in it, the copies of creatures, and the order of turns when the game has one. */
@@ -22,6 +22,8 @@ export interface Scene
     order?: string[];
     round?: number;
     turn?: string;
+    /** Who left the scene: their names are never given again to a copy in it, and the log keeps them. */
+    left?: string[];
 }
 
 // Loose: keys written by hand in the scene stay.
@@ -35,6 +37,7 @@ const sceneSchema = z.looseObject({
     order: z.array(z.string()).min(1).optional(),
     round: z.number().int().positive().optional(),
     turn: z.string().optional(),
+    left: z.array(z.string()).optional(),
 });
 
 /** The open scene, checked; a scene written wrongly by hand fails with what is wrong. */

@@ -1,25 +1,22 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { comparableText } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
-import { concernsPlayer, findPage, isStandardField, loadWorld, parsePageReference, type World, writePage } from "../pages/index.ts";
-import type { Scene } from "../scene/index.ts";
-import { copyCounters, readOpenScene, updateScene } from "./game-scene.ts";
+import { baseChain, baseValue, concernsPlayer, findPage, followersOf, inheritedFields, isStandardField, keepersOf, loadWorld, ownField, type Page, parsePageReference, playerConcerns, type World, writePage } from "../pages/index.ts";
+import { checkNotCopied, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { skippedPagesNote } from "./notes.ts";
-import { countersText } from "./page-counters.ts";
+import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
-/** What holds a counter: a page, or a copy of a creature in the open scene (D-110). */
+/** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder
 {
-    name: string;
+    page: Page;
     kind: "page" | "copy";
-    fields: Record<string, unknown>;
-    /** Fields with a fixed meaning, which are never counters. */
-    isFixed(field: string): boolean;
-    write(field: string, value: number | string): void;
+    /** Writes fields as the page names them; undefined removes one, and the page reads it from its base again (INH-9). */
+    write(fields: Record<string, number | string | undefined>): void;
     visibility: LogEntry["visibility"];
 }
 
@@ -49,37 +46,60 @@ export const change = defineCommand({
         const root = requireCampaign(context.folder);
         const world = loadWorld(root);
         const holder = holderNamed(root, world, input.page);
-        const field = fieldName(holder, input.field);
-        const before = readCounter(holder.fields[field]);
+        const fields = inheritedFields(world, holder.page);
+        const field = fieldName(world, holder, fields, input.field);
+        const before = readCounter(fields[field]);
 
         if (before === undefined) {
-            throw new Error(notCounterMessage(holder, field));
+            throw new Error(notCounterMessage(holder.page.name, field, fields[field]));
         }
 
-        const counterChange = readChange(input, before, holder.name, field);
+        const counterChange = readChange(input, before, holder.page.name, field);
         const { counter: after, beyond } = changeCounter(before, counterChange);
 
         if (!isSafeCounter(after)) {
-            throw new Error(`${field} on ${holder.name} would be too large to count exactly. Nothing changed.`);
+            throw new Error(`${field} on ${holder.page.name} would be too large to count exactly. Nothing changed.`);
         }
 
         const changed = formatCounter(after) !== formatCounter(before);
+        const written = ownField(holder.page, field) ?? field;
+        const base = baseValue(world, holder.page, field);
+        const baseCounter = base === undefined ? undefined : readCounter(base.value);
+        const backToBase = changed && base !== undefined && baseCounter !== undefined && formatCounter(baseCounter) === formatCounter(after);
+        const followers = changed && holder.kind === "page" ? followersOf(world, holder.page, field) : [];
+        const keepers = changed && holder.kind === "page" ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
 
         if (changed) {
-            holder.write(field, formatCounter(after));
+            // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
+            const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
+            holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: formatCounter(after) });
             const why = input.why?.trim() === "" ? undefined : input.why;
-            const data = { page: holder.name, copy: holder.kind === "copy" ? true : undefined, field, before: formatCounter(before), after: formatCounter(after), ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond, why };
+            const data = {
+                page: holder.page.name,
+                copy: holder.kind === "copy" ? true : undefined,
+                field,
+                before: formatCounter(before),
+                after: formatCounter(after),
+                ...amountOf(counterChange),
+                beyond: beyond === 0 ? undefined : beyond,
+                why,
+            };
             appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
+            logFollowers(root, world, context, followers, { field, before: formatCounter(before), after: formatCounter(after) });
         }
 
-        return { page: holder.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note: limitNote(after, beyond), changed, problems: world.problems };
+        const note = [limitNote(after, beyond), backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
+        const result = { page: holder.page.name, field, before: String(formatCounter(before)), after: String(formatCounter(after)), note, changed, problems: world.problems };
+        return { ...result, followers: followers.map((page) => page.name), keepers };
     },
 
     format(result)
     {
         const note = result.note === "" ? "" : `: ${result.note}`;
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${result.after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${result.after}${note}.`;
-        return [summary, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        const followers = followersNote(result.followers, `since they read ${result.field} from ${result.page}`, "change", `${result.field} ${result.after}`);
+        const lines = [summary, followers, keepersNote(result.keepers, result.field)].filter((line) => line !== "");
+        return [lines.join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -93,76 +113,56 @@ function holderNamed(root: string, world: World, name: string): CounterHolder
     }
 
     // A scene that cannot be read holds no copies here; validate reports it.
-    const { scene, problem } = readOpenScene(root);
-    const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), reference.name);
+    const open = readOpenScene(root);
+    const copy = copyName(world, open.scene, reference.name);
+
+    if (open.scene !== undefined && copy !== undefined) {
+        const copies = open.scene.copies;
+        const write = (fields: Record<string, number | string | undefined>): void => updateScene(root, Object.entries(fields).map(([field, value]) => [["copies", copy, field], value]));
+        return { page: copyPage(copy, copies[copy]), kind: "copy", write, visibility: "hidden" };
+    }
 
     const page = findPage(world, reference.name);
 
-    if (scene !== undefined && copy !== undefined) {
-        if (page !== undefined) {
-            throw new Error(`${copy} is both a copy in the open scene and a page, so it is not clear which one to change. Close the scene, which removes the copy, or rename the page. Nothing changed.`);
-        }
-
-        return copyHolder(root, scene, copy);
-    }
-
     if (page === undefined) {
-        const copies = scene === undefined ? "" : ", nor a copy of that name in the open scene";
-        const unreadable = problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
+        const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
+        const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
         throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}`);
     }
 
-    if (problem !== undefined && page.type === "creature") {
-        throw new Error(`${page.name} is a creature, and the open scene, which may hold its copies, cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
-    }
-
-    checkNotCopied(scene, page.name);
-
+    checkNotCopied(world, open, page);
     return {
-        name: page.name,
+        page,
         kind: "page",
-        fields: page.fields,
-        isFixed: (field) => isStandardField(page.type, field),
-        write: (field, value) => writePage(world, page.name, undefined, { set: { [field]: value } }),
+        write: (fields) => {
+            const set = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
+            const unset = Object.keys(fields).filter((field) => fields[field] === undefined);
+            writePage(world, page.name, undefined, { set: Object.keys(set).length === 0 ? undefined : set, unset: unset.length === 0 ? undefined : unset });
+        },
         visibility: concernsPlayer(world, page) ? "public" : "hidden",
     };
 }
 
-/** A creature with copies in the open scene keeps the counters each new copy starts with: a hit meant for a copy must not land on it. */
-function checkNotCopied(scene: Scene | undefined, name: string): void
+/** One public line for each page that changed with a base and concerns the player, with its own name only and no why: the base and the other pages may be secret (INH-10, D-93). */
+function logFollowers(root: string, world: World, context: Context, followers: Page[], change: { field: string; before: number | string; after: number | string; }): void
 {
-    const copies = Object.entries(scene?.copies ?? {}).filter(([, copy]) => comparableText(parsePageReference(copy.creature).name) === comparableText(name));
+    const concerns = playerConcerns(world);
 
-    if (copies.length > 0) {
-        const listed = copies.map(([copy, fields]) => {
-            const counters = countersText(copyCounters(fields));
-            return counters === "" ? copy : `${copy} (${counters})`;
-        });
-        throw new Error(`${name} has copies in the open scene: ${listed.join(", ")}. Change a copy; ${name}'s page holds the counters each new copy starts with. Nothing changed.`);
+    for (const follower of followers.filter(concerns)) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: follower.name, ...change }));
     }
 }
 
-/** A copy of a creature in the open scene: its counters live in state.yaml, and only the master sees them change. */
-function copyHolder(root: string, scene: Scene, copy: string): CounterHolder
+/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters it holds and how to add one. */
+function fieldName(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string): string
 {
-    return {
-        name: copy,
-        kind: "copy",
-        fields: scene.copies[copy],
-        isFixed: (field) => field === "creature",
-        write: (field, value) => updateScene(root, [[["copies", copy, field], value]]),
-        visibility: "hidden",
-    };
-}
-
-/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters it holds. */
-function fieldName(holder: CounterHolder, name: string): string
-{
-    const keys = Object.keys(holder.fields);
+    const keys = Object.keys(fields);
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
+    const page = holder.page;
 
-    if (found !== undefined && holder.isFixed(found)) {
-        throw new Error(holder.kind === "copy" ? `${found} is the creature ${holder.name} copies, not a counter.` : `${found} is a fixed field of ${holder.name}, not a counter: change it with write.`);
+    if (found !== undefined && isStandardField(page.type, found)) {
+        const what = holder.kind === "copy" && found === "creature" ? `${found} is the creature ${page.name} copies` : `${found} is a fixed field of ${page.name}`;
+        throw new Error(`${what}, not a counter${holder.kind === "page" ? ": change it with write" : ""}.`);
     }
 
     if (found !== undefined) {
@@ -170,25 +170,49 @@ function fieldName(holder: CounterHolder, name: string): string
     }
 
     const counters = keys.flatMap((key) => {
-        const counter = holder.isFixed(key) ? undefined : readCounter(holder.fields[key]);
+        const counter = isStandardField(page.type, key) ? undefined : readCounter(fields[key]);
         return counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];
     });
     const held = counters.length > 0 ? `Its counters: ${counters.join(", ")}.` : "It has no counters.";
-    const add = holder.kind === "copy"
-        ? "A copy takes the counters written on its creature when it enters the scene: write the counter on the creature, then bring copies in again with scene add."
-        : `To add one, use write, such as set ${name}=12/12.`;
-    throw new Error(`${holder.name} has no field "${name}". ${held} ${add}`);
+    throw new Error(`${page.name} has no field "${name}". ${held} ${howToAdd(world, holder, name)}`);
 }
 
-function notCounterMessage(holder: CounterHolder, field: string): string
+/** The value a page reads for a field, written in any case. */
+function counterOf(world: World, page: Page, field: string): unknown
 {
-    const value = holder.fields[field];
+    return Object.entries(inheritedFields(world, page)).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+}
 
-    if (typeof value === "string" && readCounterText(value) !== undefined) {
-        return `${field} on ${holder.name} is the text "${value}": write it without quotes, such as ${field}: ${value}, to make it a counter.`;
+/** How to add a counter that neither the page nor its bases hold; or why its base cannot be read. */
+function howToAdd(world: World, holder: CounterHolder, name: string): string
+{
+    const page = holder.page;
+    const link = typeof page.fields.creature === "string" ? page.fields.creature : undefined;
+    const base = baseChain(world, page)[0];
+
+    if (link !== undefined && base === undefined && (page.type === "character" || page.type === "creature")) {
+        const fix = holder.kind === "copy" ? "fix the creature's page, or let the copy leave the scene" : "fix the link with write";
+        return `${page.name} ${holder.kind === "copy" ? "copies" : "derives from"} ${link}, which cannot be read: no creature has that name, two pages share it, or it is not a creature. To fix it, ${fix}; validate shows why.`;
     }
 
-    return `${field} on ${holder.name} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
+    if (base === undefined) {
+        return `To add one, use write, such as set ${name}=12/12.`;
+    }
+
+    if (holder.kind === "copy") {
+        return `To add one to ${page.name} alone, use write, such as set ${name}=12/12. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.`;
+    }
+
+    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=12/12, and everything that derives from ${base.name} takes it; or on ${page.name} alone.`;
+}
+
+function notCounterMessage(page: string, field: string, value: unknown): string
+{
+    if (typeof value === "string" && readCounterText(value) !== undefined) {
+        return `${field} on ${page} is the text "${value}": write it without quotes, such as ${field}: ${value}, to make it a counter.`;
+    }
+
+    return `${field} on ${page} is ${JSON.stringify(value)}, not a counter: write a counter as a number (20) or as current/max (12/12).`;
 }
 
 function readChange(input: { by?: number; spend?: number; to?: number | string; }, counter: Counter, page: string, field: string): CounterChange

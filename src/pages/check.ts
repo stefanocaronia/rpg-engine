@@ -1,7 +1,8 @@
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
+import { baseChain, baseProblem } from "./inheritance.ts";
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
-import { containerFields, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
+import { containerFields, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { linksIn, type Page, textsIn, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
@@ -21,7 +22,7 @@ export function checkWorld(world: World): Problem[]
     return [
         ...world.problems.map((message) => ({ message })),
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
-        ...world.pages.flatMap((page) => [...fieldProblems(page), ...linkProblems(pagesByName, page), ...placeProblems(listingsByName, page), ...sectionProblems(page)]),
+        ...world.pages.flatMap((page) => [...fieldProblems(page), ...linkProblems(world, pagesByName, page), ...placeProblems(listingsByName, page), ...sectionProblems(page), ...inheritanceProblems(world, page)]),
     ];
 }
 
@@ -50,27 +51,39 @@ function repeatedPageProblem(pages: Page[]): Problem
 
 function fieldProblems(page: Page): Problem[]
 {
-    return Object.keys(page.fields).flatMap((field) => {
+    const standard = Object.keys(page.fields).flatMap((field) => {
         const problem = standardFieldProblem(page.type, page.fields, field);
-        const standard = misspelledStandardField(page.type, field);
-        const fix = standard === undefined ? `write ${page.name}, set ${field} again with an allowed value` : `write ${page.name}, unset ${field} and write its value again as ${standard}`;
+        const name = misspelledStandardField(page.type, field);
+        const fix = name === undefined ? `write ${page.name}, set ${field} again with an allowed value` : `write ${page.name}, unset ${field} and write its value again as ${name}`;
         return problem === undefined ? [] : [{ path: page.path, message: problem, fix }];
     });
+    return [...standard, ...repeatedFieldProblems(page)];
+}
+
+/** A free field written twice with a value in different cases, such as hp and HP: the engine reads only the last one (INH-5). Empty ones count as missing; standard fields written another way are reported above. */
+function repeatedFieldProblems(page: Page): Problem[]
+{
+    const free = Object.keys(page.fields).filter((field) => !isEmptyField(page.fields[field]) && misspelledStandardField(page.type, field) === undefined && !isStandardField(page.type, field));
+    return [...groupBy(free, (field) => [field]).values()].filter((names) => names.length > 1).map((names) => ({
+        path: page.path,
+        message: `${page.name} writes the field ${names[0]} ${names.length} times: ${names.join(", ")}. Only the last one, ${names.at(-1)}, is read.`,
+        fix: `write ${page.name}, unset ${names.slice(0, -1).join(", unset ")}`,
+    }));
 }
 
 /** Links, in the fields and in the text, to pages, sections or secrets that do not exist. */
-function linkProblems(pagesByName: Map<string, Page[]>, page: Page): Problem[]
+function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page): Problem[]
 {
     const inFields = Object.entries(page.fields).flatMap(([field, value]) => textsIn(value).flatMap((entry) => links(entry).map((link) => ({ link, field, entry, inList: Array.isArray(value) }))));
     const inText = links(page.body).map((link) => ({ link, field: undefined, entry: undefined, inList: false }));
 
     return [...inFields, ...inText].flatMap((found) => {
-        const broken = brokenLink(pagesByName, found.link);
+        const broken = brokenLink(world, pagesByName, found.link);
         return broken === undefined ? [] : [{ path: page.path, message: `${found.field ?? "The text"} links to ${written(found.link)}, ${broken}.`, fix: linkFix(page, found.field, found.entry, found.inList) }];
     });
 }
 
-function brokenLink(pagesByName: Map<string, Page[]>, link: Link): string | undefined
+function brokenLink(world: World, pagesByName: Map<string, Page[]>, link: Link): string | undefined
 {
     const target = pagesByName.get(comparableText(link.page))?.[0];
 
@@ -78,7 +91,14 @@ function brokenLink(pagesByName: Map<string, Page[]>, link: Link): string | unde
         return "which does not exist";
     }
 
-    return link.section !== undefined && readSection(target.body, link.section) === undefined ? `but ${target.name} has no section or secret "${link.section}"` : undefined;
+    const section = link.section;
+    const bases = baseChain(world, target);
+
+    if (section === undefined || [target, ...bases].some((holder) => readSection(holder.body, section) !== undefined)) {
+        return undefined;
+    }
+
+    return `but ${target.name} has no section or secret "${section}"${bases.length > 0 ? ", nor do the creatures it derives from" : ""}`;
 }
 
 function written(link: Link): string
@@ -108,6 +128,12 @@ function placeProblems(listingsByName: Map<string, Listing[]>, page: Page): Prob
     const other = listings[1];
     const where = listings.map((listing) => listing.holder.name).join(" and in ");
     return [{ path: page.path, message: `${page.name} is in ${where}; a thing is in one place only.`, fix: `remove it from all but one, such as write ${other.holder.name}, remove ${other.field}=${other.entry}` }];
+}
+
+function inheritanceProblems(world: World, page: Page): Problem[]
+{
+    const problem = baseProblem(world, page);
+    return problem === undefined ? [] : [{ path: page.path, message: problem, fix: `write ${page.name}, set creature to the creature it is a kind of, or unset it` }];
 }
 
 function sectionProblems(page: Page): Problem[]

@@ -20,14 +20,14 @@ For every campaign and game; the system's guide and each extension in use add th
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up).
 - `advance`: whenever time passes in the story, before you narrate it. At the first scene, set the starting date with `to`, at the scene's hour (dusk: `day 1, 18:00`). When it stops at an event, do as it says: what the characters see or hear is a scene, the rest happens off screen and leaves traces.
-- `scene`: open one when a scene starts (combat, social, exploration, travel, rest or other), with everyone in it; enemies of a kind enter as numbered copies, such as `Annegato 1`, with the counters written on the creature, changed with `change` (the numbers are for you, not the player). Inside a scene too, `advance` before you narrate time passing. Close it with a summary of one or two sentences, as the player saw it.
+- `scene`: open one when a scene starts (combat, social, exploration, travel, rest, challenge or other), with everyone in it, and close it when it ends, with a summary of one or two sentences, as the player saw it. Enemies of a kind enter as numbered copies, such as `Annegato 1`, changed with `change` (the numbers are for you, not the player); who goes, fled or fallen, `leave`s. Inside a scene too, `advance` before you narrate time passing.
 - `config`: settings and what is still missing: ask the player.
 
 ## 3. The world's pages
 
 - Every named thing has a page: character, place, faction, quest, item, event, topic, or creature (a kind, such as Wolf). Names are unique; other names go in `aliases`.
 - A page describes only itself. Whoever holds something lists it: a place `contains` places, characters and items; a character has an `inventory`; a quest has its goals as checkboxes. `show` works out where a thing is.
-- Fixed fields: `role` (pc, companion, npc), `creature`, `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened/cancelled for an event; a new quest or event starts planned), an event's `date` (when planned, a game date: `day 3, 06:00`; none while it waits for a situation) and `place`, `tags`. Any other field is free, on the page it belongs to.
+- Fixed fields: `role` (pc, companion, npc), `creature` (the creature a character or creature is a kind of, never a form taken for a while: the page holds only what differs, the rest is read from there), `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened/cancelled for an event; a new quest or event starts planned), an event's `date` (when planned, a game date: `day 3, 06:00`; none while it waits for a situation) and `place`, `tags`. Any other field is free, on the page it belongs to.
 - What is counted is a field on whoever has it: `hp: 12/12`, `uses: 1/1`, `arrows: 20`; never a count inside a text. Change it with `change`, never with `write`.
 - Links: `[[Name]]`, `[[Name#Section]]`.
 - Text: an introduction, sections, and secrets (`> [!secret] Name`). Knowing a page is not knowing its secrets.

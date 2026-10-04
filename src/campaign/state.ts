@@ -54,13 +54,13 @@ export function changeStateAt(root: string, changes: [string[], unknown][]): voi
         }
     }
 
-    // Collections written from empty ones, such as {}, would stay on one line: state.yaml is written by the engine, in blocks.
+    // Collections written from empty ones, such as {}, would stay on one line: state.yaml is written by the engine, in blocks. An empty one stays [] or {}.
     visit(document, {
         Map: (_, node) => {
-            node.flow = false;
+            node.flow = node.items.length === 0;
         },
         Seq: (_, node) => {
-            node.flow = false;
+            node.flow = node.items.length === 0;
         },
     });
     writeYamlFile(path, document);

@@ -1,80 +1,120 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { backlinks, findPage, formatFields, loadWorld, locate, parsePageReference, readSection, secretNames, sectionTitles } from "../pages/index.ts";
+import { comparableText, sameName } from "../core/text.ts";
+import { backlinks, baseChain, findPage, formatFields, inheritedByBase, loadWorld, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, textParts, type World } from "../pages/index.ts";
+import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 export const show = defineCommand({
     name: "show",
-    description: "Show a page of the world, or one of its sections or secrets. "
-        + "It also says where the thing is and which pages link to it. "
+    description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the creatures it derives from. "
+        + "It also says where the thing is and which pages link to it, and shows a copy in the open scene too. "
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
         + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
     group: "game",
     readOnly: true,
     positionals: ["page"],
     input: z.object({
-        page: z.string().describe("name of the page; Page#Name shows one section or one secret"),
+        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name shows one section or one secret"),
     }),
 
     run(input, context)
     {
-        const world = loadWorld(requireCampaign(context.folder));
+        const root = requireCampaign(context.folder);
+        const world = loadWorld(root);
         const reference = parsePageReference(input.page);
 
         if (reference.section === "") {
             throw new Error("Give the title of the section after #, or leave out the # to see the whole page.");
         }
 
-        const page = findPage(world, reference.name);
+        // A scene that cannot be read shows no copies; validate reports it.
+        const { scene } = readOpenScene(root);
+        const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), reference.name);
+        const found = findPage(world, reference.name);
+        const page = found ?? (scene !== undefined && copy !== undefined ? copyPage(copy, scene.copies[copy]) : undefined);
 
         if (page === undefined) {
-            throw new Error(`There is no page named ${reference.name}. Look for it with the find command.`);
+            throw new Error(`There is no page named ${reference.name}${scene === undefined ? "" : ", nor a copy of that name in the open scene"}. Look for it with the find command.`);
         }
 
-        const text = reference.section === undefined ? page.body : readSection(page.body, reference.section);
-
-        if (text === undefined) {
-            throw new Error(`${page.name} has no section or secret "${reference.section}". ${partsOf(page.body)}`);
-        }
-
-        const { chain, alsoIn } = locate(world, page);
+        const isCopy = found === undefined && scene !== undefined && copy !== undefined;
+        const part = reference.section === undefined ? undefined : readPart(world, page, reference.section);
+        const { chain, alsoIn } = isCopy ? { chain: [], alsoIn: [] } : locate(world, page);
+        const inherited = inheritedByBase(world, page);
         return {
             page: page.name,
             type: page.type,
             path: page.path,
             section: reference.section,
+            copyOf: isCopy ? copyLink(scene.copies[copy]) : undefined,
+            scene: isCopy ? scene.title : undefined,
+            alsoCopy: !isCopy && copy !== undefined,
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
             fields: reference.section === undefined ? page.fields : undefined,
-            text,
-            linkedFrom: backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
+            derivesFrom: baseChain(world, page).map((base) => base.name),
+            sectionFrom: part?.from,
+            inherited: reference.section === undefined
+                ? inherited.map((group) => ({ from: group.base.name, fields: group.fields, text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n") }))
+                : [],
+            text: part?.text ?? page.body,
+            linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
         };
     },
 
     format(result)
     {
+        const what = result.copyOf === undefined ? (result.type ?? "free page") : `copy of ${result.copyOf} in the open scene "${result.scene}"`;
         const header = [
-            `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${result.type ?? "free page"}) · ${result.path}`,
+            `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what}) · ${result.path}`,
+            result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
             result.isIn.length > 0 ? `Is in: ${result.isIn.join(" › ")}` : "",
             result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: remove it from all but one.` : "",
+            result.derivesFrom.length > 0 ? `Derives from: ${result.derivesFrom.join(" › ")}` : "",
+            result.sectionFrom === undefined ? "" : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
         ].filter((line) => line !== "").join("\n");
         const fields = result.fields !== undefined && Object.keys(result.fields).length > 0 ? `---\n${formatFields(result.fields)}\n---` : "";
+        const inheritedFields = result.inherited.filter((group) => Object.keys(group.fields).length > 0).map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
+        const inheritedText = result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
-        return [header, fields, result.text, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        return [header, fields, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 
-/** Lists a page's sections and secrets, for an error message. */
-function partsOf(text: string): string
+/** A section or secret of a page; when it has none by that name, the one of its nearest base that has it (INH-13). */
+function readPart(world: World, page: Page, name: string): { text: string; from?: string; }
 {
-    const sections = sectionTitles(text);
-    const secrets = secretNames(text);
+    const own = readSection(page.body, name);
 
-    if (sections.length === 0 && secrets.length === 0) {
-        return "It has no sections or secrets.";
+    if (own !== undefined) {
+        return { text: own };
     }
 
-    return [sections.length > 0 ? `Its sections are: ${sections.join(", ")}.` : "", secrets.length > 0 ? `Its secrets are: ${secrets.join(", ")}.` : ""].filter((part) => part !== "").join(" ");
+    const chain = baseChain(world, page);
+
+    for (const [index, base] of chain.entries()) {
+        const text = readSection(base.body, name);
+
+        if (text !== undefined) {
+            const nearer = new Set([page, ...chain.slice(0, index)].flatMap((holder) => textParts(holder.body).map((part) => comparableText(part.name))));
+            const parts = textParts(text).filter((part, position) => position === 0 || part.name === "" || !nearer.has(comparableText(part.name)));
+            return { text: parts.map((part) => part.text).join("\n\n"), from: base.name };
+        }
+    }
+
+    throw new Error(`${page.name} has no section or secret "${name}". ${partsOf(world, page)}`);
+}
+
+/** Lists a page's sections and secrets, and those it shows from its bases, for an error message. */
+function partsOf(world: World, page: Page): string
+{
+    const sections = sectionTitles(page.body);
+    const secrets = secretNames(page.body);
+    const inherited = inheritedByBase(world, page).filter((group) => group.parts.length > 0).map((group) => `from ${group.base.name}: ${group.parts.map((piece) => piece.name).join(", ")}`);
+    const own = [sections.length > 0 ? `Its sections are: ${sections.join(", ")}.` : "", secrets.length > 0 ? `Its secrets are: ${secrets.join(", ")}.` : ""].filter((part) => part !== "");
+    const all = [...own, inherited.length > 0 ? `It shows, ${inherited.join("; ")}.` : ""].filter((part) => part !== "");
+    return all.length > 0 ? all.join(" ") : "It has no sections or secrets.";
 }

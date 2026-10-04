@@ -11,6 +11,7 @@ const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", knows: "links", factions: "links", status: ["alive", "dead"] },
     place: { contains: "list" },
+    creature: { creature: "link" },
     quest: { status: ["planned", "open", "done", "failed"] },
     event: { date: "text", place: "link", status: ["planned", "happened", "cancelled"] },
 };
@@ -33,7 +34,7 @@ export const containerFields = ["contains", "inventory"];
 /** Whether a field has a fixed meaning on pages of this type, such as an event's date: such a field is never a counter. */
 export function isStandardField(type: PageType | undefined, name: string): boolean
 {
-    return name in commonRules || (type !== undefined && name in (typeRules[type] ?? {}));
+    return Object.hasOwn(commonRules, name) || (type !== undefined && Object.hasOwn(typeRules[type] ?? {}, name));
 }
 
 /** Checks the standard fields among `names`, the ones a write changed. The other fields are free. */
@@ -58,7 +59,7 @@ export function standardFieldProblem(type: PageType | undefined, fields: Record<
     }
 
     const misspelled = misspelledFieldProblem(type, name);
-    const problem = name in rules && !isEmptyField(fields[name]) ? problemWith(fields[name], rules[name]) : undefined;
+    const problem = Object.hasOwn(rules, name) && !isEmptyField(fields[name]) ? problemWith(fields[name], rules[name]) : undefined;
     return misspelled ?? (problem === undefined ? undefined : `"${name}" ${problem}`);
 }
 
@@ -66,7 +67,7 @@ export function standardFieldProblem(type: PageType | undefined, fields: Record<
 export function misspelledStandardField(type: PageType | undefined, name: string): string | undefined
 {
     const rules = rulesOf(type);
-    return name in rules ? undefined : Object.keys(rules).find((standard) => comparableText(standard) === comparableText(name));
+    return Object.hasOwn(rules, name) ? undefined : Object.keys(rules).find((standard) => comparableText(standard) === comparableText(name));
 }
 
 /** Why a field named like a standard one in another case is not read, such as Status; undefined for any other name. */
