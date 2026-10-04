@@ -4,7 +4,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
-import { findPage, isEmptyField, isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
@@ -537,7 +537,7 @@ function leadPlace(world: World): Page | undefined
 /** The player character and the companions in a place, alive; all of them when there is no place. */
 function partyAt(world: World, place: Page | undefined): Page[]
 {
-    return world.pages.filter((page) => page.type === "character" && isPartyMember(page) && page.fields.status !== "dead" && (place === undefined || locate(world, page).chain.includes(place)));
+    return world.pages.filter((page) => isInParty(page) && (place === undefined || locate(world, page).chain.includes(place)));
 }
 
 function unique(pages: Page[]): Page[]

@@ -15,3 +15,9 @@ export function sameName(names: string[], name: string): string | undefined
 {
     return names.find((candidate) => comparableText(candidate) === comparableText(name.trim()));
 }
+
+/** The page a link's target names: [[folder/Page.md]], and [[Page\|label]] as written in tables, name Page. */
+export function linkTargetName(target: string): string
+{
+    return (target.replace(/\\$/, "").split("/").at(-1) ?? "").replace(/\.md$/i, "").trim();
+}

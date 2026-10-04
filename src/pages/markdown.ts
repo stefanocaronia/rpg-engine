@@ -1,4 +1,4 @@
-import { comparableText } from "../core/text.ts";
+import { comparableText, linkTargetName } from "../core/text.ts";
 
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
 const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
@@ -291,7 +291,7 @@ function codeLines(lines: string[]): boolean[]
 /** The page and section a link points to: [[folder/Page.md]], and [[Page\|label]] as written in tables, point to Page. */
 function linkOf(target: string, section: string | undefined): Link
 {
-    const page = (target.replace(/\\$/, "").split("/").at(-1) ?? "").replace(/\.md$/i, "").trim();
+    const page = linkTargetName(target);
     const title = section?.replace(/\\$/, "").trim();
     return title === undefined || title === "" ? { page } : { page, section: title };
 }

@@ -4,10 +4,11 @@ import { defineCommand } from "../core/registry.ts";
 import type { Coin } from "../money/index.ts";
 import { isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
-import { formatGameDate, minutesBetween } from "../time/index.ts";
+import { formatGameDate } from "../time/index.ts";
+import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, readOpenScene } from "./game-scene.ts";
-import { dueAdvice, eventText, isDated, type PlannedEvent, plannedEvents, problemText, readPresent } from "./game-time.ts";
+import { problemText, readPresent } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -52,7 +53,8 @@ export const status = defineCommand({
         const present = readPresent(root);
         const now = present.date;
         const events = plannedEvents(world);
-        const isDue = (event: PlannedEvent): boolean => now !== undefined && isDated(event) && minutesBetween(now, event.date) <= 0;
+        const facts = worldFacts(world);
+        const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
         return {
             campaign: [settings.name, settings.language, settings.system].filter((part) => part !== undefined),
@@ -70,8 +72,9 @@ export const status = defineCommand({
             now: now === undefined ? undefined : formatGameDate(now),
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
-            dueEvents: events.filter(isDue).map((event) => eventText(event, now)),
-            plannedEvents: events.filter((event) => !isDue(event)).map((event) => eventText(event, now)),
+            dueEvents: due.map(dueText),
+            plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
+            clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world).length,
         };
     },
@@ -94,6 +97,7 @@ export const status = defineCommand({
             dueLine(result.dueEvents),
             namesLine("Open quests", result.openQuests, "find text open, type quest"),
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
+            result.clocks.length === 0 ? "" : `Clocks: ${result.clocks.join(" · ")}`,
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
         return state.filter((line) => line !== "").join("\n");
@@ -147,11 +151,10 @@ function countersOf(world: World, page: Page, coins: Coin[] | undefined): string
     return Object.entries(pageCounters(world, page, coins)).map(([field, value]) => `${field} ${String(value).trim()}`);
 }
 
-/** The planned events whose date has come: the master plays them first. */
+/** The planned events due, all of them: the master plays each one first (D-135). */
 function dueLine(events: string[]): string
 {
-    const line = namesLine("Due", events, "find text planned, type event");
-    return line === "" ? "" : `${line}. ${dueAdvice(events.length)}`;
+    return events.length === 0 ? "" : `Due: ${events.join(" · ")}. ${dueAdvice(events.length)}`;
 }
 
 /** "Scontro all'ossario (combat) at Ossario; round 1, Lena's turn; copies: Annegato 1: hp 22/22; Annegato 2: hp 13/22". */

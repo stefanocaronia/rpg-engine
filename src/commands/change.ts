@@ -6,10 +6,29 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
 import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../money/index.ts";
-import { baseChain, baseValue, concernsPlayer, findPage, followersOf, inheritedFields, isStandardField, keepersOf, loadWorld, ownField, type Page, parsePageReference, playerConcerns, type World, writePage } from "../pages/index.ts";
+import {
+    baseChain,
+    baseValue,
+    concernsPlayer,
+    findPage,
+    followersOf,
+    inheritedFields,
+    isCounterField,
+    isStandardField,
+    keepersOf,
+    loadWorld,
+    ownField,
+    type Page,
+    parsePageReference,
+    playerConcerns,
+    withPage,
+    type World,
+    writePage,
+} from "../pages/index.ts";
+import { fireEvents, nowDueNote } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
-import { newDatedLogEntry } from "./game-time.ts";
+import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -18,7 +37,8 @@ interface CounterHolder
     page: Page;
     kind: "page" | "copy";
     /** Writes fields as the page names them; undefined removes one, and the page reads it from its base again (INH-9). */
-    write(fields: Record<string, number | string | undefined>): void;
+    /** Returns the page as written, or undefined for a copy. */
+    write(fields: Record<string, number | string | undefined>): Page | undefined;
     visibility: LogEntry["visibility"];
 }
 
@@ -41,7 +61,7 @@ const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]
 
 export const change = defineCommand({
     name: "change",
-    description: "Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, coins. "
+    description: "Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, an event's clock, coins. "
         + "A counter is a field written as a number (20, from 0 up) or as current/max (12/12, from 0 to the maximum); create it with write, then change it only with this command. "
         + "by adds or takes away and stops at a limit (damage, healing); spend takes what is paid or used up, and is refused when there is not enough; "
         + "to sets a value, max, or current/max (15/15 changes the maximum too), even outside the limits. "
@@ -65,7 +85,8 @@ export const change = defineCommand({
         const holder = holderNamed(root, world, input.page);
         const fields = inheritedFields(world, holder.page);
         const { coins, problem } = campaignCoins(root);
-        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins), coins);
+        const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
+        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins, clock), coins);
         const purse = coins === undefined ? undefined : readAmount(fields[field], coins);
         const page = holder.page.name;
 
@@ -75,16 +96,19 @@ export const change = defineCommand({
 
         const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins);
         const changed = String(step.after) !== String(step.before);
+        checkClock(holder.page, field, step.after);
         const written = ownField(holder.page, field) ?? field;
         const base = baseValue(world, holder.page, field);
         const backToBase = changed && base !== undefined && step.same(base.value);
         const followers = changed && holder.kind === "page" ? followersOf(world, holder.page, field) : [];
         const keepers = changed && holder.kind === "page" ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
 
+        let after: Page | undefined;
+
         if (changed) {
             // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
             const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
-            holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
+            after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
             const why = input.why?.trim() === "" ? undefined : input.why;
             const data = { page, copy: holder.kind === "copy" ? true : undefined, field, before: step.before, after: step.after, ...step.amount, why };
             appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
@@ -92,7 +116,9 @@ export const change = defineCommand({
         }
 
         const note = [step.note, backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
-        const result = { page, field, before: String(step.before), after: String(step.after), total: step.total, note, changed, problems: world.problems };
+        // Only an event's clock sets anything off when it changes (EVT-4).
+        const due = after !== undefined && isCounterField(after.type, field) ? fireEvents(root, context, world, withPage(world, holder.page, after), readPresent(root).date).due : [];
+        const result = { page, field, before: String(step.before), after: String(step.after), total: step.total, note, changed, due, problems: world.problems };
         return { ...result, followers: followers.map((follower) => follower.name), keepers };
     },
 
@@ -102,7 +128,7 @@ export const change = defineCommand({
         const after = `${result.after}${result.total === undefined ? "" : ` (${result.total})`}`;
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
         const followers = followersNote(result.followers, `since they read ${result.field} from ${result.page}`, "change", `${result.field} ${result.after}`);
-        const lines = [summary, followers, keepersNote(result.keepers, result.field)].filter((line) => line !== "");
+        const lines = [summary, nowDueNote(result.due), followers, keepersNote(result.keepers, result.field)].filter((line) => line !== "");
         return [lines.join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
@@ -190,11 +216,30 @@ function moneyStep(input: { by?: number | string; spend?: number | string; to?: 
     };
 }
 
-/** The value a missing counter or purse is shown with, in the hint to add one: money that the page holds, when money was asked for; else 12/12. */
-function exampleValue(input: { by?: number | string; spend?: number | string; to?: number | string; }, coins: Coin[] | undefined): string
+/**
+ * The value a missing counter or purse is shown with, in the hint to add one: money that the page holds, when money was asked for;
+ * a clock as given, or empty (EVT-2); else 12/12.
+ */
+function exampleValue(input: { by?: number | string; spend?: number | string; to?: number | string; }, coins: Coin[] | undefined, clock: boolean): string
 {
     const money = coins !== undefined && [input.by, input.spend, input.to].some((part) => typeof part === "string" && readSignedAmount(part, coins) !== undefined);
-    return money && coins !== undefined ? `10 ${coins[0].name} (what it holds, not the price)` : "12/12";
+
+    if (money && coins !== undefined) {
+        return `10 ${coins[0].name} (what it holds, not the price)`;
+    }
+
+    const given = typeof input.to === "string" ? readCounterText(input.to) : undefined;
+    return clock ? (given?.max === undefined ? "0/4" : String(formatCounter(given))) : "12/12";
+}
+
+/** An event's clock keeps a maximum of at least 1, as write asks (EVT-2). */
+function checkClock(page: Page, field: string, after: number | string): void
+{
+    const counter = readCounter(after);
+
+    if (isCounterField(page.type, field) && (counter?.max === undefined || counter.max < 1)) {
+        throw new Error(`A clock needs a maximum of at least 1, such as 0/4: ${after} is not one. Nothing changed.`);
+    }
 }
 
 /** "gp/mo, pp, sp, cp": the coins of the campaign, by all their names. */
@@ -218,7 +263,12 @@ function holderNamed(root: string, world: World, name: string): CounterHolder
 
     if (open.scene !== undefined && copy !== undefined) {
         const copies = open.scene.copies;
-        const write = (fields: Record<string, number | string | undefined>): void => updateScene(root, Object.entries(fields).map(([field, value]) => [["copies", copy, field], value]));
+
+        const write = (fields: Record<string, number | string | undefined>): undefined => {
+            updateScene(root, Object.entries(fields).map(([field, value]) => [["copies", copy, field], value]));
+            return undefined;
+        };
+
         return { page: copyPage(copy, copies[copy]), kind: "copy", write, visibility: "hidden" };
     }
 
@@ -237,7 +287,7 @@ function holderNamed(root: string, world: World, name: string): CounterHolder
         write: (fields) => {
             const set = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined));
             const unset = Object.keys(fields).filter((field) => fields[field] === undefined);
-            writePage(world, page.name, undefined, { set: Object.keys(set).length === 0 ? undefined : set, unset: unset.length === 0 ? undefined : unset });
+            return writePage(world, page.name, undefined, { set: Object.keys(set).length === 0 ? undefined : set, unset: unset.length === 0 ? undefined : unset }).page;
         },
         visibility: concernsPlayer(world, page) ? "public" : "hidden",
     };
@@ -260,7 +310,7 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
     const page = holder.page;
 
-    if (found !== undefined && isStandardField(page.type, found)) {
+    if (found !== undefined && isStandardField(page.type, found) && !isCounterField(page.type, found)) {
         const what = holder.kind === "copy" && found === "creature" ? `${found} is the creature ${page.name} copies` : `${found} is a fixed field of ${page.name}`;
         throw new Error(`${what}, not a counter${holder.kind === "page" ? ": change it with write" : ""}.`);
     }
@@ -269,7 +319,7 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
         return found;
     }
 
-    const held = keys.filter((key) => !isStandardField(page.type, key)).flatMap((key) => {
+    const held = keys.filter((key) => !isStandardField(page.type, key) || isCounterField(page.type, key)).flatMap((key) => {
         const counter = readCounter(fields[key]);
         const purse = coins === undefined ? undefined : readAmount(fields[key], coins);
         return purse !== undefined && coins !== undefined ? [`${key} ${formatAmount(purse, coins)}`] : counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];

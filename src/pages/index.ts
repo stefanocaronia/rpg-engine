@@ -24,6 +24,24 @@ export {
 export { introductionText, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames } from "./page-types.ts";
-export { isEmptyField, isStandardField, misspelledFieldProblem, misspelledStandardField, newPageFields } from "./standard-fields.ts";
-export { type Backlink, backlinks, concernsPlayer, createWorld, findPage, isPartyMember, linksIn, loadWorld, locate, type Page, type PageMatch, parsePageReference, playerConcerns, searchPages, withPage, type World } from "./world.ts";
+export { containerFields, isCounterField, isEmptyField, isStandardField, listFieldNames, misspelledFieldProblem, misspelledStandardField, newPageFields, standardValues } from "./standard-fields.ts";
+export {
+    type Backlink,
+    backlinks,
+    concernsPlayer,
+    createWorld,
+    findPage,
+    isInParty,
+    isPartyMember,
+    linksIn,
+    loadWorld,
+    locate,
+    type Page,
+    type PageMatch,
+    parsePageReference,
+    playerConcerns,
+    searchPages,
+    withPage,
+    type World,
+} from "./world.ts";
 export { checkFieldChange, type PageChange, writePage } from "./write-page.ts";

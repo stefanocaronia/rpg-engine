@@ -9,6 +9,9 @@ import { containerFields } from "./standard-fields.ts";
 const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;
 const longestName = 120;
 
+// Built once for each world, which is never changed in place: who lists each name in their contents or inventory, so that locating a page costs as much as its chain.
+const holderIndexes = new WeakMap<World, Map<string, Page[]>>();
+
 /** A page of the world: one thing with a name. It describes only itself; who has it or knows it is written on their own pages. */
 export interface Page
 {
@@ -167,6 +170,12 @@ export function isPartyMember(page: Page): boolean
     return page.fields.role === "pc" || page.fields.role === "companion";
 }
 
+/** Whether a page is a living member of the party: a character who is the player's or a companion, and not dead. */
+export function isInParty(page: Page): boolean
+{
+    return page.type === "character" && isPartyMember(page) && page.fields.status !== "dead";
+}
+
 /** Whether the player may see what happens to a page: their character, the companions, what they carry, the open quests (D-93). */
 export function concernsPlayer(world: World, page: Page): boolean
 {
@@ -193,11 +202,26 @@ export function playerConcerns(world: World): (page: Page) => boolean
     return (page) => held.has(page) || (page.type === "quest" && page.fields.status === "open");
 }
 
-/** The pages whose contents or inventory list the page named `name`. */
+/** The pages whose contents or inventory list the page named `name`, in the order of the world's pages. */
 export function holdersOf(world: World, name: string): Page[]
 {
-    const target = comparableText(name);
-    return world.pages.filter((page) => containerFields.some((field) => linksIn(page.fields[field]).some((linked) => comparableText(linked) === target)));
+    let index = holderIndexes.get(world);
+
+    if (index === undefined) {
+        index = new Map();
+
+        for (const page of world.pages) {
+            for (const listed of new Set(containerFields.flatMap((field) => linksIn(page.fields[field])).map(comparableText))) {
+                const holders = index.get(listed) ?? [];
+                holders.push(page);
+                index.set(listed, holders);
+            }
+        }
+
+        holderIndexes.set(world, index);
+    }
+
+    return index.get(comparableText(name)) ?? [];
 }
 
 /** The pages that a field's value links to. */

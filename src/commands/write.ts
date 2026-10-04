@@ -19,11 +19,13 @@ import {
     inheritedFields,
     introductionFollowersOf,
     introductionText,
+    isCounterField,
     isEmptyField,
     isNeverInherited,
     isStandardField,
     keepersOf,
     linksIn,
+    listFieldNames,
     loadWorld,
     misspelledFieldProblem,
     misspelledStandardField,
@@ -47,9 +49,10 @@ import {
     writtenFieldName,
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
-import { newDatedLogEntry, plannedEventDateProblem } from "./game-time.ts";
+import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
@@ -149,6 +152,7 @@ export const write = defineCommand({
         }
 
         const type = existing?.type ?? input.type;
+        conditionsAsList(existing, fields);
         checkFieldNames(type, fields);
         checkFieldChange(type, fields);
         checkValues(fields);
@@ -164,7 +168,7 @@ export const write = defineCommand({
         }
 
         checkBase(world, existing?.name ?? reference.name, type, fields.set);
-        checkPlannedEventDate(existing, input.type, fields.set, fields.unset);
+        checkEventFields(world, existing, type, fields);
         const { page, created, changed, mode } = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
@@ -181,8 +185,9 @@ export const write = defineCommand({
         }
 
         const notes = !changed ? [] : existing === undefined ? derivesFromNothingNote(now, page) : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
+        const story = changed && changedFieldNames(fields).length > 0 ? storyNotes(root, context, world, now, existing, page) : [];
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode };
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...notes, ...moneyNotes], problems: world.problems };
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...moneyNotes], problems: world.problems };
     },
 
     format(result)
@@ -289,7 +294,7 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
 
     for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
         const name = Object.keys(fields).find((key) => comparableText(key) === comparableText(field));
-        const current = name === undefined || isStandardField(page.type, name) ? undefined : guarded(fields[name], coins);
+        const current = name === undefined || (isStandardField(page.type, name) && !isCounterField(page.type, name)) ? undefined : guarded(fields[name], coins);
         const next = current === undefined ? undefined : sameKind(current.kind, value, coins);
         const base = baseValue(world, page, field);
 
@@ -370,21 +375,49 @@ function checkBase(world: World, name: string, type: PageType | undefined, set: 
     }
 }
 
-/** A planned event comes due at its date, so a write that sets its date or status cannot leave a date the engine does not read (D-100). */
-function checkPlannedEventDate(page: Page | undefined, type: PageType | undefined, set: Record<string, unknown> | undefined, unset: string[] | undefined): void
+/**
+ * A planned event comes due at its date, so a write that sets its date or status cannot leave a date the engine does not read (D-100);
+ * nor a clock or conditions that do not read (EVT-10).
+ */
+function checkEventFields(world: World, page: Page | undefined, type: PageType | undefined, change: FieldChange): void
 {
-    const changed = [...Object.keys(set ?? {}), ...(unset ?? [])];
+    const changed = changedFieldNames(change);
 
-    if (!changed.includes("date") && !changed.includes("status")) {
+    if (type !== "event" || !["date", "status", "clock", "when"].some((field) => changed.includes(field))) {
         return;
     }
 
-    const before = page?.fields ?? (type === undefined ? {} : newPageFields(type));
-    const fields = Object.fromEntries(Object.entries({ ...before, ...set }).filter(([name]) => !unset?.includes(name)));
-    const problem = plannedEventDateProblem(page?.type ?? type, fields);
+    const fields = changedFields(page?.fields ?? newPageFields(type), change);
+    const date = changed.includes("date") || changed.includes("status") ? plannedEventDateProblem(type, fields) : undefined;
+    const problem = date ?? eventFieldsProblem(world, fields, changed);
 
     if (problem !== undefined) {
         throw new Error(problem);
+    }
+}
+
+/**
+ * What the write set off in the story: the events it made due or that wait for the date it gave them (EVT-4, EVT-5), conditions on pages that do not exist yet,
+ * and the planned events and quests linked to what changed (D-117, EVT-7).
+ */
+function storyNotes(root: string, context: Context, before: World, after: World, existing: Page | undefined, page: Page): string[]
+{
+    const present = readPresent(root).date;
+    const fired = fireEvents(root, context, before, after, present);
+    const written = fired.world.pages.find((candidate) => candidate.path === page.path) ?? page;
+    const conditions = page.type === "event" && JSON.stringify(existing?.fields.when) !== JSON.stringify(page.fields.when) ? conditionNotes(fired.world, page.fields.when) : [];
+    const consequences = consequencesNotes(fired.world, existing, written, fired.due.map((event) => event.name), present);
+    return [nowDueNote(fired.due), heldNote(fired.held), ...conditions, ...consequences].filter((note) => note !== "");
+}
+
+/** Adding a condition to an event that has one makes a list of the two, of which one is enough (EVT-3). */
+function conditionsAsList(page: Page | undefined, change: FieldChange): void
+{
+    const current = page?.type === "event" ? page.fields.when : undefined;
+
+    if (change.add?.when !== undefined && typeof current === "string" && current.trim() !== "" && change.set?.when === undefined) {
+        change.set = { ...change.set, when: [current, ...change.add.when] };
+        delete change.add.when;
     }
 }
 
@@ -617,7 +650,7 @@ function changeSummary(result: WriteResult, changes: string[]): string
 function readFields(fields: string[] | Record<string, unknown>): Record<string, unknown>
 {
     if (!Array.isArray(fields)) {
-        return fields;
+        return Object.fromEntries(Object.entries(fields).map(([name, value]) => [name, listFromText(name, value)]));
     }
 
     // The same name twice would be lost in one object; the same field in another case is refused later, with the other changes.
@@ -636,11 +669,18 @@ function readListItems(fields: string[] | Record<string, unknown>): Record<strin
 {
     const items: Record<string, unknown[]> = {};
 
-    for (const [name, value] of Array.isArray(fields) ? fields.map(readAssignment) : Object.entries(fields)) {
+    for (const [name, given] of Array.isArray(fields) ? fields.map(readAssignment) : Object.entries(fields)) {
+        const value = listFromText(name, given);
         items[name] = [...(items[name] ?? []), ...(Array.isArray(value) ? value : [value])];
     }
 
     return items;
+}
+
+/** Text given through MCP to a field that is always a list, such as "[[A]], [[B]]", read as the command line reads it (D-136); any other value as it is. */
+function listFromText(name: string, value: unknown): unknown
+{
+    return typeof value === "string" && listFieldNames.some((field) => comparableText(field) === comparableText(name)) ? readFieldValue(value) : value;
 }
 
 function readAssignment(assignment: string): [string, unknown]

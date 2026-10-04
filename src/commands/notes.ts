@@ -10,8 +10,15 @@ export function missingSettingsNote(missing: string[]): string
     return `Still missing: ${missing.join(", ")}. Ask the player, then set ${missing.length === 1 ? "it" : "each one"} with the config command (setting and value).`;
 }
 
-// The pages that change with a base are listed up to this many; the rest are counted.
-const listedFollowers = 10;
+// Long lists in outputs show this many names; the rest are counted.
+const listedNames = 10;
+
+/** The first names of a long list, joined, and how many more there are: "A · B, and 3 more". */
+export function shortList(names: string[], separator: string): string
+{
+    const more = names.length > listedNames ? `, and ${names.length - listedNames} more` : "";
+    return `${names.slice(0, listedNames).join(separator)}${more}`;
+}
 
 /** "Changed with it, since they read hp from Lupo: Zanna (hp 13/13)…", or nothing when no page changed with it; `command` is the one that changes a single page. */
 export function followersNote(followers: string[], why: string, command: "change" | "write", value?: string): string
@@ -20,9 +27,8 @@ export function followersNote(followers: string[], why: string, command: "change
         return "";
     }
 
-    const listed = followers.slice(0, listedFollowers).map((name) => (value === undefined ? name : `${name} (${value})`));
-    const more = followers.length > listedFollowers ? `, and ${followers.length - listedFollowers} more` : "";
-    return `Changed with it, ${why}: ${listed.join(", ")}${more}. To change only one of them, ${command} that page instead.`;
+    const listed = followers.map((name) => (value === undefined ? name : `${name} (${value})`));
+    return `Changed with it, ${why}: ${shortList(listed, ", ")}. To change only one of them, ${command} that page instead.`;
 }
 
 /** "Not changed, since they hold their own hp: Grigio (hp 5/11)", ten at most, or nothing when no page keeps its own. */
@@ -32,8 +38,7 @@ export function keepersNote(keepers: string[], field: string): string
         return "";
     }
 
-    const more = keepers.length > listedFollowers ? `, and ${keepers.length - listedFollowers} more` : "";
-    return `Not changed, since they hold their own ${field}: ${keepers.slice(0, listedFollowers).join(", ")}${more}.`;
+    return `Not changed, since they hold their own ${field}: ${shortList(keepers, ", ")}.`;
 }
 
 /** Lists the files of the world that could not be read as pages; empty when there are none. */

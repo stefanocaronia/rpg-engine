@@ -4,8 +4,10 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isEmptyField, loadWorld } from "../pages/index.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
+import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { type DatedEvent, dueAdvice, eventText, isDated, newDatedLogEntry, plannedEvents, presentDate } from "./game-time.ts";
+import { newDatedLogEntry, presentDate } from "./game-time.ts";
+import { shortList } from "./notes.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 /** What advance did, as its output tells it. */
@@ -27,6 +29,9 @@ interface Advance
     skipped: string[];
     /** The scene still open after an hour or more: "Alla locanda (since day 1, 18:00)" (D-115). */
     openScene?: string;
+    /** How many midnights this advance passed, and the clocks to move then (EVT-8). */
+    newDays: number;
+    clocks: string[];
 }
 
 // An hour or more passing usually ends a scene: then advance reminds that one is still open.
@@ -36,7 +41,7 @@ export const advance = defineCommand({
     name: "advance",
     description: "Let time pass in the story, whenever it does, before you narrate it: by a duration, such as 10m, 4h or 1d 6h, or to a later game date, such as day 3, 06:00. "
         + "At the first scene, set the date the game starts on with to, at the scene's hour. Time never goes back. "
-        + "It stops at the first planned event that comes due, names it and says how to play it. "
+        + "It stops at the first planned event that comes due, names it and says how to play it; on a new day, it lists the events' clocks to move. "
         + 'Example: by 8h, why "a night at the inn".',
     group: "game",
     input: z.object({
@@ -64,7 +69,7 @@ export const advance = defineCommand({
             const start = formatGameDate(request.to);
             changeState(root, { date: start });
             appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { to: start, why }));
-            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueBy(dated, request.to), next: nextAfter(dated, request.to), ...notes };
+            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next: nextAfter(dated, request.to), newDays: 0, clocks: [], ...notes };
         }
 
         const end = "by" in request ? addDuration(now, request.by) : request.to;
@@ -87,10 +92,12 @@ export const advance = defineCommand({
             to: formatGameDate(reached),
             passed,
             wanted,
-            due: stop === undefined ? [] : dated.filter((event) => minutesBetween(stop.date, event.date) === 0).map((event) => eventText(event, reached)),
-            stillDue: dueBy(dated, now),
+            due: stop === undefined ? [] : dated.filter((event) => minutesBetween(stop.date, event.date) === 0).map(dueText),
+            stillDue: dueEvents(world, now).map(dueText),
             next: stop === undefined ? nextAfter(dated, reached) : undefined,
             openScene: passed >= sceneReminderMinutes ? openSceneText(root) : undefined,
+            newDays: reached.day - now.day,
+            clocks: reached.day > now.day ? clocksToMove(world, reached) : [],
             ...notes,
         };
 
@@ -111,6 +118,7 @@ export const advance = defineCommand({
             stillDueLine(result.stillDue, result.due.length > 0),
             result.next === undefined ? "" : `Next: ${result.next}.`,
             result.openScene === undefined ? "" : `A scene is still open: ${result.openScene}. Close it if this time ends it.`,
+            clocksLine(result.newDays, result.to, result.clocks),
             result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
             skippedPagesNote(result.skipped),
         ].filter((line) => line !== "").join("\n");
@@ -163,17 +171,22 @@ function movedLine(result: Advance, rest: number): string
     return `${result.from} → ${result.to}${rest > 0 ? `: stopped after ${formatDuration(result.passed)} of ${formatDuration(result.wanted)}` : ""}.`;
 }
 
-/** The events whose date has come by `date`. */
-function dueBy(events: DatedEvent[], date: GameDate): string[]
-{
-    return events.filter((event) => minutesBetween(date, event.date) <= 0).map((event) => eventText(event, date));
-}
-
 /** The first events after `date`: all those at the same moment. */
 function nextAfter(events: DatedEvent[], date: GameDate): string | undefined
 {
     const next = events.find((event) => minutesBetween(date, event.date) > 0);
-    return next === undefined ? undefined : events.filter((event) => minutesBetween(next.date, event.date) === 0).map((event) => eventText(event, date)).join(" · ");
+    return next === undefined ? undefined : events.filter((event) => minutesBetween(next.date, event.date) === 0).map((event) => plannedText(event, date)).join(" · ");
+}
+
+/** A new day is the world's turn (EVT-8): the clocks to move as the time moved them, which they never do by themselves, and how (D-134). */
+function clocksLine(newDays: number, to: string, clocks: string[]): string
+{
+    if (clocks.length === 0) {
+        return "";
+    }
+
+    const days = newDays === 1 ? `A new day (${to.replace(/,.*$/, "")})` : `${newDays} new days (to ${to.replace(/,.*$/, "")})`;
+    return `${days}: move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan: ${shortList(clocks, " · ")}.`;
 }
 
 /** The events already due before this advance; with new ones due too, the advice above covers them. */
