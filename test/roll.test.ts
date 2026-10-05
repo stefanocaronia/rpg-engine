@@ -60,6 +60,7 @@ describe("rpg roll", () => {
         const shownFingerprint = /asks for it: ([0-9a-f]{16})/.exec(hidden.output)![1];
 
         const revealed = await runCommandLine(["roll", "--reveal", "id1"], context);
+        expect(revealed.output).toContain("revealed: 1d20 = 4 [4]. Tell the player what it was for and what came out, in the story's words; give the proof only if they ask how to check it.");
         const proof = /Proof: (.*)/.exec(revealed.output)![1];
         expect(proof).toBe("id1|1d20 = 4 [4]|salt");
         expect(createHash("sha256").update(proof).digest("hex").startsWith(shownFingerprint)).toBe(true);

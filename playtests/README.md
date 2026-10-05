@@ -5,6 +5,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | Path | Content |
 |---|---|
 | `run-playtest.mjs` | plays one session of a scenario, or asks the questionnaire |
+| `count-playtest.mjs` | counts the numbers of a run, the same way every time |
 | `checklist.md` | the fixed checklist, filled after every run |
 | `questionnaire.md` | the player's questionnaire, after the last session |
 | `players/` | player profiles |
@@ -28,6 +29,8 @@ node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-0
 node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --session 2 --first "Ciao, riprendiamo?" --max 15
 node playtests/run-playtest.mjs --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --questionnaire playtests/questionnaire.md
 ```
+
+Then count the numbers, for B12 and the report: `node playtests/count-playtest.mjs <results folder> playtests/01-guadoscuro/world`.
 
 Each session is a new master chat; the player keeps one chat for the whole run. The organizer's notes reach only the player and are kept in `dialogue.md`: the opening of each evening and, once, at `--max` player messages, that it is getting late. A session stops when the player ends it, at `--hard` messages (default `--max` + 10), on an error, or when the master's session passes `--budget` dollars (default 15).
 

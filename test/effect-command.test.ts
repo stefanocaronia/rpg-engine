@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -12,7 +12,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     await ok("write", "Ossario", "--type", "place", "--set", "contains=[[Ennio]], [[Lena]]");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "ac=13");
     await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=9/9");
@@ -103,7 +103,7 @@ describe("the end of effects (EFF-8, EFF-9)", () => {
             await ok("scene", "next");
         }
 
-        expect(await ok("scene", "next")).toBe("Round 2 · now Ennio (then Annegato 1).\nEnded: Spaventato on Annegato 2.");
+        expect(await ok("scene", "next")).toBe(`Round 2 · now Ennio${playerTurn} (then Annegato 1)${playerStop}\nEnded: Spaventato on Annegato 2.`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "effect-ended", visibility: "hidden", data: { page: "Annegato 2", copy: true, effect: "Spaventato" } });
         expect(await ok("scene", "close", "--summary", "Vinto.")).toContain("\nEnded with the scene: Benedetta on Lena (hp 12/12 → 9/9).");
     });
@@ -120,7 +120,7 @@ describe("the end of effects (EFF-8, EFF-9)", () => {
     it("lets a copy that leaves take its effects with it", async () => {
         await combat();
         await ok("effect", "add", "Annegato 1", "Prono");
-        expect(await ok("scene", "leave", "--who", "Annegato 1")).toBe("Annegato 1 (hp 22/22) left the scene.\nRound 1 · now Ennio (then Lena).");
+        expect(await ok("scene", "leave", "--who", "Annegato 1")).toBe(`Annegato 1 (hp 22/22) left the scene.\nRound 1 · now Ennio${playerTurn} (then Lena)${playerStop}`);
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).not.toContain("Prono");
     });
 });
@@ -295,7 +295,7 @@ describe("the edges of the command, case by case", () => {
         await ok("effect", "add", "Lena", "Schivata", "--for", "1 round");
         expect((await rpg("validate")).output).toBe("No problems.");
         expect(await ok("scene", "close", "--summary", "Fatto.")).toBe(
-            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: hp 22/22; Annegato 2: hp 22/22. Advance any time it took that you have not advanced yet.\nEnded with the scene: Schivata on Lena.",
+            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: hp 22/22; Annegato 2: hp 22/22. Advance any time it took that you have not advanced yet.\nEnded with the scene: Schivata on Lena.\nStill there, with no end: Maledizione on Ennio. End those the scene ended, with effect end.",
         );
         expect(page("characters/Ennio.md")).toContain("Maledizione");
     });
@@ -351,5 +351,22 @@ describe("many effects ending together", () => {
         const closed = await ok("scene", "close", "--summary", "Fatto.");
         expect(closed).toContain("Ended with the scene: Allegro on Ospite 01 · ");
         expect(closed).toContain("Allegro on Ospite 10, and 1 more.");
+    });
+});
+
+describe("what a copy keeps alive (D-145, EFF-13)", () => {
+    it("ends when the copy leaves the scene or the scene closes, and the close lists the effects left with no end", async () => {
+        await combat();
+        await ok("effect", "add", "Ennio", "Afferrato", "--by", "Annegato 1");
+        await ok("effect", "add", "Lena", "Afferrata", "--by", "Annegato 2");
+        await ok("effect", "add", "Ennio", "Prono");
+        expect(await ok("scene", "leave", "--who", "Annegato 1")).toContain("\nEnded: Afferrato on Ennio.");
+        expect(page("characters/Ennio.md")).not.toContain("Afferrato");
+        expect(readLogFile(folder).find((entry) => entry.type === "effect-ended")).toMatchObject({ data: { page: "Ennio", effect: "Afferrato", why: "who kept it left" } });
+
+        const closed = await ok("scene", "close", "--summary", "Fuggiti.");
+        expect(closed).toContain("\nEnded with the scene: Afferrata on Lena.\nStill there, with no end: Prono on Ennio. End those the scene ended, with effect end.");
+        expect(page("characters/Lena.md")).not.toContain("Afferrata");
+        expect(page("characters/Ennio.md")).toContain("Prono");
     });
 });

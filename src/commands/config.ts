@@ -14,7 +14,9 @@ export const config = defineCommand({
     description: "Show or change the campaign settings. "
         + "Without a setting it shows them all and says which are still missing; with a setting and a value it changes that one. "
         + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
+        + "difficulty (story, easy, normal, hard, brutal) is how hard the world plays; lethality what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide). "
         + "lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove: when the player signals stop, add that content to lines. "
+        + "table is a list too: what you promise the player about how you play, and the precedents you declare, in the words you said. "
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
         + 'Example: setting language, value it; or setting lines, add "spiders"; or setting coins, value "gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1".',
     group: "campaign",

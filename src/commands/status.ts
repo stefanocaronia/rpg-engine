@@ -69,10 +69,11 @@ export const status = defineCommand({
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
         return {
-            campaign: [settings.name, settings.language, settings.system].filter((part) => part !== undefined),
+            campaign: [settings.name, settings.language, settings.system, named("difficulty", settings.difficulty), named("lethality", settings.lethality)].filter((part) => part !== undefined),
             missing: missingSettings(settings),
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
+            table: settings.table ?? [],
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
@@ -99,6 +100,7 @@ export const status = defineCommand({
             result.campaign.join(" · "),
             missingSettingsNote(result.missing),
             boundariesLine(result.lines, result.veils),
+            result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             timeLine(result),
             ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
@@ -128,6 +130,12 @@ function timeLine(result: { now?: string; dateProblem?: string; datedEvents: boo
     }
 
     return result.datedEvents ? "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00." : "";
+}
+
+/** "difficulty normal": a setting named, or nothing when it is missing. */
+function named(name: string, value: string | undefined): string | undefined
+{
+    return value === undefined ? undefined : `${name} ${value}`;
 }
 
 function boundariesLine(lines: string[], veils: string[]): string
@@ -184,7 +192,22 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
         const counters = [countersText(copyCounters(world, copy)), ...effectsOf(copyPage(name, copy)).map(effectText)].filter((part) => part !== "").join(" · ");
         return counters === "" ? name : `${name}: ${counters}`;
     });
-    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}`;
+    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${awayText(world, scene)}`;
+}
+
+/** "; Ettore is in Mulino abbandonato in the files: …": members of the party in the scene whom the files put elsewhere, so that conditions on the place never fire. */
+function awayText(world: World, scene: Scene): string
+{
+    const pageNamed = (link: string): Page | undefined => world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(link).name));
+    const place = scene.place === undefined ? undefined : pageNamed(scene.place);
+    const away = place === undefined ? [] : scene.with.map(pageNamed).filter((page): page is Page => page !== undefined && isPartyMember(page) && !locate(world, page).chain.includes(place));
+
+    if (place === undefined || away.length === 0) {
+        return "";
+    }
+
+    const where = away.map((page) => `${page.name} is in ${locate(world, page).chain.find((holder) => holder.type === "place")?.name ?? "no place"}`).join(", ");
+    return `; in the files ${where}: if they are in ${place.name}, move them with write`;
 }
 
 /** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */

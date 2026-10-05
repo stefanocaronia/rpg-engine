@@ -4,7 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { backlinks, containerFields, isEmptyField, isInParty, linksIn, locate, newPageFields, type Page, type PageType, parsePageReference, standardValues, withPage, type World, writePage } from "../pages/index.ts";
+import { backlinks, containerFields, isEmptyField, isInParty, isPartyMember, linksIn, locate, newPageFields, type Page, type PageType, parsePageReference, standardValues, withPage, type World, writePage } from "../pages/index.ts";
 import { formatDuration, formatGameDate, type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
 import { formatTrigger, readTriggers, type Trigger, type TriggerFacts, triggerHolds } from "../triggers/index.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -113,8 +113,8 @@ export function plannedText(event: PlannedEvent, now: GameDate | undefined): str
 export function dueAdvice(count: number): string
 {
     return count === 1
-        ? "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Set its status (happened or cancelled), or give it a later date if the story moves it."
-        : "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Set each one's status (happened or cancelled), or give it a later date if the story moves it.";
+        ? "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again."
+        : "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
 }
 
 /**
@@ -193,8 +193,9 @@ export function heldNote(held: string[]): string
 }
 
 /**
- * What a write changed that matters to the story (D-117, EVT-7): a page's status as the tools read it, or something leaving a container. The planned events and the planned
- * or open quests that link to the page or to what left, as a note for the master to judge; `skipped` are the events already said due.
+ * What a write changed that matters to the story (D-117, EVT-7): a page's status as the tools read it, or something leaving a container, but a member of the party moving,
+ * which is the game itself (D-146). The planned events and the planned or open quests that link to the page or to what left, as a note for the master to judge;
+ * `skipped` are the events already said due.
  */
 export function consequencesNotes(world: World, before: Page | undefined, after: Page, skipped: string[], now: GameDate | undefined): string[]
 {
@@ -202,9 +203,10 @@ export function consequencesNotes(world: World, before: Page | undefined, after:
         return [];
     }
 
+    const party = new Set(world.pages.filter(isPartyMember).map((page) => comparableText(page.name)));
     const left = containerFields.flatMap((field) => {
         const kept = new Set(linksIn(after.fields[field]).map(comparableText));
-        return linksIn(before.fields[field]).map(comparableText).filter((name) => !kept.has(name));
+        return linksIn(before.fields[field]).map(comparableText).filter((name) => !kept.has(name) && !party.has(name));
     });
     const subjects = new Set([...(statusOf(before) === statusOf(after) ? [] : [comparableText(after.name)]), ...left]);
     const shown = new Set(skipped.map(comparableText));

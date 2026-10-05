@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { scene } from "../src/commands/scene.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { fightGuidance, makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -12,7 +12,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "arrows=18");
     await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=7/7");
     await rpg("write", "Varro", "--type", "character", "--set", "role=npc");
@@ -47,7 +47,7 @@ describe("rpg scene", () => {
     it("opens a scene where the character is, with the party there and numbered copies with the creature's counters", async () => {
         await ok("advance", "--to", "day 2, 14:10");
         expect(await ok("scene", "open", "--title", "Scontro all'ossario", "--type", "combat", "--creatures", "Annegato=2")).toBe(
-            "Scene opened, day 2, 14:10: Scontro all'ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7; Annegato 1: hp 22/22 · uses 1/1; Annegato 2: hp 22/22 · uses 1/1.",
+            `Scene opened, day 2, 14:10: Scontro all'ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7; Annegato 1: hp 22/22 · uses 1/1; Annegato 2: hp 22/22 · uses 1/1.\n${fightGuidance}`,
         );
         expect(stateFile()).toContain(
             'scene:\n  title: Scontro all\'ossario\n  type: combat\n  place: "[[Ossario]]"\n  opened: day 2, 14:10\n  with:\n    - "[[Ennio]]"\n    - "[[Lena]]"\n  copies:\n    Annegato 1:\n      creature: "[[Annegato]]"\n    Annegato 2:\n      creature: "[[Annegato]]"\n',
@@ -120,7 +120,7 @@ describe("rpg scene", () => {
 
         await ok("change", "Annegato 2", "hp", "--to", "0");
         expect(await ok("scene", "order", "--order", "Annegato 1", "--order", "Lena", "--order", "Ennio")).toBe("Order: Annegato 1 · Lena · Ennio. No turn: Annegato 2.\nRound 2 · now Lena (then Ennio).");
-        expect(await ok("scene", "next")).toBe("Round 2 · now Ennio (then Annegato 1).");
+        expect(await ok("scene", "next")).toBe(`Round 2 · now Ennio${playerTurn} (then Annegato 1)${playerStop}`);
         expect(await ok("scene", "next")).toBe("Round 3 · now Annegato 1 (then Lena).");
     });
 
@@ -146,7 +146,7 @@ describe("rpg scene", () => {
 
     it("takes a single text or an object where it takes a list, as an MCP client may send them", () => {
         const opened = scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: "Lena", creatures: { Lupo: 2 } }), context);
-        expect(scene.format(opened)).toBe("Scene opened: Ossario (combat) at Ossario. In it: Lena: hp 7/7; Lupo 1: hp 11/11; Lupo 2: hp 11/11.");
+        expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Lena: hp 7/7; Lupo 1: hp 11/11; Lupo 2: hp 11/11.\n${fightGuidance}`);
         expect(scene.format(scene.run(scene.input.parse({ action: "order", order: "Lena" }), context))).toBe("Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.");
         expect(scene.format(scene.run(scene.input.parse({ action: "close", summary: "Fuggono.", creatures: {}, with: [] }), context))).toContain("Scene closed after 1 round: Ossario.");
     });
@@ -237,7 +237,7 @@ describe("rpg scene, after the second review", () => {
         await ok("scene", "next");
         expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lena", "--order", "Annegato 2")).toBe("Order: Ennio · Lena · Annegato 2. No turn: Annegato 1.\nRound 1 · now Lena (then Annegato 2).");
         await ok("scene", "next");
-        expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lena")).toBe("Order: Ennio · Lena. No turn: Annegato 1, Annegato 2.\nRound 2 · now Ennio (then Lena).");
+        expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lena")).toBe(`Order: Ennio · Lena. No turn: Annegato 1, Annegato 2.\nRound 2 · now Ennio${playerTurn} (then Lena)${playerStop}`);
     });
 
     it("keeps the scene when the game date cannot be read, and writes state.yaml in blocks", async () => {
@@ -260,7 +260,7 @@ describe("rpg scene, after the second review", () => {
 
     it("counts empty texts, lists and objects from MCP as left out", () => {
         const opened = scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: [], creatures: "", order: "" }), context);
-        expect(scene.format(opened)).toBe("Scene opened: Ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.");
+        expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.\n${fightGuidance}`);
         expect(() => scene.run(scene.input.parse({ action: "next", title: "", with: "", creatures: "", order: "", summary: "" }), context)).toThrow("The scene has no order of turns");
     });
 
@@ -300,7 +300,7 @@ describe("rpg scene leave, and the reminder in advance", () => {
         expect(stateFile()).toContain("  left:\n    - Annegato 1\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "scene-changed", visibility: "hidden", data: { left: ["Annegato 1"], copies: { "Annegato 1": { hp: "4/22" } } } });
 
-        expect(await ok("scene", "leave", "--who", "[[Lena]]", "--who", "Annegato 2")).toBe("Lena, Annegato 2 (hp 22/22 · uses 1/1) left the scene.\nRound 2 · now Ennio.");
+        expect(await ok("scene", "leave", "--who", "[[Lena]]", "--who", "Annegato 2")).toBe(`Lena, Annegato 2 (hp 22/22 · uses 1/1) left the scene.\nRound 2 · now Ennio${playerTurn}${playerStop}`);
         expect(stateFile()).not.toContain("copies:");
         expect(stateFile()).toContain('with:\n    - "[[Ennio]]"\n');
         expect(readFileSync(join(folder, "world", "places", "Ossario.md"), "utf8")).toContain("[[Lena]]");
@@ -343,5 +343,24 @@ describe("rpg scene, numbers and the log after leave", () => {
         const closed = readLogFile(folder).at(-1);
         expect(closed).toMatchObject({ type: "scene-closed", visibility: "public", data: { with: ["[[Ennio]]"], left: ["Lena"] } });
         expect(JSON.stringify(closed)).not.toContain("Annegato 1");
+    });
+});
+
+describe("the party where the scene is (D-131)", () => {
+    it("says when the files put the party elsewhere, on open, on add and in status, so that conditions on the place can fire", async () => {
+        await ok("write", "Mulino", "--type", "place");
+        expect(await ok("scene", "open", "--title", "Il mulino", "--type", "exploration", "--place", "[[Mulino]]")).toBe(
+            "Scene opened: Il mulino (exploration) at Mulino. No one in it yet: add who is there with scene add.\nEnnio is in Ossario, Lena is in Ossario, not in Mulino: if they are there now, move them with write, then add them; conditions such as party in [[Mulino]] fire then.",
+        );
+        expect(await ok("scene", "add", "--with", "Ennio")).toBe(
+            "Added to Il mulino: Ennio: hp 12/12 · arrows 18.\nEnnio is in Ossario, not in Mulino: if they are there now, move them with write; conditions such as party in [[Mulino]] fire then.",
+        );
+        expect(await ok("status")).toContain("Scene: Il mulino (exploration) at Mulino, with Ennio; in the files Ennio is in Ossario: if they are in Mulino, move them with write");
+
+        await ok("write", "Ossario", "--remove", "contains=[[Ennio]]");
+        await ok("write", "Mulino", "--add", "contains=[[Ennio]]");
+        expect(await ok("status")).not.toContain("in the files");
+        expect(await ok("scene", "close", "--summary", "Niente.")).not.toContain("not in");
+        expect(await ok("scene", "open", "--title", "Ancora", "--type", "social")).not.toContain("not in");
     });
 });

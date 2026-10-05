@@ -11,7 +11,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "arrows=2"], context);
 });
 

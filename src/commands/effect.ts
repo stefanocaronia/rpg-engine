@@ -43,7 +43,9 @@ export const effect = defineCommand({
         action: z.enum(actions).describe("add or end"),
         page: z.string().optional().describe("who has it: a page, or a copy in the open scene such as Annegato 2"),
         name: z.string().optional().describe("the effect's name, such as Spaventato"),
-        for: z.string().optional().describe("add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; or scene, until it ends. Left out, it lasts until it is ended"),
+        for: z.string().optional().describe(
+            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; or scene, until it ends. Left out, it lasts until it is ended: so for one that ends with something in the story, such as until they breathe clean air; end it then",
+        ),
         until: z.string().optional().describe("add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for"),
         by: z.string().optional().describe("add: who keeps it alive, such as [[Lena]]; end: take away every effect they keep, on everyone"),
         set: fieldValues.optional().describe("add: the values it reads while it lasts, field=value, repeatable, such as ac=15, never a bonus such as +2. What must outlive it, such as hit points it adds, change on the page instead"),

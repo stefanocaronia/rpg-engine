@@ -36,9 +36,10 @@ export function saveEffects(root: string, world: World, holder: EffectHolder, ef
  * the player (EFF-11). Returns what ended, with the values that come back, "Scudo della fede on Ennio (ac 15 → 13)", ten at most. It never fails halfway:
  * a page that two pages' names share, or that cannot be written, is said, not written.
  */
-export function endEffects(root: string, context: Context, world: World, scene: Scene | undefined, ends: (effect: Effect) => boolean, why: string): string[]
+export function endEffects(root: string, context: Context, world: World, scene: Scene | undefined, ends: (effect: Effect) => boolean, why: string | ((effect: Effect) => string)): string[]
 {
     const ended: string[] = [];
+    const whyOf = typeof why === "string" ? (): string => why : why;
 
     for (const holder of effectHolders(world, scene)) {
         const effects = effectsOf(holder.page);
@@ -62,7 +63,7 @@ export function endEffects(root: string, context: Context, world: World, scene: 
         const visibility = !holder.copy && concernsPlayer(world, holder.page) ? "public" : "hidden";
 
         for (const effect of ending) {
-            appendLogEntry(root, newDatedLogEntry(root, context, "effect-ended", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: effect.name, why }));
+            appendLogEntry(root, newDatedLogEntry(root, context, "effect-ended", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: effect.name, why: whyOf(effect) }));
         }
 
         ended.push(`${named}${values.length === 0 ? "" : ` (${values.join(", ")})`}`);

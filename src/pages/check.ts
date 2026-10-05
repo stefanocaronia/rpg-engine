@@ -1,7 +1,7 @@
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { baseChain, baseProblem } from "./inheritance.ts";
-import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
+import { type Link, links, readSection, repeatedNames, secretNames } from "./markdown.ts";
 import { containerFields, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { linksIn, type Page, textsIn, type World } from "./world.ts";
 
@@ -22,7 +22,9 @@ export function checkWorld(world: World): Problem[]
     return [
         ...world.problems.map((message) => ({ message })),
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
-        ...world.pages.flatMap((page) => [...fieldProblems(page), ...linkProblems(world, pagesByName, page), ...placeProblems(listingsByName, page), ...sectionProblems(page), ...inheritanceProblems(world, page)]),
+        ...world.pages.flatMap((
+            page,
+        ) => [...fieldProblems(page), ...linkProblems(world, pagesByName, page), ...publicKnowsProblems(world, pagesByName, page), ...placeProblems(listingsByName, page), ...sectionProblems(page), ...inheritanceProblems(world, page)]),
     ];
 }
 
@@ -99,6 +101,26 @@ function brokenLink(world: World, pagesByName: Map<string, Page[]>, link: Link):
     }
 
     return `but ${target.name} has no section or secret "${section}"${bases.length > 0 ? ", nor do the creatures it derives from" : ""}`;
+}
+
+/** Sections everyone can read, listed in knows: knows lists secrets and hidden pages (D-61), so such an entry says nothing. */
+function publicKnowsProblems(world: World, pagesByName: Map<string, Page[]>, page: Page): Problem[]
+{
+    return textsIn(page.fields.knows).flatMap((entry) =>
+        links(entry).flatMap((link) => {
+            const section = link.section;
+            const target = pagesByName.get(comparableText(link.page))?.[0];
+
+            if (section === undefined || target === undefined) {
+                return [];
+            }
+
+            const holders = [target, ...baseChain(world, target)];
+            const isSecret = holders.some((holder) => secretNames(holder.body).some((name) => comparableText(name) === comparableText(section)));
+            const isPublic = !isSecret && holders.some((holder) => readSection(holder.body, section) !== undefined);
+            return isPublic ? [{ path: page.path, message: `${page.name} knows ${written(link)}, a section everyone can read: knows lists secrets and hidden pages.`, fix: `write ${page.name}, remove knows=${entry}` }] : [];
+        })
+    );
 }
 
 function written(link: Link): string

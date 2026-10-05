@@ -4,10 +4,12 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
+import type { Effect } from "../effects/index.ts";
 import { findPage, isEmptyField, isInParty, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
-import { endedByTurn, endEffects, endsWithScene } from "./game-effects.ts";
+import { effectsOf } from "./effect-layer.ts";
+import { endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -20,6 +22,10 @@ const actionParameters: Record<Action, string[]> = { open: ["title", "type", "pl
 
 // The most copies of one creature a scene takes.
 const mostCopies = 50;
+
+// How a fight is told, given when one opens (D-139).
+const fightText = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
+    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets.";
 
 // A list, or one text, as an MCP client may send it; run turns one text into a list of one.
 const textList = z.union([z.string(), z.array(z.string())]);
@@ -40,12 +46,13 @@ interface SceneInput
 /** The input as given: a list may come as one text. */
 type GivenInput = Omit<SceneInput, "with" | "creatures" | "who" | "order"> & { with?: string | string[]; creatures?: string | string[] | Record<string, number>; who?: string | string[]; order?: string | string[]; };
 
-/** The order of turns, where the scene has one. */
+/** The order of turns, where the scene has one, and whether the turn is the player's character's. */
 interface Turns
 {
     order: string[];
     round: number;
     turn: string;
+    player: boolean;
 }
 
 /** Someone in the scene, with their counters. */
@@ -56,11 +63,11 @@ interface Member
 }
 
 type SceneResult =
-    | { action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; }
-    | { action: "add"; title: string; members: Member[]; ordered: boolean; }
+    | { action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; away?: string; }
+    | { action: "add"; title: string; members: Member[]; ordered: boolean; away?: string; }
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; };
+    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; };
 
 export const scene = defineCommand({
     name: "scene",
@@ -125,12 +132,13 @@ export const scene = defineCommand({
                 const when = result.opened === undefined ? "" : `, ${result.opened}`;
                 const where = result.place === undefined ? "" : ` at ${result.place}`;
                 const members = result.members.length === 0 ? "No one in it yet: add who is there with scene add." : `In it: ${membersText(result.members)}.`;
-                return `Scene opened${when}: ${result.title} (${result.type})${where}. ${members}`;
+                const fight = result.type === "combat" ? `\n${fightText}` : "";
+                return `Scene opened${when}: ${result.title} (${result.type})${where}. ${members}${lineOf(result.away)}${fight}`;
             }
 
             case "add": {
                 const last = result.ordered ? " They take their turns last: change the order with scene order if needed." : "";
-                return `Added to ${result.title}: ${membersText(result.members)}.${last}`;
+                return `Added to ${result.title}: ${membersText(result.members)}.${last}${lineOf(result.away)}`;
             }
 
             case "leave": {
@@ -205,7 +213,9 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     saveScene(root, withoutUndefined({ ...created, copies: Object.keys(copies).length === 0 ? undefined : copies } as unknown as Scene));
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-opened", "public", { title: created.title, type: created.type, place: created.place, with: created.with }));
     logCopies(root, context, created.title, copies);
-    return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members: [...characters.map((page) => characterMember(world, page)), ...copyMembers(world, copies)] };
+    // Left out, the party is who is in the place: if none of them is, the master may have forgotten to move them.
+    const away = input.with === undefined ? awayNote(world, place, characters.length === 0 ? world.pages.filter(isInParty) : [], false) : awayNote(world, place, characters, true);
+    return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members: [...characters.map((page) => characterMember(world, page)), ...copyMembers(world, copies)], away };
 }
 
 function addTo(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult
@@ -233,7 +243,9 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     updateScene(root, changes);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, added }));
     logCopies(root, context, current.title, copies);
-    return { action: "add", title: current.title, members: [...characters.map((page) => characterMember(world, page)), ...copyMembers(world, copies)], ordered: current.order !== undefined };
+    const place = current.place === undefined ? undefined : findPage(world, parsePageReference(current.place).name);
+    const away = awayNote(world, place, characters, true);
+    return { action: "add", title: current.title, members: [...characters.map((page) => characterMember(world, page)), ...copyMembers(world, copies)], ordered: current.order !== undefined, away };
 }
 
 /** Takes out who goes (D-114): a copy vanishes with its numbers, a character leaves the scene without changing place. The turn of who leaves passes on. */
@@ -258,7 +270,8 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     const changes: [string[], unknown][] = [[["with"], current.with.filter((link) => !leaving.includes(parsePageReference(link).name))]];
     changes.push(...(staying.length === 0 ? [[["copies"], undefined] as [string[], unknown]] : Object.keys(copies).map((name): [string[], unknown] => [["copies", name], undefined])));
     const order = current.order?.filter((name) => !leaving.includes(name));
-    const turns = order === undefined || order.length === 0 ? undefined : { order, ...keptTurn(current, order) };
+    const kept = order === undefined || order.length === 0 ? undefined : keptTurn(current, order);
+    const turns = order === undefined || kept === undefined ? undefined : { order, ...kept, player: isPlayerTurn(world, kept.turn) };
 
     if (current.order !== undefined) {
         changes.push([["order"], turns?.order], [["turn"], turns?.turn]);
@@ -273,9 +286,11 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     updateScene(root, changes);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies }));
     const left = leaving.map((name) => (name in copies ? { name, counters: copyCounters(world, copies[name]) } : { name, counters: {} }));
-    // The copies that left are gone with their effects; the turn may have passed, and with it the end of some effects.
+    // The copies that left are gone with their effects, and with those they kept alive (D-145); the turn may have passed, and with it the end of some effects.
     const remaining = { ...current, copies: Object.fromEntries(Object.entries(current.copies).filter(([name]) => !leaving.includes(name))) };
-    const ended = turns === undefined ? [] : endEffects(root, context, world, remaining, (effect) => endedByTurn(effect, turns.round, turns.turn, turns.order), "turn");
+    const keptByGone = (effect: Effect): boolean => Object.keys(copies).some((name) => keptBy(effect, name));
+    const byTurn = (effect: Effect): boolean => turns !== undefined && endedByTurn(effect, turns.round, turns.turn, turns.order);
+    const ended = endEffects(root, context, world, remaining, (effect) => keptByGone(effect) || byTurn(effect), (effect) => (keptByGone(effect) ? "who kept it left" : "turn"));
     return { action: "leave", left, turns, noTurns: current.order !== undefined && turns === undefined, ended };
 }
 
@@ -307,7 +322,7 @@ function setOrder(root: string, world: World, order: string[], context: Context,
     updateScene(root, [[["order"], named], [["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: named }));
     const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, named), "turn");
-    return { action: "order", order: named, round, turn, noTurn: members.filter((name) => !named.includes(name)), ended };
+    return { action: "order", order: named, round, turn, player: isPlayerTurn(world, turn), noTurn: members.filter((name) => !named.includes(name)), ended };
 }
 
 /**
@@ -341,7 +356,7 @@ function passTurn(root: string, world: World, context: Context, current: Scene):
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, round, turn }));
     const order = current.order;
     const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, order), "turn");
-    return { action: "next", order, round, turn, noTurn: [], ended };
+    return { action: "next", order, round, turn, player: isPlayerTurn(world, turn), noTurn: [], ended };
 }
 
 /** Ends the scene; one that cannot be read is closed too, so that a scene written wrongly by hand never blocks the game. */
@@ -360,20 +375,26 @@ function close(root: string, world: World, summary: string, context: Context): S
     const present = readPresent(root).date;
     const closed = present === undefined ? undefined : formatGameDate(present);
     const raw = current === undefined ? rawScene(root) : undefined;
-    // Rounds exist only in the scene: the effects counted in them end with it, on the pages; the copies go with theirs.
-    const ended = endEffects(root, context, world, undefined, endsWithScene, "scene closed");
+    // Rounds exist only in the scene: the effects counted in them end with it, on the pages; the copies go with theirs, and with what they kept alive (D-145).
+    const keptByCopy = (effect: Effect): boolean => current !== undefined && Object.keys(current.copies).some((name) => keptBy(effect, name));
+    const ended = endEffects(root, context, world, undefined, (effect) => endsWithScene(effect) || keptByCopy(effect), "scene closed");
     saveScene(root, undefined);
 
     if (current === undefined) {
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...rawTitleAndType(raw), closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message, ended };
+        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [] };
     }
+
+    const endless = current.with.flatMap((link) => {
+        const page = findPage(world, parsePageReference(link).name);
+        return page === undefined ? [] : effectsOf(page).filter((effect) => effect.end === undefined && !keptByCopy(effect)).map((effect) => `${effect.name} on ${page.name}`);
+    });
 
     logCopies(root, context, current.title, current.copies);
     const left = current.left?.filter((name) => world.pages.some((page) => comparableText(page.name) === comparableText(name)));
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended };
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless };
 }
 
 /** The title and type of a scene that cannot be read, as far as they can be, so that the log still holds a closed scene. */
@@ -385,10 +406,11 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; }): string
 {
     const advance = "Advance any time it took that you have not advanced yet.";
-    const ended = result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`;
+    const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
+    const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
 
     if (result.unreadable !== undefined) {
         return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}`;
@@ -413,11 +435,43 @@ function logCopies(root: string, context: Context, title: string, copies: Record
     }
 }
 
-/** "Round 2 · now Lena (then Annegato 2)." */
+/** "Round 2 · now Lena (then Annegato 2).", and on the player's character's turn, to stop there (D-139). */
 function turnText(result: Turns): string
 {
     const then = result.order.length > 1 ? nextTurn(result.order, result.turn, 1).turn : undefined;
-    return `Round ${result.round} · now ${result.turn}${then === undefined ? "" : ` (then ${then})`}.`;
+    const now = result.player ? `${result.turn}, the player's character` : result.turn;
+    const stop = result.player ? ": stop here and hand them the turn, even if all they can do is roll to stay alive." : ".";
+    return `Round ${result.round} · now ${now}${then === undefined ? "" : ` (then ${then})`}${stop}`;
+}
+
+/** Whether the turn is the player's character's, which only the player plays. */
+function isPlayerTurn(world: World, name: string): boolean
+{
+    const page = findPage(world, name);
+    return page?.type === "character" && page.fields.role === "pc";
+}
+
+/**
+ * Members of the party that the files put away from the scene's place: a condition such as party in [[Ossario]] fires only when they move there (D-131).
+ * `inScene` says whether they are in the scene already, or must be added once moved.
+ */
+function awayNote(world: World, place: Page | undefined, pages: Page[], inScene: boolean): string | undefined
+{
+    const away = place === undefined ? [] : pages.filter((page) => isInParty(page) && !locate(world, page).chain.includes(place));
+
+    if (place === undefined || away.length === 0) {
+        return undefined;
+    }
+
+    const where = away.map((page) => `${page.name} is in ${locate(world, page).chain.find((holder) => holder.type === "place")?.name ?? "no place"}`).join(", ");
+    const then = inScene ? "" : ", then add them";
+    return `${where}, not in ${place.name}: if they are there now, move them with write${then}; conditions such as party in [[${place.name}]] fire then.`;
+}
+
+/** A note on a line of its own, or nothing. */
+function lineOf(note: string | undefined): string
+{
+    return note === undefined ? "" : `\n${note}`;
 }
 
 /** "Ennio: hp 12/12; Annegato 1: hp 22/22". */

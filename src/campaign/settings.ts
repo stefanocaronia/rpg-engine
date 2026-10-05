@@ -8,13 +8,22 @@ import { campaignFileName } from "./find-campaign.ts";
 
 const settingsHold = 'settings, such as "name: ..."';
 
+/** How hard the world plays (D-13, D-141). */
+export const difficulties = ["story", "easy", "normal", "hard", "brutal"] as const;
+
+/** What a fall means (D-13, D-141): the character never dies, dies only when it matters, or as the dice say. */
+export const lethalities = ["narrative", "epic", "dice"] as const;
+
 /** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
 export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
     system: z.string().min(1).optional().describe("game system of the campaign, such as 5e"),
+    difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
+    lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
     lines: z.array(z.string().min(1)).nullish().describe("what never appears in the game"),
     veils: z.array(z.string().min(1)).nullish().describe("what happens only off screen, without details"),
+    table: z.array(z.string().min(1)).nullish().describe("the table's agreements: what the master promised about how the game is played, and the precedents declared"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
 }).loose();
@@ -26,7 +35,7 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing. */
-export const listSettingNames: SettingName[] = ["lines", "veils"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "table"];
 
 // Settings that only some games have: never asked for when missing.
 const optionalSettingNames: SettingName[] = ["coins"];

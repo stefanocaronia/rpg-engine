@@ -74,7 +74,8 @@ export const roll = defineCommand({
     format(output)
     {
         if (output.kind === "reveal") {
-            return `Hidden roll ${output.id} revealed: ${output.text}\nProof: ${output.proof}\nSHA-256 of the proof: ${output.sha256} (it starts with the fingerprint ${output.fingerprint})`;
+            const tell = "Tell the player what it was for and what came out, in the story's words; give the proof only if they ask how to check it.";
+            return `Hidden roll ${output.id} revealed: ${output.text}. ${tell}\nProof: ${output.proof}\nSHA-256 of the proof: ${output.sha256} (it starts with the fingerprint ${output.fingerprint})`;
         }
 
         if (output.hidden) {

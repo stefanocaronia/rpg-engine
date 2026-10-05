@@ -11,14 +11,16 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 
 afterEach(() => removeFolder(folder));
 
 // What advance and status say to do with due events (D-106).
-const one = "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Set its status (happened or cancelled), or give it a later date if the story moves it.";
-const many = "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Set each one's status (happened or cancelled), or give it a later date if the story moves it.";
+const one =
+    "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
+const many =
+    "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
 
 function rpg(...args: string[])
 {

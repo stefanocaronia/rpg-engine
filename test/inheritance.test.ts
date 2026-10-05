@@ -5,7 +5,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { baseChain, inheritedFields, type Page } from "../src/pages/index.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { fightGuidance, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -13,7 +13,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     await ok("write", "Annegato", "--type", "creature", "--set", "hp=22/22", "--set", "ac=13", "--set", "tags=[mostri]");
     await ok("write", "Annegato capo", "--type", "creature", "--set", "creature=[[Annegato]]", "--set", "hp=40/40");
     await ok("write", "Vecchio annegato", "--type", "character", "--set", "role=npc", "--set", "creature=[[Annegato capo]]");
@@ -69,7 +69,7 @@ describe("pages that derive from a creature", () => {
     });
 
     it("give their copies in a scene what they inherit", async () => {
-        expect(await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato capo")).toBe("Scene opened: Ossario (combat). In it: Annegato capo 1: hp 40/40.");
+        expect(await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato capo")).toBe(`Scene opened: Ossario (combat). In it: Annegato capo 1: hp 40/40.\n${fightGuidance}`);
         expect(await ok("change", "Annegato capo 1", "ac", "--by=-3")).toBe("Annegato capo 1: ac 13 → 10.");
     });
 

@@ -11,7 +11,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 
 afterEach(() => removeFolder(folder));
@@ -32,6 +32,17 @@ describe("rpg validate", () => {
 
         cpSync(new URL("../playtests/01-guadoscuro/world", import.meta.url), join(folder, "world"), { recursive: true });
         expect((await rpg("validate")).output).toBe("No problems.");
+    });
+
+    it("finds knows that points to a section everyone can read (D-61)", async () => {
+        await rpg("write", "Annegato", "--type", "creature", "--text", "Un corpo gonfio.");
+        await rpg("write", "Annegato#La melma", "--text", "Lascia una melma verde.");
+        await rpg("write", "Annegato#Da dove vengono", "--secret", "--text", "Dal lago.");
+        await rpg("write", "Ennio", "--type", "character", "--add", "knows=[[Annegato#La melma]]", "--add", "knows=[[Annegato#Da dove vengono]]");
+        expect((await rpg("validate")).output).toBe([
+            "1 problem:",
+            "- world/characters/Ennio.md: Ennio knows [[Annegato#La melma]], a section everyone can read: knows lists secrets and hidden pages. Fix: write Ennio, remove knows=[[Annegato#La melma]].",
+        ].join("\n"));
     });
 
     it("finds links to pages, sections or secrets that do not exist, and says how to fix them", async () => {

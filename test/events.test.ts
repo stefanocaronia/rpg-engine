@@ -11,15 +11,17 @@ let folder: string;
 let context: Context;
 
 // What the outputs say to do with due events (D-106).
-const one = "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Set its status (happened or cancelled), or give it a later date if the story moves it.";
-const many = "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Set each one's status (happened or cancelled), or give it a later date if the story moves it.";
+const one =
+    "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
+const many =
+    "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
 const judge = "If one no longer goes as planned, write it: its status, date or by.";
 const turn = "move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan";
 
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     await ok("write", "Guadoscuro", "--type", "place", "--set", "contains=[[Locanda]], [[Ossario]]");
     await ok("write", "Locanda", "--type", "place", "--set", "contains=[[Ennio]], [[Lanterna]]");
     await ok("write", "Ossario", "--type", "place");
@@ -180,6 +182,14 @@ describe("who makes it happen, and consequences (EVT-6, EVT-7)", () => {
             `Now due: Lena fugge (day 1, 18:00), since Varro dead. ${one}`,
             `Linked to Varro: Il rituale (day 3, 23:00, in 2d 5h) · Fermare Varro (quest, open) · Il segreto (quest, planned). ${judge}`,
         ].join("\n"));
+    });
+
+    it("says nothing when a member of the party moves, which is the game itself (D-146)", async () => {
+        await ok("write", "Lena", "--type", "character", "--set", "role=companion");
+        await ok("write", "Il patto", "--type", "event", "--set", "date=day 3, 06:00", "--text", "Il patto fra [[Ennio]], [[Lena]] e [[Varro]].");
+        await ok("write", "Locanda", "--add", "contains=[[Lena]]", "--add", "contains=[[Varro]]");
+        expect(await ok("write", "Locanda", "--remove", "contains=[[Ennio]]", "--remove", "contains=[[Lena]]")).toBe("Updated Locanda (place, world/places/Locanda.md): removed from contains.");
+        expect(await ok("write", "Locanda", "--remove", "contains=[[Varro]]")).toContain("Linked to Varro: Il patto (day 3, 06:00)");
     });
 
     it("lists what is linked to a thing that moves", async () => {
