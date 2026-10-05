@@ -175,6 +175,18 @@ describe("rpg reveal (REV-1–REV-3)", () => {
         expect(await refused("reveal", "Coppa", "--to", "Ennio, Lena")).toBe("There is no character named Ennio, Lena: for more than one, give a list, such as to [Ennio, Lena]. Nothing recorded.");
     });
 
+    it("REV-3 (D-158): what a companion learns alone stays hidden in the log; what the player's character knows too is public", async () => {
+        await ok("reveal", "Coppa#Veleno", "--to", "Lena");
+        await ok("reveal", "Varro", "--to", "Ennio", "--to", "Lena");
+        await ok("reveal", "Coppa#Veleno", "--to", "Ennio");
+        expect(readLogFile(folder).filter((entry) => entry.type === "learned").map((entry) => [entry.data.page, entry.visibility, entry.data.knows])).toEqual([
+            ["Lena", "hidden", ["[[Coppa#Veleno]]"]],
+            ["Ennio", "public", ["[[Varro]]"]],
+            ["Lena", "public", ["[[Varro]]"]],
+            ["Ennio", "public", ["[[Coppa#Veleno]]"]],
+        ]);
+    });
+
     it("REV-1: validate finds a section everyone can read in knows, by the rule reveal follows", async () => {
         writeFileSync(join(folder, "world", "characters", "Varro.md"), '---\nrole: npc\nknows: ["[[Bianco#Tracce]]", "[[Bianco#Debolezza]]"]\n---\n');
         expect(await ok("validate")).toBe([

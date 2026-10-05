@@ -77,7 +77,6 @@ describe("rpg write", () => {
         const refusals: [string[], string][] = [
             [["write", "Varro", "--unset", "role"], `Varro has no field "role" to remove.`],
             [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item, event, topic, creature."],
-            [["write", "varro", "--type", "place"], "Varro already exists, as a character (world/characters/Varro.md): leave the type out to change it, or pick another name."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
             [["write", "Varro"], "Nothing to write on Varro: give fields to set, add or remove, or text."],
             [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use unset.`],

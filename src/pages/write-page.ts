@@ -1,13 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { comparableText, withArticle } from "../core/text.ts";
 import { holdRefusal } from "./containers.ts";
-import { baseChain, baseValue, ownFieldChange, sameAsBase } from "./inheritance.ts";
+import { baseChain, baseValue, derivedPages, ownFieldChange, sameAsBase } from "./inheritance.ts";
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
-import { checkPageName, findPage, holdersOf, linksIn, locate, type Page, readPage, withPage, type World } from "./world.ts";
+import { checkPageName, findPage, heldNames, holdersOf, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
 export interface PageChange extends FieldChange
@@ -25,38 +25,79 @@ export interface PageChange extends FieldChange
  * Writes a page: creates it when there is no page with that name and `type` is given, then applies the change. A change that leaves the page as it was writes nothing.
  * Fields keep the names the page gives them, and a list it inherits becomes its own before items are added or removed (INH-5, INH-7).
  */
-export function writePage(world: World, name: string, type: PageType | undefined, requested: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; }
+export function writePage(world: World, name: string, type: PageType | undefined, requested: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; retyped?: Page; }
 {
     const existing = findPage(world, name);
+    // A type given to a page that has another changes it (D-159): the file moves to the folder of its new type.
+    const retyped = existing !== undefined && type !== undefined && existing.type !== type ? existing : undefined;
     checkChange(existing, type, requested);
+
+    if (retyped !== undefined && type !== undefined) {
+        checkRetype(world, retyped, type);
+    }
+
+    const pageType = type ?? existing?.type;
     const fields = existing === undefined ? requested : { ...requested, ...ownFieldChange(world, existing, requested) };
     checkUnset(world, existing, requested.unset ?? [], fields.unset ?? []);
     const change = existing === undefined && type !== undefined ? { ...fields, set: { ...newPageFields(type), ...fields.set } } : fields;
     const mode = textMode(change);
-    const path = existing?.path ?? newPagePath(world, name, type);
+    const path = existing !== undefined && retyped === undefined ? existing.path : newPagePath(world, existing?.name ?? name, pageType);
     const fullPath = join(world.root, path);
-    const file = existing === undefined ? { body: "" } : splitPageFile(readFileSync(fullPath, "utf8"));
+    const file = existing === undefined ? { body: "" } : splitPageFile(readFileSync(join(world.root, existing.path), "utf8"));
     const changedFields = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
-    const frontmatter = withoutBaseValues(world, existing, { name, type, path }, changedFields, changedFields.length > 0 || change.unset !== undefined ? changeFields(file.frontmatter, change, path) : file.frontmatter);
-    const written = { name: existing?.name ?? name, type: existing?.type ?? type, path, fields: readFields(frontmatter, path), body: file.body };
+    const frontmatter = withoutBaseValues(world, existing, { name, type: pageType, path }, changedFields, changedFields.length > 0 || change.unset !== undefined ? changeFields(file.frontmatter, change, path) : file.frontmatter);
+    const written = { name: existing?.name ?? name, type: pageType, path, fields: readFields(frontmatter, path), body: file.body };
     const body = change.text === undefined || mode === undefined ? file.body : writeOwnText(withPage(world, existing, written), written, { ...change, text: change.text, mode });
     checkNames(name, file.body, body);
 
     if (changedFields.length > 0) {
         const fields = readFields(frontmatter, path);
-        checkStandardFields(existing?.type ?? type, fields, changedFields);
-        checkContainers(world, existing, { name: existing?.name ?? name, type: existing?.type ?? type }, fields, changedFields);
+        checkStandardFields(pageType, fields, changedFields);
+        checkContainers(world, existing, { name: existing?.name ?? name, type: pageType }, fields, changedFields);
     }
 
     const newText = joinPageFile({ frontmatter, body });
 
-    if (existing !== undefined && newText === joinPageFile(file)) {
+    if (existing !== undefined && retyped === undefined && newText === joinPageFile(file)) {
         return { page: existing, created: false, changed: false, mode };
     }
 
     mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, newText, "utf8");
-    return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true, mode };
+
+    if (retyped !== undefined) {
+        rmSync(join(world.root, retyped.path));
+    }
+
+    return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true, mode, retyped };
+}
+
+/**
+ * A page changes type only when it still fits where it is and what it holds still fits in it (CON-1, D-159); a creature that pages derive from keeps its type,
+ * or they would derive from nothing (INH-2).
+ */
+function checkRetype(world: World, page: Page, type: PageType): void
+{
+    const derived = derivedPages(world, page).map((other) => other.name);
+
+    if (derived.length > 0) {
+        throw new Error(`${page.name} is the creature that ${derived.join(", ")} ${derived.length === 1 ? "derives" : "derive"} from: as ${withArticle(type)} it would leave them deriving from nothing. Give them another creature first.`);
+    }
+
+    const holder = validHoldersOf(world, page)[0];
+
+    if (holder !== undefined && !canHold(holder.type, type)) {
+        throw new Error(`${page.name} is in ${holder.name}, which holds no ${type}: move it where ${withArticle(type)} can be first, then change its type.`);
+    }
+
+    const own = containerFieldOf(page.type);
+    const held = own === undefined ? [] : heldNames(page).flatMap((name) => world.pages.filter((other) => comparableText(other.name) === comparableText(name)));
+    const misfit = held.find((other) => !canHold(type, other.type));
+
+    if (misfit !== undefined || (held.length > 0 && containerFieldOf(type) !== own)) {
+        const what = misfit === undefined ? `the things in its ${own ?? "fields"}` : misfit.name;
+        throw new Error(`${page.name} holds ${what}, which ${withArticle(type)} does not hold there: move them out first, then change its type.`);
+    }
 }
 
 /**
@@ -133,11 +174,8 @@ function textMode(change: PageChange): TextMode | undefined
 
 function checkChange(existing: Page | undefined, type: PageType | undefined, change: PageChange): void
 {
-    if (existing !== undefined && type !== undefined && existing.type !== type) {
-        throw new Error(`${existing.name} already exists, as ${withArticle(existing.type ?? "free page")} (${existing.path}): leave the type out to change it, or pick another name.`);
-    }
-
-    const changesSomething = [change.set, change.unset, change.add, change.remove, change.text].some((part) => part !== undefined);
+    // A new type alone is a change: the page moves to the folder of that type (D-159).
+    const changesSomething = [change.set, change.unset, change.add, change.remove, change.text].some((part) => part !== undefined) || (type !== undefined && existing?.type !== type);
 
     if (existing !== undefined && !changesSomething) {
         throw new Error(`Nothing to write on ${existing.name}: give fields to set, add or remove, or text.`);

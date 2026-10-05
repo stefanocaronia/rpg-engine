@@ -78,20 +78,22 @@ describe("rpg move (CON-4)", () => {
     });
 
     it("CON-1: refuses what a container cannot hold, and a page whose type holds nothing, and writes nothing", async () => {
-        expect(await refused("move", "Ennio", "--to", "Zaino")).toBe(
-            "Zaino is an item, which holds only items. If one can be inside it, it is a place: write a place for its inside, with a link to Zaino, and move Ennio there. Nothing moved.",
+        expect(await refused("move", "Laboratorio", "--to", "Zaino")).toBe(
+            "Zaino is an item: a place goes only into a place. For a world inside a thing, such as a lamp's, write a place with a link to Zaino. Nothing moved.",
         );
-        expect(await refused("move", "Ennio", "--to", "Lena")).toBe("Lena is a character, who carries only items: to be with them, Ennio goes into the place where Lena is. Nothing moved.");
-        expect(await refused("move", "Laboratorio", "--to", "Varro")).toBe("Varro is a character, who carries only items: a place goes into a place. Nothing moved.");
+        expect(await refused("move", "Ennio", "--to", "Lena")).toBe("Lena is a character, who carries only items: to be with them, Ennio goes where Lena is. Nothing moved.");
+        expect(await refused("move", "Laboratorio", "--to", "Varro")).toBe("Varro is a character: a place goes only into a place. Nothing moved.");
         expect(await refused("move", "Lanterna", "--to", "Storia")).toBe("Storia is a topic, which holds nothing: Lanterna goes into a place, a character or an item. Nothing moved.");
-        expect(await refused("move", "Ennio", "--to", "Storia")).toBe("Storia is a topic, which holds nothing: Ennio goes into a place. Nothing moved.");
+        expect(await refused("move", "Ennio", "--to", "Storia")).toBe("Storia is a topic, which holds nothing: Ennio goes into a place or an item. Nothing moved.");
+        expect(await refused("move", "Mulino", "--to", "Storia")).toBe("Storia is a topic, which holds nothing: Mulino goes into a place. Nothing moved.");
         expect(await refused("move", "Storia", "--to", "Ossario")).toBe("Storia is a topic, which is nowhere: only places, characters and items are inside something. Nothing moved.");
         await ok("write", "Annegato", "--type", "creature", "--set", "hp=22/22");
         expect(await refused("move", "Annegato", "--to", "Ossario")).toBe(
             "Annegato is a creature, a kind: its copies enter a scene with scene, creatures; one in particular is a character with creature [[Annegato]]. Nothing moved.",
         );
-        expect(await refused("move", "Lanterna", "Lena", "--to", "Zaino")).toContain("Zaino is an item, which holds only items.");
+        expect(await refused("move", "Lanterna", "Laboratorio", "--to", "Zaino")).toContain("Zaino is an item: a place goes only into a place.");
         expect(page("items/Zaino.md")).toBe('---\ncontains:\n  - "[[Lanterna]]"\n---\n');
+        expect(await ok("move", "Ennio", "--to", "Zaino")).toBe("Moved Ennio: now in Zaino › Ossario › Cripta › Mulino › Palude.");
     });
 
     it("CON-3: refuses a ring: a container into itself or into what it holds", async () => {
@@ -205,6 +207,18 @@ describe("rpg move (CON-4)", () => {
         expect(await ok("status")).not.toContain("in the files");
     });
 
+    it("CON-1, CON-6 (D-156): a cart, an item, carries the party, and the scene follows them to the place the cart is in", async () => {
+        await ok("write", "Strada", "--type", "place");
+        await ok("write", "Carro", "--type", "item");
+        await ok("move", "Carro", "--to", "Strada");
+        await ok("scene", "open", "--title", "Partenza", "--type", "social");
+        expect(await ok("move", "Ennio", "Lena", "--to", "Carro")).toBe(
+            "Moved Ennio, Lena: now in Carro › Strada.\nThe open scene, Partenza, goes with them: now at Strada. Close it if it ended in Ossario; scene leave whoever stays behind.",
+        );
+        expect(await ok("show", "Lena")).toContain("Is in: Carro › Strada");
+        expect(await ok("move", "Carro", "--to", "Mulino")).toBe("Moved Carro: now in Mulino › Palude.\nThe open scene, Partenza, goes with them: now at Mulino. Close it if it ended in Strada; scene leave whoever stays behind.");
+    });
+
     it("CON-6: a scene without a place takes the one where all the party went", async () => {
         writeByHand("places/Ossario.md", '---\ncontains: ["[[Zaino]]"]\n---\n');
         await ok("scene", "open", "--title", "Nel buio", "--type", "exploration");
@@ -296,9 +310,10 @@ describe("rpg move (CON-4)", () => {
 
 describe("containers in write and validate (CON-7, CON-10)", () => {
     it("CON-7: write refuses what move refuses, and points to move for a thing that is elsewhere", async () => {
-        expect(await refused("write", "Zaino", "--add", "contains=[[Ennio]]")).toBe(
-            "Zaino is an item, which holds only items. If one can be inside it, it is a place: write a place for its inside, with a link to Zaino, and move Ennio there.",
+        expect(await refused("write", "Zaino", "--add", "contains=[[Laboratorio]]")).toBe(
+            "Zaino is an item: a place goes only into a place. For a world inside a thing, such as a lamp's, write a place with a link to Zaino.",
         );
+        expect(await refused("write", "Zaino", "--add", "contains=[[Ennio]]")).toBe("Ennio is already in Ossario: a thing can be in one place only. To move it, use move, page Ennio, to Zaino.");
         expect(await refused("write", "Ennio", "--add", "contains=[[Lanterna]]")).toBe("Ennio is a character: what it holds goes in inventory, not contains.");
         expect(await refused("write", "Storia", "--add", "contains=[[Lanterna]]")).toBe(
             "Storia is a topic, which holds nothing, so contains would put nothing anywhere. A place holds places, characters and items; a character carries items; an item holds items.",
@@ -309,6 +324,22 @@ describe("containers in write and validate (CON-7, CON-10)", () => {
         expect(await refused("write", "Torre", "--type", "place", "--set", "contains=[[Ennio]]")).toBe(
             "Ennio is already in Ossario: a thing can be in one place only. To move it, create Torre without it, then move, page Ennio, to Torre.",
         );
+    });
+
+    it("CON-7 (D-159): write changes a page's type, moving its file, when it still fits where it is and what it holds still fits in it", async () => {
+        await ok("write", "Carro", "--type", "item", "--text", "Un carro coperto.");
+        await ok("move", "Carro", "--to", "Ossario");
+        expect(await ok("write", "Carro", "--type", "place")).toBe("Updated Carro (place, world/places/Carro.md): was an item (world/items/Carro.md).");
+        expect(page("places/Carro.md")).toBe("Un carro coperto.\n");
+        expect(await ok("show", "Carro")).toContain("Carro (place) · world/places/Carro.md\nIs in: Ossario › Cripta › Mulino › Palude");
+        expect(await refused("write", "Cripta", "--type", "item")).toBe("Cripta holds Ossario, which an item does not hold there: move them out first, then change its type.");
+        expect(await refused("write", "Ennio", "--type", "place", "--add", "inventory=[[Lanterna]]")).toBe("Ennio is a place: what it holds goes in contains, not inventory.");
+        await ok("move", "Zaino", "--to", "Ennio");
+        expect(await refused("write", "Zaino", "--type", "place")).toBe("Zaino is in Ennio, which holds no place: move it where a place can be first, then change its type.");
+        await ok("write", "Lupo", "--type", "creature");
+        await ok("write", "Bianco", "--type", "character", "--set", "creature=[[Lupo]]");
+        expect(await refused("write", "Lupo", "--type", "item")).toBe("Lupo is the creature that Bianco derives from: as an item it would leave them deriving from nothing. Give them another creature first.");
+        expect(await ok("validate")).toBe("No problems.");
     });
 
     it("CON-7: write checks only the entries it adds, removes an entry however written, and adds none twice", async () => {
@@ -325,7 +356,7 @@ describe("containers in write and validate (CON-7, CON-10)", () => {
         writeByHand("places/Pozzo.md", '---\ncontains: ["[[Pozzo]]"]\n---\n');
         writeByHand("places/Torre.md", '---\ncontains: ["[[Scala]]"]\n---\n');
         writeByHand("places/Scala.md", '---\ncontains: ["[[Torre]]"]\n---\n');
-        writeByHand("items/Zaino.md", '---\ncontains: ["[[Lanterna]]", "[[Rosa]]"]\n---\n');
+        writeByHand("items/Zaino.md", '---\ncontains: ["[[Lanterna]]", "[[Rosa]]", "[[Laboratorio]]"]\n---\n');
         writeByHand("characters/Varro.md", '---\nrole: npc\ncontains: ["[[Storia]]"]\n---\n');
         writeByHand("topics/Storia.md", '---\ninventory: ["[[Lanterna]]"]\n---\n');
         const output = await ok("validate");
@@ -333,13 +364,14 @@ describe("containers in write and validate (CON-7, CON-10)", () => {
         expect(output).toContain("- world/places/Scala.md: Scala is inside itself: Scala › Torre › Scala. Fix: move one of them out of the others, such as move Scala, to a place outside.");
         expect(output).toContain("- world/places/Torre.md: Torre is inside itself: Torre › Scala › Torre.");
         expect(output).toContain(
-            "- world/items/Zaino.md: Zaino lists Rosa in contains, but an item holds items, and Rosa is a character. Fix: move Rosa, to a container that holds it, such as a place; or write Zaino, remove contains=[[Rosa]].",
+            "- world/items/Zaino.md: Zaino lists Laboratorio in contains, but an item holds items and characters, and Laboratorio is a place. Fix: move Laboratorio, to a container that holds it, such as a place; or write Zaino, remove contains=[[Laboratorio]].",
         );
         expect(output).toContain("- world/characters/Varro.md: Varro lists things in contains, but a character holds them in inventory. Fix: move each thing it lists into Varro, then write Varro, unset contains.");
         expect(output).toContain(
             "- world/topics/Storia.md: Storia is a topic, which holds nothing, so its inventory puts nothing anywhere. Fix: move each thing it lists into a place, a character or an item, then write Storia, unset inventory.",
         );
-        expect(await ok("show", "Rosa")).not.toContain("Is in");
+        expect(await ok("show", "Rosa")).toContain("Is in: Zaino › Ossario");
+        expect(await ok("show", "Laboratorio")).toContain("Is in: Cripta › Mulino › Palude");
         expect(await ok("write", "Varro", "--remove", "contains=[[Storia]]")).toBe("Updated Varro (character, world/characters/Varro.md): removed from contains.");
     });
 });

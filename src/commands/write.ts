@@ -80,6 +80,8 @@ interface WriteResult
     mode?: TextMode;
     /** For a copy in the open scene: the creature it copies. */
     copyOf?: string;
+    /** For a page whose type changed: what it was, and where (D-159). */
+    was?: string;
     /** The pages that changed with this one, and why (INH-11). */
     followers: string[];
     followersWhy: string;
@@ -107,7 +109,7 @@ export const write = defineCommand({
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name writes one section or one secret"),
-        type: z.enum(pageTypeNames).optional().describe(`type of a new page: ${pageTypeNames.map((type) => (type === "place" ? "place (anywhere one can be, even a cart or a ship)" : type)).join(", ")}`),
+        type: z.enum(pageTypeNames).optional().describe(`type of a new page, or the new type of one that exists: ${pageTypeNames.map(typeText).join(", ")}`),
         set: fieldValues.optional().describe('fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]'),
         unset: z.array(z.string()).optional().describe("fields to remove, repeatable"),
         add: fieldValues.optional().describe("items to add to list fields: field=value, repeatable, such as factions=[[Barcaioli]], or an object"),
@@ -162,7 +164,7 @@ export const write = defineCommand({
             throw new Error(`There is no page named ${reference.name}${copies}.${alias} To create it, give its type: ${pageTypeNames.join(", ")}.${unreadable}`);
         }
 
-        const type = existing?.type ?? input.type;
+        const type = input.type ?? existing?.type;
         conditionsAsList(existing, fields);
         checkFieldNames(type, fields);
         checkFieldChange(type, fields);
@@ -181,10 +183,10 @@ export const write = defineCommand({
 
         checkBase(world, existing?.name ?? reference.name, type, fields.set);
         checkEventFields(world, existing, type, fields);
-        const { page, created, changed, mode } = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
+        const { page, created, changed, mode, retyped } = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
 
         if (changed) {
-            const data = { page: page.name, type: page.type, ...fields, section, secret: input.secret, text: input.text, mode };
+            const data = { page: page.name, type: page.type, was: retyped?.type, ...fields, section, secret: input.secret, text: input.text, mode };
             appendLogEntry(root, newDatedLogEntry(root, context, created ? "page-created" : "page-updated", "hidden", data));
         }
 
@@ -198,7 +200,8 @@ export const write = defineCommand({
 
         const notes = !changed ? [] : existing === undefined ? derivesFromNothingNote(now, page) : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
         const story = changed && changedFieldNames(fields).length > 0 ? storyNotes(root, context, world, now, existing, page) : [];
-        const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode };
+        const was = retyped === undefined ? undefined : `${retyped.type ?? "free page"} (${retyped.path})`;
+        const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
         return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...moneyNotes], problems: world.problems };
     },
 
@@ -212,12 +215,19 @@ export const write = defineCommand({
             result.add.length > 0 ? `added to ${result.add.join(", ")}` : "",
             result.remove.length > 0 ? `removed from ${result.remove.join(", ")}` : "",
             result.mode === undefined ? "" : `${textChanges[result.mode]} ${where}`,
+            result.was === undefined ? "" : `was ${withArticle(result.was)}`,
         ].filter((change) => change !== "");
         const summary = result.changed ? changeSummary(result, changes) : `Nothing changed on ${result.page}: it already reads like that.`;
         const followers = followersNote(result.followers, result.followersWhy, "write");
         return [[summary, followers, ...result.notes].filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** A type as the parameter names it, with what tells a place from an item (D-155, D-156). */
+function typeText(type: PageType): string
+{
+    return type === "place" ? "place (a room, a house, a ship, a region)" : type === "item" ? "item (a thing, even one with someone inside, such as a cart)" : type;
+}
 
 /** Writes the fields of a copy in the open scene (INH-14): only what differs from its creature, never its text, the creature it copies or fixed fields. */
 function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; }, requested: FieldChange, coins: Coin[] | undefined): WriteResult

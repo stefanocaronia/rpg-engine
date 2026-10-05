@@ -22,8 +22,8 @@ const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     event: { date: "text", place: "link", status: ["planned", "happened", "cancelled"], clock: "counter", when: "conditions", by: "linkOrLinks" },
 };
 
-// What each type holds, in its container field (CON-1, D-150).
-const heldTypes: Partial<Record<PageType, PageType[]>> = { place: ["place", "character", "item"], character: ["item"], item: ["item"] };
+// What each type holds, in its container field (CON-1, D-150, D-156): a place never goes into an item or a character.
+const heldTypes: Partial<Record<PageType, PageType[]>> = { place: ["place", "character", "item"], character: ["item"], item: ["item", "character"] };
 
 // What a new page of a type holds when the write that creates it leaves the field out.
 const defaultFields: Partial<Record<PageType, Record<string, unknown>>> = {
@@ -46,7 +46,7 @@ export function containerFieldOf(type: PageType | undefined): "contains" | "inve
     return type === "character" ? "inventory" : type === "place" || type === "item" ? "contains" : undefined;
 }
 
-/** Whether a page of the type `holder` can hold one of the type `held` (CON-1, D-150): a place holds places, characters and items; a character carries items; an item holds items. */
+/** Whether a page of the type `holder` can hold one of the type `held` (CON-1, D-150, D-156): a place holds places, characters and items; a character carries items; an item holds items and characters. */
 export function canHold(holder: PageType | undefined, held: PageType | undefined): boolean
 {
     return holder !== undefined && held !== undefined && (heldTypes[holder] ?? []).includes(held);

@@ -199,6 +199,16 @@ describe("what holds around (ENV-2, ENV-3)", () => {
         expect(await ok("write", "Lanterna", "--unset", "environment")).toBe("Updated Lanterna (item, world/items/Lanterna.md): removed environment.");
     });
 
+    it("ENV-3 (D-157): an effect on a place holds by its name; a value named as an entry of the environment there is refused", async () => {
+        await ok("advance", "--to", "day 1, 18:00");
+        expect(await refused("effect", "add", "Ossario", "Oscurità magica", "--for", "10m", "--set", "LIGHT=dark")).toBe(
+            "LIGHT is in the environment of Cripta: an effect on a place holds for all inside by its name and end, and its values are the place's own. Leave LIGHT out and let the name say it, such as Magical darkness.",
+        );
+        expect(await ok("effect", "add", "Ossario", "Oscurità magica", "--for", "10m")).toBe("Ossario: Oscurità magica until day 1, 18:10.");
+        expect(await ok("effect", "add", "Ennio", "Scudo", "--for", "10m", "--set", "light=dark")).toContain("Ennio: Scudo until day 1, 18:10");
+        expect(await ok("status")).toContain("Around Ennio: light: dark (Cripta) · encounters: [[Palude#Incontri]] (Palude) · Oscurità magica until day 1, 18:10 (Ossario)");
+    });
+
     it("ENV-3: what a place's effects hold changes with the place too, and a scene without a place has no surroundings", async () => {
         await ok("advance", "--to", "day 1, 18:00");
         await ok("effect", "add", "Palude", "Nebbia", "--for", "6h");

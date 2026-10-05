@@ -105,16 +105,16 @@ export function holdRefusal(holder: { name: string; type?: PageType; }, held: { 
     }
 
     if (containerFieldOf(holder.type) === undefined) {
-        return `${holder.name} is ${withArticle(holder.type ?? "free page")}, which holds nothing: ${held.name} goes into a place${held.type === "item" ? ", a character or an item" : ""}.`;
+        const where = held.type === "item" ? "a place, a character or an item" : held.type === "character" ? "a place or an item" : "a place";
+        return `${holder.name} is ${withArticle(holder.type ?? "free page")}, which holds nothing: ${held.name} goes into ${where}.`;
     }
 
-    if (holder.type === "character") {
-        return held.type === "place"
-            ? `${holder.name} is a character, who carries only items: a place goes into a place.`
-            : `${holder.name} is a character, who carries only items: to be with them, ${held.name} goes into the place where ${holder.name} is.`;
+    if (held.type === "place") {
+        const inside = holder.type === "item" ? ` For a world inside a thing, such as a lamp's, write a place with a link to ${holder.name}.` : "";
+        return `${holder.name} is ${withArticle(holder.type ?? "free page")}: a place goes only into a place.${inside}`;
     }
 
-    return `${holder.name} is ${withArticle(holder.type ?? "free page")}, which holds only items. If one can be inside it, it is a place: write a place for its inside, with a link to ${holder.name}, and move ${held.name} there.`;
+    return `${holder.name} is a character, who carries only items: to be with them, ${held.name} goes where ${holder.name} is.`;
 }
 
 /** A page goes only into a container that can hold it (CON-1), and never into itself or into what it holds (CON-3). */

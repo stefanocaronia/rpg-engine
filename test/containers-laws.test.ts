@@ -22,8 +22,8 @@ const pageTypes: Record<string, PageType> = {
 };
 const names = Object.keys(pageTypes);
 const movable = names.filter((name) => pageTypes[name] !== "topic");
-// The model of CON-1, written as a table.
-const holds: Partial<Record<PageType, PageType[]>> = { place: ["place", "character", "item"], character: ["item"], item: ["item"] };
+// The model of CON-1 (D-150, D-156), written as a table.
+const holds: Partial<Record<PageType, PageType[]>> = { place: ["place", "character", "item"], character: ["item"], item: ["item", "character"] };
 const fieldOf: Partial<Record<PageType, string>> = { place: "contains", character: "inventory", item: "contains" };
 
 // An entry written in one of the ways a link can be: as the engine writes it, in another case, with the folder, with a label.

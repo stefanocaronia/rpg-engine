@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
@@ -52,6 +53,7 @@ export const reveal = defineCommand({
         const known = found.filter((item) => item.kind === "known").filter((item, index, all) => all.findIndex((other) => sameLink(other.link, item.link)) === index);
         learners.forEach(checkKnows);
         const result: RevealResult = { learned: [], known: [], notSecret: found.filter((item) => item.kind === "public").map((item) => ({ what: item.shown, page: item.page })) };
+        const lines: { learner: Page; links: string[]; }[] = [];
 
         for (const learner of learners) {
             const already = known.filter((item) => knowsLink(learner, item.link));
@@ -67,10 +69,11 @@ export const reveal = defineCommand({
 
             const written = writePage(world, learner.name, undefined, { add: { knows: learned.map((item) => item.link) } });
             world = withPage(world, learner, written.page);
-            appendLogEntry(root, newDatedLogEntry(root, context, "learned", isPartyMember(learner) ? "public" : "hidden", { page: learner.name, knows: learned.map((item) => item.link) }));
+            lines.push({ learner, links: learned.map((item) => item.link) });
             result.learned.push({ who: learner.name, what: learned.map((item) => (item.asked === undefined ? item.shown : `${item.shown} (as ${item.asked} shows it)`)) });
         }
 
+        logLearned(root, context, world, lines);
         return result;
     },
 
@@ -82,6 +85,21 @@ export const reveal = defineCommand({
         return [...(learned.length === 0 ? ["Nothing new to record."] : learned), known, notSecret].filter((line) => line !== "").join(" ");
     },
 });
+
+/**
+ * One line in the log for each who learned something (REV-3, D-158): public only for what the player's character knows, theirs and a companion's who learned it
+ * with them; what someone else learned alone stays hidden, since a secret's name may tell too much.
+ */
+function logLearned(root: string, context: Context, world: World, lines: { learner: Page; links: string[]; }[]): void
+{
+    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const playerKnows = (link: string): boolean => players.some((player) => knowsLink(player, link));
+
+    for (const { learner, links: learned } of lines) {
+        const visible = learner.fields.role === "pc" || (isPartyMember(learner) && learned.every(playerKnows));
+        appendLogEntry(root, newDatedLogEntry(root, context, "learned", visible ? "public" : "hidden", { page: learner.name, knows: learned }));
+    }
+}
 
 /** What a name gives to learn (REV-2): a page, a secret where it is written, or a public section to skip. Anything that does not exist stops the command. */
 function learnableOf(root: string, world: World, item: string): Learnable

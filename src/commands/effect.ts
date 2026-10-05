@@ -5,7 +5,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readEffects, readRounds, withEffect } from "../effects/index.ts";
-import { concernsPlayer, isNeverInherited, isStandardField, loadWorld, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
+import { concernsPlayer, environmentAt, isNeverInherited, isStandardField, loadWorld, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
@@ -33,7 +33,8 @@ interface EffectResult
 
 export const effect = defineCommand({
     name: "effect",
-    description: "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form; on a place, such as rain or magical darkness, it holds for all inside. "
+    description:
+        "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form; on a place, such as rain or magical darkness, it holds for all inside by its name, and its values are the place's own. "
         + "add gives its name, how long it lasts, who keeps it alive if someone must (concentration), and the values it gives meanwhile; what else it does in play is yours to rule. "
         + "It ends by itself, and advance or scene says so; end takes it away sooner, or every effect someone keeps alive. "
         + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set ac=15.',
@@ -110,6 +111,7 @@ export const effect = defineCommand({
         }
 
         const values = readValues(world, holder.page, input.set);
+        checkPlaceValues(world, holder, values);
         const keeper = input.by === undefined ? undefined : keeperLink(world, open.scene, input.by);
         const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, input.for, input.until) };
         checkLine(added);
@@ -135,6 +137,27 @@ export const effect = defineCommand({
         return [line, ...result.notes].join(" ");
     },
 });
+
+/**
+ * An effect on a place holds for all inside by its name and its end; its values are the place's own (ENV-3, D-157). One named as an entry of the environment
+ * that holds there would seem to change it, and would not: refused.
+ */
+function checkPlaceValues(world: World, holder: EffectHolder, values: [string, string][]): void
+{
+    if (holder.copy || holder.page.type !== "place") {
+        return;
+    }
+
+    const entries = environmentAt(world, holder.page);
+    const clash = values.find(([field]) => entries.some(({ entry }) => comparableText(entry.name) === comparableText(field)));
+
+    if (clash !== undefined) {
+        const where = entries.find(({ entry }) => comparableText(entry.name) === comparableText(clash[0]))?.place.name ?? holder.page.name;
+        throw new Error(
+            `${clash[0]} is in the environment of ${where}: an effect on a place holds for all inside by its name and end, and its values are the place's own. Leave ${clash[0]} out and let the name say it, such as Magical darkness.`,
+        );
+    }
+}
 
 /** An effects field that does not read is never written over: what was written by hand would be lost (EFF-12). */
 function checkReadable(page: Page): void

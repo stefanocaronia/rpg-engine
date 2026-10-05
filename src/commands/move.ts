@@ -43,7 +43,7 @@ export const move = defineCommand({
     positionals: ["page"],
     input: z.object({
         page: textList.describe("what moves: one or more characters, items or places, such as [Ettore, Lena]"),
-        to: z.string().describe("where: a place; for items, also a character who carries them or an item that holds them"),
+        to: z.string().describe("where: a place; for characters and items also an item, such as a cart; for items also a character who carries them"),
     }),
 
     run(input, context): MoveResult
@@ -145,13 +145,15 @@ function followParty(root: string, context: Context, world: World, scene: Scene,
         return undefined;
     }
 
-    // Only a place holds characters (CON-1), and only a place holds places, so the party went into one.
-    if (party.every((page) => locate(world, page).chain.includes(destination) && outside(page))) {
-        updateScene(root, [[["place"], `[[${destination.name}]]`]]);
-        appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: scene.title, place: `[[${destination.name}]]` }));
+    // A scene is in a place: into an item, such as a cart, it goes to the place the item is in.
+    const spot = [destination, ...locate(world, destination).chain].find((holder) => holder.type === "place");
+
+    if (spot !== undefined && party.every((page) => locate(world, page).chain.includes(destination) && outside(page))) {
+        updateScene(root, [[["place"], `[[${spot.name}]]`]]);
+        appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: scene.title, place: `[[${spot.name}]]` }));
         const copies = Object.keys(scene.copies);
         const copiesToo = copies.length === 0 ? "" : `, with ${copies.join(", ")}`;
-        return `The open scene, ${scene.title}, goes with them: now at ${destination.name}${copiesToo}. Close it if it ended${place === undefined ? "" : ` in ${place.name}`}; scene leave whoever stays behind.`;
+        return `The open scene, ${scene.title}, goes with them: now at ${spot.name}${copiesToo}. Close it if it ended${place === undefined ? "" : ` in ${place.name}`}; scene leave whoever stays behind.`;
     }
 
     if (place === undefined) {
