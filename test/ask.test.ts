@@ -87,6 +87,13 @@ describe("no roll (ASK-4, ASK-6)", () => {
         expect(readLogFile(folder).filter((entry) => entry.type === "roll")).toHaveLength(0);
     });
 
+    it("rolls nothing when the app cannot show the buttons, and says to ask in words from now on", async () => {
+        const unavailable: Player = { choose: async () => "unavailable" };
+        const result = await ask.run(ask.input.parse(wall), { ...context, player: unavailable });
+        expect(ask.format(result)).toBe("This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "asked", by: "master", data: { answer: null } });
+    });
+
     it("rolls nothing when no one answers, and says to ask in words", async () => {
         expect(await asked(wall, undefined)).toBe("No answer from the buttons: ask the player in words, and stop.");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "asked", by: "master", data: { answer: null } });

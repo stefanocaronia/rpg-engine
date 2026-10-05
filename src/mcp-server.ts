@@ -17,11 +17,18 @@ const playerWait = 30 * 60 * 1000;
 // While the player decides, the call reports progress this often, so that a host does not take it for a call that hangs.
 const progressEvery = 20 * 1000;
 
+// A form closed faster than anyone could read it was never shown: the host declares forms it does not show (ASK-6).
+const tooFastForPerson = 1500;
+
+// Hosts that declare forms but do not show them, by the entry point Claude Code gives its servers: inside the desktop app a form is closed at once,
+// or stays stuck while it renders (tried on 5 October 2026). There the master asks in words (ASK-1).
+const entryPointsWithoutForms = ["claude-desktop"];
+
 /**
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
  * the host to instructions, then status. The commands that ask the player appear only for a host that shows forms, through which they ask (D-148).
  */
-export function createMcpServer(context: Context = defaultContext()): McpServer
+export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env): McpServer
 {
     const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });
     const askingTools: RegisteredTool[] = [];
@@ -36,8 +43,13 @@ export function createMcpServer(context: Context = defaultContext()): McpServer
     }
 
     server.server.oninitialized = () => {
-        if (context.player === undefined && showsForms(server.server.getClientCapabilities())) {
-            context.player = formPlayer(server);
+        const hidesForms = entryPointsWithoutForms.includes(environment.CLAUDE_CODE_ENTRYPOINT ?? "");
+
+        if (context.player === undefined && !hidesForms && showsForms(server.server.getClientCapabilities())) {
+            context.player = formPlayer(server, () => {
+                context.player = undefined;
+                askingTools.forEach((tool) => tool.disable());
+            });
             askingTools.forEach((tool) => tool.enable());
         }
     };
@@ -78,19 +90,38 @@ function showsForms(capabilities: ClientCapabilities | undefined): boolean
     return elicitation !== undefined && (elicitation.form !== undefined || elicitation.url === undefined);
 }
 
-/** The player through the host's forms: one question, one choice among the labels, required; undefined when no one answered or the form failed. */
-function formPlayer(server: McpServer): Player
+/**
+ * The player through the host's forms: one question, one choice among the labels, required; undefined when no one answered or the form failed.
+ * A form refused or failed faster than a person could read it was never shown: `unavailable` takes the buttons away for the rest of the session.
+ */
+function formPlayer(server: McpServer, unavailable: () => void): Player
 {
     return {
         async choose(question, title, labels)
         {
+            const started = Date.now();
+
+            const notShown = (): "unavailable" | undefined => {
+                if (Date.now() - started >= tooFastForPerson) {
+                    return undefined;
+                }
+
+                unavailable();
+                return "unavailable";
+            };
+
             try {
                 const requestedSchema = { type: "object" as const, properties: { choice: { type: "string" as const, title, enum: labels } }, required: ["choice"] };
                 const reply = await server.server.elicitInput({ mode: "form", message: question, requestedSchema }, { timeout: playerWait });
-                const index = reply.action === "accept" ? labels.indexOf(String(reply.content?.choice)) : -1;
+
+                if (reply.action !== "accept") {
+                    return notShown();
+                }
+
+                const index = labels.indexOf(String(reply.content?.choice));
                 return index === -1 ? undefined : index;
             } catch {
-                return undefined;
+                return notShown();
             }
         },
     };

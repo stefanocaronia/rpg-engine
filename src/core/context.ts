@@ -20,10 +20,13 @@ export interface Context
     player?: Player;
 }
 
-/** Asks the player one question with buttons: the index of the label they chose, or undefined when no one answered. */
+/**
+ * Asks the player one question with buttons: the index of the label they chose; undefined when no one answered; "unavailable" when the surface turned out
+ * unable to show the buttons, so that from then on the master asks in words.
+ */
 export interface Player
 {
-    choose(question: string, title: string, labels: string[]): Promise<number | undefined>;
+    choose(question: string, title: string, labels: string[]): Promise<number | undefined | "unavailable">;
 }
 
 export function defaultContext(folder = process.cwd()): Context

@@ -27,7 +27,8 @@ type AskResult =
     | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
-    | { kind: "unanswered"; };
+    | { kind: "unanswered"; }
+    | { kind: "unavailable"; };
 
 export const ask = defineCommand({
     name: "ask",
@@ -86,6 +87,8 @@ export const ask = defineCommand({
                 return "The player changed their mind: no roll. Ask what they do instead, and stop.";
             case "chose":
                 return `The player chose: ${result.answer}.`;
+            case "unavailable":
+                return "This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.";
             default:
                 return "No answer from the buttons: ask the player in words, and stop.";
         }
@@ -97,6 +100,12 @@ async function rollChosen(root: string, context: Context, player: NonNullable<Co
 {
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
     const chosen = await player.choose(question, words.roll, labels);
+
+    if (chosen === "unavailable") {
+        logAnswer(root, context, question, labels, undefined);
+        return { kind: "unavailable" };
+    }
+
     const check = chosen === undefined ? undefined : checks[chosen];
 
     if (check?.notation === undefined) {
@@ -116,8 +125,13 @@ async function answer(root: string, context: Context, player: NonNullable<Contex
 {
     const labels = options.map((option) => option.label);
     const chosen = await player.choose(question, words.choice, labels);
-    const answered = chosen === undefined ? undefined : labels[chosen];
+    const answered = chosen === undefined || chosen === "unavailable" ? undefined : labels[chosen];
     logAnswer(root, context, question, labels, answered);
+
+    if (chosen === "unavailable") {
+        return { kind: "unavailable" };
+    }
+
     return answered === undefined ? { kind: "unanswered" } : { kind: "chose", answer: answered };
 }
 

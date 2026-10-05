@@ -105,14 +105,15 @@ describe("MCP server", () => {
     });
 });
 
-/** A client of a new server on `folder` that shows forms, answering each with `answer`; the forms it was shown go in `shown`. */
-async function formClient(answer: ElicitResult, shown: unknown[], capabilities: Record<string, unknown> = { form: {} }): Promise<Client>
+/** A client of a new server on `folder` that shows forms, answering each with `answer` after `delay` milliseconds; the forms it was shown go in `shown`. */
+async function formClient(answer: ElicitResult, shown: unknown[], capabilities: Record<string, unknown> = { form: {} }, delay = 0, environment: Record<string, string> = {}): Promise<Client>
 {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await createMcpServer(testContext(folder)).connect(serverTransport);
+    await createMcpServer(testContext(folder), environment).connect(serverTransport);
     const forms = new Client({ name: "forms", version: "1.0.0" }, { capabilities: { elicitation: capabilities } });
-    forms.setRequestHandler(ElicitRequestSchema, (request) => {
+    forms.setRequestHandler(ElicitRequestSchema, async (request) => {
         shown.push(request.params);
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return answer;
     });
     await forms.connect(clientTransport);
@@ -146,15 +147,37 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         await forms.close();
     });
 
-    it("says to ask in words when the form is declined or answered with something that is no button, and refuses a hidden roll", async () => {
-        const declined = await formClient({ action: "decline" }, []);
+    it("takes ask away from a host that closes the form faster than anyone could read it, since it never showed it (ASK-6)", async () => {
+        const closing = await formClient({ action: "cancel" }, []);
+        expect(((await closing.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
+            "This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.",
+        );
+        expect((await closing.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
+        expect(((await closing.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).not.toContain("call `ask`");
+        await closing.close();
+    });
+
+    it("says to ask in words when a person declined the form or answered with something that is no button, and refuses a hidden roll", async () => {
+        const declined = await formClient({ action: "decline" }, [], { form: {} }, 1600);
         expect(((await declined.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
+        expect((await declined.listTools()).tools.map((tool) => tool.name)).toContain("ask");
         expect((await declined.callTool({ name: "ask", arguments: { ...wall, hidden: true } })).isError).toBe(true);
         await declined.close();
 
-        const strange = await formClient({ action: "accept", content: { choice: "Tiro: Furtività (1d20+9)" } }, []);
+        const strange = await formClient({ action: "accept", content: { choice: "Tiro: Furtività (1d20+9)" } }, [], { form: {} }, 1600);
         expect(((await strange.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
         await strange.close();
+    });
+
+    it("offers no ask inside the desktop app's Claude Code, which declares forms but does not show them", async () => {
+        const desktop = await formClient({ action: "accept", content: { choice: "Sì" } }, [], { form: {} }, 0, { CLAUDE_CODE_ENTRYPOINT: "claude-desktop" });
+        expect((await desktop.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
+        expect(((await desktop.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).not.toContain("call `ask`");
+        await desktop.close();
+
+        const terminal = await formClient({ action: "accept", content: { choice: "Sì" } }, [], { form: {} }, 0, { CLAUDE_CODE_ENTRYPOINT: "cli" });
+        expect((await terminal.listTools()).tools.map((tool) => tool.name)).toContain("ask");
+        await terminal.close();
     });
 
     it("takes a host that declares forms the older way, without modes, as one that shows them", async () => {
