@@ -1,5 +1,6 @@
 import type { Command } from "../core/registry.ts";
 import { advance } from "./advance.ts";
+import { ask } from "./ask.ts";
 import { change } from "./change.ts";
 import { config } from "./config.ts";
 import { effect } from "./effect.ts";
@@ -14,4 +15,4 @@ import { validate } from "./validate.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, instructions, status, validate, write, show, find, roll, change, effect, advance, scene];
+export const commands: Command<any, any>[] = [init, config, instructions, status, validate, write, show, find, roll, ask, change, effect, advance, scene];

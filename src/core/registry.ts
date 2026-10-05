@@ -16,6 +16,8 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
     alwaysLoad?: boolean;
     /** Fields the command line takes as positional arguments, in order. */
     positionals?: string[];
+    /** The command asks the player directly: it exists only where the surface can (Context.player), never on the command line. */
+    needsPlayer?: boolean;
     run(input: z.infer<Schema>, context: Context): Result | Promise<Result>;
     /** Plain-text rendering of the result. */
     format(result: Result): string;

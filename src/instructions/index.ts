@@ -7,6 +7,12 @@ export function startInstructions(): string
     return readInstructions("start.md");
 }
 
+/** The line that sends the master to the buttons, where the host shows the player forms (D-148). */
+export function buttonsInstructions(): string
+{
+    return readInstructions("buttons.md");
+}
+
 /** The game master's full instructions, as the `instructions` command gives them. */
 export function masterInstructions(): string
 {

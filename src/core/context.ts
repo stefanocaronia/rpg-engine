@@ -16,6 +16,14 @@ export interface Context
     actor: string;
     /** The operating system, as Node names it (win32, linux, darwin): some files differ by it. */
     platform: string;
+    /** The player, where the surface can ask them directly, as an AI host that shows forms does (D-148); missing elsewhere. */
+    player?: Player;
+}
+
+/** Asks the player one question with buttons: the index of the label they chose, or undefined when no one answered. */
+export interface Player
+{
+    choose(question: string, title: string, labels: string[]): Promise<number | undefined>;
 }
 
 export function defaultContext(folder = process.cwd()): Context

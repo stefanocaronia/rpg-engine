@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { defineCommand } from "../core/registry.ts";
-import { masterInstructions } from "../instructions/index.ts";
+import { buttonsInstructions, masterInstructions } from "../instructions/index.ts";
 
 export const instructions = defineCommand({
     name: "instructions",
@@ -11,9 +11,10 @@ export const instructions = defineCommand({
     alwaysLoad: true,
     input: z.object({}),
 
-    run()
+    run(_input, context)
     {
-        return { text: masterInstructions() };
+        // Where the host shows the player forms, the buttons take the place of the stop in words (D-148).
+        return { text: context.player === undefined ? masterInstructions() : `${masterInstructions()}\n\n${buttonsInstructions()}` };
     },
 
     format(result)

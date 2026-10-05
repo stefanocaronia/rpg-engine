@@ -39,6 +39,10 @@ export async function runCommandLine(argv: string[], context: Context = defaultC
         return failure(`Unknown command "${commandName}".\n\n${generalHelp()}`);
     }
 
+    if (command.needsPlayer) {
+        return failure(`${command.name} works only in an AI app that shows the player a form; here, ask the player in words.`);
+    }
+
     if (args.includes("--help") || args.includes("-h")) {
         return success(commandHelp(command));
     }
@@ -154,7 +158,7 @@ function generalHelp(): string
 {
     const width = Math.max(...commands.map((command) => command.name.length));
     const line = (name: string, description: string): string => `  ${name.padEnd(width)} ${firstSentence(description)}`;
-    const groupLines = (group: string): string[] => commands.filter((command) => command.group === group).map((command) => line(command.name, command.description));
+    const groupLines = (group: string): string[] => commands.filter((command) => command.group === group && !command.needsPlayer).map((command) => line(command.name, command.description));
     return [
         `rpg-engine ${getVersion()}`,
         "",

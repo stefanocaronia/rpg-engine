@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { ElicitRequestSchema, type ElicitResult } from "@modelcontextprotocol/sdk/types.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -33,7 +34,7 @@ async function call(name: string, args: Record<string, unknown>): Promise<{ text
 describe("MCP server", () => {
     it("offers every command as a tool, with its description and parameters", async () => {
         const { tools } = await client.listTools();
-        expect(tools.map((tool) => tool.name)).toEqual(commands.map((command) => command.name));
+        expect(tools.map((tool) => tool.name)).toEqual(commands.filter((command) => !command.needsPlayer).map((command) => command.name));
 
         const write = tools.find((tool) => tool.name === "write");
         expect(write?.description).toBe(commands.find((command) => command.name === "write")?.description);
@@ -101,5 +102,64 @@ describe("MCP server", () => {
         expect(help).toContain("Campaign:\n  init         Create a new campaign.\n  config       Show or change the campaign settings.\n  mcp          Start the MCP server for an AI host.");
         expect(help).toContain("Game:\n  instructions Your instructions as game master, in full: how to run this campaign and use these tools.\n  status       Show where the game stands.\n");
         expect(help).toContain("  validate     Check the whole campaign and say how to fix each problem.\n  write        Create or change a page of the world.");
+    });
+});
+
+/** A client of a new server on `folder` that shows forms, answering each with `answer`; the forms it was shown go in `shown`. */
+async function formClient(answer: ElicitResult, shown: unknown[], capabilities: Record<string, unknown> = { form: {} }): Promise<Client>
+{
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await createMcpServer(testContext(folder)).connect(serverTransport);
+    const forms = new Client({ name: "forms", version: "1.0.0" }, { capabilities: { elicitation: capabilities } });
+    forms.setRequestHandler(ElicitRequestSchema, (request) => {
+        shown.push(request.params);
+        return answer;
+    });
+    await forms.connect(clientTransport);
+    return forms;
+}
+
+describe("a host that shows forms (D-148, ASK-1)", () => {
+    const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+5", "Acrobazia 1d20+3"], who: "Bruna" };
+
+    beforeEach(async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
+    });
+
+    it("sees ask, with a line in the instructions, and gets the player's click back in the same call", async () => {
+        expect((await client.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
+        expect((await call("instructions", {})).text).not.toContain("call `ask`");
+
+        const shown: unknown[] = [];
+        const forms = await formClient({ action: "accept", content: { choice: "Tiro: Acrobazia (1d20+3)" } }, shown);
+        expect((await forms.listTools()).tools.map((tool) => tool.name)).toContain("ask");
+        expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(/call `ask` instead of stopping in words\.$/);
+
+        const result = await forms.callTool({ name: "ask", arguments: wall });
+        expect((result.content as { text: string; }[])[0].text).toContain("Bruna, Acrobazia: 1d20+3 = 7 [4] + 3, rolled by the player.");
+        expect(shown).toEqual([{
+            mode: "form",
+            message: wall.question,
+            requestedSchema: { type: "object", properties: { choice: { type: "string", title: "Tiro", enum: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20+3)", "Cambio idea"] } }, required: ["choice"] },
+        }]);
+        await forms.close();
+    });
+
+    it("says to ask in words when the form is declined or answered with something that is no button, and refuses a hidden roll", async () => {
+        const declined = await formClient({ action: "decline" }, []);
+        expect(((await declined.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
+        expect((await declined.callTool({ name: "ask", arguments: { ...wall, hidden: true } })).isError).toBe(true);
+        await declined.close();
+
+        const strange = await formClient({ action: "accept", content: { choice: "Tiro: Furtività (1d20+9)" } }, []);
+        expect(((await strange.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
+        await strange.close();
+    });
+
+    it("takes a host that declares forms the older way, without modes, as one that shows them", async () => {
+        const older = await formClient({ action: "accept", content: { choice: "Sì" } }, [], {});
+        expect(((await older.callTool({ name: "ask", arguments: { question: "Attacco di opportunità?", options: ["Sì", "No"] } })).content as { text: string; }[])[0].text).toBe("The player chose: Sì.");
+        await older.close();
     });
 });
