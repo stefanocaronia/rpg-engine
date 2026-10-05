@@ -1,5 +1,6 @@
 import { Document, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml";
-import { trimBlankLines } from "./markdown.ts";
+import { comparableText } from "../core/text.ts";
+import { links, trimBlankLines } from "./markdown.ts";
 import { isEmptyField } from "./standard-fields.ts";
 
 const singleLink = /^\[\[[^\]]+\]\]$/;
@@ -159,6 +160,7 @@ function addToList(document: Document, name: string, values: unknown[]): void
     }
 }
 
+/** Removes every item that is the value, a link however it is written (CON-7). */
 function removeFromList(document: Document, name: string, values: unknown[]): void
 {
     const list = document.get(name);
@@ -168,19 +170,32 @@ function removeFromList(document: Document, name: string, values: unknown[]): vo
     }
 
     for (const value of values) {
-        const index = list.items.findIndex((item) => sameValue(item, value));
+        const kept = list.items.filter((item) => !sameValue(item, value));
 
-        if (index === -1) {
+        if (kept.length === list.items.length) {
             throw new Error(`"${name}" does not hold ${String(value)}.`);
         }
 
-        list.items.splice(index, 1);
+        list.items = kept;
     }
 }
 
+/** Whether a list's item is the value: the same, or the same link however written, as [[bruna]] and [[Bruna]], or [[items/Lanterna.md|la lanterna]] and [[Lanterna]]. */
 function sameValue(item: unknown, value: unknown): boolean
 {
-    return (isScalar(item) ? item.value : item) === value;
+    const written = isScalar(item) ? item.value : item;
+    return written === value || sameLink(written, value);
+}
+
+function sameLink(first: unknown, second: unknown): boolean
+{
+    if (typeof first !== "string" || typeof second !== "string" || !singleLink.test(first.trim()) || !singleLink.test(second.trim())) {
+        return false;
+    }
+
+    const [one] = links(first);
+    const [other] = links(second);
+    return one !== undefined && other !== undefined && comparableText(one.page) === comparableText(other.page) && comparableText(one.section ?? "") === comparableText(other.section ?? "");
 }
 
 /** Whether a value holds a list inside a list, which a field cannot hold. */

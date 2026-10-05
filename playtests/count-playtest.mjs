@@ -62,6 +62,7 @@ function countSession(folder, before)
         eventsByHand: [],
         newDays: [],
         playerMoves: [],
+        learned: { reveal: 0, write: 0 },
         writes: 0,
         costs: [],
         durations: [],
@@ -195,14 +196,27 @@ function countRpgCall(counts, turn, name, input, output, campaign)
         counts.effects.push({ turn, action: input.action, page: input.page, name: input.name, for: input.for, until: input.until, by: input.by, set: input.set, duration: effectDuration(input) });
     }
 
+    if (name === "move") {
+        const moved = JSON.stringify(input.page ?? "");
+
+        for (const character of campaign.playerCharacters.filter((candidate) => moved.includes(candidate))) {
+            counts.playerMoves.push({ turn, character, to: input.to, how: "move" });
+        }
+    }
+
+    if (name === "reveal") {
+        counts.learned.reveal++;
+    }
+
     if (name === "write") {
         counts.writes++;
         const added = JSON.stringify(input.add ?? "");
         const set = JSON.stringify(input.set ?? "");
+        counts.learned.write += added.includes("knows") ? 1 : 0;
 
         for (const character of campaign.playerCharacters) {
             if (added.includes("contains") && added.includes(`[[${character}]]`)) {
-                counts.playerMoves.push({ turn, character, to: input.page });
+                counts.playerMoves.push({ turn, character, to: input.page, how: "write" });
             }
         }
 
@@ -276,7 +290,8 @@ function markdown(details)
         ["Rolls by who", (s) => Object.entries(s.rolls.byWho).map(([who, count]) => `${who} ${count}`).join(", ")],
         ["Scenes by action", (s) => Object.entries(s.scenes).map(([action, count]) => `${action} ${count}`).join(", ") || "0"],
         ["advance (stopped at an event)", (s) => `${s.advances.length} (${s.advances.filter((a) => a.stopped).length})`],
-        ["Moves of the player's character", (s) => s.playerMoves.length],
+        ["Moves of the player's character (move, write)", (s) => `${s.playerMoves.length} (${s.playerMoves.filter((m) => m.how === "move").length}, ${s.playerMoves.filter((m) => m.how === "write").length})`],
+        ["What characters learned (reveal, write knows)", (s) => `${s.learned.reveal}, ${s.learned.write}`],
         ["change by field", (s) => Object.entries(s.changes).map(([field, count]) => `${field} ${count}`).join(", ") || "0"],
         ["Clock steps", (s) => s.clockSteps.length],
         ["Events that came by the engine (by cause)", (s) => s.due.length ? countBy(uniqueDue(s.due), (d) => d.cause) : "0"],

@@ -10,12 +10,15 @@ import { readEffects } from "../effects/index.ts";
 import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
 import {
     baseValue,
+    changedEnvironment,
     changedFields,
     checkFieldChange,
     derivedPages,
+    environmentAt,
     type FieldChange,
     findPage,
     followersOf,
+    formatEnvironmentEntry,
     holdsField,
     inheritedFields,
     introductionFollowersOf,
@@ -34,10 +37,12 @@ import {
     newPageFields,
     ownFieldChange,
     type Page,
+    pageNamed,
     type PageType,
     pageTypeNames,
     parsePageReference,
     playerConcerns,
+    readEnvironment,
     readFieldValue,
     removedFieldName,
     sameAsBase,
@@ -92,20 +97,20 @@ const fieldValues = z.union([z.array(z.string()), z.record(z.string(), z.unknown
 export const write = defineCommand({
     name: "write",
     description: "Create or change a page of the world. "
-        + "The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, a change, something a character learns. "
+        + "The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. "
         + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
         + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
-        + "A list field changes one item at a time with add and remove. "
-        + "It also writes the fields of a copy in the open scene; conditions and forms go with effect. "
+        + 'A list field changes one item at a time with add and remove; a place\'s environment, one line at a time, such as add environment="light: dark". '
+        + "It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name writes one section or one secret"),
-        type: z.enum(pageTypeNames).optional().describe(`type of a new page: ${pageTypeNames.join(", ")}`),
+        type: z.enum(pageTypeNames).optional().describe(`type of a new page: ${pageTypeNames.map((type) => (type === "place" ? "place (anywhere one can be, even a cart or a ship)" : type)).join(", ")}`),
         set: fieldValues.optional().describe('fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]'),
         unset: z.array(z.string()).optional().describe("fields to remove, repeatable"),
-        add: fieldValues.optional().describe("items to add to list fields: field=value, repeatable, such as knows=[[Bruna]], or an object"),
+        add: fieldValues.optional().describe("items to add to list fields: field=value, repeatable, such as factions=[[Barcaioli]], or an object"),
         remove: fieldValues.optional().describe("items to remove from list fields: field=value, repeatable, or an object"),
         text: z.string().optional().describe("text of the introduction, the part before the first heading; or of the section or secret given"),
         section: z.string().optional().describe("section or secret to write; a missing one is added at the end of the page, as a secret if secret is given; empty text removes it"),
@@ -152,13 +157,16 @@ export const write = defineCommand({
         if (existing === undefined && input.type === undefined) {
             const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
             const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it.";
-            throw new Error(`There is no page named ${reference.name}${copies}. To create it, give its type: ${pageTypeNames.join(", ")}.${unreadable}`);
+            const aliased = pageNamed(world, reference.name);
+            const alias = aliased === undefined ? "" : ` ${reference.name} is an alias of ${aliased.name}: to change that page, write ${aliased.name}.`;
+            throw new Error(`There is no page named ${reference.name}${copies}.${alias} To create it, give its type: ${pageTypeNames.join(", ")}.${unreadable}`);
         }
 
         const type = existing?.type ?? input.type;
         conditionsAsList(existing, fields);
         checkFieldNames(type, fields);
         checkFieldChange(type, fields);
+        environmentAsSet(world, existing, type, reference.name, fields);
         checkValues(fields);
 
         if (existing !== undefined) {
@@ -428,6 +436,74 @@ function storyNotes(root: string, context: Context, before: World, after: World,
     const conditions = page.type === "event" && JSON.stringify(existing?.fields.when) !== JSON.stringify(page.fields.when) ? conditionNotes(fired.world, page.fields.when) : [];
     const consequences = consequencesNotes(fired.world, existing, written, fired.due.map((event) => event.name), present);
     return [nowDueNote(fired.due), heldNote(fired.held), ...conditions, ...consequences].filter((note) => note !== "");
+}
+
+/**
+ * A place's environment changes entry by entry (ENV-4): add puts a line in, or in place of the one with its name; remove takes one out by name; set gives them all,
+ * each read as a line. The lines it ends with are set whole, or the field goes when none is left.
+ */
+function environmentAsSet(world: World, page: Page | undefined, type: PageType | undefined, name: string, change: FieldChange): void
+{
+    const add = change.add?.environment;
+    const remove = change.remove?.environment;
+
+    // On a character or an item environment would hold for nothing (ENV-6); taking it away is always allowed.
+    if ((type === "character" || type === "item") && (change.set?.environment !== undefined || add !== undefined)) {
+        throw new Error(`${name} is ${withArticle(type)}: an environment holds only on a place, for all it contains. What a thing does around itself, such as a lantern's light, is a field or an effect of its own.`);
+    }
+
+    if (type !== "place") {
+        return;
+    }
+
+    if (change.set?.environment !== undefined) {
+        const read = readEnvironment(change.set.environment);
+
+        if ("problem" in read) {
+            throw new Error(read.problem);
+        }
+
+        // Written back as lines, which Obsidian edits, whatever way they were given.
+        change.set.environment = read.entries.map(formatEnvironmentEntry);
+    }
+
+    if (add === undefined && remove === undefined) {
+        return;
+    }
+
+    checkOwnEntries(world, page, name, remove ?? []);
+    const lines = changedEnvironment(page?.fields.environment, add ?? [], remove ?? [], page?.name ?? name);
+    delete change.add?.environment;
+    delete change.remove?.environment;
+
+    if (lines.length > 0) {
+        change.set = { ...change.set, environment: lines };
+    } else if (page !== undefined && Object.hasOwn(page.fields, "environment")) {
+        change.unset = [...(change.unset ?? []), "environment"];
+    }
+}
+
+/** An entry to remove that the place does not write but reads from a place around it: removing it there would change it for all that place holds. */
+function checkOwnEntries(world: World, page: Page | undefined, name: string, remove: unknown[]): void
+{
+    const own = page === undefined ? [] : readEnvironmentNames(page.fields.environment);
+
+    for (const entry of remove.map((item) => String(item).split(":")[0].trim())) {
+        const outer = page === undefined || own.some((other) => comparableText(other) === comparableText(entry)) ? undefined : environmentAt(world, page).find((found) => comparableText(found.entry.name) === comparableText(entry));
+
+        if (outer !== undefined) {
+            throw new Error(
+                `${entry} holds in ${name} from ${outer.place.name}: to change it in ${name} only, add environment="${outer.entry.name}: …" on ${name}; to remove it everywhere ${outer.place.name} holds, write ${outer.place.name}, remove environment=${outer.entry.name}.`,
+            );
+        }
+    }
+}
+
+/** The names a place's environment writes, as far as its lines read. */
+function readEnvironmentNames(value: unknown): string[]
+{
+    const read = readEnvironment(value);
+    return "entries" in read ? read.entries.map((entry) => entry.name) : [];
 }
 
 /** Adding a condition to an event that has one makes a list of the two, of which one is enough (EVT-3). */

@@ -346,21 +346,37 @@ describe("rpg scene, numbers and the log after leave", () => {
     });
 });
 
-describe("the party where the scene is (D-131)", () => {
-    it("says when the files put the party elsewhere, on open, on add and in status, so that conditions on the place can fire", async () => {
-        await ok("write", "Mulino", "--type", "place");
-        expect(await ok("scene", "open", "--title", "Il mulino", "--type", "exploration", "--place", "[[Mulino]]")).toBe(
-            "Scene opened: Il mulino (exploration) at Mulino. No one in it yet: add who is there with scene add.\nEnnio is in Ossario, Lena is in Ossario, not in Mulino: if they are there now, move them with write, then add them; conditions such as party in [[Mulino]] fire then.",
-        );
-        expect(await ok("scene", "add", "--with", "Ennio")).toBe(
-            "Added to Il mulino: Ennio: hp 12/12 · arrows 18.\nEnnio is in Ossario, not in Mulino: if they are there now, move them with write; conditions such as party in [[Mulino]] fire then.",
-        );
-        expect(await ok("status")).toContain("Scene: Il mulino (exploration) at Mulino, with Ennio; in the files Ennio is in Ossario: if they are in Mulino, move them with write");
-
-        await ok("write", "Ossario", "--remove", "contains=[[Ennio]]");
-        await ok("write", "Mulino", "--add", "contains=[[Ennio]]");
+describe("the party where the scene is (D-152, CON-6)", () => {
+    it("brings into the scene's place the party with the character, on open and on add, and the conditions on the place fire", async () => {
+        await ok("write", "Mulino", "--type", "place", "--add", "environment=light: dim");
+        await ok("write", "I dormienti si alzano", "--type", "event", "--set", "when=party in [[Mulino]]");
+        const opened = await ok("scene", "open", "--title", "Il mulino", "--type", "exploration", "--place", "[[Mulino]]");
+        expect(opened).toContain("Scene opened: Il mulino (exploration) at Mulino. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.\nMoved into Mulino: Ennio, Lena.\nNow due: I dormienti si alzano");
+        expect(opened).toContain("\nHere: light: dim (Mulino).");
+        expect(await ok("show", "Ennio")).toContain("Is in: Mulino");
+        expect(readFileSync(join(folder, "world", "places", "Ossario.md"), "utf8")).not.toContain("Ennio");
+        expect(readLogFile(folder).find((entry) => entry.type === "moved")).toMatchObject({ visibility: "public", data: { pages: ["Ennio", "Lena"], from: { Ennio: "Ossario", Lena: "Ossario" }, to: "Mulino" } });
         expect(await ok("status")).not.toContain("in the files");
-        expect(await ok("scene", "close", "--summary", "Niente.")).not.toContain("not in");
-        expect(await ok("scene", "open", "--title", "Ancora", "--type", "social")).not.toContain("not in");
+
+        await ok("scene", "close", "--summary", "Niente.");
+        await ok("scene", "open", "--title", "All'ossario", "--type", "social", "--place", "Ossario", "--with", "Varro");
+        expect(await ok("scene", "add", "--with", "Ennio")).toBe("Added to All'ossario: Ennio: hp 12/12 · arrows 18.\nMoved into Ossario: Ennio.");
+        expect(await ok("show", "Ennio")).toContain("Is in: Ossario › Cripta");
+        expect(await ok("show", "Lena")).toContain("Is in: Mulino");
+    });
+
+    it("moves no one in a travel scene, and status gives the calls when a change by hand put the party elsewhere", async () => {
+        await ok("write", "Strada", "--type", "place");
+        expect(await ok("scene", "open", "--title", "In viaggio", "--type", "travel", "--place", "Strada")).toBe("Scene opened: In viaggio (travel) at Strada. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.");
+        expect(await ok("show", "Ennio")).toContain("Is in: Ossario");
+        expect(await ok("status")).not.toContain("in the files");
+        await ok("scene", "close", "--summary", "In marcia.");
+
+        await ok("scene", "open", "--title", "All'ossario", "--type", "exploration");
+        writeFileSync(join(folder, "world", "places", "Ossario.md"), '---\ncontains: ["[[Lena]]"]\n---\n');
+        writeFileSync(join(folder, "world", "places", "Strada.md"), '---\ncontains: ["[[Ennio]]"]\n---\n');
+        expect(await ok("status")).toContain(
+            "Scene: All'ossario (exploration) at Ossario, with Ennio, Lena; in the files Ennio is in Strada: if they are in Ossario, move, page Ennio, to Ossario; if they left the scene, scene leave, who Ennio",
+        );
     });
 });

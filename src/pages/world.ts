@@ -4,7 +4,7 @@ import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
-import { containerFields } from "./standard-fields.ts";
+import { canHold, containerFieldOf } from "./standard-fields.ts";
 
 const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;
 const longestName = 120;
@@ -149,19 +149,28 @@ export function backlinks(world: World, page: Page): Backlink[]
     return found;
 }
 
-/** Where a page is: the page that holds it, the one that holds that, and so on, climbing places' contents and characters' inventories. `alsoIn` lists other holders, which should not exist. */
+/**
+ * Where a page is: the page that holds it, the one that holds that, and so on, climbing the containers that can hold each (CON-1, CON-3), up to a page already seen.
+ * `alsoIn` lists other holders, which should not exist.
+ */
 export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[]; }
 {
     const chain: Page[] = [];
-    let holders = holdersOf(world, page.name);
+    let holders = validHoldersOf(world, page);
     const alsoIn = holders.slice(1);
 
     while (holders.length > 0 && holders[0] !== page && !chain.includes(holders[0])) {
         chain.push(holders[0]);
-        holders = holdersOf(world, holders[0].name);
+        holders = validHoldersOf(world, holders[0]);
     }
 
     return { chain, alsoIn };
+}
+
+/** The containers that list a page and can hold it, itself left out, in the order of the world's pages. */
+export function validHoldersOf(world: World, page: Page): Page[]
+{
+    return holdersOf(world, page.name).filter((holder) => holder !== page && canHold(holder.type, page.type));
 }
 
 /** Whether a page is one of the player's party: their character or a companion. */
@@ -189,10 +198,10 @@ export function playerConcerns(world: World): (page: Page) => boolean
     const queue = [...held];
 
     for (let holder = queue.shift(); holder !== undefined; holder = queue.shift()) {
-        for (const name of containerFields.flatMap((field) => linksIn(holder.fields[field]))) {
+        for (const name of heldNames(holder)) {
             const page = world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
 
-            if (page !== undefined && !held.has(page)) {
+            if (page !== undefined && !held.has(page) && canHold(holder.type, page.type)) {
                 held.add(page);
                 queue.push(page);
             }
@@ -202,7 +211,7 @@ export function playerConcerns(world: World): (page: Page) => boolean
     return (page) => held.has(page) || (page.type === "quest" && page.fields.status === "open");
 }
 
-/** The pages whose contents or inventory list the page named `name`, in the order of the world's pages. */
+/** The pages whose container field, by their type, lists the page named `name`, in the order of the world's pages (CON-1). */
 export function holdersOf(world: World, name: string): Page[]
 {
     let index = holderIndexes.get(world);
@@ -211,7 +220,7 @@ export function holdersOf(world: World, name: string): Page[]
         index = new Map();
 
         for (const page of world.pages) {
-            for (const listed of new Set(containerFields.flatMap((field) => linksIn(page.fields[field])).map(comparableText))) {
+            for (const listed of new Set(heldNames(page).map(comparableText))) {
                 const holders = index.get(listed) ?? [];
                 holders.push(page);
                 index.set(listed, holders);
@@ -222,6 +231,31 @@ export function holdersOf(world: World, name: string): Page[]
     }
 
     return index.get(comparableText(name)) ?? [];
+}
+
+/** The names a page lists in its container field, by its type (CON-1): none for a type that holds nothing. */
+export function heldNames(page: Page): string[]
+{
+    const field = containerFieldOf(page.type);
+    return field === undefined ? [] : linksIn(page.fields[field]);
+}
+
+/** The page named `name`, or else the one page with `name` among its aliases; undefined when there is none. Two pages with that name or alias stop the command. */
+export function pageNamed(world: World, name: string): Page | undefined
+{
+    const page = findPage(world, name);
+
+    if (page !== undefined) {
+        return page;
+    }
+
+    const aliased = world.pages.filter((candidate) => textsIn(candidate.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
+
+    if (aliased.length > 1) {
+        throw new Error(`${name} is an alias of ${aliased.map((other) => other.name).join(" and ")}: give the page's own name.`);
+    }
+
+    return aliased[0];
 }
 
 /** The pages that a field's value links to. */

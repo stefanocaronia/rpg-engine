@@ -1,5 +1,7 @@
 // The pages of the world: one markdown file with a YAML frontmatter for each thing with a name.
 export { checkWorld } from "./check.ts";
+export { applyMove, type MovePlan, planMove } from "./containers.ts";
+export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
 export {
     baseChain,
     baseValue,
@@ -18,19 +20,35 @@ export {
     removedFieldName,
     sameAsBase,
     sectionFollowersOf,
+    shownPart,
     uniquePage,
     writtenFieldName,
 } from "./inheritance.ts";
-export { introductionText, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
+export { introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames } from "./page-types.ts";
-export { containerFields, isCounterField, isEmptyField, isStandardField, listFieldNames, misspelledFieldProblem, misspelledStandardField, newPageFields, standardValues } from "./standard-fields.ts";
+export {
+    canHold,
+    containerFieldOf,
+    containerFields,
+    heldTypesText,
+    isCounterField,
+    isEmptyField,
+    isFieldName,
+    isStandardField,
+    listFieldNames,
+    misspelledFieldProblem,
+    misspelledStandardField,
+    newPageFields,
+    standardValues,
+} from "./standard-fields.ts";
 export {
     type Backlink,
     backlinks,
     concernsPlayer,
     createWorld,
     findPage,
+    heldNames,
     isInParty,
     isPartyMember,
     linksIn,
@@ -38,9 +56,11 @@ export {
     locate,
     type Page,
     type PageMatch,
+    pageNamed,
     parsePageReference,
     playerConcerns,
     searchPages,
+    validHoldersOf,
     withPage,
     type World,
 } from "./world.ts";

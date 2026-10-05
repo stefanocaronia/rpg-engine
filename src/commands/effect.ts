@@ -33,7 +33,7 @@ interface EffectResult
 
 export const effect = defineCommand({
     name: "effect",
-    description: "Put a condition or an effect on a character or a copy in the open scene, or end one: frightened, prone, a spell, a form. "
+    description: "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form; on a place, such as rain or magical darkness, it holds for all inside. "
         + "add gives its name, how long it lasts, who keeps it alive if someone must (concentration), and the values it gives meanwhile; what else it does in play is yours to rule. "
         + "It ends by itself, and advance or scene says so; end takes it away sooner, or every effect someone keeps alive. "
         + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set ac=15.',

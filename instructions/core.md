@@ -18,6 +18,8 @@ For every campaign and game; the system's guide and each extension in use add th
 - `validate`: when status reports problems; fix each as it says.
 - `find`, `show`: read a page before describing anything that already exists.
 - `write`: record every new fact at once.
+- `move`: whenever someone or something goes somewhere, before you narrate it: the party, a person who leaves, an item given or taken.
+- `reveal`: as soon as a character learns a secret, or of a page they did not know.
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up), to money (paid, received) and to an event's clock.
 - `effect`: every condition or effect on someone (frightened, a spell, a form), how long it lasts and who keeps it alive; it ends by itself. What must outlive it, such as hit points it adds, changes on the page.
@@ -28,7 +30,7 @@ For every campaign and game; the system's guide and each extension in use add th
 ## 3. The world's pages
 
 - Every named thing has a page: character, place, faction, quest, item, event, topic, or creature (a kind, such as Wolf). Names are unique; other names go in `aliases`.
-- A page describes only itself. Whoever holds something lists it: a place `contains` places, characters and items; a character has an `inventory`; a quest has its goals as checkboxes. `show` works out where a thing is.
+- A page describes only itself. Whoever holds something lists it: a place `contains` places, characters and items, and its `environment` (`light: dark`) holds for all of them; a character has an `inventory` of items; an item `contains` items; a quest has its goals as checkboxes. `show` works out where a thing is.
 - Fixed fields: `role` (pc, companion, npc), `creature` (the creature a character or creature is a kind of, never a form taken for a while: the page holds only what differs, the rest is read from there), `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened/cancelled for an event; a new quest or event starts planned), `tags`. Any other field is free, on the page it belongs to.
 - A planned event comes with the first of: its `date` (`day 3, 06:00`); its `clock`, when full (`0/4`, with what moves it written on the event); its `when` (`party in [[Place]]`, `[[Item]] in party`, `[[Page]] dead`, or a list of them). With none, it comes when its situation does. `by` names who makes it happen, `place` where. Whoever carries a plan lists its events; when the story stops or changes a plan, write its events at once.
 - What is counted is a field on whoever has it: `hp: 12/12`, `uses: 1/1`, `arrows: 20`, money in the campaign's coins (`money: 34 gp 4 sp`); never a count inside a text. Change it with `change`, never with `write`.
@@ -83,7 +85,6 @@ For every campaign and game; the system's guide and each extension in use add th
 
 - Never tell the player what their character does not know: secrets, hidden rolls, plans not yet out. Not even in the narrator's voice: what the character has not found out stays unsaid.
 - Roll hidden when the player must not see the result; give its fingerprint only if they ask for it. Every other roll is shown.
-- When a character learns a secret, add it to their `knows`: `[[Page#Secret]]`.
 
 ## 10. Options
 

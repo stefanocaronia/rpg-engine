@@ -4,6 +4,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { backlinks, baseChain, findPage, formatFields, inheritedByBase, inheritedFields, loadWorld, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, textParts, type World } from "../pages/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { skippedPagesNote } from "./notes.ts";
 
@@ -54,6 +55,7 @@ export const show = defineCommand({
             alsoCopy: !isCopy && copy !== undefined,
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
+            around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
             derivesFrom: baseChain(world, page).map((base) => base.name),
@@ -74,7 +76,8 @@ export const show = defineCommand({
             `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what}) · ${result.path}`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
             result.isIn.length > 0 ? `Is in: ${result.isIn.join(" › ")}` : "",
-            result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: remove it from all but one.` : "",
+            result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: move it where it is, such as move, page ${result.page}, to ${result.isIn[0]}.` : "",
+            result.around === "" ? "" : `Around: ${result.around}`,
             result.derivesFrom.length > 0 ? `Derives from: ${result.derivesFrom.join(" › ")}` : "",
             result.sectionFrom === undefined ? "" : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
             result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`,
@@ -86,6 +89,12 @@ export const show = defineCommand({
         return [header, fields, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** The place of the open scene, where its copies are (ENV-2); undefined when it has none, or none that exists. */
+function scenePlace(world: World, place: string | undefined): Page | undefined
+{
+    return place === undefined ? undefined : world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(place).name));
+}
 
 /** "ac 15 (13 without)": the values the page's effects give, each with the one it reads without them (EFF-10). */
 function coveredValues(world: World, page: Page): string[]

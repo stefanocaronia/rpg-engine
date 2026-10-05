@@ -1,9 +1,10 @@
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
-import { baseChain, baseProblem } from "./inheritance.ts";
-import { type Link, links, readSection, repeatedNames, secretNames } from "./markdown.ts";
-import { containerFields, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
-import { linksIn, type Page, textsIn, type World } from "./world.ts";
+import { comparableText, withArticle } from "../core/text.ts";
+import { readEnvironment } from "./environment.ts";
+import { baseChain, baseProblem, shownPart } from "./inheritance.ts";
+import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
+import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
+import { linksIn, type Page, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -13,7 +14,7 @@ interface Listing
     entry: string;
 }
 
-/** The exact checks on the world's pages (D-58, first level): files that cannot be read, repeated names, standard fields, links, things in two places. */
+/** The exact checks on the world's pages (D-58, first level): files that cannot be read, repeated names, standard fields, links, containers, environments. */
 export function checkWorld(world: World): Problem[]
 {
     // Built once, so that the checks cost as much as reading the pages, however many there are.
@@ -22,9 +23,15 @@ export function checkWorld(world: World): Problem[]
     return [
         ...world.problems.map((message) => ({ message })),
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
-        ...world.pages.flatMap((
-            page,
-        ) => [...fieldProblems(page), ...linkProblems(world, pagesByName, page), ...publicKnowsProblems(world, pagesByName, page), ...placeProblems(listingsByName, page), ...sectionProblems(page), ...inheritanceProblems(world, page)]),
+        ...world.pages.flatMap((page) => [
+            ...fieldProblems(page),
+            ...linkProblems(world, pagesByName, page),
+            ...publicKnowsProblems(world, pagesByName, page),
+            ...containerProblems(world, pagesByName, listingsByName, page),
+            ...environmentProblems(page),
+            ...sectionProblems(page),
+            ...inheritanceProblems(world, page),
+        ]),
     ];
 }
 
@@ -41,9 +48,11 @@ function groupBy<Item>(items: Item[], namesOf: (item: Item) => string[]): Map<st
     return groups;
 }
 
+/** The entries of a page's container field, by its type (CON-1). */
 function listingsOf(holder: Page): Listing[]
 {
-    return containerFields.flatMap((field) => textsIn(holder.fields[field]).map((entry) => ({ holder, field, entry })));
+    const field = containerFieldOf(holder.type);
+    return field === undefined ? [] : textsIn(holder.fields[field]).map((entry) => ({ holder, field, entry }));
 }
 
 function repeatedPageProblem(pages: Page[]): Problem
@@ -103,22 +112,17 @@ function brokenLink(world: World, pagesByName: Map<string, Page[]>, link: Link):
     return `but ${target.name} has no section or secret "${section}"${bases.length > 0 ? ", nor do the creatures it derives from" : ""}`;
 }
 
-/** Sections everyone can read, listed in knows: knows lists secrets and hidden pages (D-61), so such an entry says nothing. */
+/** Sections everyone can read, listed in knows: knows lists pages and secrets (D-61, REV-1), so such an entry says nothing. Secret or not, as reveal reads it. */
 function publicKnowsProblems(world: World, pagesByName: Map<string, Page[]>, page: Page): Problem[]
 {
     return textsIn(page.fields.knows).flatMap((entry) =>
         links(entry).flatMap((link) => {
             const section = link.section;
             const target = pagesByName.get(comparableText(link.page))?.[0];
-
-            if (section === undefined || target === undefined) {
-                return [];
-            }
-
-            const holders = [target, ...baseChain(world, target)];
-            const isSecret = holders.some((holder) => secretNames(holder.body).some((name) => comparableText(name) === comparableText(section)));
-            const isPublic = !isSecret && holders.some((holder) => readSection(holder.body, section) !== undefined);
-            return isPublic ? [{ path: page.path, message: `${page.name} knows ${written(link)}, a section everyone can read: knows lists secrets and hidden pages.`, fix: `write ${page.name}, remove knows=${entry}` }] : [];
+            const part = section === undefined || target === undefined ? undefined : shownPart(world, target, section);
+            return part !== undefined && !part.secret
+                ? [{ path: page.path, message: `${page.name} knows ${written(link)}, a section everyone can read: knows lists pages and secrets.`, fix: `write ${page.name}, remove knows=${entry}` }]
+                : [];
         })
     );
 }
@@ -142,18 +146,110 @@ function linkFix(page: Page, field: string | undefined, entry: string | undefine
     return inList ? `write ${page.name}, remove ${field}=${entry}` : `write ${page.name}, set ${field} to a page that exists`;
 }
 
-/** A thing listed by more than one container: it can be in one place only. */
-function placeProblems(listingsByName: Map<string, Listing[]>, page: Page): Problem[]
+/**
+ * What is wrong with a page as a container or as a thing held (CON-10): listed by more than one container, listing itself, inside itself through others,
+ * listing what it cannot hold, or listing things in a field its type does not use.
+ */
+function containerProblems(world: World, pagesByName: Map<string, Page[]>, listingsByName: Map<string, Listing[]>, page: Page): Problem[]
 {
     const listings = (listingsByName.get(comparableText(page.name)) ?? []).filter((listing, index, all) => all.findIndex((other) => other.holder === listing.holder) === index);
+    const holders = listings.filter((listing) => listing.holder !== page && canHold(listing.holder.type, page.type));
+    const self = listings.find((listing) => listing.holder === page);
+    const problems: Problem[] = [];
 
-    if (listings.length < 2) {
+    if (holders.length > 1) {
+        const where = holders.map((listing) => listing.holder.name).join(" and in ");
+        problems.push({ path: page.path, message: `${page.name} is in ${where}; a thing is in one place only.`, fix: `move ${page.name}, to ${holders[0].holder.name} or wherever it is: it stays there only` });
+    }
+
+    if (self !== undefined) {
+        problems.push({ path: page.path, message: `${page.name} lists itself in ${self.field}: a thing is never inside itself.`, fix: `write ${page.name}, remove ${self.field}=${self.entry}` });
+    }
+
+    const ring = ringOf(world, page);
+
+    if (ring !== undefined) {
+        problems.push({
+            path: page.path,
+            message: `${page.name} is inside itself: ${[page, ...ring, page].map((holder) => holder.name).join(" › ")}.`,
+            fix: `move one of them out of the others, such as move ${page.name}, to a place outside`,
+        });
+    }
+
+    return [...problems, ...heldProblems(pagesByName, page), ...wrongFieldProblems(page)];
+}
+
+/** The containers above a page, nearest first, when climbing them leads back to it; undefined when it does not. */
+function ringOf(world: World, page: Page): Page[] | undefined
+{
+    const chain: Page[] = [];
+
+    for (let holder = validHoldersOf(world, page)[0]; holder !== undefined && !chain.includes(holder); holder = validHoldersOf(world, holder)[0]) {
+        if (holder === page) {
+            return chain;
+        }
+
+        chain.push(holder);
+    }
+
+    return undefined;
+}
+
+/** Entries of a container's field that point to pages it cannot hold (CON-1): they put nothing anywhere. */
+function heldProblems(pagesByName: Map<string, Page[]>, holder: Page): Problem[]
+{
+    return listingsOf(holder).flatMap((listing) =>
+        linksIn(listing.entry).flatMap((name) => {
+            const held = pagesByName.get(comparableText(name));
+            const page = held?.length === 1 ? held[0] : undefined;
+
+            if (page === undefined || page === holder || canHold(holder.type, page.type)) {
+                return [];
+            }
+
+            const message = `${holder.name} lists ${page.name} in ${listing.field}, but ${withArticle(holder.type ?? "free page")} holds ${heldTypesText(holder.type)}, and ${page.name} is ${withArticle(page.type ?? "free page")}.`;
+            return [{ path: holder.path, message, fix: `move ${page.name}, to a container that holds it, such as a place; or write ${holder.name}, remove ${listing.field}=${listing.entry}` }];
+        })
+    );
+}
+
+/** Container fields on a page whose type does not list things there (CON-1): they put nothing anywhere. */
+function wrongFieldProblems(page: Page): Problem[]
+{
+    const own = containerFieldOf(page.type);
+    return containerFields.filter((field) => field !== own && !isEmptyField(page.fields[field])).map((field) => {
+        const message = own === undefined
+            ? `${page.name} is ${withArticle(page.type ?? "free page")}, which holds nothing, so its ${field} puts nothing anywhere.`
+            : `${page.name} lists things in ${field}, but ${withArticle(page.type ?? "free page")} holds them in ${own}.`;
+        return { path: page.path, message, fix: `move each thing it lists into ${own === undefined ? "a place, a character or an item" : page.name}, then write ${page.name}, unset ${field}` };
+    });
+}
+
+/** A place's environment that cannot be read, or an environment on a page that is not a place, where it holds for nothing (ENV-6). */
+function environmentProblems(page: Page): Problem[]
+{
+    const value = page.fields.environment;
+
+    if (isEmptyField(value)) {
         return [];
     }
 
-    const other = listings[1];
-    const where = listings.map((listing) => listing.holder.name).join(" and in ");
-    return [{ path: page.path, message: `${page.name} is in ${where}; a thing is in one place only.`, fix: `remove it from all but one, such as write ${other.holder.name}, remove ${other.field}=${other.entry}` }];
+    // On other types, such as a creature, environment is a free field: a game may use it for where they live.
+    if (page.type === "character" || page.type === "item") {
+        return [{
+            path: page.path,
+            message: `${page.name} has an environment, but only a place's holds, for all it contains.`,
+            fix: `write ${page.name}, unset environment; what it does around itself, such as a lantern's light, is a field or an effect of its own`,
+        }];
+    }
+
+    if (page.type !== "place") {
+        return [];
+    }
+
+    // An environment that is not a list of lines is reported with the standard fields.
+    const read = standardFieldProblem(page.type, page.fields, "environment") === undefined ? readEnvironment(value) : { entries: [] };
+    return "problem" in read ? [{ path: page.path, message: `${page.name}: ${read.problem}`, fix: `write ${page.name}, set environment whole, such as ["light: dark"]` }] : [];
 }
 
 function inheritanceProblems(world: World, page: Page): Problem[]

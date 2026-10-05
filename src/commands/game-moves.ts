@@ -1,0 +1,52 @@
+// Moving pages in play (D-151, CON-4, CON-5, CON-9), as move and scene do it: the move, its lines in the log, the events it sets off and what links to what moved.
+import type { Context } from "../core/context.ts";
+import { appendLogEntry } from "../core/log.ts";
+import { applyMove, concernsPlayer, isInParty, locate, type Page, planMove, type World } from "../pages/index.ts";
+import { fireEvents, heldNote, linkedStoryNotes, nowDueNote } from "./game-events.ts";
+import { newDatedLogEntry, readPresent } from "./game-time.ts";
+
+/** What a move did: the pages that changed place, the world after it and after the events it set off, and what the master should know. */
+export interface MoveDone
+{
+    moved: Page[];
+    world: World;
+    notes: string[];
+}
+
+/**
+ * Moves pages into a container (CON-4) and does what follows: a line in the log for the pages that concern the player, public, and one for the others, hidden (CON-9);
+ * the events it sets off, judged once on the world before and after it; what links to the pages that moved, but the living members of the party (CON-5).
+ */
+export function movePages(root: string, context: Context, world: World, pages: Page[], destination: Page): MoveDone
+{
+    const plan = planMove(world, pages, destination);
+
+    if (plan.edits.length === 0) {
+        return { moved: [], world, notes: [] };
+    }
+
+    const after = applyMove(world, plan);
+    logMoves(root, context, world, after, plan.moving, destination);
+    const present = readPresent(root).date;
+    const fired = fireEvents(root, context, world, after, present);
+    const now = (page: Page): Page => fired.world.pages.find((other) => other.path === page.path) ?? page;
+    const linked = linkedStoryNotes(fired.world, plan.moving.filter((page) => !isInParty(page)).map(now), fired.due.map((event) => event.name), present);
+    return { moved: plan.moving.map(now), world: fired.world, notes: [nowDueNote(fired.due), heldNote(fired.held), ...linked].filter((note) => note !== "") };
+}
+
+/**
+ * One line for the pages the player may see, before the move or after it (D-93), or that carry one of the party, as a ship with the party aboard, public;
+ * one for the others, hidden. Each says where they were and where they went (CON-9).
+ */
+function logMoves(root: string, context: Context, before: World, after: World, moved: Page[], destination: Page): void
+{
+    const now = (page: Page): Page => after.pages.find((other) => other.path === page.path) ?? page;
+    const carriesParty = (page: Page): boolean => before.pages.some((member) => isInParty(member) && locate(before, member).chain.some((holder) => holder.path === page.path));
+    const seen = (page: Page): boolean => concernsPlayer(before, page) || concernsPlayer(after, now(page)) || carriesParty(page);
+    const groups: ["public" | "hidden", Page[]][] = [["public", moved.filter(seen)], ["hidden", moved.filter((page) => !seen(page))]];
+
+    for (const [visibility, pages] of groups.filter(([, group]) => group.length > 0)) {
+        const from = Object.fromEntries(pages.map((page) => [page.name, locate(before, page).chain[0]?.name ?? null]));
+        appendLogEntry(root, newDatedLogEntry(root, context, "moved", visibility, { pages: pages.map((page) => page.name), from, to: destination.name }));
+    }
+}

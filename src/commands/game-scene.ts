@@ -4,7 +4,7 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { baseChain, findPage, isEmptyField, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { baseChain, findPage, isEmptyField, isInParty, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 
@@ -149,6 +149,28 @@ export function copiesReadingFrom(world: World, scene: Scene, page: Page): strin
         const counters = countersText(copyCounters(world, copy));
         return counters === "" ? name : `${name} (${counters})`;
     });
+}
+
+/**
+ * "in the files Ettore is in Mulino abbandonato: if they are in Ossario, move, page Ettore, to Ossario; if they left the scene, scene leave Ettore": the living members
+ * of the party in a scene whom the files put elsewhere, as a hand-made change may leave them (CON-8). Empty when there are none, or the scene is a travel one.
+ */
+export function partyAwayText(world: World, scene: Scene): string
+{
+    // Read without stopping at names two pages share, which validate reports.
+    const pageCalled = (link: string): Page | undefined => world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(link).name));
+    const place = scene.place === undefined ? undefined : pageCalled(scene.place);
+    const members = scene.with.map(pageCalled).filter((page): page is Page => page !== undefined && isInParty(page));
+    const away = place === undefined || scene.type === "travel" ? [] : members.filter((page) => !locate(world, page).chain.includes(place));
+
+    if (place === undefined || away.length === 0) {
+        return "";
+    }
+
+    // More than one name goes as a list, which the tools take as it is.
+    const names = away.length === 1 ? away[0].name : `[${away.map((page) => page.name).join(", ")}]`;
+    const where = away.map((page) => `${page.name} is in ${locate(world, page).chain.find((holder) => holder.type === "place")?.name ?? "no place"}`).join(", ");
+    return `in the files ${where}: if they are in ${place.name}, move, page ${names}, to ${place.name}; if they left the scene, scene leave, who ${names}`;
 }
 
 /** Writes a whole new scene into state.yaml, or, undefined, removes it when the scene closes. */

@@ -41,7 +41,7 @@ describe("rpg validate", () => {
         await rpg("write", "Ennio", "--type", "character", "--add", "knows=[[Annegato#La melma]]", "--add", "knows=[[Annegato#Da dove vengono]]");
         expect((await rpg("validate")).output).toBe([
             "1 problem:",
-            "- world/characters/Ennio.md: Ennio knows [[Annegato#La melma]], a section everyone can read: knows lists secrets and hidden pages. Fix: write Ennio, remove knows=[[Annegato#La melma]].",
+            "- world/characters/Ennio.md: Ennio knows [[Annegato#La melma]], a section everyone can read: knows lists pages and secrets. Fix: write Ennio, remove knows=[[Annegato#La melma]].",
         ].join("\n"));
     });
 
@@ -67,7 +67,7 @@ describe("rpg validate", () => {
         const output = (await rpg("validate")).output;
         expect(output).toContain("6 problems:");
         expect(output).toContain('- world/quests/Voto.md: "status" must be one of: planned, open, done, failed. Fix: write Voto, set status again with an allowed value.');
-        expect(output).toContain("- world/items/Lanterna.md: Lanterna is in Ennio and in Cripta; a thing is in one place only. Fix: remove it from all but one, such as write Cripta, remove contains=[[Lanterna]].");
+        expect(output).toContain("- world/items/Lanterna.md: Lanterna is in Ennio and in Cripta; a thing is in one place only. Fix: move Lanterna, to Ennio or wherever it is: it stays there only.");
         expect(output).toContain('- world/characters/Ennio.md: Ennio has two sections or secrets named "Note". Fix: rename one of them by hand, so that Ennio#Note finds one place.');
         expect(output).toContain("- The frontmatter of world/characters/Rotto.md is not valid YAML");
         expect(output).toContain("- world/items/ennio.md: Two pages have the same name: world/characters/Ennio.md and world/items/ennio.md. Fix: rename one of them by hand: names must be unique in the campaign.");

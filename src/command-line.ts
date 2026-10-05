@@ -79,9 +79,17 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
     }
 
     const parsed = parseArgs({ args, options, allowPositionals: true, strict: true, tokens: true });
+    // The last positional, when it is a list, takes the arguments left before the first option, as in rpg move Ettore Lena --to Ossario.
+    const last = positionals.at(-1);
+    const takesRest = last !== undefined && isList(command.input.shape[last] as z.ZodType);
+    const firstOption = parsed.tokens.findIndex((token) => token.kind === "option");
+    const valuesOf = (tokens: typeof parsed.tokens): string[] => tokens.flatMap((token) => (token.kind === "positional" ? [token.value] : []));
+    const given = takesRest && firstOption !== -1 ? valuesOf(parsed.tokens.slice(0, firstOption)) : parsed.positionals;
+    const extra = takesRest ? valuesOf(parsed.tokens.slice(firstOption === -1 ? parsed.tokens.length : firstOption)) : parsed.positionals.slice(positionals.length);
 
-    if (parsed.positionals.length > positionals.length) {
-        throw new Error(`Unexpected argument: ${parsed.positionals.slice(positionals.length).join(" ")}`);
+    if (extra.length > 0) {
+        const how = takesRest ? ` Give the ${last} before the options, and repeat an option for each of its values, such as --to A --to B.` : "";
+        throw new Error(`Unexpected argument: ${extra.join(" ")}.${how}`);
     }
 
     checkRepeatedOptions(parsed.tokens, options);
@@ -95,8 +103,8 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
     }
 
     positionals.forEach((name, index) => {
-        if (parsed.positionals[index] !== undefined) {
-            input[name] = parsed.positionals[index];
+        if (given[index] !== undefined) {
+            input[name] = takesRest && name === last ? given.slice(index) : given[index];
         }
     });
     return { input, asJson: parsed.values.json === true };
@@ -183,7 +191,7 @@ function commandHelp(command: AnyCommand): string
 {
     const positionals = command.positionals ?? [];
     const optionLines = inputFields(command).map(([name, field]) => {
-        const flag = positionals.includes(name) ? `<${name}>` : `--${name}${isBoolean(field) ? "" : " <value>"}${isList(field) ? "..." : ""}`;
+        const flag = positionals.includes(name) ? `<${name}>${isList(field) ? "..." : ""}` : `--${name}${isBoolean(field) ? "" : " <value>"}${isList(field) ? "..." : ""}`;
         return `  ${flag.padEnd(20)} ${field.description ?? ""}`;
     });
     return [usage(command), "", command.description, "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");
@@ -191,7 +199,7 @@ function commandHelp(command: AnyCommand): string
 
 function usage(command: AnyCommand): string
 {
-    return ["rpg", command.name, ...(command.positionals ?? []).map((name) => `<${name}>`), "[options]"].join(" ");
+    return ["rpg", command.name, ...(command.positionals ?? []).map((name) => `<${name}>${isList(command.input.shape[name] as z.ZodType) ? "..." : ""}`), "[options]"].join(" ");
 }
 
 function success(output: string): CommandLineResult

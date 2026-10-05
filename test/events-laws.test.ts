@@ -65,9 +65,10 @@ const specs: fc.Arbitrary<Spec> = fc.record({
     duplicate: drawn.duplicate,
 }));
 
-// One change, as a command makes it: a thing moves, a status changes, or an event's fields do.
+// One change, as a command makes it: someone or something moves where it can be (CON-1), a status changes, or an event's fields do.
 const changes = fc.oneof(
-    fc.record({ move: fc.constantFrom(...people.map(([name]) => name), ...items), to: holderOf([...places, "Ennio", "Lena"]) }),
+    fc.record({ move: fc.constantFrom(...people.map(([name]) => name)), to: holderOf(places) }),
+    fc.record({ move: fc.constantFrom(...items), to: holderOf([...places, "Ennio", "Lena"]) }),
     fc.record({ character: fc.constantFrom(...people.map(([name]) => name)), status: fc.constantFrom<string | undefined>("alive", "dead", undefined) }),
     fc.record({ event: fc.constantFrom(...events), fields: eventFields }),
 );

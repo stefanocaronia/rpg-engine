@@ -1,14 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { comparableText, withArticle } from "../core/text.ts";
+import { holdRefusal } from "./containers.ts";
 import { baseChain, baseValue, ownFieldChange, sameAsBase } from "./inheritance.ts";
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
-import { checkStandardFields, containerFields, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
-import { checkPageName, findPage, holdersOf, linksIn, type Page, readPage, withPage, type World } from "./world.ts";
-
-const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
+import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
+import { checkPageName, findPage, holdersOf, linksIn, locate, type Page, readPage, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
 export interface PageChange extends FieldChange
@@ -46,7 +45,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
     if (changedFields.length > 0) {
         const fields = readFields(frontmatter, path);
         checkStandardFields(existing?.type ?? type, fields, changedFields);
-        checkContainers(world, existing, fields, changedFields);
+        checkContainers(world, existing, { name: existing?.name ?? name, type: existing?.type ?? type }, fields, changedFields);
     }
 
     const newText = joinPageFile({ frontmatter, body });
@@ -183,7 +182,7 @@ function checkUnset(world: World, existing: Page | undefined, requested: string[
 export function checkFieldChange(type: PageType | undefined, change: FieldChange): void
 {
     for (const name of [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {})]) {
-        if (!fieldNamePattern.test(name)) {
+        if (!isFieldName(name)) {
             throw new Error(`"${name}" cannot be a field name: start with a letter, and use only letters, digits, - and _.`);
         }
     }
@@ -251,18 +250,65 @@ function sectionAndSecretNames(body: string): string[]
     return [...sectionTitles(body), ...secretNames(body)].map(comparableText);
 }
 
-/** A thing can be in one place only: a place's contents or a character's inventory cannot list what another page already holds. */
-function checkContainers(world: World, existing: Page | undefined, fields: Record<string, unknown>, changedFields: string[]): void
+/**
+ * A container lists only what it can hold, never what holds it, nor what is already elsewhere (CON-1, CON-3, CON-7). Only the entries a write adds are checked:
+ * the others are validate's.
+ */
+function checkContainers(world: World, existing: Page | undefined, page: { name: string; type?: PageType; }, fields: Record<string, unknown>, changedFields: string[]): void
 {
-    for (const field of containerFields.filter((candidate) => changedFields.includes(candidate))) {
-        for (const target of linksIn(fields[field])) {
-            const holder = holdersOf(world, target).find((page) => page !== existing);
+    const own = containerFieldOf(page.type);
 
-            if (holder !== undefined) {
-                throw new Error(`${target} is already in ${holder.name}: a thing can be in one place only. Remove it from ${holder.name} first.`);
+    for (const field of containerFields.filter((candidate) => changedFields.includes(candidate))) {
+        const before = new Set(linksIn(existing?.fields[field]).map(comparableText));
+        const added = linksIn(fields[field]).filter((name) => !before.has(comparableText(name)));
+
+        // In a field the type does not use, taking things out is always allowed: it is how such a field is cleaned.
+        if (field !== own) {
+            if (added.length > 0) {
+                throw new Error(wrongContainerField(page, field));
+            }
+
+            continue;
+        }
+
+        for (const target of added) {
+            const problem = holdProblem(world, existing ?? { ...page, path: "", fields: {}, body: "" }, target);
+
+            if (problem !== undefined) {
+                throw new Error(problem);
             }
         }
     }
+}
+
+/** Why `holder` cannot list the page named `target` (CON-1, CON-3): it cannot hold its type, it is that page or inside it, or the page is already elsewhere. */
+function holdProblem(world: World, holder: Page, target: string): string | undefined
+{
+    const page = findPage(world, target);
+
+    if (page !== undefined && !canHold(holder.type, page.type)) {
+        return holdRefusal(holder, page);
+    }
+
+    if (comparableText(target) === comparableText(holder.name) || (page !== undefined && locate(world, holder).chain.includes(page))) {
+        return `${holder.name} cannot hold ${target}, which ${comparableText(target) === comparableText(holder.name) ? "is itself" : `holds ${holder.name}`}: a thing is never inside itself.`;
+    }
+
+    // A page that lists itself holds itself nowhere (CON-3): that is validate's to report.
+    const elsewhere = holdersOf(world, target).find((other) => other.path !== holder.path && comparableText(other.name) !== comparableText(target) && (page === undefined || canHold(other.type, page.type)));
+    // A page still to create cannot be a destination yet: create it first.
+    const how = holder.path === "" ? `create ${holder.name} without it, then move, page ${target}, to ${holder.name}` : `use move, page ${target}, to ${holder.name}`;
+    return elsewhere === undefined ? undefined : `${target} is already in ${elsewhere.name}: a thing can be in one place only. To move it, ${how}.`;
+}
+
+/** Why a type does not list things in this field (CON-1): a character carries in inventory, places and items hold in contains, the other types hold nothing. */
+function wrongContainerField(page: { name: string; type?: PageType; }, field: string): string
+{
+    const own = containerFieldOf(page.type);
+    const what = `${page.name} is ${withArticle(page.type ?? "free page")}`;
+    return own === undefined
+        ? `${what}, which holds nothing, so ${field} would put nothing anywhere. A place holds places, characters and items; a character carries items; an item holds items.`
+        : `${what}: what it holds goes in ${own}, not ${field}.`;
 }
 
 function newPagePath(world: World, name: string, type: PageType | undefined): string

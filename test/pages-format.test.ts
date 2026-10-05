@@ -165,7 +165,9 @@ describe("where things are", () => {
     it("refuses to put a thing in two places", async () => {
         await rpg("write", "Lanterna", "--type", "item");
         await rpg("write", "Laboratorio", "--type", "place", "--add", "contains=[[Lanterna]]");
-        expect((await rpg("write", "Elia", "--type", "character", "--add", "inventory=[[Lanterna]]")).output).toBe("Lanterna is already in Laboratorio: a thing can be in one place only. Remove it from Laboratorio first.");
+        expect((await rpg("write", "Elia", "--type", "character", "--add", "inventory=[[Lanterna]]")).output).toBe(
+            "Lanterna is already in Laboratorio: a thing can be in one place only. To move it, create Elia without it, then move, page Lanterna, to Elia.",
+        );
 
         await rpg("write", "Laboratorio", "--remove", "contains=[[Lanterna]]");
         expect((await rpg("write", "Elia", "--type", "character", "--add", "inventory=[[Lanterna]]")).exitCode).toBe(0);
@@ -175,6 +177,6 @@ describe("where things are", () => {
         await rpg("write", "Lanterna", "--type", "item");
         writeFileSync(join(folder, "world", "places", "Laboratorio.md"), '---\ncontains: ["[[Lanterna]]"]\n---\n');
         writeFileSync(join(folder, "world", "places", "Cappella.md"), '---\ncontains: ["[[Lanterna]]"]\n---\n');
-        expect((await rpg("show", "Lanterna")).output).toContain("Is in: Cappella\nAlso listed in: Laboratorio. A thing can be in one place only: remove it from all but one.");
+        expect((await rpg("show", "Lanterna")).output).toContain("Is in: Cappella\nAlso listed in: Laboratorio. A thing can be in one place only: move it where it is, such as move, page Lanterna, to Cappella.");
     });
 });

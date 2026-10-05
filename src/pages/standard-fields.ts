@@ -2,22 +2,28 @@ import { comparableText } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
 
 const linkPattern = /^\[\[[^\]]+\]\]$/;
+const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
 
 /**
  * What a standard field holds: text, a link, a list of links or text, a list of links only, a link or a list of links, a counter, conditions as text or a list of texts,
- * or one of some values. Counters and conditions are read fully by the commands that use them.
+ * lines of text (a line written without quotes, which YAML reads as a map of one key, counts as the line it was), or one of some values.
+ * Counters, conditions and lines are read fully by the commands that use them.
  */
-type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | readonly string[];
+type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | readonly string[];
 
 const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", knows: "links", factions: "links", status: ["alive", "dead"] },
-    place: { contains: "list" },
+    place: { contains: "list", environment: "lines" },
+    item: { contains: "list" },
     creature: { creature: "link" },
     quest: { status: ["planned", "open", "done", "failed"] },
     event: { date: "text", place: "link", status: ["planned", "happened", "cancelled"], clock: "counter", when: "conditions", by: "linkOrLinks" },
 };
+
+// What each type holds, in its container field (CON-1, D-150).
+const heldTypes: Partial<Record<PageType, PageType[]>> = { place: ["place", "character", "item"], character: ["item"], item: ["item"] };
 
 // What a new page of a type holds when the write that creates it leaves the field out.
 const defaultFields: Partial<Record<PageType, Record<string, unknown>>> = {
@@ -31,11 +37,38 @@ export function newPageFields(type: PageType): Record<string, unknown>
     return defaultFields[type] ?? {};
 }
 
-/** The fields that list what a page holds: a place's contents and a character's inventory. */
+/** The fields that list what a page holds: a place's or an item's contents and a character's inventory. */
 export const containerFields = ["contains", "inventory"];
 
-/** The standard fields that are always lists, of links or of words, on the pages that have them: read from text as the command line reads them (D-136). */
-export const listFieldNames = [...new Set([commonRules, ...Object.values(typeRules)].flatMap((rules) => Object.entries(rules ?? {}).filter(([, rule]) => ["list", "links", "linkOrLinks"].includes(rule as string)).map(([name]) => name)))];
+/** The field where a page of a type lists what it holds (CON-1): contains for places and items, inventory for characters; undefined for the types that hold nothing. */
+export function containerFieldOf(type: PageType | undefined): "contains" | "inventory" | undefined
+{
+    return type === "character" ? "inventory" : type === "place" || type === "item" ? "contains" : undefined;
+}
+
+/** Whether a page of the type `holder` can hold one of the type `held` (CON-1, D-150): a place holds places, characters and items; a character carries items; an item holds items. */
+export function canHold(holder: PageType | undefined, held: PageType | undefined): boolean
+{
+    return holder !== undefined && held !== undefined && (heldTypes[holder] ?? []).includes(held);
+}
+
+/** What a type holds, for messages: "places, characters and items", "items", or "nothing". */
+export function heldTypesText(type: PageType | undefined): string
+{
+    const held = type === undefined ? [] : (heldTypes[type] ?? []).map((name) => `${name}s`);
+    return held.length === 0 ? "nothing" : held.length === 1 ? held[0] : `${held.slice(0, -1).join(", ")} and ${held.at(-1)}`;
+}
+
+/** Whether a name can be a field's: a letter first, then letters, digits, - and _. */
+export function isFieldName(name: string): boolean
+{
+    return fieldNamePattern.test(name);
+}
+
+/** The standard fields that are always lists, of links, words or lines, on the pages that have them: read from text as the command line reads them (D-136). */
+export const listFieldNames = [
+    ...new Set([commonRules, ...Object.values(typeRules)].flatMap((rules) => Object.entries(rules ?? {}).filter(([, rule]) => ["list", "links", "linkOrLinks", "lines"].includes(rule as string)).map(([name]) => name))),
+];
 
 /** Whether a field has a fixed meaning on pages of this type, such as an event's date: such a field is never a counter, but for an event's clock. */
 export function isStandardField(type: PageType | undefined, name: string): boolean
@@ -129,7 +162,15 @@ function problemWith(value: unknown, rule: Rule): string | undefined
             return typeof value === "string" || typeof value === "number" ? undefined : "must be a counter written current/max, such as 1/4.";
         case "conditions":
             return typeof value === "string" || (Array.isArray(value) && value.every((item) => typeof item === "string")) ? undefined : "must be a condition or a list of conditions, as text, such as party in [[Ossario]].";
+        case "lines":
+            return Array.isArray(value) && value.every((item) => typeof item === "string" || isOneKeyMap(item)) ? undefined : 'must be a list of lines, such as ["light: dark"].';
     }
+}
+
+/** A map of one key, as YAML reads a line such as light: dark written without quotes. */
+function isOneKeyMap(value: unknown): boolean
+{
+    return value !== null && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 1;
 }
 
 function isLink(value: unknown): boolean

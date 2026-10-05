@@ -4,7 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { backlinks, containerFields, isEmptyField, isInParty, isPartyMember, linksIn, locate, newPageFields, type Page, type PageType, parsePageReference, standardValues, withPage, type World, writePage } from "../pages/index.ts";
+import { backlinks, containerFieldOf, isEmptyField, isInParty, linksIn, locate, newPageFields, type Page, type PageType, parsePageReference, standardValues, withPage, type World, writePage } from "../pages/index.ts";
 import { formatDuration, formatGameDate, type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
 import { formatTrigger, readTriggers, type Trigger, type TriggerFacts, triggerHolds } from "../triggers/index.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -193,8 +193,8 @@ export function heldNote(held: string[]): string
 }
 
 /**
- * What a write changed that matters to the story (D-117, EVT-7): a page's status as the tools read it, or something leaving a container, but a member of the party moving,
- * which is the game itself (D-146). The planned events and the planned or open quests that link to the page or to what left, as a note for the master to judge;
+ * What a write changed that matters to the story (D-117, EVT-7): a page's status as the tools read it, or something leaving a container, but a living member of the party
+ * moving, which is the game itself (D-146). The planned events and the planned or open quests that link to the page or to what left, as a note for the master to judge;
  * `skipped` are the events already said due.
  */
 export function consequencesNotes(world: World, before: Page | undefined, after: Page, skipped: string[], now: GameDate | undefined): string[]
@@ -203,15 +203,23 @@ export function consequencesNotes(world: World, before: Page | undefined, after:
         return [];
     }
 
-    const party = new Set(world.pages.filter(isPartyMember).map((page) => comparableText(page.name)));
-    const left = containerFields.flatMap((field) => {
-        const kept = new Set(linksIn(after.fields[field]).map(comparableText));
-        return linksIn(before.fields[field]).map(comparableText).filter((name) => !kept.has(name) && !party.has(name));
-    });
+    const party = new Set(world.pages.filter(isInParty).map((page) => comparableText(page.name)));
+    const field = containerFieldOf(after.type);
+    const kept = new Set(linksIn(field === undefined ? undefined : after.fields[field]).map(comparableText));
+    const left = linksIn(field === undefined ? undefined : before.fields[field]).map(comparableText).filter((name) => !kept.has(name) && !party.has(name));
     const subjects = new Set([...(statusOf(before) === statusOf(after) ? [] : [comparableText(after.name)]), ...left]);
+    return linkedStoryNotes(world, world.pages.filter((page) => subjects.has(comparableText(page.name))), skipped, now);
+}
+
+/**
+ * For each page, the planned events and the planned or open quests linked to it, as a note for the master to judge (D-117, EVT-7, CON-5); `skipped` are the events
+ * already said due.
+ */
+export function linkedStoryNotes(world: World, pages: Page[], skipped: string[], now: GameDate | undefined): string[]
+{
     const shown = new Set(skipped.map(comparableText));
 
-    return world.pages.filter((page) => subjects.has(comparableText(page.name))).flatMap((page) => {
+    return pages.flatMap((page) => {
         const linked = backlinks(world, page).map((link) => link.page).filter((other) => isOpenStory(other) && !shown.has(comparableText(other.name)));
         return linked.length === 0 ? [] : [`Linked to ${page.name}: ${shortList(linked.map((other) => storyText(other, now)), " · ")}. If one no longer goes as planned, write it: its status, date or by.`];
     });

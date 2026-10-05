@@ -2,9 +2,10 @@ import { z } from "zod";
 import { changeState, requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { isEmptyField, loadWorld } from "../pages/index.ts";
+import { isEmptyField, loadWorld, type World } from "../pages/index.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
 import { endedByDate, endEffects } from "./game-effects.ts";
+import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
@@ -32,6 +33,8 @@ interface Advance
     openScene?: string;
     /** The effects whose end in game time this advance reached (EFF-8). */
     ended: string[];
+    /** What holds around the player character after an hour or more (ENV-5): "Ettore: light: dark (Cripta)". */
+    around?: string;
     /** How many midnights this advance passed, and the clocks to move then (EVT-8). */
     newDays: number;
     clocks: string[];
@@ -110,7 +113,9 @@ export const advance = defineCommand({
         }
 
         const ended = passed > 0 ? endEffects(root, context, world, readOpenScene(root).scene, (effect) => endedByDate(effect, reached), "time passed") : [];
-        return { ...result, ended };
+        // Read again only when effects ended, which may have been on the places around.
+        const around = passed >= sceneReminderMinutes ? aroundLead(ended.length === 0 ? world : loadWorld(root)) : undefined;
+        return { ...result, ended, around };
     },
 
     format(result)
@@ -123,6 +128,7 @@ export const advance = defineCommand({
             stillDueLine(result.stillDue, result.due.length > 0),
             result.next === undefined ? "" : `Next: ${result.next}.`,
             result.openScene === undefined ? "" : `A scene is still open: ${result.openScene}. Close it if this time ends it.`,
+            result.around === undefined ? "" : `Around ${result.around}.`,
             clocksLine(result.newDays, result.to, result.clocks),
             result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
             skippedPagesNote(result.skipped),
@@ -160,6 +166,14 @@ function openSceneText(root: string): string | undefined
 {
     const { scene } = readOpenScene(root);
     return scene === undefined ? undefined : `${scene.title}${scene.opened === undefined ? "" : ` (since ${scene.opened})`}`;
+}
+
+/** "Ettore: light: dark (Cripta)": what holds around the player character, for rules that count the hours spent there (ENV-5); undefined when nothing does. */
+function aroundLead(world: World): string | undefined
+{
+    const lead = world.pages.find((page) => page.type === "character" && page.fields.role === "pc");
+    const around = surroundingsText(surroundings(world, lead));
+    return lead === undefined || around === "" ? undefined : `${lead.name}: ${around}`;
 }
 
 /** The first line: where time went, and where it stopped short of what was asked. */

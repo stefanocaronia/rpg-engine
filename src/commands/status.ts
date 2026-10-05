@@ -8,9 +8,10 @@ import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectText, keptEffects } from "./game-effects.ts";
+import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
-import { type ClosedScene, closedScenes, copyCounters, copyPage, readOpenScene } from "./game-scene.ts";
+import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -78,6 +79,7 @@ export const status = defineCommand({
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
+            around: players.length === 0 ? "" : surroundingsText(surroundings(world, players[0])),
             scene: sceneText(world, openScene.scene),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
@@ -103,6 +105,7 @@ export const status = defineCommand({
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             timeLine(result),
             ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
+            result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
@@ -192,22 +195,8 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
         const counters = [countersText(copyCounters(world, copy)), ...effectsOf(copyPage(name, copy)).map(effectText)].filter((part) => part !== "").join(" · ");
         return counters === "" ? name : `${name}: ${counters}`;
     });
-    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${awayText(world, scene)}`;
-}
-
-/** "; Ettore is in Mulino abbandonato in the files: …": members of the party in the scene whom the files put elsewhere, so that conditions on the place never fire. */
-function awayText(world: World, scene: Scene): string
-{
-    const pageNamed = (link: string): Page | undefined => world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(link).name));
-    const place = scene.place === undefined ? undefined : pageNamed(scene.place);
-    const away = place === undefined ? [] : scene.with.map(pageNamed).filter((page): page is Page => page !== undefined && isPartyMember(page) && !locate(world, page).chain.includes(place));
-
-    if (place === undefined || away.length === 0) {
-        return "";
-    }
-
-    const where = away.map((page) => `${page.name} is in ${locate(world, page).chain.find((holder) => holder.type === "place")?.name ?? "no place"}`).join(", ");
-    return `; in the files ${where}: if they are in ${place.name}, move them with write`;
+    const away = partyAwayText(world, scene);
+    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${away === "" ? "" : `; ${away}`}`;
 }
 
 /** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */

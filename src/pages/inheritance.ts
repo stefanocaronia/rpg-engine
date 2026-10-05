@@ -1,5 +1,5 @@
 import { comparableText, withArticle } from "../core/text.ts";
-import { introductionText, textParts } from "./markdown.ts";
+import { introductionText, secretNames, sectionTitles, textParts } from "./markdown.ts";
 import type { FieldChange } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
 import { isEmptyField, isStandardField, misspelledStandardField } from "./standard-fields.ts";
@@ -98,6 +98,23 @@ export function keepersOf(world: World, page: Page, field: string): Page[]
         const chain = baseChain(world, derived);
         return holdsField(derived, field) && !chain.slice(0, chain.indexOf(page)).some((between) => holdsField(between, field));
     });
+}
+
+/** The section or secret `name` that a page shows, its own or the nearest base's (INH-13): where it is written, its title there, and whether it is a secret (REV-1). */
+export function shownPart(world: World, page: Page, name: string): { holder: Page; title: string; secret: boolean; } | undefined
+{
+    const wanted = comparableText(name.trim());
+
+    for (const holder of [page, ...baseChain(world, page)]) {
+        const secret = secretNames(holder.body).find((title) => title !== "" && comparableText(title) === wanted);
+        const section = sectionTitles(holder.body).find((title) => comparableText(title) === wanted);
+
+        if (secret !== undefined || section !== undefined) {
+            return { holder, title: secret ?? section ?? name, secret: secret !== undefined };
+        }
+    }
+
+    return undefined;
 }
 
 /** Whether a field is one that no page ever inherits (INH-8), however it is written. */
