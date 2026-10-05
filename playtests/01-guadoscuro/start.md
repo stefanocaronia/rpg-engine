@@ -12,14 +12,14 @@ Before session 1, in a new folder chosen as `README.md` says, from the repo at t
 $campaign = "F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro"
 rpg init $campaign --name "La nebbia di Guadoscuro"
 Copy-Item -Recurse -Force playtests\01-guadoscuro\world\* $campaign\world
-Copy-Item instructions\core.md $campaign\AGENTS.md
+Copy-Item instructions\start.md $campaign\AGENTS.md
 Set-Content -NoNewline -Path $campaign\CLAUDE.md -Value "@AGENTS.md`n"
 Push-Location $campaign; rpg find; Pop-Location
 ```
 
 - Only the name: language and system stay missing, so setup really happens.
-- `world/`: the whole adventure, no player character; `rpg find` lists its 39 pages and no problems.
-- `AGENTS.md` is the commit's `instructions/core.md`, unchanged; `CLAUDE.md` is exactly `@AGENTS.md` and a newline. Nothing else: no `.claude/`, no `CLAUDE.local.md`, no word about the test.
+- `world/`: the whole adventure, no player character; `rpg find` lists its 40 pages and `rpg validate` finds no problems.
+- `AGENTS.md` is the commit's `instructions/start.md`, unchanged: the lines that send the master to `instructions` and `status`, as a campaign will have them; `CLAUDE.md` is exactly `@AGENTS.md` and a newline. Nothing else: no `.claude/`, no `CLAUDE.local.md`, no word about the test.
 
 ## The sessions
 
@@ -38,19 +38,20 @@ The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page 
   - Guadoscuro: Agnese, Nina; Locanda del Guado (Gaspare, Rosa); Cappella (Fratello Odo); Emporio (Tobia); Casa di Varro (Diario di Varro); Capanno di Matteo (Lena).
   - Palude > Mulino abbandonato > Cripta: Ingresso allagato; Ossario; Corridoio della cripta; Laboratorio della cripta (Varro, Lanterna della cappella); Sala del rituale (Livia, Teresa, Matteo).
 - **Characters** (11, all `npc`): Varro, Lena, Fratello Odo, Agnese, Gaspare, Nina, Tobia, Rosa, Teresa, Matteo, Livia (`dead`).
-- **Events** (5): Il rogo (`happened`); Sparizione di Rosa, La nebbia si infittisce, La marcia della Confraternita, Il rituale della luna nuova (`planned`).
+- **Events** (6): Il rogo (`happened`); Sparizione di Rosa, La nebbia si infittisce, La marcia della Confraternita, Il rituale della luna nuova, I dormienti si alzano (`planned`).
 - **Creatures** (3): Annegato, Fuoco fatuo, Lupo. **Faction**: Confraternita della Lanterna. **Items**: Diario di Varro, Lanterna della cappella. **Quests**: Ritrovare gli scomparsi, Ritrovare la lanterna. **Topic**: La nebbia.
 
 ## The clock
 
-| Event | Date on its page | Whose plan | What changes it |
+| Event | Comes | By | What changes it |
 |---|---|---|---|
-| Sparizione di Rosa | day 1, 23:00 | Varro#Il piano | if Rosa is guarded, the drowned try anyway and flee from resistance |
-| La nebbia si infittisce | day 2, 06:00 | Varro#Il piano | |
-| La marcia della Confraternita | day 3, 06:00 | Fratello Odo#La marcia | a day later if Odo gets the proof of who takes people, or is confronted with the fire |
-| Il rituale della luna nuova | day 3, 23:00 | Varro#Il piano | Il rituale della luna nuova#Come si ferma; Varro#Cosa lo ferma |
+| Sparizione di Rosa | day 1, 23:00 | Varro | guarded, the drowned flee, and Varro tries again the next night |
+| La nebbia si infittisce | day 2, 06:00 | Varro | |
+| La marcia della Confraternita | day 3, 06:00, or when its clock 0/4 fills | Fratello Odo | #Cosa la affretta, a sign per step in #I segni; put off to day 3, 18:00 by Fratello Odo#La marcia |
+| Il rituale della luna nuova | day 3, 23:00 | Varro | #Come si ferma; Varro#Cosa lo ferma |
+| I dormienti si alzano | when party in Ossario | | the wheel's crash (Mulino abbandonato#La combinazione) |
 
-Triggers by situation: Ossario#I dormienti (they rise for anyone but Varro), Corridoio della cripta#La trappola, Mulino abbandonato#La combinazione (left lever down wakes the ossuary; all three down raise the water).
+Triggers by situation: Corridoio della cripta#La trappola, Mulino abbandonato#La combinazione (left lever down wakes the sleepers; all three down raise the water).
 
 ## The clue map
 

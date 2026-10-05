@@ -337,7 +337,7 @@ function frontmatter(text)
     return text.replace(/\r\n/g, "\n").match(/^\uFEFF?---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/)?.[1] ?? "";
 }
 
-/** The campaign's instructions are this commit's core ones and nothing else: CLAUDE.md only imports AGENTS.md, and no Claude Code settings or local instructions sit beside them. */
+/** The campaign's instructions are this commit's start lines and nothing else: AGENTS.md sends the master to the instructions and status tools, CLAUDE.md only imports it, and no Claude Code settings or local instructions sit beside them. */
 function checkCampaign(campaign)
 {
     const text = (name) => existsSync(join(campaign, name)) ? readFileSync(join(campaign, name), "utf8").replace(/\r\n/g, "\n") : undefined;
@@ -346,8 +346,8 @@ function checkCampaign(campaign)
         throw new Error(`${campaign} is not a campaign: make it as the scenario's start.md says.`);
     }
 
-    if (text("AGENTS.md") !== readFileSync(join(repo, "instructions", "core.md"), "utf8").replace(/\r\n/g, "\n")) {
-        throw new Error(`${join(campaign, "AGENTS.md")} is not this commit's instructions/core.md: copy it again.`);
+    if (text("AGENTS.md") !== readFileSync(join(repo, "instructions", "start.md"), "utf8").replace(/\r\n/g, "\n")) {
+        throw new Error(`${join(campaign, "AGENTS.md")} is not this commit's instructions/start.md: copy it again.`);
     }
 
     if (text("CLAUDE.md") !== "@AGENTS.md\n") {

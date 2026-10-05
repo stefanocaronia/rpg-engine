@@ -1,5 +1,6 @@
 ---
 date: day 2, 06:00
+by: "[[Varro]]"
 place: "[[Palude]]"
 status: planned
 ---

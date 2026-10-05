@@ -41,7 +41,7 @@ Before the first turn the run stops unless:
 
 - the repo has no uncommitted changes, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
-- the campaign's `AGENTS.md` is this commit's `instructions/core.md`, its `CLAUDE.md` holds only `@AGENTS.md`, and it has no `.claude/` or `CLAUDE.local.md`;
+- the campaign's `AGENTS.md` is this commit's `instructions/start.md`, its `CLAUDE.md` holds only `@AGENTS.md`, and it has no `.claude/` or `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`;
 - session 2 continues the player's chat and the campaign of session 1, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
 - `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and no custom agents.

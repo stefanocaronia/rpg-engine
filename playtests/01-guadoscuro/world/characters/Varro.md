@@ -13,6 +13,8 @@ knows:
   - "[[Diario di Varro#Livia]]"
   - "[[Diario di Varro#La cripta]]"
   - "[[Diario di Varro#Il primo rito]]"
+  - "[[I dormienti si alzano]]"
+  - "[[I dormienti si alzano#Chi e perché]]"
   - "[[Il rituale della luna nuova]]"
   - "[[Il rituale della luna nuova#Chi e perché]]"
   - "[[Il rituale della luna nuova#Come si ferma]]"

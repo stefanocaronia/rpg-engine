@@ -9,6 +9,8 @@ knows:
   - "[[Il rogo#Com'è andata]]"
   - "[[La marcia della Confraternita]]"
   - "[[La marcia della Confraternita#Chi e perché]]"
+  - "[[La marcia della Confraternita#Cosa la affretta]]"
+  - "[[La marcia della Confraternita#I segni]]"
 ---
 
 Il capo della [[Confraternita della Lanterna]], sessant'anni, alto e ossuto, con la voce da predica anche quando chiede il sale. Vuole salvare Guadoscuro dalla nebbia, col fuoco se serve; teme che il paese smetta di ascoltarlo.
@@ -20,7 +22,7 @@ Il capo della [[Confraternita della Lanterna]], sessant'anni, alto e ossuto, con
 - «Hanno rubato la [[Lanterna della cappella|lanterna]], e la [[Lena|ragazza dell'alchimista]] è sparita: le streghe si nascondono.»
 
 > [!secret] La marcia
-> Se qualcuno gli porta la prova di chi rapisce gli abitanti, o gli rinfaccia il [[Il rogo|rogo]], esita: la [[La marcia della Confraternita|marcia sul mulino]] slitta di un giorno.
+> Guida la [[La marcia della Confraternita|marcia sul mulino]]. Se qualcuno gli porta la prova che i rapiti sono vivi là sotto, o da solo con lui gli rinfaccia il [[Il rogo|rogo]], esita: non vuole altri innocenti sulla coscienza, ma le streghe non devono vedere la luna nuova. Rimanda la marcia al tramonto del giorno della luna nuova, non oltre.
 
 > [!secret] Il rimorso
 > La notte del [[Il rogo|rogo]] c'era anche lui, con la torcia, e sente ancora le grida. Davanti al paese non lo ammetterà mai; da solo, di fronte alle prove, vacilla.

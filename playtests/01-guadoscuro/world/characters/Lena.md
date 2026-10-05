@@ -6,6 +6,8 @@ knows:
   - "[[Annegato#Da dove vengono]]"
   - "[[Corridoio della cripta#La trappola]]"
   - "[[Cripta]]"
+  - "[[I dormienti si alzano]]"
+  - "[[I dormienti si alzano#Chi e perché]]"
   - "[[Il rituale della luna nuova]]"
   - "[[Il rituale della luna nuova#Chi e perché]]"
   - "[[Il rituale della luna nuova#Come si ferma]]"

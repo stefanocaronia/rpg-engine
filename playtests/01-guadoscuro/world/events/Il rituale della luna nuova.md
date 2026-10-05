@@ -1,5 +1,6 @@
 ---
 date: day 3, 23:00
+by: "[[Varro]]"
 place: "[[Sala del rituale]]"
 status: planned
 ---
