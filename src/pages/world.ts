@@ -1,6 +1,8 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
 import type { FieldKind } from "../core/field-kind.ts";
+import { filesIn } from "../core/files.ts";
+import { frozen } from "../core/frozen.ts";
 import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
@@ -102,13 +104,13 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     const { system, language, missingSystem, noSystem } = options;
 
     if (system === undefined) {
-        return { root, ...campaign, language, missingSystem, noSystem };
+        return frozen({ root, ...campaign, language, missingSystem, noSystem });
     }
 
     const systemPages = readPages(system.folder, system.name);
     const { name, title, fields } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
-    return { root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, pages: systemPages.pages }, language };
+    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, pages: systemPages.pages }, language });
 }
 
 /**
@@ -388,13 +390,13 @@ export function readPage(root: string, fullPath: string): Page
     const path = relative(root, fullPath).split(sep).join("/");
     const parts = path.split("/");
     const file = splitPageFile(readFileSync(fullPath, "utf8"));
-    return {
+    return frozen({
         name: basename(fullPath).replace(/\.md$/i, "").normalize("NFC"),
         type: parts.length > 2 ? typeOfFolder(parts[1]) : undefined,
         path,
         fields: readFields(file.frontmatter, path),
         body: file.body,
-    };
+    });
 }
 
 /** The page whose file in a folder's world/ is named `name`, with the type its folder gives, found by the file's name alone without reading the pages: enough to say that a page is there. */
@@ -402,23 +404,20 @@ export function pageFileNamed(root: string, name: string): { name: string; type?
 {
     const worldPath = join(root, worldFolderName);
     const wanted = comparableText(name.trim());
-    const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
-    const entry = entries.find((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name) && comparableText(candidate.name.slice(0, -3)) === wanted);
-    return entry === undefined ? undefined : { name: entry.name.slice(0, -3), type: typeOfFolder(relative(worldPath, entry.parentPath).split(sep)[0]) };
+    const file = filesIn(worldPath, (candidate) => /\.md$/i.test(candidate) && comparableText(candidate.slice(0, -3)) === wanted)[0];
+    return file === undefined ? undefined : { name: basename(file).slice(0, -3), type: typeOfFolder(relative(worldPath, file).split(sep)[0]) };
 }
 
 /** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
 function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
 {
-    const worldPath = join(root, worldFolderName);
-    const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
     const pages: Page[] = [];
     const problems: string[] = [];
 
-    for (const entry of entries.filter((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name))) {
+    for (const file of filesIn(join(root, worldFolderName), (name) => /\.md$/i.test(name))) {
         try {
-            const page = readPage(root, join(entry.parentPath, entry.name));
-            pages.push(system === undefined ? page : { ...page, system });
+            const page = readPage(root, file);
+            pages.push(system === undefined ? page : frozen({ ...page, system }));
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             problems.push(system === undefined ? message : `The system ${system}: ${message}`);

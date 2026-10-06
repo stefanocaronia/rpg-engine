@@ -1,5 +1,7 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { relative } from "node:path";
+import { filesIn } from "../core/files.ts";
+import { frozen } from "../core/frozen.ts";
 
 /**
  * A section of a rules text (RUL-1): a heading; a title in bold that opens a paragraph ("***Escaping a Grapple.*** A grappled creature…"), one level below the heading it is under;
@@ -26,7 +28,7 @@ export interface RuleSection
 /** The sections of the markdown files in a folder and its folders, file by file in order of path; none when there is no such folder. */
 export function readRuleBook(folder: string, source: string): RuleSection[]
 {
-    return markdownFiles(folder).flatMap((path) => ruleSections(readFileSync(path, "utf8"), relative(folder, path).replace(/\\/g, "/").replace(/\.md$/i, ""), source));
+    return frozen(markdownFiles(folder).flatMap((path) => ruleSections(readFileSync(path, "utf8"), relative(folder, path).replace(/\\/g, "/").replace(/\.md$/i, ""), source)));
 }
 
 /** The files of rules in a folder and its folders, without .md, in order of path: the chapters of a game system, or the campaign's house rules. */
@@ -226,12 +228,5 @@ function plainTitle(title: string): string
 
 function markdownFiles(folder: string): string[]
 {
-    if (!existsSync(folder) || !statSync(folder).isDirectory()) {
-        return [];
-    }
-
-    return readdirSync(folder, { withFileTypes: true, recursive: true })
-        .filter((entry) => entry.isFile() && /\.md$/i.test(entry.name))
-        .map((entry) => join(entry.parentPath, entry.name))
-        .sort((first, second) => (first < second ? -1 : first > second ? 1 : 0));
+    return filesIn(folder, (name) => /\.md$/i.test(name)).sort((first, second) => (first < second ? -1 : first > second ? 1 : 0));
 }

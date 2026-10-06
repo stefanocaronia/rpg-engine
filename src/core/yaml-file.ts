@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { type Document, isMap, parseDocument } from "yaml";
+import { frozen } from "./frozen.ts";
 
 /** A YAML file of keys and values, read so that writing it back keeps its comments. `holds` says what it must hold, for the error message: settings, such as "name: ...". */
 export function readYamlFile(path: string, holds: string): Document
@@ -30,7 +31,7 @@ export function readYamlFile(path: string, holds: string): Document
 /** The keys and values of a YAML file, as plain data; an empty file gives an empty object. */
 export function readYamlValues(path: string, holds: string): unknown
 {
-    return readYamlFile(path, holds).toJS() ?? {};
+    return frozen(readYamlFile(path, holds).toJS() ?? {});
 }
 
 /** Writes a YAML file read with readYamlFile; long values stay on one line. */

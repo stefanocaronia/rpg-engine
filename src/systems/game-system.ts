@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
+import { frozen } from "../core/frozen.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -118,7 +119,7 @@ function readSystem(folder: string, name: string): GameSystem
     }
 
     const data = parsed.data;
-    return {
+    return frozen({
         name,
         folder,
         title: data.title,
@@ -135,5 +136,5 @@ function readSystem(folder: string, name: string): GameSystem
         }),
         recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({ name: recipe, set: value.set ?? {}, ends: value.ends ?? [], rules: value.rules ?? [] })),
         conditions: data.conditions ?? [],
-    };
+    });
 }
