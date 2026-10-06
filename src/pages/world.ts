@@ -47,6 +47,8 @@ export interface World
     language?: string;
     /** The game system campaign.yaml names when it is not installed: none of its pages can be found (SYS-1). */
     missingSystem?: string;
+    /** Whether campaign.yaml names no game system yet (D-167): a link may be to a page of the one it will name. */
+    noSystem?: boolean;
 }
 
 /** What a game system says of itself, as the world reads it (SYS-1, SYS-8). */
@@ -92,15 +94,15 @@ export function createWorld(root: string): void
 
 /**
  * The pages of the campaign in `root`, and those of its game system, if one is installed: `system` says where it is and what it declares (SYS-1).
- * `language` is the campaign's, and `missingSystem` the system it names that is not installed, for messages.
+ * `language` is the campaign's; `missingSystem` the system it names that is not installed, and `noSystem` whether it names none yet, for messages.
  */
-export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; } = {}): World
+export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; noSystem?: boolean; } = {}): World
 {
     const campaign = readPages(root);
-    const { system, language, missingSystem } = options;
+    const { system, language, missingSystem, noSystem } = options;
 
     if (system === undefined) {
-        return { root, ...campaign, language, missingSystem };
+        return { root, ...campaign, language, missingSystem, noSystem };
     }
 
     const systemPages = readPages(system.folder, system.name);
@@ -123,6 +125,19 @@ export function findPage(world: World, name: string): Page | undefined
     }
 
     return found[0] ?? systemPageNamed(world, name);
+}
+
+/**
+ * What to do first about a name that is not found, when it may be one of the campaign's game system, such as a page: install the system the campaign names,
+ * or name one (SYS-1, D-167); undefined when the campaign's system is there.
+ */
+export function systemFirstFix(world: World, what = "a page"): string | undefined
+{
+    if (world.missingSystem !== undefined) {
+        return `if it is ${what} of the system ${world.missingSystem}, which is not installed, fix the system first, as the problem on campaign.yaml says`;
+    }
+
+    return world.noSystem === true ? `if it is ${what} of a game system, choose the campaign's system first, with config` : undefined;
 }
 
 /** The page of the campaign's game system with this name, ignoring case; undefined when there is none (SYS-3). */

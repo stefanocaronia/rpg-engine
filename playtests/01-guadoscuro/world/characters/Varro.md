@@ -30,6 +30,10 @@ knows:
   - "[[Sparizione di Rosa]]"
   - "[[Sparizione di Rosa#Chi e perché]]"
   - "[[Tobia#I reagenti]]"
+creature: "[[Commoner]]"
+int: 16
+hp: 9/9
+hp-dice: 2d8
 ---
 
 L'alchimista di Guadoscuro, vedovo, sui cinquant'anni: mani macchiate di acidi, tosse secca, parla piano e preciso, come a un allievo. Da quando l'inverno scorso gli è morta la figlia [[Livia]], in paese non si fa quasi più vedere.
@@ -45,3 +49,8 @@ L'alchimista di Guadoscuro, vedovo, sui cinquant'anni: mani macchiate di acidi, 
 
 > [!secret] Cosa lo ferma
 > Le armi, o le parole. Lo convincono solo due cose: la prova che dal cerchio tornerebbe un corpo vuoto, come i suoi [[Annegato|annegati]], o Lena che glielo chiede.
+
+## Actions
+
+### Fiala d'acido
+*Attacco a distanza con un'arma:* +2 a colpire, gittata 20/60 ft, un bersaglio. *Colpito:* 7 (2d6) danni da acido.

@@ -9,7 +9,7 @@ export function campaignWorld(root: string, context: Context): World
 {
     const named = readTextSetting(root, "system");
     const system = campaignSystem(root, context);
-    return loadWorld(root, { system, language: readTextSetting(root, "language"), missingSystem: named !== undefined && system === undefined ? named : undefined });
+    return loadWorld(root, { system, language: readTextSetting(root, "language"), missingSystem: named !== undefined && system === undefined ? named : undefined, noSystem: named === undefined });
 }
 
 /** The installed game system that campaign.yaml names; undefined when it names none, or one that is not installed (SYS-1). */
@@ -17,6 +17,19 @@ export function campaignSystem(root: string, context: Context): GameSystem | und
 {
     const name = readTextSetting(root, "system");
     return name === undefined ? undefined : findSystem(context.systemFolders, name);
+}
+
+/** The occasions of a game system that end effects (DAT-5): those its recipes name, such as long rest. */
+export function occasionsOf(system: GameSystem | undefined): string[]
+{
+    return [...new Set((system?.recipes ?? []).flatMap((recipe) => recipe.ends))];
+}
+
+/** The occasions of the campaign's game system, with its name; undefined without one. */
+export function systemOccasions(root: string, context: Context): { system: string; names: string[]; } | undefined
+{
+    const system = campaignSystem(root, context);
+    return system === undefined ? undefined : { system: system.name, names: occasionsOf(system) };
 }
 
 /** A game system named in campaign.yaml that is not installed (SYS-1, D-167): the commands go on without its pages. */
@@ -60,6 +73,10 @@ export function installedText(context: Context): string
 /** " The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.": for a name not found (SYS-1). Empty otherwise. */
 export function missingSystemHint(world: World): string
 {
+    if (world.noSystem === true) {
+        return " The campaign has no game system yet, so none of its pages can be found: choose it with config.";
+    }
+
     return world.missingSystem === undefined ? "" : ` The campaign's system, ${world.missingSystem}, is not installed, so none of its pages can be found: validate says how to fix it.`;
 }
 

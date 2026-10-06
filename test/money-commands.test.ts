@@ -49,7 +49,7 @@ describe("the coins of the campaign (MON-1, MON-8)", () => {
 
         writeFileSync(join(folder, "campaign.yaml"), file("campaign.yaml").replace("cp/mr: 1", "cp/mr: 2"));
         expect(await ok("validate")).toContain(
-            "- campaign.yaml: coins: No coin is worth 1: the smallest coin is worth 1, and the others are worth so many of it. Fix: fix the coins in campaign.yaml by hand, or set them again with config, each with its value in the smallest coin.",
+            "- campaign.yaml: coins: No coin is worth 1: the smallest coin is worth 1, and the others are worth so many of it. Fix: fix the coins in campaign.yaml by hand, or set them again with config, each with its value in the smallest coin, or remove them from campaign.yaml to have those of the system 5e.",
         );
         expect(await ok("status")).toContain("Ennio: hp 12/12");
         expect((await rpg("change", "Ennio", "money", "--spend", "5 sp")).output).toContain("money on Ennio looks like money, but the campaign's coins cannot be read: coins: No coin is worth 1");
@@ -199,7 +199,7 @@ describe("a game with other coins, and one without money", () => {
                 'money on Ada is "5 mo", not a counter: write a counter as a number (20) or as current/max (12/12). If it is money, the campaign needs its coins: set them with config, naming them as written here (mo), each with its value in the smallest.',
             );
             expect((await runCommandLine(["write", "Ada", "--set", "money=6 mo"], without)).exitCode).toBe(0);
-            expect((await runCommandLine(["config"], without)).output).toContain("coins: (none: a game without money)");
+            expect((await runCommandLine(["config"], without)).output).toContain("coins: (none: neither the campaign nor its game system gives coins)");
         } finally {
             removeFolder(other);
         }

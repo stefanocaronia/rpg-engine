@@ -17,24 +17,27 @@ import {
     inheritedFields,
     isCounterField,
     isDeclaredUncounted,
+    isPartyMember,
     isStandardField,
     keepersOf,
     ownField,
     type Page,
-    parsePageReference,
     playerConcerns,
     systemPageNamed,
     withPage,
     type World,
     writePage,
 } from "../pages/index.ts";
+import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
-import { saveEffects } from "./game-effects.ts";
+import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
+import { effectsAtRecipe, notBroughtBack, partyPages, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
+import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignWorld, missingSystemHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -72,27 +75,40 @@ export const change = defineCommand({
         + "by adds or takes away and stops at a limit (damage, healing); spend takes what is paid or used up, and is refused when there is not enough; "
         + "to sets a value, max, or current/max (15/15 changes the maximum too), even outside the limits. "
         + 'Money is a field written in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
-        + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf".',
+        + "recipe applies a rest of the game system, such as long rest, once you have advanced its hours: to the page, or without one to the player character and the companions with them. "
+        + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf"; or recipe "long rest".',
     group: "game",
     positionals: ["page", "field"],
     input: z.object({
-        page: z.string().describe("page that holds the counter or the money"),
-        field: z.string().describe("the counter or the money, such as hp"),
+        page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
+        field: z.string().optional().describe("the counter or the money, such as hp; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; on the command line write --by=-7"),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins"),
         to: z.union([z.number().int(), z.string()]).optional().describe("the new value: a number, max, current/max such as 15/15, or coins; on the command line write --to=-3"),
         why: z.string().optional().describe("what the change is for"),
+        recipe: z.string().optional().describe("a recipe of the game system, such as long rest"),
     }),
 
     run(input, context)
     {
         const root = requireCampaign(context.folder);
         const world = campaignWorld(root, context);
+
+        if (input.recipe !== undefined) {
+            return recipeResult(root, context, world, { ...input, recipe: input.recipe });
+        }
+
+        if (input.page === undefined || input.field === undefined) {
+            throw new Error('Give the page and the field, such as page Bruna, field hp, by -7; or a recipe of the game system, such as recipe "long rest".');
+        }
+
         const holder = holderNamed(root, world, input.page);
         const fields = effectiveFields(world, holder.page);
-        const { coins, problem } = campaignCoins(root);
+        const { coins, problem } = campaignCoins(root, context);
+        const system = campaignSystem(root, context);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
-        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins, clock), coins, suggestedNumber(fields, input));
+        const example = exampleValue(input, coins, clock, usuallyZero(system, input.field));
+        const field = fieldName(world, holder, fields, input.field, example, coins, suggestedNumber(fields, { ...input, field: input.field }));
         // A field the game system declares is never money (SYS-8).
         const purse = coins === undefined || declaredKind(world, field) !== undefined ? undefined : readAmount(fields[field], coins);
         const page = holder.page.name;
@@ -102,52 +118,272 @@ export const change = defineCommand({
         }
 
         const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins);
-        const changed = String(step.after) !== String(step.before);
-        checkClock(holder.page, field, step.after);
-        const written = ownField(holder.page, field) ?? field;
-        // A value an effect gives changes on the effect, under which the page keeps its own (EFF-7).
-        const layer = effectGiving(holder.page, field);
-        const base = layer === undefined ? baseValue(world, holder.page, field) : undefined;
-        const backToBase = changed && base !== undefined && step.same(base.value);
-        const followers = changed && holder.kind === "page" && layer === undefined ? followersOf(world, holder.page, field) : [];
-        const keepers = changed && holder.kind === "page" && layer === undefined ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
-
-        let after: Page | undefined;
-
-        if (changed) {
-            // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
-            const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
-
-            if (layer === undefined) {
-                after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
-            } else {
-                const effects = effectsOf(holder.page).map((effect) => (effect.name === layer.name ? withValue(effect, field, String(step.after)) : effect));
-                saveEffects(root, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
-            }
-
-            const why = input.why?.trim() === "" ? undefined : input.why;
-            const data = { page, copy: holder.kind === "copy" ? true : undefined, field, effect: layer?.name, before: step.before, after: step.after, ...step.amount, why };
-            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
-            logFollowers(root, world, context, followers, { field, before: step.before, after: step.after });
-        }
-
-        const note = [layer === undefined ? "" : `in ${layer.name}`, step.note, backToBase && base !== undefined ? `again as ${base.base.name}` : ""].filter((part) => part !== "").join("; ");
-        // Only an event's clock sets anything off when it changes (EVT-4).
-        const due = after !== undefined && isCounterField(after.type, field) ? fireEvents(root, context, world, withPage(world, holder.page, after), readPresent(root).date).due : [];
-        const result = { page, field, before: String(step.before), after: String(step.after), total: step.total, note, changed, due, problems: world.problems };
-        return { ...result, followers: followers.map((follower) => follower.name), keepers };
+        const why = input.why?.trim() === "" ? undefined : input.why;
+        return { ...applyStep(root, context, world, holder, field, step, why, system).outcome, problems: world.problems };
     },
 
     format(result)
     {
+        if ("recipe" in result) {
+            return recipeText(result);
+        }
+
         const note = result.note === "" ? "" : `: ${result.note}`;
         const after = `${result.after}${result.total === undefined ? "" : ` (${result.total})`}`;
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
-        const followers = followersNote(result.followers, `since they read ${result.field} from ${result.page}`, "change", `${result.field} ${result.after}`);
-        const lines = [summary, nowDueNote(result.due), followers, keepersNote(result.keepers, result.field)].filter((line) => line !== "");
-        return [lines.join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        // A rule's text, of several lines, comes after the lines of the change.
+        const notes = stepNotes(result);
+        const lines = [summary, ...notes.filter((line) => !line.includes("\n"))];
+        return [lines.join("\n"), ...notes.filter((line) => line.includes("\n")), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** What a step did to a counter or to money. */
+interface StepOutcome
+{
+    page: string;
+    field: string;
+    before: string;
+    after: string;
+    total?: string;
+    /** "in Forma d'orso; at max; again as Lupo": the effect it changed on, the limit it reached, the base whose value the page reads again. */
+    note: string;
+    effect?: string;
+    again?: string;
+    changed: boolean;
+    due: ReturnType<typeof fireEvents>["due"];
+    followers: string[];
+    keepers: string[];
+    thresholds: string[];
+}
+
+/** What a recipe did to a page: the effects it ended, the steps it wrote, and the counters it leaves to the master. */
+interface RecipeOutcome
+{
+    page: string;
+    ended: string[];
+    steps: StepOutcome[];
+    notBroughtBack: string[];
+}
+
+/**
+ * Writes a step: on the effect that gives the field (EFF-7), else on the page, from which the field goes when it comes back to its base's value (INH-9); with
+ * its line in the log and those of the pages that read it from this one (INH-10), the events it sets off (EVT-4) and the thresholds it touches (DAT-3).
+ * Returns the world as written, for a next step.
+ */
+function applyStep(
+    root: string,
+    context: Context,
+    world: World,
+    holder: CounterHolder,
+    field: string,
+    step: Step,
+    why: string | undefined,
+    system: GameSystem | undefined,
+): { outcome: StepOutcome; world: World; }
+{
+    const page = holder.page.name;
+    const changed = String(step.after) !== String(step.before);
+    checkClock(holder.page, field, step.after);
+    const written = ownField(holder.page, field) ?? field;
+    // A value an effect gives changes on the effect, under which the page keeps its own (EFF-7).
+    const layer = effectGiving(holder.page, field);
+    const base = layer === undefined ? baseValue(world, holder.page, field) : undefined;
+    const backToBase = changed && base !== undefined && step.same(base.value);
+    const followers = changed && holder.kind === "page" && layer === undefined ? followersOf(world, holder.page, field) : [];
+    const keepers = changed && holder.kind === "page" && layer === undefined ? keepersOf(world, holder.page, field).map((keeper) => `${keeper.name} (${field} ${String(counterOf(world, keeper, field))})`) : [];
+
+    let after: Page | undefined;
+
+    if (changed) {
+        // Back to the base's value, the field goes in every spelling the page wrote it, so that the page reads the base's (INH-5, INH-9).
+        const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
+
+        if (layer === undefined) {
+            after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
+        } else {
+            const effects = effectsOf(holder.page).map((effect) => (effect.name === layer.name ? withValue(effect, field, String(step.after)) : effect));
+            after = saveEffects(root, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
+        }
+
+        const data = { page, copy: holder.kind === "copy" ? true : undefined, field, effect: layer?.name, before: step.before, after: step.after, ...step.amount, why };
+        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", holder.visibility, data));
+        logFollowers(root, world, context, followers, { field, before: step.before, after: step.after });
+    }
+
+    const again = backToBase ? base?.base.name : undefined;
+    const note = [layer === undefined ? "" : `in ${layer.name}`, step.note, again === undefined ? "" : `again as ${again}`].filter((part) => part !== "").join("; ");
+    const updated = after === undefined ? world : withPage(world, holder.page, after);
+    // Only an event's clock sets anything off when it changes (EVT-4).
+    const due = after !== undefined && layer === undefined && isCounterField(after.type, field) ? fireEvents(root, context, world, updated, readPresent(root).date).due : [];
+    // The rules a counter of the player character or a companion touches (DAT-3): never for a copy, nor for a page that is not in the party.
+    const touched = changed || (step.amount.beyond ?? 0) !== 0;
+    const thresholds = touched && holder.kind === "page" && isPartyMember(holder.page) ? thresholdNotes(root, system, field, step, layer?.name) : [];
+    const outcome = {
+        page,
+        field,
+        before: String(step.before),
+        after: String(step.after),
+        total: step.total,
+        note,
+        effect: layer?.name,
+        again,
+        changed,
+        due,
+        followers: followers.map((follower) => follower.name),
+        keepers,
+        thresholds,
+    };
+    return { outcome, world: updated };
+}
+
+/** What else a step says: the thresholds it touches, the events it sets off, the pages that changed with it, and those that keep their own. */
+function stepNotes(step: StepOutcome): string[]
+{
+    const followers = followersNote(step.followers, `since they read ${step.field} from ${step.page}`, "change", `${step.field} ${step.after}`);
+    return [...step.thresholds, nowDueNote(step.due), followers, keepersNote(step.keepers, step.field)].filter((note) => note !== "");
+}
+
+/**
+ * A recipe of the game system applied to a page, or to the living player characters and the companions with them (DAT-4). Every page is checked before any
+ * is written.
+ */
+function recipeResult(
+    root: string,
+    context: Context,
+    world: World,
+    input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; },
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; }
+{
+    const named = campaignSystem(root, context);
+    const page = input.page?.trim() === "" ? undefined : input.page;
+    checkQuotedRecipe(named, input.recipe, [page, input.field]);
+
+    if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined) {
+        throw new Error('A recipe changes by itself the fields it names: give it with the page, or alone for the player character and the companions with them, such as recipe "long rest". Nothing changed.');
+    }
+
+    const { system, recipe } = recipeNamed(named, input.recipe);
+    const pages = page === undefined ? partyPages(world) : [recipePage(root, world, page)];
+
+    if (pages.length === 0) {
+        throw new Error("There is no living player character, so a recipe without a page goes to no one: give the page. Nothing changed.");
+    }
+
+    // A page given was checked when it was found; each must still be the only one of its name, and its effects must read.
+    for (const candidate of pages) {
+        findPage(world, candidate.name);
+        checkEffectsReadable(candidate);
+    }
+
+    const why = input.why === undefined || input.why.trim() === "" ? recipe.name : input.why;
+    let current = world;
+    const outcomes = pages.map((candidate) => {
+        const applied = recipeOn(root, context, current, system, recipe, candidate.name, why);
+        current = applied.world;
+        return applied.outcome;
+    });
+    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules };
+}
+
+/**
+ * A recipe applied to one page (DAT-4): the effects that last until one of its occasions end first (DAT-5), then each field it names goes to its maximum or to
+ * its value, as change sets it.
+ */
+function recipeOn(root: string, context: Context, world: World, system: GameSystem, recipe: Recipe, name: string, why: string): { outcome: RecipeOutcome; world: World; }
+{
+    let current = world;
+    const start = pageHolder(current, pageCalled(current, name));
+    const { ending, remaining } = effectsAtRecipe(start.page, recipe);
+
+    if (ending.length > 0) {
+        const written = saveEffects(root, current, { page: start.page, copy: false }, remaining);
+
+        for (const effect of ending) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "effect-ended", start.visibility, { page: name, effect: effect.name, why }));
+        }
+
+        current = written === undefined ? current : withPage(current, start.page, written);
+    }
+
+    const steps: StepOutcome[] = [];
+
+    for (const { field, target } of recipeTargets(current, recipe, pageCalled(current, name))) {
+        const holder = pageHolder(current, pageCalled(current, name));
+        const step = counterStep({ to: target }, effectiveFields(current, holder.page)[field], name, field, undefined);
+
+        if (String(step.after) !== String(step.before)) {
+            const applied = applyStep(root, context, current, holder, field, step, why, system);
+            steps.push(applied.outcome);
+            current = applied.world;
+        }
+    }
+
+    const outcome = { page: name, ended: ending.map((effect) => effect.name), steps, notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)) };
+    return { outcome, world: current };
+}
+
+/** The page with this name, which a recipe has just checked or written. */
+function pageCalled(world: World, name: string): Page
+{
+    const page = findPage(world, name);
+
+    if (page === undefined) {
+        throw new Error(`There is no page named ${name}. Look for it with the find command.`);
+    }
+
+    return page;
+}
+
+/** "--recipe long rest" without quotes reads rest as the page or the field: refused, with the quotes to give. */
+function checkQuotedRecipe(system: GameSystem | undefined, recipe: string, rest: (string | undefined)[]): void
+{
+    const known = (name: string): boolean => (system?.recipes ?? []).some((candidate) => comparableText(candidate.name) === comparableText(name));
+    const words = rest.filter((word) => word !== undefined);
+    const joined = [...words.map((word) => `${recipe} ${word}`), [recipe, ...words].join(" ")].find(known);
+
+    if (!known(recipe) && joined !== undefined) {
+        throw new Error(`Put the recipe's name in quotes, such as recipe "${joined}". Nothing changed.`);
+    }
+}
+
+/** The page a recipe goes to: a page of the campaign, never a copy in the scene. */
+function recipePage(root: string, world: World, name: string): Page
+{
+    const holder = holderNamed(root, world, name);
+
+    if (holder.kind === "copy") {
+        throw new Error(`${holder.page.name} is a copy in the scene: a recipe goes to pages, such as the characters who rest. Nothing changed.`);
+    }
+
+    return holder.page;
+}
+
+/**
+ * "Long rest (a recipe of the system 5e):", then for each page what ended and changed, as in "Ennio: Prosciugato ended; hp 8/12 → 12/12. Not brought back:
+ * hit-dice 1/3.", with the thresholds it touched; the rules for the rest; the game date, which a recipe does not move.
+ */
+function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; }): string
+{
+    const notes = result.outcomes.flatMap((outcome) => outcome.steps.flatMap(stepNotes));
+    const lines = result.outcomes.flatMap((outcome) => {
+        const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
+        const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
+        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${left}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
+    });
+    const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
+    const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;
+    const text = [title, ...lines, rules, "The game date did not move: advance the hours of the rest, if you have not yet."].filter((line) => line !== "").join("\n");
+    return [text, ...notes.filter((note) => note.includes("\n"))].join("\n\n");
+}
+
+/** "hp 20/34 → 34/34 (in Forma d'orso)": a step of a recipe, with the effect it changed on or the base the page reads again. */
+function stepText(step: StepOutcome): string
+{
+    // A value an effect gives never goes back to a base: one of the two at most.
+    const where = step.effect !== undefined ? ` (in ${step.effect})` : step.again !== undefined ? ` (again as ${step.again})` : "";
+    return `${step.field} ${step.before} → ${step.after}${where}`;
+}
 
 /** A change to a counter: by, spend or to, within its limits (D-92). */
 function counterStep(input: { by?: number | string; spend?: number | string; to?: number | string; }, value: unknown, page: string, field: string, coins: Coin[] | undefined): Step
@@ -234,9 +470,9 @@ function moneyStep(input: { by?: number | string; spend?: number | string; to?: 
 
 /**
  * The value a missing counter or purse is shown with, in the hint to add one: money that the page holds, when money was asked for;
- * a clock as given, or empty (EVT-2); else 12/12.
+ * a clock as given, or empty (EVT-2); 0 for a field usually at zero, such as exhaustion (DAT-2); else 12/12.
  */
-function exampleValue(input: { by?: number | string; spend?: number | string; to?: number | string; }, coins: Coin[] | undefined, clock: boolean): string
+function exampleValue(input: { by?: number | string; spend?: number | string; to?: number | string; }, coins: Coin[] | undefined, clock: boolean, zero: boolean): string
 {
     const money = coins !== undefined && [input.by, input.spend, input.to].some((part) => typeof part === "string" && readSignedAmount(part, coins) !== undefined);
 
@@ -245,7 +481,13 @@ function exampleValue(input: { by?: number | string; spend?: number | string; to
     }
 
     const given = typeof input.to === "string" ? readCounterText(input.to) : undefined;
-    return clock ? (given?.max === undefined ? "0/4" : String(formatCounter(given))) : "12/12";
+    return clock ? (given?.max === undefined ? "0/4" : String(formatCounter(given))) : zero ? "0" : "12/12";
+}
+
+/** Whether the game system's status line shows a field only when it is not at zero, as it does exhaustion: it is usually at zero (DAT-2). */
+function usuallyZero(system: GameSystem | undefined, field: string): boolean
+{
+    return system?.statusLine.some((entry) => entry.whenSet && comparableText(entry.field) === comparableText(field.trim())) === true;
 }
 
 /** An event's clock keeps a maximum of at least 1, as write asks (EVT-2). */
@@ -280,9 +522,14 @@ function holderNamed(root: string, world: World, name: string): CounterHolder
         return { page: found.page, kind: "copy", write, visibility: "hidden" };
     }
 
-    const page = found.page;
-    checkNotSystemPage(world, open, page);
-    checkNotCopied(world, open, page);
+    checkNotSystemPage(world, open, found.page);
+    checkNotCopied(world, open, found.page);
+    return pageHolder(world, found.page);
+}
+
+/** A page as what holds its counters: written with write, its lines in the log public when it concerns the player. */
+function pageHolder(world: World, page: Page): CounterHolder
+{
     return {
         page,
         kind: "page",

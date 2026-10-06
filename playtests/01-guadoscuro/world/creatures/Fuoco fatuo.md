@@ -1,3 +1,7 @@
+---
+creature: "[[Will-o'-Wisp]]"
+---
+
 Una luce pallida che danza sopra l'acqua ferma e attira i viandanti verso le pozze profonde; si nutre della loro paura.
 
 > [!secret] Le luci della palude

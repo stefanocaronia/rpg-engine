@@ -5,7 +5,7 @@ import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { systemLabel } from "./system-pages.ts";
-import { linksIn, type Page, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
+import { linksIn, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -112,9 +112,8 @@ function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page
     return [...inFields, ...inText].flatMap((found) => {
         const broken = brokenLink(world, pagesByName, found.link);
         // While the campaign's system is missing, the link may be to one of its pages: removing it would break what derives from it.
-        const fix = world.missingSystem === undefined || broken !== "which does not exist"
-            ? linkFix(page, found.field, found.entry, found.inList)
-            : `if it is a page of the system ${world.missingSystem}, which is not installed, fix the system first, as the problem on campaign.yaml says; otherwise ${linkFix(page, found.field, found.entry, found.inList)}`;
+        const first = broken === "which does not exist" ? systemFirstFix(world) : undefined;
+        const fix = first === undefined ? linkFix(page, found.field, found.entry, found.inList) : `${first}; otherwise ${linkFix(page, found.field, found.entry, found.inList)}`;
         return broken === undefined ? [] : [{ path: page.path, message: `${found.field ?? "The text"} links to ${written(found.link)}, ${broken}.`, fix }];
     });
 }

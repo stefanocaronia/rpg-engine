@@ -72,7 +72,9 @@ describe("effect add and end (EFF-1, EFF-4, EFF-5)", () => {
         expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=15", "--set", "AC=17")).output).toBe("AC is given twice: give each value once.");
         expect((await rpg("effect", "add", "Ennio", "Strano", "--set", "x=[[1], [2]]")).output).toContain("would be a list inside a list");
         expect(page("characters/Ennio.md")).not.toContain("effects");
-        expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "presto")).output).toBe('"presto" is not a duration: write it as 10m, 1h or 1d 6h, as rounds such as 1 round or 10 rounds, or scene.');
+        expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "presto")).output).toBe(
+            '"presto" is not a duration: write it as 10m, 1h or 1d 6h, as rounds such as 1 round or 10 rounds, or scene, or an occasion of the system 5e: long rest, short rest.',
+        );
         expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "2 rounds")).output).toBe("Rounds are counted in a scene with turns: open one with scene open, then set the order, or give a duration in time, such as 1m.");
         await ok("scene", "open", "--title", "Calma", "--type", "social");
         expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "2 rounds")).output).toBe("Rounds are counted in a scene with turns: set the order with scene order, or give a duration in time, such as 1m.");
@@ -131,7 +133,7 @@ describe("the layer of values (EFF-3, EFF-6, EFF-7, EFF-10)", () => {
         expect(await ok("change", "Ennio", "hp", "--by=-10")).toBe("Ennio: hp 34/34 → 24/34: in Forma d'orso.");
         expect(page("characters/Ennio.md")).toContain('effects:\n  - "Forma d\'orso (hp: 24/34, speed: 40 ft)"');
         expect(page("characters/Ennio.md")).toContain("hp: 12/12");
-        expect(await ok("status")).toContain("PC: Ennio, in Ossario: hp 24/34 · Forma d'orso");
+        expect(await ok("status")).toContain("PC: Ennio, in Ossario: hp 24/34 · ac 13 · Forma d'orso");
         expect(await ok("show", "Ennio")).toContain("While they last: hp 24/34 (12/12 without), speed 40 ft (none without)");
         expect(await ok("effect", "end", "Ennio", "Forma d'orso")).toBe("Ennio: Forma d'orso ended; hp 24/34 → 12/12, speed 40 ft → none.");
     });
@@ -172,7 +174,7 @@ describe("validate (EFF-12)", () => {
         expect((await rpg("validate")).output).toBe([
             "4 problems:",
             '- world/characters/Ennio.md: Scudo della fede on Ennio ended at day 1, 10:00, and is still there. Fix: let time pass with advance, which ends it, or effect end Ennio "Scudo della fede".',
-            '- world/characters/Ennio.md: Volo on Ennio ends "domani", which is not a game date. Fix: effect end Ennio "Volo", then add it again with a duration.',
+            '- world/characters/Ennio.md: Volo on Ennio ends "domani", which is not a game date nor an occasion of the system 5e (long rest, short rest). Fix: effect end Ennio "Volo", then add it again with a duration.',
             '- world/characters/Ennio.md: Schivata on Ennio ends with the scene, but no scene is open. Fix: effect end Ennio "Schivata".',
             '- world/characters/Lena.md: Lena: The effect prono is written twice: keep one. Fix: write each line of effects in quotes, such as - "Scudo della fede (ac: 15) until day 2, 14:20", and each effect once; or remove them all with write Lena, unset effects, and add again with effect add those that still hold.',
         ].join("\n"));
@@ -195,7 +197,7 @@ describe("who keeps an effect alive (D-138, EFF-13)", () => {
     it("refuses end with more than the page and the name, or without them", async () => {
         await ok("effect", "add", "Ennio", "Prono");
         expect((await rpg("effect", "end", "Ennio", "Prono", "--for", "1h")).output).toBe("end takes the page and the effect's name, or by alone: nothing else.");
-        expect((await rpg("effect", "end")).output).toBe("Give the page and the effect's name, such as page Ennio, name Spaventato; or only by, to end every effect someone keeps alive.");
+        expect((await rpg("effect", "end")).output).toBe("Give the page and the effect's name, such as page Ennio, name Benedizione; or only by, to end every effect someone keeps alive.");
         expect((await rpg("effect", "add", "Ennio", "Prono", "--by", "Nessuno")).output).toContain("There is no page named Nessuno");
     });
 });
@@ -218,10 +220,12 @@ describe("other ends (EFF-4, EFF-9)", () => {
         expect(await ok("scene", "close", "--summary", "Accordo fatto.")).toContain("\nEnded with the scene: Ira on Ennio.");
     });
 
-    it("warns when a duration in time is given in a scene with turns, which do not move time", async () => {
+    it("turns a duration in time given in a scene with turns into rounds of the system, and warns where the system has no round (DAT-7)", async () => {
         await combat();
-        expect(await ok("effect", "add", "Ennio", "Benedizione", "--for", "1m")).toBe(
-            "Ennio: Benedizione until day 1, 18:01. The scene counts turns, and time does not pass with them: if it should end during the turns, give it in rounds.",
+        expect(await ok("effect", "add", "Ennio", "Benedizione", "--for", "1m")).toBe("Ennio: Benedizione until round 11, Ennio. 1m is 10 rounds of 6 seconds.");
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: 5e", "system: ironsworn"));
+        expect(await ok("effect", "add", "Ennio", "Ispirato", "--for", "1m")).toBe(
+            "Ennio: Ispirato until day 1, 18:01. The scene counts turns, and time does not pass with them: if it should end during the turns, give it in rounds.",
         );
     });
 });
@@ -322,7 +326,7 @@ describe("the edges of the command, case by case", () => {
         await ok("effect", "add", "Annegato 1", "Prono", "--why", "");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "effect-added", visibility: "hidden", data: { page: "Annegato 1", copy: true, effect: "Prono" } });
         expect(readLogFile(folder).at(-1)?.data.why).toBeUndefined();
-        expect((await rpg("effect", "add", "Ennio", "  ")).output).toBe("Give the page and the effect's name, such as page Ennio, name Spaventato.");
+        expect((await rpg("effect", "add", "Ennio", "  ")).output).toBe("Give the page and the effect's name, such as page Ennio, name Benedizione.");
         expect(await ok("effect", "add", "Ennio", "Vigile", "--set", "ac=13")).toBe("Ennio: Vigile, until it is ended.");
         expect(await ok("effect", "end", "Ennio", "Vigile")).toBe("Ennio: Vigile ended.");
         await ok("effect", "add", "Lena", "Benedetta", "--by", "Lena");

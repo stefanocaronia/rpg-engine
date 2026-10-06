@@ -89,9 +89,11 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
 
     if (extra.length > 0) {
         const quoted = [...given.slice(positionals.length - 1, positionals.length), ...extra].join(" ");
+        // A text given in several words: quote it. A word from a list, such as open, is not a text.
+        const freeText = last !== undefined && baseType(command.input.shape[last] as z.ZodType) === "string";
         const how = takesRest
             ? ` Give the ${last} before the options, and repeat an option for each of its values, such as --to A --to B.`
-            : positionals.length > 0
+            : freeText
             ? ` Put a value with spaces in quotes, such as "${quoted}".`
             : "";
         throw new Error(`Unexpected argument: ${extra.join(" ")}.${how}`);

@@ -61,13 +61,15 @@ import {
     writtenFieldName,
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+import { missingSheetFields } from "./page-counters.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -142,7 +144,7 @@ export const write = defineCommand({
             throw new Error("Give the text to write.");
         }
 
-        const { coins, problem: coinsProblem } = campaignCoins(root);
+        const { coins, problem: coinsProblem } = campaignCoins(root, context);
         const world = campaignWorld(root, context);
         const fields: FieldChange = {
             set: input.set === undefined ? undefined : asAmounts(world, oneItemLists(readFields(input.set)), coins),
@@ -219,7 +221,10 @@ export const write = defineCommand({
         const story = changed && changedFieldNames(fields).length > 0 ? storyNotes(root, context, world, now, existing, page) : [];
         const was = retyped === undefined ? undefined : `${retyped.type ?? "free page"} (${retyped.path})`;
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...moneyNotes], problems: world.problems };
+        // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
+        const joined = changed && (created || existing?.fields.role !== page.fields.role);
+        const sheet = joined ? missingSheetNote(campaignSystem(root, context), now, page) : [];
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...sheet, ...moneyNotes], problems: world.problems };
     },
 
     format(result)
@@ -641,6 +646,16 @@ function moneyNotesOf(world: World, page: string, set: Record<string, unknown> |
     const notes = unread.map(([field, value]) => `${field} on ${page} is "${value}", which is not money: write the coins one after the other, such as ${field}=12 ${coins?.[0].name ?? ""}, to count them.`);
     const looksLikeMoney = texts.some(([, value]) => /\d+\s*\p{L}/u.test(value));
     return problem !== undefined && looksLikeMoney ? [...notes, `The campaign's coins cannot be read, so no money is counted: ${problem.message} To fix it, ${problem.fix}.`] : notes;
+}
+
+/**
+ * The fields of the system's character sheet that a player character still lacks, or a companion that does not derive from a creature (DAT-2):
+ * written by these names, status and the dashboard read them.
+ */
+function missingSheetNote(system: GameSystem | undefined, now: World, page: Page): string[]
+{
+    const missing = missingSheetFields(system, now, page);
+    return missing.length === 0 || system === undefined ? [] : [`${page.name}'s sheet of the system ${system.name} still lacks, by these names: ${missing.join(", ")}.`];
 }
 
 /** A page created with a name that other pages give as their creature or item, though it is not one: they derive from nothing (INH-2). */

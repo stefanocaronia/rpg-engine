@@ -5,17 +5,18 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
+import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
 import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
-import { countersText, pageCounters } from "./page-counters.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
+import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "close"] as const;
 type Action = (typeof actions)[number];
@@ -63,6 +64,8 @@ interface Member
 {
     name: string;
     counters: Record<string, unknown>;
+    /** A character's effects with their end, such as "Poisoned until day 1, 19:00". */
+    effects?: string[];
 }
 
 /** Who of the party a scene brought into its place, and what that set off (CON-6). */
@@ -227,7 +230,8 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-opened", "public", { title: created.title, type: created.type, place: created.place, with: created.with }));
     logCopies(root, context, created.title, copies);
     const after = brought.world;
-    const members = [...characters.map((page) => characterMember(after, page)), ...copyMembers(after, copies)];
+    const system = campaignSystem(root, context);
+    const members = [...characters.map((page) => characterMember(after, page, system)), ...copyMembers(after, copies)];
     const around = surroundingsText(surroundings(after, place === undefined ? undefined : after.pages.find((page) => page.path === place.path)));
     return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members, around, moved: brought.moved, notes: brought.notes };
 }
@@ -259,7 +263,8 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     updateScene(root, changes);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, added }));
     logCopies(root, context, current.title, copies);
-    const entered = [...characters.map((page) => characterMember(brought.world, page)), ...copyMembers(brought.world, copies)];
+    const system = campaignSystem(root, context);
+    const entered = [...characters.map((page) => characterMember(brought.world, page, system)), ...copyMembers(brought.world, copies)];
     return { action: "add", title: current.title, place: place?.name, members: entered, ordered: current.order !== undefined, moved: brought.moved, notes: brought.notes };
 }
 
@@ -499,14 +504,16 @@ function lineOf(note: string | undefined): string
 function membersText(members: Member[]): string
 {
     return members.map((member) => {
-        const counters = countersText(member.counters);
-        return counters === "" ? member.name : `${member.name}: ${counters}`;
+        const shown = [countersText(member.counters), ...(member.effects ?? [])].filter((part) => part !== "").join(" · ");
+        return shown === "" ? member.name : `${member.name}: ${shown}`;
     }).join("; ");
 }
 
-function characterMember(world: World, page: Page): Member
+/** A character in the scene, with their effects: the player character and a companion with the counters of their line (DAT-2), anyone else with all of theirs. */
+function characterMember(world: World, page: Page, system: GameSystem | undefined): Member
 {
-    return { name: page.name, counters: pageCounters(world, page) };
+    const counters = isPartyMember(page) ? partyCounters(world, page, undefined, system) : pageCounters(world, page);
+    return { name: page.name, counters, effects: effectsOf(page).map((effect) => effectShown(world, effect)) };
 }
 
 function copyMembers(world: World, copies: Record<string, SceneCopy>): Member[]

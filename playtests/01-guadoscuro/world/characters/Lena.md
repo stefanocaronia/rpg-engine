@@ -15,6 +15,9 @@ knows:
   - "[[Ossario#I dormienti]]"
   - "[[Tobia#Le consegne]]"
   - "[[Varro#Cosa vuole]]"
+creature: "[[Commoner]]"
+dex: 14
+ac: 12
 ---
 
 L'apprendista dell'alchimista [[Varro]], diciannove anni, magra e svelta; parla a scatti e si guarda sempre alle spalle. Da quattro notti in paese nessuno la vede.

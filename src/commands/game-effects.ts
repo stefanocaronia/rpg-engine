@@ -4,7 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { type Effect, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
-import { concernsPlayer, isEmptyField, type Page, type World, writePage } from "../pages/index.ts";
+import { concernsPlayer, isDeclaredUncounted, isEmptyField, type Page, systemFirstFix, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
 import { effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
@@ -19,15 +19,26 @@ export interface EffectHolder
     copy: boolean;
 }
 
-/** Writes a holder's effects; the field goes when none is left. */
-export function saveEffects(root: string, world: World, holder: EffectHolder, effects: Effect[]): void
+/** Writes a holder's effects; the field goes when none is left. Returns the page as written, or undefined for a copy. */
+export function saveEffects(root: string, world: World, holder: EffectHolder, effects: Effect[]): Page | undefined
 {
     const lines = effects.length === 0 ? undefined : effects.map(formatEffect);
 
     if (holder.copy) {
         updateScene(root, [[["copies", holder.page.name, "effects"], lines]]);
-    } else {
-        writePage(world, holder.page.name, undefined, lines === undefined ? { unset: ["effects"] } : { set: { effects: lines } });
+        return undefined;
+    }
+
+    return writePage(world, holder.page.name, undefined, lines === undefined ? { unset: ["effects"] } : { set: { effects: lines } }).page;
+}
+
+/** An effects field that does not read is never written over: what was written by hand would be lost (EFF-12). */
+export function checkEffectsReadable(page: Page): void
+{
+    const read = readEffects(effectsField(page));
+
+    if ("problem" in read) {
+        throw new Error(`${page.name}'s effects do not read: ${read.problem} Write each line in quotes by hand, or remove them all with write ${page.name}, unset effects, and add again those that still hold. Nothing changed.`);
     }
 }
 
@@ -104,6 +115,14 @@ export function effectText(effect: Effect): string
     return effect.end === undefined ? effect.name : `${effect.name} until ${formatEnd(effect.end)}`;
 }
 
+/** An effect as status shows it: its name, the values it gives that no counter shows, such as ac 18, and its end (SYS-8). */
+export function effectShown(world: World, effect: Effect): string
+{
+    const values = effect.values.filter(([field]) => isDeclaredUncounted(world, field)).map(([field, value]) => `${field} ${value}`);
+    const end = effect.end === undefined ? "" : ` until ${formatEnd(effect.end)}`;
+    return `${effect.name}${values.length === 0 ? "" : ` (${values.join(", ")})`}${end}`;
+}
+
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */
 export function keptEffects(world: World, scene: Scene | undefined, name: string): string[]
 {
@@ -119,10 +138,10 @@ export function keptEffects(world: World, scene: Scene | undefined, name: string
 }
 
 /**
- * The problems of effects (EFF-12): fields that do not read, ends that are not game dates, effects ended and still there, effects that end with a scene
- * when none is open. `sceneProblem` says why the open scene cannot be read, if it cannot.
+ * The problems of effects (EFF-12): fields that do not read, ends that are neither game dates nor occasions of the game system (DAT-5), effects ended and still there,
+ * effects that end with a scene when none is open. `sceneProblem` says why the open scene cannot be read, if it cannot.
  */
-export function effectProblems(world: World, scene: Scene | undefined, now: GameDate | undefined, sceneProblem?: string): Problem[]
+export function effectProblems(world: World, scene: Scene | undefined, now: GameDate | undefined, occasions: { system: string; names: string[]; } | undefined, sceneProblem?: string): Problem[]
 {
     return effectHolders(world, scene).flatMap(({ page, copy }) => {
         const path = copy ? "state.yaml" : page.path;
@@ -140,6 +159,14 @@ export function effectProblems(world: World, scene: Scene | undefined, now: Game
 
             if (end !== undefined && "date" in end && readGameDate(end.date) === undefined) {
                 return [{ path, message: `${effect.name} on ${page.name} ends "${end.date}", which is not a game date.`, fix: `${endIt}, then add it again with a duration` }];
+            }
+
+            if (end !== undefined && "occasion" in end && !(occasions?.names ?? []).some((name) => comparableText(name) === comparableText(end.occasion))) {
+                const named = occasions === undefined || occasions.names.length === 0 ? "" : ` nor an occasion of the system ${occasions.system} (${occasions.names.join(", ")})`;
+                // Without the campaign's system, the occasion may well be one of its own: the system comes first (SYS-1).
+                const first = systemFirstFix(world, "an occasion");
+                const fix = `${first === undefined ? "" : `${first}; otherwise `}${endIt}, then add it again with a duration`;
+                return [{ path, message: `${effect.name} on ${page.name} ends "${end.occasion}", which is not a game date${named}.`, fix }];
             }
 
             if (end !== undefined && now !== undefined && endedByDate(effect, now)) {

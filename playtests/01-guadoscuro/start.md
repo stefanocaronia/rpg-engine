@@ -10,14 +10,14 @@ Before session 1, in a new folder chosen as `README.md` says, from the repo at t
 
 ```
 $campaign = "F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro"
-rpg init $campaign --name "La nebbia di Guadoscuro"
+rpg init $campaign --name "La nebbia di Guadoscuro" --system 5e
 Copy-Item -Recurse -Force playtests\01-guadoscuro\world\* $campaign\world
 Copy-Item instructions\start.md $campaign\AGENTS.md
 Set-Content -NoNewline -Path $campaign\CLAUDE.md -Value "@AGENTS.md`n"
 Push-Location $campaign; rpg find; Pop-Location
 ```
 
-- Only the name: language and system stay missing, so setup really happens.
+- The name and the system: the adventure's creatures and people derive from pages of 5e, as with an adventure installed for it. Language, difficulty and lethality stay missing, so setup really happens.
 - `world/`: the whole adventure, no player character; `rpg find` lists its 40 pages and `rpg validate` finds no problems.
 - `AGENTS.md` is the commit's `instructions/start.md`, unchanged: the lines that send the master to `instructions` and `status`, as a campaign will have them; `CLAUDE.md` is exactly `@AGENTS.md` and a newline. Nothing else: no `.claude/`, no `CLAUDE.local.md`, no word about the test.
 
@@ -32,14 +32,14 @@ Each master session stops past `--budget` 15 $ (default). Then the questionnaire
 
 ## The pages
 
-The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page describes only itself; where a thing is comes from its container's `contains`; every secret is in its block. An NPC's `knows` lists every secret of other pages it knows, plus the hidden pages it knows of (the crypt, a planned event); NPCs without one know none. Event dates are game dates: day 1 is the day the character arrives in Guadoscuro. A change to the pages goes in the run's report, since runs are compared.
+The adventure of `private/project/AVVENTURA-DI-PROVA.md`, in Italian. Each page describes only itself; where a thing is comes from its container's `contains`; every secret is in its block. An NPC's `knows` lists every secret of other pages it knows, plus the hidden pages it knows of (the crypt, a planned event); NPCs without one know none. Event dates are game dates: day 1 is the day the character arrives in Guadoscuro. A change to the pages goes in the run's report, since runs are compared. Since the third run the numbers come from the system: the creatures and the living adults derive from pages of 5e, and the encounters of the Palude stay as written, for the master to size to the party.
 
 - **Places** (14), with what they contain:
   - Guadoscuro: Agnese, Nina; Locanda del Guado (Gaspare, Rosa); Cappella (Fratello Odo); Emporio (Tobia); Casa di Varro (Diario di Varro); Capanno di Matteo (Lena).
   - Palude > Mulino abbandonato > Cripta: Ingresso allagato; Ossario; Corridoio della cripta; Laboratorio della cripta (Varro, Lanterna della cappella); Sala del rituale (Livia, Teresa, Matteo).
-- **Characters** (11, all `npc`): Varro, Lena, Fratello Odo, Agnese, Gaspare, Nina, Tobia, Rosa, Teresa, Matteo, Livia (`dead`).
+- **Characters** (11, all `npc`): Varro, Lena, Fratello Odo, Agnese, Gaspare, Nina, Tobia, Rosa, Teresa, Matteo, Livia (`dead`). The living adults derive from Commoner, Varro and Lena with a few numbers of their own; Nina, a child, and Livia have none.
 - **Events** (6): Il rogo (`happened`); Sparizione di Rosa, La nebbia si infittisce, La marcia della Confraternita, Il rituale della luna nuova, I dormienti si alzano (`planned`).
-- **Creatures** (3): Annegato, Fuoco fatuo, Lupo. **Faction**: Confraternita della Lanterna. **Items**: Diario di Varro, Lanterna della cappella. **Quests**: Ritrovare gli scomparsi, Ritrovare la lanterna. **Topic**: La nebbia.
+- **Creatures** (3), kinds of 5e creatures with no numbers of their own: Annegato (Zombie), Fuoco fatuo (Will-o'-Wisp), Lupo (Wolf). **Faction**: Confraternita della Lanterna. **Items**: Diario di Varro, Lanterna della cappella. **Quests**: Ritrovare gli scomparsi, Ritrovare la lanterna. **Topic**: La nebbia.
 
 ## The clock
 

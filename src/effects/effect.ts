@@ -2,9 +2,9 @@ import { comparableText } from "../core/text.ts";
 
 /**
  * When an effect ends (EFF-2): at a game date, written as the time module reads it; at the start of someone's turn in a round of the scene;
- * or when the scene ends.
+ * when the scene ends; or at an occasion of the game system, such as long rest, which only its recipe brings (DAT-5).
  */
-export type EffectEnd = { date: string; } | { round: number; turn: string; } | { scene: true; };
+export type EffectEnd = { date: string; } | { round: number; turn: string; } | { scene: true; } | { occasion: string; };
 
 /** An effect on whoever has it (D-123, D-132): its name, who keeps it alive (D-138), the values it gives for a while, and when it ends, if it does. */
 export interface Effect
@@ -90,10 +90,10 @@ export function formatEffect(effect: Effect): string
     return `${effect.name}${values}${effect.end === undefined ? "" : ` until ${formatEnd(effect.end)}`}`;
 }
 
-/** An end as written: day 2, 14:20, round 12, Ennio, or scene end. */
+/** An end as written: day 2, 14:20, round 12, Ennio, scene end, or long rest. */
 export function formatEnd(end: EffectEnd): string
 {
-    return "date" in end ? end.date : "round" in end ? `round ${end.round}, ${end.turn}` : sceneEnd;
+    return "date" in end ? end.date : "round" in end ? `round ${end.round}, ${end.turn}` : "occasion" in end ? end.occasion : sceneEnd;
 }
 
 /** How many rounds a duration such as 3 rounds or 1 round gives; undefined for anything else. */
@@ -149,7 +149,8 @@ function withEnd(effect: Effect, endText: string): { effect: Effect; } | { probl
     const round = roundPattern.exec(text);
 
     if (round === null) {
-        return { effect: { ...effect, end: { date: text } } };
+        // A date always has a number in it; an end without one is an occasion, such as long rest (DAT-5).
+        return { effect: { ...effect, end: /\d/.test(text) ? { date: text } : { occasion: text } } };
     }
 
     return Number(round[1]) < 1 ? { problem: `"${endText}" is not an end: rounds start from 1.` } : { effect: { ...effect, end: { round: Number(round[1]), turn: pageName(round[2]) } } };

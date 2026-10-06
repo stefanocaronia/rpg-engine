@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { comparableText } from "../src/core/text.ts";
+import { coinsProblem, readCoins } from "../src/money/index.ts";
 import { checkWorld, isStandardField, loadWorld } from "../src/pages/index.ts";
 import { isTitled, readRuleBook } from "../src/rules/index.ts";
 import { installedSystems } from "../src/systems/index.ts";
@@ -37,6 +38,22 @@ describe("the installed game systems", () => {
 
             it("derives no page from another (SYS-2)", () => {
                 expect(world.pages.filter((page) => page.fields.creature !== undefined || page.fields.item !== undefined).map((page) => page.name)).toEqual([]);
+            });
+
+            it("gives data the engine can read: coins, declared fields, and rules that its chapters hold (DAT-1–DAT-7)", () => {
+                const book = readRuleBook(join(system.folder, "rules"), system.name);
+                const hasRule = (title: string): boolean => book.some((section) => isTitled(section, title));
+                const declared = (field: string): boolean => Object.keys(system.fields).some((name) => (field.endsWith("*") ? name.startsWith(field.slice(0, -1)) : comparableText(name) === comparableText(field)));
+
+                if (system.coins !== undefined) {
+                    expect(coinsProblem(typeof system.coins === "string" ? readCoins(system.coins) : system.coins)).toBeUndefined();
+                }
+
+                expect([...system.sheet, ...system.statusLine.map((entry) => entry.field)].filter((field) => !declared(field))).toEqual([]);
+                expect(system.thresholds.filter((threshold) => system.fields[threshold.field] !== "counter" || !hasRule(threshold.rule))).toEqual([]);
+                expect(system.recipes.flatMap((recipe) => [...Object.keys(recipe.set).filter((field) => !declared(field)), ...recipe.rules.filter((rule) => !hasRule(rule))])).toEqual([]);
+                expect(system.conditions.filter((condition) => !hasRule(condition))).toEqual([]);
+                expect(system.roundSeconds === undefined || system.roundSeconds > 0).toBe(true);
             });
 
             it("writes its rules in chapters that open with a heading, each section read by its path (RUL-1, RUL-3)", () => {

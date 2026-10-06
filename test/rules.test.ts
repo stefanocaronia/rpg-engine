@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
 import type { Context } from "../src/core/context.ts";
-import { findRules, hasAllWords, isTitled, ruleFiles, ruleSections, shownRules } from "../src/rules/index.ts";
+import { bookTitles, findRules, hasAllWords, isTitled, readRuleBook, ruleFiles, ruleSections, shownRules } from "../src/rules/index.ts";
 import { makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const rulesOf5e = join(testSystemFolders[0], "5e", "rules");
@@ -83,7 +83,11 @@ describe("the sections of a rules text (RUL-1)", () => {
         writeFileSync(join(folder, "b.md"), "# B\n");
         writeFileSync(join(folder, "A.MD"), "# A\n");
         writeFileSync(join(folder, "c.txt"), "# C\n");
-        expect(ruleFiles(folder)).toEqual(["A", "b"]);
+        writeFileSync(join(folder, "d.md.bak"), "# D\n");
+        mkdirSync(join(folder, "x", "y"), { recursive: true });
+        writeFileSync(join(folder, "x", "y", "Z.md"), "No heading.\n");
+        expect(ruleFiles(folder)).toEqual(["A", "b", "x/y/Z"]);
+        expect(bookTitles(readRuleBook(folder, "test"))).toEqual(["A", "B", "Z"]);
         expect(ruleFiles(join(folder, "missing"))).toEqual([]);
         removeFolder(folder);
     });
@@ -131,8 +135,20 @@ describe("searching the rules (RUL-3–RUL-5)", () => {
     });
 
     it("finds a word of two letters only as itself (RUL-4)", () => {
-        const sections = sectionsOf("# Armor\n\n## Plate\n\nAC 18.\n\n## Actions\n\nAn action.\n");
+        const sections = sectionsOf("# Armor\n\n## Plate\n\nAC 18.\n\n## Actions\n\nAn action.\n\n## Acid\n\nAcid burns.\n\n## Other\n\nNothing.\n");
         expect(findRules(sections, "ac").map((finding) => finding.section.path.at(-1))).toEqual(["Plate"]);
+    });
+
+    it("weighs a rare word more than one that many sections have, and searches with every word when the text names no section", () => {
+        const sections = sectionsOf("# Book\n\n## One\n\nrare\n\n## Two\n\ncommon\n\n## Three\n\ncommon\n\n## Four\n\nfiller\n\n## Five\n\nfiller\n\n## Six\n\nfiller\n\n## Seven\n\nfiller\n");
+        expect(findRules(sections, "common rare")[0].section.path.at(-1)).toBe("One");
+        expect(pathsFound("# Combat\n\n## Hiding\n\nhide\n\n# Spells\n\n## Light\n\nlight\n\n# Other\n\n## Rest\n\nrest\n", "Spells › Hiding")).toEqual(["Combat › Hiding", "Spells", "Spells › Light"]);
+    });
+
+    it("takes no title from bold words inside a paragraph, and keeps a rule of dashes that is not at the top", () => {
+        const sections = sectionsOf("# Moving\n\nUse **Dash** to move.\n\n---\n\nMore text.\n\n---\n");
+        expect(sections.map((section) => section.path.join(" › "))).toEqual(["Moving"]);
+        expect(sections[0].text).toContain("---\n\nMore text.");
     });
 
     it("puts the rarest word first, then the shorter title, then the order of the text (RUL-5)", () => {
@@ -239,12 +255,21 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
         const output = await ok("rules", "grappled");
         expect(output).toContain("Appendix PH-A: Conditions › Grappled (5e):\n" + sectionOf("Conditions", "## Grappled", "## Incapacitated"));
         expect(output).toContain("Also: Combat › Making an Attack › Melee Attacks › Grappling");
-        expect(output).not.toMatch(/Precedents|House rules|not installed|more\)/);
+        expect(output).not.toMatch(/Precedents|House rules|not installed|more\)|Its parts|No rule matches|disagree|also a page/);
     });
 
     it("cuts a section too long to its own text and names its parts", async () => {
         const output = await ok("rules", "Combat");
         expect(output.startsWith("Combat (5e):\n# Combat\n(Its parts: The Order of Combat; Movement and Position; Actions in Combat;")).toBe(true);
+    });
+
+    it("gives the system's rules the words the house rules leave, and always shows the first of them", async () => {
+        mkdirSync(join(folder, "rules"));
+        writeFileSync(join(folder, "rules", "Lotta.md"), `# Lotta\n\nGrappling al nostro tavolo. ${"parola ".repeat(790)}\n`);
+        const output = await ok("rules", "grappling");
+        expect(output.startsWith("Lotta (house rule):\n# Lotta")).toBe(true);
+        expect(output).toContain("Combat › Making an Attack › Melee Attacks › Grappling (5e):\n#### Grappling");
+        expect(output).toContain("(Its parts: Escaping a Grapple; Moving a Grappled Creature. Read one by its heading.)");
     });
 
     it("says when a page of the system or of the campaign has the name searched, since pages hold rules too", async () => {

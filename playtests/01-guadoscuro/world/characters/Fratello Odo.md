@@ -11,6 +11,7 @@ knows:
   - "[[La marcia della Confraternita#Chi e perché]]"
   - "[[La marcia della Confraternita#Cosa la affretta]]"
   - "[[La marcia della Confraternita#I segni]]"
+creature: "[[Commoner]]"
 ---
 
 Il capo della [[Confraternita della Lanterna]], sessant'anni, alto e ossuto, con la voce da predica anche quando chiede il sale. Vuole salvare Guadoscuro dalla nebbia, col fuoco se serve; teme che il paese smetta di ascoltarlo.

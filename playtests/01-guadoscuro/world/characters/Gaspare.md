@@ -4,6 +4,7 @@ status: alive
 aliases: [l'oste]
 knows:
   - "[[Il rogo#Com'è andata]]"
+creature: "[[Commoner]]"
 ---
 
 Gaspare tiene la locanda di Guadoscuro da trent'anni. Grosso e lento, parla a voce bassa, come se la nebbia ascoltasse. Vuole che i viandanti tornino: senza di loro la locanda muore. Teme la [[Confraternita della Lanterna|Confraternita]] più della nebbia.

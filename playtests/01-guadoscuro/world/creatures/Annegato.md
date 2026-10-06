@@ -1,3 +1,7 @@
+---
+creature: "[[Zombie]]"
+---
+
 Un corpo ripescato dalla palude e rimesso in piedi: lento, forte, muto, non sente dolore.
 
 > [!secret] Da dove vengono

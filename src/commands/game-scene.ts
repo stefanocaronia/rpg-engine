@@ -4,7 +4,7 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, parsePageReference, readOnlyMessage, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
+import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, parsePageReference, readOnlyMessage, systemFirstFix, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
 import { missingSystemHint } from "./game-world.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -238,9 +238,7 @@ export function sceneProblems(root: string, world: World): Problem[]
     const missing = [...links, ...copied].filter(({ link, found }) => !found(parsePageReference(link).name)).map(({ link }) => ({
         path: "state.yaml",
         message: `The open scene links to ${link}, which does not exist.`,
-        fix: world.missingSystem === undefined
-            ? "create that page, or close the scene and open it again"
-            : `if it is a page of the system ${world.missingSystem}, which is not installed, fix the system first, as the problem on campaign.yaml says; otherwise create that page`,
+        fix: systemFirstFix(world) === undefined ? "create that page, or close the scene and open it again" : `${systemFirstFix(world)}; otherwise create that page`,
     }));
     const clashes = Object.keys(scene.copies).filter(exists).map((name) => ({
         path: "state.yaml",

@@ -52,7 +52,7 @@ export const config = defineCommand({
         }
 
         const settings = readSettings(root);
-        const valueOf = (name: SettingName) => (listSettingNames.includes(name) ? (settings[name] ?? []) : name === "coins" ? coinsShown(root) : name === "system" ? systemShown(settings.system, context) : settings[name]);
+        const valueOf = (name: SettingName) => (listSettingNames.includes(name) ? (settings[name] ?? []) : name === "coins" ? coinsShown(root, context) : name === "system" ? systemShown(settings.system, context) : settings[name]);
         return { settings: Object.fromEntries(shown.map((name) => [name, valueOf(name)])), missing: missingWithSystems(missingSettings(settings), context) };
     },
 
@@ -87,7 +87,7 @@ function systemShown(system: string | undefined, context: Context): string
 function newCoins(root: string, text: string, context: Context): Record<string, number | string>
 {
     const coins = readCoins(text);
-    const before = campaignCoins(root).coins;
+    const before = campaignCoins(root, context).coins;
 
     if (before === undefined) {
         return coins;

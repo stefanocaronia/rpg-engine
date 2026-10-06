@@ -4,15 +4,17 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readEffects, readRounds, withEffect } from "../effects/index.ts";
+import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readRounds, withEffect } from "../effects/index.ts";
 import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
-import { effectGiving, effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
-import { type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
+import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
+import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
+import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
-import { campaignWorld } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -44,9 +46,9 @@ export const effect = defineCommand({
     input: z.object({
         action: z.enum(actions).describe("add or end"),
         page: z.string().optional().describe("who has it: a page, or a copy in the open scene such as Annegato 2"),
-        name: z.string().optional().describe("the effect's name, such as Spaventato"),
+        name: z.string().optional().describe("the effect's name, such as Benedizione; a condition of the game system always by its name there, such as Frightened"),
         for: z.string().optional().describe(
-            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; or scene, until it ends. Left out, it lasts until it is ended: so for one that ends with something in the story, such as until they breathe clean air; end it then",
+            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; or scene, until it ends; or an occasion of the game system, such as long rest, which its recipe brings. Left out, it lasts until it is ended: so for one that ends with something in the story, such as until they breathe clean air; end it then",
         ),
         until: z.string().optional().describe("add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for"),
         by: z.string().optional().describe("add: who keeps it alive, such as [[Lena]]; end: take away every effect they keep, on everyone"),
@@ -73,13 +75,13 @@ export const effect = defineCommand({
         }
 
         if (input.page === undefined || input.name === undefined || input.name.trim() === "") {
-            throw new Error(`Give the page and the effect's name, such as page Ennio, name Spaventato${input.action === "end" ? "; or only by, to end every effect someone keeps alive" : ""}.`);
+            throw new Error(`Give the page and the effect's name, such as page Ennio, name Benedizione${input.action === "end" ? "; or only by, to end every effect someone keeps alive" : ""}.`);
         }
 
         const found = pageOrCopy(world, open, input.page, (page) => `effects are on the whole page, such as page ${page}`);
         checkNotSystemPage(world, open, found.page);
         const holder: EffectHolder = { page: found.page, copy: found.copy !== undefined };
-        checkReadable(holder.page);
+        checkEffectsReadable(holder.page);
         const current = effectsOf(holder.page);
         const visibility = !holder.copy && concernsPlayer(world, holder.page) ? "public" : "hidden";
 
@@ -115,12 +117,14 @@ export const effect = defineCommand({
         const values = readValues(world, holder.page, input.set);
         checkPlaceValues(world, holder, values);
         const keeper = input.by === undefined ? undefined : keeperLink(world, open.scene, input.by);
-        const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, input.for, input.until) };
+        const system = campaignSystem(root, context);
+        checkNotCounter(system, holder.page, name);
+        const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, input.for, input.until, system, inScene(open.scene, holder), missingSystemHint(world)) };
         checkLine(added);
         const replaced = effectNamed(current, name);
         const effects = withEffect(current, added);
         const changed = valuesChanged(world, holder.page, withEffects(holder.page, effects), added);
-        const notes = addNotes(world, holder.page, current, added, open.scene);
+        const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system)];
         saveEffects(root, world, holder, effects);
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
         const instead = replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`];
@@ -136,7 +140,10 @@ export const effect = defineCommand({
         }
 
         const line = `${result.page}: ${result.effect}${result.end === undefined ? ", until it is ended" : ` until ${result.end}`}${values}.`;
-        return [line, ...result.notes].join(" ");
+        // A note of several lines, such as the text of a condition, goes on lines of its own.
+        const short = result.notes.filter((note) => !note.includes("\n"));
+        const long = result.notes.filter((note) => note.includes("\n"));
+        return [[line, ...short].join(" "), ...long].join("\n\n");
     },
 });
 
@@ -161,21 +168,36 @@ function checkPlaceValues(world: World, holder: EffectHolder, values: [string, s
     }
 }
 
-/** An effects field that does not read is never written over: what was written by hand would be lost (EFF-12). */
-function checkReadable(page: Page): void
+/** An effect never bears the name of a counter of the game system, such as exhaustion: the counter is kept on the page, with change (DAT-6). */
+function checkNotCounter(system: GameSystem | undefined, page: Page, name: string): void
 {
-    const read = readEffects(effectsField(page));
+    const field = Object.keys(system?.fields ?? {}).find((candidate) => comparableText(candidate) === comparableText(name));
 
-    if ("problem" in read) {
-        throw new Error(`${page.name}'s effects do not read: ${read.problem} Write each line in quotes by hand, or remove them all with write ${page.name}, unset effects, and add again those that still hold. Nothing changed.`);
+    if (system !== undefined && field !== undefined && system.fields[field] === "counter") {
+        throw new Error(`${field} is a counter of the system ${system.name}, kept on the page: change it, such as page ${page.name}, field ${field}, by 1. Nothing changed.`);
     }
+}
+
+/** Whether the holder of an effect is in the open scene: a copy in it, or a character it is with. */
+function inScene(scene: Scene | undefined, holder: EffectHolder): boolean
+{
+    return scene !== undefined && (holder.copy || scene.with.some((link) => comparableText(parsePageReference(link).name) === comparableText(holder.page.name)));
 }
 
 /**
  * When the effect ends (EFF-4): a duration in game time from now; rounds from the current turn, or the next turn of someone, in a scene with turns;
- * the end of the scene; or nothing.
+ * the end of the scene; an occasion of the game system; or nothing. `member` says whether its holder is in the open scene, and `hint` what a missing
+ * game system means, for a duration that does not read.
  */
-function withEnd(root: string, scene: Scene | undefined, duration: string | undefined, until: string | undefined): { end?: EffectEnd; }
+function withEnd(
+    root: string,
+    scene: Scene | undefined,
+    duration: string | undefined,
+    until: string | undefined,
+    system: GameSystem | undefined,
+    member: boolean,
+    hint: string,
+): { end?: EffectEnd; }
 {
     if (duration !== undefined && until !== undefined) {
         throw new Error("Give for or until, not both.");
@@ -204,10 +226,25 @@ function withEnd(root: string, scene: Scene | undefined, duration: string | unde
         return { end: { round: turns.round + rounds, turn: turns.turn } };
     }
 
+    const occasion = occasionsOf(system).find((candidate) => comparableText(candidate) === comparableText(duration.trim()));
+
+    if (occasion !== undefined) {
+        return { end: { occasion } };
+    }
+
     const minutes = readDuration(duration);
 
     if (minutes === undefined) {
-        throw new Error(`"${duration}" is not a duration: write it as 10m, 1h or 1d 6h, as rounds such as 1 round or 10 rounds, or scene.`);
+        const occasions = occasionsOf(system);
+        const named = occasions.length === 0 ? "" : `, or an occasion of the system ${system?.name ?? ""}: ${occasions.join(", ")}`;
+        throw new Error(`"${duration}" is not a duration: write it as 10m, 1h or 1d 6h, as rounds such as 1 round or 10 rounds, or scene${named}.${hint}`);
+    }
+
+    // In a scene with turns, time does not pass with the rounds: a duration of up to a minute, on someone in the scene, becomes rounds as long as the system's
+    // round; a longer one stays in game time and outlasts the scene (DAT-7).
+    if (member && minutes <= 1 && scene?.order !== undefined && system?.roundSeconds !== undefined) {
+        const turns = sceneTurns(scene);
+        return { end: { round: turns.round + Math.ceil((minutes * 60) / system.roundSeconds), turn: turns.turn } };
     }
 
     const now = presentDate(root);
@@ -333,7 +370,7 @@ function checkLine(added: Effect): void
  * What the master should know about an effect just added: a current/max counter in it changes there and is lost at its end; a value it gives over another
  * effect's; a duration in time in a scene whose turns do not move time (EFF-3, EFF-4).
  */
-function addNotes(world: World, page: Page, current: Effect[], added: Effect, scene: Scene | undefined): string[]
+function addNotes(world: World, page: Page, current: Effect[], added: Effect, scene: Scene | undefined, system: GameSystem | undefined): string[]
 {
     const others = withEffects(page, current.filter((effect) => comparableText(effect.name) !== comparableText(added.name)));
     const fields = effectiveFields(world, others);
@@ -343,7 +380,8 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
         const other = effectGiving(others, field);
         return other === undefined ? [] : [`${field} goes over ${other.name} (${field} ${read(field)})`];
     });
-    const timed = scene?.order !== undefined && added.end !== undefined && "date" in added.end;
+    // With a round, a short duration became rounds and a long one outlasts the scene on purpose (DAT-7): only a system without one needs the warning.
+    const timed = scene?.order !== undefined && added.end !== undefined && "date" in added.end && system?.roundSeconds === undefined;
     return [
         counters.length === 0
             ? ""
@@ -353,6 +391,41 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
         over.length === 0 ? "" : `Its ${over.join(", ")}: write the value both give together.`,
         timed ? "The scene counts turns, and time does not pass with them: if it should end during the turns, give it in rounds." : "",
     ].filter((note) => note !== "");
+}
+
+/**
+ * The text of a condition of the game system, when the effect bears its name (DAT-6): who believes they know a rule does not look it up. A house rule
+ * on it comes first, with the precedents on it.
+ */
+function conditionNote(root: string, system: GameSystem | undefined, name: string): string[]
+{
+    const condition = system?.conditions.find((candidate) => comparableText(candidate) === comparableText(name));
+
+    if (system === undefined || condition === undefined) {
+        return [];
+    }
+
+    const rule = ruleTitled(root, system, condition);
+
+    if (rule === undefined) {
+        return [];
+    }
+
+    const source = rule.source === houseRules ? ", by a house rule of the campaign" : "";
+    return [`${condition} is a condition of the system ${system.name}${source}:\n${ruleBlock(rule)}`];
+}
+
+/** "1m is 10 rounds of 6 seconds.": a duration in time that became rounds, in a scene with turns (DAT-7). */
+function roundsNote(duration: string | undefined, end: EffectEnd | undefined, system: GameSystem | undefined): string[]
+{
+    const minutes = duration === undefined ? undefined : readDuration(duration);
+
+    if (minutes === undefined || end === undefined || !("round" in end) || system?.roundSeconds === undefined) {
+        return [];
+    }
+
+    const rounds = Math.ceil((minutes * 60) / system.roundSeconds);
+    return [`${duration?.trim() ?? ""} is ${rounds} ${rounds === 1 ? "round" : "rounds"} of ${system.roundSeconds} seconds.`];
 }
 
 /** The value an effect would give, such as 18 for "+2" on ac 16; 16 when the change is not a number added to one. */

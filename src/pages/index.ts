@@ -64,6 +64,7 @@ export {
     playerConcerns,
     searchPages,
     searchSystemPages,
+    systemFirstFix,
     type SystemInfo,
     systemPageNamed,
     type SystemPages,

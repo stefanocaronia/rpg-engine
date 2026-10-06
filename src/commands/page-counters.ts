@@ -2,6 +2,7 @@ import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Coin, formatAmount, readAmount } from "../money/index.ts";
 import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 
 /**
@@ -22,6 +23,59 @@ export function pageCounters(world: World, page: Page, coins?: Coin[]): Record<s
             return purse !== undefined && coins !== undefined ? [[field, formatAmount(purse, coins)]] : counter(field, value) ? [[field, value]] : [];
         }),
     );
+}
+
+/**
+ * The counters of the player character or a companion as their line shows them (DAT-2): first the fields of the system's status line, in its order, numbers it
+ * declares too, one marked so only when it is not at zero; then the other counters, but one the system declares without a maximum, such as xp, at zero.
+ */
+export function partyCounters(world: World, page: Page, coins: Coin[] | undefined, system: GameSystem | undefined): Record<string, unknown>
+{
+    const counters = pageCounters(world, page, coins);
+    const fields = effectiveFields(world, page);
+    const shown: Record<string, unknown> = {};
+    const used = new Set<string>();
+
+    for (const { field, whenSet } of system?.statusLine ?? []) {
+        const key = Object.keys(fields).find((name) => comparableText(name) === comparableText(field));
+
+        // A value written by hand as a map or a list, such as ac: {base: 14, shield: 2}, is not one a line can show.
+        if (key === undefined || isEmptyField(fields[key]) || !["number", "string"].includes(typeof fields[key])) {
+            continue;
+        }
+
+        used.add(key);
+        const value = counters[key] ?? fields[key];
+
+        if (!whenSet || readCounter(value)?.value !== 0) {
+            shown[key] = value;
+        }
+    }
+
+    for (const [field, value] of Object.entries(counters)) {
+        const counter = readCounter(value);
+
+        if (!used.has(field) && !(declaredKind(world, field) === "counter" && counter?.max === undefined && counter?.value === 0)) {
+            shown[field] = value;
+        }
+    }
+
+    return shown;
+}
+
+/**
+ * The fields of the system's character sheet that a page lacks (DAT-2): a player character's, or a companion's that does not derive from a creature; none for other pages.
+ */
+export function missingSheetFields(system: GameSystem | undefined, world: World, page: Page): string[]
+{
+    const sheeted = page.fields.role === "pc" || (page.fields.role === "companion" && page.fields.creature === undefined);
+
+    if (system === undefined || page.type !== "character" || !sheeted) {
+        return [];
+    }
+
+    const fields = Object.keys(effectiveFields(world, page)).map(comparableText);
+    return system.sheet.filter((field) => !fields.includes(comparableText(field)));
 }
 
 /** "hp 5/12 · arrows 18": counters as the outputs show them. */

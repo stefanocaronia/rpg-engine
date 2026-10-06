@@ -5,13 +5,13 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { pageFileNamed } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
+import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
 import { campaignSystem, foreignLanguage } from "./game-world.ts";
 
 // About how many words an answer shows: a section of the system has about 80 words in the middle (D-178).
 const answerWords = 800;
 // How many more sections an answer names after those it shows.
 const namedSections = 8;
-const houseRules = "house rules";
 
 /** What an answer shows of one source of rules, the house rules or the game system's: some sections with their text, the others by their path. */
 interface Answer
@@ -86,25 +86,17 @@ export const rules = defineCommand({
             pageLine(result.page),
             sections.length === 0 ? notFound(result) : "",
             precedentsLine(result.precedents),
-            result.precedents.length > 0 && result.found.shown.length > 0
-                ? "When the text and a precedent disagree, tell the player and ask whether to keep the precedent: if so, write it again saying it is a house rule, against the book; if not, remove it. Both with config."
-                : "",
+            result.precedents.length > 0 && result.found.shown.length > 0 ? disagreementAdvice : "",
             houseRulesLine(result.houseRules),
         ];
         return lines.filter((line) => line !== "").join("\n\n");
     },
 });
 
-/** The rule a precedent is about: the name before its colon, as in "Poisoned: …" (D-179); undefined when it has none. */
-function ruleOf(precedent: string): string | undefined
-{
-    return precedent.includes(":") ? precedent.split(":")[0].trim() : undefined;
-}
-
 /** Whether a precedent is about a rule that the search names, or about the title of a section shown: "Poisoned: …" goes with Poisoned (D-179). */
 function isAboutAny(precedent: string, text: string, titles: string[]): boolean
 {
-    const rule = ruleOf(precedent);
+    const rule = precedentRule(precedent);
     return rule !== undefined && (hasAllWords(text, rule) || titles.some((title) => comparableText(rule) === comparableText(title)));
 }
 

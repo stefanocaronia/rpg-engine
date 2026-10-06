@@ -90,7 +90,7 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\nprecedents: (none)\ncoins: (none: a game without money)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\nprecedents: (none)\ncoins: (none: neither the campaign nor its game system gives coins)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
         );
     });
 

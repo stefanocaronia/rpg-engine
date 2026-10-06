@@ -4,6 +4,7 @@ status: alive
 aliases: [la sindaca]
 knows:
   - "[[Il rogo#Com'è andata]]"
+creature: "[[Commoner]]"
 ---
 
 La sindaca di Guadoscuro, cinquant'anni, spiccia, conta tutto, anche le parole. Vuole riavere i suoi compaesani prima che il paese si svuoti; teme [[Fratello Odo]], che in paese conta più di lei.

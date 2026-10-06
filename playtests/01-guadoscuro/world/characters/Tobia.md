@@ -2,6 +2,7 @@
 role: npc
 status: alive
 aliases: [l'emporista]
+creature: "[[Commoner]]"
 ---
 
 L'emporista, grasso e gentile, parla di prezzi anche ai funerali. Vuole vendere e restare fuori dai guai; teme che qualcuno gli dia la colpa.

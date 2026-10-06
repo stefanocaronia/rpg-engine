@@ -3,22 +3,21 @@ import { z } from "zod";
 import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { type Effect, formatEnd } from "../effects/index.ts";
-import type { Coin } from "../money/index.ts";
-import { isDeclaredUncounted, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { isInParty, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { keptEffects } from "./game-effects.ts";
+import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
-import { campaignWorld, missingWithSystems, systemInStatus } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
-import { countersText, pageCounters } from "./page-counters.ts";
+import { countersText, missingSheetFields, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
@@ -58,13 +57,14 @@ export const status = defineCommand({
         const players = characters.filter((page) => page.fields.role === "pc");
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
         const withLead = (page: Page): boolean => place !== undefined && placeOf(world, page) === place;
-        const { coins } = campaignCoins(root);
+        const { coins } = campaignCoins(root, context);
+        const system = campaignSystem(root, context);
         const openScene = readOpenScene(root);
         const member = (page: Page): Member => ({
             name: characterName(page),
             where: locate(world, page).chain.map((holder) => holder.name),
             withLead: withLead(page),
-            counters: countersOf(world, page, coins),
+            counters: Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
             effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
         });
         const present = readPresent(root);
@@ -97,6 +97,12 @@ export const status = defineCommand({
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
+            sheet: system === undefined ? undefined : { system: system.name, fields: system.sheet, alsoLine: lineOnlyFields(system) },
+            // A dead character's sheet is no longer kept (D-190).
+            incompleteSheets: characters.filter(isInParty).flatMap((page) => {
+                const missing = missingSheetFields(system, world, page);
+                return missing.length === 0 ? [] : [`${characterName(page)}'s sheet still lacks, by these names: ${missing.join(", ")}.`];
+            }),
         };
     },
 
@@ -112,9 +118,10 @@ export const status = defineCommand({
             result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,
             result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
-            ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
+            ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
+            ...result.incompleteSheets,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
@@ -177,10 +184,24 @@ function memberCounters(member: Member): string
     return shown.length === 0 ? "" : `: ${shown.join(" · ")}`;
 }
 
-/** "hp 5/12": the counters on a page as they are written, its fixed fields left out. */
-function countersOf(world: World, page: Page, coins: Coin[] | undefined): string[]
+/**
+ * " The system 5e keeps on a character sheet, by these names: level, xp, hp…; and when they apply: slots-1…", for status before there is a player character
+ * (DAT-2): the fields of the sheet, then those of the status line that are not on it.
+ */
+function sheetNote(sheet: { system: string; fields: string[]; alsoLine: string[]; } | undefined): string
 {
-    return Object.entries(pageCounters(world, page, coins)).map(([field, value]) => `${field} ${String(value).trim()}`);
+    if (sheet === undefined || sheet.fields.length === 0) {
+        return "";
+    }
+
+    const also = sheet.alsoLine.length === 0 ? "" : `; and when they apply: ${sheet.alsoLine.join(", ")}`;
+    return ` The system ${sheet.system} keeps on a character sheet, by these names: ${sheet.fields.join(", ")}${also}.`;
+}
+
+/** The fields of the system's status line that its character sheet does not list, such as spell slots. */
+function lineOnlyFields(system: GameSystem): string[]
+{
+    return system.statusLine.map((entry) => entry.field).filter((field) => !system.sheet.some((name) => comparableText(name) === comparableText(field)));
 }
 
 /** The planned events due, all of them: the master plays each one first (D-135). */
@@ -247,12 +268,4 @@ function namesLine(label: string, names: string[], more: string, separator = " �
 
     const shown = names.slice(0, shownNames).join(separator);
     return names.length > shownNames ? `${label}: ${shown}, and ${names.length - shownNames} more: ${more}` : `${label}: ${shown}`;
-}
-
-/** An effect as status shows it: its name, the values it gives that no counter shows, such as ac 18, and its end (SYS-8). */
-function effectShown(world: World, effect: Effect): string
-{
-    const values = effect.values.filter(([field]) => isDeclaredUncounted(world, field)).map(([field, value]) => `${field} ${value}`);
-    const end = effect.end === undefined ? "" : ` until ${formatEnd(effect.end)}`;
-    return `${effect.name}${values.length === 0 ? "" : ` (${values.join(", ")})`}${end}`;
 }

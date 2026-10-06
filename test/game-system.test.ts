@@ -34,13 +34,15 @@ describe("installed systems", () => {
 
         const systems = installedSystems([near, join(near, "missing"), far]);
         expect(systems.map((found) => found.name)).toEqual(["alfa", "zeta"]);
-        expect(systems[0]).toEqual({ name: "alfa", folder: join(near, "alfa"), title: "the near alfa", language: "en-GB", attribution: undefined, fields: { hp: "counter", cr: "text" } });
+        expect(systems[0]).toMatchObject({ name: "alfa", folder: join(near, "alfa"), title: "the near alfa", language: "en-GB", fields: { hp: "counter", cr: "text" }, sheet: [], thresholds: [], recipes: [] });
+        expect(systems[0].attribution).toBeUndefined();
         expect(systems[1].fields).toEqual({});
     });
 
-    it("finds a system by its name in any case, with spaces around it", () => {
+    it("finds a system by its name in any case, with spaces around it, past a folder that does not exist, and reads no other", () => {
         system(near, "5e", "title: the fifth edition\nlanguage: en\nattribution: From the SRD.\n");
-        expect(findSystem([near], " 5E ")?.attribution).toBe("From the SRD.");
+        system(near, "rotto", "title: a broken one\nlanguage: Italiano\n");
+        expect(findSystem([join(far, "missing"), near], " 5E ")?.attribution).toBe("From the SRD.");
         expect(findSystem([near], "4e")).toBeUndefined();
     });
 
