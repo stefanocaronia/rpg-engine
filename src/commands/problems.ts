@@ -9,6 +9,7 @@ import { moneyProblems } from "./game-money.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
 import { systemOccasions, systemProblems } from "./game-world.ts";
+import { workedOutProblems } from "./worked-out.ts";
 
 /** Every problem in a campaign: its settings, its game system and coins, its log, its world, its game time, its planned events, its effects and its open scene. */
 export function campaignProblems(root: string, world: World, context: Context): Problem[]
@@ -19,6 +20,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...moneyProblems(root, context),
         ...checkLog(root),
         ...checkWorld(world),
+        ...workedOutProblems(world),
         ...timeProblems(root),
         ...eventProblems(world),
         ...effectProblems(world, readOpenScene(root).scene, readPresent(root).date, systemOccasions(root, context)),

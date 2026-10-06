@@ -1,0 +1,311 @@
+// What a game system works out, through the commands (MECCANICHE, FOR-3–FOR-9): the sheet of a cleric of the 5e in a campaign played in Italian, and the
+// momentum of the test system based on Ironsworn.
+import fc from "fast-check";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runCommandLine } from "../src/command-line.ts";
+import type { Context } from "../src/core/context.ts";
+import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+
+let folder: string;
+let context: Context;
+
+beforeEach(async () => {
+    folder = makeTempFolder();
+    context = testContext(folder);
+    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("write", "Locanda", "--type", "place");
+    await ok(...ettore());
+    await ok("write", "Locanda", "--add", "contains=[[Ettore]]");
+});
+
+afterEach(() => removeFolder(folder));
+
+/** Ettore, a cleric of the third level: proficient in Wisdom and Charisma saves and in four skills, with 18 hit points from the dice. */
+function ettore(): string[]
+{
+    return [
+        "write",
+        "Ettore",
+        "--type",
+        "character",
+        "--set",
+        "role=pc",
+        "--set",
+        "level=3",
+        "--set",
+        "str=14",
+        "--set",
+        "dex=8",
+        "--set",
+        "con=15",
+        "--set",
+        "int=10",
+        "--set",
+        "wis=16",
+        "--set",
+        "cha=12",
+        "--set",
+        "hp-base=18",
+        "--set",
+        "hp=24/24",
+        "--set",
+        "ac=18",
+        "--set",
+        "save-proficiencies=[wis, cha]",
+        "--set",
+        "skill-proficiencies=[Insight, Religion, Medicine, Persuasion]",
+    ];
+}
+
+async function ok(...args: string[]): Promise<string>
+{
+    const result = await runCommandLine(args, context);
+    expect(result.exitCode, result.output).toBe(0);
+    return result.output;
+}
+
+async function refused(...args: string[]): Promise<string>
+{
+    const result = await runCommandLine(args, context);
+    expect(result.exitCode, result.output).toBe(1);
+    return result.output;
+}
+
+/** The lines of what show says the system works out. */
+async function workedLines(page: string): Promise<string[]>
+{
+    const output = await ok("show", page);
+    const block = output.split("\n\n").find((part) => part.startsWith("Worked out by the system"));
+    return block === undefined ? [] : block.split("\n").slice(1);
+}
+
+/** The values show says the system works out, by field. */
+async function worked(page: string): Promise<Record<string, number>>
+{
+    return Object.fromEntries((await workedLines(page)).map((line) => {
+        const [, field, value] = /^(\S+) ([+-]?\d+)/.exec(line) ?? [];
+        return [field, Number(value)];
+    }));
+}
+
+/** The file of a page, a character unless its folder is given. */
+function pageText(page: string, type = "characters"): string
+{
+    return readFileSync(join(folder, "world", type, `${page}.md`), "utf8");
+}
+
+describe("what show and status give of a sheet (FOR-8)", () => {
+    it("works the sheet out, each value with only what changed it", async () => {
+        const lines = await workedLines("Ettore");
+        expect(lines).toEqual(expect.arrayContaining([
+            "wis-mod +3: wis 16",
+            "proficiency +2: level 3, proficiency-by-level 2",
+            "str-save +2: str-mod +2",
+            "wis-save +5: wis-mod +3, proficiency +2, wis in save-proficiencies",
+            "insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies",
+            "arcana +0: int-mod +0",
+            "initiative -1: dex-mod -1",
+            "passive-perception 13: perception +3",
+        ]));
+        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 2);
+        expect(await ok("status")).toContain("PC: Ettore, in Locanda: level 3 · hp 24/24 · ac 18 · passive-perception 13");
+    });
+
+    it("works out nothing on a page without what a formula reads, and keeps the values written there (FOR-4)", async () => {
+        await ok("write", "Bandito", "--type", "creature", "--set", "passive-perception=11", "--set", "dex=12");
+        expect(pageText("Bandito", "creatures")).toContain("passive-perception: 11");
+        expect(await workedLines("Bandito")).toEqual(["dex-mod +1: dex 12", "initiative +1: dex-mod +1"]);
+    });
+});
+
+describe("the order of layers (FOR-3) and the bonus fields (FOR-5)", () => {
+    it("works out from a score an effect gives, and back when it ends", async () => {
+        expect(await ok("effect", "add", "Ettore", "Gauntlets of Ogre Power", "--set", "str=19")).toContain("str 14 → 19");
+        expect(await worked("Ettore")).toMatchObject({ "str-mod": 4, "str-save": 4, athletics: 4 });
+        await ok("effect", "end", "Ettore", "Gauntlets of Ogre Power");
+        expect(await worked("Ettore")).toMatchObject({ "str-mod": 2, "str-save": 2, athletics: 2 });
+    });
+
+    it("adds up the bonuses of different effects, never twice the same one", async () => {
+        await ok("effect", "add", "Ettore", "Ring of Protection", "--set", "bonus-saves=1");
+        expect(await ok("effect", "add", "Ettore", "Cloak of Protection", "--set", "bonus-saves=1")).not.toContain("goes over");
+        expect(await worked("Ettore")).toMatchObject({ "wis-save": 7, "str-save": 4 });
+        expect(await workedLines("Ettore")).toContain("wis-save +7: wis-mod +3, proficiency +2, wis in save-proficiencies, bonus-saves +2");
+        await ok("effect", "add", "Ettore", "Ring of Protection", "--set", "bonus-saves=1");
+        expect(await worked("Ettore")).toMatchObject({ "wis-save": 7 });
+    });
+});
+
+describe("the limits of counters (FOR-6)", () => {
+    it("keeps the written maximum with what the system works out, and says it", async () => {
+        expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp max 24 → 27: worked out by the system 5e.");
+        expect(pageText("Ettore")).toContain("hp: 24/27");
+        expect(await ok("change", "Ettore", "hp", "--by=10")).toBe("Ettore: hp 24/27 → 27/27: at max, 7 beyond.");
+        expect(await refused("change", "Ettore", "hp", "--to", "20/30")).toBe("The maximum of hp on Ettore is worked out by the game system: 27. Give the current value alone, such as to 20. Nothing changed.");
+        expect(await ok("change", "Ettore", "hp", "--to", "20/27")).toBe("Ettore: hp 27/27 → 20/27.");
+    });
+
+    it("reads a current above a maximum that fell as the maximum, and keeps it written for an effect that raises it", async () => {
+        await ok("write", "Ettore", "--set", "con=12");
+        expect(pageText("Ettore")).toContain("hp: 24/21");
+        expect(await ok("status")).toContain("hp 21/21");
+    });
+
+    it("works out the maximum of a counter the page writes without one", async () => {
+        await ok("write", "Mira", "--type", "character", "--set", "role=companion", "--set", "level=1", "--set", "con=14", "--set", "hp-base=8", "--set", "hp=10");
+        expect(pageText("Mira")).toContain("hp: 10/10");
+    });
+});
+
+describe("a computed field is never written (FOR-7)", () => {
+    it("is left out by write, refused by change and by effect, which say what to change instead", async () => {
+        expect(await ok("write", "Ettore", "--set", "insight=9", "--set", "speed=25 ft")).toBe(
+            "Updated Ettore (character, world/characters/Ettore.md): set speed.\n"
+                + "Not written: insight on Ettore is worked out by the system 5e from wis-mod, proficiency, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect.",
+        );
+        expect(await refused("write", "Ettore", "--set", "proficiency=3", "--set", "perception=7")).toBe(
+            "Not written: proficiency, perception, which the system 5e works out (show Ettore says from what): change the fields they come from, or give a bonus with an effect. Nothing changed.",
+        );
+        expect(await refused("change", "Ettore", "insight", "--by=1")).toBe(
+            "insight on Ettore is worked out by the system 5e from wis-mod, proficiency, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
+        );
+        expect(await refused("effect", "add", "Ettore", "Strano", "--set", "insight=9")).toContain("give the effect one of the fields it comes from instead, such as bonus-skills. Nothing changed.");
+    });
+
+    it("is said by validate when written by hand, with a maximum that does not match", async () => {
+        writeFileSync(join(folder, "world", "characters", "Ettore.md"), pageText("Ettore").replace("hp: 24/24", "hp: 24/30").replace("ac: 18", "ac: 18\nperception: 7"));
+        const output = await ok("validate");
+        expect(output).toContain("- world/characters/Ettore.md: perception is worked out by the system 5e (+3): the value written on Ettore is never read. Fix: write Ettore, unset perception.");
+        expect(output).toContain("- world/characters/Ettore.md: hp on Ettore has the maximum 30 written, but the system 5e works out 24. Fix: change Ettore, field hp, to 24/24.");
+    });
+});
+
+describe("a system whose formulas do not read (FOR-9)", () => {
+    it("cannot be read, and says which formula and where", async () => {
+        const systems = join(folder, "..", `${folder.split(/[\\/]/).at(-1)}-systems`);
+        mkdirSync(join(systems, "broken"), { recursive: true });
+        writeFileSync(join(systems, "broken", "system.yaml"), "title: a broken system\nlanguage: en\ncomputed:\n  str-mod: floor((str - 10) /\n");
+        const broken = { ...context, systemFolders: [systems] };
+        const output = (await runCommandLine(["config", "system", "broken"], broken)).output;
+        removeFolder(systems);
+        expect(output).toContain("The game system broken cannot be read, because");
+        expect(output).toContain('is not valid: computed.str-mod: "floor((str - 10) /" is not a formula');
+    });
+});
+
+describe("Ironsworn: a counter with a minimum and a maximum that debilities lower (FOR-6)", () => {
+    it("goes down to -6 and up to 10 less the debilities", async () => {
+        await ok("config", "system", "ironsworn");
+        await ok("write", "Kara", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--set", "debilities=[wounded, shaken]");
+        expect(pageText("Kara")).toContain("momentum: 2/8");
+        expect(await ok("change", "Kara", "momentum", "--by=-10")).toBe("Kara: momentum 2/8 → -6/8: at min, 2 beyond.");
+        expect(await ok("change", "Kara", "momentum", "--by=20")).toBe("Kara: momentum -6/8 → 8/8: at max, 6 beyond.");
+        await ok("write", "Kara", "--remove", "debilities=shaken");
+        expect(pageText("Kara")).toContain("momentum: 8/9");
+    });
+
+    it("works out a foe's progress in boxes and the ticks its rank marks", async () => {
+        await ok("config", "system", "ironsworn");
+        expect(await workedLines("Marsh Stalker")).toEqual(["progress-score 0: progress 0", "progress-step 8: ranks dangerous: 8"]);
+    });
+});
+
+describe("laws of the worked-out sheet", () => {
+    const step = fc.oneof(
+        fc.record({ kind: fc.constant("score"), field: fc.constantFrom("str", "dex", "con", "wis", "cha"), value: fc.integer({ min: 3, max: 20 }) }),
+        fc.record({ kind: fc.constant("level"), value: fc.integer({ min: 1, max: 20 }) }),
+        fc.record({ kind: fc.constant("skill"), skill: fc.constantFrom("Insight", "Athletics", "Perception") }),
+        fc.record({ kind: fc.constant("save"), ability: fc.constantFrom("str", "wis") }),
+        fc.record({ kind: fc.constant("effect"), name: fc.constantFrom("Ring", "Cloak", "Stone"), bonus: fc.integer({ min: 1, max: 3 }) }),
+        fc.record({ kind: fc.constant("strength"), value: fc.option(fc.integer({ min: 15, max: 25 })) }),
+    );
+
+    it("works every value out as the SRD counts it, and keeps the written maximum in pair, after any writes and effects (FOR-3–FOR-6)", async () => {
+        await fc.assert(
+            fc.asyncProperty(fc.array(step, { minLength: 1, maxLength: 6 }), async (steps) => {
+                removeFolder(folder);
+                folder = makeTempFolder();
+                context = testContext(folder);
+                await ok("init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+                await ok(...ettore());
+                const scores: Record<string, number> = { str: 14, dex: 8, con: 15, int: 10, wis: 16, cha: 12 };
+                let level = 3;
+                const skills = new Set(["Insight", "Religion", "Medicine", "Persuasion"]);
+                const saves = new Set(["wis", "cha"]);
+                const bonuses = new Map<string, number>();
+                let gauntlets: number | undefined;
+
+                for (const action of steps) {
+                    if (action.kind === "score") {
+                        await ok("write", "Ettore", "--set", `${action.field}=${action.value}`);
+                        scores[action.field] = action.value;
+                    } else if (action.kind === "level") {
+                        await ok("write", "Ettore", "--set", `level=${action.value}`);
+                        level = action.value;
+                    } else if (action.kind === "skill") {
+                        // Added when it is not there, removed when it is.
+                        const add = !skills.has(action.skill);
+                        await ok("write", "Ettore", add ? "--add" : "--remove", `skill-proficiencies=${action.skill}`);
+                        add ? skills.add(action.skill) : skills.delete(action.skill);
+                    } else if (action.kind === "save") {
+                        const add = !saves.has(action.ability);
+                        await ok("write", "Ettore", add ? "--add" : "--remove", `save-proficiencies=${action.ability}`);
+                        add ? saves.add(action.ability) : saves.delete(action.ability);
+                    } else if (action.kind === "effect") {
+                        await ok("effect", "add", "Ettore", action.name, "--set", `bonus-saves=${action.bonus}`);
+                        bonuses.set(action.name, action.bonus);
+                    } else if (action.value === null) {
+                        if (gauntlets !== undefined) {
+                            await ok("effect", "end", "Ettore", "Gauntlets");
+                        }
+
+                        gauntlets = undefined;
+                    } else {
+                        await ok("effect", "add", "Ettore", "Gauntlets", "--set", `str=${action.value}`);
+                        gauntlets = action.value;
+                    }
+
+                    // The SRD's own counting: modifiers (p. 76), proficiency (p. 56), saves (p. 83), skills (p. 77), passive Perception (p. 78).
+                    const strength = gauntlets ?? scores.str;
+                    const mod = (score: number): number => Math.floor((score - 10) / 2);
+                    const proficiency = 2 + Math.floor((level - 1) / 4);
+                    const bonus = [...bonuses.values()].reduce((total, value) => total + value, 0);
+                    const perception = mod(scores.wis) + (skills.has("Perception") ? proficiency : 0);
+                    expect(await worked("Ettore")).toMatchObject({
+                        "str-mod": mod(strength),
+                        proficiency,
+                        "str-save": mod(strength) + (saves.has("str") ? proficiency : 0) + bonus,
+                        "wis-save": mod(scores.wis) + (saves.has("wis") ? proficiency : 0) + bonus,
+                        athletics: mod(strength) + (skills.has("Athletics") ? proficiency : 0),
+                        insight: mod(scores.wis) + (skills.has("Insight") ? proficiency : 0),
+                        "passive-perception": 10 + perception,
+                    });
+                    // Written without the effects, which never change the scores here but the strength.
+                    expect(pageText("Ettore")).toMatch(new RegExp(`hp: \\d+/${18 + level * mod(scores.con)}\\n`));
+                }
+            }),
+            { numRuns: 12 },
+        );
+    }, 120000);
+
+    it("adds up the bonuses of effects in any order (FOR-5)", async () => {
+        const effects = fc.uniqueArray(fc.record({ name: fc.constantFrom("Ring", "Cloak", "Stone", "Blessing"), bonus: fc.integer({ min: 1, max: 4 }) }), { selector: (effect) => effect.name, minLength: 1 });
+        await fc.assert(
+            fc.asyncProperty(effects, async (given) => {
+                for (const effect of ["Ring", "Cloak", "Stone", "Blessing"]) {
+                    await runCommandLine(["effect", "end", "Ettore", effect], context);
+                }
+
+                for (const effect of given) {
+                    await ok("effect", "add", "Ettore", effect.name, "--set", `bonus-saves=${effect.bonus}`);
+                }
+
+                const total = given.reduce((sum, effect) => sum + effect.bonus, 0);
+                expect((await worked("Ettore"))["wis-save"]).toBe(5 + total);
+            }),
+            { numRuns: 15 },
+        );
+    }, 60000);
+});

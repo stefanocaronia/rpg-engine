@@ -15,6 +15,7 @@ import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
+import { computedField } from "./worked-out.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -341,9 +342,21 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     }
 
     const current = Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const computed = computedField(world, field, fields);
+
+    // An effect changes what a computed field comes from, never the field (FOR-7, D-200).
+    if (computed !== undefined) {
+        // A bonus field first, which is what an effect is for; else a field the page writes.
+        const from = [...computed.from.filter((name) => declaredKind(world, name) === "bonus"), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
+        throw new Error(
+            `${computed.name} on ${page.name} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: give the effect one of the fields it comes from instead, such as ${
+                from[0] ?? computed.from[0]
+            }. Nothing changed.`,
+        );
+    }
 
     // A field the game system declares as a number takes a number; a counter stays a counter (SYS-8, EFF-3).
-    if (declaredKind(world, field) === "number" && typeof value !== "number") {
+    if (["number", "modifier", "bonus"].includes(declaredKind(world, field) ?? "") && typeof value !== "number") {
         throw new Error(`${field} on ${page.name} is a number, ${String(current ?? "none")}: give the value it reads while the effect lasts, such as ${field}=${exampleValue(current, text)}, not "${text}". Nothing changed.`);
     }
 
@@ -376,7 +389,8 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
     const fields = effectiveFields(world, others);
     const read = (field: string): string => String(Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? "none");
     const counters = added.values.filter(([field, value]) => !isDeclaredUncounted(world, field) && readCounter(value)?.max !== undefined).map(([field]) => field);
-    const over = added.values.flatMap(([field]) => {
+    // A bonus field adds up the effects that give it, so none goes over another (FOR-5).
+    const over = added.values.filter(([field]) => declaredKind(world, field) !== "bonus").flatMap(([field]) => {
         const other = effectGiving(others, field);
         return other === undefined ? [] : [`${field} goes over ${other.name} (${field} ${read(field)})`];
     });

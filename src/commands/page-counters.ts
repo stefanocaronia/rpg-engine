@@ -4,6 +4,7 @@ import { type Coin, formatAmount, readAmount } from "../money/index.ts";
 import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { signedText } from "./worked-out.ts";
 
 /**
  * The counters of a page as the outputs show them, such as hp 5/12: all those it holds, and those it inherits written as current/max (D-116, as for copies in D-110).
@@ -48,7 +49,8 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
         const value = counters[key] ?? fields[key];
 
         if (!whenSet || readCounter(value)?.value !== 0) {
-            shown[key] = value;
+            // A modifier shows its sign, as the system declares it (FOR-8).
+            shown[key] = typeof value === "number" ? signedText(world, key, value) : value;
         }
     }
 

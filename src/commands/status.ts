@@ -201,7 +201,9 @@ function sheetNote(sheet: { system: string; fields: string[]; alsoLine: string[]
 /** The fields of the system's status line that its character sheet does not list, such as spell slots. */
 function lineOnlyFields(system: GameSystem): string[]
 {
-    return system.statusLine.map((entry) => entry.field).filter((field) => !system.sheet.some((name) => comparableText(name) === comparableText(field)));
+    // What the system works out is never written (FOR-7).
+    const written = (field: string): boolean => !system.formulas.computed.some(([name]) => comparableText(name) === comparableText(field));
+    return system.statusLine.map((entry) => entry.field).filter((field) => written(field) && !system.sheet.some((name) => comparableText(name) === comparableText(field)));
 }
 
 /** The planned events due, all of them: the master plays each one first (D-135). */

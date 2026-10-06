@@ -25,6 +25,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { workedFields, workedLine } from "./worked-out.ts";
 
 export const show = defineCommand({
     name: "show",
@@ -78,6 +79,8 @@ export const show = defineCommand({
             around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
+            worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => workedLine(world, worked)) : [],
+            systemName: world.system?.name,
             derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
             inherited: reference.section === undefined
@@ -108,10 +111,11 @@ export const show = defineCommand({
             result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`,
         ].filter((line) => line !== "").join("\n");
         const fields = result.fields !== undefined && Object.keys(result.fields).length > 0 ? `---\n${formatFields(result.fields)}\n---` : "";
+        const worked = result.worked.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${result.worked.join("\n")}`;
         const inheritedFields = result.inherited.filter((group) => Object.keys(group.fields).length > 0).map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
         const inheritedText = result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
-        return [header, fields, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        return [header, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 

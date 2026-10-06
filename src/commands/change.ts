@@ -39,6 +39,7 @@ import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder
@@ -117,7 +118,8 @@ export const change = defineCommand({
             throw new Error(`${field} on ${page} looks like money, but the campaign's coins cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
         }
 
-        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins);
+        const limits = counterLimits(world, fields, field);
+        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
         const why = input.why?.trim() === "" ? undefined : input.why;
         return { ...applyStep(root, context, world, holder, field, step, why, system).outcome, problems: world.problems };
     },
@@ -200,7 +202,7 @@ function applyStep(
         const spellings = Object.keys(holder.page.fields).filter((name) => comparableText(name) === comparableText(field));
 
         if (layer === undefined) {
-            after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: step.after });
+            after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: storedCounter(world, holder, field, step.after) });
         } else {
             const effects = effectsOf(holder.page).map((effect) => (effect.name === layer.name ? withValue(effect, field, String(step.after)) : effect));
             after = saveEffects(root, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
@@ -386,15 +388,29 @@ function stepText(step: StepOutcome): string
 }
 
 /** A change to a counter: by, spend or to, within its limits (D-92). */
-function counterStep(input: { by?: number | string; spend?: number | string; to?: number | string; }, value: unknown, page: string, field: string, coins: Coin[] | undefined): Step
+function counterStep(
+    input: { by?: number | string; spend?: number | string; to?: number | string; },
+    value: unknown,
+    page: string,
+    field: string,
+    coins: Coin[] | undefined,
+    limits: { min?: number; max?: number; } = {},
+): Step
 {
-    const before = readCounter(value);
+    const read = readCounter(value);
 
-    if (before === undefined) {
+    if (read === undefined) {
         throw new Error(notCounterMessage(page, field, value, coins));
     }
 
+    const before = limits.min === undefined ? read : { ...read, min: limits.min };
     const counterChange = readChange(input, before, page, field, coins);
+
+    // A maximum the game system works out is given only as it works it out (FOR-7).
+    if ("to" in counterChange && limits.max !== undefined && counterChange.to.max !== undefined && counterChange.to.max !== limits.max) {
+        throw new Error(`The maximum of ${field} on ${page} is worked out by the game system: ${limits.max}. Give the current value alone, such as to ${Math.min(counterChange.to.value, limits.max)}. Nothing changed.`);
+    }
+
     const { counter: after, beyond } = changeCounter(before, counterChange);
 
     if (!isSafeCounter(after)) {
@@ -407,6 +423,14 @@ function counterStep(input: { by?: number | string; spend?: number | string; to?
     };
 
     return { before: formatCounter(before), after: formatCounter(after), amount: { ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond }, note: limitNote(after, beyond), same };
+}
+
+/** A counter as the page keeps it: with the maximum the game system works out from the page without its effects, which the reading puts back (FOR-6). */
+function storedCounter(world: World, holder: CounterHolder, field: string, value: number | string): number | string
+{
+    const counter = readCounter(value);
+    const { max } = holder.kind === "page" ? counterLimits(world, inheritedFields(world, holder.page), field) : {};
+    return counter === undefined || max === undefined ? value : formatCounter({ value: counter.value, max });
 }
 
 /** A change to money (MON-4, MON-5): coins received with by, paid with spend or a negative by, the purse set with to. */
@@ -561,6 +585,11 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     const keys = Object.keys(fields);
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
     const page = holder.page;
+    const computed = computedField(world, name, fields);
+
+    if (computed !== undefined) {
+        throw new Error(`${computedMessage(world, computed, page.name)}. Nothing changed.`);
+    }
 
     if (found !== undefined && isStandardField(page.type, found) && !isCounterField(page.type, found)) {
         const what = holder.kind === "copy" && found === "creature" ? `${found} is the creature ${page.name} copies` : `${found} is a fixed field of ${page.name}`;
@@ -738,6 +767,7 @@ function amountOf(change: CounterChange): Record<string, unknown>
 function limitNote(counter: Counter, beyond: number): string
 {
     const limit = counterLimit(counter);
-    const where = limit === "outside" ? (counter.max === undefined ? "below 0" : `outside 0–${counter.max}`) : limit ?? "";
+    const lowest = counter.min ?? 0;
+    const where = limit === "outside" ? (counter.max === undefined ? `below ${lowest}` : `outside ${lowest}–${counter.max}`) : limit ?? "";
     return [where, beyond === 0 ? "" : `${Math.abs(beyond)} beyond`].filter((part) => part !== "").join(", ");
 }

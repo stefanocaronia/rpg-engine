@@ -1,9 +1,11 @@
-/** A number kept on a page: the current value and, for current/max fields such as 5/12, the maximum. The limits are 0 and the maximum. */
+/** A number kept on a page: the current value and, for current/max fields such as 5/12, the maximum. The limits are the minimum, 0 unless given, and the maximum. */
 export interface Counter
 {
     value: number;
-    /** Undefined for a plain number, which goes from 0 up. */
+    /** Undefined for a plain number, which goes from its minimum up. */
     max?: number;
+    /** The lowest value a change by an amount reaches, when it is not 0, as a game system works it out (FOR-6); never written in the field. */
+    min?: number;
 }
 
 /** A change to a counter: by an amount (damage, healing), spending what is there, or to a value. */
@@ -30,7 +32,7 @@ export function readCounterText(text: string): Counter | undefined
     return wholeNumber.test(trimmed) ? safeCounter({ value: Number(trimmed) }) : readCurrentAndMax(trimmed);
 }
 
-/** The counter as its field is written: 5/12, or 20. */
+/** The counter as its field is written: 5/12, or 20; the minimum is never written. */
 export function formatCounter(counter: Counter): number | string
 {
     return counter.max === undefined ? counter.value : `${counter.value}/${counter.max}`;
@@ -53,21 +55,23 @@ export function changeCounter(counter: Counter, change: CounterChange): { counte
     }
 
     const target = counter.value + ("by" in change ? change.by : -change.spend);
-    const lowest = Math.min(0, counter.value);
+    const lowest = Math.min(counter.min ?? 0, counter.value);
     const highest = counter.max === undefined ? Number.POSITIVE_INFINITY : Math.max(counter.max, counter.value);
     const value = Math.min(Math.max(target, lowest), highest) || 0;
     return { counter: { ...counter, value }, beyond: target - value };
 }
 
-/** Where a counter stands against its limits: at 0, at its maximum, outside them, or within. */
-export function counterLimit(counter: Counter): "at 0" | "at max" | "outside" | undefined
+/** Where a counter stands against its limits: at 0, at another minimum, at its maximum, outside them, or within. */
+export function counterLimit(counter: Counter): "at 0" | "at min" | "at max" | "outside" | undefined
 {
-    if (counter.value < 0 || (counter.max !== undefined && counter.value > counter.max)) {
+    const lowest = counter.min ?? 0;
+
+    if (counter.value < lowest || (counter.max !== undefined && counter.value > counter.max)) {
         return "outside";
     }
 
-    if (counter.value === 0) {
-        return "at 0";
+    if (counter.value === lowest) {
+        return lowest === 0 ? "at 0" : "at min";
     }
 
     return counter.value === counter.max ? "at max" : undefined;

@@ -76,15 +76,15 @@ describe("the character sheet (DAT-2)", () => {
         const other = { ...context, folder: empty };
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
-            "No player character yet. The system 5e keeps on a character sheet, by these names: level, xp, hp, temp-hp, hit-dice, ac, speed, str, dex, con, int, wis, cha, proficiency, "
-                + "saves, skills, passive-perception, languages, exhaustion, death-successes, death-failures; and when they apply: slots-1, slots-2, slots-3, slots-4, slots-5, slots-6, "
-                + "slots-7, slots-8, slots-9.",
+            "No player character yet. The system 5e keeps on a character sheet, by these names: level, xp, hp-base, hp, temp-hp, hit-dice, ac, speed, str, dex, con, int, wis, cha, "
+                + "save-proficiencies, skill-proficiencies, languages, exhaustion, death-successes, death-failures; and when they apply: slots-1, slots-2, slots-3, slots-4, slots-5, "
+                + "slots-6, slots-7, slots-8, slots-9.",
         );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
-            "Bruna's sheet of the system 5e still lacks, by these names: level, xp, temp-hp, hit-dice, ac,",
+            "Bruna's sheet of the system 5e still lacks, by these names: level, xp, hp-base, temp-hp, hit-dice, ac,",
         );
         expect((await runCommandLine(["write", "Bruna", "--set", "level=1"], other)).output).not.toContain("still lacks");
-        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, temp-hp, hit-dice, ac,");
+        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, hp-base, temp-hp, hit-dice, ac,");
         removeFolder(empty);
     });
 

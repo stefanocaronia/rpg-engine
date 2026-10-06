@@ -1,5 +1,6 @@
 import { basename, join, relative, resolve, sep } from "node:path";
 import type { FieldKind } from "../core/field-kind.ts";
+import type { SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
@@ -63,6 +64,8 @@ export interface SystemInfo
     language: string;
     /** The kind of each field it declares, by the name it gives (SYS-8). */
     fields: Record<string, FieldKind>;
+    /** What it works out from the fields of a page (D-199, FOR-1). */
+    formulas?: SystemFormulas;
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -107,9 +110,9 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = readPages(system.folder, system.name);
-    const { name, title, fields } = system;
+    const { name, title, fields, formulas } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
-    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, pages: systemPages.pages }, language });
+    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, pages: systemPages.pages }, language });
 }
 
 /**

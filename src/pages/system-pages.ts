@@ -7,10 +7,31 @@ import type { Page, World } from "./world.ts";
 /** The kind the game system declares for a field, by its name in any case (SYS-8); undefined when it declares none. */
 export function declaredKind(world: World, field: string): FieldKind | undefined
 {
-    const fields = world.system?.fields ?? {};
-    const name = Object.keys(fields).find((declared) => comparableText(declared) === comparableText(field));
-    return name === undefined ? undefined : fields[name];
+    const fields = world.system?.fields;
+    return fields === undefined ? undefined : kindsOf(fields).get(comparableText(field));
 }
+
+/** The kinds a system declares, by the name as it is compared, the first written winning: built once for each system, as every field read asks (D-194). */
+function kindsOf(fields: Record<string, FieldKind>): Map<string, FieldKind>
+{
+    let kinds = kindsByFields.get(fields);
+
+    if (kinds === undefined) {
+        kinds = new Map();
+
+        for (const [name, kind] of Object.entries(fields)) {
+            if (!kinds.has(comparableText(name))) {
+                kinds.set(comparableText(name), kind);
+            }
+        }
+
+        kindsByFields.set(fields, kinds);
+    }
+
+    return kinds;
+}
+
+const kindsByFields = new WeakMap<Record<string, FieldKind>, Map<string, FieldKind>>();
 
 /** Whether the game system declares a field as something never counted: a number, text or a list, such as cr 1/4 or cost 15 gp (SYS-8). */
 export function isDeclaredUncounted(world: World, field: string): boolean

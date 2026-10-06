@@ -266,8 +266,8 @@ describe("a campaign of another system: the test system based on Ironsworn", () 
     it("brings in its foes and counts only what it declares a counter", async () => {
         await ok("config", "system", "ironsworn");
         expect(await ok("show", "Marsh Stalker")).toContain("Marsh Stalker (creature of the system ironsworn, read-only)");
-        expect(await ok("scene", "open", "--title", "Fens", "--type", "combat", "--creatures", "Marsh Stalker")).toContain("Marsh Stalker 1: progress 0/10.");
-        expect(await ok("change", "Marsh Stalker 1", "progress", "--by=2")).toBe("Marsh Stalker 1: progress 0/10 → 2/10.");
+        expect(await ok("scene", "open", "--title", "Fens", "--type", "combat", "--creatures", "Marsh Stalker")).toContain("Marsh Stalker 1: progress 0/40.");
+        expect(await ok("change", "Marsh Stalker 1", "progress", "--by=8")).toBe("Marsh Stalker 1: progress 0/40 → 8/40.");
         expect(await refused("change", "Marsh Stalker 1", "rank", "--by=1")).toContain("rank is text in the system ironsworn, never counted");
         expect(await refused("show", "Wolf")).toBe("There is no page named Wolf, nor a copy of that name in the open scene. Look for it with the find command.");
     });

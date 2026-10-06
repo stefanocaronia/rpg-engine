@@ -62,7 +62,7 @@ import {
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
-import { effectsField } from "./effect-layer.ts";
+import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
@@ -70,6 +70,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { missingSheetFields } from "./page-counters.ts";
+import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -146,13 +147,22 @@ export const write = defineCommand({
 
         const { coins, problem: coinsProblem } = campaignCoins(root, context);
         const world = campaignWorld(root, context);
+        // A field the game system works out is never written: the rest is (FOR-7, D-200).
+        const target = findPage(world, reference.name);
+        const given = input.set === undefined ? undefined : withoutComputed(world, target === undefined ? {} : effectiveFields(world, target), oneItemLists(readFields(input.set)), reference.name);
         const fields: FieldChange = {
-            set: input.set === undefined ? undefined : asAmounts(world, oneItemLists(readFields(input.set)), coins),
+            set: given === undefined || Object.keys(given.set).length === 0 ? undefined : asAmounts(world, given.set, coins),
             unset: input.unset,
             add: input.add === undefined ? undefined : readListItems(input.add),
             remove: input.remove === undefined ? undefined : readListItems(input.remove),
         };
-        const moneyNotes = moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem);
+
+        // Only fields the system works out, and nothing else to write: said as such.
+        if (given?.note !== undefined && fields.set === undefined && [input.type, input.unset, input.add, input.remove, input.text].every((part) => part === undefined)) {
+            throw new Error(`${given.note} Nothing changed.`);
+        }
+
+        const moneyNotes = [...(given?.note === undefined ? [] : [given.note]), ...moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem)];
         const open = readOpenScene(root);
         const copy = copyName(world, open.scene, reference.name);
 
@@ -202,11 +212,20 @@ export const write = defineCommand({
 
         checkBase(world, existing?.name ?? reference.name, type, fields.set);
         checkEventFields(world, existing, type, fields);
-        const { page, created, changed, mode, retyped } = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
+        const written = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
+        const { created, changed, mode, retyped } = written;
 
         if (changed) {
-            const data = { page: page.name, type: page.type, was: retyped?.type, ...fields, section, secret: input.secret, text: input.text, mode };
+            const data = { page: written.page.name, type: written.page.type, was: retyped?.type, ...fields, section, secret: input.secret, text: input.text, mode };
             appendLogEntry(root, newDatedLogEntry(root, context, created ? "page-created" : "page-updated", "hidden", data));
+        }
+
+        // The maximum of a counter follows what the game system works out from the page as it is now (FOR-6).
+        const limits = changed ? workedLimitsChange(withPage(world, existing, written.page), written.page) : { set: {}, notes: [] };
+        const page = Object.keys(limits.set).length === 0 ? written.page : writePage(withPage(world, existing, written.page), written.page.name, undefined, { set: limits.set }).page;
+
+        if (page !== written.page) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: page.name, set: limits.set, why: "worked out by the game system" }));
         }
 
         const now = withPage(world, existing, page);
@@ -224,7 +243,7 @@ export const write = defineCommand({
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? missingSheetNote(campaignSystem(root, context), now, page) : [];
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...sheet, ...moneyNotes], problems: world.problems };
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...limits.notes, ...sheet, ...moneyNotes], problems: world.problems };
     },
 
     format(result)
@@ -882,6 +901,43 @@ function readListItems(fields: string[] | Record<string, unknown>): Record<strin
 }
 
 /** A field that is always a list, given one item, such as contains=[[Locanda]] or tags=boss, holds a list of that one item; text with commas is left to the check that asks for a list. */
+/** The fields given to set without those the game system works out (FOR-7), with a note on those left out. */
+function withoutComputed(world: World, base: Record<string, unknown>, set: Record<string, unknown>, page: string): { set: Record<string, unknown>; note?: string; }
+{
+    const fields = { ...base, ...set };
+    const computed = Object.keys(set).flatMap((field) => {
+        const found = computedField(world, field, fields);
+        return found === undefined ? [] : [found];
+    });
+
+    if (computed.length === 0) {
+        return { set };
+    }
+
+    const kept = Object.fromEntries(Object.entries(set).filter(([field]) => computedField(world, field, fields) === undefined));
+    const note = computed.length === 1
+        ? `Not written: ${computedMessage(world, computed[0], page)}.`
+        : `Not written: ${computed.map((found) => found.name).join(", ")}, which the system ${world.system?.name ?? ""} works out (show ${page} says from what): change the fields they come from, or give a bonus with an effect.`;
+    return { set: kept, note };
+}
+
+/** The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). */
+function workedLimitsChange(world: World, page: Page): { set: Record<string, unknown>; notes: string[]; }
+{
+    const fields = inheritedFields(world, page);
+    const changes = Object.keys(world.system?.formulas?.counters ?? {}).flatMap((field) => {
+        const key = Object.keys(page.fields).find((name) => comparableText(name) === comparableText(field));
+        const counter = key === undefined ? undefined : readCounter(page.fields[key]);
+        const { max } = counterLimits(world, fields, field);
+        return key === undefined || counter === undefined || max === undefined || counter.max === max ? [] : [{ key, before: counter.max, value: formatCounter({ value: counter.value, max }), max }];
+    });
+    const said = changes.map((change) => `${change.key} max ${change.before ?? "none"} → ${change.max}`);
+    return {
+        set: Object.fromEntries(changes.map((change) => [change.key, change.value])),
+        notes: said.length === 0 ? [] : [`${said.join(", ")}: worked out by the system ${world.system?.name ?? ""}.`],
+    };
+}
+
 function oneItemLists(set: Record<string, unknown>): Record<string, unknown>
 {
     const isList = (name: string): boolean => listFieldNames.some((field) => comparableText(field) === comparableText(name));

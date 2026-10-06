@@ -1,7 +1,9 @@
 // The values effects give for a while, as a layer over a page (D-123, EFF-3): read by every command that shows or changes a page's fields.
+import { numberOf } from "../core/formula.ts";
 import { comparableText } from "../core/text.ts";
 import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
-import { inheritedFields, type Page, readFieldValue, type World } from "../pages/index.ts";
+import { declaredKind, inheritedFields, type Page, readFieldValue, type World } from "../pages/index.ts";
+import { withWorkedOut } from "./worked-out.ts";
 
 /** The effects field of a page or copy, written in any case (EFF-1). */
 export function effectsField(page: Page): unknown
@@ -16,18 +18,39 @@ export function effectsOf(page: Page): Effect[]
     return "effects" in read ? read.effects : [];
 }
 
-/** The fields a page reads with its effects over them (EFF-3): from the newest effect that gives a field, then the page, then its bases. */
+/**
+ * The fields a page reads with its effects over them (EFF-3): from the newest effect that gives a field, then the page, then its bases; a bonus field adds up
+ * the effects that give it (FOR-5). Over them, what the game system works out (FOR-3).
+ */
 export function effectiveFields(world: World, page: Page): Record<string, unknown>
+{
+    // A world and its pages never change: a page's fields are worked out once in each world, and each caller gets its own copy (D-194).
+    let byPage = readByWorld.get(world);
+
+    if (byPage === undefined) {
+        byPage = new WeakMap();
+        readByWorld.set(world, byPage);
+    }
+
+    const known = byPage.get(page) ?? layeredFields(world, page);
+    byPage.set(page, known);
+    return { ...known };
+}
+
+const readByWorld = new WeakMap<World, WeakMap<Page, Record<string, unknown>>>();
+
+function layeredFields(world: World, page: Page): Record<string, unknown>
 {
     const fields = { ...inheritedFields(world, page) };
 
     for (const effect of effectsOf(page)) {
         for (const [field, value] of effect.values) {
-            fields[Object.keys(fields).find((key) => comparableText(key) === comparableText(field)) ?? field] = valueOf(value);
+            const key = Object.keys(fields).find((name) => comparableText(name) === comparableText(field)) ?? field;
+            fields[key] = declaredKind(world, field) === "bonus" ? (numberOf(fields[key]) ?? 0) + (numberOf(valueOf(value)) ?? 0) : valueOf(value);
         }
     }
 
-    return fields;
+    return withWorkedOut(world, fields);
 }
 
 /** The newest effect that gives a field to a page: change changes its value, not the page's (EFF-7). */

@@ -3,7 +3,7 @@ title: a test system based on Ironsworn
 language: en
 attribution: >-
   This work is based on Ironsworn (https://www.ironswornrpg.com), created by Shawn Tomkin, and licensed for our use under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
-  Changes: the names of its mechanics are used, with a foe and a short chapter on its moves written for these tests.
+  Changes: the names of its mechanics are used, with a foe and a short chapter on its moves written for these tests, and some of its rules as formulas.
 fields:
   edge: number
   heart: number
@@ -15,4 +15,17 @@ fields:
   supply: counter
   momentum: counter
   rank: text
+  # Progress is counted in ticks, four to a box, ten boxes to a track: a rank marks so many ticks for each progress.
   progress: counter
+  progress-score: number
+  progress-step: number
+  debilities: list
+# The ticks a rank marks for each progress.
+tables:
+  ranks: {troublesome: 12, dangerous: 8, formidable: 4, extreme: 2, epic: 1}
+computed:
+  progress-score: floor(progress / 4)
+  progress-step: table(ranks, rank)
+# Momentum goes down to -6, and each debility takes one from its maximum.
+counters:
+  momentum: {min: -6, max: 10 - count(debilities)}

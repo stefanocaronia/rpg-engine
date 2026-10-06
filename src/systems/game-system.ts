@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
+import { type FormulaData, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
@@ -27,6 +28,9 @@ const systemSchema = z.object({
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
+    tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
+    computed: z.record(z.string(), z.string().min(1)).optional(),
+    counters: z.record(z.string(), z.object({ min: z.union([z.number(), z.string().min(1)]).optional(), max: z.union([z.number(), z.string().min(1)]).optional() }).strict()).optional(),
 });
 
 /** A recipe of the system (D-185, DAT-4): the fields it brings to their maximum or to a value, the occasions it ends, the rules to read for the rest. */
@@ -74,6 +78,8 @@ export interface GameSystem
     recipes: Recipe[];
     /** The names of its conditions (D-186, DAT-6). */
     conditions: string[];
+    /** What it works out from the fields of a page (D-199, FOR-1). */
+    formulas: SystemFormulas;
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
@@ -119,6 +125,7 @@ function readSystem(folder: string, name: string): GameSystem
     }
 
     const data = parsed.data;
+    const formulas = systemFormulas(data, name, path);
     return frozen({
         name,
         folder,
@@ -136,5 +143,16 @@ function readSystem(folder: string, name: string): GameSystem
         }),
         recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({ name: recipe, set: value.set ?? {}, ends: value.ends ?? [], rules: value.rules ?? [] })),
         conditions: data.conditions ?? [],
+        formulas,
     });
+}
+
+/** The formulas of a system, read once; a system whose formulas do not read cannot be read either (FOR-9). */
+function systemFormulas(data: FormulaData, name: string, path: string): SystemFormulas
+{
+    try {
+        return readFormulas(data);
+    } catch (error) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${error instanceof Error ? error.message : String(error)}`);
+    }
 }
