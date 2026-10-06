@@ -56,7 +56,7 @@ describe("rpg scene", () => {
         expect(opened).toMatchObject({ type: "scene-opened", visibility: "public", data: { title: "Scontro all'ossario", type: "combat", place: "[[Ossario]]", with: ["[[Ennio]]", "[[Lena]]"] } });
         expect(opened.data.copies).toBeUndefined();
         expect(copies).toMatchObject({ type: "scene-changed", visibility: "hidden", data: { copies: { "Annegato 1": { creature: "[[Annegato]]" } } } });
-        expect(copies.data.copies["Annegato 1"].hp).toBeUndefined();
+        expect((copies.data.copies as Record<string, Record<string, unknown>>)["Annegato 1"].hp).toBeUndefined();
     });
 
     it("runs the turns, changes a copy's counters with change, and closes with a summary that keeps the enemies' numbers hidden", async () => {
@@ -144,11 +144,11 @@ describe("rpg scene", () => {
         expect(await ok("change", "Lupo", "hp", "--by=-1")).toBe("Lupo: hp 11/11 → 10/11.");
     });
 
-    it("takes a single text or an object where it takes a list, as an MCP client may send them", () => {
-        const opened = scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: "Lena", creatures: { Lupo: 2 } }), context);
+    it("takes a single text or an object where it takes a list, as an MCP client may send them", async () => {
+        const opened = await scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: "Lena", creatures: { Lupo: 2 } }), context);
         expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Lena: hp 7/7; Lupo 1: hp 11/11; Lupo 2: hp 11/11.\n${fightGuidance}`);
-        expect(scene.format(scene.run(scene.input.parse({ action: "order", order: "Lena" }), context))).toBe("Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.");
-        expect(scene.format(scene.run(scene.input.parse({ action: "close", summary: "Fuggono.", creatures: {}, with: [] }), context))).toContain("Scene closed after 1 round: Ossario.");
+        expect(scene.format(await scene.run(scene.input.parse({ action: "order", order: "Lena" }), context))).toBe("Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.");
+        expect(scene.format(await scene.run(scene.input.parse({ action: "close", summary: "Fuggono.", creatures: {}, with: [] }), context))).toContain("Scene closed after 1 round: Ossario.");
     });
 
     it("says what is wrong, and how to fix it", async () => {
@@ -261,8 +261,8 @@ describe("rpg scene, after the second review", () => {
         expect(stateFile()).toContain("scene:\n  title: Dopo\n");
     });
 
-    it("counts empty texts, lists and objects from MCP as left out", () => {
-        const opened = scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: [], creatures: "", order: "" }), context);
+    it("counts empty texts, lists and objects from MCP as left out", async () => {
+        const opened = await scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: [], creatures: "", order: "" }), context);
         expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.\n${fightGuidance}`);
         expect(() => scene.run(scene.input.parse({ action: "next", title: "", with: "", creatures: "", order: "", summary: "" }), context)).toThrow("The scene has no order of turns");
     });

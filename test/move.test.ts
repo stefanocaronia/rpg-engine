@@ -239,11 +239,11 @@ describe("rpg move (CON-4)", () => {
     });
 
     it("CON-4: takes one text or a list, as MCP sends them, without blank names or the same page twice", async () => {
-        const run = (input: { page: string | string[]; to: string; }) => move.format(move.run(input, context));
+        const run = async (input: { page: string | string[]; to: string; }) => move.format(await move.run(input, context));
         expect(() => move.run({ page: [" "], to: "Ossario" }, context)).toThrow("Give what moves, such as page Ettore.");
-        expect(run({ page: "Lanterna", to: "Lena" })).toBe("Moved Lanterna: now in Lena › Ossario › Cripta › Mulino › Palude.");
-        expect(run({ page: ["Ennio", "ennio", "[[Ennio]]", ""], to: "Laboratorio" })).toBe("Moved Ennio: now in Laboratorio › Cripta › Mulino › Palude. There: Varro.");
-        expect(run({ page: ["Ennio", "Lena", "Varro"], to: "Laboratorio" })).toBe("Moved Lena: now in Laboratorio › Cripta › Mulino › Palude. Already there: Ennio, Varro.");
+        expect(await run({ page: "Lanterna", to: "Lena" })).toBe("Moved Lanterna: now in Lena › Ossario › Cripta › Mulino › Palude.");
+        expect(await run({ page: ["Ennio", "ennio", "[[Ennio]]", ""], to: "Laboratorio" })).toBe("Moved Ennio: now in Laboratorio › Cripta › Mulino › Palude. There: Varro.");
+        expect(await run({ page: ["Ennio", "Lena", "Varro"], to: "Laboratorio" })).toBe("Moved Lena: now in Laboratorio › Cripta › Mulino › Palude. Already there: Ennio, Varro.");
     });
 
     it("CON-4: a page listed in the destination and elsewhere moves; entries written with text, a section or as text go; others stay", async () => {

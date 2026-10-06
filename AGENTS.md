@@ -32,7 +32,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run build`: compile `src/` into `dist/`.
 - `npm test`: run the tests.
 - `npm run format`: format the code (ESLint fixes, then dprint).
-- `npm run lint`: check the formatting, as CI does.
+- `npm run lint`: check the formatting, and the types of the tests too, as CI does.
 - `npm link`: install the development build as the global `rpg` command.
 
 ## Development vs game

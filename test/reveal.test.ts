@@ -169,8 +169,8 @@ describe("rpg reveal (REV-1–REV-3)", () => {
             "Unexpected argument: Lena. Give the page before the options, and repeat an option for each of its values, such as --to A --to B.",
         );
         expect(page("characters/Ennio.md")).not.toContain("knows");
-        expect(reveal.format(reveal.run({ page: "Varro", to: "" }, context))).toBe("Ennio now knows Varro.");
-        expect(reveal.format(reveal.run({ page: "Rosa", to: [] }, context))).toBe("Ennio now knows Rosa.");
+        expect(reveal.format(await reveal.run({ page: "Varro", to: "" }, context))).toBe("Ennio now knows Varro.");
+        expect(reveal.format(await reveal.run({ page: "Rosa", to: [] }, context))).toBe("Ennio now knows Rosa.");
         expect(await refused("reveal", "Varro, Rosa")).toBe("There is no page named Varro, Rosa: for more than one, give a list, such as page [Varro, Rosa]. Nothing recorded.");
         expect(await refused("reveal", "Coppa", "--to", "Ennio, Lena")).toBe("There is no character named Ennio, Lena: for more than one, give a list, such as to [Ennio, Lena]. Nothing recorded.");
     });

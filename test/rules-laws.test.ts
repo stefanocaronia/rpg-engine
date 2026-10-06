@@ -32,7 +32,11 @@ describe("the laws of rules as text", () => {
 
                 for (const [index, section] of sections.entries()) {
                     expect(text).toContain(section.text);
-                    const parts = sections.slice(index + 1).filter((other) => other.path.length === section.path.length + 1 && other.path.slice(0, -1).join("\n") === section.path.join("\n") && section.text.includes(other.text));
+                    // Its parts come before the next section of its level or above: two sections may have the same title and the same parts (# Cover, ## Hiding twice).
+                    const after = sections.slice(index + 1);
+                    const next = after.findIndex((other) => other.level <= section.level);
+                    const within = next === -1 ? after : after.slice(0, next);
+                    const parts = within.filter((other) => other.path.length === section.path.length + 1 && other.path.slice(0, -1).join("\n") === section.path.join("\n") && section.text.includes(other.text));
                     expect(parts.map((part) => part.path.at(-1))).toEqual(section.parts);
                     // Its own text leaves its parts out: it is shorter than its text by at least theirs (the same words may be written twice, so they are not looked for).
                     expect(section.ownText.length).toBeLessThanOrEqual(section.text.length - parts.reduce((sum, part) => sum + part.text.length, 0));
@@ -42,6 +46,11 @@ describe("the laws of rules as text", () => {
             }),
             runs,
         );
+    });
+
+    it("RUL-1: two sections with the same title each hold their own parts (found by the law on CI)", () => {
+        const sections = sectionsOf("# Cover\n\n## Hiding\n\n# Cover\n\n## Hiding\n");
+        expect(sections.map((section) => [section.path.join(" › "), section.parts])).toEqual([["Cover", ["Hiding"]], ["Cover › Hiding", []], ["Cover", ["Hiding"]], ["Cover › Hiding", []]]);
     });
 
     it("RUL-1: a title in a block of code is never a section, and a section never begins inside one", () => {

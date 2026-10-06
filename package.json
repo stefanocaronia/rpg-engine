@@ -27,7 +27,7 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
-    "lint": "eslint . && dprint check"
+    "lint": "eslint . && dprint check && tsc -p tsconfig.test.json"
   },
   "engines": {
     "node": ">=22"

@@ -118,8 +118,8 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
         expect((await rpg("change", "Varro", "oro", "--spend", "5 sp")).output).toBe("oro on Varro is a number, not money: to count it in coins, set it with its coins, such as set oro=15 gp; or give spend a whole number.");
     });
 
-    it("takes coins as text in an object, as MCP sends them", () => {
-        const result = change.run(change.input.parse({ page: "Ennio", field: "money", spend: "1 gp 2 sp" }), context);
+    it("takes coins as text in an object, as MCP sends them", async () => {
+        const result = await change.run(change.input.parse({ page: "Ennio", field: "money", spend: "1 gp 2 sp" }), context);
         expect(change.format(result)).toBe("Ennio: money 34 gp 4 sp → 33 gp 2 sp (33.2 gp).");
     });
 

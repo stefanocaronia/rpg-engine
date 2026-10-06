@@ -299,7 +299,7 @@ describe("firing, case by case (EVT-1, EVT-4, EVT-5)", () => {
     it("takes a list of links given as text through MCP in a field that is a list, and conditions only as a list (D-136)", async () => {
         await ok("write", "Cripta", "--type", "place");
         await ok("write", "Diario", "--type", "item");
-        const result = write.run(write.input.parse({ page: "Il rituale", type: "event", set: { by: "[[Varro]], [[Ennio]]", when: ["[[Varro]] dead", "party in [[Cripta]]"] } }), context);
+        const result = await write.run(write.input.parse({ page: "Il rituale", type: "event", set: { by: "[[Varro]], [[Ennio]]", when: ["[[Varro]] dead", "party in [[Cripta]]"] } }), context);
         expect(write.format(result)).toBe("Created Il rituale (event, world/events/Il rituale.md): set by, when.");
         expect(eventFile("Il rituale")).toContain('by:\n  - "[[Varro]]"\n  - "[[Ennio]]"');
         await ok("write", "Locanda", "--remove", "contains=[[Lanterna]]");
