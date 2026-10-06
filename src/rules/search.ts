@@ -25,7 +25,7 @@ export function findRules(sections: RuleSection[], text: string): RuleFinding[]
         return named;
     }
 
-    const indexed = sections.map((section, index) => ({ section, index, title: searchWords(section.path.at(-1) ?? ""), above: searchWords(section.path.slice(0, -1).join(" ")), text: searchWords(section.ownText) }));
+    const indexed = sections.map((section, index) => ({ section, index, ...wordsOf(section) }));
     const having = searched.map((word) => indexed.filter((entry) => [entry.title, entry.above, entry.text].some((words) => hasForm(words, word))).length);
     // A word weighs more the fewer sections have it, and never nothing, so that a book of one section is found too.
     const weights = having.map((count) => 1 + Math.log((sections.length + 1) / (count + 1)));
@@ -81,6 +81,22 @@ export function searchWords(text: string): string[]
 {
     return comparableText(text).match(/[\p{L}\p{N}]+/gu) ?? [];
 }
+
+/** The words of a section's title, of the titles above it and of its own text, each once: cut once for each section, which never changes (D-194). */
+function wordsOf(section: RuleSection): { title: string[]; above: string[]; text: string[]; }
+{
+    let words = wordsBySection.get(section);
+
+    if (words === undefined) {
+        const distinct = (text: string): string[] => [...new Set(searchWords(text))];
+        words = { title: distinct(section.path.at(-1) ?? ""), above: distinct(section.path.slice(0, -1).join(" ")), text: distinct(section.ownText) };
+        wordsBySection.set(section, words);
+    }
+
+    return words;
+}
+
+const wordsBySection = new WeakMap<RuleSection, { title: string[]; above: string[]; text: string[]; }>();
 
 // A form of a word may change this many of its last letters, and must keep at least the first four (all of a shorter word).
 const formLetters = 3;

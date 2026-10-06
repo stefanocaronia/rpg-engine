@@ -1,3 +1,4 @@
+import { frozen } from "../core/frozen.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { readEnvironment } from "./environment.ts";
@@ -15,8 +16,25 @@ interface Listing
     entry: string;
 }
 
-/** The exact checks on the world's pages (D-58, first level): files that cannot be read, repeated names, standard fields, links, containers, environments. */
+/**
+ * The exact checks on the world's pages (D-58, first level): files that cannot be read, repeated names, standard fields, links, containers, environments.
+ * A world never changes: its problems are found once, and a session of the MCP server keeps the world while its files do not change (D-194).
+ */
 export function checkWorld(world: World): Problem[]
+{
+    let problems = checked.get(world);
+
+    if (problems === undefined) {
+        problems = frozen(worldProblems(world));
+        checked.set(world, problems);
+    }
+
+    return problems;
+}
+
+const checked = new WeakMap<World, Problem[]>();
+
+function worldProblems(world: World): Problem[]
 {
     // Built once, so that the checks cost as much as reading the pages, however many there are.
     const pagesByName = groupBy(world.pages, (page) => [page.name]);
@@ -26,16 +44,35 @@ export function checkWorld(world: World): Problem[]
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
         ...world.pages.flatMap((page) => hidingProblems(world, page)),
         ...world.pages.flatMap((page) => [
-            ...fieldProblems(page),
+            ...pageAlone.fields(page),
             ...linkProblems(world, pagesByName, page),
             ...publicKnowsProblems(world, pagesByName, page),
             ...containerProblems(world, pagesByName, listingsByName, page),
-            ...environmentProblems(page),
-            ...sectionProblems(page),
+            ...pageAlone.environment(page),
+            ...pageAlone.sections(page),
             ...inheritanceProblems(world, page),
         ]),
     ];
 }
+
+/** A check that reads the page alone, made once for each page: a page never changes, and a session keeps those whose files do not (D-194). */
+function onceForEachPage(check: (page: Page) => Problem[]): (page: Page) => Problem[]
+{
+    const done = new WeakMap<Page, Problem[]>();
+
+    return (page) => {
+        let problems = done.get(page);
+
+        if (problems === undefined) {
+            problems = frozen(check(page));
+            done.set(page, problems);
+        }
+
+        return problems;
+    };
+}
+
+const pageAlone = { fields: onceForEachPage(fieldProblems), environment: onceForEachPage(environmentProblems), sections: onceForEachPage(sectionProblems) };
 
 function groupBy<Item>(items: Item[], namesOf: (item: Item) => string[]): Map<string, Item[]>
 {

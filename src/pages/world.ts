@@ -118,8 +118,7 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
  */
 export function findPage(world: World, name: string): Page | undefined
 {
-    const wanted = comparableText(name);
-    const found = world.pages.filter((page) => comparableText(page.name) === wanted);
+    const found = pagesNamed(world).get(comparableText(name)) ?? [];
 
     if (found.length > 1) {
         throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by hand: names must be unique in the campaign.`);
@@ -140,6 +139,27 @@ export function systemFirstFix(world: World, what = "a page"): string | undefine
 
     return world.noSystem === true ? `if it is ${what} of a game system, choose the campaign's system first, with config` : undefined;
 }
+
+/** The pages of the campaign by the name as it is compared, in the world's order: built once for each world, which never changes (D-194). */
+function pagesNamed(world: World): Map<string, Page[]>
+{
+    let names = namesByWorld.get(world);
+
+    if (names === undefined) {
+        names = new Map();
+
+        for (const page of world.pages) {
+            const key = comparableText(page.name);
+            names.set(key, [...(names.get(key) ?? []), page]);
+        }
+
+        namesByWorld.set(world, names);
+    }
+
+    return names;
+}
+
+const namesByWorld = new WeakMap<World, Map<string, Page[]>>();
 
 /** The page of the campaign's game system with this name, ignoring case; undefined when there is none (SYS-3). */
 export function systemPageNamed(world: World, name: string): Page | undefined
@@ -289,7 +309,7 @@ export function playerConcerns(world: World): (page: Page) => boolean
 
     for (let holder = queue.shift(); holder !== undefined; holder = queue.shift()) {
         for (const name of heldNames(holder)) {
-            const page = world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
+            const page = pagesNamed(world).get(comparableText(name))?.[0];
 
             if (page !== undefined && !held.has(page) && canHold(holder.type, page.type)) {
                 held.add(page);

@@ -2,7 +2,7 @@
 // changed. At the start, at every instructions, and whenever a watcher fails or cannot start, a full check compares the text of every file kept with the disk.
 import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve, sep } from "node:path";
 import { foldersIn } from "./files.ts";
 import { FileStore, isInside, readText } from "./store.ts";
 
@@ -133,9 +133,10 @@ export class SessionStore extends FileStore
             return;
         }
 
-        const holdsKept = [...this.kept.keys(), ...this.listings.keys(), ...this.watchers.keys()].some((other) => isInside(path, other));
+        // Only a name that is gone may be a folder that held what is kept: looked for only then.
+        const under = `${path}${sep}`;
 
-        if (now === undefined && holdsKept) {
+        if (now === undefined && [...this.kept.keys(), ...this.listings.keys(), ...this.watchers.keys()].some((other) => other.startsWith(under))) {
             // A folder that went, renamed or removed, with all it held: only its name comes.
             this.forgetUnder(path);
             this.closeWatchersUnder(path);

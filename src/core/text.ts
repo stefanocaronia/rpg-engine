@@ -1,5 +1,15 @@
+import { rememberedByText } from "./memo.ts";
+
 /** A name as it is compared: any case, accents written either way (NFC) and a curly apostrophe as a straight one (SYS-5), so that "Città" from any system matches "città". */
 export function comparableText(text: string): string
+{
+    // Names come back at every call: a short text is remembered.
+    return text.length > 200 ? comparable(text) : rememberedComparable(text);
+}
+
+const rememberedComparable = rememberedByText(comparable);
+
+function comparable(text: string): string
 {
     return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
 }

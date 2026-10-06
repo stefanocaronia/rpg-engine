@@ -1,3 +1,4 @@
+import { rememberedByText } from "../core/memo.ts";
 import { comparableText, linkTargetName } from "../core/text.ts";
 
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
@@ -153,13 +154,17 @@ export function linkedPages(text: string): string[]
     return links(text).map((link) => link.page);
 }
 
-/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code blocks do not count. */
+/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code blocks do not count. Read once for each text. */
 export function links(text: string): Link[]
 {
+    return rememberedLinks(text);
+}
+
+const rememberedLinks = rememberedByText((text: string): Link[] => {
     const lines = text.split("\n");
     const code = codeLines(lines);
     return lines.flatMap((line, index) => (code[index] ? [] : [...line.matchAll(linkPattern)].map((match) => linkOf(match[1], match[2]))));
-}
+}, 20_000);
 
 /** Removes the blank lines at the start and the white space at the end. */
 export function trimBlankLines(text: string): string
