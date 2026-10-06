@@ -2,11 +2,9 @@ import { join } from "node:path";
 import { z } from "zod";
 import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
-import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
@@ -17,8 +15,9 @@ import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, 
 import { problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
-import { countersText, missingSheetFields, pageCounters, partyCounters } from "./page-counters.ts";
+import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
+import { missingSheetFields, type SheetSummary, sheetSummary } from "./sheet.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
 const shownNames = 3;
@@ -97,7 +96,7 @@ export const status = defineCommand({
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
-            sheet: system === undefined ? undefined : { system: system.name, fields: system.sheet, alsoLine: lineOnlyFields(system) },
+            sheet: system === undefined ? undefined : sheetSummary(system),
             // A dead character's sheet is no longer kept (D-190).
             incompleteSheets: characters.filter(isInParty).flatMap((page) => {
                 const missing = missingSheetFields(system, world, page);
@@ -185,25 +184,19 @@ function memberCounters(member: Member): string
 }
 
 /**
- * " The system 5e keeps on a character sheet, by these names: level, xp, hp…; and when they apply: slots-1…", for status before there is a player character
- * (DAT-2): the fields of the sheet, then those of the status line that are not on it.
+ * " The system 5e keeps on a character sheet, by these names: level, xp…; and when they apply: traits…, slots-1…. It works out Skills, str-mod…: never write them.",
+ * for status before there is a player character (DAT-2).
  */
-function sheetNote(sheet: { system: string; fields: string[]; alsoLine: string[]; } | undefined): string
+function sheetNote(sheet: SheetSummary | undefined): string
 {
-    if (sheet === undefined || sheet.fields.length === 0) {
+    if (sheet === undefined) {
         return "";
     }
 
-    const also = sheet.alsoLine.length === 0 ? "" : `; and when they apply: ${sheet.alsoLine.join(", ")}`;
-    return ` The system ${sheet.system} keeps on a character sheet, by these names: ${sheet.fields.join(", ")}${also}.`;
-}
-
-/** The fields of the system's status line that its character sheet does not list, such as spell slots. */
-function lineOnlyFields(system: GameSystem): string[]
-{
-    // What the system works out is never written (FOR-7).
-    const written = (field: string): boolean => !system.formulas.computed.some(([name]) => comparableText(name) === comparableText(field));
-    return system.statusLine.map((entry) => entry.field).filter((field) => written(field) && !system.sheet.some((name) => comparableText(name) === comparableText(field)));
+    const also = sheet.whenTheyApply.length === 0 ? "" : `; and when they apply: ${sheet.whenTheyApply.join(", ")}`;
+    const worked = sheet.workedOut.length === 0 ? "" : ` It works out ${sheet.workedOut.join(", ")}: never write them.`;
+    const lists = sheet.lists.length === 0 ? "" : ` Only its names go in ${sheet.lists.join(", ")}: write lists them if a name is not one.`;
+    return ` The system ${sheet.system} keeps on a character sheet, by these names: ${sheet.written.join(", ")}${also}.${worked}${lists}`;
 }
 
 /** The planned events due, all of them: the master plays each one first (D-135). */

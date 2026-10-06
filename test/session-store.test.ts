@@ -277,7 +277,7 @@ describe("the store of a session", () => {
         openWatcher(join(folder, "world", "characters"))!.failed();
         const [status, show] = await Promise.all([warm("status"), warm("show", "Ennio")]);
         expect(status).toContain("hp 5/12");
-        expect(show).toContain("hp: 5/12");
+        expect(show).toContain("Combat: hp 5/12");
     });
 
     it("checks everything after more changes than a watcher on Linux keeps", async () => {

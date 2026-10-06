@@ -65,21 +65,6 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
     return shown;
 }
 
-/**
- * The fields of the system's character sheet that a page lacks (DAT-2): a player character's, or a companion's that does not derive from a creature; none for other pages.
- */
-export function missingSheetFields(system: GameSystem | undefined, world: World, page: Page): string[]
-{
-    const sheeted = page.fields.role === "pc" || (page.fields.role === "companion" && page.fields.creature === undefined);
-
-    if (system === undefined || page.type !== "character" || !sheeted) {
-        return [];
-    }
-
-    const fields = Object.keys(effectiveFields(world, page)).map(comparableText);
-    return system.sheet.filter((field) => !fields.includes(comparableText(field)));
-}
-
 /** "hp 5/12 · arrows 18": counters as the outputs show them. */
 export function countersText(counters: Record<string, unknown>): string
 {

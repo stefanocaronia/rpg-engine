@@ -20,6 +20,9 @@ fields:
   progress-score: number
   progress-step: number
   debilities: list
+# The debilities a character can mark.
+values:
+  debilities: [wounded, shaken, unprepared, encumbered, maimed, corrupted, cursed, tormented]
 # The ticks a rank marks for each progress.
 tables:
   ranks: {troublesome: 12, dangerous: 8, formidable: 4, extreme: 2, epic: 1}

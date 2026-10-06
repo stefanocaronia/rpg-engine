@@ -10,6 +10,9 @@ import { readYamlValues } from "../core/yaml-file.ts";
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";
 
+// An entry of the sheet: a field, ? when it is written only when it applies, and a field shown beside it in parentheses.
+const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
+
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
     ends: z.array(z.string().min(1)).optional(),
@@ -23,7 +26,10 @@ const systemSchema = z.object({
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
-    sheet: z.array(z.string().min(1)).optional(),
+    sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "traits?" for one written only when it applies')).min(1))
+        .optional(),
+    "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
+    values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     "status-line": z.array(z.string().min(1)).optional(),
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
@@ -51,6 +57,22 @@ export interface Threshold
     rule: string;
 }
 
+/** A group of the character sheet (D-207, DAT-2): its name, which show takes as Page#Group, its fields in order, and what write says of it when a character joins the party. */
+export interface SheetGroup
+{
+    name: string;
+    entries: SheetEntry[];
+    note?: string;
+}
+
+/** A field of the sheet; one written only when it applies is never reminded (D-206); beside, a field shown next to it, such as str-mod by str. */
+export interface SheetEntry
+{
+    field: string;
+    optional: boolean;
+    beside?: string;
+}
+
 /** An installed game system: what it is and what it declares (SYS-1). */
 export interface GameSystem
 {
@@ -70,8 +92,10 @@ export interface GameSystem
     coins?: string | Record<string, unknown>;
     /** How long a round lasts, in seconds (D-187, DAT-7). */
     roundSeconds?: number;
-    /** The fields of a character sheet (D-183, DAT-2). */
-    sheet: string[];
+    /** The groups of a character sheet, in order (D-183, D-207, DAT-2). */
+    sheet: SheetGroup[];
+    /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
+    values: Record<string, string[]>;
     /** The fields the line of a character shows, in order; whenSet marks a field usually at zero, shown only when it is not (DAT-2, DAT-4). */
     statusLine: { field: string; whenSet: boolean; }[];
     thresholds: Threshold[];
@@ -126,6 +150,15 @@ function readSystem(folder: string, name: string): GameSystem
 
     const data = parsed.data;
     const formulas = systemFormulas(data, name, path);
+    const sheet = sheetOf(data, name, path);
+    const values = data.values ?? {};
+    const kindOf = (field: string): string | undefined => Object.entries(data.fields ?? {}).find(([declared]) => comparableText(declared) === comparableText(field))?.[1];
+    const notList = Object.keys(values).find((field) => kindOf(field) !== "list");
+
+    if (notList !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list in fields, or give no values to it.`);
+    }
+
     return frozen({
         name,
         folder,
@@ -135,7 +168,8 @@ function readSystem(folder: string, name: string): GameSystem
         fields: data.fields ?? {},
         coins: data.coins,
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
-        sheet: data.sheet ?? [],
+        sheet,
+        values,
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),
         thresholds: Object.entries(data.thresholds ?? {}).map(([key, rule]) => {
             const [field, value] = key.split(" ");
@@ -144,6 +178,30 @@ function readSystem(folder: string, name: string): GameSystem
         recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({ name: recipe, set: value.set ?? {}, ends: value.ends ?? [], rules: value.rules ?? [] })),
         conditions: data.conditions ?? [],
         formulas,
+    });
+}
+
+/** The groups of a system's sheet, each with its note; a note for a group the sheet does not have is refused. */
+function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string): SheetGroup[]
+{
+    const groups = Object.entries(data.sheet ?? {});
+    const notes = Object.entries(data["sheet-notes"] ?? {});
+    const stray = notes.find(([group]) => !groups.some(([other]) => comparableText(other) === comparableText(group)));
+
+    if (stray !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-notes.${stray[0]}: the sheet has no group ${stray[0]}; its groups are ${groups.map(([group]) => group).join(", ")}.`);
+    }
+
+    return groups.map(([group, entries]) => {
+        const note = notes.find(([other]) => comparableText(other) === comparableText(group))?.[1];
+        return {
+            name: group,
+            entries: entries.map((entry) => {
+                const [, field, optional, beside] = sheetEntryPattern.exec(entry) ?? [];
+                return { field, optional: optional === "?", ...(beside === undefined ? {} : { beside }) };
+            }),
+            ...(note === undefined ? {} : { note }),
+        };
     });
 }
 

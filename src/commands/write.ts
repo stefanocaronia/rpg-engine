@@ -61,7 +61,6 @@ import {
     writtenFieldName,
 } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
-import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
@@ -69,7 +68,7 @@ import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScen
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
-import { missingSheetFields } from "./page-counters.ts";
+import { checkListValues, joiningNotes } from "./sheet.ts";
 import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
@@ -147,9 +146,10 @@ export const write = defineCommand({
 
         const { coins, problem: coinsProblem } = campaignCoins(root, context);
         const world = campaignWorld(root, context);
+        const system = campaignSystem(root, context);
         // A field the game system works out is never written: the rest is (FOR-7, D-200).
         const target = findPage(world, reference.name);
-        const given = input.set === undefined ? undefined : withoutComputed(world, target === undefined ? {} : effectiveFields(world, target), oneItemLists(readFields(input.set)), reference.name);
+        const given = input.set === undefined ? undefined : withoutComputed(world, target === undefined ? {} : effectiveFields(world, target), oneItemLists(world, readFields(input.set)), reference.name);
         const fields: FieldChange = {
             set: given === undefined || Object.keys(given.set).length === 0 ? undefined : asAmounts(world, given.set, coins),
             unset: input.unset,
@@ -198,6 +198,8 @@ export const write = defineCommand({
         checkFieldChange(type, fields);
         environmentAsSet(world, existing, type, reference.name, fields);
         checkValues(fields);
+        checkListValues(system, fields.set ?? {});
+        checkListValues(system, fields.add ?? {});
         checkKnows(world, fields);
 
         if (existing !== undefined) {
@@ -242,7 +244,7 @@ export const write = defineCommand({
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
-        const sheet = joined ? missingSheetNote(campaignSystem(root, context), now, page) : [];
+        const sheet = joined ? joiningNotes(system, now, page) : [];
         return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...limits.notes, ...sheet, ...moneyNotes], problems: world.problems };
     },
 
@@ -667,16 +669,6 @@ function moneyNotesOf(world: World, page: string, set: Record<string, unknown> |
     return problem !== undefined && looksLikeMoney ? [...notes, `The campaign's coins cannot be read, so no money is counted: ${problem.message} To fix it, ${problem.fix}.`] : notes;
 }
 
-/**
- * The fields of the system's character sheet that a player character still lacks, or a companion that does not derive from a creature (DAT-2):
- * written by these names, status and the dashboard read them.
- */
-function missingSheetNote(system: GameSystem | undefined, now: World, page: Page): string[]
-{
-    const missing = missingSheetFields(system, now, page);
-    return missing.length === 0 || system === undefined ? [] : [`${page.name}'s sheet of the system ${system.name} still lacks, by these names: ${missing.join(", ")}.`];
-}
-
 /** A page created with a name that other pages give as their creature or item, though it is not one: they derive from nothing (INH-2). */
 function derivesFromNothingNote(now: World, page: Page): string[]
 {
@@ -900,7 +892,6 @@ function readListItems(fields: string[] | Record<string, unknown>): Record<strin
     return items;
 }
 
-/** A field that is always a list, given one item, such as contains=[[Locanda]] or tags=boss, holds a list of that one item; text with commas is left to the check that asks for a list. */
 /** The fields given to set without those the game system works out (FOR-7), with a note on those left out. */
 function withoutComputed(world: World, base: Record<string, unknown>, set: Record<string, unknown>, page: string): { set: Record<string, unknown>; note?: string; }
 {
@@ -938,9 +929,13 @@ function workedLimitsChange(world: World, page: Page): { set: Record<string, unk
     };
 }
 
-function oneItemLists(set: Record<string, unknown>): Record<string, unknown>
+/**
+ * A field that is always a list, or that the game system declares one, given one item, such as contains=[[Locanda]] or tags=boss, holds a list of that one item;
+ * text with commas is left to the checks that ask for a list.
+ */
+function oneItemLists(world: World, set: Record<string, unknown>): Record<string, unknown>
 {
-    const isList = (name: string): boolean => listFieldNames.some((field) => comparableText(field) === comparableText(name));
+    const isList = (name: string): boolean => listFieldNames.some((field) => comparableText(field) === comparableText(name)) || declaredKind(world, name) === "list";
     return Object.fromEntries(Object.entries(set).map(([name, value]) => [name, isList(name) && typeof value === "string" && !value.includes(",") && value.trim() !== "" ? [value] : value]));
 }
 

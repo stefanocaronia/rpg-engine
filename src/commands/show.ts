@@ -23,8 +23,9 @@ import {
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
-import { campaignWorld, missingSystemHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./sheet.ts";
 import { workedFields, workedLine } from "./worked-out.ts";
 
 export const show = defineCommand({
@@ -32,18 +33,20 @@ export const show = defineCommand({
     description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
         + "It also says where the thing is and which pages link to it, and shows a copy in the open scene too. "
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
+        + "A character shows the sheet of the game system in groups, such as Abilities; Page#Group shows one group with how each number is made. "
         + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
     group: "game",
     readOnly: true,
     positionals: ["page"],
     input: z.object({
-        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name shows one section or one secret"),
+        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, or a group of a character's sheet"),
     }),
 
     run(input, context)
     {
         const root = requireCampaign(context.folder);
         const world = campaignWorld(root, context);
+        const system = campaignSystem(root, context);
         const reference = parsePageReference(input.page);
 
         if (reference.section === "") {
@@ -61,7 +64,15 @@ export const show = defineCommand({
         }
 
         const isCopy = found === undefined && scene !== undefined && copy !== undefined;
-        const part = reference.section === undefined ? undefined : readPart(world, page, reference.section);
+        // A section or a secret first, then a group of the sheet (DAT-2).
+        const part = reference.section === undefined ? undefined : findPart(world, page, reference.section);
+        const group = reference.section === undefined || part !== undefined ? undefined : sheetGroup(world, system, page, reference.section);
+
+        if (reference.section !== undefined && part === undefined && group === undefined) {
+            const groups = sheetGroupNames(system, page).length === 0 ? "" : ` The groups of its sheet are: ${sheetGroupNames(system, page).join(", ")}.`;
+            throw new Error(`${page.name} has no section or secret "${reference.section}". ${partsOf(world, page)}${groups}`);
+        }
+
         const { chain, alsoIn } = isCopy ? { chain: [], alsoIn: [] } : locate(world, page);
         const inherited = inheritedByBase(world, page);
         return {
@@ -70,23 +81,25 @@ export const show = defineCommand({
             path: page.path,
             system: page.system,
             hides: page.system === undefined && !isCopy && systemPageNamed(world, page.name) !== undefined ? world.system?.name : undefined,
-            section: reference.section,
+            section: group?.name ?? reference.section,
             copyOf: isCopy ? copyLink(scene.copies[copy]) : undefined,
             scene: isCopy ? scene.title : undefined,
             alsoCopy: !isCopy && copy !== undefined,
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
             around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
+            sheet: group?.lines ?? (reference.section === undefined ? sheetLines(world, system, page) : []),
+            onSheet: sheetFieldNames(system, page),
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
-            worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => workedLine(world, worked)) : [],
+            worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => ({ field: worked.field, line: workedLine(world, worked) })) : [],
             systemName: world.system?.name,
             derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
             inherited: reference.section === undefined
                 ? inherited.map((group) => ({ from: nameWithSystem(group.base), fields: group.fields, text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n") }))
                 : [],
-            text: part?.text ?? page.body,
+            text: group === undefined ? (part?.text ?? page.body) : "",
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
         };
@@ -110,12 +123,19 @@ export const show = defineCommand({
             result.sectionFrom === undefined ? "" : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
             result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`,
         ].filter((line) => line !== "").join("\n");
-        const fields = result.fields !== undefined && Object.keys(result.fields).length > 0 ? `---\n${formatFields(result.fields)}\n---` : "";
-        const worked = result.worked.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${result.worked.join("\n")}`;
-        const inheritedFields = result.inherited.filter((group) => Object.keys(group.fields).length > 0).map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
+        // What a character's sheet shows is not said again with the fields as written (D-207).
+        const onSheet = new Set(result.onSheet.map(comparableText));
+        const offSheet = (fields: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(fields).filter(([field]) => !onSheet.has(comparableText(field))));
+        const sheet = result.sheet.join("\n");
+        const own = offSheet(result.fields ?? {});
+        const fields = Object.keys(own).length > 0 ? `---\n${formatFields(own)}\n---` : "";
+        const workedLines = result.worked.filter((worked) => !onSheet.has(comparableText(worked.field))).map((worked) => worked.line);
+        const worked = workedLines.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${workedLines.join("\n")}`;
+        const inheritedFields = result.inherited.map((group) => ({ from: group.from, fields: offSheet(group.fields) })).filter((group) => Object.keys(group.fields).length > 0)
+            .map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
         const inheritedText = result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
-        return [header, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -141,8 +161,8 @@ function coveredValues(world: World, page: Page): string[]
     return fields.map((field) => `${field} ${String(read(withThem, field))} (${read(without, field) === undefined ? "none" : String(read(without, field))} without)`);
 }
 
-/** A section or secret of a page; when it has none by that name, the one of its nearest base that has it (INH-13). */
-function readPart(world: World, page: Page, name: string): { text: string; from?: string; }
+/** A section or secret of a page; when it has none by that name, the one of its nearest base that has it (INH-13); undefined when none has it. */
+function findPart(world: World, page: Page, name: string): { text: string; from?: string; } | undefined
 {
     const own = readSection(page.body, name);
 
@@ -162,7 +182,7 @@ function readPart(world: World, page: Page, name: string): { text: string; from?
         }
     }
 
-    throw new Error(`${page.name} has no section or secret "${name}". ${partsOf(world, page)}`);
+    return undefined;
 }
 
 /** Lists a page's sections and secrets, and those it shows from its bases, for an error message. */

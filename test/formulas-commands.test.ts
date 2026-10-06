@@ -73,12 +73,11 @@ async function refused(...args: string[]): Promise<string>
     return result.output;
 }
 
-/** The lines of what show says the system works out. */
+/** The lines of what show says the system works out, each with the values it came from, as its result gives them. */
 async function workedLines(page: string): Promise<string[]>
 {
-    const output = await ok("show", page);
-    const block = output.split("\n\n").find((part) => part.startsWith("Worked out by the system"));
-    return block === undefined ? [] : block.split("\n").slice(1);
+    const shown = JSON.parse(await ok("show", page, "--json")) as { worked: { line: string; }[]; };
+    return shown.worked.map((worked) => worked.line);
 }
 
 /** The values show says the system works out, by field. */

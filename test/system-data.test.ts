@@ -76,15 +76,18 @@ describe("the character sheet (DAT-2)", () => {
         const other = { ...context, folder: empty };
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
-            "No player character yet. The system 5e keeps on a character sheet, by these names: level, xp, hp-base, hp, temp-hp, hit-dice, ac, speed, str, dex, con, int, wis, cha, "
-                + "save-proficiencies, skill-proficiencies, languages, exhaustion, death-successes, death-failures; and when they apply: slots-1, slots-2, slots-3, slots-4, slots-5, "
-                + "slots-6, slots-7, slots-8, slots-9.",
+            "No player character yet. The system 5e keeps on a character sheet, by these names: level, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, hit-dice, "
+                + "save-proficiencies, skill-proficiencies, languages; and when they apply: inspiration, traits, ideals, bonds, flaws, temp-hp, death-successes, death-failures, "
+                + "exhaustion, expertise, slots-1, slots-2, slots-3, slots-4, slots-5, slots-6, slots-7, slots-8, slots-9. It works out str-mod, dex-mod, con-mod, int-mod, wis-mod, "
+                + "cha-mod, proficiency, Saving Throws, Skills, initiative, passive-perception: never write them. Only its names go in save-proficiencies, skill-proficiencies, "
+                + "expertise: write lists them if a name is not one.",
         );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
-            "Bruna's sheet of the system 5e still lacks, by these names: level, xp, hp-base, temp-hp, hit-dice, ac,",
+            "Bruna's sheet of the system 5e still lacks, by these names: level, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hit-dice, save-proficiencies, "
+                + "skill-proficiencies, languages.\nPersonality: traits, ideals, bonds and flaws are the player's,",
         );
         expect((await runCommandLine(["write", "Bruna", "--set", "level=1"], other)).output).not.toContain("still lacks");
-        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, hp-base, temp-hp, hit-dice, ac,");
+        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hit-dice,");
         removeFolder(empty);
     });
 
@@ -329,7 +332,7 @@ describe("other game systems", () => {
                 "language: it",
                 "round: 60 seconds",
                 "fields: { vigore: counter, fatica: counter, punti-a: counter, punti-b: counter, pozioni: counter }",
-                "sheet: [vigore, fatica]",
+                "sheet: { Stato: [vigore, fatica] }",
                 "status-line: [vigore, fatica?]",
                 "thresholds: { vigore 0: Sfinimento, fatica: Fatica }",
                 "recipes:",

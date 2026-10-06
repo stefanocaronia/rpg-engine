@@ -184,6 +184,12 @@ export function tableOf(rows: Record<string, number>): Table
     return { rows: Object.entries(rows) };
 }
 
+/** The names of the items of a list field, as has, count and item read them (FOR-2): a link as the page or the section it names, without the number after a name. */
+export function listItemNames(value: unknown): string[]
+{
+    return itemsOf(value).map((item) => item.name);
+}
+
 /** A field's value read as a number (FOR-2): a number, a counter's current value, or text such as +2. Undefined for anything else. */
 export function numberOf(value: unknown): number | undefined
 {

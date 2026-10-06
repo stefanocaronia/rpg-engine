@@ -49,7 +49,8 @@ describe("the installed game systems", () => {
                     expect(coinsProblem(typeof system.coins === "string" ? readCoins(system.coins) : system.coins)).toBeUndefined();
                 }
 
-                expect([...system.sheet, ...system.statusLine.map((entry) => entry.field)].filter((field) => !declared(field))).toEqual([]);
+                const onSheet = system.sheet.flatMap((group) => group.entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside])));
+                expect([...onSheet, ...system.statusLine.map((entry) => entry.field), ...Object.keys(system.values)].filter((field) => !declared(field))).toEqual([]);
                 expect(system.thresholds.filter((threshold) => system.fields[threshold.field] !== "counter" || !hasRule(threshold.rule))).toEqual([]);
                 expect(system.recipes.flatMap((recipe) => [...Object.keys(recipe.set).filter((field) => !declared(field)), ...recipe.rules.filter((rule) => !hasRule(rule))])).toEqual([]);
                 expect(system.conditions.filter((condition) => !hasRule(condition))).toEqual([]);

@@ -102,10 +102,17 @@ export function signedText(world: World, field: string, value: number): string
 /** "insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies": a computed field and what it came from, leaving out what adds nothing (FOR-8). */
 export function workedLine(world: World, worked: WorkedField): string
 {
-    const parts = worked.reads.flatMap((read): string[] => {
+    const parts = workedParts(world, worked.reads);
+    return `${worked.field} ${signedText(world, worked.field, worked.value)}${parts === "" ? "" : `: ${parts}`}`;
+}
+
+/** "wis-mod +3, proficiency +2, Insight in skill-proficiencies": the values a result came from, leaving out what adds nothing (FOR-8). */
+export function workedParts(world: World, reads: FormulaRead[]): string
+{
+    const parts = reads.flatMap((read): string[] => {
         if ("table" in read) {
             // A key the explanation does not already give, as text: "ranks dangerous: 8".
-            const keyed = worked.reads.some((other) => "field" in other && other.key === true);
+            const keyed = reads.some((other) => "field" in other && other.key === true);
             return [keyed ? `${read.table} ${read.value}` : `${read.table} ${read.key}: ${read.value}`];
         }
 
@@ -119,8 +126,22 @@ export function workedLine(world: World, worked: WorkedField): string
 
         return [`${read.value} in ${read.list}`];
     });
-    const unique = parts.filter((part, index) => parts.indexOf(part) === index);
-    return `${worked.field} ${signedText(world, worked.field, worked.value)}${unique.length === 0 ? "" : `: ${unique.join(", ")}`}`;
+    return parts.filter((part, index) => parts.indexOf(part) === index).join(", ");
+}
+
+/** The maximum the game system works out for a counter with these fields, with only the values that changed it (FOR-6, FOR-8); undefined where it has none. */
+export function workedMaximum(world: World, fields: Record<string, unknown>, field: string): WorkedField | undefined
+{
+    const entry = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field.trim()));
+    const formula = entry?.[1].max;
+
+    if (entry === undefined || formula === undefined) {
+        return undefined;
+    }
+
+    const scope = formulaScope(world, fields);
+    const worked = workOut(formula, scope);
+    return worked.value === undefined ? undefined : { field: entry[0], value: worked.value, reads: contributingReads(formula, scope, worked) };
 }
 
 /**
