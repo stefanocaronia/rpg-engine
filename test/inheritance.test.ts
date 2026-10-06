@@ -482,6 +482,16 @@ describe("pages that derive from a creature, after the second review (D-124)", (
         expect(shown).toContain("## Morso\n\nMorde e non molla.");
     });
 
+    it("keeps a base's heading with text of its own, and looks for kept subsections only down to the next heading of its level (D-169)", async () => {
+        writeFileSync(join(folder, "world", "creatures", "Lupo.md"), "---\nhp: 11/11\n---\n\n## Azioni\n\nIn branco.\n\n### Morso\n\nMorde.\n\n## Reazioni\n\n### Schivata\n\nSchiva.\n");
+        await ok("write", "Zanna#Morso", "--text", "Morde e non molla.");
+        expect(await ok("show", "Zanna")).toContain("## Azioni\n\nIn branco.");
+        writeFileSync(join(folder, "world", "creatures", "Lupo.md"), "---\nhp: 11/11\n---\n\n## Azioni\n\n### Morso\n\nMorde.\n\n## Reazioni\n\n### Schivata\n\nSchiva.\n");
+        const shown = await ok("show", "Zanna");
+        expect(shown).not.toContain("## Azioni");
+        expect(shown).toContain("## Reazioni\n\n### Schivata\n\nSchiva.");
+    });
+
     it("shows a base's secret without a name even when the page has one of its own", async () => {
         writeFileSync(join(folder, "world", "creatures", "Lupo.md"), "---\nhp: 11/11\n---\n\nUn lupo grigio.\n\n> [!secret]\n> Il branco è del Re dei Lupi.\n");
         writeFileSync(join(folder, "world", "characters", "Zanna.md"), '---\nrole: companion\ncreature: "[[Lupo]]"\n---\n\n> [!secret]\n> Zanna ricorda il Re.\n');

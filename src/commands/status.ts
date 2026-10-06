@@ -1,10 +1,12 @@
+import { join } from "node:path";
 import { z } from "zod";
-import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
+import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { type Effect, formatEnd } from "../effects/index.ts";
 import type { Coin } from "../money/index.ts";
 import { isDeclaredUncounted, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
@@ -77,6 +79,8 @@ export const status = defineCommand({
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
             table: settings.table ?? [],
+            precedents: settings.precedents ?? [],
+            houseRules: bookTitles(readRuleBook(join(root, houseRulesFolderName), "house rules")),
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             place,
@@ -105,6 +109,8 @@ export const status = defineCommand({
             missingSettingsNote(result.missing),
             boundariesLine(result.lines, result.veils),
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
+            result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,
+            result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
             ...(result.players.length === 0 ? ["No player character yet."] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,

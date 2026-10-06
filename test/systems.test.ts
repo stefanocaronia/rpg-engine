@@ -68,7 +68,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
     it("reports a system written by hand that is not installed, and goes on without its pages", async () => {
         handWrite("campaign.yaml", "name: Guadoscuro\nlanguage: it\nsystem: Quinta edizione\ndifficulty: normal\nlethality: dice\n");
         expect(await ok("validate")).toBe(
-            `1 problem:\n- campaign.yaml: The system Quinta edizione is not installed: no creatures, items or rules come from a system. ${installed} Fix: config, setting system, value 5e.`,
+            `1 problem:\n- campaign.yaml: The system Quinta edizione is not installed: no creatures, items or rules come from a system. ${installed} Fix: ask the player which game you play, then config, setting system, value 5e.`,
         );
         expect(await ok("config", "system")).toBe("system: Quinta edizione (not installed; installed: 5e, ironsworn)");
         expect(await ok("status")).toContain("1 problem in the campaign");
@@ -287,7 +287,7 @@ describe("after the round on the code: the system missing, and the remedies (SYS
             "world/creatures/Lupo.md: creature links to [[Wolf]], which does not exist. Fix: if it is a page of the system Quinta edizione, which is not installed, fix the system first, "
                 + "as the problem on campaign.yaml says; otherwise write Lupo, set creature to a page that exists.",
         );
-        expect(await ok("status")).toContain("Guadoscuro · it · Quinta edizione (not installed: config, setting system, value 5e) · difficulty normal");
+        expect(await ok("status")).toContain("Guadoscuro · it · Quinta edizione (not installed: ask the player, then config, setting system, value 5e) · difficulty normal");
     });
 
     it("points the remedies of change at the campaign's pages, and refuses a field the system never counts even when it is missing", async () => {

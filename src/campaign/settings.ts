@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Document, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
+import { type Document, isMap, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
 import { z } from "zod";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
@@ -15,6 +15,9 @@ export const difficulties = ["story", "easy", "normal", "hard", "brutal"] as con
 /** What a fall means (D-13, D-141): the character never dies, dies only when it matters, or as the dice say. */
 export const lethalities = ["narrative", "epic", "dice"] as const;
 
+/** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
+const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
+
 /** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
 export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
@@ -22,9 +25,10 @@ export const settingsSchema = z.object({
     system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
-    lines: z.array(z.string().min(1)).nullish().describe("what never appears in the game"),
-    veils: z.array(z.string().min(1)).nullish().describe("what happens only off screen, without details"),
-    table: z.array(z.string().min(1)).nullish().describe("the table's agreements: what the master promised about how the game is played, and the precedents declared"),
+    lines: z.array(listItem).nullish().describe("what never appears in the game"),
+    veils: z.array(listItem).nullish().describe("what happens only off screen, without details"),
+    table: z.array(listItem).nullish().describe("the table's agreements: what the master promised about how the game is played"),
+    precedents: z.array(listItem).nullish().describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
 }).loose();
@@ -36,7 +40,7 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents"];
 
 // Settings that only some games have: never asked for when missing.
 const optionalSettingNames: SettingName[] = ["coins"];
@@ -63,6 +67,17 @@ export function readTextSetting(root: string, name: SettingName): string | undef
         return typeof value === "string" ? value : undefined;
     } catch {
         return undefined;
+    }
+}
+
+/** A list setting as campaign.yaml writes it, read even when another setting breaks the file, as the system is (SYS-1): what rules reads. Empty when it cannot be read. */
+export function readListSetting(root: string, name: SettingName): string[]
+{
+    try {
+        const value: unknown = parseDocument(readFileSync(join(root, campaignFileName), "utf8")).toJS()?.[name];
+        return Array.isArray(value) ? value.map((item: unknown) => pairText(item) ?? item).filter((item): item is string => typeof item === "string" && item.trim() !== "") : [];
+    } catch {
+        return [];
     }
 }
 
@@ -189,6 +204,11 @@ function listNode(document: Document, setting: SettingName): YAMLSeq
         return list;
     }
 
+    if (isSeq(node)) {
+        // Items written by hand as pairs become the text they were meant to be, and are written back in quotes.
+        node.items = node.items.map((item) => (isMap(item) && pairText(item.toJSON()) !== undefined ? document.createNode(pairText(item.toJSON())) : item));
+    }
+
     if (!isSeq(node) || !node.items.every((item) => isScalar(item) && typeof item.value === "string")) {
         throw new Error(`"${setting}" in ${campaignFileName} is not a list of text; write it by hand as ${setting}: [item, item].`);
     }
@@ -201,6 +221,17 @@ function saveSettings(root: string, document: Document): void
 {
     validateSettings(document.toJS());
     writeYamlFile(join(root, campaignFileName), document);
+}
+
+/** "Poisoned: la benda…" for the YAML pair { Poisoned: "la benda…" } that a list item written without quotes becomes; undefined for anything else. */
+function pairText(item: unknown): string | undefined
+{
+    if (item === null || typeof item !== "object" || Array.isArray(item)) {
+        return undefined;
+    }
+
+    const entries = Object.entries(item);
+    return entries.length === 1 && ["string", "number", "boolean"].includes(typeof entries[0][1]) ? `${entries[0][0]}: ${String(entries[0][1])}` : undefined;
 }
 
 /** The same item of a list setting, ignoring case, accents written either way and the spaces around it. */

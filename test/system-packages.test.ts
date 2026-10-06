@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { comparableText } from "../src/core/text.ts";
 import { checkWorld, isStandardField, loadWorld } from "../src/pages/index.ts";
+import { isTitled, readRuleBook } from "../src/rules/index.ts";
 import { installedSystems } from "../src/systems/index.ts";
 import { testSystemFolders } from "./support.ts";
 
@@ -36,6 +37,15 @@ describe("the installed game systems", () => {
 
             it("derives no page from another (SYS-2)", () => {
                 expect(world.pages.filter((page) => page.fields.creature !== undefined || page.fields.item !== undefined).map((page) => page.name)).toEqual([]);
+            });
+
+            it("writes its rules in chapters that open with a heading, each section read by its path (RUL-1, RUL-3)", () => {
+                const book = readRuleBook(join(system.folder, "rules"), system.name);
+                expect(book.length).toBeGreaterThan(0);
+                expect(book.filter((section) => section.level === 0).map((section) => section.file)).toEqual([]);
+                // A title with ›, > or / in it could not be read by its path.
+                const unread = book.filter((section) => !isTitled(section, section.path.join(" › ")));
+                expect(unread.map((section) => section.path.join(" › "))).toEqual([]);
             });
 
             it("gives every declared field a value of its kind, without a final period (SYS-8)", () => {

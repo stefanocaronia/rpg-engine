@@ -88,7 +88,12 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
     const extra = takesRest ? valuesOf(parsed.tokens.slice(firstOption === -1 ? parsed.tokens.length : firstOption)) : parsed.positionals.slice(positionals.length);
 
     if (extra.length > 0) {
-        const how = takesRest ? ` Give the ${last} before the options, and repeat an option for each of its values, such as --to A --to B.` : "";
+        const quoted = [...given.slice(positionals.length - 1, positionals.length), ...extra].join(" ");
+        const how = takesRest
+            ? ` Give the ${last} before the options, and repeat an option for each of its values, such as --to A --to B.`
+            : positionals.length > 0
+            ? ` Put a value with spaces in quotes, such as "${quoted}".`
+            : "";
         throw new Error(`Unexpected argument: ${extra.join(" ")}.${how}`);
     }
 

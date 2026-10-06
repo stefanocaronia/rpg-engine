@@ -4,6 +4,9 @@ import { dirname, join, resolve } from "node:path";
 /** The file that marks a folder as a campaign and holds its settings. */
 export const campaignFileName = "campaign.yaml";
 
+/** The folder of a campaign with its house rules, a markdown file for each (D-178). */
+export const houseRulesFolderName = "rules";
+
 /** The campaign that holds `folder`: the nearest folder, from `folder` upwards, with a campaign.yaml. */
 export function findCampaign(folder: string): string | undefined
 {

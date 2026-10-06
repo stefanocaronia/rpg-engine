@@ -10,6 +10,7 @@ import { instructions } from "./instructions.ts";
 import { move } from "./move.ts";
 import { reveal } from "./reveal.ts";
 import { roll } from "./roll.ts";
+import { rules } from "./rules.ts";
 import { scene } from "./scene.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
@@ -17,4 +18,4 @@ import { validate } from "./validate.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, instructions, status, validate, write, move, reveal, show, find, roll, ask, change, effect, advance, scene];
+export const commands: Command<any, any>[] = [init, config, instructions, status, validate, write, move, reveal, show, find, rules, roll, ask, change, effect, advance, scene];

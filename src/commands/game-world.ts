@@ -32,7 +32,7 @@ export function systemProblems(root: string, context: Context): Problem[]
     return [{
         path: "campaign.yaml",
         message: `The system ${name} is not installed: no creatures, items or rules come from a system. ${installedText(context)}`,
-        fix: first === undefined ? "install the game system" : `config, setting system, value ${first.name}`,
+        fix: first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`,
     }];
 }
 
@@ -76,11 +76,13 @@ export function systemSearchHint(world: World): string
 /** The language the game system names its pages in, such as English, when it is not the campaign's (D-165); undefined when it is, or there is no system. */
 export function foreignSystemLanguage(world: World): string | undefined
 {
-    if (world.system === undefined || world.language === undefined || world.language.split("-")[0] === world.system.language.split("-")[0]) {
-        return undefined;
-    }
+    return world.system === undefined ? undefined : foreignLanguage(world.system.language, world.language);
+}
 
-    return languageName(world.system.language);
+/** The language a game system writes in, such as English, when the campaign plays in another one (D-165); undefined when it is the same, or the campaign's is not set. */
+export function foreignLanguage(systemLanguage: string, campaignLanguage: string | undefined): string | undefined
+{
+    return campaignLanguage === undefined || campaignLanguage.split("-")[0] === systemLanguage.split("-")[0] ? undefined : languageName(systemLanguage);
 }
 
 /**
@@ -139,7 +141,7 @@ export function systemInStatus(root: string, context: Context): string | undefin
     }
 
     const [first] = installedSystems(context.systemFolders);
-    return `${name} ${first === undefined ? "(not installed)" : `(not installed: config, setting system, value ${first.name})`}`;
+    return `${name} ${first === undefined ? "(not installed)" : `(not installed: ask the player, then config, setting system, value ${first.name})`}`;
 }
 
 /** A language as messages name it, such as English for en. */

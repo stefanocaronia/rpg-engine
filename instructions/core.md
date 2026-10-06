@@ -17,6 +17,7 @@ For every campaign and game; the system's guide and each extension in use add th
 - `status`: right after `instructions`, and whenever you need to check where things stand: the campaign's state.
 - `validate`: when status reports problems; fix each as it says.
 - `find`, `show`: read a page before describing anything that already exists.
+- `rules`: whenever you are unsure how a rule works, before you rule and say what is at stake, and when the player questions a ruling.
 - `write`: record every new fact at once.
 - `move`: whenever someone or something goes somewhere, before you narrate it: the party, a person who leaves, an item given or taken.
 - `reveal`: as soon as a character learns a secret, or of a page they did not know.
@@ -50,7 +51,7 @@ For every campaign and game; the system's guide and each extension in use add th
 2. What is not yet revealed may change, if the story gains.
 3. Beyond your preparation: canon first, then tables or the oracle, then improvisation, recorded at once.
 4. Prepare situations, not plots: at least three clues for every conclusion the player must reach, and before each session about ten secrets not tied to places.
-5. When you apply a rule from memory, say so: it becomes a precedent. Precedents, and what you promise the player about how you play, go in the table setting, in the words you said.
+5. Tell the player where a ruling comes from, in table words: the book, or your own call. A ruling without the text, said or not, is a precedent: add it to the precedents setting, the rule's name in the system's language first, then what you said. What you promise the player about how you play goes in the table setting, in the words you said.
 6. Watch pace, variety, difficulty and engagement, and adjust behind the scenes only what is not yet revealed: never the dice, never established facts.
 
 ## 6. Craft
@@ -78,7 +79,7 @@ For every campaign and game; the system's guide and each extension in use add th
 
 ## 8. Rules
 
-- Rule with the exact text at hand: house rules, the system, the player's manuals, precedents; your own memory last, and say so.
+- Rule with the exact text at hand, in this order: house rules, the system, the player's manuals, precedents (`rules` gives all but the manuals); your own memory last.
 - You may use what you know, search the web and read the player's manuals.
 
 ## 9. Secrets

@@ -57,6 +57,7 @@ export {
     loadWorld,
     locate,
     type Page,
+    pageFileNamed,
     type PageMatch,
     pageNamed,
     parsePageReference,

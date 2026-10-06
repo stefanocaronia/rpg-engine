@@ -382,6 +382,16 @@ export function readPage(root: string, fullPath: string): Page
     };
 }
 
+/** The page whose file in a folder's world/ is named `name`, with the type its folder gives, found by the file's name alone without reading the pages: enough to say that a page is there. */
+export function pageFileNamed(root: string, name: string): { name: string; type?: PageType; } | undefined
+{
+    const worldPath = join(root, worldFolderName);
+    const wanted = comparableText(name.trim());
+    const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
+    const entry = entries.find((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name) && comparableText(candidate.name.slice(0, -3)) === wanted);
+    return entry === undefined ? undefined : { name: entry.name.slice(0, -3), type: typeOfFolder(relative(worldPath, entry.parentPath).split(sep)[0]) };
+}
+
 /** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
 function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
 {

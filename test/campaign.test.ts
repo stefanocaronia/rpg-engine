@@ -90,7 +90,7 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\ncoins: (none: a game without money)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\nprecedents: (none)\ncoins: (none: a game without money)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
         );
     });
 
@@ -157,7 +157,7 @@ describe("rpg config", () => {
     });
 
     it("refuses unknown settings and invalid values", async () => {
-        expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(`There is no setting "colour". The settings are: name, language, system, difficulty, lethality, lines, veils, table, coins.`);
+        expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(`There is no setting "colour". The settings are: name, language, system, difficulty, lethality, lines, veils, table, precedents, coins.`);
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });
 
