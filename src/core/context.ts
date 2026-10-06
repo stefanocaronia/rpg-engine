@@ -1,5 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import type { FileStore } from "./store.ts";
 
 /** What a command needs from the outside world: tests replace it to get repeatable results. */
 export interface Context
@@ -21,6 +22,8 @@ export interface Context
     player?: Player;
     /** The folders that hold the installed game systems, nearest first (SYS-1). */
     systemFolders: string[];
+    /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
+    files?: FileStore;
 }
 
 /**

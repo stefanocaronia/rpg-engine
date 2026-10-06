@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { files } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { holdRefusal } from "./containers.ts";
 import { baseChain, baseValue, derivedPages, ownFieldChange, sameAsBase } from "./inheritance.ts";
@@ -50,7 +50,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
     const mode = textMode(change);
     const path = existing !== undefined && retyped === undefined ? existing.path : newPagePath(world, existing?.name ?? name, pageType);
     const fullPath = join(world.root, path);
-    const file = existing === undefined ? { body: "" } : splitPageFile(readFileSync(join(world.root, existing.path), "utf8"));
+    const file = existing === undefined ? { body: "" } : splitPageFile(files().text(join(world.root, existing.path)) ?? "");
     const changedFields = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
     const frontmatter = withoutBaseValues(world, existing, { name, type: pageType, path }, changedFields, changedFields.length > 0 || change.unset !== undefined ? changeFields(file.frontmatter, change, path) : file.frontmatter);
     const written = { name: existing?.name ?? name, type: pageType, path, fields: readFields(frontmatter, path), body: file.body };
@@ -69,11 +69,10 @@ export function writePage(world: World, name: string, type: PageType | undefined
         return { page: existing, created: false, changed: false, mode };
     }
 
-    mkdirSync(dirname(fullPath), { recursive: true });
-    writeFileSync(fullPath, newText, "utf8");
+    files().write(fullPath, newText);
 
     if (retyped !== undefined) {
-        rmSync(join(world.root, retyped.path));
+        files().remove(join(world.root, retyped.path));
     }
 
     return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true, mode, retyped };
@@ -373,7 +372,7 @@ function newPagePath(world: World, name: string, type: PageType | undefined): st
     checkPageName(name);
     const path = `${worldFolderName}/${pageTypes[type]}/${name}.md`;
 
-    if (existsSync(join(world.root, path))) {
+    if (files().exists(join(world.root, path))) {
         const problem = world.problems.find((candidate) => candidate.includes(path));
         throw new Error(`${path} already exists, but it cannot be read as a page${problem === undefined ? "" : `: ${problem}`}. Fix it or remove it by hand.`);
     }

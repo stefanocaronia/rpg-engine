@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { relative } from "node:path";
-import { filesIn } from "../core/files.ts";
+import { relative, resolve } from "node:path";
 import { frozen } from "../core/frozen.ts";
+import { files } from "../core/store.ts";
 
 /**
  * A section of a rules text (RUL-1): a heading; a title in bold that opens a paragraph ("***Escaping a Grapple.*** A grappled creature…"), one level below the heading it is under;
@@ -28,7 +27,9 @@ export interface RuleSection
 /** The sections of the markdown files in a folder and its folders, file by file in order of path; none when there is no such folder. */
 export function readRuleBook(folder: string, source: string): RuleSection[]
 {
-    return frozen(markdownFiles(folder).flatMap((path) => ruleSections(readFileSync(path, "utf8"), relative(folder, path).replace(/\\/g, "/").replace(/\.md$/i, ""), source)));
+    // Each file is cut into sections once in a call (D-194).
+    const sectionsOf = (path: string): RuleSection[] => files().read(path, `rules ${source} ${resolve(folder)}`, (text) => ruleSections(text, relative(folder, path).replace(/\\/g, "/").replace(/\.md$/i, ""), source)) ?? [];
+    return frozen(markdownFiles(folder).flatMap(sectionsOf));
 }
 
 /** The files of rules in a folder and its folders, without .md, in order of path: the chapters of a game system, or the campaign's house rules. */
@@ -228,5 +229,5 @@ function plainTitle(title: string): string
 
 function markdownFiles(folder: string): string[]
 {
-    return filesIn(folder, (name) => /\.md$/i.test(name)).sort((first, second) => (first < second ? -1 : first > second ? 1 : 0));
+    return files().files(folder, (name) => /\.md$/i.test(name)).sort((first, second) => (first < second ? -1 : first > second ? 1 : 0));
 }

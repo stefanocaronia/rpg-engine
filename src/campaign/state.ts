@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Document, visit } from "yaml";
 import { z } from "zod";
+import { files } from "../core/store.ts";
 import { readYamlFile, readYamlValues, writeYamlFile } from "../core/yaml-file.ts";
 
 const stateFileName = "state.yaml";
@@ -30,7 +30,7 @@ export function readState(root: string): CampaignState
 export function readStateValues(root: string): Record<string, unknown>
 {
     const path = join(root, stateFileName);
-    const values = existsSync(path) ? readYamlValues(path, holds) : {};
+    const values = files().exists(path) ? readYamlValues(path, holds) : {};
     return values !== null && typeof values === "object" ? (values as Record<string, unknown>) : {};
 }
 
@@ -44,7 +44,7 @@ export function changeState(root: string, values: Partial<CampaignState>): void
 export function changeStateAt(root: string, changes: [string[], unknown][]): void
 {
     const path = join(root, stateFileName);
-    const document = existsSync(path) ? readYamlFile(path, holds) : new Document({});
+    const document = files().exists(path) ? readYamlFile(path, holds) : new Document({});
 
     for (const [keys, value] of changes) {
         if (value === undefined) {

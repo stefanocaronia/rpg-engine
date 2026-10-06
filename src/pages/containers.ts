@@ -1,6 +1,6 @@
 // Moving pages from one container to another (D-151, CON-4): everything is checked before anything is written.
-import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { files } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { links } from "./markdown.ts";
 import { changeFields, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
@@ -68,9 +68,9 @@ export function planMove(world: World, pages: Page[], destination: Page): MovePl
  */
 export function applyMove(world: World, plan: MovePlan): World
 {
-    const files = plan.edits.map(({ holder, field, remove, add }) => {
+    const changed = plan.edits.map(({ holder, field, remove, add }) => {
         const fullPath = join(world.root, holder.path);
-        const file = splitPageFile(readFileSync(fullPath, "utf8"));
+        const file = splitPageFile(files().text(fullPath) ?? "");
         const removed = remove.length === 0 ? file.frontmatter : changeFields(file.frontmatter, { remove: { [field]: remove } }, holder.path);
         // A container left with nothing loses the field, as if it had never held anything.
         const emptied = add.length === 0 && isEmptyList(readFields(removed, holder.path)[field]) ? changeFields(removed, { unset: [field] }, holder.path) : removed;
@@ -79,11 +79,11 @@ export function applyMove(world: World, plan: MovePlan): World
     });
     let after = world;
 
-    for (const [index, { holder, fullPath, text }] of files.entries()) {
+    for (const [index, { holder, fullPath, text }] of changed.entries()) {
         try {
-            writeFileSync(fullPath, text, "utf8");
+            files().write(fullPath, text);
         } catch (error) {
-            const written = files.slice(0, index).map((file) => file.holder.name);
+            const written = changed.slice(0, index).map((file) => file.holder.name);
             const done = written.length === 0 ? "Nothing moved" : `Written already: ${written.join(", ")}`;
             throw new Error(`${holder.path} could not be written (${error instanceof Error ? error.message : String(error)}). ${done}: fix it, then run the same move again, which finishes it.`);
         }

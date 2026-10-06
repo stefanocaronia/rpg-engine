@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
+import { files } from "../core/store.ts";
 import { campaignFileName, findCampaign } from "./find-campaign.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
@@ -20,10 +21,10 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     }
 
     const mcpConfig = mcpConfigWithRpg(root, platform);
-    mkdirSync(join(root, "sessions"), { recursive: true });
-    writeFileSync(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`, "utf8");
-    writeFileSync(join(root, "state.yaml"), "# The present of the game, kept by rpg: date and current scene.\n", "utf8");
-    writeFileSync(join(root, ".mcp.json"), JSON.stringify(mcpConfig, null, 2) + "\n", "utf8");
+    files().makeFolder(join(root, "sessions"));
+    files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
+    files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: date and current scene.\n");
+    files().write(join(root, ".mcp.json"), JSON.stringify(mcpConfig, null, 2) + "\n");
     return root;
 }
 
@@ -33,9 +34,9 @@ function mcpConfigWithRpg(root: string, platform: string): { mcpServers?: Record
     const path = join(root, ".mcp.json");
     let config: { mcpServers?: Record<string, unknown>; } = {};
 
-    if (existsSync(path)) {
+    if (files().exists(path)) {
         try {
-            config = JSON.parse(readFileSync(path, "utf8"));
+            config = JSON.parse(files().text(path) ?? "");
         } catch {
             throw new Error(`${path} is not valid JSON, so the rpg server cannot be added to it. Fix it or remove it by hand, then create the campaign again.`);
         }

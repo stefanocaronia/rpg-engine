@@ -1,8 +1,7 @@
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Context } from "./context.ts";
-import { frozen } from "./frozen.ts";
 import type { Problem } from "./problem.ts";
+import { files } from "./store.ts";
 
 /** One line of the campaign's log: something that changed in the game. */
 export interface LogEntry
@@ -30,33 +29,25 @@ export function newLogEntry(context: Context, type: string, visibility: LogEntry
 
 export function appendLogEntry(folder: string, entry: LogEntry): void
 {
-    appendFileSync(join(folder, logFileName), JSON.stringify(entry) + "\n", "utf8");
+    files().append(join(folder, logFileName), JSON.stringify(entry) + "\n");
 }
 
 /** The entries of the log; lines that are not entries, such as lines edited by hand, are left out: checkLog reports them. */
 export function readLog(folder: string): LogEntry[]
 {
-    return frozen(
-        logLines(folder).flatMap((line) => {
-            const read = line.trim() === "" ? undefined : readEntry(line);
-            return read !== undefined && "entry" in read ? [read.entry] : [];
-        }),
-    );
+    return logLines(folder).flatMap((read) => (read !== undefined && "entry" in read ? [read.entry] : []));
 }
 
 /** The lines of the log that are not log entries, such as lines edited by hand. */
 export function checkLog(folder: string): Problem[]
 {
-    return logLines(folder).flatMap((line, index) => {
-        const read = line.trim() === "" ? undefined : readEntry(line);
-        return read === undefined || "entry" in read ? [] : [{ path: logFileName, message: `line ${index + 1} ${read.problem}.`, fix: "repair or remove that line by hand" }];
-    });
+    return logLines(folder).flatMap((read, index) => read === undefined || "entry" in read ? [] : [{ path: logFileName, message: `line ${index + 1} ${read.problem}.`, fix: "repair or remove that line by hand" }]);
 }
 
-function logLines(folder: string): string[]
+/** Each line of the log, read once in a call: its entry, what keeps it from being one, or nothing for an empty line. */
+function logLines(folder: string): ({ entry: LogEntry; } | { problem: string; } | undefined)[]
 {
-    const logPath = join(folder, logFileName);
-    return existsSync(logPath) ? readFileSync(logPath, "utf8").split("\n") : [];
+    return files().read(join(folder, logFileName), "log", (text) => text.split("\n").map((line) => (line.trim() === "" ? undefined : readEntry(line)))) ?? [];
 }
 
 /** A line of the log read once: the entry, or what keeps it from being one. */

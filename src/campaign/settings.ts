@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Document, isMap, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
 import { z } from "zod";
 import type { Problem } from "../core/problem.ts";
+import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlFile, readYamlValues, writeYamlFile } from "../core/yaml-file.ts";
 import { campaignFileName } from "./find-campaign.ts";
@@ -63,7 +63,7 @@ export function readCoinsSetting(root: string): unknown
 export function readTextSetting(root: string, name: SettingName): string | undefined
 {
     try {
-        const value: unknown = parseDocument(readFileSync(join(root, campaignFileName), "utf8")).get(name);
+        const value: unknown = parseDocument(files().text(join(root, campaignFileName)) ?? "").get(name);
         return typeof value === "string" ? value : undefined;
     } catch {
         return undefined;
@@ -74,7 +74,7 @@ export function readTextSetting(root: string, name: SettingName): string | undef
 export function readListSetting(root: string, name: SettingName): string[]
 {
     try {
-        const value: unknown = parseDocument(readFileSync(join(root, campaignFileName), "utf8")).toJS()?.[name];
+        const value: unknown = parseDocument(files().text(join(root, campaignFileName)) ?? "").toJS()?.[name];
         return Array.isArray(value) ? value.map((item: unknown) => pairText(item) ?? item).filter((item): item is string => typeof item === "string" && item.trim() !== "") : [];
     } catch {
         return [];

@@ -28,4 +28,12 @@ describe("architecture", () => {
             }
         }
     });
+
+    it("reads and writes the campaign only through the store of the call, so that the MCP server can keep it (D-137, D-194)", () => {
+        // The store itself, and what reads the package rather than a campaign: its version, its instructions, its game systems; init looks for campaigns below.
+        const allowed = ["core/files.ts", "core/store.ts", "core/version.ts", "instructions/index.ts", "systems/game-system.ts", "campaign/create-campaign.ts"];
+        const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));
+        const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
+        expect(touching.sort()).toEqual(allowed.sort());
+    });
 });

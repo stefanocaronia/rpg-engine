@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { files } from "../core/store.ts";
 
 /** The file that marks a folder as a campaign and holds its settings. */
 export const campaignFileName = "campaign.yaml";
@@ -12,7 +12,7 @@ export function findCampaign(folder: string): string | undefined
 {
     let current = resolve(folder);
 
-    while (!existsSync(join(current, campaignFileName))) {
+    while (!files().exists(join(current, campaignFileName))) {
         const parent = dirname(current);
 
         if (parent === current) {

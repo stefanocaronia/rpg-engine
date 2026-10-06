@@ -1,8 +1,7 @@
-import { mkdirSync, readFileSync } from "node:fs";
-import { basename, join, relative, sep } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import type { FieldKind } from "../core/field-kind.ts";
-import { filesIn } from "../core/files.ts";
 import { frozen } from "../core/frozen.ts";
+import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
@@ -90,7 +89,7 @@ export interface Backlink
 export function createWorld(root: string): void
 {
     for (const folder of Object.values(pageTypes)) {
-        mkdirSync(join(root, worldFolderName, folder), { recursive: true });
+        files().makeFolder(join(root, worldFolderName, folder));
     }
 }
 
@@ -384,19 +383,31 @@ export function checkPageName(name: string): void
     }
 }
 
-/** Reads one page file of the campaign in `root`. */
+/** Reads one page file of the campaign in `root`, once in a call (D-194). */
 export function readPage(root: string, fullPath: string): Page
+{
+    const page = files().read(fullPath, `page ${resolve(root)}`, (text) => pageOf(root, fullPath, text));
+
+    if (page === undefined) {
+        throw new Error(`ENOENT: no such file or directory, open '${fullPath}'`);
+    }
+
+    return page;
+}
+
+/** The page that the text of a file in `root` writes. */
+function pageOf(root: string, fullPath: string, text: string): Page
 {
     const path = relative(root, fullPath).split(sep).join("/");
     const parts = path.split("/");
-    const file = splitPageFile(readFileSync(fullPath, "utf8"));
-    return frozen({
+    const file = splitPageFile(text);
+    return {
         name: basename(fullPath).replace(/\.md$/i, "").normalize("NFC"),
         type: parts.length > 2 ? typeOfFolder(parts[1]) : undefined,
         path,
         fields: readFields(file.frontmatter, path),
         body: file.body,
-    });
+    };
 }
 
 /** The page whose file in a folder's world/ is named `name`, with the type its folder gives, found by the file's name alone without reading the pages: enough to say that a page is there. */
@@ -404,7 +415,7 @@ export function pageFileNamed(root: string, name: string): { name: string; type?
 {
     const worldPath = join(root, worldFolderName);
     const wanted = comparableText(name.trim());
-    const file = filesIn(worldPath, (candidate) => /\.md$/i.test(candidate) && comparableText(candidate.slice(0, -3)) === wanted)[0];
+    const file = files().files(worldPath, (candidate) => /\.md$/i.test(candidate) && comparableText(candidate.slice(0, -3)) === wanted)[0];
     return file === undefined ? undefined : { name: basename(file).slice(0, -3), type: typeOfFolder(relative(worldPath, file).split(sep)[0]) };
 }
 
@@ -414,7 +425,7 @@ function readPages(root: string, system?: string): { pages: Page[]; problems: st
     const pages: Page[] = [];
     const problems: string[] = [];
 
-    for (const file of filesIn(join(root, worldFolderName), (name) => /\.md$/i.test(name))) {
+    for (const file of files().files(join(root, worldFolderName), (name) => /\.md$/i.test(name))) {
         try {
             const page = readPage(root, file);
             pages.push(system === undefined ? page : frozen({ ...page, system }));
