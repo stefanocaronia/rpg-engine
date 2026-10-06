@@ -134,15 +134,14 @@ export function changeListSetting(root: string, name: string, change: { add?: st
     const before = JSON.stringify(list.toJSON());
     const items = (): string[] => list.items.map((node) => String(isScalar(node) ? node.value : node));
 
-    for (const item of change.remove ?? []) {
-        const index = items().findIndex((other) => sameText(other, item));
+    const held = items();
+    const missing = (change.remove ?? []).find((item) => !held.some((other) => sameText(other, item)));
 
-        if (index === -1) {
-            throw new Error(`"${setting}" does not hold "${item}". It holds: ${items().length > 0 ? items().join("; ") : "nothing"}.`);
-        }
-
-        list.items.splice(index, 1);
+    if (missing !== undefined) {
+        throw new Error(`"${setting}" does not hold "${missing}", so nothing changed. It holds: ${held.length > 0 ? held.join("; ") : "nothing"}.`);
     }
+
+    list.items = list.items.filter((_, index) => !(change.remove ?? []).some((item) => sameText(held[index], item)));
 
     for (const item of change.add ?? []) {
         if (!items().some((other) => sameText(other, item))) {

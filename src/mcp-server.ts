@@ -26,7 +26,11 @@ const tooFastForPerson = 1500;
 
 // Hosts that declare forms but do not show them, by the entry point Claude Code gives its servers: inside the desktop app a form is closed at once,
 // or stays stuck while it renders (tried on 5 October 2026). There the master asks in words (ASK-1).
+// A claude started from inside the desktop app inherits its entry point, so its servers leave out the forms too.
 const entryPointsWithoutForms = ["claude-desktop"];
+
+// Hosts ask for the tools tens of milliseconds after initialized: the world, which takes a second or more to read in a large campaign, is read after that.
+const preloadAfter = 250;
 
 /**
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
@@ -59,7 +63,7 @@ export function createMcpServer(context: Context = defaultContext(), environment
 
         // The world is read once the host has the tools, never before: initialize and the list of tools answer at once (D-194).
         if (context.files instanceof SessionStore) {
-            setImmediate(() => void preload(context, context.files as SessionStore));
+            setTimeout(() => void preload(context, context.files as SessionStore), preloadAfter);
         }
     };
 
@@ -72,16 +76,11 @@ export function createMcpServer(context: Context = defaultContext(), environment
  */
 export async function startMcpServer(): Promise<void>
 {
-    const session = new SessionStore();
-
-    const leave = (): void => {
-        session.close();
-        process.exit(0);
-    };
-
+    const leave = (): never => process.exit(0);
     process.stdin.on("end", leave);
     process.stdin.on("close", leave);
-    await createMcpServer({ ...defaultContext(), files: session }).connect(new StdioServerTransport());
+    const context = defaultContext();
+    await createMcpServer({ ...context, files: new SessionStore({ systemFolders: context.systemFolders }) }).connect(new StdioServerTransport());
 }
 
 /** Reads the campaign of the server's folder, if there is one, before the first call needs it; a campaign that does not read waits for that call to say why. */

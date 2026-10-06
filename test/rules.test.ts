@@ -158,6 +158,14 @@ describe("searching the rules (RUL-3–RUL-5)", () => {
         expect(findRules(sections, "common").map((finding) => finding.section.path.at(-1))).toEqual(["Other", "Third", "Grappled", "Grappling"]);
     });
 
+    it("weighs a word again in the title, and half again in a title above, at any depth (RUL-5)", () => {
+        const sections = sectionsOf("# Creatures\n\n## Venom of spiders\n\nRare.\n\n### Widow\n\nA bite.\n\n## Snake\n\nIts venom kills.\n\n## Wolf\n\nIt bites.\n\n## Bear\n\nIt claws.\n\n## Boar\n\nIt charges.\n\n## Hawk\n\nIt flies.\n");
+        const scores = new Map(findRules(sections, "venom").map((finding) => [finding.section.path.at(-1), finding.score]));
+        expect([...scores.keys()]).toEqual(["Venom of spiders", "Widow", "Snake"]);
+        expect(scores.get("Venom of spiders")! / scores.get("Snake")!).toBeCloseTo(2);
+        expect(scores.get("Widow")! / scores.get("Snake")!).toBeCloseTo(1.5);
+    });
+
     it("finds nothing by a word that more than half of the sections have, such as in (RUL-5)", () => {
         const sections = sectionsOf("# Book\n\n## Falling\n\nfall in a pit\n\n## Swimming\n\nswim in water\n\n## Cover\n\ncover in combat\n");
         expect(findRules(sections, "in")).toEqual([]);

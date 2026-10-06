@@ -60,6 +60,8 @@ export {
     pageFileNamed,
     type PageMatch,
     pageNamed,
+    pagesWithName,
+    pageWithPath,
     parsePageReference,
     playerConcerns,
     searchPages,

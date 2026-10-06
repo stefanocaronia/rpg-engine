@@ -3,7 +3,7 @@ import { z } from "zod";
 import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { isInParty, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
@@ -231,7 +231,7 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
 /** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */
 function sceneMemberText(world: World, name: string): string
 {
-    const page = world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
+    const page = pagesWithName(world, name)[0];
 
     if (page === undefined || isPartyMember(page)) {
         return name;

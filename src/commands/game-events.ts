@@ -13,7 +13,9 @@ import {
     locate,
     newPageFields,
     type Page,
+    pagesWithName,
     type PageType,
+    pageWithPath,
     parsePageReference,
     standardValues,
     systemLabel,
@@ -175,7 +177,7 @@ export function eventsToFire(before: World, after: World, now: GameDate | undefi
 
     for (const event of plannedEvents(after)) {
         const cause = triggerOf(event.page, factsAfter);
-        const old = before.pages.find((page) => page.path === event.page.path);
+        const old = pageWithPath(before, event.page.path);
         const wasPlanned = old !== undefined && isPlannedEvent(old.type, old.fields);
         const dateChanged = JSON.stringify(old?.fields.date) !== JSON.stringify(event.page.fields.date);
         // Due before, it already came; set off before with the same date, it waits for that date, put off or given by an earlier command.
@@ -274,7 +276,7 @@ export function conditionNotes(world: World, when: unknown): string[]
     const read = isEmptyField(when) ? { triggers: [] } : readTriggers(when);
     const named = "triggers" in read ? read.triggers.flatMap(namedPages) : [];
 
-    return [...new Set(named)].filter((name) => !world.pages.some((page) => comparableText(page.name) === comparableText(name))).map((name) => {
+    return [...new Set(named)].filter((name) => pagesWithName(world, name).length === 0).map((name) => {
         const system = systemPageNamed(world, name);
 
         if (system !== undefined) {
@@ -352,7 +354,7 @@ function whenProblem(world: World, when: unknown): string | undefined
 function systemConditionProblem(world: World, trigger: Trigger): string | undefined
 {
     const system = namedPages(trigger)
-        .filter((name) => !world.pages.some((page) => comparableText(page.name) === comparableText(name)))
+        .filter((name) => pagesWithName(world, name).length === 0)
         .map((name) => systemPageNamed(world, name))
         .find((page) => page !== undefined);
     return system === undefined ? undefined : systemConditionText(system);
@@ -369,7 +371,7 @@ function systemConditionText(page: Page): string
 function deadMakers(world: World, event: Page): string[]
 {
     return linksIn(event.fields.by).flatMap((name) => {
-        const pages = world.pages.filter((page) => comparableText(page.name) === comparableText(name));
+        const pages = pagesWithName(world, name);
         return pages.length === 1 && pages[0].type === "character" && pages[0].fields.status === "dead" ? [pages[0].name] : [];
     });
 }
@@ -377,7 +379,7 @@ function deadMakers(world: World, event: Page): string[]
 /** A status condition on a page whose type has no such status, such as [[Ossario]] dead; pages that do not exist are left to the notes and the link check. */
 function statusProblem(world: World, trigger: Trigger): string | undefined
 {
-    const pages = trigger.kind === "status" ? world.pages.filter((page) => comparableText(page.name) === comparableText(trigger.page)) : [];
+    const pages = trigger.kind === "status" ? pagesWithName(world, trigger.page) : [];
 
     if (trigger.kind !== "status" || pages.length !== 1) {
         return undefined;

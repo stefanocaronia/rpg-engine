@@ -118,7 +118,7 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
  */
 export function findPage(world: World, name: string): Page | undefined
 {
-    const found = pagesNamed(world).get(comparableText(name)) ?? [];
+    const found = pagesWithName(world, name);
 
     if (found.length > 1) {
         throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by hand: names must be unique in the campaign.`);
@@ -140,8 +140,11 @@ export function systemFirstFix(world: World, what = "a page"): string | undefine
     return world.noSystem === true ? `if it is ${what} of a game system, choose the campaign's system first, with config` : undefined;
 }
 
-/** The pages of the campaign by the name as it is compared, in the world's order: built once for each world, which never changes (D-194). */
-function pagesNamed(world: World): Map<string, Page[]>
+/**
+ * The pages of the campaign with this name, ignoring case and Unicode normalization, in the world's order: from an index built once for each world, which never
+ * changes, so that following a chain costs a lookup however many pages there are (INH-16, D-194).
+ */
+export function pagesWithName(world: World, name: string): Page[]
 {
     let names = namesByWorld.get(world);
 
@@ -156,10 +159,25 @@ function pagesNamed(world: World): Map<string, Page[]>
         namesByWorld.set(world, names);
     }
 
-    return names;
+    return names.get(comparableText(name)) ?? [];
 }
 
 const namesByWorld = new WeakMap<World, Map<string, Page[]>>();
+
+/** The page of the campaign at this path, from an index built once for each world (D-194). */
+export function pageWithPath(world: World, path: string): Page | undefined
+{
+    let paths = pathsByWorld.get(world);
+
+    if (paths === undefined) {
+        paths = new Map(world.pages.map((page) => [page.path, page]));
+        pathsByWorld.set(world, paths);
+    }
+
+    return paths.get(path);
+}
+
+const pathsByWorld = new WeakMap<World, Map<string, Page>>();
 
 /** The page of the campaign's game system with this name, ignoring case; undefined when there is none (SYS-3). */
 export function systemPageNamed(world: World, name: string): Page | undefined
@@ -309,7 +327,7 @@ export function playerConcerns(world: World): (page: Page) => boolean
 
     for (let holder = queue.shift(); holder !== undefined; holder = queue.shift()) {
         for (const name of heldNames(holder)) {
-            const page = pagesNamed(world).get(comparableText(name))?.[0];
+            const page = pagesWithName(world, name)[0];
 
             if (page !== undefined && !held.has(page) && canHold(holder.type, page.type)) {
                 held.add(page);

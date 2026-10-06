@@ -2,7 +2,7 @@
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
 
@@ -72,6 +72,7 @@ export class FileStore
         if (listing === undefined) {
             listing = filesIn(key, () => true);
             this.listings.set(key, listing);
+            this.onKept(key);
         }
 
         return listing.filter((path) => keep(basename(path)));
@@ -85,6 +86,11 @@ export class FileStore
 
     /** Keeps the files of a campaign up to date for later calls: only the store of a session does (D-193). */
     track(_root: string): void
+    {
+    }
+
+    /** A file, or the listing of a folder, that the store keeps from now on: a session tells what lasts from a call to the next (D-193). */
+    protected onKept(_path: string): void
     {
     }
 
@@ -143,6 +149,7 @@ export class FileStore
         if (entry === undefined) {
             entry = { text: readText(key), readings: new Map() };
             this.kept.set(key, entry);
+            this.onKept(key);
         }
 
         return entry;
@@ -160,6 +167,7 @@ export class FileStore
             this.kept.delete(key);
         } else {
             this.kept.set(key, { text: now.text, readings: new Map() });
+            this.onKept(key);
         }
 
         this.forgetBuiltFrom(key);
@@ -201,11 +209,11 @@ export function withFiles<T>(store: FileStore, work: () => T): T
     return running.getStore() === undefined ? running.run(store, work) : work();
 }
 
-/** Whether a path is inside a folder, below it. */
+/** Whether a path is inside a folder, below it: a folder named like "..notes" is inside too. */
 export function isInside(folder: string, path: string): boolean
 {
     const below = relative(folder, path);
-    return below !== "" && !below.startsWith("..") && !isAbsolute(below);
+    return below !== "" && below !== ".." && !below.startsWith(`..${sep}`) && !isAbsolute(below);
 }
 
 /** The text of a file, or undefined when there is none: a folder or a file that cannot be read fails as before. */

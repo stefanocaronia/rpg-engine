@@ -3,7 +3,7 @@ import { introductionText, secretNames, sectionTitles, textParts } from "./markd
 import type { FieldChange } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
 import { isEmptyField, isStandardField, misspelledStandardField } from "./standard-fields.ts";
-import { linksIn, type Page, systemPageNamed, type World } from "./world.ts";
+import { linksIn, type Page, pagesWithName, systemPageNamed, type World } from "./world.ts";
 
 // The field in which a page of a type names what it derives from, named after the type of its base: for a character or a creature, the creature it is a kind of;
 // for an item, the item (INH-1, D-164). On other types a field with that name means something else, such as the wolf of a trophy, and passes nothing on.
@@ -11,9 +11,6 @@ const baseFields: Partial<Record<PageType, "creature" | "item">> = { character: 
 
 // INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, and what holds it for a while. Fields a system declares are inherited.
 const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
-
-// Pages by comparable name, built once for each loaded world: following a chain costs a lookup, however many pages there are (INH-16).
-const namesCache = new WeakMap<World, Map<string, Page[]>>();
 
 /** A field and its value as a page writes it. */
 export interface FieldValue
@@ -257,8 +254,8 @@ export function introductionFollowersOf(world: World, page: Page): Page[]
  */
 export function uniquePage(world: World, name: string): Page | undefined
 {
-    const found = pagesNamed(world).get(comparableText(name));
-    return found === undefined ? systemPageNamed(world, name) : found.length === 1 ? found[0] : undefined;
+    const found = pagesWithName(world, name);
+    return found.length === 0 ? systemPageNamed(world, name) : found.length === 1 ? found[0] : undefined;
 }
 
 /** The field in which a page of this type names what it derives from (INH-1): creature for characters and creatures, item for items; undefined for the other types. */
@@ -356,22 +353,4 @@ function isFixedName(page: Page, field: string): boolean
 function heldName(page: Page, field: string): string | undefined
 {
     return Object.keys(page.fields).findLast((name) => comparableText(name) === comparableText(field) && !isEmptyField(page.fields[name]));
-}
-
-function pagesNamed(world: World): Map<string, Page[]>
-{
-    let names = namesCache.get(world);
-
-    if (names === undefined) {
-        names = new Map();
-
-        for (const page of world.pages) {
-            const key = comparableText(page.name);
-            names.set(key, [...(names.get(key) ?? []), page]);
-        }
-
-        namesCache.set(world, names);
-    }
-
-    return names;
 }

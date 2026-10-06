@@ -2,7 +2,24 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { backlinks, baseChain, findPage, formatFields, inheritedByBase, inheritedFields, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, systemPageNamed, textParts, type World } from "../pages/index.ts";
+import {
+    backlinks,
+    baseChain,
+    findPage,
+    formatFields,
+    inheritedByBase,
+    inheritedFields,
+    locate,
+    type Page,
+    pagesWithName,
+    parsePageReference,
+    readSection,
+    secretNames,
+    sectionTitles,
+    systemPageNamed,
+    textParts,
+    type World,
+} from "../pages/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
@@ -107,7 +124,7 @@ function nameWithSystem(page: Page): string
 /** The place of the open scene, where its copies are (ENV-2); undefined when it has none, or none that exists. */
 function scenePlace(world: World, place: string | undefined): Page | undefined
 {
-    return place === undefined ? undefined : world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(place).name));
+    return place === undefined ? undefined : pagesWithName(world, parsePageReference(place).name)[0];
 }
 
 /** "ac 15 (13 without)": the values the page's effects give, each with the one it reads without them (EFF-10). */

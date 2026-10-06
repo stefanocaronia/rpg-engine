@@ -115,7 +115,10 @@ describe("rpg config", () => {
         expect(readLogFile(folder)).toHaveLength(logLines);
 
         expect((await runCommandLine(["config", "lines", "--remove", "ragni"], context)).output).toBe("lines: corpi descritti nei dettagli");
-        expect((await runCommandLine(["config", "lines", "--remove", "lupi"], context)).output).toBe(`"lines" does not hold "lupi". It holds: corpi descritti nei dettagli.`);
+        expect((await runCommandLine(["config", "lines", "--remove", "lupi"], context)).output).toBe(`"lines" does not hold "lupi", so nothing changed. It holds: corpi descritti nei dettagli.`);
+        expect((await runCommandLine(["config", "lines", "--remove", "corpi descritti nei dettagli", "--remove", "lupi"], context)).output).toBe(
+            `"lines" does not hold "lupi", so nothing changed. It holds: corpi descritti nei dettagli.`,
+        );
         expect((await runCommandLine(["config", "lines", "lupi"], context)).output).toBe(`"lines" is a list: change it one item at a time with add and remove.`);
         expect((await runCommandLine(["config", "language", "--add", "it"], context)).output).toBe(`"language" holds one value: give the new value instead of add or remove.`);
         expect((await runCommandLine(["config", "veils", "--add", "torture"], context)).output).toBe("veils: torture");

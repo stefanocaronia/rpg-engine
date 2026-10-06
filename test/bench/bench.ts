@@ -43,7 +43,7 @@ console.log(`| pages | command | first call | then (median of ${warmRuns}) |\n|-
 
 for (const size of sizes) {
     const folder = join(scratch, `campaign-${size}`);
-    const session = new SessionStore();
+    const session = new SessionStore({ systemFolders: [systems] });
     const context = { ...benchContext(folder, [systems]), files: session };
     await must(context, ["init", "--name", "Banco", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"]);
     await must(context, ["advance", "--to", "day 1, 18:00"]);

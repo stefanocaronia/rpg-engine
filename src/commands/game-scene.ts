@@ -4,7 +4,7 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, parsePageReference, readOnlyMessage, systemFirstFix, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
+import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, pagesWithName, parsePageReference, readOnlyMessage, systemFirstFix, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
 import { missingSystemHint } from "./game-world.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
@@ -119,7 +119,7 @@ export function copyName(world: World, scene: Scene | undefined, name: string): 
 {
     const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), name);
 
-    if (copy !== undefined && world.pages.some((page) => comparableText(page.name) === comparableText(copy))) {
+    if (copy !== undefined && pagesWithName(world, copy).length > 0) {
         throw new Error(`${copy} is both a copy in the open scene and a page, so it is not clear which one is meant. Close the scene, which removes the copy, or rename the page. Nothing changed.`);
     }
 
@@ -175,7 +175,7 @@ export function copiesReadingFrom(world: World, scene: Scene, page: Page): strin
 export function partyAwayText(world: World, scene: Scene): string
 {
     // Read without stopping at names two pages share, which validate reports.
-    const pageCalled = (link: string): Page | undefined => world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(link).name));
+    const pageCalled = (link: string): Page | undefined => pagesWithName(world, parsePageReference(link).name)[0];
     const place = scene.place === undefined ? undefined : pageCalled(scene.place);
     const members = scene.with.map(pageCalled).filter((page): page is Page => page !== undefined && isInParty(page));
     const away = place === undefined || scene.type === "travel" ? [] : members.filter((page) => !locate(world, page).chain.includes(place));
@@ -230,7 +230,7 @@ export function sceneProblems(root: string, world: World): Problem[]
         return [];
     }
 
-    const exists = (name: string): boolean => world.pages.some((page) => comparableText(page.name) === comparableText(name));
+    const exists = (name: string): boolean => pagesWithName(world, name).length > 0;
     // A copy may copy a creature of the game system (SYS-7).
     const creatureExists = (name: string): boolean => exists(name) || systemPageNamed(world, name) !== undefined;
     const links = [scene.place, ...scene.with].filter((link) => link !== undefined).map((link) => ({ link, found: exists }));

@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -232,7 +232,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     const after = brought.world;
     const system = campaignSystem(root, context);
     const members = [...characters.map((page) => characterMember(after, page, system)), ...copyMembers(after, copies)];
-    const around = surroundingsText(surroundings(after, place === undefined ? undefined : after.pages.find((page) => page.path === place.path)));
+    const around = surroundingsText(surroundings(after, place === undefined ? undefined : pageWithPath(after, place.path)));
     return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members, around, moved: brought.moved, notes: brought.notes };
 }
 
@@ -434,7 +434,7 @@ function close(root: string, world: World, summary: string, context: Context): S
     });
 
     logCopies(root, context, current.title, current.copies);
-    const left = current.left?.filter((name) => world.pages.some((page) => comparableText(page.name) === comparableText(name)));
+    const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
     return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless };

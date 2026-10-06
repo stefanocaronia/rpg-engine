@@ -76,6 +76,9 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
             "There is no page named Wolf. Look for it with the find command. The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.",
         );
         expect(await ok("show", "Ennio")).toContain("Ennio (character)");
+        // Installed, the system goes unsaid.
+        handWrite("campaign.yaml", "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\n");
+        expect(await refused("show", "Lupastro")).toBe("There is no page named Lupastro. Look for it with the find command.");
     });
 });
 

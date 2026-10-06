@@ -1,13 +1,15 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
-import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { type ChildProcessByStdio, spawn } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
+import { SessionStore } from "../src/core/session-store.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
@@ -189,18 +191,122 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     });
 });
 
-describe("rpg mcp, as a host starts it", () => {
-    it("ends when the host goes and its input closes, after its watchers started (D-193)", async () => {
+describe("MCP server, with the files of a session (D-193)", () => {
+    it("makes the session ready before every tool: what its watchers name, and everything at instructions", async () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
-        const server = spawn(process.execPath, [fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "mcp"], { cwd: folder, stdio: ["pipe", "pipe", "ignore"] });
-        const answered = new Promise<void>((done) => server.stdout.on("data", (data: Buffer) => data.toString().includes('"id":2') && done()));
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=12/12"], testContext(folder));
+        const reports = new Map<string, (name: string | undefined) => void>();
+        const session = new SessionStore({ watchFolder: (watched, changed) => (reports.set(resolve(watched), changed), { close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+        const status = async (): Promise<string> => ((await host.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
+        const bruna = (hp: string): void => writeFileSync(join(folder, "world", "characters", "Bruna.md"), `---\nrole: pc\nhp: ${hp}\n---\n`);
+
+        try {
+            // The campaign is watched once the host has the tools, before any call.
+            await vi.waitFor(() => expect(reports.has(resolve(folder, "world", "characters"))).toBe(true));
+            expect(await status()).toContain("hp 12/12");
+            bruna("7/12");
+            expect(await status()).toContain("hp 12/12");
+            await host.callTool({ name: "instructions", arguments: {} });
+            expect(await status()).toContain("hp 7/12");
+            bruna("6/12");
+            reports.get(resolve(folder, "world", "characters"))?.("Bruna.md");
+            expect(await status()).toContain("hp 6/12");
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+});
+
+describe("MCP server, starting a session (D-194)", () => {
+    it("lists the tools to a host that asks for them after initialized before it reads the campaign", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        const order: string[] = [];
+
+        class SeenSession extends SessionStore
+        {
+            override async ready(everything = false): Promise<void>
+            {
+                order.push(everything ? "read the campaign" : "ready");
+                return super.ready(everything);
+            }
+        }
+
+        const session = new SeenSession({ watchFolder: () => ({ close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+
+        try {
+            // As Claude Code and Gemini CLI do, some 40 milliseconds after initialized.
+            await new Promise((done) => setTimeout(done, 50));
+            await host.listTools();
+            order.push("tools");
+            await vi.waitFor(() => expect(order).toContain("read the campaign"));
+            expect(order).toEqual(["tools", "read the campaign"]);
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+});
+
+describe("rpg mcp, as a host starts it", () => {
+    beforeEach(async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+    });
+
+    /** The server in a new process, as a host starts it, initialized by a host with these capabilities; what it writes goes in `output`. */
+    async function startServer(capabilities: object, output: string[]): Promise<{ send: (message: object) => boolean; server: ChildProcessByStdio<Writable, Readable, null>; }>
+    {
+        // Not as the host that runs the tests may be: one whose forms the server leaves out.
+        const env = { ...process.env, CLAUDE_CODE_ENTRYPOINT: "" };
+        const server = spawn(process.execPath, [fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "mcp"], { cwd: folder, env, stdio: ["pipe", "pipe", "ignore"] });
+        server.stdout.on("data", (data: Buffer) => output.push(data.toString()));
         const send = (message: object): boolean => server.stdin.write(`${JSON.stringify(message)}\n`);
-        send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: LATEST_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "test", version: "1" } } });
+        send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: LATEST_PROTOCOL_VERSION, capabilities, clientInfo: { name: "test", version: "1" } } });
+        await until(output, '"id":1');
         send({ jsonrpc: "2.0", method: "notifications/initialized" });
-        send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "status", arguments: {} } });
-        await answered;
-        const ended = new Promise<number | null>((done) => server.on("exit", done));
+        return { send, server };
+    }
+
+    /** The exit code of the server once its input closes; "still running" if it is still there after five seconds. */
+    async function endInput(server: ChildProcessByStdio<Writable, Readable, null>): Promise<number | string | null>
+    {
+        const ended = new Promise<number | string | null>((done) => {
+            const timer = setTimeout(() => (server.kill(), done("still running")), 5000);
+            server.on("exit", (code) => (clearTimeout(timer), done(code)));
+        });
         server.stdin.end();
-        expect(await ended).toBe(0);
+        return ended;
+    }
+
+    async function until(output: string[], text: string): Promise<void>
+    {
+        while (!output.join("").includes(text)) {
+            await new Promise((done) => setTimeout(done, 20));
+        }
+    }
+
+    it("answers, and ends when the host goes and its input closes, after its watchers started (D-193)", async () => {
+        const output: string[] = [];
+        const { send, server } = await startServer({}, output);
+        send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "status", arguments: {} } });
+        await until(output, '"id":2');
+        expect(output.join("")).toContain("Rocca");
+        expect(await endInput(server)).toBe(0);
+    }, 30000);
+
+    it("ends when the host goes while a player's form still waits", async () => {
+        const output: string[] = [];
+        const { send, server } = await startServer({ elicitation: {} }, output);
+        send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "ask", arguments: { question: "Apri la porta?", options: ["Sì", "No"] } } });
+        await until(output, "elicitation/create");
+        expect(await endInput(server)).toBe(0);
     }, 30000);
 });

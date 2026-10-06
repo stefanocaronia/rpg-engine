@@ -9,16 +9,14 @@ import { findSystem, type GameSystem, installedSystems } from "../systems/index.
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
 {
-    const named = readTextSetting(root, "system");
-    const system = campaignSystem(root, context);
-    // The same world until one of its pages, campaign.yaml or its game system changes: in a session, across calls (D-137).
-    const from = [join(root, worldFolderName), join(root, campaignFileName), ...(system === undefined ? [] : [system.folder])].map((path) => resolve(path));
+    // The same world until one of its pages or campaign.yaml changes: in a session, across calls (D-137). A game system does not change while the server runs.
+    const from = [join(root, worldFolderName), join(root, campaignFileName)].map((path) => resolve(path));
     const dependsOn = (path: string): boolean => from.some((source) => source === path || isInside(source, path) || isInside(path, source));
-    return files().remember(
-        `world ${resolve(root)}`,
-        dependsOn,
-        () => loadWorld(root, { system, language: readTextSetting(root, "language"), missingSystem: named !== undefined && system === undefined ? named : undefined, noSystem: named === undefined }),
-    );
+    return files().remember(`world ${resolve(root)}`, dependsOn, () => {
+        const named = readTextSetting(root, "system");
+        const system = campaignSystem(root, context);
+        return loadWorld(root, { system, language: readTextSetting(root, "language"), missingSystem: system === undefined ? named : undefined, noSystem: named === undefined });
+    });
 }
 
 /** The installed game system that campaign.yaml names; undefined when it names none, or one that is not installed (SYS-1). */

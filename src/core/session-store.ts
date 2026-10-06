@@ -1,8 +1,9 @@
-// The files as the MCP server keeps them for a whole session (D-137, D-193): what a call read stays for the next ones, until a watcher says that a file
-// changed. At the start, at every instructions, and whenever a watcher fails or cannot start, a full check compares the text of every file kept with the disk.
+// The files as the MCP server keeps them for a whole session (D-137, D-193): what a call read of a campaign stays for the next ones, until a watcher says
+// that a file changed. At the start, at every instructions, and whenever a watcher fails or cannot start, a full check compares the text of every file kept
+// of the campaigns with the disk. The game systems stay as they were read: they do not change while the server runs. Anything else is read at every call.
 import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, join, resolve, sep } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { foldersIn } from "./files.ts";
 import { FileStore, isInside, readText } from "./store.ts";
 
@@ -12,20 +13,30 @@ export type WatchFolder = (folder: string, changed: (name: string | undefined) =
 // The folders of a campaign below its own that hold what is kept: its pages and its house rules. The campaign's folder holds its settings, state and log.
 const watchedTrees = ["world", "rules"];
 
+// More changes than this between two calls, and a watcher on Linux may have lost some without a word: inotify keeps 16384 by default, then drops the rest.
+const tooManyChanges = 10_000;
+
 /** The files of a session of the MCP server, kept between calls and watched (D-193). */
 export class SessionStore extends FileStore
 {
     private readonly watchers = new Map<string, { close(): void; }>();
     private readonly roots = new Set<string>();
     private readonly reported = new Set<string>();
+    private readonly passing = new Set<string>();
+    private readonly systemFolders: string[];
     private readonly watchFolder: WatchFolder;
-    private checkAll = true;
+    private checking: Promise<void> | undefined;
+    private checkAll = false;
     private unwatchable = false;
+    private changes = 0;
+    private wrote = false;
 
-    constructor(watchFolder: WatchFolder = watchWithNode)
+    /** `systemFolders` hold the game systems, kept for the whole session; `watchFolder` is Node's watcher, unless a test gives its own. */
+    constructor(options: { systemFolders?: string[]; watchFolder?: WatchFolder; } = {})
     {
         super();
-        this.watchFolder = watchFolder;
+        this.systemFolders = (options.systemFolders ?? []).map((folder) => resolve(folder));
+        this.watchFolder = options.watchFolder ?? watchWithNode;
     }
 
     /** Starts watching a campaign, the first time a call finds it; what was kept of it before is read again. */
@@ -43,27 +54,34 @@ export class SessionStore extends FileStore
     }
 
     /**
-     * Makes the store right for a call: lets the watchers' last events in, then reads again the files they named; or compares every file kept with the disk,
-     * when `everything` is asked, as at instructions, or when a watcher failed or could not start.
+     * Makes the store right for a call: forgets what lasts only for a call, lets the watchers' last events in and reads again the files they named; first it
+     * compares every file kept with the disk when `everything` is asked, as at instructions, when a watcher failed or could not start, or after too many
+     * changes. One full check runs at a time: a call that comes while one is under way waits for it.
      */
     async ready(everything = false): Promise<void>
     {
         await new Promise((done) => setImmediate(done));
+        this.wrote = false;
+        this.forgetPassing();
 
-        if (everything || this.checkAll || this.unwatchable) {
-            await this.checkEverything();
-            return;
+        if (everything || this.checkAll || this.unwatchable || this.changes > tooManyChanges) {
+            this.checking ??= this.checkEverything().finally(() => (this.checking = undefined));
         }
 
+        await this.checking;
         const reported = [...this.reported];
         this.reported.clear();
+        this.changes = 0;
 
         for (const path of reported) {
             this.recheck(path);
         }
     }
 
-    /** The text on the disk, before a write: a store that kept another one missed a change, and checks everything at the next call. */
+    /**
+     * The text on the disk, before a write. A file kept with another text was changed by hand without the store knowing: what the command worked out from it no
+     * longer holds, so it stops before writing, and the next call checks everything (D-196).
+     */
     override fresh(path: string): string | undefined
     {
         const now = readText(resolve(path));
@@ -71,9 +89,33 @@ export class SessionStore extends FileStore
         if (now !== this.text(path)) {
             this.changed(path, { text: now }, now !== undefined);
             this.checkAll = true;
+            const name = this.shownPath(resolve(path));
+            throw new Error(
+                this.wrote
+                    ? `${name} was changed by hand since this call read it, so the command stopped before writing it, after other files: look at them again with status and validate, and finish by hand only what is missing.`
+                    : `${name} was changed by hand since this call read it, so the command wrote nothing: look at it again, as with show or status, and repeat the command if it still fits.`,
+            );
         }
 
         return now;
+    }
+
+    override write(path: string, text: string): void
+    {
+        super.write(path, text);
+        this.wrote = true;
+    }
+
+    override append(path: string, text: string): void
+    {
+        super.append(path, text);
+        this.wrote = true;
+    }
+
+    override remove(path: string): void
+    {
+        super.remove(path);
+        this.wrote = true;
     }
 
     /** Stops watching, as the server closes. */
@@ -84,6 +126,39 @@ export class SessionStore extends FileStore
         }
 
         this.watchers.clear();
+    }
+
+    /** What a call keeps outside the campaigns watched and the game systems lasts for that call only. */
+    protected override onKept(path: string): void
+    {
+        if (!this.lasts(path)) {
+            this.passing.add(path);
+        }
+    }
+
+    /** Whether what is kept of a path lasts from a call to the next: a file of a campaign watched, or of a game system. */
+    private lasts(path: string): boolean
+    {
+        return [...this.roots, ...this.systemFolders].some((folder) => path === folder || isInside(folder, path));
+    }
+
+    /** A path as messages give it: inside a campaign, from its folder. */
+    private shownPath(path: string): string
+    {
+        const root = [...this.roots].find((folder) => isInside(folder, path));
+        return root === undefined ? path : relative(root, path).replaceAll(sep, "/");
+    }
+
+    /** Forgets what lasts only for a call, such as a campaign.yaml not there yet, which another process may write: the next call reads it again. */
+    private forgetPassing(): void
+    {
+        for (const path of [...this.passing].filter((passing) => !this.lasts(passing))) {
+            this.kept.delete(path);
+            this.listings.delete(path);
+            this.forgetBuiltFrom(path);
+        }
+
+        this.passing.clear();
     }
 
     /** Watches each folder of the campaigns that holds what is kept, those that came into it too; one that cannot be watched makes every call check everything. */
@@ -103,6 +178,8 @@ export class SessionStore extends FileStore
     /** A change a watcher saw: a name in its folder; without one, or with its own folder's path as Windows gives it when the folder goes, it has lost track. */
     private report(folder: string, name: string | undefined): void
     {
+        this.changes++;
+
         if (name === undefined || name === "" || isAbsolute(name)) {
             this.lose(folder);
             return;
@@ -133,11 +210,11 @@ export class SessionStore extends FileStore
             return;
         }
 
-        // Only a name that is gone may be a folder that held what is kept: looked for only then.
+        // Only a name that is gone may be a folder watched, or one that held what is kept: looked for only then.
         const under = `${path}${sep}`;
 
-        if (now === undefined && [...this.kept.keys(), ...this.listings.keys(), ...this.watchers.keys()].some((other) => other.startsWith(under))) {
-            // A folder that went, renamed or removed, with all it held: only its name comes.
+        if (now === undefined && (this.watchers.has(path) || [...this.kept.keys(), ...this.listings.keys(), ...this.watchers.keys()].some((other) => other.startsWith(under)))) {
+            // A folder that went, renamed or removed, with all it held: only its name comes, and on Linux nothing more from its own watcher.
             this.forgetUnder(path);
             this.closeWatchersUnder(path);
             return;
@@ -155,6 +232,7 @@ export class SessionStore extends FileStore
     {
         this.reported.clear();
         this.checkAll = false;
+        this.changes = 0;
         const paths = [...this.kept.keys()].filter((path) => [...this.roots].some((root) => isInside(root, path)));
         const texts = await Promise.all(paths.map((path) => readFile(path, "utf8").catch(() => undefined)));
 
@@ -186,9 +264,11 @@ export class SessionStore extends FileStore
 
     private closeWatchersUnder(path: string): void
     {
-        for (const folder of [...this.watchers.keys()].filter((other) => other === path || isInside(path, other))) {
-            this.watchers.get(folder)?.close();
-            this.watchers.delete(folder);
+        for (const [folder, watcher] of this.watchers) {
+            if (folder === path || isInside(path, folder)) {
+                watcher.close();
+                this.watchers.delete(folder);
+            }
         }
     }
 }

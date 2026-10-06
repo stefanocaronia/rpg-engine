@@ -4,7 +4,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { isInParty, locate, type Page, pageNamed, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
+import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
@@ -136,7 +136,7 @@ function pageOf(world: World, scene: Scene | undefined, name: string, role: "wha
 function followParty(root: string, context: Context, world: World, scene: Scene, went: Page[], destination: Page): string | undefined
 {
     // Read without stopping at names two pages share: the move is already done.
-    const pageCalled = (link: string): Page | undefined => world.pages.find((page) => comparableText(page.name) === comparableText(parsePageReference(link).name));
+    const pageCalled = (link: string): Page | undefined => pagesWithName(world, parsePageReference(link).name)[0];
     const party = scene.with.map(pageCalled).filter((page): page is Page => page !== undefined && isInParty(page));
     const gone = party.filter((page) => went.some((other) => other.path === page.path));
     const place = scene.place === undefined ? undefined : pageCalled(scene.place);

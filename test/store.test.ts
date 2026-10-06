@@ -1,8 +1,8 @@
 // The store of a call (D-137, D-194): each file read once and kept frozen, what a call writes kept, and the store of the running command reached with files().
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { files, FileStore, withFiles } from "../src/core/store.ts";
+import { files, FileStore, isInside, withFiles } from "../src/core/store.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 let folder: string;
@@ -34,6 +34,7 @@ describe("the store of a call", () => {
         const store = new FileStore();
         expect(store.text(join(folder, "nessuno.md"))).toBeUndefined();
         expect(store.exists(join(folder, "nessuno.md"))).toBe(false);
+        expect(store.read(join(folder, "nessuno.md"), "test", (text) => text.length)).toBeUndefined();
         writeFileSync(join(folder, "rotto.md"), "x");
         let tries = 0;
         const broken = (): unknown =>
@@ -59,10 +60,35 @@ describe("the store of a call", () => {
         store.remove(join(folder, "world", "places", "Mulino.md"));
         expect(pages()).toEqual(["world/characters/Ennio.md"]);
         expect(store.exists(join(folder, "world", "places", "Mulino.md"))).toBe(false);
+        expect(existsSync(join(folder, "world", "places", "Mulino.md"))).toBe(false);
+        store.append(join(folder, "world", "places", "Note.md"), "nota\n");
+        expect(pages().sort()).toEqual(["world/characters/Ennio.md", "world/places/Note.md"]);
         expect(store.text(join(folder, "log.jsonl"))).toBeUndefined();
         store.append(join(folder, "log.jsonl"), "a\n");
         store.append(join(folder, "log.jsonl"), "b\n");
         expect(store.text(join(folder, "log.jsonl"))).toBe("a\nb\n");
+    });
+
+    it("lists a folder once, as it was when first listed", () => {
+        writeFileSync(join(folder, "a.md"), "uno");
+        const store = new FileStore();
+        const listed = (): number => store.files(folder, (name) => name.endsWith(".md")).length;
+        expect(listed()).toBe(1);
+        writeFileSync(join(folder, "b.md"), "due");
+        expect(listed()).toBe(1);
+        expect(new FileStore().files(folder, (name) => name.endsWith(".md")).length).toBe(2);
+    });
+
+    it("remembers a value until a file it is built from changes", () => {
+        const store = new FileStore();
+        let builds = 0;
+        const value = (): object => store.remember("pages", (path) => isInside(join(folder, "world"), path), () => ({ build: ++builds }));
+        const first = value();
+        store.append(join(folder, "log.jsonl"), "{}\n");
+        expect(value()).toBe(first);
+        store.write(join(folder, "world", "Ennio.md"), "ennio");
+        expect(value()).not.toBe(first);
+        expect(builds).toBe(2);
     });
 
     it("reads a file appended to before it was read as the file is", () => {
@@ -71,6 +97,14 @@ describe("the store of a call", () => {
         store.append(join(folder, "log.jsonl"), "b\n");
         appendFileSync(join(folder, "log.jsonl"), "c\n");
         expect(store.text(join(folder, "log.jsonl"))).toBe("a\nb\nc\n");
+    });
+
+    it("tells a path inside a folder from the folder itself and from the paths beside and above it", () => {
+        expect(isInside(folder, join(folder, "world", "a.md"))).toBe(true);
+        expect(isInside(folder, join(folder, "..appunti", "a.md"))).toBe(true);
+        expect(isInside(folder, folder)).toBe(false);
+        expect(isInside(join(folder, "world"), join(folder, "world2", "a.md"))).toBe(false);
+        expect(isInside(join(folder, "world"), folder)).toBe(false);
     });
 
     it("is the store of the running command, kept by a command run inside it, and a new one outside", () => {
