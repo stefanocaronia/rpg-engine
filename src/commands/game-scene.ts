@@ -4,8 +4,9 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { baseChain, findPage, isEmptyField, isInParty, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, parsePageReference, readOnlyMessage, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
+import { missingSystemHint } from "./game-world.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 
 /** A scene that has been closed, as the log keeps it. */
@@ -107,7 +108,7 @@ export function pageOrCopy(world: World, open: { scene?: Scene; problem?: Proble
     if (page === undefined) {
         const copies = open.scene === undefined ? "" : ", nor a copy of that name in the open scene";
         const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read: validate shows how to fix it.";
-        throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}`);
+        throw new Error(`There is no page named ${reference.name}${copies}. Look for it with the find command.${unreadable}${missingSystemHint(world)}`);
     }
 
     return { page };
@@ -140,6 +141,22 @@ export function checkNotCopied(world: World, open: { scene?: Scene; problem?: Pr
     if (copies.length > 0) {
         throw new Error(`${page.name} has copies in the open scene, which read from it what they do not change: ${copies.join(", ")}. Change a copy; to change ${page.name} for all, close the scene first. Nothing changed.`);
     }
+}
+
+/** Refuses to change a page of the game system (SYS-6): the same call goes to one of its copies in the open scene; with none, how one enters the story. */
+export function checkNotSystemPage(world: World, open: { scene?: Scene; }, page: Page): void
+{
+    if (page.system === undefined) {
+        return;
+    }
+
+    const copies = open.scene === undefined ? [] : Object.entries(open.scene.copies).filter(([name, copy]) => baseChain(world, copyPage(name, copy)).includes(page)).map(([name]) => name);
+
+    if (copies.length > 0) {
+        throw new Error(`${page.name} is ${systemLabel(page)}, read-only: its copies in the open scene are ${copies.join(", ")}. Make the same call on the one you mean, such as page "${copies[0]}". Nothing changed.`);
+    }
+
+    throw new Error(page.type === "creature" ? `${kindMessage(page)} Nothing changed.` : readOnlyMessage(page));
 }
 
 /** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */
@@ -214,11 +231,16 @@ export function sceneProblems(root: string, world: World): Problem[]
     }
 
     const exists = (name: string): boolean => world.pages.some((page) => comparableText(page.name) === comparableText(name));
-    const links = [scene.place, ...scene.with, ...Object.values(scene.copies).map((copy) => copy.creature)].filter((link) => link !== undefined);
-    const missing = links.filter((link) => !exists(parsePageReference(link).name)).map((link) => ({
+    // A copy may copy a creature of the game system (SYS-7).
+    const creatureExists = (name: string): boolean => exists(name) || systemPageNamed(world, name) !== undefined;
+    const links = [scene.place, ...scene.with].filter((link) => link !== undefined).map((link) => ({ link, found: exists }));
+    const copied = Object.values(scene.copies).map((copy) => ({ link: copy.creature, found: creatureExists }));
+    const missing = [...links, ...copied].filter(({ link, found }) => !found(parsePageReference(link).name)).map(({ link }) => ({
         path: "state.yaml",
         message: `The open scene links to ${link}, which does not exist.`,
-        fix: "create that page, or close the scene and open it again",
+        fix: world.missingSystem === undefined
+            ? "create that page, or close the scene and open it again"
+            : `if it is a page of the system ${world.missingSystem}, which is not installed, fix the system first, as the problem on campaign.yaml says; otherwise create that page`,
     }));
     const clashes = Object.keys(scene.copies).filter(exists).map((name) => ({
         path: "state.yaml",

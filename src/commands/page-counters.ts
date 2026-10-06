@@ -1,7 +1,7 @@
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Coin, formatAmount, readAmount } from "../money/index.ts";
-import { isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
+import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 
 /**
@@ -12,11 +12,13 @@ export function pageCounters(world: World, page: Page, coins?: Coin[]): Record<s
 {
     const given = effectsOf(page).flatMap((effect) => effect.values.map(([field]) => field));
     const own = new Set([...Object.entries(page.fields).filter(([, value]) => !isEmptyField(value)).map(([field]) => field), ...given].map(comparableText));
-    const counter = (field: string, value: unknown): boolean => !isStandardField(page.type, field) && readCounter(value) !== undefined && (own.has(comparableText(field)) || readCounter(value)?.max !== undefined);
+    // A field the game system declares as a number, text or list is never counted, and no field it declares is money (SYS-8).
+    const counter = (field: string, value: unknown): boolean =>
+        !isStandardField(page.type, field) && !isDeclaredUncounted(world, field) && readCounter(value) !== undefined && (own.has(comparableText(field)) || readCounter(value)?.max !== undefined);
 
     return Object.fromEntries(
         Object.entries(effectiveFields(world, page)).flatMap(([field, value]): [string, unknown][] => {
-            const purse = coins === undefined || isStandardField(page.type, field) ? undefined : readAmount(value, coins);
+            const purse = coins === undefined || isStandardField(page.type, field) || declaredKind(world, field) !== undefined ? undefined : readAmount(value, coins);
             return purse !== undefined && coins !== undefined ? [[field, formatAmount(purse, coins)]] : counter(field, value) ? [[field, value]] : [];
         }),
     );

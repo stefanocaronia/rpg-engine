@@ -5,13 +5,14 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readEffects, readRounds, withEffect } from "../effects/index.ts";
-import { concernsPlayer, environmentAt, isNeverInherited, isStandardField, loadWorld, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
+import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
 import { type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
-import { pageOrCopy, readOpenScene } from "./game-scene.ts";
+import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
+import { campaignWorld } from "./game-world.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -56,7 +57,7 @@ export const effect = defineCommand({
     run(input, context): EffectResult
     {
         const root = requireCampaign(context.folder);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const open = readOpenScene(root);
         const why = input.why?.trim() === "" ? undefined : input.why;
 
@@ -76,6 +77,7 @@ export const effect = defineCommand({
         }
 
         const found = pageOrCopy(world, open, input.page, (page) => `effects are on the whole page, such as page ${page}`);
+        checkNotSystemPage(world, open, found.page);
         const holder: EffectHolder = { page: found.page, copy: found.copy !== undefined };
         checkReadable(holder.page);
         const current = effectsOf(holder.page);
@@ -285,13 +287,13 @@ function readValues(world: World, page: Page, set: string[] | Record<string, unk
         }
 
         const text = String(value).trim();
-        checkValue(page, fields, field, text);
+        checkValue(world, page, fields, field, text);
         return [field, text];
     });
 }
 
 /** A value reads as a page would hold it, and a field the page reads as a counter gets a counter: the value it reads, not a bonus. */
-function checkValue(page: Page, fields: Record<string, unknown>, field: string, text: string): void
+function checkValue(world: World, page: Page, fields: Record<string, unknown>, field: string, text: string): void
 {
     let value: unknown;
 
@@ -303,8 +305,13 @@ function checkValue(page: Page, fields: Record<string, unknown>, field: string, 
 
     const current = Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 
-    if (readCounter(current) !== undefined && readCounter(value) === undefined) {
-        throw new Error(`${field} on ${page.name} is a counter, ${String(current)}: give the value it reads while the effect lasts, such as ${field}=16, not "${text}". Nothing changed.`);
+    // A field the game system declares as a number takes a number; a counter stays a counter (SYS-8, EFF-3).
+    if (declaredKind(world, field) === "number" && typeof value !== "number") {
+        throw new Error(`${field} on ${page.name} is a number, ${String(current ?? "none")}: give the value it reads while the effect lasts, such as ${field}=${exampleValue(current, text)}, not "${text}". Nothing changed.`);
+    }
+
+    if (!isDeclaredUncounted(world, field) && readCounter(current) !== undefined && readCounter(value) === undefined) {
+        throw new Error(`${field} on ${page.name} is a counter, ${String(current)}: give the value it reads while the effect lasts, such as ${field}=${exampleValue(current, text)}, not "${text}". Nothing changed.`);
     }
 }
 
@@ -331,7 +338,7 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
     const others = withEffects(page, current.filter((effect) => comparableText(effect.name) !== comparableText(added.name)));
     const fields = effectiveFields(world, others);
     const read = (field: string): string => String(Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? "none");
-    const counters = added.values.filter(([, value]) => readCounter(value)?.max !== undefined).map(([field]) => field);
+    const counters = added.values.filter(([field, value]) => !isDeclaredUncounted(world, field) && readCounter(value)?.max !== undefined).map(([field]) => field);
     const over = added.values.flatMap(([field]) => {
         const other = effectGiving(others, field);
         return other === undefined ? [] : [`${field} goes over ${other.name} (${field} ${read(field)})`];
@@ -346,4 +353,10 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
         over.length === 0 ? "" : `Its ${over.join(", ")}: write the value both give together.`,
         timed ? "The scene counts turns, and time does not pass with them: if it should end during the turns, give it in rounds." : "",
     ].filter((note) => note !== "");
+}
+
+/** The value an effect would give, such as 18 for "+2" on ac 16; 16 when the change is not a number added to one. */
+function exampleValue(current: unknown, text: string): number
+{
+    return typeof current === "number" && /^[+-]\d+$/.test(text.trim()) ? current + Number(text.trim()) : 16;
 }

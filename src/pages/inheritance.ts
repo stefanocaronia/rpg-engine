@@ -3,14 +3,14 @@ import { introductionText, secretNames, sectionTitles, textParts } from "./markd
 import type { FieldChange } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
 import { isEmptyField, isStandardField, misspelledStandardField } from "./standard-fields.ts";
-import { linksIn, type Page, type World } from "./world.ts";
+import { linksIn, type Page, systemPageNamed, type World } from "./world.ts";
 
-// The field in which a page of a type names what it derives from: for a character or a creature, the creature it is a kind of (INH-1).
-// On other types a field with that name means something else, such as the wolf of a trophy, and passes nothing on.
-const baseFields: Partial<Record<PageType, string>> = { character: "creature", creature: "creature" };
+// The field in which a page of a type names what it derives from, named after the type of its base: for a character or a creature, the creature it is a kind of;
+// for an item, the item (INH-1, D-164). On other types a field with that name means something else, such as the wolf of a trophy, and passes nothing on.
+const baseFields: Partial<Record<PageType, "creature" | "item">> = { character: "creature", creature: "creature", item: "item" };
 
 // INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, and what holds it for a while. Fields a system declares are inherited.
-const neverInherited = new Set(["role", "status", "creature", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
+const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
 
 // Pages by comparable name, built once for each loaded world: following a chain costs a lookup, however many pages there are (INH-16).
 const namesCache = new WeakMap<World, Map<string, Page[]>>();
@@ -71,12 +71,46 @@ export function inheritedByBase(world: World, page: Page): Inherited[]
     const introducer = introductionText(page.body) === "" ? chain.find((base) => introductionText(base.body) !== "") : undefined;
 
     return chain.flatMap((base) => {
-        const parts = textParts(base.body).filter((part) => part.name === "" || !shown.has(comparableText(part.name)));
-        parts.forEach((part) => shown.add(comparableText(part.name)));
+        const all = textParts(base.body);
+        const kept = new Set(all.filter((part) => part.name === "" || !shown.has(comparableText(part.name))));
+        const parts = all.filter((part, index) => kept.has(part) && !emptyHeading(all, index, kept));
+        kept.forEach((part) => shown.add(comparableText(part.name)));
         const own = Object.fromEntries(fields.filter(([field]) => baseValue(world, page, field)?.base === base));
         const introduction = base === introducer ? introductionText(base.body) : "";
         return Object.keys(own).length > 0 || parts.length > 0 || introduction !== "" ? [{ base, fields: own, introduction, parts }] : [];
     });
+}
+
+/**
+ * Whether the part at `index` is a heading with no text of its own whose subsections are none of them `kept`, as when the page writes them all itself: it has nothing
+ * left to show (INH-13, D-169), such as the Actions of a creature whose one action the page rewrote.
+ */
+function emptyHeading(parts: { name: string; text: string; }[], index: number, kept: Set<{ name: string; text: string; }>): boolean
+{
+    const level = headingLevel(parts[index].text);
+
+    if (level === undefined || parts[index].text.split("\n").slice(1).some((line) => line.trim() !== "")) {
+        return false;
+    }
+
+    for (const next of parts.slice(index + 1)) {
+        // A secret has no level: it belongs to the section it is in.
+        if ((headingLevel(next.text) ?? Number.POSITIVE_INFINITY) <= level) {
+            break;
+        }
+
+        if (kept.has(next)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** The level of the heading a part starts with, 2 for "## Actions"; undefined for a secret. */
+function headingLevel(text: string): number | undefined
+{
+    return /^(#{1,6})[ \t]/.exec(text)?.[1].length;
 }
 
 /** Whether a page writes a field with the very value it would read from its bases, and in no other case: that is no difference, and the page does not keep it (INH-9, D-125). */
@@ -218,26 +252,34 @@ export function introductionFollowersOf(world: World, page: Page): Page[]
     return followers(world, page, (candidate) => introductionText(candidate.body) !== "");
 }
 
-/** The page with this name, when exactly one page has it; undefined when none or two have it. */
+/**
+ * The page with this name, when exactly one page of the campaign has it, or else the game system's (SYS-3); undefined when none has it, or two of the campaign do (INH-3).
+ */
 export function uniquePage(world: World, name: string): Page | undefined
 {
     const found = pagesNamed(world).get(comparableText(name));
-    return found?.length === 1 ? found[0] : undefined;
+    return found === undefined ? systemPageNamed(world, name) : found.length === 1 ? found[0] : undefined;
 }
 
-/** Why a page's base cannot be followed (INH-15): it is not a creature, or the chain comes back to the page. Undefined when it can. */
+/** The field in which a page of this type names what it derives from (INH-1): creature for characters and creatures, item for items; undefined for the other types. */
+export function baseFieldOf(type: PageType | undefined): "creature" | "item" | undefined
+{
+    return type === undefined ? undefined : baseFields[type];
+}
+
+/** Why a page's base cannot be followed (INH-15): it is not of the type its field names, or the chain comes back to the page. Undefined when it can. */
 export function baseProblem(world: World, page: Page): string | undefined
 {
-    const field = baseFieldOf(page);
+    const field = baseFieldOf(page.type);
     const [name] = field === undefined ? [] : linksIn(page.fields[field]);
     const linked = name === undefined ? undefined : uniquePage(world, name);
 
-    if (linked === undefined) {
+    if (field === undefined || linked === undefined) {
         return undefined;
     }
 
-    if (linked.type !== "creature") {
-        return `${page.name} derives from ${linked.name}, which is ${withArticle(linked.type ?? "free page")}: ${field} must link to a creature.`;
+    if (linked.type !== field) {
+        return `${page.name} derives from ${linked.name}, which is ${withArticle(linked.type ?? "free page")}: ${field} must link to ${withArticle(field)}.`;
     }
 
     const seen = [page];
@@ -250,29 +292,38 @@ export function baseProblem(world: World, page: Page): string | undefined
     return nextBase(world, seen[seen.length - 1]) === page ? `${page.name} derives from itself: ${[...seen, page].map((link) => link.name).join(" › ")}.` : undefined;
 }
 
-/** Why a page of this type and name cannot derive from the page `link` points to (INH-2, INH-3): it is not a creature, it is the page itself, or the chain would come back. Undefined when it can, or when that page does not exist yet. */
+/**
+ * Why a page of this type and name cannot derive from the page `link` points to (INH-2, INH-3): it is not of the type the field names, it is the page itself, or the chain would come back.
+ * Undefined when it can, or when that page does not exist yet.
+ */
 export function newBaseProblem(world: World, page: { name: string; type?: PageType; }, link: string): string | undefined
 {
-    const [name] = page.type === undefined || baseFields[page.type] === undefined ? [] : linksIn(link);
+    const field = baseFieldOf(page.type);
+    const [name] = field === undefined ? [] : linksIn(link);
 
-    if (name !== undefined && comparableText(name) === comparableText(page.name)) {
-        return `${page.name} cannot derive from itself: creature must link to another creature.`;
+    if (field === undefined || name === undefined) {
+        return undefined;
     }
 
-    const target = name === undefined ? undefined : uniquePage(world, name);
+    if (comparableText(name) === comparableText(page.name)) {
+        return `${page.name} cannot derive from itself: ${field} must link to another ${field}.`;
+    }
+
+    const target = uniquePage(world, name);
 
     if (target === undefined) {
         return undefined;
     }
 
-    if (target.type !== "creature") {
-        return `creature must link to a creature, and ${target.name} is ${withArticle(target.type ?? "free page")}.`;
+    if (target.type !== field) {
+        return `${field} must link to ${withArticle(field)}, and ${target.name} is ${withArticle(target.type ?? "free page")}.`;
     }
 
-    // The chain, and the page its last creature links to, where the chain stops: it may be this one, a creature about to be created.
+    // The chain, and the page its last base links to, where the chain stops: it may be this one, a page of the same type about to be created.
     const chain = [target, ...baseChain(world, target)];
-    const [next] = linksIn(chain[chain.length - 1].fields.creature);
-    const names = [...chain.map((linked) => linked.name), ...(page.type === "creature" && next !== undefined ? [next] : [])];
+    const last = chain[chain.length - 1];
+    const [next] = linksIn(last.fields[baseFieldOf(last.type) ?? field]);
+    const names = [...chain.map((linked) => linked.name), ...(page.type === field && next !== undefined ? [next] : [])];
     const back = names.findIndex((linked) => comparableText(linked) === comparableText(page.name));
     return back === -1 ? undefined : `${page.name} cannot derive from ${target.name}: the chain would come back to it (${[page.name, ...names.slice(0, back), page.name].join(" › ")}).`;
 }
@@ -286,24 +337,19 @@ function followers(world: World, page: Page, holds: (candidate: Page) => boolean
     });
 }
 
-/** The page a page derives from (INH-2): a creature its base field links to, when exactly one page has that name. */
+/** The page a page derives from (INH-2): the page of the type its base field names that the field links to, when exactly one page has that name. */
 function nextBase(world: World, page: Page): Page | undefined
 {
-    const field = baseFieldOf(page);
+    const field = baseFieldOf(page.type);
     const [name] = field === undefined ? [] : linksIn(page.fields[field]);
     const base = name === undefined ? undefined : uniquePage(world, name);
-    return base?.type === "creature" ? base : undefined;
+    return base !== undefined && base.type === field ? base : undefined;
 }
 
 /** Whether a name is a fixed field of the page's type, or one written in another case, which is another field. */
 function isFixedName(page: Page, field: string): boolean
 {
     return isStandardField(page.type, field) || misspelledStandardField(page.type, field) !== undefined;
-}
-
-function baseFieldOf(page: Page): string | undefined
-{
-    return page.type === undefined ? undefined : baseFields[page.type];
 }
 
 /** The name under which a page holds a field with a value, as reading takes it: the last one written in any case; undefined when it holds none. */

@@ -78,7 +78,8 @@ describe("page files", () => {
         handWrite("world/items/Rotto.md", "---\nchiave: [aperta\n---\nTesto.\n");
 
         const found = await rpg("find");
-        expect(found.output).toContain("Varro (character)\n\nThese files could not be read as pages and were left out:\n- The frontmatter of world/items/Rotto.md is not valid YAML; fix it by hand:");
+        expect(found.output).toContain("Varro (character)\n\nThe system 5e has ");
+        expect(found.output).toContain("These files could not be read as pages and were left out:\n- The frontmatter of world/items/Rotto.md is not valid YAML; fix it by hand:");
         expect((await rpg("write", "Rotto", "--type", "item", "--text", "x")).output).toContain("world/items/Rotto.md already exists, but it cannot be read as a page");
     });
 });

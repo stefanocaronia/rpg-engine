@@ -2,17 +2,19 @@ import { z } from "zod";
 import { missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
+import { type Effect, formatEnd } from "../effects/index.ts";
 import type { Coin } from "../money/index.ts";
-import { isPartyMember, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { isDeclaredUncounted, isPartyMember, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { effectText, keptEffects } from "./game-effects.ts";
+import { keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
+import { campaignWorld, missingWithSystems, systemInStatus } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -49,7 +51,7 @@ export const status = defineCommand({
     {
         const root = requireCampaign(context.folder);
         const settings = readSettings(root);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
         const players = characters.filter((page) => page.fields.role === "pc");
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
@@ -61,7 +63,7 @@ export const status = defineCommand({
             where: locate(world, page).chain.map((holder) => holder.name),
             withLead: withLead(page),
             counters: countersOf(world, page, coins),
-            effects: [...effectsOf(page).map(effectText), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
+            effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
         });
         const present = readPresent(root);
         const now = present.date;
@@ -70,8 +72,8 @@ export const status = defineCommand({
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
         return {
-            campaign: [settings.name, settings.language, settings.system, named("difficulty", settings.difficulty), named("lethality", settings.lethality)].filter((part) => part !== undefined),
-            missing: missingSettings(settings),
+            campaign: [settings.name, settings.language, systemInStatus(root, context), named("difficulty", settings.difficulty), named("lethality", settings.lethality)].filter((part) => part !== undefined),
+            missing: missingWithSystems(missingSettings(settings), context),
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
             table: settings.table ?? [],
@@ -90,7 +92,7 @@ export const status = defineCommand({
             dueEvents: due.map(dueText),
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
-            problems: campaignProblems(root, world).length,
+            problems: campaignProblems(root, world, context).length,
         };
     },
 
@@ -192,7 +194,7 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
     const characters = scene.with.length === 0 ? "" : `, with ${scene.with.map((link) => sceneMemberText(world, parsePageReference(link).name)).join(", ")}`;
     const turn = scene.turn === undefined ? "" : `; round ${scene.round ?? 1}, ${scene.turn}'s turn`;
     const copies = Object.entries(scene.copies).map(([name, copy]) => {
-        const counters = [countersText(copyCounters(world, copy)), ...effectsOf(copyPage(name, copy)).map(effectText)].filter((part) => part !== "").join(" · ");
+        const counters = [countersText(copyCounters(world, copy)), ...effectsOf(copyPage(name, copy)).map((effect) => effectShown(world, effect))].filter((part) => part !== "").join(" · ");
         return counters === "" ? name : `${name}: ${counters}`;
     });
     const away = partyAwayText(world, scene);
@@ -208,7 +210,7 @@ function sceneMemberText(world: World, name: string): string
         return name;
     }
 
-    const shown = [countersText(pageCounters(world, page)), ...effectsOf(page).map(effectText)].filter((part) => part !== "");
+    const shown = [countersText(pageCounters(world, page)), ...effectsOf(page).map((effect) => effectShown(world, effect))].filter((part) => part !== "");
     return shown.length === 0 ? name : `${name} (${shown.join(" · ")})`;
 }
 
@@ -239,4 +241,12 @@ function namesLine(label: string, names: string[], more: string, separator = " �
 
     const shown = names.slice(0, shownNames).join(separator);
     return names.length > shownNames ? `${label}: ${shown}, and ${names.length - shownNames} more: ${more}` : `${label}: ${shown}`;
+}
+
+/** An effect as status shows it: its name, the values it gives that no counter shows, such as ac 18, and its end (SYS-8). */
+function effectShown(world: World, effect: Effect): string
+{
+    const values = effect.values.filter(([field]) => isDeclaredUncounted(world, field)).map(([field, value]) => `${field} ${value}`);
+    const end = effect.end === undefined ? "" : ` until ${formatEnd(effect.end)}`;
+    return `${effect.name}${values.length === 0 ? "" : ` (${values.join(", ")})`}${end}`;
 }

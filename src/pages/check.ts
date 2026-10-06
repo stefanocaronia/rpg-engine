@@ -1,10 +1,11 @@
 import type { Problem } from "../core/problem.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { readEnvironment } from "./environment.ts";
-import { baseChain, baseProblem, shownPart } from "./inheritance.ts";
+import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./inheritance.ts";
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
-import { linksIn, type Page, textsIn, validHoldersOf, type World } from "./world.ts";
+import { systemLabel } from "./system-pages.ts";
+import { linksIn, type Page, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -23,6 +24,7 @@ export function checkWorld(world: World): Problem[]
     return [
         ...world.problems.map((message) => ({ message })),
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
+        ...world.pages.flatMap((page) => hidingProblems(world, page)),
         ...world.pages.flatMap((page) => [
             ...fieldProblems(page),
             ...linkProblems(world, pagesByName, page),
@@ -53,6 +55,25 @@ function listingsOf(holder: Page): Listing[]
 {
     const field = containerFieldOf(holder.type);
     return field === undefined ? [] : textsIn(holder.fields[field]).map((entry) => ({ holder, field, entry }));
+}
+
+/** A page of the campaign with the name of a page of the game system, which it hides (SYS-4): what derives from that name reads it instead. */
+function hidingProblems(world: World, page: Page): Problem[]
+{
+    const hidden = systemPageNamed(world, page.name);
+
+    if (hidden === undefined) {
+        return [];
+    }
+
+    const readers = derivedPages(world, page).map((derived) => derived.name);
+    const listed = `${readers.slice(0, 10).join(", ")}${readers.length > 10 ? `, and ${readers.length - 10} more,` : ""}`;
+    const who = readers.length === 0 ? "" : `, and ${listed} ${readers.length === 1 ? "derives" : "derive"} from it instead`;
+    return [{
+        path: page.path,
+        message: `${page.name} hides ${hidden.name}, ${systemLabel(hidden)}: links to that name lead to this page${who}.`,
+        fix: `if the file was made by mistake, such as by clicking a link in Obsidian, delete it; otherwise rename it by hand, with a name of its own`,
+    }];
 }
 
 function repeatedPageProblem(pages: Page[]): Problem
@@ -90,13 +111,17 @@ function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page
 
     return [...inFields, ...inText].flatMap((found) => {
         const broken = brokenLink(world, pagesByName, found.link);
-        return broken === undefined ? [] : [{ path: page.path, message: `${found.field ?? "The text"} links to ${written(found.link)}, ${broken}.`, fix: linkFix(page, found.field, found.entry, found.inList) }];
+        // While the campaign's system is missing, the link may be to one of its pages: removing it would break what derives from it.
+        const fix = world.missingSystem === undefined || broken !== "which does not exist"
+            ? linkFix(page, found.field, found.entry, found.inList)
+            : `if it is a page of the system ${world.missingSystem}, which is not installed, fix the system first, as the problem on campaign.yaml says; otherwise ${linkFix(page, found.field, found.entry, found.inList)}`;
+        return broken === undefined ? [] : [{ path: page.path, message: `${found.field ?? "The text"} links to ${written(found.link)}, ${broken}.`, fix }];
     });
 }
 
 function brokenLink(world: World, pagesByName: Map<string, Page[]>, link: Link): string | undefined
 {
-    const target = pagesByName.get(comparableText(link.page))?.[0];
+    const target = pagesByName.get(comparableText(link.page))?.[0] ?? systemPageNamed(world, link.page);
 
     if (target === undefined) {
         return "which does not exist";
@@ -109,16 +134,24 @@ function brokenLink(world: World, pagesByName: Map<string, Page[]>, link: Link):
         return undefined;
     }
 
-    return `but ${target.name} has no section or secret "${section}"${bases.length > 0 ? ", nor do the creatures it derives from" : ""}`;
+    return `but ${target.name} has no section or secret "${section}"${bases.length > 0 ? ", nor do the pages it derives from" : ""}`;
 }
 
-/** Sections everyone can read, listed in knows: knows lists pages and secrets (D-61, REV-1), so such an entry says nothing. Secret or not, as reveal reads it. */
+/**
+ * Sections everyone can read, listed in knows: knows lists pages and secrets (D-61, REV-1), so such an entry says nothing. Secret or not, as reveal reads it.
+ * Nor does a page of the game system, which anyone may know (SYS-2).
+ */
 function publicKnowsProblems(world: World, pagesByName: Map<string, Page[]>, page: Page): Problem[]
 {
     return textsIn(page.fields.knows).flatMap((entry) =>
         links(entry).flatMap((link) => {
             const section = link.section;
-            const target = pagesByName.get(comparableText(link.page))?.[0];
+            const target = pagesByName.get(comparableText(link.page))?.[0] ?? systemPageNamed(world, link.page);
+
+            if (target?.system !== undefined) {
+                return [{ path: page.path, message: `${page.name} knows ${written(link)}, ${systemLabel(target)}, which anyone may know: knows lists pages and secrets of the campaign.`, fix: `write ${page.name}, remove knows=${entry}` }];
+            }
+
             const part = section === undefined || target === undefined ? undefined : shownPart(world, target, section);
             return part !== undefined && !part.secret
                 ? [{ path: page.path, message: `${page.name} knows ${written(link)}, a section everyone can read: knows lists pages and secrets.`, fix: `write ${page.name}, remove knows=${entry}` }]
@@ -176,7 +209,7 @@ function containerProblems(world: World, pagesByName: Map<string, Page[]>, listi
         });
     }
 
-    return [...problems, ...heldProblems(pagesByName, page), ...wrongFieldProblems(page)];
+    return [...problems, ...heldProblems(world, pagesByName, page), ...wrongFieldProblems(page)];
 }
 
 /** The containers above a page, nearest first, when climbing them leads back to it; undefined when it does not. */
@@ -195,12 +228,23 @@ function ringOf(world: World, page: Page): Page[] | undefined
     return undefined;
 }
 
-/** Entries of a container's field that point to pages it cannot hold (CON-1): they put nothing anywhere. */
-function heldProblems(pagesByName: Map<string, Page[]>, holder: Page): Problem[]
+/** Entries of a container's field that point to pages it cannot hold (CON-1), or to pages of the game system, which are nowhere (SYS-6): they put nothing anywhere. */
+function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Page): Problem[]
 {
     return listingsOf(holder).flatMap((listing) =>
         linksIn(listing.entry).flatMap((name) => {
             const held = pagesByName.get(comparableText(name));
+            const system = held === undefined ? systemPageNamed(world, name) : undefined;
+
+            if (system !== undefined) {
+                const instead = system.type === "item" ? `; one that ${holder.name} has is an item of the campaign with item=[[${system.name}]], or text` : "";
+                return [{
+                    path: holder.path,
+                    message: `${holder.name} lists ${system.name} in ${listing.field}, but ${system.name} is ${systemLabel(system)}, a kind, which is nowhere${instead}.`,
+                    fix: `write ${holder.name}, remove ${listing.field}=${listing.entry}${system.type === "item" ? `, then write "<name>", type item, set item=[[${system.name}]] and move it to ${holder.name}` : ""}`,
+                }];
+            }
+
             const page = held?.length === 1 ? held[0] : undefined;
 
             if (page === undefined || page === holder || canHold(holder.type, page.type)) {
@@ -255,7 +299,8 @@ function environmentProblems(page: Page): Problem[]
 function inheritanceProblems(world: World, page: Page): Problem[]
 {
     const problem = baseProblem(world, page);
-    return problem === undefined ? [] : [{ path: page.path, message: problem, fix: `write ${page.name}, set creature to the creature it is a kind of, or unset it` }];
+    const field = baseFieldOf(page.type) ?? "creature";
+    return problem === undefined ? [] : [{ path: page.path, message: problem, fix: `write ${page.name}, set ${field} to the ${field} it is a kind of, or unset it` }];
 }
 
 function sectionProblems(page: Page): Problem[]

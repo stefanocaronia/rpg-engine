@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { loadWorld } from "../pages/index.ts";
+import { campaignWorld } from "./game-world.ts";
 import { campaignProblems } from "./problems.ts";
 
 export const validate = defineCommand({
@@ -16,7 +16,7 @@ export const validate = defineCommand({
     run(input, context)
     {
         const root = requireCampaign(context.folder);
-        return { problems: campaignProblems(root, loadWorld(root)) };
+        return { problems: campaignProblems(root, campaignWorld(root, context), context) };
     },
 
     format(result)

@@ -6,4 +6,8 @@ Work in progress.
 
 ## License
 
-[MIT](LICENSE)
+The code is under the [MIT](LICENSE) license.
+
+The 5e system, in `systems/5e/`, is under the Creative Commons Attribution 4.0 International License ([its license](systems/5e/LICENSE.md)): This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode. rpg-engine is compatible with fifth edition.
+
+The tests use a system based on Ironsworn, with the names of its mechanics and a foe of our own: This work is based on Ironsworn (https://www.ironswornrpg.com), created by Shawn Tomkin, and licensed for our use under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).

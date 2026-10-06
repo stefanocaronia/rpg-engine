@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Document, isScalar, isSeq, type YAMLSeq } from "yaml";
+import { type Document, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
 import { z } from "zod";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
@@ -18,7 +19,7 @@ export const lethalities = ["narrative", "epic", "dice"] as const;
 export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
-    system: z.string().min(1).optional().describe("game system of the campaign, such as 5e"),
+    system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
     lines: z.array(z.string().min(1)).nullish().describe("what never appears in the game"),
@@ -48,8 +49,27 @@ export function readSettings(root: string): CampaignSettings
 /** The coins as campaign.yaml writes them, unchecked and read on their own, so that a mistake in another setting does not hide them; the money module checks them (MON-1). */
 export function readCoinsSetting(root: string): unknown
 {
+    return readOneSetting(root, "coins");
+}
+
+/**
+ * A text setting as campaign.yaml writes it, such as the system or the language, read even when another setting breaks the file: YAML still gives the keys it can (SYS-1).
+ * Undefined when it is missing, not text, or the file cannot be read.
+ */
+export function readTextSetting(root: string, name: SettingName): string | undefined
+{
+    try {
+        const value: unknown = parseDocument(readFileSync(join(root, campaignFileName), "utf8")).get(name);
+        return typeof value === "string" ? value : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function readOneSetting(root: string, name: SettingName): unknown
+{
     const values = readYamlValues(join(root, campaignFileName), settingsHold);
-    return values !== null && typeof values === "object" ? (values as Record<string, unknown>).coins : undefined;
+    return values !== null && typeof values === "object" ? (values as Record<string, unknown>)[name] : undefined;
 }
 
 /**

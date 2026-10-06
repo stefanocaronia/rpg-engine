@@ -1,7 +1,7 @@
-/** A name as it is compared: any case, and accents written either way (NFC), so that "Città" from any system matches "città". */
+/** A name as it is compared: any case, accents written either way (NFC) and a curly apostrophe as a straight one (SYS-5), so that "Città" from any system matches "città". */
 export function comparableText(text: string): string
 {
-    return text.normalize("NFC").toLowerCase();
+    return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
 }
 
 /** A noun with its article, as messages write it: "a character", "an item". */

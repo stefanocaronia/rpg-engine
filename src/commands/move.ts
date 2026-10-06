@@ -4,12 +4,13 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { isInParty, loadWorld, locate, type Page, pageNamed, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
+import { isInParty, locate, type Page, pageNamed, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
 import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
+import { campaignWorld, missingSystemHint } from "./game-world.ts";
 import { shortList, skippedPagesNote } from "./notes.ts";
 
 // A list, or one text, as an MCP client may send it.
@@ -49,7 +50,7 @@ export const move = defineCommand({
     run(input, context): MoveResult
     {
         const root = requireCampaign(context.folder);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const { scene } = readOpenScene(root);
         const names = (typeof input.page === "string" ? [input.page] : input.page).filter((name) => name.trim() !== "");
 
@@ -122,7 +123,7 @@ function pageOf(world: World, scene: Scene | undefined, name: string, role: "wha
         const list = reference.name.includes(",")
             ? ` For more than one, give a list, such as page [${reference.name.split(",").map((part) => part.trim()).join(", ")}].`
             : ` Look for it with find, or create it with write and its type: ${pageTypeNames.join(", ")}.`;
-        throw new Error(`There is no page named ${reference.name}.${list} Nothing moved.`);
+        throw new Error(`There is no page named ${reference.name}.${list}${missingSystemHint(world)} Nothing moved.`);
     }
 
     return page;

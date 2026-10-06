@@ -64,13 +64,13 @@ describe("pages that derive from a creature", () => {
     it("say how to add a counter that neither the page nor its bases hold", async () => {
         const result = await rpg("change", "Vecchio annegato", "mana", "--by=-1");
         expect(result.output).toBe(
-            'Vecchio annegato has no field "mana". Its counters: hp 40/40, ac 13. Vecchio annegato reads what it does not hold from Annegato capo: write the counter there, such as set mana=12/12, and everything that derives from Annegato capo takes it; or on Vecchio annegato alone.',
+            'Vecchio annegato has no field "mana". Its counters: hp 40/40. Vecchio annegato reads what it does not hold from Annegato capo: write the counter there, such as set mana=12/12, and everything that derives from Annegato capo takes it; or on Vecchio annegato alone.',
         );
     });
 
     it("give their copies in a scene what they inherit", async () => {
         expect(await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato capo")).toBe(`Scene opened: Ossario (combat). In it: Annegato capo 1: hp 40/40.\n${fightGuidance}`);
-        expect(await ok("change", "Annegato capo 1", "ac", "--by=-3")).toBe("Annegato capo 1: ac 13 → 10.");
+        expect(await ok("change", "Annegato capo 1", "hp", "--by=-3")).toBe("Annegato capo 1: hp 40/40 → 37/40.");
     });
 
     it("are checked by validate: a base must be a creature, and a chain must not come back", async () => {
@@ -180,11 +180,11 @@ describe("what derives, and what it shows", () => {
     });
 
     it("shows all the counters a page holds, and of those it inherits only the current/max ones", async () => {
-        await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11", "--set", "ac=13", "--set", "speed=12");
+        await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11", "--set", "difesa=13", "--set", "speed=12");
         await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "fiuto=3");
         expect(await ok("status")).toContain("Companions: Zanna: hp 11/11 · fiuto 3");
-        expect(await ok("change", "Zanna", "ac", "--by=-1")).toBe("Zanna: ac 13 → 12.");
-        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11 · ac 12 · fiuto 3");
+        expect(await ok("change", "Zanna", "difesa", "--by=-1")).toBe("Zanna: difesa 13 → 12.");
+        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11 · difesa 12 · fiuto 3");
     });
 
     it("says where a field comes from when it cannot be removed from the page", async () => {
@@ -319,7 +319,8 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
 
         await ok("write", "Orso", "--type", "character", "--set", "role=npc", "--set", "creature=[[Grande orso]]");
         expect(await ok("write", "Grande orso", "--type", "creature", "--set", "hp=30/30")).toBe(
-            "Created Grande orso (creature, world/creatures/Grande orso.md): set hp.\nChanged with it, since they derive from Grande orso: Orso. To change only one of them, write that page instead.",
+            "Created Grande orso (creature, world/creatures/Grande orso.md): set hp.\nChanged with it, since they derive from Grande orso: Orso. To change only one of them, write that page instead.\n"
+                + "Grande orso derives from no creature: if it is a kind of one of the system 5e (named in English: find, type creature, with part of its name in English), set creature to it, and its numbers come from there.",
         );
 
         for (let index = 1; index <= 12; index++) {
@@ -346,7 +347,7 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
             'Annegato is a creature, and the open scene, which may hold its copies, cannot be read: The open scene in state.yaml is not valid: type: Invalid option: expected one of "combat"|"social"|"exploration"|"travel"|"rest"|"challenge"|"other". To fix it, close it with scene close and a summary, then open it again. Nothing changed.',
         );
         expect((await rpg("write", "Annegato capo 1", "--set", "spaventato=true")).output).toBe(
-            "There is no page named Annegato capo 1. To create it, give its type: character, place, faction, quest, item, event, topic, creature. The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it.",
+            "There is no page named Annegato capo 1. To create it, give its type: character, place, faction, quest, item, event, topic, creature. The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it. find looks for the pages of the system 5e in their names and fields, in English.",
         );
     });
 });
@@ -472,6 +473,15 @@ describe("pages that derive from a creature, after the second review (D-124)", (
         expect(await ok("show", "Zanna")).not.toContain("Ulula.");
     });
 
+    it("shows no heading of a base left with nothing to show, once the page writes all its subsections (D-169)", async () => {
+        writeFileSync(join(folder, "world", "creatures", "Lupo.md"), "---\nhp: 11/11\n---\n\n## Tratti\n\n### Fiuto\n\nSente il sangue.\n\n## Azioni\n\n### Morso\n\nMorde.\n");
+        await ok("write", "Zanna#Morso", "--text", "Morde e non molla.");
+        const shown = await ok("show", "Zanna");
+        expect(shown).toContain("Text inherited from Lupo:\n\n## Tratti\n\n### Fiuto\n\nSente il sangue.");
+        expect(shown).not.toContain("## Azioni");
+        expect(shown).toContain("## Morso\n\nMorde e non molla.");
+    });
+
     it("shows a base's secret without a name even when the page has one of its own", async () => {
         writeFileSync(join(folder, "world", "creatures", "Lupo.md"), "---\nhp: 11/11\n---\n\nUn lupo grigio.\n\n> [!secret]\n> Il branco è del Re dei Lupi.\n");
         writeFileSync(join(folder, "world", "characters", "Zanna.md"), '---\nrole: companion\ncreature: "[[Lupo]]"\n---\n\n> [!secret]\n> Zanna ricorda il Re.\n');
@@ -501,7 +511,7 @@ describe("pages that derive from a creature, after the second review (D-124)", (
         await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--add", "knows=[[Zanna#Debolezza]]");
         expect(await ok("validate")).toBe("No problems.");
         await ok("write", "Ennio", "--add", "knows=[[Zanna#Nulla]]");
-        expect(await ok("validate")).toContain('knows links to [[Zanna#Nulla]], but Zanna has no section or secret "Nulla", nor do the creatures it derives from.');
+        expect(await ok("validate")).toContain('knows links to [[Zanna#Nulla]], but Zanna has no section or secret "Nulla", nor do the pages it derives from.');
     });
 
     it("refuses a creature whose chain would come back through a page not written yet, and a base that is a free page", async () => {
@@ -610,9 +620,10 @@ describe("pages that hold only their differences (D-125)", () => {
         expect(await ok("write", "Lupo alfa", "--set", "creature=[[Gufo]]")).toBe(
             "Updated Lupo alfa (creature, world/creatures/Lupo alfa.md): set creature.\nChanged with it, since they derive from Lupo alfa: Ombra. To change only one of them, write that page instead.",
         );
-        const [hp, ac] = readLogFile(folder).slice(-2);
+        const [hp] = readLogFile(folder).slice(-1);
         expect(hp).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Ombra", field: "hp", before: "11/11", after: "1/1" } });
-        expect(ac).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Ombra", field: "ac", before: 13, after: 11 } });
+        // ac is a number of the system 5e, never counted (SYS-8): no line for it.
+        expect(readLogFile(folder).some((entry) => entry.type === "counter-changed" && (entry.data as { field?: string; }).field === "ac")).toBe(false);
     });
 
     it("keeps on a copy only what differs from its creature", async () => {

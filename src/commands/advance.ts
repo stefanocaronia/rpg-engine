@@ -2,13 +2,14 @@ import { z } from "zod";
 import { changeState, requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { isEmptyField, loadWorld, type World } from "../pages/index.ts";
+import { isEmptyField, type World } from "../pages/index.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
 import { endedByDate, endEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
+import { campaignWorld } from "./game-world.ts";
 import { shortList } from "./notes.ts";
 import { skippedPagesNote } from "./notes.ts";
 
@@ -61,7 +62,7 @@ export const advance = defineCommand({
         const root = requireCampaign(context.folder);
         const request = readRequest(input);
         const now = presentDate(root);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const events = plannedEvents(world);
         const dated = events.filter(isDated);
         const why = input.why?.trim() === "" ? undefined : input.why;
@@ -114,7 +115,7 @@ export const advance = defineCommand({
 
         const ended = passed > 0 ? endEffects(root, context, world, readOpenScene(root).scene, (effect) => endedByDate(effect, reached), "time passed") : [];
         // Read again only when effects ended, which may have been on the places around.
-        const around = passed >= sceneReminderMinutes ? aroundLead(ended.length === 0 ? world : loadWorld(root)) : undefined;
+        const around = passed >= sceneReminderMinutes ? aroundLead(ended.length === 0 ? world : campaignWorld(root, context)) : undefined;
         return { ...result, ended, around };
     },
 

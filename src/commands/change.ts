@@ -3,24 +3,27 @@ import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, withArticle } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
 import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../money/index.ts";
 import {
     baseChain,
+    baseFieldOf,
     baseValue,
     concernsPlayer,
+    declaredKind,
     findPage,
     followersOf,
     inheritedFields,
     isCounterField,
+    isDeclaredUncounted,
     isStandardField,
     keepersOf,
-    loadWorld,
     ownField,
     type Page,
     parsePageReference,
     playerConcerns,
+    systemPageNamed,
     withPage,
     type World,
     writePage,
@@ -29,8 +32,9 @@ import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-la
 import { saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
-import { checkNotCopied, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
+import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
+import { campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -83,13 +87,14 @@ export const change = defineCommand({
     run(input, context)
     {
         const root = requireCampaign(context.folder);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const holder = holderNamed(root, world, input.page);
         const fields = effectiveFields(world, holder.page);
         const { coins, problem } = campaignCoins(root);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
-        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins, clock), coins);
-        const purse = coins === undefined ? undefined : readAmount(fields[field], coins);
+        const field = fieldName(world, holder, fields, input.field, exampleValue(input, coins, clock), coins, suggestedNumber(fields, input));
+        // A field the game system declares is never money (SYS-8).
+        const purse = coins === undefined || declaredKind(world, field) !== undefined ? undefined : readAmount(fields[field], coins);
         const page = holder.page.name;
 
         if (problem !== undefined && typeof fields[field] === "string" && /\d+\s*\p{L}/u.test(fields[field])) {
@@ -259,7 +264,7 @@ function coinNames(coins: Coin[]): string
     return coins.map((coin) => coin.names.join("/")).join(", ");
 }
 
-/** What holds the counter, given by name or as a link: a copy in the open scene first, then a page. */
+/** What holds the counter, given by name or as a link: a copy in the open scene first, then a page of the campaign. */
 function holderNamed(root: string, world: World, name: string): CounterHolder
 {
     const open = readOpenScene(root);
@@ -276,6 +281,7 @@ function holderNamed(root: string, world: World, name: string): CounterHolder
     }
 
     const page = found.page;
+    checkNotSystemPage(world, open, page);
     checkNotCopied(world, open, page);
     return {
         page,
@@ -299,8 +305,11 @@ function logFollowers(root: string, world: World, context: Context, followers: P
     }
 }
 
-/** The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters and money it holds and how to add one. */
-function fieldName(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string, example: string, coins: Coin[] | undefined): string
+/**
+ * The holder's field with this name, ignoring case and how accents are written; a missing or fixed one fails with the counters and money it holds and how to add one.
+ * A field the game system never counts fails with how to write it instead, with `suggested` as its new value when the change gives one.
+ */
+function fieldName(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string, example: string, coins: Coin[] | undefined, suggested: string): string
 {
     const keys = Object.keys(fields);
     const found = keys.find((key) => key === name) ?? keys.find((key) => comparableText(key) === comparableText(name.trim()));
@@ -311,16 +320,22 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
         throw new Error(`${what}, not a counter${holder.kind === "page" ? ": change it with write" : ""}.`);
     }
 
+    const declared = found ?? name.trim();
+
+    if (isDeclaredUncounted(world, declared)) {
+        throw new Error(uncountedMessage(world, page.name, declared, suggested));
+    }
+
     if (found !== undefined) {
         return found;
     }
 
-    const held = keys.filter((key) => !isStandardField(page.type, key) || isCounterField(page.type, key)).flatMap((key) => {
+    const held = keys.filter((key) => (!isStandardField(page.type, key) || isCounterField(page.type, key)) && !isDeclaredUncounted(world, key)).flatMap((key) => {
         const counter = readCounter(fields[key]);
-        const purse = coins === undefined ? undefined : readAmount(fields[key], coins);
+        const purse = coins === undefined || declaredKind(world, key) !== undefined ? undefined : readAmount(fields[key], coins);
         return purse !== undefined && coins !== undefined ? [`${key} ${formatAmount(purse, coins)}`] : counter === undefined ? [] : [`${key} ${formatCounter(counter)}`];
     });
-    const hasMoney = coins !== undefined && keys.some((key) => readAmount(fields[key], coins) !== undefined);
+    const hasMoney = coins !== undefined && keys.some((key) => declaredKind(world, key) === undefined && readAmount(fields[key], coins) !== undefined);
     const listed = held.length > 0 ? `Its counters${hasMoney ? " and money" : ""}: ${held.join(", ")}.` : "It has no counters.";
     throw new Error(`${page.name} has no field "${name}". ${listed} ${howToAdd(world, holder, name, example)}`);
 }
@@ -331,27 +346,64 @@ function counterOf(world: World, page: Page, field: string): unknown
     return Object.entries(inheritedFields(world, page)).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 }
 
-/** How to add a counter that neither the page nor its bases hold; or why its base cannot be read. */
+/**
+ * How to add a counter that neither the page nor its bases hold, on the nearest base of the campaign, since the system's are read-only (SYS-6); or why its base cannot be read.
+ */
 function howToAdd(world: World, holder: CounterHolder, name: string, example: string): string
 {
     const page = holder.page;
-    const link = typeof page.fields.creature === "string" ? page.fields.creature : undefined;
-    const base = baseChain(world, page)[0];
+    const field = baseFieldOf(page.type);
+    const link = field === undefined || typeof page.fields[field] !== "string" ? undefined : page.fields[field];
+    const chain = baseChain(world, page);
+    const base = chain.find((candidate) => candidate.system === undefined);
 
-    if (link !== undefined && base === undefined && (page.type === "character" || page.type === "creature")) {
+    if (field !== undefined && link !== undefined && chain.length === 0) {
         const fix = holder.kind === "copy" ? "fix the creature's page, or let the copy leave the scene" : "fix the link with write";
-        return `${page.name} ${holder.kind === "copy" ? "copies" : "derives from"} ${link}, which cannot be read: no creature has that name, two pages share it, or it is not a creature. To fix it, ${fix}; validate shows why.`;
+        return `${page.name} ${holder.kind === "copy" ? "copies" : "derives from"} ${link}, which cannot be read: no ${field} has that name, two pages share it, or it is not ${withArticle(field)}. `
+            + `To fix it, ${fix}; validate shows why.${missingSystemHint(world)}`;
     }
 
     if (base === undefined) {
         return `To add one, use write, such as set ${name}=${example}.`;
     }
 
+    // A page of the campaign named like one of the system's hides it (SYS-4): writing on it is not what the master means.
+    const hides = systemPageNamed(world, base.name) === undefined ? "" : ` But ${base.name} hides the system ${world.system?.name ?? ""}'s ${base.name}: validate says how to fix it.`;
+
     if (holder.kind === "copy") {
-        return `To add one to ${page.name} alone, use write, such as set ${name}=${example}. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.`;
+        return `To add one to ${page.name} alone, use write, such as set ${name}=${example}. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.${hides}`;
     }
 
-    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=${example}, and everything that derives from ${base.name} takes it; or on ${page.name} alone.`;
+    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=${example}, and everything that derives from ${base.name} takes it; or on ${page.name} alone.${hides}`;
+}
+
+/**
+ * A field the game system never counts, such as ac: a number for a while is an effect, for good a write (SYS-8). `suggested` is the value the change would give, when it gives one.
+ */
+function uncountedMessage(world: World, page: string, field: string, suggested: string): string
+{
+    const system = world.system?.name ?? "";
+
+    if (declaredKind(world, field) !== "number") {
+        const kind = declaredKind(world, field) === "text" ? "text" : "a list";
+        return `${field} is ${kind} in the system ${system}, never counted: write it instead, such as write "${page}", set ${field}=${suggested}. Nothing changed.`;
+    }
+
+    return `${field} is a number in the system ${system}, never counted: for a while, such as a spell, effect, action add, page "${page}", set ${field}=${suggested}; `
+        + `for good, write "${page}", set ${field}=${suggested}. Nothing changed.`;
+}
+
+/** The value a change would give a number, such as 18 for by 2 on ac 16; "<value>" when it gives none. */
+function suggestedNumber(fields: Record<string, unknown>, input: { field: string; by?: number | string; to?: number | string; }): string
+{
+    const current = Object.entries(fields).find(([name]) => comparableText(name) === comparableText(input.field.trim()))?.[1];
+
+    // From a command line a number arrives as text.
+    if (input.to !== undefined && /^[+-]?\d+$/.test(String(input.to).trim())) {
+        return String(Number(input.to));
+    }
+
+    return typeof current === "number" && typeof input.by === "number" ? String(current + input.by) : "<value>";
 }
 
 function notCounterMessage(page: string, field: string, value: unknown, coins: Coin[] | undefined): string

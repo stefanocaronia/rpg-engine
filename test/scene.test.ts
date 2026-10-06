@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { scene } from "../src/commands/scene.ts";
 import type { Context } from "../src/core/context.ts";
-import { fightGuidance, makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
+import { fightGuidance, makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -132,11 +132,11 @@ describe("rpg scene", () => {
         expect((await rpg("write", "Fuoco fatuo", "--set", "hp=5/5")).output).toBe(
             "Fuoco fatuo has copies in the open scene, which read from it what they do not change: Fuoco fatuo 1. Change a copy; to change Fuoco fatuo for all, close the scene first. Nothing changed.",
         );
-        writeFileSync(join(folder, "world", "creatures", "Fuoco fatuo.md"), "---\nhp: 5/5\nac: 12\n---\n\nUna luce che inganna.\n");
+        writeFileSync(join(folder, "world", "creatures", "Fuoco fatuo.md"), "---\nhp: 5/5\ndifesa: 12\n---\n\nUna luce che inganna.\n");
         expect(await ok("change", "Fuoco fatuo 1", "hp", "--by=-2")).toBe("Fuoco fatuo 1: hp 5/5 → 3/5.");
-        expect(await ok("change", "Fuoco fatuo 1", "ac", "--by=-2")).toBe("Fuoco fatuo 1: ac 12 → 10.");
-        expect(stateFile()).toContain('    Fuoco fatuo 1:\n      creature: "[[Fuoco fatuo]]"\n      hp: 3/5\n      ac: 10\n');
-        expect(await ok("status")).toContain("copies: Fuoco fatuo 1: hp 3/5 · ac 10; Annegato 1: hp 22/22 · uses 1/1");
+        expect(await ok("change", "Fuoco fatuo 1", "difesa", "--by=-2")).toBe("Fuoco fatuo 1: difesa 12 → 10.");
+        expect(stateFile()).toContain('    Fuoco fatuo 1:\n      creature: "[[Fuoco fatuo]]"\n      hp: 3/5\n      difesa: 10\n');
+        expect(await ok("status")).toContain("copies: Fuoco fatuo 1: hp 3/5 · difesa 10; Annegato 1: hp 22/22 · uses 1/1");
 
         const creature = await rpg("change", "Annegato", "hp", "--by=-3");
         expect(creature.exitCode).toBe(1);
@@ -158,7 +158,10 @@ describe("rpg scene", () => {
             [["scene", "open", "--title", "X"], "Give the scene a title and a type: combat, social, exploration, travel, rest, challenge, other."],
             [["scene", "open", "--title", "X", "--type", "fight"], 'Invalid input for "scene"'],
             [["scene", "open", "--title", "X", "--type", "combat", "--summary", "y"], "scene open does not take summary: it takes title, type, place, with, creatures."],
-            [["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegati=2"], "There is no creature named Annegati. The creatures are: Annegato, Fuoco fatuo, Lupo."],
+            [
+                ["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegati=2"],
+                `There is no creature named Annegati. The campaign's creatures are: Annegato, Fuoco fatuo, Lupo. The system 5e has ${systemPageCount("5e", "creatures")} creatures, named in English`,
+            ],
             [["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Varro"], "Varro is a character, not a creature: characters enter with with."],
             [["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegato=0"], "Give how many Annegato enter as a whole number from 1 to 50, such as Annegato=2."],
             [["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegato=due"], "Give how many Annegato enter"],

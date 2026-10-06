@@ -4,10 +4,11 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import { baseChain, isEmptyField, isPartyMember, links, loadWorld, type Page, pageNamed, parsePageReference, secretNames, shownPart, withPage, type World, writePage } from "../pages/index.ts";
+import { baseChain, isEmptyField, isPartyMember, links, type Page, pageNamed, parsePageReference, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { copyName, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
+import { campaignWorld } from "./game-world.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);
@@ -38,7 +39,7 @@ export const reveal = defineCommand({
     run(input, context): RevealResult
     {
         const root = requireCampaign(context.folder);
-        let world = loadWorld(root);
+        let world = campaignWorld(root, context);
         const { scene } = readOpenScene(root);
         const asked = listOf(input.page);
 
@@ -116,6 +117,10 @@ function learnableOf(root: string, world: World, item: string): Learnable
         const roll = readLog(root).some((entry) => entry.type === "roll" && entry.visibility === "hidden" && entry.id === reference.name);
         const why = roll ? `${reference.name} is a hidden roll: show its result with roll, reveal ${reference.name}.` : `There is no page named ${reference.name}: ${listHint(reference.name, "page") ?? "look for it with find."}`;
         throw new Error(`${why} Nothing recorded.`);
+    }
+
+    if (page.system !== undefined) {
+        throw new Error(`${page.name} is ${systemLabel(page)}: it holds no secrets, and anyone may know what it says. Nothing recorded.`);
     }
 
     if (reference.section === undefined) {

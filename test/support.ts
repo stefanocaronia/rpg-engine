@@ -1,8 +1,19 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Context } from "../src/core/context.ts";
 import type { LogEntry } from "../src/core/log.ts";
+
+/** The game systems the tests see: those of the package, such as 5e, and the test system ironsworn. */
+export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url)), fileURLToPath(new URL("./systems/", import.meta.url))];
+
+/** How many pages a game system the tests see has, in a folder of its world if given: "The system 5e has 22 more pages". */
+export function systemPageCount(system: string, folder?: string): number
+{
+    const world = join(testSystemFolders.find((candidate) => readdirSync(candidate).includes(system)) ?? testSystemFolders[0], system, "world", folder ?? "");
+    return readdirSync(world, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".md")).length;
+}
 
 /** A context with dice that always show 4, a fixed time and ids id1, id2…, working in `folder` as the master. */
 export function testContext(folder: string): Context
@@ -16,6 +27,7 @@ export function testContext(folder: string): Context
         newSalt: () => "salt",
         actor: "master",
         platform: "linux",
+        systemFolders: testSystemFolders,
     };
 }
 

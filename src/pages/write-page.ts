@@ -7,6 +7,7 @@ import { introductionText, partContent, readSection, repeatedNames, secretNames,
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
+import { heldSystemPageMessage, hidingMessage, readOnlyMessage } from "./system-pages.ts";
 import { checkPageName, findPage, heldNames, holdersOf, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
@@ -28,6 +29,12 @@ export interface PageChange extends FieldChange
 export function writePage(world: World, name: string, type: PageType | undefined, requested: PageChange): { page: Page; created: boolean; changed: boolean; mode?: TextMode; retyped?: Page; }
 {
     const existing = findPage(world, name);
+
+    // The campaign only reads the pages of its game system, and never hides one with a page of its own (SYS-4, SYS-6).
+    if (existing?.system !== undefined) {
+        throw new Error(type === undefined ? readOnlyMessage(existing) : hidingMessage(existing, type));
+    }
+
     // A type given to a page that has another changes it (D-159): the file moves to the folder of its new type.
     const retyped = existing !== undefined && type !== undefined && existing.type !== type ? existing : undefined;
     checkChange(existing, type, requested);
@@ -81,7 +88,8 @@ function checkRetype(world: World, page: Page, type: PageType): void
     const derived = derivedPages(world, page).map((other) => other.name);
 
     if (derived.length > 0) {
-        throw new Error(`${page.name} is the creature that ${derived.join(", ")} ${derived.length === 1 ? "derives" : "derive"} from: as ${withArticle(type)} it would leave them deriving from nothing. Give them another creature first.`);
+        const kind = page.type ?? "page";
+        throw new Error(`${page.name} is the ${kind} that ${derived.join(", ")} ${derived.length === 1 ? "derives" : "derive"} from: as ${withArticle(type)} it would leave them deriving from nothing. Give them another ${kind} first.`);
     }
 
     const holder = validHoldersOf(world, page)[0];
@@ -319,10 +327,17 @@ function checkContainers(world: World, existing: Page | undefined, page: { name:
     }
 }
 
-/** Why `holder` cannot list the page named `target` (CON-1, CON-3): it cannot hold its type, it is that page or inside it, or the page is already elsewhere. */
+/**
+ * Why `holder` cannot list the page named `target` (CON-1, CON-3): it cannot hold its type, it is that page or inside it, the page is already elsewhere,
+ * or it is a page of the game system, which is nowhere (SYS-6).
+ */
 function holdProblem(world: World, holder: Page, target: string): string | undefined
 {
     const page = findPage(world, target);
+
+    if (page?.system !== undefined) {
+        return `${heldSystemPageMessage(page, holder)} Nothing changed.`;
+    }
 
     if (page !== undefined && !canHold(holder.type, page.type)) {
         return holdRefusal(holder, page);

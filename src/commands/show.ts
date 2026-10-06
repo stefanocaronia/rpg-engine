@@ -2,15 +2,16 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
-import { backlinks, baseChain, findPage, formatFields, inheritedByBase, inheritedFields, loadWorld, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, textParts, type World } from "../pages/index.ts";
+import { backlinks, baseChain, findPage, formatFields, inheritedByBase, inheritedFields, locate, type Page, parsePageReference, readSection, secretNames, sectionTitles, systemPageNamed, textParts, type World } from "../pages/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
+import { campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
 
 export const show = defineCommand({
     name: "show",
-    description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the creatures it derives from. "
+    description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
         + "It also says where the thing is and which pages link to it, and shows a copy in the open scene too. "
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
         + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
@@ -24,7 +25,7 @@ export const show = defineCommand({
     run(input, context)
     {
         const root = requireCampaign(context.folder);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
         const reference = parsePageReference(input.page);
 
         if (reference.section === "") {
@@ -38,7 +39,7 @@ export const show = defineCommand({
         const page = found ?? (scene !== undefined && copy !== undefined ? copyPage(copy, scene.copies[copy]) : undefined);
 
         if (page === undefined) {
-            throw new Error(`There is no page named ${reference.name}${scene === undefined ? "" : ", nor a copy of that name in the open scene"}. Look for it with the find command.`);
+            throw new Error(`There is no page named ${reference.name}${scene === undefined ? "" : ", nor a copy of that name in the open scene"}. Look for it with the find command.${missingSystemHint(world)}`);
         }
 
         const isCopy = found === undefined && scene !== undefined && copy !== undefined;
@@ -49,6 +50,8 @@ export const show = defineCommand({
             page: page.name,
             type: page.type,
             path: page.path,
+            system: page.system,
+            hides: page.system === undefined && !isCopy && systemPageNamed(world, page.name) !== undefined ? world.system?.name : undefined,
             section: reference.section,
             copyOf: isCopy ? copyLink(scene.copies[copy]) : undefined,
             scene: isCopy ? scene.title : undefined,
@@ -58,10 +61,10 @@ export const show = defineCommand({
             around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
-            derivesFrom: baseChain(world, page).map((base) => base.name),
+            derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
             inherited: reference.section === undefined
-                ? inherited.map((group) => ({ from: group.base.name, fields: group.fields, text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n") }))
+                ? inherited.map((group) => ({ from: nameWithSystem(group.base), fields: group.fields, text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n") }))
                 : [],
             text: part?.text ?? page.body,
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
@@ -71,9 +74,14 @@ export const show = defineCommand({
 
     format(result)
     {
-        const what = result.copyOf === undefined ? (result.type ?? "free page") : `copy of ${result.copyOf} in the open scene "${result.scene}"`;
+        const what = result.copyOf !== undefined
+            ? `copy of ${result.copyOf} in the open scene "${result.scene}"`
+            : result.system !== undefined
+            ? `${result.type ?? "page"} of the system ${result.system}, read-only`
+            : (result.type ?? "free page");
         const header = [
-            `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what}) · ${result.path}`,
+            `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what})${result.system === undefined ? ` · ${result.path}` : ""}`,
+            result.hides === undefined ? "" : `This page hides the system ${result.hides}'s ${result.page}: links to that name lead here.`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
             result.isIn.length > 0 ? `Is in: ${result.isIn.join(" › ")}` : "",
             result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: move it where it is, such as move, page ${result.page}, to ${result.isIn[0]}.` : "",
@@ -89,6 +97,12 @@ export const show = defineCommand({
         return [header, fields, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** "Wolf (5e)": a page's name, with the game system it comes from (SYS-2). */
+function nameWithSystem(page: Page): string
+{
+    return page.system === undefined ? page.name : `${page.name} (${page.system})`;
+}
 
 /** The place of the open scene, where its copies are (ENV-2); undefined when it has none, or none that exists. */
 function scenePlace(world: World, place: string | undefined): Page | undefined

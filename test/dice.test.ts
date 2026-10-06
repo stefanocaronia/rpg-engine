@@ -22,7 +22,7 @@ describe("dice notation", () => {
         expect(diceRoll.text).toBe(text);
     });
 
-    it("covers the dice of games very different from D&D", () => {
+    it("covers the dice of games very different from the fifth edition", () => {
         expect(rollDice("1d6+2", { values: [4] }).total).toBe(6); // Ironsworn action die
         expect(rollDice("2d10", { values: [3, 9] }).total).toBe(12); // Ironsworn challenge dice
         expect(rollDice("3d6kh1", { values: [2, 6, 4] }).total).toBe(6); // Blades in the Dark pool

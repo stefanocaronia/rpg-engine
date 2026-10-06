@@ -68,7 +68,7 @@ describe("effect add and end (EFF-1, EFF-4, EFF-5)", () => {
         expect((await rpg("effect", "add", "Ennio", "Morte apparente", "--set", "status=dead")).output).toBe("An effect gives values to counters and free fields, such as ac=15, not to status.");
         expect((await rpg("effect", "add", "Ennio", "Attesa until dawn")).output).toBe('The name Attesa until dawn has "until" in it: give the end with for or until, not in the name.');
         expect((await rpg("effect", "add", "Ennio", "Armatura (ac: 15)")).output).toBe("Give the values with set, not in the name, such as name Armatura, set ac=15.");
-        expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=+2")).output).toBe('ac on Ennio is a counter, 13: give the value it reads while the effect lasts, such as ac=16, not "+2". Nothing changed.');
+        expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=+2")).output).toBe('ac on Ennio is a number, 13: give the value it reads while the effect lasts, such as ac=15, not "+2". Nothing changed.');
         expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=15", "--set", "AC=17")).output).toBe("AC is given twice: give each value once.");
         expect((await rpg("effect", "add", "Ennio", "Strano", "--set", "x=[[1], [2]]")).output).toContain("would be a list inside a list");
         expect(page("characters/Ennio.md")).not.toContain("effects");
@@ -131,7 +131,7 @@ describe("the layer of values (EFF-3, EFF-6, EFF-7, EFF-10)", () => {
         expect(await ok("change", "Ennio", "hp", "--by=-10")).toBe("Ennio: hp 34/34 → 24/34: in Forma d'orso.");
         expect(page("characters/Ennio.md")).toContain('effects:\n  - "Forma d\'orso (hp: 24/34, speed: 40 ft)"');
         expect(page("characters/Ennio.md")).toContain("hp: 12/12");
-        expect(await ok("status")).toContain("PC: Ennio, in Ossario: hp 24/34 · ac 13 · Forma d'orso");
+        expect(await ok("status")).toContain("PC: Ennio, in Ossario: hp 24/34 · Forma d'orso");
         expect(await ok("show", "Ennio")).toContain("While they last: hp 24/34 (12/12 without), speed 40 ft (none without)");
         expect(await ok("effect", "end", "Ennio", "Forma d'orso")).toBe("Ennio: Forma d'orso ended; hp 24/34 → 12/12, speed 40 ft → none.");
     });
@@ -247,10 +247,10 @@ describe("notes on values (EFF-3, EFF-4)", () => {
 
 describe("effects written by hand (EFF-1, EFF-12)", () => {
     it("reads lines written without quotes, and an Effects field in any case", async () => {
-        writeFileSync(join(folder, "world", "characters", "Lena.md"), "---\nrole: companion\nhp: 9/9\nEffects:\n  - Maledetta (wis: 6) until day 9, 06:00\n---\n");
-        expect(await ok("status")).toContain("Companions: Lena, with Ennio: hp 9/9 · wis 6 · Maledetta until day 9, 06:00");
+        writeFileSync(join(folder, "world", "characters", "Lena.md"), "---\nrole: companion\nhp: 9/9\nEffects:\n  - Maledetta (fiuto: 6) until day 9, 06:00\n---\n");
+        expect(await ok("status")).toContain("Companions: Lena, with Ennio: hp 9/9 · fiuto 6 · Maledetta until day 9, 06:00");
         expect(await ok("effect", "add", "Lena", "Prona")).toBe("Lena: Prona, until it is ended.");
-        expect(page("characters/Lena.md")).toBe('---\nrole: companion\nhp: 9/9\nEffects:\n  - "Maledetta (wis: 6) until day 9, 06:00"\n  - Prona\n---\n');
+        expect(page("characters/Lena.md")).toBe('---\nrole: companion\nhp: 9/9\nEffects:\n  - "Maledetta (fiuto: 6) until day 9, 06:00"\n  - Prona\n---\n');
     });
 
     it("never writes over effects that do not read, and lets write remove them all", async () => {

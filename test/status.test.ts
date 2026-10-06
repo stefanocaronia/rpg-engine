@@ -28,7 +28,7 @@ async function state(): Promise<string>
 
 describe("rpg status", () => {
     it("says what is missing before the game starts, and leaves the instructions to their own command", async () => {
-        expect(await state()).toBe("Guadoscuro\nStill missing: language, system, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).\nNo player character yet.");
+        expect(await state()).toBe("Guadoscuro\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).\nNo player character yet.");
         expect((await rpg("instructions")).output).toBe(readFileSync(new URL("../instructions/core.md", import.meta.url), "utf8").replace(/\r\n/g, "\n").trim());
     });
 
@@ -51,7 +51,7 @@ describe("rpg status", () => {
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned");
 
         expect(await state()).toBe([
-            "Guadoscuro · it · 5e · difficulty normal · lethality epic",
+            "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
             "PC: Ennio, in Laboratorio › Cripta: hp 5/12 · arrows 18",
@@ -72,7 +72,7 @@ describe("rpg status", () => {
         expect(await state()).toBe(
             [
                 "Guadoscuro",
-                "Still missing: language, system, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+                "Still missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
                 "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
                 "PC: Ennio",
                 "Planned events: Sparizione di Rosa (day 1, 23:00) · Il rituale (day 2, 23:00) · La fiera (day 3, 06:00), and 1 more: find text planned, type event",

@@ -4,7 +4,24 @@ import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { backlinks, containerFieldOf, isEmptyField, isInParty, linksIn, locate, newPageFields, type Page, type PageType, parsePageReference, standardValues, withPage, type World, writePage } from "../pages/index.ts";
+import {
+    backlinks,
+    containerFieldOf,
+    isEmptyField,
+    isInParty,
+    linksIn,
+    locate,
+    newPageFields,
+    type Page,
+    type PageType,
+    parsePageReference,
+    standardValues,
+    systemLabel,
+    systemPageNamed,
+    withPage,
+    type World,
+    writePage,
+} from "../pages/index.ts";
 import { formatDuration, formatGameDate, type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
 import { formatTrigger, readTriggers, type Trigger, type TriggerFacts, triggerHolds } from "../triggers/index.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -258,6 +275,12 @@ export function conditionNotes(world: World, when: unknown): string[]
     const named = "triggers" in read ? read.triggers.flatMap(namedPages) : [];
 
     return [...new Set(named)].filter((name) => !world.pages.some((page) => comparableText(page.name) === comparableText(name))).map((name) => {
+        const system = systemPageNamed(world, name);
+
+        if (system !== undefined) {
+            return systemConditionText(system);
+        }
+
         const aliased = world.pages.find((page) => textsOf(page.fields.aliases).some((alias) => comparableText(alias) === comparableText(name)));
         const hint = aliased === undefined ? "" : ` ${aliased.name} has ${name} among its aliases: write [[${aliased.name}]].`;
         return `[[${name}]] is not a page yet: the condition on it cannot hold until a page has that name.${hint}`;
@@ -322,7 +345,24 @@ function whenProblem(world: World, when: unknown): string | undefined
     }
 
     const read = readTriggers(when);
-    return "problem" in read ? read.problem : read.triggers.map((trigger) => statusProblem(world, trigger)).find((problem) => problem !== undefined);
+    return "problem" in read ? read.problem : read.triggers.map((trigger) => statusProblem(world, trigger) ?? systemConditionProblem(world, trigger)).find((problem) => problem !== undefined);
+}
+
+/** A condition on a page of the game system, which no page of the campaign hides: it can never hold (SYS-2). */
+function systemConditionProblem(world: World, trigger: Trigger): string | undefined
+{
+    const system = namedPages(trigger)
+        .filter((name) => !world.pages.some((page) => comparableText(page.name) === comparableText(name)))
+        .map((name) => systemPageNamed(world, name))
+        .find((page) => page !== undefined);
+    return system === undefined ? undefined : systemConditionText(system);
+}
+
+/** "[[Wolf]] is a creature of the system 5e, a kind: never anywhere, never dead, so the condition on it can never hold. …" */
+function systemConditionText(page: Page): string
+{
+    return `[[${page.name}]] is ${systemLabel(page)}, a kind: never anywhere, never dead, so the condition on it can never hold. `
+        + `Name a page of the campaign instead, such as one with ${page.type === "item" ? "item" : "creature"}=[[${page.name}]].`;
 }
 
 /** The characters an event names in by who are dead (EVT-6). */

@@ -20,7 +20,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | user guide | yes | no |
 | `src/` | core, CLI, MCP server, dashboard | yes | built into `dist/` |
-| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required | yes | yes |
+| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/` | yes | yes, without their tests |
 | `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules): optional | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
@@ -107,7 +107,7 @@ Seven experts review the work and discuss it with the maintainer. Each one is a 
 - TypeScript on Node ≥ 22; zod; yaml; the official MCP SDK; vitest; few dependencies.
 - Code, comments, commit messages, public docs, command names, file names and config keys in English; game content in the campaign language.
 - Secret parts of a page go in a `> [!secret]` block (Obsidian callout).
-- Tests use Ironsworn (CC-BY-4.0) next to `5e`, to keep the core generic.
+- Tests use Ironsworn next to `5e`, to keep the core generic: only its CC BY 4.0 parts (the SRD, asset cards and oracles; from Delve, moves, oracles, theme and domain cards), with its attribution.
 - Never keep the repo under a path containing `&`: on Windows, npm's `.cmd` shims truncate the path and `npm run` fails.
 - Credentials never go in the repo or in a campaign: they belong in the OS keychain.
 - **Licensing and trademarks.** The repo and the npm package hold only original or open-licensed content: for 5e, only SRD 5.1 and 5.2 (CC-BY-4.0) with the required attribution, and compatibility stated only as "compatible with fifth edition". No Wizards of the Coast trademarks in names or presentation, no non-SRD content (Forgotten Realms, non-SRD monsters, art), not even in tests. These rules cover only what we ship: never restrict what a user's AI knows, searches or reads.

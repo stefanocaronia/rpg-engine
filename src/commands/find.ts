@@ -1,13 +1,17 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { loadWorld, pageTypeNames, searchPages } from "../pages/index.ts";
+import { pageTypeNames, searchPages, searchSystemPages } from "../pages/index.ts";
+import { campaignWorld, foreignSystemLanguage, systemSearchHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
+
+// The pages of the game system that find lists for one text; the others are counted.
+const listedSystemPages = 10;
 
 export const find = defineCommand({
     name: "find",
     description: "Find pages of the world. "
-        + "It looks for a text in their names, fields and text, ignoring case, or lists the pages of a type. "
+        + "It looks for a text in their names, fields and text, ignoring case, or lists the pages of a type; the game system's pages are found by their names and fields. "
         + "Use it when you do not know a page's exact name, and before creating a page, to check that it does not exist under another name. "
         + 'Example: text "lanterna"; or type place.',
     group: "game",
@@ -20,14 +24,46 @@ export const find = defineCommand({
 
     run(input, context)
     {
-        const world = loadWorld(requireCampaign(context.folder));
+        const world = campaignWorld(requireCampaign(context.folder), context);
         const matches = searchPages(world, input).map(({ page, excerpt }) => ({ page: page.name, type: page.type, path: page.path, excerpt }));
-        return { matches, problems: world.problems };
+        // The game system's pages are found by name only, and listed only for a text: there may be hundreds (SYS-3).
+        const withText = (input.text?.trim() ?? "") !== "";
+        const system = searchSystemPages(world, input);
+        const listed = withText ? system.slice(0, listedSystemPages).map(({ page, excerpt }) => ({ page: page.name, type: page.type, excerpt })) : [];
+        const systemFound = { system: world.system?.name, systemMatches: listed, systemMore: system.length - listed.length, withText, type: input.type };
+        return { matches, ...systemFound, language: foreignSystemLanguage(world), searchHint: systemSearchHint(world).trim(), problems: world.problems };
     },
 
     format(result)
     {
         const lines = result.matches.map((match) => `${match.page} (${match.type ?? "free page"})${match.excerpt === undefined ? "" : `: ${match.excerpt}`}`);
-        return [lines.length > 0 ? lines.join("\n") : "No page matches.", skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        const system = result.systemMatches.map((match) => `${match.page} (${match.type ?? "page"}, system ${result.system ?? ""})${match.excerpt === undefined ? "" : `: ${match.excerpt}`}`);
+        const found = [...lines, ...system];
+        const note = systemNote(result, lines.length > 0);
+        const none = note === "" || result.withText ? "No page matches." : "No page of the campaign matches.";
+        return [found.length > 0 ? found.join("\n") : none, note, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** What find says of the game system's pages it does not list: how many more there are and how to find them, or that it names them in another language. */
+function systemNote(result: { system?: string; systemMatches: unknown[]; systemMore: number; withText: boolean; type?: string; language?: string; searchHint: string; }, listed: boolean): string
+{
+    if (result.system === undefined) {
+        return "";
+    }
+
+    const named = result.language;
+
+    if (!result.withText && result.systemMore > 0) {
+        const what = result.type === undefined ? "pages" : `${result.type}s`;
+        const language = named === undefined ? "" : `, named in ${named}`;
+        return `The system ${result.system} has ${result.systemMore}${listed ? " more" : ""} ${what}${language}: give part of a name${named === undefined ? "" : `, in ${named},`} to find them.`;
+    }
+
+    if (result.systemMore > 0) {
+        return `And ${result.systemMore} more of the system ${result.system}: give more of the name.`;
+    }
+
+    // Nothing of the system found: how find looks for its pages, when nothing at all was found or they are named in another language (D-165).
+    return result.withText && result.systemMatches.length === 0 && (!listed || named !== undefined) ? result.searchHint : "";
+}

@@ -4,6 +4,7 @@ import { createCampaign, difficulties, lethalities, missingSettings } from "../c
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { createWorld } from "../pages/index.ts";
+import { installedSystemName, missingWithSystems } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 
 export const init = defineCommand({
@@ -18,7 +19,7 @@ export const init = defineCommand({
         folder: z.string().optional().describe("folder of the new campaign; the current folder if left out"),
         name: z.string().optional().describe("name of the campaign; the folder's name if left out"),
         language: z.string().optional().describe("language of the game, as a code such as it or en"),
-        system: z.string().optional().describe("game system, such as 5e"),
+        system: z.string().optional().describe("game system: one of those installed, such as 5e"),
         difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
         lethality: z.enum(lethalities).optional().describe(`what a fall means: ${lethalities.join(", ")}`),
     }),
@@ -26,11 +27,13 @@ export const init = defineCommand({
     run(input, context)
     {
         const folder = resolve(context.folder, input.folder ?? ".");
-        const settings = { name: input.name ?? basename(folder), language: input.language, system: input.system, difficulty: input.difficulty, lethality: input.lethality };
+        // Only an installed system (D-167), as it is installed.
+        const system = input.system === undefined ? undefined : installedSystemName(input.system, context, "init");
+        const settings = { name: input.name ?? basename(folder), language: input.language, system, difficulty: input.difficulty, lethality: input.lethality };
         const root = createCampaign(folder, settings, context.platform);
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
-        return { root, name: settings.name, missing: missingSettings(settings) };
+        return { root, name: settings.name, missing: missingWithSystems(missingSettings(settings), context) };
     },
 
     format(result)

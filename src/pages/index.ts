@@ -4,6 +4,7 @@ export { applyMove, type MovePlan, planMove } from "./containers.ts";
 export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
 export {
     baseChain,
+    baseFieldOf,
     baseValue,
     derivedPages,
     followersOf,
@@ -42,6 +43,7 @@ export {
     newPageFields,
     standardValues,
 } from "./standard-fields.ts";
+export { declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
 export {
     type Backlink,
     backlinks,
@@ -60,6 +62,10 @@ export {
     parsePageReference,
     playerConcerns,
     searchPages,
+    searchSystemPages,
+    type SystemInfo,
+    systemPageNamed,
+    type SystemPages,
     validHoldersOf,
     withPage,
     type World,

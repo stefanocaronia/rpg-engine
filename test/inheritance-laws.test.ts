@@ -23,7 +23,7 @@ import {
 } from "../src/pages/index.ts";
 
 const names = ["Lupo", "Orso", "Corvo", "Ombra", "Zanna"];
-const neverInherited = ["role", "status", "creature", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases"];
+const neverInherited = ["role", "status", "creature", "item", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases"];
 const folders: Record<string, string> = { creature: "creatures", character: "characters", item: "items" };
 const runs = { numRuns: 2000 };
 
@@ -32,7 +32,7 @@ const creatureValue = fc.oneof(
     fc.constantFrom(...names).chain((name) => fc.constantFrom(`[[${name}]]`, `[[${name.toLowerCase()}]]`, `[[${name.toUpperCase()}]]`)),
     fc.constantFrom("[[Nessuno]]", "Lupo", "", null),
 );
-const fieldName = fc.constantFrom("hp", "HP", "ac", "Ac", "fiuto", "attacchi", "Attacchi", "Status", ...neverInherited.filter((name) => name !== "creature"), "Knows", "PLACE");
+const fieldName = fc.constantFrom("hp", "HP", "ac", "Ac", "fiuto", "attacchi", "Attacchi", "Status", ...neverInherited.filter((name) => name !== "creature" && name !== "item"), "Knows", "PLACE");
 const fieldValue = fc.oneof(fc.constantFrom("5/12", "12/12", "3", "feroce", "", null), fc.integer({ min: 0, max: 20 }), fc.constant(["morso", "artigli"]), fc.constant(["coda"]));
 // A page names each section or secret once, in any case: validate reports one that does not.
 const part = fc.constantFrom("## Tattiche\n\nIn branco.", "## tattiche\n\nDa solo.", "## Aspetto\n\nGrigio.\n\n### Occhi\n\nGialli.", "### Occhi\n\nRossi.", "> [!secret] Debolezza\n> Il fuoco.", "> [!secret]\n> Senza nome.");
@@ -41,7 +41,9 @@ const pageShape = fc.record({
     name: fc.constantFrom(...names),
     type: fc.constantFrom<PageType>("creature", "creature", "creature", "character", "item"),
     fields: fc.dictionary(fieldName, fieldValue, { maxKeys: 4 }),
-    creature: fc.option(creatureValue, { nil: undefined }),
+    // The link to a base, in the field of the page's type or in the other one, where it is a free field (INH-1).
+    base: fc.option(creatureValue, { nil: undefined }),
+    baseField: fc.constantFrom("creature", "item"),
     introduction: fc.boolean(),
     parts: fc.uniqueArray(part, { selector: partName, maxLength: 2 }),
 });
@@ -55,14 +57,14 @@ const worlds = fc.tuple(fc.uniqueArray(pageShape, { selector: (page) => page.nam
             name: shape.name,
             type: shape.type,
             path: `world/${folders[shape.type]}/${shape.name}${index}.md`,
-            fields: shape.creature === undefined ? shape.fields : { ...shape.fields, creature: shape.creature },
+            fields: shape.base === undefined ? shape.fields : { ...shape.fields, [shape.baseField]: shape.base },
             body: [shape.introduction ? `Chi è ${shape.name}.` : "", ...shape.parts].filter((text) => text !== "").join("\n\n"),
         })),
     } satisfies World;
 });
 
 describe("the laws of inheritance, on worlds made at random", () => {
-    it("INH-2, INH-3: a chain holds only creatures, each once, never the page, and follows the reference model", () => {
+    it("INH-2, INH-3: a chain holds only pages of the type its field names, each once, never the page, and follows the reference model", () => {
         fc.assert(
             fc.property(worlds, (world) => {
                 for (const page of world.pages) {
@@ -70,7 +72,7 @@ describe("the laws of inheritance, on worlds made at random", () => {
                     expect(chain).toEqual(referenceChain(world, page));
                     expect(new Set(chain).size).toBe(chain.length);
                     expect(chain.includes(page)).toBe(false);
-                    expect(chain.every((base) => base.type === "creature")).toBe(true);
+                    expect(chain.every((base) => base.type === baseTypeOf(page))).toBe(true);
                 }
             }),
             runs,
@@ -102,7 +104,7 @@ describe("the laws of inheritance, on worlds made at random", () => {
     it("INH-10: the followers of a base for a field are exactly the pages whose value changes when the base writes a new one", () => {
         fc.assert(
             fc.property(worlds, fc.constantFrom("hp", "Fiuto", "attacchi", "tags", "Knows", "status"), (world, field) => {
-                for (const base of world.pages.filter((page) => page.type === "creature")) {
+                for (const base of world.pages.filter((page) => page.type === "creature" || page.type === "item")) {
                     const followers = followersOf(world, base, field);
                     const rewritten = { ...base, fields: { ...withoutField(base.fields, field), [field]: "nuovo" } };
                     const after = { ...world, pages: world.pages.map((page) => (page === base ? rewritten : page)) };
@@ -154,7 +156,7 @@ describe("the laws of inheritance, on worlds made at random", () => {
     it("INH-13: the followers of a section are the pages that show it from that base", () => {
         fc.assert(
             fc.property(worlds, fc.constantFrom("Tattiche", "Debolezza", "Nuova"), (world, name) => {
-                for (const base of world.pages.filter((page) => page.type === "creature")) {
+                for (const base of world.pages.filter((page) => page.type === "creature" || page.type === "item")) {
                     const rewritten = { ...base, body: `${base.body}\n\n> [!secret] ${name}\n> Scritto ora.`.trim() };
                     const holds = textParts(base.body).some((piece) => comparableText(piece.name) === comparableText(name));
                     const after = { ...world, pages: world.pages.map((page) => (page === base ? (holds ? base : rewritten) : page)) };
@@ -169,9 +171,9 @@ describe("the laws of inheritance, on worlds made at random", () => {
         );
     });
 
-    it("INH-2, INH-3: write takes no creature that would make a page derive from itself, even through a page written later", () => {
+    it("INH-2, INH-3: write takes no creature or item that would make a page derive from itself, even through a page written later", () => {
         fc.assert(
-            fc.property(worlds, fc.constantFrom(...names, "Spettro"), fc.constantFrom<PageType>("creature", "character"), creatureValue, (world, name, newType, link) => {
+            fc.property(worlds, fc.constantFrom(...names, "Spettro"), fc.constantFrom<PageType>("creature", "character", "item"), creatureValue, (world, name, newType, link) => {
                 const named = world.pages.filter((page) => comparableText(page.name) === comparableText(name));
 
                 if (named.length > 1 || typeof link !== "string") {
@@ -179,7 +181,8 @@ describe("the laws of inheritance, on worlds made at random", () => {
                 }
 
                 const before = named.at(0);
-                const page: Page = { name, type: before?.type ?? newType, path: before?.path ?? `world/creatures/${name}.md`, fields: { ...before?.fields, creature: link }, body: before?.body ?? "" };
+                const type = before?.type ?? newType;
+                const page: Page = { name, type, path: before?.path ?? `world/${folders[type]}/${name}.md`, fields: { ...before?.fields, [type === "item" ? "item" : "creature"]: link }, body: before?.body ?? "" };
                 const after = { ...world, pages: [...world.pages.filter((other) => other !== before), page] };
                 const problem = newBaseProblem(world, page, link);
 
@@ -246,7 +249,7 @@ describe("the laws of inheritance, on worlds made at random", () => {
     });
 });
 
-/** The chain as INH-2 and INH-3 say it, written plainly: follow the link of a character or creature to the one creature with that name, and stop before a page already met. */
+/** The chain as INH-2 and INH-3 say it, written plainly: follow the link of a character or creature to the one creature with that name, of an item to the one item, and stop before a page already met. */
 function referenceChain(world: World, page: Page): Page[]
 {
     const chain: Page[] = [];
@@ -262,9 +265,16 @@ function referenceChain(world: World, page: Page): Page[]
 
 function referenceBase(world: World, page: Page): Page | undefined
 {
-    const link = page.type === "creature" || page.type === "character" ? /^\[\[([^\]]+)\]\]$/.exec(String(page.fields.creature ?? "")) : null;
+    const field = page.type === "creature" || page.type === "character" ? "creature" : page.type === "item" ? "item" : undefined;
+    const link = field === undefined ? null : /^\[\[([^\]]+)\]\]$/.exec(String(page.fields[field] ?? ""));
     const found = link === null ? [] : world.pages.filter((candidate) => candidate.name.toLowerCase() === link[1].toLowerCase());
-    return found.length === 1 && found[0].type === "creature" ? found[0] : undefined;
+    return found.length === 1 && found[0].type === field ? found[0] : undefined;
+}
+
+/** The type of the pages a page can derive from (INH-1): creatures for characters and creatures, items for items. */
+function baseTypeOf(page: Page): PageType
+{
+    return page.type === "item" ? "item" : "creature";
 }
 
 /** What a page reads for a field, as INH-4–INH-8 say it: the last name with a value on the nearest page that has one; never a field of the closed list from a base. */

@@ -13,6 +13,7 @@ export {
     missingSettings,
     readCoinsSetting,
     readSettings,
+    readTextSetting,
     type SettingName,
     settingNames,
 } from "./settings.ts";

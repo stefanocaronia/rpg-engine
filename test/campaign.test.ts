@@ -20,7 +20,7 @@ describe("rpg init", () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
-        expect(result.output).toContain("Still missing: language, system, difficulty, lethality.");
+        expect(result.output).toContain("Still missing: system (installed: 5e, ironsworn), language, difficulty, lethality.");
 
         const typeFolders = ["characters", "places", "factions", "quests", "items", "events", "topics", "creatures"].map((type) => `world/${type}`);
 
@@ -39,7 +39,9 @@ describe("rpg init", () => {
 
     it("says how to set what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
-        expect(result.output).toBe(`Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).`);
+        expect(result.output).toBe(
+            `Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system (installed: 5e, ironsworn), difficulty, lethality. Ask the player, then set each one with the config command (setting and value).`,
+        );
     });
 
     it("refuses a second campaign in the same folder, inside another one or around another one", async () => {
@@ -88,13 +90,13 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\ncoins: (none: a game without money)\n\nStill missing: language, system, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\ncoins: (none: a game without money)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
         );
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe("language: it\n\nStill missing: system, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).");
+        expect(result.output).toBe("language: it\n\nStill missing: system (installed: 5e, ironsworn), difficulty, lethality. Ask the player, then set each one with the config command (setting and value).");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });
@@ -142,7 +144,7 @@ describe("rpg config", () => {
         expect(refused.exitCode).toBe(1);
         expect(refused.output).toContain('"deadly" is not a valid difficulty');
         expect((await runCommandLine(["config", "lethality", "epic"], context)).output).toBe(
-            "lethality: epic\n\nStill missing: language, system, difficulty. Ask the player, then set each one with the config command (setting and value).",
+            "lethality: epic\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty. Ask the player, then set each one with the config command (setting and value).",
         );
         expect((await runCommandLine(["config", "table", "--add", "rolls shown as they fall"], context)).output).toContain("table: rolls shown as they fall");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("table:\n  - rolls shown as they fall\n");

@@ -6,6 +6,7 @@ import { links } from "./markdown.ts";
 import { changeFields, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
 import { canHold, containerFieldOf, isEmptyField } from "./standard-fields.ts";
+import { heldSystemPageMessage, systemLabel } from "./system-pages.ts";
 import { linksIn, locate, type Page, readPage, withPage, type World } from "./world.ts";
 
 /** A planned move: the containers to write, in order, each with the entries it loses, as written, and those it gains; the destination comes last. */
@@ -117,9 +118,17 @@ export function holdRefusal(holder: { name: string; type?: PageType; }, held: { 
     return `${holder.name} is a character, who carries only items: to be with them, ${held.name} goes where ${holder.name} is.`;
 }
 
-/** A page goes only into a container that can hold it (CON-1), and never into itself or into what it holds (CON-3). */
+/** A page goes only into a container that can hold it (CON-1), never into itself or into what it holds (CON-3); the pages of the game system go nowhere (SYS-6). */
 function checkMove(world: World, page: Page, destination: Page): void
 {
+    if (page.system !== undefined) {
+        throw new Error(`${heldSystemPageMessage(page, destination)} Nothing moved.`);
+    }
+
+    if (destination.system !== undefined) {
+        throw new Error(`${destination.name} is ${systemLabel(destination)}, a kind, which holds nothing: ${page.name} goes into a page of the campaign. Nothing moved.`);
+    }
+
     if (!canHold(destination.type, page.type)) {
         throw new Error(`${holdRefusal(destination, page)} Nothing moved.`);
     }

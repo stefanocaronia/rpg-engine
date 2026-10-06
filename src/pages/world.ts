@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, sep } from "node:path";
+import type { FieldKind } from "../core/field-kind.ts";
 import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
@@ -11,6 +12,9 @@ const longestName = 120;
 
 // Built once for each world, which is never changed in place: who lists each name in their contents or inventory, so that locating a page costs as much as its chain.
 const holderIndexes = new WeakMap<World, Map<string, Page[]>>();
+
+// The pages of a game system by comparable name, built once for each world read: a name costs a lookup, however many pages the system has (SYS-3).
+const systemNames = new WeakMap<SystemPages, Map<string, Page>>();
 
 /** A page of the world: one thing with a name. It describes only itself; who has it or knows it is written on their own pages. */
 export interface Page
@@ -25,9 +29,11 @@ export interface Page
     fields: Record<string, unknown>;
     /** The markdown text. */
     body: string;
+    /** The game system the page comes from, such as 5e: read-only, and nowhere (SYS-2). Undefined for the campaign's own pages. */
+    system?: string;
 }
 
-/** Every page of a campaign, read from its world folder. */
+/** Every page of a campaign, read from its world folder, and the pages of its game system. */
 export interface World
 {
     /** The campaign folder. */
@@ -35,6 +41,31 @@ export interface World
     pages: Page[];
     /** Why some files could not be read as pages: the other pages still work. */
     problems: string[];
+    /** The campaign's game system, when one is installed (SYS-1): its pages are found after the campaign's own. */
+    system?: SystemPages;
+    /** The language the campaign is played in, as a code such as it, when campaign.yaml says it. */
+    language?: string;
+    /** The game system campaign.yaml names when it is not installed: none of its pages can be found (SYS-1). */
+    missingSystem?: string;
+}
+
+/** What a game system says of itself, as the world reads it (SYS-1, SYS-8). */
+export interface SystemInfo
+{
+    /** The name the campaign gives it, such as 5e. */
+    name: string;
+    /** What it is, for messages: "the fifth edition, from the SRD 5.1". */
+    title: string;
+    /** The language it names its pages in, such as en. */
+    language: string;
+    /** The kind of each field it declares, by the name it gives (SYS-8). */
+    fields: Record<string, FieldKind>;
+}
+
+/** The pages of the campaign's game system, read-only (SYS-2). */
+export interface SystemPages extends SystemInfo
+{
+    pages: Page[];
 }
 
 export interface PageMatch
@@ -59,26 +90,29 @@ export function createWorld(root: string): void
     }
 }
 
-export function loadWorld(root: string): World
+/**
+ * The pages of the campaign in `root`, and those of its game system, if one is installed: `system` says where it is and what it declares (SYS-1).
+ * `language` is the campaign's, and `missingSystem` the system it names that is not installed, for messages.
+ */
+export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; } = {}): World
 {
-    const worldPath = join(root, worldFolderName);
-    const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
-    const pages: Page[] = [];
-    const problems: string[] = [];
+    const campaign = readPages(root);
+    const { system, language, missingSystem } = options;
 
-    for (const entry of entries.filter((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name))) {
-        try {
-            pages.push(readPage(root, join(entry.parentPath, entry.name)));
-        } catch (error) {
-            problems.push(error instanceof Error ? error.message : String(error));
-        }
+    if (system === undefined) {
+        return { root, ...campaign, language, missingSystem };
     }
 
-    pages.sort((first, second) => (first.path < second.path ? -1 : 1));
-    return { root, pages, problems };
+    const systemPages = readPages(system.folder, system.name);
+    const { name, title, fields } = system;
+    const problems = [...campaign.problems, ...systemPages.problems];
+    return { root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, pages: systemPages.pages }, language };
 }
 
-/** The page with this name, ignoring case and Unicode normalization. Two pages with that name stop the command: no write may pick one of them. */
+/**
+ * The page with this name, ignoring case and Unicode normalization: the campaign's, else the game system's (SYS-3). Two pages of the campaign with that name stop the command:
+ * no write may pick one of them.
+ */
 export function findPage(world: World, name: string): Page | undefined
 {
     const wanted = comparableText(name);
@@ -88,7 +122,47 @@ export function findPage(world: World, name: string): Page | undefined
         throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by hand: names must be unique in the campaign.`);
     }
 
-    return found[0];
+    return found[0] ?? systemPageNamed(world, name);
+}
+
+/** The page of the campaign's game system with this name, ignoring case; undefined when there is none (SYS-3). */
+export function systemPageNamed(world: World, name: string): Page | undefined
+{
+    if (world.system === undefined) {
+        return undefined;
+    }
+
+    let names = systemNames.get(world.system);
+
+    if (names === undefined) {
+        names = new Map();
+
+        // A package names each page once (SYS-2): were it to repeat one, the first would be read.
+        for (const page of [...world.system.pages].reverse()) {
+            names.set(comparableText(page.name), page);
+        }
+
+        systemNames.set(world.system, names);
+    }
+
+    return names.get(comparableText(name));
+}
+
+/**
+ * The pages of the campaign's game system with a text in their name or fields, of a type if given, with the field it is in; with no text, all those of that type (SYS-3).
+ * Their text is the rules', which are read on their own.
+ */
+export function searchSystemPages(world: World, query: { text?: string; type?: PageType; }): PageMatch[]
+{
+    const text = comparableText(query.text?.trim() ?? "");
+    return (world.system?.pages ?? []).filter((page) => query.type === undefined || page.type === query.type).flatMap((page): PageMatch[] => {
+        if (text === "" || comparableText(page.name).includes(text)) {
+            return [{ page }];
+        }
+
+        const excerpt = fieldExcerpt(page, text);
+        return excerpt === undefined ? [] : [{ page, excerpt }];
+    });
 }
 
 /** The world with a page as it is now written, in its place or added: for what depends on it, without reading every page again. */
@@ -167,10 +241,10 @@ export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[
     return { chain, alsoIn };
 }
 
-/** The containers that list a page and can hold it, itself left out, in the order of the world's pages. */
+/** The containers that list a page and can hold it, itself left out, in the order of the world's pages. A page of the game system is in none (SYS-6). */
 export function validHoldersOf(world: World, page: Page): Page[]
 {
-    return holdersOf(world, page.name).filter((holder) => holder !== page && canHold(holder.type, page.type));
+    return page.system !== undefined ? [] : holdersOf(world, page.name).filter((holder) => holder !== page && canHold(holder.type, page.type));
 }
 
 /** Whether a page is one of the player's party: their character or a companion. */
@@ -240,7 +314,10 @@ export function heldNames(page: Page): string[]
     return field === undefined ? [] : linksIn(page.fields[field]);
 }
 
-/** The page named `name`, or else the one page with `name` among its aliases; undefined when there is none. Two pages with that name or alias stop the command. */
+/**
+ * The page named `name`, or else the one page with `name` among its aliases; undefined when there is none. A name wins over an alias, and the campaign over its game system (SYS-3).
+ * Two pages of the campaign with that name or alias stop the command.
+ */
 export function pageNamed(world: World, name: string): Page | undefined
 {
     const page = findPage(world, name);
@@ -249,13 +326,13 @@ export function pageNamed(world: World, name: string): Page | undefined
         return page;
     }
 
-    const aliased = world.pages.filter((candidate) => textsIn(candidate.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
+    const aliased = withAlias(world.pages, name);
 
     if (aliased.length > 1) {
         throw new Error(`${name} is an alias of ${aliased.map((other) => other.name).join(" and ")}: give the page's own name.`);
     }
 
-    return aliased[0];
+    return aliased[0] ?? withAlias(world.system?.pages ?? [], name)[0];
 }
 
 /** The pages that a field's value links to. */
@@ -303,6 +380,34 @@ export function readPage(root: string, fullPath: string): Page
         fields: readFields(file.frontmatter, path),
         body: file.body,
     };
+}
+
+/** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
+function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
+{
+    const worldPath = join(root, worldFolderName);
+    const entries = existsSync(worldPath) ? readdirSync(worldPath, { recursive: true, withFileTypes: true }) : [];
+    const pages: Page[] = [];
+    const problems: string[] = [];
+
+    for (const entry of entries.filter((candidate) => candidate.isFile() && /\.md$/i.test(candidate.name))) {
+        try {
+            const page = readPage(root, join(entry.parentPath, entry.name));
+            pages.push(system === undefined ? page : { ...page, system });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            problems.push(system === undefined ? message : `The system ${system}: ${message}`);
+        }
+    }
+
+    pages.sort((first, second) => (first.path < second.path ? -1 : 1));
+    return { pages, problems };
+}
+
+/** The pages that have `name` among their aliases. */
+function withAlias(pages: Page[], name: string): Page[]
+{
+    return pages.filter((candidate) => textsIn(candidate.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
 }
 
 function fieldExcerpt(page: Page, text: string): string | undefined

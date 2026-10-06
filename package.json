@@ -18,6 +18,7 @@
   "files": [
     "dist",
     "systems",
+    "!systems/*/test",
     "extensions",
     "instructions"
   ],
@@ -40,7 +41,7 @@
     "mcp"
   ],
   "author": "Stefano Caronia",
-  "license": "MIT",
+  "license": "(MIT AND CC-BY-4.0)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stefanocaronia/rpg-engine.git"

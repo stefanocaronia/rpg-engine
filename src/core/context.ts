@@ -1,4 +1,5 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
 /** What a command needs from the outside world: tests replace it to get repeatable results. */
 export interface Context
@@ -18,6 +19,8 @@ export interface Context
     platform: string;
     /** The player, where the surface can ask them directly, as an AI host that shows forms does (D-148); missing elsewhere. */
     player?: Player;
+    /** The folders that hold the installed game systems, nearest first (SYS-1). */
+    systemFolders: string[];
 }
 
 /**
@@ -39,5 +42,7 @@ export function defaultContext(folder = process.cwd()): Context
         newSalt: () => randomBytes(16).toString("hex"),
         actor: "master",
         platform: process.platform,
+        // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up.
+        systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url))],
     };
 }

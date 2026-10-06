@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, loadWorld, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, locate, type Page, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectsOf } from "./effect-layer.ts";
@@ -14,6 +14,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
 import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
+import { campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters } from "./page-counters.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "close"] as const;
@@ -107,7 +108,7 @@ export const scene = defineCommand({
         const root = requireCampaign(context.folder);
         const input = asLists(given);
         checkParameters(input);
-        const world = loadWorld(root);
+        const world = campaignWorld(root, context);
 
         if (input.action === "close") {
             return close(root, world, input.summary ?? "", context);
@@ -580,7 +581,9 @@ function creaturePage(world: World, name: string): Page
 
     const creatures = world.pages.filter((candidate) => candidate.type === "creature").map((candidate) => candidate.name);
     const more = creatures.length > 10 ? `, and ${creatures.length - 10} more: find --type creature` : "";
-    const known = creatures.length === 0 ? "There are no creature pages yet: create one with write, type creature." : `The creatures are: ${creatures.slice(0, 10).join(", ")}${more}.`;
+    const system = systemPagesHint(world, "creature");
+    const none = system === "" ? "There are no creature pages yet: create one with write, type creature." : "The campaign has no creature pages yet.";
+    const known = `${creatures.length === 0 ? none : `The campaign's creatures are: ${creatures.slice(0, 10).join(", ")}${more}.`}${system}${missingSystemHint(world)}`;
     throw new Error(page === undefined ? `There is no creature named ${name}. ${known}` : `${page.name} is ${withArticle(page.type ?? "free page")}, not a creature: characters enter with with. ${known}`);
 }
 
