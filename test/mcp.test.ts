@@ -1,8 +1,10 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { ElicitRequestSchema, type ElicitResult } from "@modelcontextprotocol/sdk/types.js";
+import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
+import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
@@ -185,4 +187,20 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         expect(((await older.callTool({ name: "ask", arguments: { question: "Attacco di opportunità?", options: ["Sì", "No"] } })).content as { text: string; }[])[0].text).toBe("The player chose: Sì.");
         await older.close();
     });
+});
+
+describe("rpg mcp, as a host starts it", () => {
+    it("ends when the host goes and its input closes, after its watchers started (D-193)", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        const server = spawn(process.execPath, [fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "mcp"], { cwd: folder, stdio: ["pipe", "pipe", "ignore"] });
+        const answered = new Promise<void>((done) => server.stdout.on("data", (data: Buffer) => data.toString().includes('"id":2') && done()));
+        const send = (message: object): boolean => server.stdin.write(`${JSON.stringify(message)}\n`);
+        send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: LATEST_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "test", version: "1" } } });
+        send({ jsonrpc: "2.0", method: "notifications/initialized" });
+        send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "status", arguments: {} } });
+        await answered;
+        const ended = new Promise<number | null>((done) => server.on("exit", done));
+        server.stdin.end();
+        expect(await ended).toBe(0);
+    }, 30000);
 });

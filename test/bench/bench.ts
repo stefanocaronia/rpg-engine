@@ -1,4 +1,5 @@
-// The performance bench (step 11, D-194): times the commands on campaigns of several sizes, in one process as the MCP server runs them, and from the command line.
+// The performance bench (step 11, D-194): times the commands on campaigns of several sizes, in one process as the MCP server runs them, with the files kept
+// for the session (D-193), and from the command line.
 // Run it with: node test/bench/bench.ts [sizes, such as 100,1000,5000] [--big for a game system as large as a whole SRD]. The command line runs dist/cli.js when
 // the engine is built, else src/cli.ts, which loads more slowly.
 import { spawnSync } from "node:child_process";
@@ -8,6 +9,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandLine } from "../../src/command-line.ts";
 import type { Context } from "../../src/core/context.ts";
+import { SessionStore } from "../../src/core/session-store.ts";
 import { enlargeSystem, generateWorld } from "./generate.ts";
 
 const engine = fileURLToPath(new URL("../../", import.meta.url));
@@ -17,6 +19,7 @@ const warmRuns = 5;
 
 // What the master does in a session, as the commands' arguments; a call that changes what it acts on runs once.
 const calls: { args: string[]; once?: boolean; }[] = [
+    { args: ["instructions"] },
     { args: ["status"] },
     { args: ["show", "Abitante 3"] },
     { args: ["find", "nebbia"] },
@@ -40,10 +43,13 @@ console.log(`| pages | command | first call | then (median of ${warmRuns}) |\n|-
 
 for (const size of sizes) {
     const folder = join(scratch, `campaign-${size}`);
-    const context = benchContext(folder, [systems]);
+    const session = new SessionStore();
+    const context = { ...benchContext(folder, [systems]), files: session };
     await must(context, ["init", "--name", "Banco", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"]);
     await must(context, ["advance", "--to", "day 1, 18:00"]);
     generateWorld(folder, size);
+    // The world was written by hand: the server's first call reads it all, as after a chat starts.
+    await session.ready(true);
 
     for (const { args, once } of calls) {
         const first = await timed(context, args);
@@ -61,6 +67,7 @@ for (const size of sizes) {
     // The command line reads the systems of the package: the game system is the 5e as it ships.
     const run = spawnSync(process.execPath, [cli, "status"], { cwd: folder });
     console.log(`| ${size} | status from the command line (${cli.endsWith(".js") ? "dist" : "src"}), with the 5e as it ships | ${Math.round(performance.now() - started)} ms (exit ${run.status}) | |`);
+    session.close();
 }
 
 rmSync(scratch, { recursive: true, force: true });
@@ -72,10 +79,11 @@ function benchContext(folder: string, systemFolders: string[]): Context
     return { folder, random: () => 4, now: () => new Date("2026-10-02T10:00:00Z"), newId: () => `id${++idCount}`, newSalt: () => "salt", actor: "master", platform: process.platform, systemFolders };
 }
 
-/** How long a call takes; one that fails stops the bench, since what it measures would be something else. */
+/** How long a call takes, with the session made ready first as the MCP server does; one that fails stops the bench, since it would measure something else. */
 async function timed(context: Context, args: string[]): Promise<number>
 {
     const started = performance.now();
+    await (context.files as SessionStore).ready(args[0] === "instructions");
     await must(context, args);
     return Math.round(performance.now() - started);
 }

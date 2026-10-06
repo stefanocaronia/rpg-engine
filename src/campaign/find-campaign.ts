@@ -34,5 +34,7 @@ export function requireCampaign(folder: string): string
         throw new Error(`There is no campaign here: no ${campaignFileName} in ${resolve(folder)} or in the folders above it. Create one with the init command, or work from inside a campaign folder.`);
     }
 
+    // The session of the MCP server watches the campaign from the first call that finds it (D-193).
+    files().track(root);
     return root;
 }

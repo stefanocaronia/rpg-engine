@@ -2,10 +2,13 @@ import { basename } from "node:path";
 import { type Document, isMap, parseDocument } from "yaml";
 import { files } from "./store.ts";
 
-/** A YAML file of keys and values, read so that writing it back keeps its comments. `holds` says what it must hold, for the error message: settings, such as "name: ...". */
+/**
+ * A YAML file of keys and values, read as the disk has it now so that writing it back keeps its comments and loses no change (D-193). `holds` says what it
+ * must hold, for the error message: settings, such as "name: ...".
+ */
 export function readYamlFile(path: string, holds: string): Document
 {
-    return documentOf(path, files().text(path) ?? missing(path), holds);
+    return documentOf(path, files().fresh(path) ?? missing(path), holds);
 }
 
 /** The keys and values of a YAML file, as plain data, read once by the store of the call; an empty file gives an empty object. */

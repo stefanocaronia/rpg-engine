@@ -16,8 +16,9 @@ interface Kept
 /** The files of a call, read once and kept: a module asks for them through files(). */
 export class FileStore
 {
-    private readonly kept = new Map<string, Kept>();
-    private readonly listings = new Map<string, string[]>();
+    protected readonly kept = new Map<string, Kept>();
+    protected readonly listings = new Map<string, string[]>();
+    private readonly remembered = new Map<string, { value: unknown; dependsOn: (path: string) => boolean; }>();
 
     /** The text of a file; undefined when there is none. */
     text(path: string): string | undefined
@@ -76,12 +77,40 @@ export class FileStore
         return listing.filter((path) => keep(basename(path)));
     }
 
+    /** The text of a file as it is now, for a command about to write it: in a call, the text the call reads; a session checks the disk (D-193). */
+    fresh(path: string): string | undefined
+    {
+        return this.text(path);
+    }
+
+    /** Keeps the files of a campaign up to date for later calls: only the store of a session does (D-193). */
+    track(_root: string): void
+    {
+    }
+
+    /**
+     * A value built from the files, such as the world, kept until something changes that `dependsOn` takes: a file, or a folder that may hold one. A build
+     * that fails is not kept.
+     */
+    remember<T>(key: string, dependsOn: (path: string) => boolean, build: () => T): T
+    {
+        const kept = this.remembered.get(key);
+
+        if (kept !== undefined) {
+            return kept.value as T;
+        }
+
+        const value = build();
+        this.remembered.set(key, { value, dependsOn });
+        return value;
+    }
+
     /** Writes a file, with the folders it needs. */
     write(path: string, text: string): void
     {
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, text, "utf8");
-        this.wrote(path, { text }, true);
+        this.changed(path, { text }, true);
     }
 
     /** Adds text at the end of a file, as the log grows. */
@@ -90,7 +119,7 @@ export class FileStore
         const before = this.kept.get(resolve(path));
         appendFileSync(path, text, "utf8");
         // A file never read stays to be read: what is kept of it would be only its end.
-        this.wrote(path, before === undefined ? undefined : { text: `${before.text ?? ""}${text}` }, true);
+        this.changed(path, before === undefined ? undefined : { text: `${before.text ?? ""}${text}` }, true);
     }
 
     /** Makes a folder, with those it needs, if it is not there. */
@@ -103,10 +132,10 @@ export class FileStore
     remove(path: string): void
     {
         rmSync(path);
-        this.wrote(path, { text: undefined }, false);
+        this.changed(path, { text: undefined }, false);
     }
 
-    private entry(path: string): Kept
+    protected entry(path: string): Kept
     {
         const key = resolve(path);
         let entry = this.kept.get(key);
@@ -120,10 +149,10 @@ export class FileStore
     }
 
     /**
-     * What is kept of a file after a change: its new text and no readings, or nothing, to read it again, when its text is not known; and whether it is in the
-     * listings of the folders that hold it.
+     * What is kept of a file after a change: its new text and no readings, or nothing, to read it again, when its text is not known; whether it is in the
+     * listings of the folders that hold it; and no value remembered from it.
      */
-    private wrote(path: string, now: { text: string | undefined; } | undefined, exists: boolean): void
+    protected changed(path: string, now: { text: string | undefined; } | undefined, exists: boolean): void
     {
         const key = resolve(path);
 
@@ -133,6 +162,8 @@ export class FileStore
             this.kept.set(key, { text: now.text, readings: new Map() });
         }
 
+        this.forgetBuiltFrom(key);
+
         for (const [folder, listing] of this.listings) {
             const inside = isInside(folder, key);
             const listed = listing.includes(key);
@@ -141,6 +172,16 @@ export class FileStore
                 listing.push(key);
             } else if (inside && !exists && listed) {
                 listing.splice(listing.indexOf(key), 1);
+            }
+        }
+    }
+
+    /** Forgets the values remembered from a file. */
+    protected forgetBuiltFrom(path: string): void
+    {
+        for (const [key, value] of this.remembered) {
+            if (value.dependsOn(path)) {
+                this.remembered.delete(key);
             }
         }
     }
@@ -161,14 +202,14 @@ export function withFiles<T>(store: FileStore, work: () => T): T
 }
 
 /** Whether a path is inside a folder, below it. */
-function isInside(folder: string, path: string): boolean
+export function isInside(folder: string, path: string): boolean
 {
     const below = relative(folder, path);
     return below !== "" && !below.startsWith("..") && !isAbsolute(below);
 }
 
 /** The text of a file, or undefined when there is none: a folder or a file that cannot be read fails as before. */
-function readText(path: string): string | undefined
+export function readText(path: string): string | undefined
 {
     try {
         return readFileSync(path, "utf8");

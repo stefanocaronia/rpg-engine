@@ -50,7 +50,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
     const mode = textMode(change);
     const path = existing !== undefined && retyped === undefined ? existing.path : newPagePath(world, existing?.name ?? name, pageType);
     const fullPath = join(world.root, path);
-    const file = existing === undefined ? { body: "" } : splitPageFile(files().text(join(world.root, existing.path)) ?? "");
+    const file = existing === undefined ? { body: "" } : splitPageFile(files().fresh(join(world.root, existing.path)) ?? "");
     const changedFields = [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})];
     const frontmatter = withoutBaseValues(world, existing, { name, type: pageType, path }, changedFields, changedFields.length > 0 || change.unset !== undefined ? changeFields(file.frontmatter, change, path) : file.frontmatter);
     const written = { name: existing?.name ?? name, type: pageType, path, fields: readFields(frontmatter, path), body: file.body };

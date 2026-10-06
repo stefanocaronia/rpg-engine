@@ -70,7 +70,7 @@ export function applyMove(world: World, plan: MovePlan): World
 {
     const changed = plan.edits.map(({ holder, field, remove, add }) => {
         const fullPath = join(world.root, holder.path);
-        const file = splitPageFile(files().text(fullPath) ?? "");
+        const file = splitPageFile(files().fresh(fullPath) ?? "");
         const removed = remove.length === 0 ? file.frontmatter : changeFields(file.frontmatter, { remove: { [field]: remove } }, holder.path);
         // A container left with nothing loses the field, as if it had never held anything.
         const emptied = add.length === 0 && isEmptyList(readFields(removed, holder.path)[field]) ? changeFields(removed, { unset: [field] }, holder.path) : removed;
