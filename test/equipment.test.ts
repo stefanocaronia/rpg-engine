@@ -307,6 +307,21 @@ describe("what a character has equipped (CON-12)", () => {
         expect(await ok("show", "Gara")).toContain("Attacks: Unarmed Strike +5, 4 bludgeoning\n");
     });
 
+    it("keeps what goes with whoever moves: a character's armor, and the passengers' arms on a boat, but not an item moved away from them", async () => {
+        await character("Gara", "classes=[[Fighter]] 1");
+        await carry("Gara", { Cotta: "Chain Mail", Spada: "Longsword" }, ["Cotta", "Spada"]);
+        await ok("write", "Molo", "--type", "place");
+        await ok("write", "Isola", "--type", "place");
+        // A third-run playtest: every move of the player character took off its armor (CON-12).
+        expect(await ok("move", "Gara", "--to", "Molo")).not.toContain("equipped no more");
+        expect(await ok("show", "Gara")).toContain("Combat: ac 16 ·");
+        await ok("write", "Barca", "--type", "item");
+        await ok("move", "Gara", "--to", "Barca");
+        expect(await ok("move", "Barca", "--to", "Isola")).not.toContain("equipped no more");
+        expect(await ok("show", "Gara")).toContain("equipped Cotta, Spada");
+        expect(await ok("move", "Spada", "--to", "Isola")).toContain("Gara has Spada equipped no more.");
+    });
+
     it("tells the system's name of an item the campaign names in its own language", async () => {
         await ok("config", "language", "it");
         expect(await ok("write", "Lama", "--type", "item", "--set", "item=[[Spada lunga]]")).toContain(

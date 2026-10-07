@@ -50,12 +50,19 @@ export function planMove(world: World, pages: Page[], destination: Page): MovePl
     // A page only written twice in the destination does not move: its double goes in silence.
     const inDestination = (page: Page): boolean => entriesOf(destination, field).some((entry) => pointsTo(entry, page));
     const moving = pages.filter((page) => !inDestination(page) || edits.some((edit) => edit.remove.some((entry) => pointsTo(entry, page))));
-    // Who had one of them equipped, or something inside one of them, as a sword in a pack, and holds it no more, around the destination, has it no more (CON-12).
+    // Who had one of them equipped, or something inside one of them, as a sword in a pack, and holds it no more after the move has it no more (CON-12); who
+    // moves keeps what goes with them, as a character their armor, or the passengers of a boat theirs.
     const around = new Set([destination, ...locate(world, destination).chain]);
     const carried = world.pages.filter((page) => moving.includes(page) || locate(world, page).chain.some((holder) => moving.includes(holder)));
 
-    for (const holder of world.pages.filter((page) => page.type === "character" && !around.has(page))) {
-        const remove = entriesOf(holder, "equipped").filter((entry) => carried.some((page) => pointsTo(entry, page)));
+    const staysWith = (item: Page, holder: Page): boolean => {
+        const chain = locate(world, item).chain;
+        const moved = chain.findIndex((container) => moving.includes(container));
+        return around.has(holder) || (!moving.includes(item) && moved !== -1 && chain.slice(0, moved + 1).includes(holder));
+    };
+
+    for (const holder of world.pages.filter((page) => page.type === "character")) {
+        const remove = entriesOf(holder, "equipped").filter((entry) => carried.some((page) => pointsTo(entry, page) && !staysWith(page, holder)));
 
         if (remove.length > 0) {
             edits.push({ holder, field: "equipped", remove: distinctLinks(remove), add: [] });

@@ -99,7 +99,7 @@ describe("the laws of containers and moves, on worlds made at random", () => {
         );
     });
 
-    it("CON-12: after a move, a character away from the destination has equipped no more what moved, or what was inside it; the others keep theirs", () => {
+    it("CON-12: after a move, a character has equipped no more what moved away from it, or what was inside it, but keeps what moves with it; the others keep theirs", () => {
         fc.assert(
             fc.property(equippedWorlds, moves, (world, { subjects, destination }) => {
                 let plan: ReturnType<typeof planMove>;
@@ -116,7 +116,16 @@ describe("the laws of containers and moves, on worlds made at random", () => {
 
                 for (const character of characters) {
                     const before = equippedOf(world, character);
-                    const gone = (item: string): boolean => !around.includes(character) && (moved.includes(item) || chainByModel(world, item).some((holder) => moved.includes(holder)));
+
+                    // What moves with the character, inside a moving page that is the character or held by it, stays with it.
+                    const gone = (item: string): boolean => {
+                        const chain = chainByModel(world, item);
+                        const nearest = chain.findIndex((holder) => moved.includes(holder));
+                        const carried = moved.includes(item) || nearest !== -1;
+                        const withIt = !moved.includes(item) && nearest !== -1 && chain.slice(0, nearest + 1).includes(character);
+                        return carried && !around.includes(character) && !withIt;
+                    };
+
                     expect(equippedOf(after, character), character).toEqual(before.filter((item) => !gone(item)));
                 }
             }),
