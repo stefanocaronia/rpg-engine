@@ -44,7 +44,7 @@ function ettore(): string[]
         "save-proficiencies=[wis, cha]",
         "skill-proficiencies=[Insight, Religion]",
         "languages=[Common, Dwarvish]",
-        "traits=Cito le scritture, sempre.",
+        "personality-traits=Cito le scritture, sempre.",
         "umore=sereno",
     ];
     return ["write", "Ettore", "--type", "character", ...fields.flatMap((field) => ["--set", field])];
@@ -79,21 +79,21 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         const shown = await ok("show", "Ettore");
         expect(shown).toContain([
             "Character: level 3 · xp 900",
-            "Personality: traits Cito le scritture, sempre.",
+            "Personality: personality-traits Cito le scritture, sempre.",
             "Abilities: str 14 (+2) · dex 8 (-1) · con 15 (+2) · int 10 (+0) · wis 16 (+3) · cha 12 (+1) · proficiency +2",
             "Saving Throws: str-save +2 · dex-save -1 · con-save +2 · int-save +0 · wis-save +5 · cha-save +3",
             "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 · intimidation +1 · investigation +0 · "
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 · sleight-of-hand -1 · stealth -1 · survival +3",
             "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice 3/3 · passive-perception 13",
-            "Proficiencies: save-proficiencies wis; cha · skill-proficiencies Insight; Religion · languages Common; Dwarvish",
+            "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             "",
             "---\nrole: pc\numore: sereno\n---",
         ].join("\n"));
         expect(shown).not.toContain("Worked out by the system");
         // The result keeps every field as written and every value with what it came from, for whoever reads it as data.
-        const data = JSON.parse(await ok("show", "Ettore", "--json")) as { fields: Record<string, unknown>; worked: { field: string; line: string; }[]; onSheet: string[]; };
+        const data = JSON.parse(await ok("show", "Ettore", "--json")) as { fields: Record<string, unknown>; worked: { field: string; line: string; repeats: boolean; }[]; onSheet: string[]; };
         expect(data.fields).toMatchObject({ str: 14, hp: "20/24", umore: "sereno" });
-        expect(data.worked).toContainEqual({ field: "insight", line: "insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies" });
+        expect(data.worked).toContainEqual({ field: "insight", line: "insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies", repeats: false });
         expect(data.onSheet).toContain("str-mod");
     });
 
@@ -106,13 +106,12 @@ describe("the sheet in show (DAT-2, D-207)", () => {
     });
 
     it("gives a group with how each value is made, by its name in any case; a section of that name comes first", async () => {
+        // A group is its values: no place, links or inherited text.
         expect(await ok("show", "Ettore#combat")).toBe([
             "Ettore#Combat (character) · world/characters/Ettore.md",
-            "Is in: Locanda",
             "",
-            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice 3/3\npassive-perception 13: perception +3",
-            "",
-            "Linked from:\n- Locanda: contains",
+            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice 3/3: the maximum from level 3",
+            "passive-perception 13: perception +3",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
         await ok("write", "Ettore#Combat", "--text", "Combatte con la mazza del padre.");
@@ -120,7 +119,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
     });
 
     it("says what a group lacks, and names the groups when there is no section or group by that name", async () => {
-        await ok("write", "Mira", "--type", "character", "--set", "role=companion", "--set", "wis=12");
+        await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
             'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies.',
@@ -141,17 +140,23 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
     it("says once, when a character joins the party, what the sheet lacks and the system's notes; what is written only when it applies is never reminded", async () => {
         const joined = await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "level=1");
         expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, hit-dice, save-proficiencies, skill-proficiencies, languages.");
-        expect(joined).toContain("Personality: traits, ideals, bonds and flaws are the player's, in their words, with links to what they name: propose some if they ask, never write one they did not choose.");
+        expect(joined).toContain(
+            "Personality: a player character's personality traits, ideal, bond and flaw are the player's, in their words, with links to what they name: propose some if they ask, "
+                + "never write one they did not choose. A companion's are yours to write in the companion's voice, from what the story has shown; ask the player only for a "
+                + "companion they made.",
+        );
+        expect(joined).toContain("Combat: hp-base is the hit points the class's hit dice gave at each level, without Constitution:");
         expect(await ok("write", "Mira", "--set", "xp=0")).not.toContain("Personality");
         const status = await ok("status");
         expect(status).toContain("Mira's sheet still lacks, by these names: str, dex,");
-        expect(status).not.toMatch(/traits|inspiration|temp-hp|exhaustion|expertise/);
+        expect(status).not.toMatch(/personality|inspiration|temp-hp|exhaustion|expertise/);
         expect(await ok("write", "Rosa", "--type", "character", "--set", "role=npc")).toBe("Created Rosa (character, world/characters/Rosa.md): set role.");
     });
 
     it("takes in a list only the names the system gives, in any case and as links, and refuses the others with those names, changing nothing", async () => {
         await ok("write", "Ettore", "--set", "skill-proficiencies=[insight, Medicine]");
-        await ok("write", "Ettore", "--add", "skill-proficiencies=[[Religion]]");
+        expect(await refused("write", "Ettore", "--add", "skill-proficiencies=[[Religion]]")).toBe("skill-proficiencies takes the system's names, not links: Religion. Nothing changed.");
+        await ok("write", "Ettore", "--add", "skill-proficiencies=RELIGION");
         await ok("write", "Ettore", "--add", "expertise=Thieves’ Tools");
         const before = pageText("Ettore");
         const skills = "Acrobatics, Animal Handling, Arcana, Athletics, Deception, History, Insight, Intimidation, Investigation, Medicine, Nature, Perception, Performance, "
@@ -225,8 +230,12 @@ describe("rolls from the sheet (DAT-8)", () => {
         expect(await refused("roll", "1d20+athletics", "--who", "Bruno")).toBe(
             "There is no page named Bruno, nor a copy of that name in the open scene, to take athletics from: give who as the name of a character, or the number in the notation.",
         );
-        expect(await refused("roll", "1d20+str-1", "--who", "Ettore")).toBe(
-            "Ettore has no str-1: show Ettore gives what its sheet has. A minus between two terms takes spaces around it, such as 1d20+str - 1.",
+        const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
+        expect(subtraction).toMatch(/^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13\. Give one of them, or the number, such as 1d20\+5\./);
+        expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
+        expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");
+        expect(await refused("roll", "1d20+str", "--who", "Ettore")).toBe(
+            "str 14 is a score: the system 5e works out str-mod +2 from it, which is what a roll adds, such as 1d20+str-mod. Nothing rolled.",
         );
         expect(await refused("roll", "1d20+speed", "--who", "Ettore")).toBe('speed on Ettore is "25 ft.", not a whole number: give the number in the notation.');
         expect(readLogFile(folder)).toHaveLength(logged);
@@ -235,13 +244,67 @@ describe("rolls from the sheet (DAT-8)", () => {
     });
 
     it("reminds the effects on who rolls that are not in their numbers, the conditions, and the fields of their line not at zero", async () => {
-        expect(await ok("roll", "1d20", "--who", "Ettore")).not.toContain("see whether");
+        expect(await ok("roll", "1d20", "--who", "Ettore")).not.toContain("complete it");
         await ok("effect", "add", "Ettore", "Gauntlets of Ogre Power", "--set", "str=19");
-        expect(await ok("roll", "1d20", "--who", "Ettore")).not.toContain("see whether");
+        expect(await ok("roll", "1d20", "--who", "Ettore")).not.toContain("complete it");
         await ok("effect", "add", "Ettore", "Benedizione", "--for", "1m");
         await ok("effect", "add", "Ettore", "Poisoned", "--for", "1h", "--set", "speed=20 ft.");
         await ok("write", "Ettore", "--set", "exhaustion=1", "--set", "inspiration=0");
-        expect(await ok("roll", "1d20", "--who", "Ettore")).toContain("\nEttore has Benedizione, Poisoned, exhaustion 1: see whether they change this roll.");
+        expect(await ok("roll", "1d20", "--who", "Ettore")).toContain(
+            "\nEttore has Benedizione, Poisoned, exhaustion 1: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again.",
+        );
+    });
+});
+
+describe("what the review of 7 October put right", () => {
+    it("rolls a creature's skills by name from its stat block, and shows only the values that do not repeat a modifier (D-210)", async () => {
+        await ok("write", "Lupo", "--type", "creature", "--set", "creature=[[Wolf]]");
+        await ok("write", "Gaspare", "--type", "character", "--set", "role=npc", "--set", "creature=[[Commoner]]");
+        expect(await ok("roll", "1d20+perception", "--who", "Lupo")).toContain("1d20+perception = 7 [4] + 3 (perception +3)");
+        expect(await ok("roll", "1d20+stealth", "--who", "Lupo")).toContain("1d20+stealth = 8 [4] + 4 (stealth +4)");
+        expect(await ok("roll", "1d20+perception", "--who", "Gaspare")).toContain("1d20+perception = 4 [4] + 0 (perception +0)");
+        const shown = await ok("show", "Lupo");
+        expect(shown).toContain("\nperception +3: ");
+        expect(shown).not.toContain("athletics +1: str-mod +1");
+    });
+
+    it("follows the 5e: hit points at every level, a hit die for each level, expertise only where proficient, inspiration up to 1", async () => {
+        expect(await ok("write", "Ettore", "--set", "hp-per-level=1")).toContain("hp max 24 → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1): worked out by the system 5e.");
+        expect(await ok("write", "Ettore", "--set", "level=4")).toContain("hit-dice max 3 → 4 (level 4)");
+        await ok("write", "Ettore", "--add", "expertise=Stealth", "--add", "expertise=Insight");
+        const shown = await ok("show", "Ettore");
+        expect(shown).toContain("insight +7");
+        expect(shown).toContain("stealth -1");
+        await ok("write", "Ettore", "--set", "inspiration=1");
+        expect(pageText("Ettore")).toContain("inspiration: 1/1");
+    });
+
+    it("adds a bonus an effect gives with its sign, and refuses an effect that gives a maximum the system works out otherwise", async () => {
+        await ok("effect", "add", "Ettore", "Ring of Protection", "--set", "bonus-saves=+1");
+        await ok("effect", "add", "Ettore", "Cloak of Protection", "--set", "bonus-saves=1");
+        expect(await ok("show", "Ettore")).toContain("wis-save +7");
+        expect(await refused("effect", "add", "Ettore", "Aid", "--set", "hp=25/31")).toBe(
+            "The maximum of hp on Ettore is worked out by the system 5e: 24, from hp-base, level, con, hp-per-level. Give the effect the current value alone, such as hp=25, "
+                + "or one of those fields, such as hp-base. Nothing changed.",
+        );
+    });
+
+    it("leaves out a computed field written on a copy in the scene or on a page that gets its base in the same write (FOR-7)", async () => {
+        await ok("scene", "open", "--title", "Imboscata", "--type", "combat", "--creatures", "Goblin=1");
+        expect(await refused("write", "Goblin 1", "--set", "dex-mod=5")).toBe(
+            "Not written, the system 5e works it out: dex-mod +2 (you gave 5). They come from dex. Nothing changed.",
+        );
+        expect(await ok("write", "Lupo", "--type", "creature", "--set", "creature=[[Wolf]]", "--set", "str-mod=3")).toContain("Not written, the system 5e works it out: str-mod +1 (you gave 3).");
+        expect(readFileSync(join(folder, "world", "creatures", "Lupo.md"), "utf8")).not.toContain("str-mod");
+    });
+
+    it("puts right with validate's fix a maximum written by hand, and rolls for a name two pages share when the roll reads no sheet", async () => {
+        writeFileSync(join(folder, "world", "characters", "Lena.md"), "---\nrole: companion\nlevel: 1\ncon: 10\nhp-base: 10\nhp: 5/40\n---\n");
+        expect(await ok("validate")).toContain("Fix: change Lena, field hp, to 5/10.");
+        await ok("change", "Lena", "hp", "--to", "5/10");
+        expect(readFileSync(join(folder, "world", "characters", "Lena.md"), "utf8")).toContain("hp: 5/10");
+        writeFileSync(join(folder, "world", "Ettore.md"), "Un'altra pagina con lo stesso nome.\n");
+        expect(await ok("roll", "1d20", "--who", "Ettore")).toMatch(/Ettore: 1d20 = 4 \[4\]$/);
     });
 });
 

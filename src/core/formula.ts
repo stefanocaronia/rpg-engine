@@ -10,7 +10,8 @@ export type Formula =
     | { kind: "operation"; operator: "+" | "-" | "*" | "/"; left: Formula; right: Formula; }
     | { kind: "math"; name: MathName; operands: Formula[]; }
     | { kind: "table"; table: string; key: Formula; }
-    | { kind: "list"; name: ListName; list: string; item?: string; };
+    | { kind: "list"; name: ListName; list: string; item?: string; }
+    | { kind: "first"; options: Formula[]; };
 
 /** A table read by value: by number, the highest row not above the key; by name, the row with that name (FOR-2). */
 export interface Table
@@ -47,10 +48,10 @@ export interface SystemFormulas
     counters: Record<string, { min?: Formula; max?: Formula; }>;
 }
 
-/** What a system.yaml writes of its formulas: computed fields, tables, and the limits of counters, each a formula or a number. */
+/** What a system.yaml writes of its formulas: computed fields, each a formula, a number or formulas in order, tables, and the limits of counters. */
 export interface FormulaData
 {
-    computed?: Record<string, string>;
+    computed?: Record<string, number | string | (number | string)[]>;
     tables?: Record<string, Record<string, number>>;
     counters?: Record<string, { min?: number | string; max?: number | string; }>;
 }
@@ -62,7 +63,13 @@ export interface FormulaData
 export function readFormulas(data: FormulaData): SystemFormulas
 {
     const tables = Object.fromEntries(Object.entries(data.tables ?? {}).map(([name, rows]) => [name, tableOf(rows)]));
-    const computed = Object.entries(data.computed ?? {}).map(([name, text]): [string, Formula] => [name, placed(`computed.${name}`, () => parseFormula(text))]);
+    const computed = Object.entries(data.computed ?? {}).map(([name, given]): [string, Formula] => [name, computedFormula(name, given)]);
+    const twice = computed.find(([name], index) => computed.findIndex(([other]) => comparableText(other) === comparableText(name)) !== index);
+
+    if (twice !== undefined) {
+        throw new Error(`computed.${twice[0]}: the field is given twice, in different cases: give it once.`);
+    }
+
     const counters = Object.fromEntries(
         Object.entries(data.counters ?? {}).map(([name, limits]) => [name, {
             ...(limits.min === undefined ? {} : { min: placed(`counters.${name}.min`, () => formulaOf(limits.min as number | string)) }),
@@ -158,6 +165,8 @@ export function fieldsRead(formula: Formula): string[]
             return fieldsRead(formula.key);
         case "list":
             return [formula.list];
+        case "first":
+            return unique(formula.options.flatMap(fieldsRead));
     }
 }
 
@@ -173,6 +182,8 @@ export function tablesRead(formula: Formula): string[]
             return unique(formula.operands.flatMap(tablesRead));
         case "table":
             return unique([formula.table, ...tablesRead(formula.key)]);
+        case "first":
+            return unique(formula.options.flatMap(tablesRead));
         default:
             return [];
     }
@@ -239,7 +250,25 @@ function evaluate(formula: Formula, scope: FormulaScope, reads: FormulaRead[]): 
 
         case "list":
             return listValue(formula, scope, reads);
+        case "first":
+            return firstValue(formula.options, scope, reads);
     }
+}
+
+/** The value of the first of a field's formulas that has one, with only what that one read (D-210). */
+function firstValue(options: Formula[], scope: FormulaScope, reads: FormulaRead[]): number | undefined
+{
+    for (const option of options) {
+        const tried: FormulaRead[] = [];
+        const value = evaluate(option, scope, tried);
+
+        if (value !== undefined && Number.isFinite(value)) {
+            reads.push(...tried);
+            return value;
+        }
+    }
+
+    return undefined;
 }
 
 function fieldNumber(name: string, scope: FormulaScope, reads: FormulaRead[]): number | undefined
@@ -356,6 +385,21 @@ function itemsOf(value: unknown): { name: string; number?: number; }[]
 function unique(names: string[]): string[]
 {
     return names.filter((name, index) => names.findIndex((other) => comparableText(other) === comparableText(name)) === index);
+}
+
+/** A computed field as system.yaml writes it: one formula, or several in order, of which the first with a value counts (FOR-1, D-210). */
+function computedFormula(name: string, given: number | string | (number | string)[]): Formula
+{
+    if (!Array.isArray(given)) {
+        return placed(`computed.${name}`, () => formulaOf(given));
+    }
+
+    if (given.length === 0) {
+        throw new Error(`computed.${name}: give a formula, or formulas in order, such as [a formula, another].`);
+    }
+
+    const options = given.map((option, index) => placed(`computed.${name}[${index + 1}]`, () => formulaOf(option)));
+    return options.length === 1 ? options[0] : { kind: "first", options };
 }
 
 /** A formula read at its place in system.yaml, such as computed.insight, which a refusal names first. */

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
+import { numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
@@ -15,7 +16,7 @@ import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
-import { computedField } from "./worked-out.ts";
+import { computedField, counterLimits, maximumSources } from "./worked-out.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -355,9 +356,26 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
         );
     }
 
+    // A bonus is what the effect adds, with its sign or without (FOR-5).
+    if (declaredKind(world, field) === "bonus" && numberOf(text) === undefined) {
+        throw new Error(`${field} on ${page.name} is a bonus: give what the effect adds, such as ${field}=1, not "${text}". Nothing changed.`);
+    }
+
     // A field the game system declares as a number takes a number; a counter stays a counter (SYS-8, EFF-3).
-    if (["number", "modifier", "bonus"].includes(declaredKind(world, field) ?? "") && typeof value !== "number") {
+    if (["number", "modifier"].includes(declaredKind(world, field) ?? "") && typeof value !== "number" && !(declaredKind(world, field) === "modifier" && numberOf(text) !== undefined)) {
         throw new Error(`${field} on ${page.name} is a number, ${String(current ?? "none")}: give the value it reads while the effect lasts, such as ${field}=${exampleValue(current, text)}, not "${text}". Nothing changed.`);
+    }
+
+    // The maximum of a counter the system works out comes from what the formula reads, as hp from hp-base (FOR-6, FOR-7).
+    const limits = readCounter(value)?.max === undefined ? {} : counterLimits(world, fields, field);
+
+    if (limits.max !== undefined && readCounter(value)?.max !== limits.max) {
+        const from = maximumSources(world, field);
+        throw new Error(
+            `The maximum of ${field} on ${page.name} is worked out by the system ${world.system?.name ?? ""}: ${limits.max}, from ${from.join(", ")}. Give the effect the current value alone, such as ${field}=${
+                readCounter(value)?.value ?? 0
+            }, or one of those fields, such as ${from[0] ?? field}. Nothing changed.`,
+        );
     }
 
     if (!isDeclaredUncounted(world, field) && readCounter(current) !== undefined && readCounter(value) === undefined) {

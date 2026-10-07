@@ -26,14 +26,14 @@ import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./sheet.ts";
-import { workedFields, workedLine } from "./worked-out.ts";
+import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./worked-out.ts";
 
 export const show = defineCommand({
     name: "show",
     description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
         + "It also says where the thing is and which pages link to it, and shows a copy in the open scene too. "
         + "Use it before describing anything that already exists, so that what you say matches what is written. "
-        + "A character shows the sheet of the game system in groups, such as Abilities; Page#Group shows one group with how each number is made. "
+        + "The player character and the companions show the sheet of the game system in groups, such as Abilities; Page#Group shows one group with how each number is made. "
         + 'Example: page "Old lighthouse"; or page "Old lighthouse#Cellar" for one section.',
     group: "game",
     readOnly: true,
@@ -92,7 +92,8 @@ export const show = defineCommand({
             onSheet: sheetFieldNames(system, page),
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
-            worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => ({ field: worked.field, line: workedLine(world, worked) })) : [],
+            worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => ({ field: worked.field, line: workedLine(world, worked), repeats: repeatsRead(world, worked) })) : [],
+            group: group !== undefined,
             systemName: world.system?.name,
             derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
@@ -112,8 +113,15 @@ export const show = defineCommand({
             : result.system !== undefined
             ? `${result.type ?? "page"} of the system ${result.system}, read-only`
             : (result.type ?? "free page");
+        const title = `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what})${result.system === undefined ? ` · ${result.path}` : ""}`;
+
+        // A group of the sheet is its values, with what effects cover in them.
+        if (result.group) {
+            return [[title, result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`].filter((line) => line !== "").join("\n"), result.sheet.join("\n")].join("\n\n");
+        }
+
         const header = [
-            `${result.page}${result.section === undefined ? "" : `#${result.section}`} (${what})${result.system === undefined ? ` · ${result.path}` : ""}`,
+            title,
             result.hides === undefined ? "" : `This page hides the system ${result.hides}'s ${result.page}: links to that name lead here.`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
             result.isIn.length > 0 ? `Is in: ${result.isIn.join(" › ")}` : "",
@@ -129,7 +137,8 @@ export const show = defineCommand({
         const sheet = result.sheet.join("\n");
         const own = offSheet(result.fields ?? {});
         const fields = Object.keys(own).length > 0 ? `---\n${formatFields(own)}\n---` : "";
-        const workedLines = result.worked.filter((worked) => !onSheet.has(comparableText(worked.field))).map((worked) => worked.line);
+        // A value that only repeats the one it comes from, as a creature's athletics its str-mod, is not said again.
+        const workedLines = result.worked.filter((worked) => !worked.repeats && !onSheet.has(comparableText(worked.field))).map((worked) => worked.line);
         const worked = workedLines.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${workedLines.join("\n")}`;
         const inheritedFields = result.inherited.map((group) => ({ from: group.from, fields: offSheet(group.fields) })).filter((group) => Object.keys(group.fields).length > 0)
             .map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
@@ -138,6 +147,13 @@ export const show = defineCommand({
         return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** Whether a worked-out value only repeats the one value it is said to come from, as athletics -1 from str-mod -1. */
+function repeatsRead(world: World, worked: WorkedField): boolean
+{
+    const parts = workedParts(world, worked.reads).split(", ");
+    return parts.length === 1 && /^\S+ \S+$/.test(parts[0]) && parts[0].endsWith(` ${signedText(world, worked.field, worked.value)}`);
+}
 
 /** "Wolf (5e)": a page's name, with the game system it comes from (SYS-2). */
 function nameWithSystem(page: Page): string

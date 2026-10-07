@@ -70,8 +70,8 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
     });
 
     it.each([
-        ["sheet: [forza, vigore]", "sheet"],
-        ["sheet:\n  Corpo: [forza(forza-mod)]", 'write it as "str", "str (str-mod)" for a field shown beside it, or "traits?" for one written only when it applies'],
+        ["sheet: [forza, vigore]", "write the sheet as groups, each with its fields"],
+        ["sheet:\n  Corpo: [forza(forza-mod)]", 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies'],
         ["sheet:\n  Corpo: []", "sheet.Corpo"],
         ["sheet:\n  Corpo: [forza]\nsheet-notes: { Animo: del giocatore }", "sheet-notes.Animo: the sheet has no group Animo; its groups are Corpo."],
         ["values: { motto: [breve] }", "values.motto: declare motto as a list in fields, or give no values to it."],

@@ -119,6 +119,19 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(() => parseFormula(text)).toThrow(message);
     });
 
+    it("takes several formulas in order, the first with a value, with what that one read (D-210)", () => {
+        const formulas = readFormulas({ computed: { perception: ["wis-mod + level", "wis-mod + item(skills, Perception)"], flat: 2 } });
+        const [, perception] = formulas.computed[0];
+        const worked = (fields: Record<string, unknown>) => workOut(perception, scope(fields));
+        expect(worked({ "wis-mod": 1, level: 3, skills: ["Perception +5"] })).toEqual({ value: 4, reads: [{ field: "wis-mod", value: 1 }, { field: "level", value: 3 }] });
+        expect(worked({ "wis-mod": 1, skills: ["Perception +5"] }).value).toBe(6);
+        expect(worked({}).value).toBeUndefined();
+        expect(formulas.computed[1][1]).toEqual({ kind: "number", value: 2 });
+        expect(() => readFormulas({ computed: { a: [] } })).toThrow("computed.a: give a formula, or formulas in order");
+        expect(() => readFormulas({ computed: { a: ["1", "b +"] } })).toThrow(/^computed\.a\[2\]: "b \+" is not a formula/);
+        expect(() => readFormulas({ computed: { a: "1", A: "2" } })).toThrow("computed.A: the field is given twice, in different cases: give it once.");
+    });
+
     it("names the place, a table that is not there, and fields that read each other in a circle", () => {
         expect(() => readFormulas({ computed: { "str-mod": "floor((str - 10) /" } })).toThrow(/^computed\.str-mod: "floor\(\(str - 10\) \/" is not a formula/);
         expect(() => readFormulas({ computed: { proficiency: "table(proficiency-by-level, level)" } })).toThrow('computed.proficiency: there is no table "proficiency-by-level" in tables.');

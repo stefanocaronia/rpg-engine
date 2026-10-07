@@ -7,13 +7,13 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.ts";
-import { findPage, type Page, type World } from "../pages/index.ts";
+import { findPage, type Page, pagesWithName, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { signedText } from "./worked-out.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
+import { signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 const faceValues = z.preprocess(
@@ -38,7 +38,7 @@ export const roll = defineCommand({
         + "When the player must not see the result, make it hidden; give the player its fingerprint only if they ask for it. reveal shows a hidden roll's proof later. "
         + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
         + "With who, a field of their sheet stands for its value, such as 1d20+athletics. "
-        + 'Example: notation 1d20+perception, why "notice the trap", who Bruna.',
+        + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
     group: "game",
     positionals: ["notation"],
     input: z.object({
@@ -71,8 +71,9 @@ export const roll = defineCommand({
         }
 
         const physical = input.values !== undefined;
-        const roller = rollerOf(root, context, input.who);
-        const named = withSheetValues(input.notation, roller, input.who);
+        const system = campaignSystem(root, context);
+        const roller = rollerOf(root, context, input.who, hasNames(input.notation));
+        const named = withSheetValues(input.notation, roller, input.who, system);
         const diceRoll = rollDice(named.notation, input.values ? { values: input.values } : { random: context.random });
         // The notation as it was given, with the values its names took from the sheet (DAT-8).
         const taken = Object.entries(named.taken).map(([field, value]) => `${field} ${roller === undefined ? value : signedText(roller.world, field, value)}`);
@@ -89,7 +90,7 @@ export const roll = defineCommand({
         }
 
         appendLogEntry(root, entry);
-        const note = roller === undefined ? undefined : rollerNote(roller.world, campaignSystem(root, context), roller.page);
+        const note = roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
         return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note };
     },
 
@@ -111,15 +112,19 @@ export const roll = defineCommand({
     },
 });
 
-/** The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. */
-function rollerOf(root: string, context: Context, who: string | undefined): { world: World; page: Page; } | undefined
+/**
+ * The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. Without names to
+ * read, a name two pages share is a label too: the roll needs no sheet.
+ */
+function rollerOf(root: string, context: Context, who: string | undefined, readsSheet: boolean): { world: World; page: Page; } | undefined
 {
     if (who === undefined) {
         return undefined;
     }
 
     const world = campaignWorld(root, context);
-    const page = findPage(world, who);
+    const named = pagesWithName(world, who);
+    const page = readsSheet ? findPage(world, who) : named.length === 1 ? named[0] : undefined;
 
     if (page !== undefined) {
         return { world, page };
@@ -130,8 +135,14 @@ function rollerOf(root: string, context: Context, who: string | undefined): { wo
     return scene === undefined || copy === undefined ? undefined : { world, page: copyPage(copy, scene.copies[copy]) };
 }
 
+/** Whether a notation names a field, such as athletics in 1d20+athletics (DAT-8). */
+function hasNames(notation: string): boolean
+{
+    return [...notation.matchAll(namePattern)].some((match) => !diePattern.test(notation.slice((match.index ?? 0) + match[1].length + match[2].length)));
+}
+
 /** The notation with each name of a field replaced by its value on the sheet of who rolls, effects and formulas included, and the values taken (DAT-8). */
-function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined): { notation: string; taken: Record<string, number>; }
+function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined, system: GameSystem | undefined): { notation: string; taken: Record<string, number>; }
 {
     const taken: Record<string, number> = {};
     const fields = roller === undefined ? undefined : effectiveFields(roller.world, roller.page);
@@ -140,7 +151,10 @@ function withSheetValues(notation: string, roller: { world: World; page: Page; }
             return whole;
         }
 
-        const value = sheetValue(fields, roller?.page, name, who);
+        // "sleight of hand": a name of several words, which a notation cannot hold.
+        const words = /^\s+[A-Za-z]/.test(notation.slice(offset + whole.length));
+        checkNotScore(roller, system, fields, name);
+        const value = sheetValue(roller, fields, name, who, words);
         taken[name] = value;
         const negative = (sign === "-") !== (value < 0);
         return `${negative ? "-" : sign === "" ? "" : "+"}${Math.abs(value)}`;
@@ -148,10 +162,25 @@ function withSheetValues(notation: string, roller: { world: World; page: Page; }
     return { notation: replaced, taken };
 }
 
-/** The whole number a field holds on the sheet of who rolls; refused, with how to give it, when there is no sheet or it holds none. */
-function sheetValue(fields: Record<string, unknown> | undefined, page: Page | undefined, name: string, who: string | undefined): number
+/** Refuses a score the system shows with a modifier beside it, such as str with str-mod (DAT-2): a roll adds the modifier, and 1d20+str would add the score. */
+function checkNotScore(roller: { world: World; page: Page; } | undefined, system: GameSystem | undefined, fields: Record<string, unknown> | undefined, name: string): void
 {
-    if (fields === undefined || page === undefined) {
+    const entry = system?.sheet.flatMap((group) => group.entries).find((candidate) => candidate.beside !== undefined && comparableText(candidate.field) === comparableText(name));
+    const read = (field: string): unknown => Object.entries(fields ?? {}).find(([key]) => comparableText(key) === comparableText(field))?.[1];
+    const modifier = entry?.beside === undefined ? undefined : numberOf(read(entry.beside));
+
+    if (roller !== undefined && entry?.beside !== undefined && modifier !== undefined) {
+        const worked = `${entry.beside} ${signedText(roller.world, entry.beside, modifier)}`;
+        throw new Error(`${name} ${String(read(name))} is a score: the system ${system?.name ?? ""} works out ${worked} from it, which is what a roll adds, such as 1d20+${entry.beside}. Nothing rolled.`);
+    }
+}
+
+/** The whole number a field holds on the sheet of who rolls; refused, with the numbers it has, when there is no sheet or it holds none. */
+function sheetValue(roller: { world: World; page: Page; } | undefined, fields: Record<string, unknown> | undefined, name: string, who: string | undefined, words: boolean): number
+{
+    const page = roller?.page;
+
+    if (roller === undefined || fields === undefined || page === undefined) {
         throw new Error(
             who === undefined
                 ? `"${name}" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as 1d20+5.`
@@ -163,8 +192,11 @@ function sheetValue(fields: Record<string, unknown> | undefined, page: Page | un
     const number = numberOf(value);
 
     if (value === undefined) {
-        const subtraction = name.includes("-") ? " A minus between two terms takes spaces around it, such as 1d20+str - 1." : "";
-        throw new Error(`${page.name} has no ${name}: show ${page.name} gives what its sheet has.${subtraction}`);
+        const numbers = workedFields(roller.world, fields).map((worked) => `${worked.field} ${signedText(roller.world, worked.field, worked.value)}`);
+        const has = numbers.length === 0 ? "" : ` Its numbers: ${numbers.join(", ")}.`;
+        const subtraction = /-\d+$/.test(name) ? " To subtract, put spaces around the minus, such as 1d20+athletics - 1." : "";
+        const hyphens = words ? " A name of several words is written with hyphens, such as sleight-of-hand." : "";
+        throw new Error(`${page.name} has no ${name}.${has} Give one of them, or the number, such as 1d20+5.${subtraction}${hyphens}${missingSystemHint(roller.world)}`);
     }
 
     if (number === undefined || !Number.isInteger(number)) {
@@ -188,7 +220,7 @@ function rollerNote(world: World, system: GameSystem | undefined, page: Page): s
         return number === undefined || number === 0 ? [] : [`${entry.field} ${number}`];
     });
     const all = [...effects.map((effect) => effect.name), ...marked];
-    return all.length === 0 ? undefined : `${page.name} has ${all.join(", ")}: see whether they change this roll.`;
+    return all.length === 0 ? undefined : `${page.name} has ${all.join(", ")}: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again.`;
 }
 
 function revealHiddenRoll(rollId: string, root: string, context: Context): RollOutput

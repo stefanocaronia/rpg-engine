@@ -26,8 +26,9 @@ const systemSchema = z.object({
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
-    sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "traits?" for one written only when it applies')).min(1))
-        .optional(),
+    sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies')).min(1), {
+        error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
+    }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
     values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     "status-line": z.array(z.string().min(1)).optional(),
@@ -35,7 +36,7 @@ const systemSchema = z.object({
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
-    computed: z.record(z.string(), z.string().min(1)).optional(),
+    computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(z.string(), z.object({ min: z.union([z.number(), z.string().min(1)]).optional(), max: z.union([z.number(), z.string().min(1)]).optional() }).strict()).optional(),
 });
 

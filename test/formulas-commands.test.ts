@@ -115,7 +115,15 @@ describe("what show and status give of a sheet (FOR-8)", () => {
     it("works out nothing on a page without what a formula reads, and keeps the values written there (FOR-4)", async () => {
         await ok("write", "Bandito", "--type", "creature", "--set", "passive-perception=11", "--set", "dex=12");
         expect(pageText("Bandito", "creatures")).toContain("passive-perception: 11");
-        expect(await workedLines("Bandito")).toEqual(["dex-mod +1: dex 12", "initiative +1: dex-mod +1"]);
+        // A creature's saves and skills come from its stat block, here empty, so from dex-mod alone (D-210).
+        expect(await workedLines("Bandito")).toEqual([
+            "dex-mod +1: dex 12",
+            "dex-save +1: dex-mod +1",
+            "acrobatics +1: dex-mod +1",
+            "sleight-of-hand +1: dex-mod +1",
+            "stealth +1: dex-mod +1",
+            "initiative +1: dex-mod +1",
+        ]);
     });
 });
 
@@ -139,7 +147,7 @@ describe("the order of layers (FOR-3) and the bonus fields (FOR-5)", () => {
 
 describe("the limits of counters (FOR-6)", () => {
     it("keeps the written maximum with what the system works out, and says it", async () => {
-        expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp max 24 → 27: worked out by the system 5e.");
+        expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp max 24 → 27 (hp-base 18, level 3, con-mod +3): worked out by the system 5e.");
         expect(pageText("Ettore")).toContain("hp: 24/27");
         expect(await ok("change", "Ettore", "hp", "--by=10")).toBe("Ettore: hp 24/27 → 27/27: at max, 7 beyond.");
         expect(await refused("change", "Ettore", "hp", "--to", "20/30")).toBe("The maximum of hp on Ettore is worked out by the game system: 27. Give the current value alone, such as to 20. Nothing changed.");
@@ -162,13 +170,15 @@ describe("a computed field is never written (FOR-7)", () => {
     it("is left out by write, refused by change and by effect, which say what to change instead", async () => {
         expect(await ok("write", "Ettore", "--set", "insight=9", "--set", "speed=25 ft")).toBe(
             "Updated Ettore (character, world/characters/Ettore.md): set speed.\n"
-                + "Not written: insight on Ettore is worked out by the system 5e from wis-mod, proficiency, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect.",
+                + "Not written, the system 5e works it out: insight +5 (you gave 9). They come from wis, level, skill-proficiencies, expertise, bonus-skills. "
+                + "A bonus such as bonus-skills comes from an effect, for what gives one, such as a magic item.",
         );
         expect(await refused("write", "Ettore", "--set", "proficiency=3", "--set", "perception=7")).toBe(
-            "Not written: proficiency, perception, which the system 5e works out (show Ettore says from what): change the fields they come from, or give a bonus with an effect. Nothing changed.",
+            "Not written, the system 5e works them out: proficiency +2 (you gave 3); perception +3 (you gave 7). They come from level, wis, skill-proficiencies, expertise, bonus-skills. "
+                + "A bonus such as bonus-skills comes from an effect, for what gives one, such as a magic item. Nothing changed.",
         );
         expect(await refused("change", "Ettore", "insight", "--by=1")).toBe(
-            "insight on Ettore is worked out by the system 5e from wis-mod, proficiency, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
+            "insight on Ettore is +5, worked out by the system 5e from wis, level, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
         );
         expect(await refused("effect", "add", "Ettore", "Strano", "--set", "insight=9")).toContain("give the effect one of the fields it comes from instead, such as bonus-skills. Nothing changed.");
     });

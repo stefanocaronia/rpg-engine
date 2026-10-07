@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import { numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -69,7 +70,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
-import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
+import { computedField, counterLimits, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -147,9 +148,11 @@ export const write = defineCommand({
         const { coins, problem: coinsProblem } = campaignCoins(root, context);
         const world = campaignWorld(root, context);
         const system = campaignSystem(root, context);
-        // A field the game system works out is never written: the rest is (FOR-7, D-200).
-        const target = findPage(world, reference.name);
-        const given = input.set === undefined ? undefined : withoutComputed(world, target === undefined ? {} : effectiveFields(world, target), oneItemLists(world, readFields(input.set)), reference.name);
+        const open = readOpenScene(root);
+        const copy = copyName(world, open.scene, reference.name);
+        // A field the game system works out is never written, on a page or a copy: the rest is (FOR-7, D-200).
+        const target = open.scene !== undefined && copy !== undefined ? copyPage(copy, open.scene.copies[copy]) : findPage(world, reference.name);
+        const given = input.set === undefined ? undefined : withoutComputed(world, target, oneItemLists(world, readFields(input.set)), reference.name, input.type);
         const fields: FieldChange = {
             set: given === undefined || Object.keys(given.set).length === 0 ? undefined : asAmounts(world, given.set, coins),
             unset: input.unset,
@@ -163,8 +166,6 @@ export const write = defineCommand({
         }
 
         const moneyNotes = [...(given?.note === undefined ? [] : [given.note]), ...moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem)];
-        const open = readOpenScene(root);
-        const copy = copyName(world, open.scene, reference.name);
 
         if (open.scene !== undefined && copy !== undefined) {
             checkNoEffects(fields, copyPage(copy, open.scene.copies[copy]));
@@ -892,23 +893,32 @@ function readListItems(fields: string[] | Record<string, unknown>): Record<strin
     return items;
 }
 
-/** The fields given to set without those the game system works out (FOR-7), with a note on those left out. */
-function withoutComputed(world: World, base: Record<string, unknown>, set: Record<string, unknown>, page: string): { set: Record<string, unknown>; note?: string; }
+/**
+ * The fields given to set without those the game system works out on the page as the write leaves it, a copy in the open scene or a page that gets its base in
+ * the same write included (FOR-7), with a note that gives the values the system works out and what they come from.
+ */
+function withoutComputed(world: World, target: Page | undefined, set: Record<string, unknown>, name: string, type: PageType | undefined): { set: Record<string, unknown>; note?: string; }
 {
-    const fields = { ...base, ...set };
-    const computed = Object.keys(set).flatMap((field) => {
+    const after: Page = { ...(target ?? { name, path: "", body: "" }), type: type ?? target?.type, fields: { ...(target?.fields ?? {}), ...set } };
+    const fields = effectiveFields(world, after);
+    const computed = Object.entries(set).flatMap(([field, given]) => {
         const found = computedField(world, field, fields);
-        return found === undefined ? [] : [found];
+        return found === undefined ? [] : [{ ...found, given }];
     });
 
     if (computed.length === 0) {
         return { set };
     }
 
-    const kept = Object.fromEntries(Object.entries(set).filter(([field]) => computedField(world, field, fields) === undefined));
-    const note = computed.length === 1
-        ? `Not written: ${computedMessage(world, computed[0], page)}.`
-        : `Not written: ${computed.map((found) => found.name).join(", ")}, which the system ${world.system?.name ?? ""} works out (show ${page} says from what): change the fields they come from, or give a bonus with an effect.`;
+    const kept = Object.fromEntries(Object.entries(set).filter(([field]) => !computed.some((found) => comparableText(found.name) === comparableText(field))));
+    const values = computed.map((found) => {
+        const value = signedText(world, found.name, found.value);
+        return `${found.name} ${value}${numberOf(found.given) === found.value ? ", as you gave it" : ` (you gave ${String(found.given)})`}`;
+    });
+    const sources = [...new Set(computed.flatMap((found) => found.from))];
+    const bonuses = sources.filter((field) => declaredKind(world, field) === "bonus");
+    const bonus = bonuses.length === 0 ? "" : ` A bonus such as ${bonuses[0]} comes from an effect, for what gives one, such as a magic item.`;
+    const note = `Not written, the system ${world.system?.name ?? ""} works ${computed.length === 1 ? "it" : "them"} out: ${values.join("; ")}. They come from ${sources.join(", ")}.${bonus}`;
     return { set: kept, note };
 }
 
@@ -922,7 +932,11 @@ function workedLimitsChange(world: World, page: Page): { set: Record<string, unk
         const { max } = counterLimits(world, fields, field);
         return key === undefined || counter === undefined || max === undefined || counter.max === max ? [] : [{ key, before: counter.max, value: formatCounter({ value: counter.value, max }), max }];
     });
-    const said = changes.map((change) => `${change.key} max ${change.before ?? "none"} → ${change.max}`);
+    // "hp max 27 → 33 (hp-base 27, level 3, con-mod +2)": what the maximum comes from, so that a written maximum is not taken for the dice.
+    const said = changes.map((change) => {
+        const parts = workedParts(world, workedMaximum(world, fields, change.key)?.reads ?? []);
+        return `${change.key} max ${change.before ?? "none"} → ${change.max}${parts === "" ? "" : ` (${parts})`}`;
+    });
     return {
         set: Object.fromEntries(changes.map((change) => [change.key, change.value])),
         notes: said.length === 0 ? [] : [`${said.join(", ")}: worked out by the system ${world.system?.name ?? ""}.`],

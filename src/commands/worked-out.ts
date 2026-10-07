@@ -78,18 +78,52 @@ export function counterLimits(world: World, fields: Record<string, unknown>, fie
  * The game system's computed field with this name, in any case, and the fields it comes from, when its formula has a value with these fields (FOR-7):
  * where it has none, as on a creature without a level, the field is written like any other.
  */
-export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; from: string[]; } | undefined
+export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number; from: string[]; } | undefined
 {
     const entry = world.system?.formulas?.computed.find(([name]) => comparableText(name) === comparableText(field.trim()));
-    return entry === undefined || formulaScope(world, fields).computed(entry[0])?.value === undefined ? undefined : { name: entry[0], from: fieldsRead(entry[1]) };
+    const scope = formulaScope(world, fields);
+    const value = entry === undefined ? undefined : scope.computed(entry[0])?.value;
+
+    if (entry === undefined || value === undefined) {
+        return undefined;
+    }
+
+    // Of several formulas, the one that gave the value says what it comes from (D-210).
+    const used = entry[1].kind === "first" ? (entry[1].options.find((option) => workOut(option, scope).value !== undefined) ?? entry[1]) : entry[1];
+    return { name: entry[0], value, from: writtenSources(world, used) };
+}
+
+/** The written fields the maximum of a counter comes from, as hp-base, level and con for hp (FOR-6); none when the system works out no maximum for it. */
+export function maximumSources(world: World, field: string): string[]
+{
+    const max = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field.trim()))?.[1].max;
+    return max === undefined ? [] : writtenSources(world, max);
+}
+
+/** The written fields a formula comes from, through the computed fields it reads: what can be changed, as wis for passive-perception (FOR-7). */
+function writtenSources(world: World, formula: Formula, seen = new Set<string>()): string[]
+{
+    const formulas = world.system?.formulas;
+    const index = formulas === undefined ? undefined : formulaIndex(formulas);
+    const sources = fieldsRead(formula).flatMap((name) => {
+        const entry = index?.computed.get(comparableText(name));
+
+        if (entry === undefined || seen.has(comparableText(name))) {
+            return entry === undefined ? [name] : [];
+        }
+
+        seen.add(comparableText(name));
+        return writtenSources(world, entry[1], seen);
+    });
+    return sources.filter((name, position) => sources.findIndex((other) => comparableText(other) === comparableText(name)) === position);
 }
 
 /** Why a computed field is not written or changed, and what to change instead: the fields it comes from, or an effect on a bonus among them (FOR-7). */
-export function computedMessage(world: World, computed: { name: string; from: string[]; }, page: string): string
+export function computedMessage(world: World, computed: { name: string; value: number; from: string[]; }, page: string): string
 {
     const bonuses = computed.from.filter((field) => declaredKind(world, field) === "bonus");
     const instead = bonuses.length === 0 ? "change one of those" : `change one of those, or give ${bonuses.join(" or ")} with an effect`;
-    return `${computed.name} on ${page} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: ${instead}`;
+    return `${computed.name} on ${page} is ${signedText(world, computed.name, computed.value)}, worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: ${instead}`;
 }
 
 /** A value of a field as the outputs show it: with its sign when the system declares the field a modifier or a bonus (FOR-8). */
@@ -126,7 +160,9 @@ export function workedParts(world: World, reads: FormulaRead[]): string
 
         return [`${read.value} in ${read.list}`];
     });
-    return parts.filter((part, index) => parts.indexOf(part) === index).join(", ");
+    // "Perception in skills" says nothing more beside "Perception 3 in skills".
+    const named = (part: string): boolean => parts.some((other) => other !== part && other.startsWith(part.replace(/ in [^ ]+$/, " ")) && other.endsWith(part.slice(part.lastIndexOf(" in "))));
+    return parts.filter((part, index) => parts.indexOf(part) === index && !named(part)).join(", ");
 }
 
 /** The maximum the game system works out for a counter with these fields, with only the values that changed it (FOR-6, FOR-8); undefined where it has none. */

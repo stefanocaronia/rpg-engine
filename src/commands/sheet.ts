@@ -38,7 +38,8 @@ export function sheetSummary(system: GameSystem): SheetSummary | undefined
         written: remindedFields(system),
         whenTheyApply: [...entries.filter((entry) => entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field))), ...lineOnly],
         workedOut,
-        lists: Object.keys(system.values).filter((field) => onSheet.has(comparableText(field))),
+        // "save-proficiencies (str, dex, con…)": a few names whole, many by the first two, as the system writes them.
+        lists: Object.entries(system.values).filter(([field]) => onSheet.has(comparableText(field))).map(([field, names]) => `${field} (${names.length <= 6 ? names.join(", ") : `such as ${names.slice(0, 2).join(", ")}`})`),
     };
 }
 
@@ -136,14 +137,19 @@ export function sheetFieldNames(system: GameSystem | undefined, page: Page): str
     return system === undefined || !isSheeted(page) ? [] : entryFields(system.sheet.flatMap((group) => group.entries));
 }
 
-/** Refuses items given to a list that the game system does not take, with the names it takes (SYS-8). */
+/** Refuses items given to a list that the game system does not take, with the names it takes, and links in place of its names (SYS-8). */
 export function checkListValues(system: GameSystem | undefined, lists: Record<string, unknown>): void
 {
     for (const [field, value] of Object.entries(lists)) {
         const wrong = wrongValues(system, field, value);
+        const links = allowedValues(system, field) === undefined ? [] : (Array.isArray(value) ? value : [value]).filter((item) => /\[\[/.test(String(item)));
 
         if (system !== undefined && wrong.length > 0) {
             throw new Error(`${wrongText(system, field, wrong)} Nothing changed.`);
+        }
+
+        if (links.length > 0) {
+            throw new Error(`${field} takes the system's names, not links: ${listItemNames(links).join(", ")}. Nothing changed.`);
         }
     }
 }
@@ -172,7 +178,7 @@ function remindedFields(system: GameSystem): string[]
 /** A player character, or a companion that does not derive from a creature, keeps the sheet of the system (DAT-2). */
 function isSheeted(page: Page): boolean
 {
-    return page.type === "character" && (page.fields.role === "pc" || (page.fields.role === "companion" && page.fields.creature === undefined));
+    return page.type === "character" && (page.fields.role === "pc" || (page.fields.role === "companion" && isEmptyField(page.fields.creature)));
 }
 
 function isWorkedOut(system: GameSystem, field: string): boolean
@@ -205,8 +211,10 @@ function valueText(world: World, field: string, value: unknown): string
         return signedText(world, field, value);
     }
 
+    // Items with commas of their own are told apart by semicolons.
     if (Array.isArray(value)) {
-        return value.map(String).join("; ");
+        const items = value.map((item) => String(item).trim());
+        return items.join(items.some((item) => item.includes(",")) ? "; " : ", ");
     }
 
     return typeof value === "object" && value !== null ? JSON.stringify(value) : String(value).trim();
@@ -220,15 +228,21 @@ function readField(fields: Record<string, unknown>, field: string): unknown
 /** The items of a list that the game system does not take, by the names they are read as (SYS-8); none for a field without values. */
 function wrongValues(system: GameSystem | undefined, field: string, value: unknown): string[]
 {
-    const allowed = Object.entries(system?.values ?? {}).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const allowed = allowedValues(system, field);
     return allowed === undefined ? [] : listItemNames(value).filter((name) => !allowed.some((item) => comparableText(item) === comparableText(name)));
+}
+
+/** The names a list field takes in the game system (SYS-8); undefined for a field without values. */
+function allowedValues(system: GameSystem | undefined, field: string): string[] | undefined
+{
+    return Object.entries(system?.values ?? {}).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 }
 
 /** "Stealthh is not one of the names skill-proficiencies takes in the system 5e: Acrobatics, …": with how to write a list, when a name holds a comma. */
 function wrongText(system: GameSystem, field: string, wrong: string[]): string
 {
-    const allowed = Object.entries(system.values).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? [];
-    const list = wrong.some((name) => name.includes(",")) ? " A list is written [a, b]." : "";
+    const allowed = allowedValues(system, field) ?? [];
+    const list = wrong.some((name) => /[,;]/.test(name)) ? " A list is written [a, b]." : "";
     const names = wrong.map((name) => `"${name}"`).join(", ");
     return `${names} ${wrong.length === 1 ? "is not one of the names" : "are not names"} ${field} takes in the system ${system.name}: ${allowed.join(", ")}.${list}`;
 }

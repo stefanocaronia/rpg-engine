@@ -195,7 +195,7 @@ function sheetNote(sheet: SheetSummary | undefined): string
 
     const also = sheet.whenTheyApply.length === 0 ? "" : `; and when they apply: ${sheet.whenTheyApply.join(", ")}`;
     const worked = sheet.workedOut.length === 0 ? "" : ` It works out ${sheet.workedOut.join(", ")}: never write them.`;
-    const lists = sheet.lists.length === 0 ? "" : ` Only its names go in ${sheet.lists.join(", ")}: write lists them if a name is not one.`;
+    const lists = sheet.lists.length === 0 ? "" : ` Only its names go in ${sheet.lists.join(", ")}, as it writes them: write lists them if a name is not one.`;
     return ` The system ${sheet.system} keeps on a character sheet, by these names: ${sheet.written.join(", ")}${also}.${worked}${lists}`;
 }
 

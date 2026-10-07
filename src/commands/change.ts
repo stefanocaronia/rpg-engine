@@ -185,11 +185,14 @@ function applyStep(
 ): { outcome: StepOutcome; world: World; }
 {
     const page = holder.page.name;
-    const changed = String(step.after) !== String(step.before);
     checkClock(holder.page, field, step.after);
     const written = ownField(holder.page, field) ?? field;
     // A value an effect gives changes on the effect, under which the page keeps its own (EFF-7).
     const layer = effectGiving(holder.page, field);
+    // A maximum written by hand that is not the system's is put right even when the value reads the same, as validate's fix asks (FOR-6).
+    const workedMax = holder.kind === "page" && counterLimits(world, inheritedFields(world, holder.page), field).max !== undefined;
+    const stale = layer === undefined && workedMax && Object.hasOwn(holder.page.fields, written) && String(holder.page.fields[written]) !== String(storedCounter(world, holder, field, step.after));
+    const changed = String(step.after) !== String(step.before) || stale;
     const base = layer === undefined ? baseValue(world, holder.page, field) : undefined;
     const backToBase = changed && base !== undefined && step.same(base.value);
     const followers = changed && holder.kind === "page" && layer === undefined ? followersOf(world, holder.page, field) : [];
