@@ -44,6 +44,13 @@ function stateFile(): string
 }
 
 describe("rpg scene", () => {
+    it("never takes the scene away when its close cannot find a page: the close stops with the scene still open", async () => {
+        await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Lupo=1");
+        writeFileSync(join(folder, "world", "Lena.md"), "Un'altra Lena.\n");
+        expect((await rpg("scene", "close", "--summary", "Fine.")).exitCode).toBe(1);
+        expect(stateFile()).toContain("scene:");
+    });
+
     it("opens a scene where the character is, with the party there and numbered copies with the creature's counters", async () => {
         await ok("advance", "--to", "day 2, 14:10");
         expect(await ok("scene", "open", "--title", "Scontro all'ossario", "--type", "combat", "--creatures", "Annegato=2")).toBe(
@@ -79,7 +86,10 @@ describe("rpg scene", () => {
         expect(await ok("status")).toContain("Scene: Ossario (combat) at Ossario, with Ennio, Lena; round 2, Lena's turn; copies: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1");
 
         expect(await ok("scene", "close", "--summary", "Gli annegati cadono; Lena è ferita.")).toBe(
-            "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1. Advance any time it took that you have not advanced yet.",
+            "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1. Advance any time it took that you have not advanced yet."
+                // A creature of the campaign written without its experience points is named, not left out in silence (DAT-11).
+                + "\nxp: Annegato 2 counts nothing, with no xp-value on Annegato: write it, such as write Annegato, set xp-value=…, and share it. Leave out what the party summoned; "
+                + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",
         );
         expect(stateFile()).not.toContain("scene:");
         const [copies, closed] = readLogFile(folder).slice(-2);
@@ -299,8 +309,9 @@ describe("rpg scene leave, and the reminder in advance", () => {
         await ok("scene", "next");
         await ok("change", "Annegato 1", "hp", "--by=-18");
         expect(await ok("scene", "leave", "--who", "annegato 1")).toBe("Annegato 1 (hp 4/22 · uses 1/1) left the scene.\nRound 1 · now Lena (then Annegato 2).");
-        expect(stateFile()).not.toContain("    Annegato 1:");
-        expect(stateFile()).toContain("  left:\n    - Annegato 1\n");
+        // Out of the copies, kept as it left for what overcoming it gives at the close (DAT-11).
+        expect(stateFile()).not.toMatch(/ {2}copies:\n(?: {4}.*\n| {6}.*\n)* {4}Annegato 1:/);
+        expect(stateFile()).toContain("  left:\n    - Annegato 1\n  gone:\n    Annegato 1:\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "scene-changed", visibility: "hidden", data: { left: ["Annegato 1"], copies: { "Annegato 1": { hp: "4/22" } } } });
 
         expect(await ok("scene", "leave", "--who", "[[Lena]]", "--who", "Annegato 2")).toBe(`Lena, Annegato 2 (hp 22/22 · uses 1/1) left the scene.\nRound 2 · now Ennio${playerTurn}${playerStop}`);

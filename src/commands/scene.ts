@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, linksIn, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -328,6 +328,8 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     }
 
     changes.push([["left"], [...(current.left ?? []), ...leaving]]);
+    // A copy that leaves, fallen or fled, is kept as it left, without its effects, which go with it (D-145): closing the scene counts what overcoming it gives (DAT-11).
+    changes.push(...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["gone", name], Object.fromEntries(Object.entries(copy).filter(([field]) => field !== "effects"))]));
 
     updateScene(root, changes);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies }));
@@ -423,6 +425,12 @@ function close(root: string, world: World, summary: string, context: Context): S
     const raw = current === undefined ? rawScene(root) : undefined;
     // Rounds exist only in the scene: the effects counted in them end with it, on the pages; the copies go with theirs, and with what they kept alive (D-145).
     const keptByCopy = (effect: Effect): boolean => current !== undefined && Object.keys(current.copies).some((name) => keptBy(effect, name));
+    // What the close says is worked out before anything is written: a page it cannot find stops it with the scene still open.
+    const endless = (current?.with ?? []).flatMap((link) => {
+        const page = findPage(world, parsePageReference(link).name);
+        return page === undefined ? [] : effectsOf(page).filter((effect) => effect.end === undefined && !keptByCopy(effect)).map((effect) => `${effect.name} on ${page.name}`);
+    });
+    const rewards = current === undefined ? [] : rewardLines(world, campaignSystem(root, context), current);
     const ended = endEffects(root, context, world, undefined, (effect) => endsWithScene(effect) || keptByCopy(effect), "scene closed");
     saveScene(root, undefined);
 
@@ -431,49 +439,63 @@ function close(root: string, world: World, summary: string, context: Context): S
         return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [] };
     }
 
-    const endless = current.with.flatMap((link) => {
-        const page = findPage(world, parsePageReference(link).name);
-        return page === undefined ? [] : effectsOf(page).filter((effect) => effect.end === undefined && !keptByCopy(effect)).map((effect) => `${effect.name} on ${page.name}`);
-    });
-
     logCopies(root, context, current.title, current.copies);
     const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    const rewards = rewardLines(world, campaignSystem(root, context), current);
     return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless, ...(rewards.length === 0 ? {} : { rewards }) };
 }
 
 /**
- * What the creatures overcome in a scene give the party there (DAT-11): for each reward of the system, the copies and the characters outside the party at its
- * counter's value or below, or dead, with what each gives, shared, rounded down, among the living party members there who keep the sheet. Said with the calls
- * to make, never given: who is overcome another way is the master's to judge.
+ * What the creatures overcome in a scene give the party there (DAT-11): for each reward of the system, the copies, also those that left, and the characters
+ * outside the party at its counter's value or below, or dead, with what each gives, shared, rounded down, among the living party members who were there and
+ * keep the sheet. Said with the calls to make, never given: a character may have been an ally, and who fled or was overcome another way is the master's to judge.
  */
 function rewardLines(world: World, system: GameSystem | undefined, scene: Scene): string[]
 {
-    const there = scene.with.flatMap((link) => findPage(world, parsePageReference(link).name) ?? []);
-    const party = there.filter((page) => isPartyMember(page) && page.fields.status !== "dead" && hasSheet(world, page));
-    const others = [...Object.entries(scene.copies).map(([name, copy]) => copyPage(name, copy)), ...there.filter((page) => !isPartyMember(page))];
+    const there = [...scene.with.map((link) => parsePageReference(link).name), ...(scene.left ?? [])].flatMap((name) => findPage(world, name) ?? []);
+    const party = there.filter((page, index) => there.indexOf(page) === index && isPartyMember(page) && page.fields.status !== "dead" && hasSheet(world, page));
+    const copies = [...Object.entries(scene.copies), ...Object.entries(scene.gone ?? {})].map(([name, copy]) => ({ page: copyPage(name, copy), left: name in (scene.gone ?? {}) }));
+    const others = [...copies, ...there.filter((page) => !isPartyMember(page)).map((page) => ({ page, left: (scene.left ?? []).includes(page.name) }))];
     const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 
     return (system?.rewards ?? []).flatMap((reward) => {
-        const overcome = others.flatMap((page) => {
+        const worth = others.flatMap(({ page, left }) => {
             const fields = effectiveFields(world, page);
-            const worth = numberOf(read(fields, reward.from));
+            const value = numberOf(read(fields, reward.from));
             const counter = readCounter(read(fields, reward.counter))?.value;
             const down = page.fields.status === "dead" || (counter !== undefined && counter <= reward.value);
-            return worth === undefined || worth <= 0 || !down ? [] : [{ name: page.name, worth }];
+            return [{ name: page.name, kind: linksIn(page.fields.creature)[0] ?? page.name, worth: value ?? 0, given: value !== undefined, down, left, character: page.type === "character" }];
         });
+        const overcome = worth.filter((item) => item.down && item.worth > 0);
+        const fled = worth.filter((item) => !item.down && item.left && item.worth > 0);
+        // A creature of the campaign written without the field, as cr 2 (450 XP), would count nothing in silence.
+        const unknown = worth.filter((item) => item.down && !item.given);
         const total = overcome.reduce((sum, item) => sum + item.worth, 0);
 
-        if (total === 0 || party.length === 0) {
+        if ((total === 0 && fled.length === 0 && unknown.length === 0) || party.length === 0) {
             return [];
         }
 
         const share = Math.floor(total / party.length);
         const to = party.length === 1 ? `${share} to ${party[0].name}` : `${share} each to ${party.map((page) => page.name).join(", ")}`;
-        const calls = party.map((page) => `change ${page.name}, field ${reward.field}, by ${share}`).join("; ");
-        return [`${reward.field} of those overcome: ${overcome.map((item) => `${item.name} ${item.worth}`).join(", ")}, ${total} in all; ${to}: ${calls}. Those overcome another way count too, as you judge.`];
+        // Who has no such field yet gets it written: change would refuse it.
+        const held = (page: Page): boolean => read(effectiveFields(world, page), reward.field) !== undefined;
+        const calls = party.map((page) => (held(page) ? `change ${page.name}, field ${reward.field}, by ${share}` : `write ${page.name}, set ${reward.field}=${share}`)).join("; ");
+        const kinds = [...new Set(unknown.map((item) => item.kind))];
+        const characters = overcome.filter((item) => item.character).map((item) => item.name);
+        const parts = [
+            total === 0 ? `${reward.field}:` : `${reward.field} of those overcome: ${overcome.map((item) => `${item.name} ${item.worth}`).join(", ")}, ${total} in all; ${to}: ${calls}.`,
+            characters.length === 0 ? "" : `${characters.join(", ")} ${characters.length === 1 ? "is a character" : "are characters"}: leave out any who fought on your side, and share again.`,
+            fled.length === 0 ? "" : `Fled: ${fled.map((item) => `${item.name} ${item.worth}`).join(", ")}, to count if the party overcame them.`,
+            unknown.length === 0
+                ? ""
+                : `${unknown.map((item) => item.name).join(", ")} ${unknown.length === 1 ? "counts" : "count"} nothing, with no ${reward.from} on ${kinds.join(", ")}: write it, such as write ${
+                    kinds[0]
+                }, set ${reward.from}=…, and share it.`,
+            "Leave out what the party summoned; count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",
+        ];
+        return [parts.filter((part) => part !== "").join(" ")];
     });
 }
 

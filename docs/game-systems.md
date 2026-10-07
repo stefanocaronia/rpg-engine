@@ -105,8 +105,8 @@ settings:
     milestones: {means: "the characters rise when the story reaches a milestone …", without: [xp]}
 ```
 
-- Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
-- `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, and the experience and rewards of that field say nothing. Without a value, nothing is left out.
+- Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing, and `status` shows its value on the campaign's line at every session; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
+- `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, the experience and rewards of that field say nothing, and `write` says so when one is written. Without a value, nothing is left out.
 
 ### sheet and sheet-notes
 
@@ -170,7 +170,15 @@ rewards:
   xp: {from: xp-value, overcome: hp 0}
 ```
 
-`scene close` adds up `from` on the copies and on the characters outside the party who were in the scene and are at the `overcome` value or below, or dead, and shares it, rounded down, among the living party members there who keep the sheet. It says the share with the calls of `change`, and gives nothing by itself: who was overcome another way, and what the story rewards, are the master's to judge.
+`scene close` adds up `from` on the copies and on the characters outside the party who were in the scene, those that left it too, and are at the `overcome` value or below, or dead, and shares it, rounded down, among the living party members who were there and keep the sheet. It says the share with the calls of `change` (`write` for one who has no such field yet), and gives nothing by itself: it names the characters among the overcome, who may have fought on the party's side, those that left alive, who may have fled, and those whose page gives no `from`; who was overcome another way, and what the story rewards, are the master's to judge.
+
+### quest-ends
+
+What `write` says when a quest becomes done or failed, such as the experience the story gives:
+
+```yaml
+quest-ends: "What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, level up the characters with the player."
+```
 
 ### thresholds
 
@@ -273,7 +281,7 @@ progression:
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class.
 - The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
 - `level-up`: what `write` says when the character's levels rise in all, such as how hit points are added; the engine knows nothing of what it says.
-- `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, or the highest level they reach beyond the classes', `xp 950 (level 3 due)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule, and `status` says it at every session until the classes rise. Only the classes change the level.
+- `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, the highest level they reach beyond the classes', `xp 950 (level 3 due)`, or the least their level needs when they are below it, `xp 0 (at least 6500 at level 5)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule and the `level-up` note, a companion's choices left to the master; `status` says it at every session until the classes rise. `write` says when the points fall short of the level, and `validate` reports points below it, written with a maximum, or as text. Only the classes change the level.
 - `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
 
 ### item-formulas

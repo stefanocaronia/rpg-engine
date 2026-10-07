@@ -69,12 +69,12 @@ import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
-import { experienceOf, newLevelNotes } from "./game-experience.ts";
+import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, foreignSystemLanguage, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
@@ -161,19 +161,22 @@ export const write = defineCommand({
         // A field the game system works out is never written, on a page or a copy: the rest is (FOR-7, D-200).
         const target = open.scene !== undefined && copy !== undefined ? copyPage(copy, open.scene.copies[copy]) : findPage(world, reference.name);
         const given = input.set === undefined ? undefined : withoutComputed(world, target, oneItemLists(world, readFields(input.set)), reference.name, input.type);
+        const added = listsWithoutComputed(world, target, input.add === undefined ? undefined : readListItems(input.add));
+        const removed = listsWithoutComputed(world, target, input.remove === undefined ? undefined : readListItems(input.remove));
         const fields: FieldChange = {
             set: given === undefined || Object.keys(given.set).length === 0 ? undefined : asAmounts(world, given.set, coins),
             unset: input.unset,
-            add: input.add === undefined ? undefined : readListItems(input.add),
-            remove: input.remove === undefined ? undefined : readListItems(input.remove),
+            add: added.lists,
+            remove: removed.lists,
         };
+        const computedNotes = [given?.note, added.note, removed.note].filter((note) => note !== undefined);
 
         // Only fields the system works out, and nothing else to write: said as such.
-        if (given?.note !== undefined && fields.set === undefined && [input.type, input.unset, input.add, input.remove, input.text].every((part) => part === undefined)) {
-            throw new Error(`${given.note} Nothing changed.`);
+        if (computedNotes.length > 0 && [fields.set, fields.add, fields.remove, input.type, input.unset, input.text].every((part) => part === undefined)) {
+            throw new Error(`${computedNotes.join(" ")} Nothing changed.`);
         }
 
-        const moneyNotes = [...(given?.note === undefined ? [] : [given.note]), ...moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem)];
+        const moneyNotes = [...computedNotes, ...moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem)];
 
         if (open.scene !== undefined && copy !== undefined) {
             checkNoEffects(fields, copyPage(copy, open.scene.copies[copy]));
@@ -261,10 +264,13 @@ export const write = defineCommand({
         const sheet = joined ? joiningNotes(system, now, page) : [];
         const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
-        // Points that reach a level the classes have not (PRO-6).
-        const levels = changed && isPartyMember(page)
-            ? newLevelNotes(page.name, existing === undefined ? undefined : experienceOf(world, effectiveFields(world, existing)), experienceOf(now, effectiveFields(now, page)))
-            : [];
+        // Points that reach a level the classes have not, or fall short of the level's (PRO-6); a field the settings leave out (DAT-10).
+        const [before, after] = [existing === undefined ? undefined : experienceOf(world, effectiveFields(world, existing)), experienceOf(now, effectiveFields(now, page))];
+        const companion = page.fields.role === "companion";
+        const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, system?.progression?.levelUp), ...leastNotes(page.name, before, after)] : [];
+        const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
+        const quest = changed ? questEndNotes(system, existing, page) : [];
+        const shadows = changed && section !== undefined ? featureSectionNotes(now, page, section) : [];
         const links = changed ? linkNotes(now, fields) : [];
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
@@ -273,7 +279,7 @@ export const write = defineCommand({
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -1058,6 +1064,43 @@ function withoutComputed(world: World, target: Page | undefined, set: Record<str
     const bonus = bonuses.length === 0 ? "" : ` A bonus such as ${bonuses[0]} comes from an effect, for what gives one, such as a magic item.`;
     const note = `Not written, the system ${world.system?.name ?? ""} works ${computed.length === 1 ? "it" : "them"} out: ${values.join("; ")}. They come from ${sources.join(", ")}.${bonus}`;
     return { set: kept, note };
+}
+
+/** The items given to add or remove without the fields the game system works out on the page, which no list change writes (FOR-7, D-200), with a note. */
+function listsWithoutComputed(world: World, target: Page | undefined, lists: Record<string, unknown[]> | undefined): { lists?: Record<string, unknown[]>; note?: string; }
+{
+    if (lists === undefined || target === undefined) {
+        return { lists };
+    }
+
+    const fields = effectiveFields(world, target);
+    const computed = Object.keys(lists).flatMap((field) => computedField(world, field, fields) ?? []);
+
+    if (computed.length === 0) {
+        return { lists };
+    }
+
+    const kept = Object.fromEntries(Object.entries(lists).filter(([field]) => !computed.some((found) => comparableText(found.name) === comparableText(field))));
+    const values = computed.map((found) => `${found.name} ${signedText(world, found.name, found.value)}`).join("; ");
+    const sources = [...new Set(computed.flatMap((found) => found.from))].join(", ");
+    return {
+        lists: Object.keys(kept).length === 0 ? undefined : kept,
+        note: `Not written, the system ${world.system?.name ?? ""} works ${computed.length === 1 ? "it" : "them"} out: ${values}. ${computed.length === 1 ? "It comes" : "They come"} from ${sources}.`,
+    };
+}
+
+/** What the system says when a quest is done or failed, such as the experience the story gives (D-233). */
+function questEndNotes(system: GameSystem | undefined, existing: Page | undefined, page: Page): string[]
+{
+    const ended = (candidate: Page | undefined): boolean => ["done", "failed"].includes(String(candidate?.fields.status));
+    return page.type !== "quest" || system?.questEnds === undefined || !ended(page) || ended(existing) ? [] : [`${page.name} is ${String(page.fields.status)}. ${system.questEnds}`];
+}
+
+/** A section of a character with the name of a feature its classes give: show gives it in place of the feature's text (PRO-4). */
+function featureSectionNotes(world: World, page: Page, section: string): string[]
+{
+    const feature = progressionOf(world, effectiveFields(world, page))?.features.find((candidate) => sameFeature(candidate.name, section));
+    return feature === undefined ? [] : [`show ${page.name}#${section} now gives this section, not the text of the feature ${featureParts(feature.name).name} its classes give.`];
 }
 
 /**

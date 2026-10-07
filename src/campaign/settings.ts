@@ -92,7 +92,7 @@ export function readListSetting(root: string, name: SettingName): string[]
     }
 }
 
-function readOneSetting(root: string, name: SettingName): unknown
+export function readOneSetting(root: string, name: string): unknown
 {
     const values = readYamlValues(join(root, campaignFileName), settingsHold);
     return values !== null && typeof values === "object" ? (values as Record<string, unknown>)[name] : undefined;

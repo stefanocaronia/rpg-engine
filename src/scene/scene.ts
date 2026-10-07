@@ -24,6 +24,8 @@ export interface Scene
     turn?: string;
     /** Who left the scene: their names are never given again to a copy in it, and the log keeps them. */
     left?: string[];
+    /** The copies that left, as they were when they left: what overcoming them gives counts when the scene closes (DAT-11). */
+    gone?: Record<string, SceneCopy>;
 }
 
 // Loose: keys written by hand in the scene stay.
@@ -38,6 +40,7 @@ const sceneSchema = z.looseObject({
     round: z.number().int().positive().optional(),
     turn: z.string().optional(),
     left: z.array(z.string()).optional(),
+    gone: z.record(z.string(), z.looseObject({ creature: z.string() })).optional(),
 });
 
 /** The open scene, checked; a scene written wrongly by hand fails with what is wrong. */

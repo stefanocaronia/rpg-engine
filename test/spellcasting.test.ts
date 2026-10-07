@@ -125,8 +125,8 @@ describe("what the master is told when it writes and spends spells (D-216, D-227
         expect(await ok("show", "Ada")).toContain("spell-save-dc 16 · spell-attack +8");
         const risen = await ok("write", "Ada", "--set", "classes=[[Wizard]] 6", "--set", "hp-base=34");
         expect(risen).toContain("max-prepared 8 → 9");
-        expect(risen).not.toContain("A new level gives hit points");
-        expect(await ok("write", "Ada", "--set", "classes=[[Wizard]] 7")).toContain("A new level gives hit points");
+        expect(risen).not.toContain("Each new level gives hit points");
+        expect(await ok("write", "Ada", "--set", "classes=[[Wizard]] 7")).toContain("Each new level gives hit points");
     });
 });
 

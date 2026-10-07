@@ -110,7 +110,7 @@ export const change = defineCommand({
         const { coins, problem } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
-        const example = exampleValue(input, coins, clock, usuallyZero(system, input.field));
+        const example = exampleValue(input, coins, clock, usuallyZero(system, input.field) || withoutMaximum(system, input.field));
         const field = fieldName(world, holder, fields, input.field, example, coins, suggestedNumber(fields, { ...input, field: input.field }));
         // A field the game system declares is never money (SYS-8).
         const purse = coins === undefined || declaredKind(world, field) !== undefined ? undefined : readAmount(fields[field], coins);
@@ -233,7 +233,11 @@ function applyStep(
     const touched = changed || (step.amount.beyond ?? 0) !== 0;
     const party = holder.kind === "page" && isPartyMember(holder.page);
     // Points that reach a new level are said with the rule to read (PRO-6).
-    const levels = changed && party && after !== undefined ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after))) : [];
+    const companion = holder.page.fields.role === "companion";
+    const levelUp = world.system?.progression?.levelUp;
+    const levels = changed && party && after !== undefined
+        ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after)), companion, levelUp)
+        : [];
     const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...levels];
     const outcome = {
         page,
@@ -536,6 +540,14 @@ function exampleValue(input: { by?: number | string; spend?: number | string; to
 
     const given = typeof input.to === "string" ? readCounterText(input.to) : undefined;
     return clock ? (given?.max === undefined ? "0/4" : String(formatCounter(given))) : zero ? "0" : "12/12";
+}
+
+/** Whether the game system declares a field a counter and works out no maximum for it, as xp: it counts up from 0. */
+function withoutMaximum(system: GameSystem | undefined, field: string): boolean
+{
+    const counted = Object.entries(system?.fields ?? {}).some(([name, kind]) => kind === "counter" && comparableText(name) === comparableText(field));
+    const limits = Object.entries(system?.formulas.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    return counted && limits?.max === undefined;
 }
 
 /** Whether the game system's status line shows a field only when it is not at zero, as it does exhaustion: it is usually at zero (DAT-2). */

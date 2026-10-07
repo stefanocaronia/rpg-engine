@@ -17,6 +17,7 @@ export {
     readCampaignData,
     readCoinsSetting,
     readListSetting,
+    readOneSetting,
     readSettings,
     readTextSetting,
     type SettingName,

@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { campaignFileName, readCampaignData, readTextSetting } from "../campaign/index.ts";
+import { campaignFileName, readCampaignData, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
@@ -56,17 +56,37 @@ export function systemSettingValue(root: string, setting: SystemSetting): string
     return setting.values.find((value) => written !== undefined && comparableText(value.value) === comparableText(written))?.value;
 }
 
+/** "xp is not kept with advancement milestones": said when a field the campaign's settings leave out is written or changed (DAT-10); undefined for any other. */
+export function leftOutNote(root: string, context: Context, field: string): string | undefined
+{
+    const setting = (campaignSystem(root, context)?.settings ?? []).find((candidate) => {
+        const value = candidate.values.find((other) => other.value === systemSettingValue(root, candidate));
+        return value?.without.some((name) => comparableText(name) === comparableText(field)) === true;
+    });
+    return setting === undefined ? undefined : `${field} is not kept with ${setting.name} ${systemSettingValue(root, setting) ?? ""}: config says what it means.`;
+}
+
 /** A setting of the system written by hand with a value the system does not have (DAT-10): what it takes instead. */
 export function systemSettingProblems(root: string, context: Context): Problem[]
 {
     return (campaignSystem(root, context)?.settings ?? []).flatMap((setting): Problem[] => {
-        const written = readTextSetting(root, setting.name);
-        return written === undefined || systemSettingValue(root, setting) !== undefined ? [] : [{
+        const written = rawSetting(root, setting.name);
+        return written === undefined || written === null || systemSettingValue(root, setting) !== undefined ? [] : [{
             path: campaignFileName,
-            message: `${setting.name} is "${written}", which the system ${campaignSystem(root, context)?.name ?? ""} does not take: ${valuesText(setting)}.`,
-            fix: `config, setting ${setting.name}, value ${setting.values[0].value}`,
+            message: `${setting.name} is ${JSON.stringify(written)}, which the system ${campaignSystem(root, context)?.name ?? ""} does not take: ${valuesText(setting)}.`,
+            fix: `ask the player, then config, setting ${setting.name}, with ${setting.values.map((value) => `value ${value.value}`).join(" or ")}`,
         }];
     });
+}
+
+/** A setting as campaign.yaml writes it, of any kind; undefined when the file does not read, which validate reports on its own. */
+function rawSetting(root: string, name: string): unknown
+{
+    try {
+        return readOneSetting(root, name);
+    } catch {
+        return undefined;
+    }
 }
 
 /** "xp or milestones": the values of a setting of the system. */

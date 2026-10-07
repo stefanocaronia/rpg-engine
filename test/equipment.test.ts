@@ -112,6 +112,9 @@ describe("the armor class (D-231)", () => {
         expect(await ok("show", "Sergente")).toContain("ac: 16");
         await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]", "--set", "level=2");
         expect(await ok("show", "Lupa")).toContain("Combat: ac 13 ·");
+        // The skills its stat block lists, too, before a character's formula (D-210).
+        expect(await ok("show", "Lupa#Skills")).toContain("perception +3");
+        expect(await ok("show", "Lupa")).toContain("stealth +4");
     });
 
     it("is changed by an effect through what it comes from, never directly, and validate says so of an effect written before", async () => {

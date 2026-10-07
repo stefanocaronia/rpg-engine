@@ -55,6 +55,7 @@ const systemSchema = z.object({
         ),
     ).optional(),
     rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
+    "quest-ends": z.string().min(1).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
@@ -164,6 +165,8 @@ export interface GameSystem
     leftOut: string[];
     /** What the creatures overcome in a scene give the party (DAT-11). */
     rewards: Reward[];
+    /** What write says when a quest is done or failed, such as the experience the story gives (D-233). */
+    questEnds?: string;
 }
 
 /**
@@ -341,6 +344,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             const [counter, value] = reward.overcome.split(" ");
             return { field, from: reward.from, counter, value: Number(value) };
         }),
+        ...(data["quest-ends"] === undefined ? {} : { questEnds: data["quest-ends"] }),
     });
 }
 

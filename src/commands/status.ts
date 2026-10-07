@@ -14,7 +14,7 @@ import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -74,7 +74,15 @@ export const status = defineCommand({
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
         return {
-            campaign: [settings.name, settings.language, systemInStatus(root, context), named("difficulty", settings.difficulty), named("lethality", settings.lethality)].filter((part) => part !== undefined),
+            campaign: [
+                settings.name,
+                settings.language,
+                systemInStatus(root, context),
+                named("difficulty", settings.difficulty),
+                named("lethality", settings.lethality),
+                // What the system adds to the setup, as advancement xp (DAT-10).
+                ...(system?.settings ?? []).map((setting) => named(setting.name, systemSettingValue(root, setting))),
+            ].filter((part) => part !== undefined),
             missing: missingWithSystems(root, missingSettings(settings), context),
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
@@ -104,7 +112,7 @@ export const status = defineCommand({
                 return missing.length === 0 ? [] : [`${characterName(page)}'s sheet still lacks, by these names: ${missing.join(", ")}.`];
             }),
             // A level the points reach, until the classes rise (PRO-6).
-            levelsDue: characters.filter(isInParty).flatMap((page) => levelDueNote(characterName(page), experienceOf(world, effectiveFields(world, page))) ?? []),
+            levelsDue: characters.filter(isInParty).flatMap((page) => levelDueNote(characterName(page), experienceOf(world, effectiveFields(world, page)), page.fields.role === "companion") ?? []),
         };
     },
 

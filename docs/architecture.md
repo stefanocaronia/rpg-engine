@@ -248,7 +248,7 @@ Files: [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [comm
 
 Files: [scene/scene.ts](../src/scene/scene.ts), [commands/scene.ts](../src/commands/scene.ts), [commands/game-scene.ts](../src/commands/game-scene.ts).
 
-The open scene lives in `state.yaml` under `scene`: title, type, place, who is in it, numbered copies of creatures holding only what changed (`Annegato 1`), and when there are turns, `order`, `round` and `turn`. The `scene` command opens, adds, leaves, orders, passes the turn and closes; closing removes the scene from `state.yaml` and logs a `scene-closed` line, from which `status` lists the last scenes. Closing also says what the creatures overcome give the party, as the system's `rewards` say (`DAT-11`), with the calls of `change` and without giving it.
+The open scene lives in `state.yaml` under `scene`: title, type, place, who is in it, numbered copies of creatures holding only what changed (`Annegato 1`), and when there are turns, `order`, `round` and `turn`. The `scene` command opens, adds, leaves, orders, passes the turn and closes; closing removes the scene from `state.yaml` and logs a `scene-closed` line, from which `status` lists the last scenes. Closing also says what the creatures overcome give the party, as the system's `rewards` say (`DAT-11`), with the calls of `change` and without giving it: a copy that leaves is kept under `gone`, without its effects, for it. What the close says is worked out before the scene goes, so that a page it cannot find stops it with the scene still open.
 
 ### Game time
 
