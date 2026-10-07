@@ -85,10 +85,12 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
     }
 
     const fields = effectiveFields(world, page);
+    const marks = markCounts(world, system, fields);
     return system.sheet.flatMap((group) => {
         const shown = group.entries.flatMap((entry) => {
             const value = readField(fields, entry.field);
-            return isEmptyField(value) ? [] : [`${entry.field} ${valueText(world, entry.field, value)}${besideText(world, fields, entry)}`];
+            const marked = "●".repeat(marks.get(comparableText(entry.field)) ?? 0);
+            return isEmptyField(value) ? [] : [`${entry.field} ${valueText(world, entry.field, value)}${marked === "" ? "" : ` ${marked}`}${besideText(world, fields, entry)}`];
         });
         return shown.length === 0 ? [] : [`${group.name}: ${shown.join(" · ")}`];
     });
@@ -168,6 +170,23 @@ export function listValueProblems(world: World, system: GameSystem | undefined):
             const wrong = wrongValues(system, field, value);
             return wrong.length === 0 ? [] : [{ path: page.path, message: `On ${page.name}: ${wrongText(system, field, wrong)}`, fix: `write ${page.name}, remove ${field}=${wrong[0]}, then add the right name` }];
         })
+    );
+}
+
+/** How many marks each computed field earns (D-217, DAT-2): one for each list of the system's marks that it reads with its item, where that item changes it. */
+function markCounts(world: World, system: GameSystem, fields: Record<string, unknown>): Map<string, number>
+{
+    const marking = new Set(system.marks.map(comparableText));
+
+    if (marking.size === 0) {
+        return new Map();
+    }
+
+    return new Map(
+        workedFields(world, fields, true).map((worked) => [
+            comparableText(worked.field),
+            worked.reads.filter((read) => "item" in read && read.value === 1 && marking.has(comparableText(read.list))).length,
+        ]),
     );
 }
 

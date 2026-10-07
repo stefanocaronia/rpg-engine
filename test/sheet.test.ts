@@ -81,10 +81,11 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Character: classes Cleric 3 · level 3 · xp 900",
             "Personality: personality-traits Cito le scritture, sempre.",
             "Abilities: str 14 (+2) · dex 8 (-1) · con 15 (+2) · int 10 (+0) · wis 16 (+3) · cha 12 (+1) · proficiency +2",
-            "Saving Throws: str-save +2 · dex-save -1 · con-save +2 · int-save +0 · wis-save +5 · cha-save +3",
-            "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 · intimidation +1 · investigation +0 · "
-            + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 · sleight-of-hand -1 · stealth -1 · survival +3",
-            "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13",
+            // A number the character is proficient in has a mark (D-217).
+            "Saving Throws: str-save +2 · dex-save -1 · con-save +2 · int-save +0 · wis-save +5 ● · cha-save +3 ●",
+            "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 ● · intimidation +1 · investigation +0 · "
+            + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
+            "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             "",
             "---\nrole: pc\numore: sereno\n---",
@@ -111,7 +112,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
             "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes",
-            "passive-perception 13: perception +3",
+            "passive-perception 13: perception +3\npassive-insight 15: insight +5\npassive-investigation 10: investigation +0",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
         await ok("write", "Ettore#Combat", "--text", "Combatte con la mazza del padre.");
@@ -231,7 +232,7 @@ describe("rolls from the sheet (DAT-8)", () => {
             "There is no page named Bruno, nor a copy of that name in the open scene, to take athletics from: give who as the name of a character, or the number in the notation.",
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
-        expect(subtraction).toMatch(/^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13\. Give one of them, or the number, such as 1d20\+5\./);
+        expect(subtraction).toMatch(/^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10\. Give one of them, or the number, such as 1d20\+5\./);
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");
         expect(await refused("roll", "1d20+str", "--who", "Ettore")).toBe(
@@ -273,8 +274,9 @@ describe("what the review of 7 October put right", () => {
         expect(await ok("write", "Ettore", "--set", "classes=[[Cleric]] 4")).toContain("hit-dice-d8 max 3 → 4 (4 in classes)");
         await ok("write", "Ettore", "--add", "expertise=Stealth", "--add", "expertise=Insight");
         const shown = await ok("show", "Ettore");
-        expect(shown).toContain("insight +7");
-        expect(shown).toContain("stealth -1");
+        // Expertise has a second mark, but not where the character is not proficient, since it changes nothing there (D-217).
+        expect(shown).toContain("insight +7 ●●");
+        expect(shown).toContain("stealth -1 ·");
         await ok("write", "Ettore", "--set", "inspiration=1");
         expect(pageText("Ettore")).toContain("inspiration: 1/1");
     });

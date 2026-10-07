@@ -125,6 +125,16 @@ values:
 
 `write` refuses other names, listing these, and refuses links where the system wants its names; `validate` reports names written by hand on the campaign's pages. The field must be declared a `list`.
 
+### marks
+
+The lists that mark the numbers of the sheet that read them, such as proficiencies:
+
+```yaml
+marks: [save-proficiencies, skill-proficiencies, expertise]
+```
+
+A computed number has a ● for each of these lists that it reads with its item, where the item changes it: `athletics +5 ●`, and `stealth +7 ●●` with expertise. The fields must be declared `list`.
+
 ### status-line
 
 The fields of the line that shows the player character and the companions in `status` and in scenes, in order:

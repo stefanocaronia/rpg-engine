@@ -31,6 +31,7 @@ const systemSchema = z.object({
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
     values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
+    marks: z.array(z.string().min(1)).optional(),
     "status-line": z.array(z.string().min(1)).optional(),
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
@@ -97,6 +98,8 @@ export interface GameSystem
     sheet: SheetGroup[];
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
+    /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
+    marks: string[];
     /** The fields the line of a character shows, in order; whenSet marks a field usually at zero, shown only when it is not (DAT-2, DAT-4). */
     statusLine: { field: string; whenSet: boolean; }[];
     thresholds: Threshold[];
@@ -160,6 +163,12 @@ function readSystem(folder: string, name: string): GameSystem
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list in fields, or give no values to it.`);
     }
 
+    const notMarking = (data.marks ?? []).find((field) => kindOf(field) !== "list");
+
+    if (notMarking !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: marks: ${notMarking} is not declared as a list in fields.`);
+    }
+
     return frozen({
         name,
         folder,
@@ -171,6 +180,7 @@ function readSystem(folder: string, name: string): GameSystem
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
         sheet,
         values,
+        marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),
         thresholds: Object.entries(data.thresholds ?? {}).map(([key, rule]) => {
             const [field, value] = key.split(" ");

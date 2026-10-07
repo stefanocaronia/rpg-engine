@@ -76,6 +76,7 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         ["sheet:\n  Corpo: [forza]\nsheet-notes: { Animo: del giocatore }", "sheet-notes.Animo: the sheet has no group Animo; its groups are Corpo."],
         ["values: { motto: [breve] }", "values.motto: declare motto as a list in fields, or give no values to it."],
         ["values: { talenti: [breve] }", "values.talenti: declare talenti as a list in fields"],
+        ["marks: [motto]", "marks: motto is not declared as a list in fields."],
     ])("refuses %j, saying where and how to write it", (yaml, message) => {
         system(near, "prova", `${declared}${yaml}\n`);
         expect(() => findSystem([near], "prova")).toThrow(message);

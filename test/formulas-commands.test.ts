@@ -107,8 +107,10 @@ describe("what show and status give of a sheet (FOR-8)", () => {
             "arcana +0: int-mod +0",
             "initiative -1: dex-mod -1",
             "passive-perception 13: perception +3",
+            "passive-insight 15: insight +5",
         ]));
-        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 2);
+        // Modifiers, proficiency, saves, skills, initiative and the three passives (D-218).
+        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 1 + 3);
         expect(await ok("status")).toContain("PC: Ettore, in Locanda: level 3 · hp 24/24 · ac 18 · passive-perception 13");
     });
 
