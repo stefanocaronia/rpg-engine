@@ -192,7 +192,8 @@ function markCounts(world: World, system: GameSystem, fields: Record<string, unk
     return new Map(
         workedFields(world, fields, true).map((worked) => [
             comparableText(worked.field),
-            worked.reads.filter((read) => "item" in read && read.value === 1 && marking.has(comparableText(read.list))).length,
+            // Each list once, though a formula may read it twice, as a skill read for its proficiency and for half of it.
+            new Set(worked.reads.flatMap((read) => ("item" in read && read.value === 1 && marking.has(comparableText(read.list)) ? [comparableText(read.list)] : []))).size,
         ]),
     );
 }

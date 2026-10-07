@@ -204,6 +204,11 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
     const sources = fieldsRead(formula).flatMap((name) => {
         const entry = index?.computed.get(comparableText(name));
 
+        // What the classes give comes from the lists that name them (PRO-3).
+        if (entry === undefined && progressedField(world, scope.progression(), name) !== undefined) {
+            return scope.progression()?.lists ?? [name];
+        }
+
         if (entry === undefined || scope.computed(name)?.value === undefined) {
             return [name];
         }

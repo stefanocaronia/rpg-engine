@@ -172,15 +172,15 @@ describe("a computed field is never written (FOR-7)", () => {
     it("is left out by write, refused by change and by effect, which say what to change instead", async () => {
         expect(await ok("write", "Ettore", "--set", "insight=9", "--set", "speed=25 ft")).toBe(
             "Updated Ettore (character, world/characters/Ettore.md): set speed.\n"
-                + "Not written, the system 5e works it out: insight +5 (you gave 9). They come from wis, level, skill-proficiencies, expertise, bonus-skills. "
+                + "Not written, the system 5e works it out: insight +5 (you gave 9). They come from wis, level, skill-proficiencies, expertise, features, bonus-skills. "
                 + "A bonus such as bonus-skills comes from an effect, for what gives one, such as a magic item.",
         );
         expect(await refused("write", "Ettore", "--set", "proficiency=3", "--set", "perception=7")).toBe(
-            "Not written, the system 5e works them out: proficiency +2 (you gave 3); perception +3 (you gave 7). They come from level, wis, skill-proficiencies, expertise, bonus-skills. "
+            "Not written, the system 5e works them out: proficiency +2 (you gave 3); perception +3 (you gave 7). They come from level, wis, skill-proficiencies, expertise, features, bonus-skills. "
                 + "A bonus such as bonus-skills comes from an effect, for what gives one, such as a magic item. Nothing changed.",
         );
         expect(await refused("change", "Ettore", "insight", "--by=1")).toBe(
-            "insight on Ettore is +5, worked out by the system 5e from wis, level, skill-proficiencies, expertise, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
+            "insight on Ettore is +5, worked out by the system 5e from wis, level, skill-proficiencies, expertise, features, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
         );
         expect(await refused("effect", "add", "Ettore", "Strano", "--set", "insight=9")).toContain("give the effect one of the fields it comes from instead, such as bonus-skills. Nothing changed.");
     });

@@ -129,3 +129,25 @@ describe("a threshold given with write (DAT-3)", () => {
         expect(await ok("write", "Gara", "--set", "exhaustion=1/6")).toContain("exhaustion changed: Exhaustion, from the rules of 5e:");
     });
 });
+
+describe("features that change the numbers (D-222)", () => {
+    it("adds half the proficiency bonus to a check without it: Jack of All Trades rounded down, Remarkable Athlete rounded up on Strength, Dexterity and Constitution", async () => {
+        await character("Lirà", "classes=[[Bard]] 2", "skill-proficiencies=[Performance]");
+        const bard = await ok("show", "Lirà");
+        // Proficiency +2: half is +1, on every check without the proficiency, initiative too; none on a skill it is proficient in.
+        expect(bard).toContain("athletics +3 · deception +3");
+        expect(bard).toContain("performance +4 ●");
+        expect(bard).toContain("initiative +3");
+        expect(await ok("show", "Lirà#Skills")).toContain("athletics +3: str-mod +2, proficiency +2, Jack of All Trades in features");
+        await character("Gara", "classes=[[Fighter]] 7", "subclasses=[[Champion]]");
+        const champion = await ok("show", "Gara");
+        // Proficiency +3: half rounded up is +2, on Strength and Dexterity checks only.
+        expect(champion).toContain("acrobatics +4 · animal-handling +2 · arcana +2 · athletics +4");
+        expect(champion).toContain("initiative +4");
+    });
+
+    it("adds Aura of Protection to a paladin's own saves, at least 1", async () => {
+        await character("Ser", "classes=[[Paladin]] 6", "cha=8", "save-proficiencies=[wis, cha]");
+        expect(await ok("show", "Ser")).toContain("Saving Throws: str-save +3 · dex-save +3 · con-save +3 · int-save +3 · wis-save +6 ● · cha-save +3 ●");
+    });
+});
