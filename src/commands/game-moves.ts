@@ -1,7 +1,7 @@
 // Moving pages in play (D-151, CON-4, CON-5, CON-9), as move and scene do it: the move, its lines in the log, the events it sets off and what links to what moved.
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
-import { applyMove, concernsPlayer, isInParty, locate, type Page, planMove, type World } from "../pages/index.ts";
+import { applyMove, concernsPlayer, isInParty, links, locate, type MovePlan, type Page, planMove, type World } from "../pages/index.ts";
 import { fireEvents, heldNote, linkedStoryNotes, nowDueNote } from "./game-events.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 
@@ -31,7 +31,13 @@ export function movePages(root: string, context: Context, world: World, pages: P
     const fired = fireEvents(root, context, world, after, present);
     const now = (page: Page): Page => fired.world.pages.find((other) => other.path === page.path) ?? page;
     const linked = linkedStoryNotes(fired.world, plan.moving.filter((page) => !isInParty(page)).map(now), fired.due.map((event) => event.name), present);
-    return { moved: plan.moving.map(now), world: fired.world, notes: [nowDueNote(fired.due), heldNote(fired.held), ...linked].filter((note) => note !== "") };
+    return { moved: plan.moving.map(now), world: fired.world, notes: [...unequippedNotes(plan), nowDueNote(fired.due), heldNote(fired.held), ...linked].filter((note) => note !== "") };
+}
+
+/** "Gara has Spada equipped no more.": who no longer holds what it had equipped (CON-12). */
+function unequippedNotes(plan: MovePlan): string[]
+{
+    return plan.edits.filter((edit) => edit.field === "equipped").map((edit) => `${edit.holder.name} has ${edit.remove.map((entry) => links(entry)[0]?.page ?? entry).join(", ")} equipped no more.`);
 }
 
 /**

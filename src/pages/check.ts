@@ -313,6 +313,12 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
     );
 }
 
+/** What a character has equipped and does not hold (CON-12), as write says it after a change of its inventory or of what it has equipped. */
+export function equippedNotes(world: World, character: Page): string[]
+{
+    return equippedProblems(world, groupBy(world.pages, (page) => [page.name]), character).map((problem) => `${problem.message} Fix: ${problem.fix}.`);
+}
+
 /**
  * What a character has equipped and does not hold, directly or inside what it holds (CON-12): an item that went elsewhere, or a page of the game system, a kind,
  * which is nowhere.

@@ -1,4 +1,4 @@
-// The laws of containers and moves (MECCANICHE, CON-1–CON-4, CON-7), on worlds made at random with rings, doubles and entries a container cannot hold, against a model.
+// The laws of containers and moves (MECCANICHE, CON-1–CON-4, CON-7, CON-12), on worlds made at random with rings, doubles and entries a container cannot hold, against a model.
 import fc from "fast-check";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -40,6 +40,16 @@ const worlds = fc.tuple(...names.map(() => fc.array(entries, { maxLength: 3 })))
     }),
 }));
 const moves = fc.record({ subjects: fc.subarray(movable, { minLength: 1, maxLength: 3 }), destination: fc.constantFrom(...names) });
+// The same worlds, where each character has some of the items equipped, held or not (CON-12).
+const characters = names.filter((name) => pageTypes[name] === "character");
+const items = names.filter((name) => pageTypes[name] === "item");
+const equippedWorlds = fc.tuple(worlds, fc.tuple(...characters.map(() => fc.subarray(items)))).map(([world, lists]): World => ({
+    ...world,
+    pages: world.pages.map((page) => {
+        const equipped = lists[characters.indexOf(page.name)] ?? [];
+        return equipped.length === 0 ? page : { ...page, fields: { ...page.fields, equipped: equipped.map((item) => `[[${item}]]`) } };
+    }),
+}));
 
 describe("the laws of containers and moves, on worlds made at random", () => {
     it("CON-1, CON-3: a page is in the first container that lists it and can hold it, climbing up to a page already seen, as the model says", () => {
@@ -84,6 +94,31 @@ describe("the laws of containers and moves, on worlds made at random", () => {
 
                 // CON-4: moving again changes nothing.
                 expect(planMove(after, subjects.map((name) => pageNamed(after, name)), pageNamed(after, destination)).edits).toEqual([]);
+            }),
+            { numRuns: 2000 },
+        );
+    });
+
+    it("CON-12: after a move, a character away from the destination has equipped no more what moved, or what was inside it; the others keep theirs", () => {
+        fc.assert(
+            fc.property(equippedWorlds, moves, (world, { subjects, destination }) => {
+                let plan: ReturnType<typeof planMove>;
+
+                try {
+                    plan = planMove(world, subjects.map((name) => pageNamed(world, name)), pageNamed(world, destination));
+                } catch {
+                    return;
+                }
+
+                const after = applied(world, plan);
+                const moved = plan.moving.map((page) => page.name);
+                const around = [destination, ...chainByModel(world, destination)];
+
+                for (const character of characters) {
+                    const before = equippedOf(world, character);
+                    const gone = (item: string): boolean => !around.includes(character) && (moved.includes(item) || chainByModel(world, item).some((holder) => moved.includes(holder)));
+                    expect(equippedOf(after, character), character).toEqual(before.filter((item) => !gone(item)));
+                }
             }),
             { numRuns: 2000 },
         );
@@ -174,6 +209,13 @@ function pageNamed(world: World, name: string): Page
     }
 
     return found;
+}
+
+/** What a character has equipped, by name, in order. */
+function equippedOf(world: World, name: string): string[]
+{
+    const value = pageNamed(world, name).fields.equipped;
+    return Array.isArray(value) ? value.map(targetOf).filter((item): item is string => item !== undefined) : [];
 }
 
 /** The name an entry points to, read the model's way: the text between [[ and ]], without a label, a folder or .md. */

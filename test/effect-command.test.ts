@@ -65,7 +65,7 @@ describe("effect add and end (EFF-1, EFF-4, EFF-5)", () => {
     });
 
     it("refuses values on fixed fields, lists, lines that would not read back, and time without a game date", async () => {
-        expect((await rpg("effect", "add", "Ennio", "Morte apparente", "--set", "status=dead")).output).toBe("An effect gives values to counters and free fields, such as ac=15, not to status.");
+        expect((await rpg("effect", "add", "Ennio", "Morte apparente", "--set", "status=dead")).output).toBe("An effect gives values to counters and free fields, such as speed=20, not to status.");
         expect((await rpg("effect", "add", "Ennio", "Attesa until dawn")).output).toBe('The name Attesa until dawn has "until" in it: give the end with for or until, not in the name.');
         expect((await rpg("effect", "add", "Ennio", "Armatura (ac: 15)")).output).toBe("Give the values with set, not in the name, such as name Armatura, set ac=15.");
         expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=+2")).output).toBe('ac on Ennio is a number, 13: give the value it reads while the effect lasts, such as ac=15, not "+2". Nothing changed.');
@@ -139,7 +139,7 @@ describe("the layer of values (EFF-3, EFF-6, EFF-7, EFF-10)", () => {
     });
 
     it("refuses to change effects with write, on pages and copies", async () => {
-        const refused = 'effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set ac=15; action end to take one away. Nothing changed.';
+        const refused = 'effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set bonus-ac=2; action end to take one away. Nothing changed.';
         expect((await rpg("write", "Ennio", "--set", "effects=[Prono]")).output).toBe(refused);
         await combat();
         expect((await rpg("write", "Annegato 1", "--add", "effects=Prono")).output).toBe(refused);

@@ -12,6 +12,7 @@ import { effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } 
 import { copyPage, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { shortList } from "./notes.ts";
+import { computedField, effectBonuses } from "./worked-out.ts";
 
 /** Who holds effects: a page, or a copy in the open scene seen as a page (INH-14). */
 export interface EffectHolder
@@ -207,8 +208,23 @@ export function effectProblems(world: World, scene: Scene | undefined, now: Game
                 return [{ path, message: `${effect.name} on ${page.name} ends with the scene, but ${why}.`, fix: endIt }];
             }
 
-            return [];
+            return computedValueProblems(world, page, path, effect, endIt);
         });
+    });
+}
+
+/** A value an effect gives to a field the game system works out, as ac written before the system did: it does not count (FOR-7). */
+function computedValueProblems(world: World, page: Page, path: string, effect: Effect, endIt: string): Problem[]
+{
+    const fields = effectiveFields(world, page);
+    return effect.values.flatMap(([field]): Problem[] => {
+        const computed = computedField(world, field, fields);
+        const instead = computed === undefined ? [] : [...effectBonuses(world, computed.from), ...computed.from];
+        return computed === undefined ? [] : [{
+            path,
+            message: `${effect.name} on ${page.name} gives ${computed.name}, which the system ${world.system?.name ?? ""} works out, so it does not count.`,
+            fix: `${endIt}, then add it again with what ${computed.name} comes from${instead.length === 0 ? "" : `, such as ${instead[0]}`}`,
+        }];
     });
 }
 

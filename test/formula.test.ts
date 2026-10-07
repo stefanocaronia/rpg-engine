@@ -112,6 +112,18 @@ describe("what a result came from (FOR-8)", () => {
         const worked = workOut(table, scope({ level: 3 }, tables));
         expect(contributingReads(table, scope({ level: 3 }, tables), worked)).toEqual([{ field: "level", value: 3, key: true }, { table: "proficiency", key: "3", value: 2 }]);
     });
+
+    it("keeps of min, max and best only what the operand that gives the result read, and of a tie one that read something", () => {
+        const read = (text: string, fields: Record<string, unknown>, tables: Record<string, Record<string, number>> = {}): string[] => {
+            const formula = parseFormula(text);
+            const worked = workOut(formula, scope(fields, tables));
+            return contributingReads(formula, scope(fields, tables), worked).map((reading) => ("field" in reading ? reading.field : "list" in reading ? reading.list : reading.table));
+        };
+
+        expect(read("max(str-mod, dex-mod) + proficiency", { "str-mod": -1, "dex-mod": 4, proficiency: 2 })).toEqual(["dex-mod", "proficiency"]);
+        expect(read("best(table(base, level) + dex-mod, unarmored-ac)", { level: 1, "dex-mod": 2, "unarmored-ac": 15 }, { base: { 1: 10 } })).toEqual(["unarmored-ac"]);
+        expect(read("min(1, floor(level / 11))", { level: 11 })).toEqual(["level"]);
+    });
 });
 
 describe("a system's formulas that do not read (FOR-9)", () => {
@@ -158,6 +170,8 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(parseRollFormula("2d6 fire")).toEqual({ dice: "2d6", words: "fire" });
         expect(parseRollFormula("16 + bonus").dice).toBeUndefined();
         expect(() => parseRollFormula("1d8 + str-mod +")).toThrow(/is not a formula/);
+        // Why it does not read is said of what follows the dice, which are allowed.
+        expect(() => parseRollFormula("1d8 + str_mod slashing")).toThrow(/^"str_mod slashing" is not a formula/);
         expect(workOut(count, { ...scope({ classes: ["[[Fighter]] 3", "[[Wizard]] 2", "[[Ranger]] 1"] }), page: (name) => pages[name] }).value).toBe(2);
     });
 

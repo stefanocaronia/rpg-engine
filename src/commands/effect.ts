@@ -16,7 +16,7 @@ import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
-import { computedField, counterLimits, maximumSources } from "./worked-out.ts";
+import { computedField, counterLimits, effectBonuses, itemSource, maximumSources } from "./worked-out.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -42,7 +42,7 @@ export const effect = defineCommand({
         "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form; on a place, such as rain or magical darkness, it holds for all inside by its name, and its values are the place's own. "
         + "add gives its name, how long it lasts, who keeps it alive if someone must (concentration), and the values it gives meanwhile; what else it does in play is yours to rule. "
         + "It ends by itself, and advance or scene says so; end takes it away sooner, or every effect someone keeps alive. "
-        + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set ac=15.',
+        + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set bonus-ac=2.',
     group: "game",
     positionals: ["action", "page", "name"],
     input: z.object({
@@ -54,7 +54,9 @@ export const effect = defineCommand({
         ),
         until: z.string().optional().describe("add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for"),
         by: z.string().optional().describe("add: who keeps it alive, such as [[Lena]]; end: take away every effect they keep, on everyone"),
-        set: fieldValues.optional().describe("add: the values it reads while it lasts, field=value, repeatable, such as ac=15, never a bonus such as +2. What must outlive it, such as hit points it adds, change on the page instead"),
+        set: fieldValues.optional().describe(
+            "add: the values it reads while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. What must outlive it, such as hit points it adds, change on the page instead",
+        ),
         why: z.string().optional().describe("what caused it, or ended it"),
     }),
 
@@ -108,8 +110,11 @@ export const effect = defineCommand({
 
         const name = input.name.trim();
 
-        if (/\([^()]*:[^()]*\)/.test(name)) {
-            throw new Error(`Give the values with set, not in the name, such as name ${name.replace(/\s*\(.*$/, "")}, set ac=15.`);
+        const inName = /\(([^()]*:[^()]*)\)/.exec(name);
+
+        if (inName !== null) {
+            const values = inName[1].split(",").map((value) => value.trim().replace(/\s*:\s*/, "="));
+            throw new Error(`Give the values with set, not in the name, such as name ${name.replace(/\s*\(.*$/, "")}, set ${values.join(", set ")}.`);
         }
 
         if (/\buntil\b/i.test(name)) {
@@ -300,7 +305,7 @@ function readValues(world: World, page: Page, set: string[] | Record<string, unk
             const separator = assignment.indexOf("=");
 
             if (separator <= 0 || assignment.slice(separator + 1).trim() === "") {
-                throw new Error(`Write a value as field=value, such as ac=15, not "${assignment}".`);
+                throw new Error(`Write a value as field=value, such as speed=20, not "${assignment}".`);
             }
 
             return [assignment.slice(0, separator).trim(), assignment.slice(separator + 1).trim()];
@@ -310,7 +315,7 @@ function readValues(world: World, page: Page, set: string[] | Record<string, unk
 
     return pairs.map(([field, value], index) => {
         if (isStandardField(page.type, field) || isNeverInherited(field) || comparableText(field) === "by") {
-            throw new Error(`An effect gives values to counters and free fields, such as ac=15, not to ${field}.`);
+            throw new Error(`An effect gives values to counters and free fields, such as speed=20, not to ${field}.`);
         }
 
         if (pairs.findIndex(([other]) => comparableText(other) === comparableText(field)) !== index) {
@@ -355,9 +360,17 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
         throw new Error(`${computed.name} on ${page.name} is ${String(computed.value)} for everyone, a fixed value of the game data (system ${world.system?.name ?? ""} or campaign.yaml): an effect cannot change it. Nothing changed.`);
     }
 
+    // What an item of a list gives, as a shield's armor-class-bonus, changes with an effect on the item, through what its formula reads of it (PRO-5).
+    const source = computed === undefined || effectBonuses(world, computed.from).length > 0 ? undefined : itemSource(world, fields, computed.name);
+
+    if (computed !== undefined && source !== undefined) {
+        const through = source.own.length === 0 ? "" : `, through ${source.own.join(" or ")}, such as effect add, page ${source.item}, set ${source.own[0]}=1`;
+        throw new Error(`${computed.name} on ${page.name} is what ${source.item} in its ${source.list} gives, by the formula of its page: an effect on ${source.item} changes it${through}. Nothing changed.`);
+    }
+
     if (computed !== undefined) {
-        // A bonus field first, which is what an effect is for; else a field the page writes.
-        const from = [...computed.from.filter((name) => declaredKind(world, name) === "bonus"), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
+        // A bonus field of the page first, which is what an effect is for; else a field the page writes.
+        const from = [...effectBonuses(world, computed.from), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
         throw new Error(
             `${computed.name} on ${page.name} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: give the effect one of the fields it comes from instead, such as ${
                 from[0] ?? computed.from[0]

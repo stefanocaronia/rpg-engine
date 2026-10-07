@@ -73,6 +73,8 @@ export interface SystemInfo
     itemFormulas?: Record<string, string[]>;
     /** The counters that come back with a rest, by name or by a name ending in *: a page has them full until it spends them (DAT-9). */
     uses?: string[];
+    /** The fields the line of the player character and the companions shows, in order (DAT-2). */
+    statusLine?: { field: string; whenSet: boolean; }[];
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -117,9 +119,15 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = readPages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, itemFormulas, uses } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, uses, statusLine } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
-    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, uses, pages: systemPages.pages }, language });
+    return frozen({
+        root,
+        pages: campaign.pages,
+        problems,
+        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, uses, statusLine, pages: systemPages.pages },
+        language,
+    });
 }
 
 /**

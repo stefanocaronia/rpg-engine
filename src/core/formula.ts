@@ -164,8 +164,8 @@ export function parseRollFormula(text: string): RollFormula
         return { dice: dice[1] };
     }
 
-    // Read again whole, for the reason it does not read.
-    return { formula: parseFormula(text) };
+    // Read again, after the dice, which are allowed, for the reason it does not read.
+    return { formula: parseFormula(dice === null ? text : rest.replace(/^\+\s*/, "")) };
 }
 
 function tryFormula(text: string): Formula | undefined
@@ -301,7 +301,7 @@ function evaluate(formula: Formula, scope: FormulaScope, reads: FormulaRead[]): 
         case "operation":
             return operate(formula.operator, evaluate(formula.left, scope, reads), evaluate(formula.right, scope, reads));
         case "math":
-            return mathOf(formula.name, formula.operands.map((operand) => evaluate(operand, scope, reads)));
+            return mathValue(formula.name, formula.operands, scope, reads);
 
         case "table": {
             const before = reads.length;
@@ -367,6 +367,21 @@ function operate(operator: "+" | "-" | "*" | "/", left: number | undefined, righ
         case "/":
             return right === 0 ? undefined : left / right;
     }
+}
+
+/** A function of its operands; min, max and best keep only what the operand that gives the result read, as first does (FOR-8). */
+function mathValue(name: MathName, operands: Formula[], scope: FormulaScope, reads: FormulaRead[]): number | undefined
+{
+    const tried = operands.map((operand) => {
+        const own: FormulaRead[] = [];
+        return { value: evaluate(operand, scope, own), reads: own };
+    });
+    const value = mathOf(name, tried.map((operand) => operand.value));
+    // Of operands that tie, one that read something: min(1, level) at level 1 comes from the level.
+    const winners = tried.filter((operand) => operand.value === value);
+    const chosen = value !== undefined && (name === "min" || name === "max" || name === "best") ? [winners.find((operand) => operand.reads.length > 0) ?? winners[0]] : tried;
+    reads.push(...chosen.flatMap((operand) => operand.reads));
+    return value;
 }
 
 function mathOf(name: MathName, operands: (number | undefined)[]): number | undefined

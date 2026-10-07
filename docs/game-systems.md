@@ -260,10 +260,10 @@ item-formulas:
 ```
 
 - A class's page gives `spell-save-dc: "8 + proficiency + wis-mod + bonus-spell-dc"`; an armor's `armor-class: "14 + min(dex-mod, 2) + bonus"`; a weapon's `attack: "str-mod + proficiency * max(has(weapon-proficiencies, martial weapons), …) + bonus"`.
-- The formula reads the item's own fields first, as the `bonus` of a magic weapon written on the campaign's item, then the character's.
-- With one item the field is that number; with several, "Cleric 13, Wizard 12", which no other formula reads. A formula may begin with dice and end with words, as a damage `"1d8 + str-mod + bonus slashing"`: the dice and the words stay, the rest is worked out, "1d8+3 slashing".
+- The formula reads the item's own fields first, with its effects, as the `bonus` of a magic weapon written `1` or `+1` on the campaign's item, or Magic Weapon's; then the character's. The fields the item gives for its list are read on the character. The 5e's arms and armor write `bonus: 0`, so that a formula never reads a bonus of who has them.
+- With one item the field is that number; with several, "Cleric 13, Wizard 12". Another formula reads the number of the first item that gives it, as the first class's Unarmored Defense, and `write` says so when a second item gives it. A formula may begin with dice and end with words, as a damage `"1d8 + str-mod + bonus slashing"`: the dice and the words stay, the rest is worked out, "1d8+3 slashing".
 - A group of the sheet whose fields all come from one list is shown item by item: `Attacks: [attack, damage-roll]` gives "Attacks: Longsword +5, 1d8+3 slashing · Light Crossbow +2, 1d8 piercing".
-- Never written, like computed fields; `validate` reports a formula of an item's page that does not read, reads itself, or reads a table or a name no one has.
+- Never written, like computed fields: an effect changes what the item's formula reads, on the item. `validate` reports a formula of an item's page that does not read, reads itself, or reads a table or a name no one has, and words after a field that is a number or that another formula reads, as `12 + Dex modifier`.
 
 ## 4. The formula language
 
@@ -273,6 +273,8 @@ item-formulas:
 | `floor(x)`, `ceil(x)` | rounded down, up: one value | `ceil(level / 2)` |
 | `min(a, b, …)`, `max(a, b, …)` | at least two values | `max(1, con-mod)` |
 | `best(a, b, …)` | the highest of those that have a value; none when none has | `best(10 + dex-mod, unarmored-ac)` |
+
+Of `min`, `max` and `best`, what a value came from is only what the operand that gives it read: `max(str-mod, dex-mod)` comes from `dex-mod +4` alone.
 | `table(name, key)` | the table's row for the key | `table(ranks, rank)` |
 | `has(list, Name)` | 1 when the list holds Name, else 0 | `has(skill-proficiencies, Sleight of Hand)` |
 | `count(list)` | how many items | `10 - count(debilities)` |

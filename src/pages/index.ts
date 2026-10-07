@@ -1,5 +1,5 @@
 // The pages of the world: one markdown file with a YAML frontmatter for each thing with a name.
-export { checkWorld } from "./check.ts";
+export { checkWorld, equippedNotes } from "./check.ts";
 export { applyMove, type MovePlan, planMove } from "./containers.ts";
 export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
 export {

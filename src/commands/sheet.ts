@@ -125,7 +125,8 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
     if (list !== undefined) {
         const items = itemLines(world, fields, list, entryFields(group.entries), true);
         const lines = items.map((item) => `${item.item}: ${item.values.map((value) => workedLine(world, value)).join("; ")}`);
-        return { name: group.name, lines: lines.length === 0 ? [`${page.name} has nothing in ${group.name} yet.`] : lines };
+        const empty = `${page.name} has nothing in ${group.name} yet: the pages of the items in its ${list} give it, as ${entryFields(group.entries).join(" and ")}.`;
+        return { name: group.name, lines: lines.length === 0 ? [empty] : lines };
     }
 
     const worked = workedFields(world, fields, true);

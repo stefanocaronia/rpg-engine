@@ -7,7 +7,7 @@ import { introductionText, partContent, readSection, repeatedNames, secretNames,
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
-import { heldSystemPageMessage, hidingMessage, readOnlyMessage } from "./system-pages.ts";
+import { heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
 import { checkPageName, findPage, heldNames, holdersOf, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
@@ -61,6 +61,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
         const fields = readFields(frontmatter, path);
         checkStandardFields(pageType, fields, changedFields);
         checkContainers(world, existing, { name: existing?.name ?? name, type: pageType }, fields, changedFields);
+        checkEquipped(world, existing, existing?.name ?? name, fields, changedFields);
     }
 
     const newText = joinPageFile({ frontmatter, body });
@@ -323,6 +324,24 @@ function checkContainers(world: World, existing: Page | undefined, page: { name:
                 throw new Error(problem);
             }
         }
+    }
+}
+
+/** What a character equips is an item of the campaign, never a page of the game system, a kind that no one holds (CON-12, SYS-6). */
+function checkEquipped(world: World, existing: Page | undefined, name: string, fields: Record<string, unknown>, changedFields: string[]): void
+{
+    if (!changedFields.includes("equipped")) {
+        return;
+    }
+
+    const before = new Set(linksIn(existing?.fields.equipped).map(comparableText));
+    const kind = linksIn(fields.equipped).filter((link) => !before.has(comparableText(link))).map((link) => findPage(world, link)).find((page) => page?.system !== undefined);
+
+    if (kind !== undefined) {
+        throw new Error(
+            `${kind.name} is ${systemLabel(kind)}, a kind: no one wears or wields it. To equip ${name} with one, create it under a name in the campaign's language: `
+                + `write "<name>", type item, set item=[[${kind.name}]]; then move, page "<name>", to ${name}, and add it to equipped. Nothing changed.`,
+        );
     }
 }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { listItemNames, numberOf } from "../core/formula.ts";
+import { fieldsRead, listItemNames, numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -18,6 +18,7 @@ import {
     declaredKind,
     derivedPages,
     environmentAt,
+    equippedNotes,
     type FieldChange,
     findPage,
     followersOf,
@@ -72,11 +73,11 @@ import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, foreignSystemLanguage, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
-import { computedField, counterLimits, hasSheet, isUse, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
+import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -260,11 +261,14 @@ export const write = defineCommand({
         const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
         const links = changed ? linkNotes(now, fields) : [];
+        // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
+        const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
+        const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...links, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -374,7 +378,7 @@ function checkNoEffects(change: FieldChange, page: Page | undefined): void
     }
 
     if (changedFieldNames(change).some((name) => comparableText(name) === "effects")) {
-        throw new Error('effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set ac=15; action end to take one away. Nothing changed.');
+        throw new Error('effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set bonus-ac=2; action end to take one away. Nothing changed.');
     }
 }
 
@@ -798,14 +802,15 @@ function noBaseNote(now: World, page: Page): string[]
  */
 function linkNotes(world: World, change: FieldChange): string[]
 {
-    const given = [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})].filter(([field]) => declaredKind(world, field) !== undefined).flatMap(([, value]) => linksIn(value));
+    // The base a creature or an item derives from too, as item=[[Spada lunga]] for Longsword.
+    const told = (field: string): boolean => declaredKind(world, field) !== undefined || ["creature", "item"].includes(comparableText(field));
+    const given = [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})].filter(([field]) => told(field)).flatMap(([, value]) => linksIn(value));
     const names = [...new Set(given)];
     const exists = (name: string): Page | undefined => pagesWithName(world, name)[0] ?? systemPageNamed(world, name);
     const missing = names.filter((name) => exists(name) === undefined);
     const system = world.system;
-    const language = system !== undefined && world.language !== undefined && comparableText(world.language) !== comparableText(system.language)
-        ? ` The system ${system.name} names its pages in ${system.language}: find looks them up.`
-        : "";
+    const foreign = foreignSystemLanguage(world);
+    const language = system === undefined || foreign === undefined ? "" : ` The system ${system.name} names its pages in ${foreign}: find looks them up.`;
     const absent = missing.length === 0
         ? []
         : [`No page for ${missing.map((name) => `[[${name}]]`).join(", ")} yet: create ${missing.length === 1 ? "it" : "them"} with write if ${
@@ -818,6 +823,29 @@ function linkNotes(world: World, change: FieldChange): string[]
         return page === undefined || others.length === 0 ? [] : [`[[${name}]] is ${page.system === undefined ? withArticle(page.type ?? "page") : systemLabel(page)}; there is also ${others.map((other) => other.name).join(", ")}.`];
     });
     return [...absent, ...twins];
+}
+
+/**
+ * When the items of a list give a field another formula reads, as two armors in equipped or Unarmored Defense from two classes, the formula reads the first
+ * (PRO-5): said when a write makes it so.
+ */
+function firstItemNotes(before: World, after: World, existing: Page | undefined, page: Page): string[]
+{
+    const computed = after.system?.formulas?.computed ?? [];
+    return Object.entries(after.system?.itemFormulas ?? {}).flatMap(([list, names]) =>
+        names.flatMap((field) => {
+            const readers = computed.filter(([, formula]) => fieldsRead(formula).some((name) => comparableText(name) === comparableText(field))).map(([name]) => name);
+            const giving = (world: World, fields: Record<string, unknown>): string[] => itemLines(world, fields, list, [field]).map((line) => line.item);
+            const is = readers.length === 0 ? [] : giving(after, effectiveFields(after, page));
+            const was = is.length < 2 || existing === undefined ? [] : giving(before, effectiveFields(before, existing));
+
+            if (is.length < 2 || (was.length === is.length && was.every((name, index) => comparableText(name) === comparableText(is[index])))) {
+                return [];
+            }
+
+            return [`${readers.join(", ")} ${readers.length === 1 ? "reads" : "read"} ${field} from ${is[0]}, the first in ${page.name}'s ${list} that gives it, not from ${is.slice(1).join(", ")}.`];
+        })
+    );
 }
 
 /** "hp=15/15": the fields a refused write gave, for the call to make instead, without the base field, which that call gives. */
