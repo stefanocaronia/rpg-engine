@@ -28,9 +28,10 @@ export interface FormulaScope
     page?(name: string): Record<string, unknown> | undefined;
 }
 
-/** A value a formula read to work out its result: a field and the number it read, a name looked for in a list, or a row of a table. */
+/** A value a formula read to work out its result: a field and the number it read, or the dice a roll took from it, a name looked for in a list, or a row of a table. */
 export type FormulaRead =
     | { field: string; value: number; key?: true; }
+    | { field: string; dice: string; }
     | { list: string; item: string; value: number; }
     | { list: string; value: number; where?: string; count?: true; }
     | { table: string; key: string; value: number; };
@@ -128,26 +129,30 @@ export function parseFormula(text: string): Formula
 /** A formula of a page that may begin with dice and end with words, as a weapon's damage "1d8 + str-mod slashing" (PRO-5): its parts. */
 export interface RollFormula
 {
-    /** The dice it begins with, such as 1d8; none for a plain formula. */
-    dice?: string;
+    /** The dice it begins with: one choice for 1d8; several for dice(…), of which the largest counts (PRO-5, D-235). None for a plain formula. */
+    dice?: DiceChoice[];
     /** The formula after the dice; none for dice alone. */
     formula?: Formula;
     /** The words it ends with, such as slashing. */
     words?: string;
 }
 
+/** One of the dice a roll may begin with (D-235): dice as written, a number, as an unarmed strike's 1, or a field that holds dice, as a monk's martial-arts. */
+export type DiceChoice = { dice: string; } | { number: number; } | { field: string; };
+
 /**
- * Reads a formula that may begin with dice, such as 1d8 or 2d6, and end with words, such as a damage type: "1d8 + str-mod + bonus slashing". Refused, with why,
- * when what is between does not read as a formula (FOR-9).
+ * Reads a formula that may begin with dice, such as 1d8 or 2d6, or with dice(…), the largest of several, such as dice(1d6, martial-arts) (D-235), and end with
+ * words, such as a damage type: "1d8 + str-mod + bonus slashing". Refused, with why, when what is between does not read as a formula (FOR-9).
  */
 export function parseRollFormula(text: string): RollFormula
 {
-    const dice = /^\s*(\d*d\d+)\b/i.exec(text);
-    const rest = (dice === null ? text : text.slice(dice[0].length)).trim();
+    const opening = openingDice(text);
+    const dice = opening?.choices;
+    const rest = (opening === undefined ? text : text.slice(opening.length)).trim();
     const words = rest.split(/\s+/).filter((word) => word !== "");
 
-    if (dice !== null && words.length > 0 && !/^[+-]/.test(rest)) {
-        return { dice: dice[1], words: rest };
+    if (dice !== undefined && words.length > 0 && !/^[+-]/.test(rest)) {
+        return { dice, words: rest };
     }
 
     // The longest beginning that reads as a formula; the words after it are said as they are.
@@ -156,16 +161,94 @@ export function parseRollFormula(text: string): RollFormula
         const tail = words.slice(count).join(" ");
 
         if (formula !== undefined && /^[\p{L} ]*$/u.test(tail)) {
-            return { ...(dice === null ? {} : { dice: dice[1] }), formula, ...(tail === "" ? {} : { words: tail }) };
+            return { ...(dice === undefined ? {} : { dice }), formula, ...(tail === "" ? {} : { words: tail }) };
         }
     }
 
-    if (dice !== null && words.length === 0) {
-        return { dice: dice[1] };
+    if (dice !== undefined && words.length === 0) {
+        return { dice };
     }
 
     // Read again, after the dice, which are allowed, for the reason it does not read.
-    return { formula: parseFormula(dice === null ? text : rest.replace(/^\+\s*/, "")) };
+    return { formula: parseFormula(dice === undefined ? text : rest.replace(/^\+\s*/, "")) };
+}
+
+/**
+ * The dice a roll takes (D-235): of its choices, the largest that has a value, by the average it rolls, the first of two alike; a field gives dice it holds,
+ * such as a monk's martial-arts 1d6, or a number. Undefined when none has a value, as martial-arts for one who is no monk.
+ */
+export function chosenDice(choices: DiceChoice[], scope: FormulaScope): { dice?: string; number?: number; reads: FormulaRead[]; } | undefined
+{
+    type Valued = { dice?: string; number?: number; reads: FormulaRead[]; };
+    const valued = choices.flatMap((choice): Valued[] => {
+        if ("dice" in choice) {
+            return [{ dice: choice.dice, reads: [] }];
+        }
+
+        if ("number" in choice) {
+            return [{ number: choice.number, reads: [] }];
+        }
+
+        const value = scope.field(choice.field);
+        const number = numberOf(value);
+        const dice = typeof value === "string" && dicePattern.test(value.trim()) ? value.trim() : undefined;
+        return dice !== undefined ? [{ dice, reads: [{ field: choice.field, dice }] }] : number !== undefined ? [{ number, reads: [{ field: choice.field, value: number }] }] : [];
+    });
+    const average = (choice: Valued): number => (choice.dice === undefined ? (choice.number ?? 0) : diceAverage(choice.dice));
+    return valued.reduce<Valued | undefined>((best, choice) => (best === undefined || average(choice) > average(best) ? choice : best), undefined);
+}
+
+/** The fields a roll's dice read, as martial-arts in dice(1d6, martial-arts) (D-235). */
+export function diceFields(roll: RollFormula): string[]
+{
+    return (roll.dice ?? []).flatMap((choice) => ("field" in choice ? [choice.field] : []));
+}
+
+// 1d8, d6, 2d6: dice as a roll writes them.
+const dicePattern = /^(\d*)d(\d+)$/i;
+
+/** What dice roll on average, as 4.5 for 1d8. */
+function diceAverage(dice: string): number
+{
+    const [, count, faces] = dicePattern.exec(dice) ?? [];
+    return (count === "" || count === undefined ? 1 : Number(count)) * (Number(faces) + 1) / 2;
+}
+
+/** The dice a roll formula begins with, and how much of its text they take: 1d8, or dice(…) with dice, numbers and fields (D-235); undefined for none. */
+function openingDice(text: string): { choices: DiceChoice[]; length: number; } | undefined
+{
+    const written = /^\s*(\d*d\d+)\b/i.exec(text);
+
+    if (written !== null) {
+        return { choices: [{ dice: written[1] }], length: written[0].length };
+    }
+
+    const call = /^\s*dice\s*\(([^()]*)\)/i.exec(text);
+
+    if (call === null) {
+        return undefined;
+    }
+
+    const choices = call[1].split(",").map((part): DiceChoice => {
+        const choice = part.trim();
+        namePattern.lastIndex = 0;
+        const name = namePattern.exec(choice);
+
+        if (dicePattern.test(choice)) {
+            return { dice: choice };
+        }
+
+        if (/^\d+$/.test(choice)) {
+            return { number: Number(choice) };
+        }
+
+        if (name !== null && name[0] === choice) {
+            return { field: choice };
+        }
+
+        throw new Error(`"${text}" is not a formula: dice, a number or a field that holds dice was expected in dice() at "${choice}", such as dice(1d6, martial-arts).`);
+    });
+    return { choices, length: call[0].length };
 }
 
 function tryFormula(text: string): Formula | undefined
@@ -199,7 +282,7 @@ export function workOut(formula: Formula, scope: FormulaScope): WorkedOut
 export function contributingReads(formula: Formula, scope: FormulaScope, worked: WorkedOut): FormulaRead[]
 {
     return worked.reads.filter((read) => {
-        if ("table" in read || ("field" in read && read.key === true)) {
+        if ("table" in read || "dice" in read || ("field" in read && read.key === true)) {
             return true;
         }
 
@@ -309,7 +392,7 @@ function evaluate(formula: Formula, scope: FormulaScope, reads: FormulaRead[]): 
 
             // What gives the key always counts: a level one higher may stay in the same row (FOR-8).
             for (const read of reads.slice(before)) {
-                if ("field" in read) {
+                if ("value" in read && "field" in read) {
                     read.key = true;
                 }
             }
@@ -667,6 +750,11 @@ class FormulaReader
             this.expect(",");
             const item = this.rawUntilClose();
             return { kind: "list", name: lower as ListName, list, item };
+        }
+
+        // Dice only begin the formula of an item's page (D-235).
+        if (lower === "dice") {
+            throw new Error(`"${this.text}" is not a formula: dice() goes only at the beginning of an item's formula, such as dice(1d6, martial-arts) + dex-mod.`);
         }
 
         this.fail(`a function: ${[...mathNames, "table", ...listNames].join(", ")}`);

@@ -13,7 +13,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
-import { signedText, workedFields } from "./worked-out.ts";
+import { itemList, signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 const faceValues = z.preprocess(
@@ -340,6 +340,14 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
         const subtraction = /-\d+$/.test(name) ? " To subtract, put spaces around the minus, such as 1d20+athletics - 1." : "";
         const hyphens = words ? " A name of several words is written with hyphens, such as sleight-of-hand." : "";
         throw new Error(`${page.name} has no ${name}.${has} Give one of them, or the number, such as 1d20+5.${subtraction}${hyphens}${missingSystemHint(roller.world)}`);
+    }
+
+    // One value for each item of a list, as the attacks of two weapons (PRO-5): the roll takes the number of the one used.
+    const list = itemList(roller.world, name);
+    const first = typeof value === "string" ? /[+-]\d+/.exec(value)?.[0] : undefined;
+
+    if (number === undefined && list !== undefined && first !== undefined) {
+        throw new Error(`${name} on ${page.name} is ${JSON.stringify(value)}, one for each item in its ${list}: give the number of the one used, such as 1d20${first}.`);
     }
 
     if (number === undefined || !Number.isInteger(number)) {

@@ -46,9 +46,30 @@ export function systemLabel(page: Page): string
     return `${withArticle(page.type ?? "page")} of the system ${page.system ?? ""}`;
 }
 
-/** Why a page of the game system cannot be written, and what to write instead: a page of the campaign that derives from it (SYS-6, SYS-7). */
-export function readOnlyMessage(page: Page, fields: string[] = []): string
+/** The list where the game system puts a page for every character who keeps the sheet, as equipped for the unarmed strike (DAT-13); undefined for any other page. */
+export function alwaysInList(world: World, page: Page): string | undefined
 {
+    return page.system === undefined ? undefined : Object.entries(world.system?.alwaysIn ?? {}).find(([, names]) => names.some((name) => comparableText(name) === comparableText(page.name)))?.[0];
+}
+
+/** "Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet…": why no one writes or equips it (DAT-13). */
+export function alwaysInMessage(page: Page, list: string): string
+{
+    return `${page.name} is ${systemLabel(page)} that it puts in the ${list} of every character with a sheet, worked out on each from their own fields: it is there already, and read-only.`;
+}
+
+/**
+ * Why a page of the game system cannot be written, and what to write instead: a page of the campaign that derives from it (SYS-6, SYS-7); for one the system puts
+ * in a list of every character, that it is there already (DAT-13).
+ */
+export function readOnlyMessage(page: Page, fields: string[] = [], world?: World): string
+{
+    const list = world === undefined ? undefined : alwaysInList(world, page);
+
+    if (list !== undefined) {
+        return `${alwaysInMessage(page, list)} Nothing changed.`;
+    }
+
     if (page.type === "creature") {
         const set = [`creature=[[${page.name}]]`, ...fields].join(", ");
         return `${page.name} is ${systemLabel(page)}: read-only. For a kind of your own, create a creature that derives from it, under a name in the campaign's language: `

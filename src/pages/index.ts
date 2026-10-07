@@ -43,7 +43,7 @@ export {
     newPageFields,
     standardValues,
 } from "./standard-fields.ts";
-export { declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
+export { alwaysInList, alwaysInMessage, declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
 export {
     type Backlink,
     backlinks,

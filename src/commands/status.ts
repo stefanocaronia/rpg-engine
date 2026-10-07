@@ -73,6 +73,8 @@ export const status = defineCommand({
         const facts = worldFacts(world);
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
+        // Until there is a player character, or while its sheet is being made, before the first scene (DAT-12).
+        const creating = players.length === 0 || (openScene.scene === undefined && closed.length === 0 && players.some((page) => missingSheetFields(system, world, page).length > 0));
         return {
             campaign: [
                 settings.name,
@@ -106,6 +108,8 @@ export const status = defineCommand({
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
             sheet: system === undefined ? undefined : sheetSummary(system),
+            // How the player character is made (DAT-12, D-235).
+            creation: creating && system?.creation !== undefined ? { system: system.name, note: system.creation } : undefined,
             // A dead character's sheet is no longer kept (D-190).
             incompleteSheets: characters.filter(isInParty).flatMap((page) => {
                 const missing = missingSheetFields(system, world, page);
@@ -133,6 +137,7 @@ export const status = defineCommand({
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             ...result.incompleteSheets,
             ...result.levelsDue,
+            result.creation === undefined ? "" : `Creating the player character (${result.creation.system}): ${result.creation.note}`,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,

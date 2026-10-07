@@ -5,7 +5,7 @@ import { readEnvironment } from "./environment.ts";
 import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./inheritance.ts";
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
-import { systemLabel } from "./system-pages.ts";
+import { alwaysInList, alwaysInMessage, systemLabel } from "./system-pages.ts";
 import { linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
@@ -335,6 +335,10 @@ function equippedProblems(world: World, pagesByName: Map<string, Page[]>, charac
         linksIn(entry).flatMap((name): Problem[] => {
             const held = pagesByName.get(comparableText(name));
             const system = held === undefined ? systemPageNamed(world, name) : undefined;
+
+            if (system !== undefined && alwaysInList(world, system) !== undefined) {
+                return [{ path: character.path, message: `${character.name} has ${system.name} in equipped: ${alwaysInMessage(system, alwaysInList(world, system) ?? "")}`, fix: `write ${character.name}, remove equipped=${entry}` }];
+            }
 
             if (system !== undefined) {
                 return [{

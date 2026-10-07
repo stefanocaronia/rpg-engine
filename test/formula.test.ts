@@ -1,7 +1,7 @@
 // The formulas of a game system (FOR-1–FOR-9): what they read, how they count, where they have no value, and what refuses a system.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { contributingReads, type FormulaScope, numberOf, parseFormula, parseRollFormula, readFormulas, tableOf, workOut } from "../src/core/formula.ts";
+import { chosenDice, contributingReads, type FormulaScope, numberOf, parseFormula, parseRollFormula, readFormulas, tableOf, workOut } from "../src/core/formula.ts";
 
 /** A scope over plain fields and the tables given. */
 function scope(fields: Record<string, unknown>, tables: Record<string, Record<string, number>> = {}): FormulaScope
@@ -165,13 +165,23 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(valueOf("best(10 + dex, armor, 12)", { dex: 2 })).toBe(12);
         expect(valueOf("best(armor, shield)", {})).toBeUndefined();
         // A formula of a page may begin with dice and end with words (PRO-5).
-        expect(parseRollFormula("1d8 + str-mod + bonus slashing")).toMatchObject({ dice: "1d8", words: "slashing" });
+        expect(parseRollFormula("1d8 + str-mod + bonus slashing")).toMatchObject({ dice: [{ dice: "1d8" }], words: "slashing" });
         expect(parseRollFormula("1 + dex-mod piercing")).toMatchObject({ words: "piercing" });
-        expect(parseRollFormula("2d6 fire")).toEqual({ dice: "2d6", words: "fire" });
+        expect(parseRollFormula("2d6 fire")).toEqual({ dice: [{ dice: "2d6" }], words: "fire" });
         expect(parseRollFormula("16 + bonus").dice).toBeUndefined();
         expect(() => parseRollFormula("1d8 + str-mod +")).toThrow(/is not a formula/);
         // Why it does not read is said of what follows the dice, which are allowed.
         expect(() => parseRollFormula("1d8 + str_mod slashing")).toThrow(/^"str_mod slashing" is not a formula/);
+        // Or with dice(…), the largest of several, as a monk weapon's own die and the Martial Arts die (D-235).
+        expect(parseRollFormula("dice(1d6, martial-arts) + dex-mod bludgeoning")).toMatchObject({ dice: [{ dice: "1d6" }, { field: "martial-arts" }], words: "bludgeoning" });
+        expect(parseRollFormula("DICE(martial-arts, 1) + str-mod")).toMatchObject({ dice: [{ field: "martial-arts" }, { number: 1 }] });
+        expect(parseRollFormula("dice(2d6) cold")).toEqual({ dice: [{ dice: "2d6" }], words: "cold" });
+        expect(() => parseRollFormula("dice(1d6, martial arts) + dex-mod")).toThrow(
+            '"dice(1d6, martial arts) + dex-mod" is not a formula: dice, a number or a field that holds dice was expected in dice() at "martial arts", such as dice(1d6, martial-arts).',
+        );
+        expect(() => parseRollFormula("dice() + dex-mod")).toThrow('in dice() at ""');
+        expect(() => parseFormula("2 + dice(1d6)")).toThrow('"2 + dice(1d6)" is not a formula: dice() goes only at the beginning of an item\'s formula, such as dice(1d6, martial-arts) + dex-mod.');
+        expect(() => parseRollFormula("1d4 + dice(1d6) cold")).toThrow("dice() goes only at the beginning");
         expect(workOut(count, { ...scope({ classes: ["[[Fighter]] 3", "[[Wizard]] 2", "[[Ranger]] 1"] }), page: (name) => pages[name] }).value).toBe(2);
     });
 
@@ -186,6 +196,41 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(() => readFormulas({ computed: { a: "b + 1", b: "c + 1", c: "a + 1" } })).toThrow("computed fields read each other in a circle: a → b → c → a.");
         expect(() => readFormulas({ computed: { a: "a + 1" } })).toThrow("computed fields read each other in a circle: a → a.");
         expect(readFormulas({ computed: { b: "a + 1", a: "1" }, counters: { momentum: { min: -6, max: "10 - count(debilities)" } } }).counters.momentum.min).toEqual({ kind: "number", value: -6 });
+    });
+});
+
+describe("the dice a roll takes (D-235)", () => {
+    const dice = (text: string, fields: Record<string, unknown> = {}) => {
+        const choices = parseRollFormula(text).dice ?? [];
+        return chosenDice(choices, scope(fields));
+    };
+
+    it("takes the largest by its average, the first of two alike, dice a field holds, and a number, as an unarmed strike's 1", () => {
+        expect(dice("dice(1d6, martial-arts)", { "martial-arts": "1d4" })).toEqual({ dice: "1d6", reads: [] });
+        expect(dice("dice(1d6, martial-arts)", { "martial-arts": "1d8" })).toEqual({ dice: "1d8", reads: [{ field: "martial-arts", dice: "1d8" }] });
+        expect(dice("dice(1d6, martial-arts)", { "martial-arts": "1d6" })).toEqual({ dice: "1d6", reads: [] });
+        expect(dice("dice(martial-arts, 1d6)", { "martial-arts": "1d6" })).toEqual({ dice: "1d6", reads: [{ field: "martial-arts", dice: "1d6" }] });
+        expect(dice("dice(martial-arts, 1)", {})).toEqual({ number: 1, reads: [] });
+        expect(dice("dice(martial-arts, 1)", { "martial-arts": "d4" })).toEqual({ dice: "d4", reads: [{ field: "martial-arts", dice: "d4" }] });
+        expect(dice("dice(2d6, 1d10)")).toEqual({ dice: "2d6", reads: [] });
+        // A field that holds a number gives it; one that holds other text, as two classes' "Bard 3, Sorcerer 4", gives nothing.
+        expect(dice("dice(extra)", { extra: "+3" })).toEqual({ number: 3, reads: [{ field: "extra", value: 3 }] });
+        expect(dice("dice(martial-arts)", { "martial-arts": "Monk 1d6, Bard 3" })).toBeUndefined();
+        expect(dice("dice(martial-arts)", {})).toBeUndefined();
+    });
+
+    it("is never smaller on average than any choice with a value, and has a value when one has", () => {
+        const choice = fc.oneof(
+            fc.tuple(fc.integer({ min: 1, max: 4 }), fc.constantFrom(4, 6, 8, 10, 12)).map(([count, faces]) => ({ text: `${count}d${faces}`, average: (count * (faces + 1)) / 2 })),
+            fc.integer({ min: 0, max: 20 }).map((number) => ({ text: String(number), average: number })),
+        );
+        fc.assert(fc.property(fc.array(choice, { minLength: 1, maxLength: 4 }), fc.option(choice, { nil: undefined }), (choices, held) => {
+            const fields = held === undefined ? {} : { held: held.text };
+            const chosen = dice(`dice(${[...choices.map((given) => given.text), "held"].join(", ")})`, fields);
+            const valued = [...choices, ...(held === undefined ? [] : [held])];
+            const average = chosen?.dice === undefined ? chosen?.number : valued.find((given) => given.text === chosen.dice)?.average;
+            expect(average).toBe(Math.max(...valued.map((given) => given.average)));
+        }));
     });
 });
 

@@ -156,7 +156,7 @@ export function checkNotSystemPage(world: World, open: { scene?: Scene; }, page:
         throw new Error(`${page.name} is ${systemLabel(page)}, read-only: its copies in the open scene are ${copies.join(", ")}. Make the same call on the one you mean, such as page "${copies[0]}". Nothing changed.`);
     }
 
-    throw new Error(page.type === "creature" ? `${kindMessage(page)} Nothing changed.` : readOnlyMessage(page));
+    throw new Error(page.type === "creature" ? `${kindMessage(page)} Nothing changed.` : readOnlyMessage(page, [], world));
 }
 
 /** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */

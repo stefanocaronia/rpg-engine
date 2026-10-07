@@ -126,8 +126,19 @@ sheet-notes:
 - `field (beside)`: a field shown in parentheses beside it: `str 14 (+2)`.
 - The player character (`role: pc`) keeps the sheet, and so does a companion with a `level` or with no `creature` (a wolf with its stat block does not).
 - `show` gives a sheet one line per group, effects and formulas included: `Abilities: str 14 (+2) · dex 12 (+1) · proficiency +2`. `show Page#Group` gives one group with how each number is made (a section or secret of that name comes first).
-- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take; then it reminds what each character still lacks.
+- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, then how to make one (`creation`); afterwards it reminds what each character still lacks.
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
+
+### creation
+
+How a player character is made in the game, which `status` says until there is one, then while a player character's sheet still lacks fields before the first scene, after the sheet's reminders (`DAT-12`):
+
+```yaml
+creation: >-
+  agree first, and set with config in table: how the ability scores are made, multiclassing, feats, … Then, in order, with write: race and class at 1st level, …
+```
+
+The 5e's gives what the table agrees first and writes in `table`, that every choice is the player's, the steps in order (race and class with the choices of their features, ability scores by the way agreed and the race's increases, background, proficiencies and languages, `hp-base`, the starting equipment as items, spells, alignment and personality, then the sheet read with the player), and what a character who starts above 1st level has. The engine knows nothing of what it says.
 
 ### values
 
@@ -298,7 +309,19 @@ item-formulas:
 - The formula reads the item's own fields first, with its effects, as the `bonus` of a magic weapon written `1` or `+1` on the campaign's item, or Magic Weapon's; then the character's. The fields the item gives for its list are read on the character. The 5e's arms and armor write `bonus: 0`, so that a formula never reads a bonus of who has them.
 - With one item the field is that number; with several, "Cleric 13, Wizard 12". Another formula reads the number of the first item that gives it, as the first class's Unarmored Defense, and `write` says so when a second item gives it. A formula may begin with dice and end with words, as a damage `"1d8 + str-mod + bonus slashing"`: the dice and the words stay, the rest is worked out, "1d8+3 slashing".
 - A group of the sheet whose fields all come from one list is shown item by item: `Attacks: [attack, damage-roll]` gives "Attacks: Longsword +5, 1d8+3 slashing · Light Crossbow +2, 1d8 piercing".
-- Never written, like computed fields: an effect changes what the item's formula reads, on the item. `validate` reports a formula of an item's page that does not read, reads itself, or reads a table or a name no one has, and words after a field that is a number or that another formula reads, as `12 + Dex modifier`.
+- A roll may take its dice from a field, with `dice(…)` in place of the dice: the largest of the dice, numbers and fields it names that have a value, by the average they roll, the first of two alike. A field gives the dice it holds, such as a monk's `martial-arts 1d6`, or a number. So a monk weapon writes `"dice(1d6, martial-arts) + … bludgeoning"`, and rolls the Martial Arts die once it is larger than its own; the unarmed strike writes `"dice(martial-arts, 1) + … bludgeoning"`, whose number adds to the rest: "4 bludgeoning", or "1d6+4 bludgeoning" for a monk. With none of them having a value, the item gives nothing; a field no one has never counts, and `validate` reports it. `dice(…)` goes only at the beginning. `show Page#Attacks` names the field the dice came from: `martial-arts 1d6`.
+- Never written, like computed fields: an effect changes what the item's formula reads, on the item. `validate` reports a formula of an item's page that does not read, reads itself, or reads a table or a name no one has, its dice included, and words after a field that is a number or that another formula reads, as `12 + Dex modifier`.
+
+### always-in
+
+The pages every character who keeps the sheet has in a list without writing them there (`DAT-13`):
+
+```yaml
+always-in:
+  equipped: [Unarmed Strike]
+```
+
+The formulas read the list with these pages after the written ones, so the attacks of every player character and companion with a sheet end with the unarmed strike: "Attacks: Longsword +5, 1d8+3 slashing · Unarmed Strike +5, 4 bludgeoning". The list as written does not change: the sheet's `equipped` shows only what the character carries. `write` and `effect` on such a page, or equipping it, and `validate` on a character who lists it, say that it is there already, never how to derive an item from it, which would count it twice. Creatures and characters without a sheet never have them. The list is one the system declares or a list of the core, such as `equipped`, and each name a page of the system: [test/system-packages.test.ts](../test/system-packages.test.ts) checks both.
 
 ## 4. The formula language
 
@@ -321,6 +344,7 @@ Of `min`, `max` and `best`, what a value came from is only what the operand that
 - **Names.** A field, table or list name starts with a letter and holds letters and digits, with single hyphens between them: `str-mod`, `hit-dice-d10`. A hyphen between two parts is part of the name, so `level-1` is a field called `level-1`: write `level - 1`. Names and functions ignore case. Only ASCII letters, digits and hyphens: a field with an accent or an underscore cannot be read by a formula.
 - **Values.** A field reads as a number when it is one, a counter (its current value: `7/12` reads 7) or signed text (`"+2"`). Anything else is no number.
 - **Lists.** An item is a name with an optional number after it: `"[[Fighter]] 3"` is Fighter with 3, `Perception +3` is Perception with 3. A value in parentheses after the name is not part of it, and gives the number it begins with: `Channel Divinity (2/rest)` is Channel Divinity with 2, `Bardic Inspiration (d8)` has no number. A link reads as the page it names, or as its section: `[[Cleric#Channel Divinity]]` reads as Channel Divinity. A single value is a list of one. The name in `has` and `item` runs up to `)` and may hold spaces.
+- **Dice.** Only a formula of an item's page may begin with dice, `1d8` or `dice(…)` (see `item-formulas`); in any other formula a die is no number.
 - **sum with a field.** For each item it reads the page the item names, the campaign's first, else the system's, with what that page inherits, and keeps the item when its field has the value (ignoring case).
 
 ### When a formula has no value

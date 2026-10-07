@@ -50,7 +50,10 @@ describe("rpg status", () => {
         await rpg("write", "Ritrovare la lanterna", "--type", "quest");
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned");
 
-        expect(await state()).toBe([
+        // The system's note on making a character comes while the sheets lack fields, before the first scene (DAT-12).
+        const shown = await state();
+        expect(shown).toMatch(/\nCreating the player character \(5e\): agree first, .*\nAlso there: Varro/);
+        expect(shown.replace(/^Creating the player character.*\n/m, "")).toBe([
             "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic",
             "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { parseRollFormula } from "../src/core/formula.ts";
 import { comparableText } from "../src/core/text.ts";
 import { coinsProblem, readCoins } from "../src/money/index.ts";
-import { checkWorld, isStandardField, loadWorld } from "../src/pages/index.ts";
+import { checkWorld, isStandardField, listFieldNames, loadWorld } from "../src/pages/index.ts";
 import { isTitled, readRuleBook } from "../src/rules/index.ts";
 import { installedSystems } from "../src/systems/index.ts";
 import { testSystemFolders } from "./support.ts";
@@ -59,6 +59,10 @@ describe("the installed game systems", () => {
                 expect(system.recipes.flatMap((recipe) => [...Object.keys(recipe.set).filter((field) => !declared(field)), ...recipe.rules.filter((rule) => !hasRule(rule))])).toEqual([]);
                 expect(system.conditions.filter((condition) => !hasRule(condition))).toEqual([]);
                 expect(system.roundSeconds === undefined || system.roundSeconds > 0).toBe(true);
+                // What every character with a sheet has in a list (D-235): a list of the system or of the core, and pages the system has.
+                const lists = Object.keys(system.alwaysIn).filter((list) => system.fields[list] !== "list" && !(isStandardField("character", list) && listFieldNames.includes(list)));
+                expect(lists).toEqual([]);
+                expect(Object.values(system.alwaysIn).flat().filter((name) => !world.pages.some((page) => comparableText(page.name) === comparableText(name)))).toEqual([]);
             });
 
             it("writes its rules in chapters that open with a heading, each section read by its path (RUL-1, RUL-3)", () => {

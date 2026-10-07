@@ -69,6 +69,14 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(found?.values).toEqual({ Doti: ["agile", "forte"] });
     });
 
+    it("reads the pages every character with a sheet has in a list, and how a player character is made (D-235)", () => {
+        system(near, "prova", `${declared}always-in: { equipped: [Pugno] }\ncreation: "con il giocatore, un passo alla volta"\n`);
+        expect(findSystem([near], "prova")).toMatchObject({ alwaysIn: { equipped: ["Pugno"] }, creation: "con il giocatore, un passo alla volta" });
+        system(far, "altro", declared);
+        expect(findSystem([far], "altro")).toMatchObject({ alwaysIn: {} });
+        expect(findSystem([far], "altro")?.creation).toBeUndefined();
+    });
+
     it.each([
         ["sheet: [forza, vigore]", "write the sheet as groups, each with its fields"],
         ["sheet:\n  Corpo: [forza(forza-mod)]", 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies'],
@@ -77,6 +85,9 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         ["values: { motto: [breve] }", "values.motto: declare motto as a list in fields, or give no values to it."],
         ["values: { talenti: [breve] }", "values.talenti: declare talenti as a list in fields"],
         ["marks: [motto]", "motto is not declared as a list in fields, as marks and progression need."],
+        ["always-in: [Pugno]", "always-in: write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]."],
+        ["always-in: { equipped: [] }", "always-in.equipped"],
+        ['creation: ""', "creation"],
     ])("refuses %j, saying where and how to write it", (yaml, message) => {
         system(near, "prova", `${declared}${yaml}\n`);
         expect(() => findSystem([near], "prova")).toThrow(message);

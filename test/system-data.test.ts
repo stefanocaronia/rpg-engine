@@ -85,12 +85,20 @@ describe("the character sheet (DAT-2)", () => {
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), as it writes them: "
                 + "write lists them if a name is not one.",
         );
+        // How a character is made, until there is one (D-235).
+        expect((await runCommandLine(["status"], other)).output).toContain(
+            "\nCreating the player character (5e): agree first, and set with config in table: how the ability scores are made, multiclassing, feats,",
+        );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
             "Bruna's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, "
                 + "skill-proficiencies, weapon-proficiencies, languages.\nPersonality: a player character's personality traits, ideal, bond and flaw are the player's,",
         );
         expect((await runCommandLine(["write", "Bruna", "--set", "classes=[[Fighter]] 1"], other)).output).not.toContain("still lacks");
         expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, str, dex, con, int, wis, cha, speed, hp-base,");
+        // While the sheet is being made, until the first scene (DAT-12).
+        expect((await runCommandLine(["status"], other)).output).toContain("Creating the player character");
+        await runCommandLine(["scene", "open", "--title", "Il molo", "--type", "exploration"], other);
+        expect((await runCommandLine(["status"], other)).output).not.toContain("Creating the player character");
         removeFolder(empty);
     });
 

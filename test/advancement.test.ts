@@ -93,7 +93,7 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         expect(await ok("change", "Ennio", "xp", "--by", "200", "--why", "i lupi")).not.toContain("has the xp");
         const reached = await ok("change", "Ennio", "xp", "--by", "150", "--why", "la missione");
         // When the points reach it, the system's note on what a level gives comes with it: where the hit points go.
-        expect(reached).toContain(`${due} Each new level gives hit points: for each, roll the hit die of the class that rose`);
+        expect(reached).toContain(`${due} Each new level gives hit points, but a new character's first, which takes the largest number of its class's hit die: for each, roll the hit die of the class that rose`);
         expect(reached).toContain("add them to hp-base with write, without con-mod, which the system adds by itself.");
         expect(await ok("status")).toContain("PC: Ennio: level 1 · xp 350 (level 2 due) · hp 12/12");
         expect(await ok("status")).toContain(due);

@@ -180,7 +180,7 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
         expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 4")).toContain("Ability Score Improvement is new");
         const eighth = await ok("write", "Brann", "--set", "classes=[[Barbarian]] 8");
         expect(eighth).toContain("What Brann's classes give: Extra Attack, Fast Movement, Mindless Rage, Feral Instinct are new; Ability Score Improvement again.");
-        expect(eighth).toContain("Each new level gives hit points: for each, roll the hit die of the class that rose");
+        expect(eighth).toContain("Each new level gives hit points, but a new character's first, which takes the largest number of its class's hit die: for each, roll the hit die of the class that rose");
         await ok("write", "Lio", "--type", "character", "--set", "role=pc", "--set", "creature=[[Human]]", "--set", "classes=[[Bard]] 4", "--set", "cha=14");
         expect(await ok("write", "Lio", "--set", "classes=[[Bard]] 5")).toContain(
             "Font of Inspiration is new; Bardic Inspiration (d6 → d8); spells-known 7 → 8, spell-save-dc 12 → 13, spell-attack +4 → +5. show Lio#Font of Inspiration gives a feature's text.",

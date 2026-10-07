@@ -1,7 +1,9 @@
 // What the game system works out from the fields of a page (D-199, FOR-3–FOR-8): its computed fields, each with the values it came from, and the limits of
 // its counters. The formulas are the system's data; this is where they meet the pages and the counters.
 import {
+    chosenDice,
     contributingReads,
+    diceFields,
     fieldsRead,
     type Formula,
     type FormulaRead,
@@ -99,11 +101,15 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>, she
 export function hasSheet(world: World, page: Page): boolean
 {
     // A level or classes the page inherits count too, as a companion deriving from a creature with classes.
-    const fields = page.fields.role === "companion" ? inheritedFields(world, page) : page.fields;
+    return page.type === "character" && keepsSheet(world, page.fields.role === "companion" ? inheritedFields(world, page) : page.fields);
+}
+
+/** Whether a character with these fields keeps the sheet (DAT-2): the player character, and a companion with a level or classes, or that derives from no creature. */
+function keepsSheet(world: World, fields: Record<string, unknown>): boolean
+{
     const list = world.system?.progression === undefined ? undefined : keyOf(fields, world.system.progression.list);
     const levelled = !isEmptyField(fields[keyOf(fields, "level") ?? "level"]) || (list !== undefined && !isEmptyField(fields[list]));
-    const companion = page.fields.role === "companion" && (isEmptyField(page.fields.creature) || levelled);
-    return page.type === "character" && (page.fields.role === "pc" || companion);
+    return fields.role === "pc" || (fields.role === "companion" && (isEmptyField(fields.creature) || levelled));
 }
 
 /**
@@ -283,25 +289,33 @@ function itemValues(world: World, scope: ReturnType<typeof formulaScope>, field:
 
         const own = itemScope(world, scope, page, list);
         const worked = given.formula === undefined ? undefined : workOut(given.formula, own);
+        // The dice it takes, as the Martial Arts die of a monk when it is larger (D-235); none of its choices with a value, no value.
+        const dice = given.dice === undefined ? undefined : chosenDice(given.dice, own);
 
-        if (given.formula !== undefined && worked?.value === undefined) {
+        if ((given.formula !== undefined && worked?.value === undefined) || (given.dice !== undefined && dice === undefined)) {
             return [];
         }
 
         const reads = worked === undefined || given.formula === undefined ? [] : explained ? contributingReads(given.formula, own, worked) : worked.reads;
-        return [{ name: item.name, value: rollValue(given, worked?.value), reads }];
+        return [{ name: item.name, value: rollValue(given, dice, worked?.value), reads: [...(dice?.reads ?? []), ...reads] }];
     });
 }
 
-/** "1d8+3 slashing": a roll's dice, the number its formula works out, unless 0, and its words; the number alone for a plain formula. */
-function rollValue(given: RollFormula, value: number | undefined): number | string
+/**
+ * "1d8+3 slashing": a roll's dice, the number its formula works out, unless 0, and its words; the number alone for a plain formula. Dice that are a number, as an
+ * unarmed strike's 1, add to it: "4 bludgeoning" (D-235).
+ */
+function rollValue(given: RollFormula, dice: { dice?: string; number?: number; } | undefined, value: number | undefined): number | string
 {
-    if (given.dice === undefined && given.words === undefined && value !== undefined) {
-        return value;
+    const rolled = dice?.dice;
+    const total = dice?.number === undefined ? value : (value ?? 0) + dice.number;
+
+    if (rolled === undefined && given.words === undefined && total !== undefined) {
+        return total;
     }
 
-    const number = value === undefined || (value === 0 && given.dice !== undefined) ? "" : given.dice === undefined ? String(value) : value > 0 ? `+${value}` : String(value);
-    return `${given.dice ?? ""}${number}${given.words === undefined ? "" : ` ${given.words}`}`;
+    const number = total === undefined || (total === 0 && rolled !== undefined) ? "" : rolled === undefined ? String(total) : total > 0 ? `+${total}` : String(total);
+    return `${rolled ?? ""}${number}${given.words === undefined ? "" : ` ${given.words}`}`;
 }
 
 /**
@@ -380,7 +394,9 @@ function progressedField(world: World, scope: ReturnType<typeof formulaScope>, f
             const page = scope.page(item.name);
             const given = itemFormula(page, found.field);
             // What the item holds itself, as a weapon's bonus, comes from it, not from who lists it.
-            return given?.formula === undefined ? [] : writtenSources(world, given.formula, scope).filter((name) => page === undefined || keyOf(page, name) === undefined);
+            const dice = (given === undefined ? [] : diceFields(given)).flatMap((name) => writtenSources(world, { kind: "field", name }, scope));
+            const formula = given?.formula === undefined ? [] : writtenSources(world, given.formula, scope);
+            return [...formula, ...dice].filter((name) => page === undefined || keyOf(page, name) === undefined);
         });
         return { name: found.field, value: found.value, from: [...new Set([...read, list])] };
     }
@@ -502,7 +518,10 @@ export function effectBonuses(world: World, from: string[]): string[]
     return from.filter((field) => declaredKind(world, field) === "bonus" && itemList(world, field) === undefined);
 }
 
-/** The first item of its list whose page gives a field, with the fields of its own that its formula reads, as a shield's bonus (PRO-5). */
+/**
+ * The first item of its list whose page gives a field, with the fields of its own that its formula reads, as a shield's bonus (PRO-5): a page of the campaign,
+ * which an effect can change, not one of the system, as the unarmed strike (D-235).
+ */
 export function itemSource(world: World, fields: Record<string, unknown>, field: string): { item: string; list: string; own: string[]; } | undefined
 {
     const list = itemList(world, field);
@@ -512,7 +531,7 @@ export function itemSource(world: World, fields: Record<string, unknown>, field:
         const page = scope.page(item.name);
         const given = itemFormula(page, field);
 
-        if (list !== undefined && page !== undefined && given?.formula !== undefined) {
+        if (list !== undefined && page !== undefined && given?.formula !== undefined && pagesWithName(world, item.name).length > 0) {
             return { item: item.name, list, own: fieldsRead(given.formula).filter((name) => keyOf(page, name) !== undefined) };
         }
     }
@@ -540,8 +559,13 @@ export function workedParts(world: World, reads: FormulaRead[]): string
     const parts = reads.flatMap((read): string[] => {
         if ("table" in read) {
             // A key the explanation does not already give, as text: "ranks dangerous: 8".
-            const keyed = reads.some((other) => "field" in other && other.key === true);
+            const keyed = reads.some((other) => "field" in other && "key" in other && other.key === true);
             return [keyed ? `${read.table} ${read.value}` : `${read.table} ${read.key}: ${read.value}`];
+        }
+
+        // The dice a roll took from a field, as a monk's martial-arts 1d6 (D-235).
+        if ("dice" in read) {
+            return [`${read.field} ${read.dice}`];
         }
 
         if ("field" in read) {
@@ -682,6 +706,19 @@ function itemFormulaProblems(world: World, page: Page, fields: Record<string, un
                     return [{ path: page.path, message: `${field} on ${item.name} ${why}, so ${page.name} has none from it.`, fix: `write ${item.name}, set ${field} as a formula of what the system has` }];
                 }
 
+                // Dice from a field no one has never count, while the other dice still do (D-235).
+                const dice = diceFields(given).find((name) => comparableText(name) === comparableText(field) || (!known.has(comparableText(name)) && keyOf(holder, name) === undefined));
+
+                if (dice !== undefined) {
+                    return [{
+                        path: page.path,
+                        message: `${field} on ${item.name} takes dice from ${dice}, which ${
+                            comparableText(dice) === comparableText(field) ? "is the field itself" : "neither the system nor the character has"
+                        }: they never count for ${page.name}.`,
+                        fix: `write ${item.name}, set ${field} with dice from a field the system has, such as dice(1d6, martial-arts)`,
+                    }];
+                }
+
                 // Words after a number another formula reads, as "12 + Dex modifier", make it text, which no formula counts.
                 return given.words === undefined || given.dice !== undefined || !isReadAsNumber(world, field) ? [] : [{
                     path: page.path,
@@ -799,7 +836,7 @@ function formulaScope(
 
             const key = keys.get(comparableText(name));
             const value = key === undefined ? undefined : fields[key];
-            return value === undefined && declaredKind(world, name) === "bonus" ? 0 : value;
+            return value === undefined && declaredKind(world, name) === "bonus" ? 0 : withAlwaysIn(world, fields, name, value);
         },
         table: (name) => index?.tables.get(comparableText(name)),
         // The page an item names, of the campaign or of the system, with its effects, as a class with its hit die (D-215) or a weapon under Magic Weapon.
@@ -811,6 +848,23 @@ function formulaScope(
     };
     const full = { ...scope, computed, progression, each, page: (name: string) => scope.page?.(name) };
     return full;
+}
+
+/**
+ * A list as the formulas read it (DAT-13, D-235): what the page writes, then what the system puts in it for who keeps the sheet, as the unarmed strike among what a
+ * character has equipped, so that the attacks show it.
+ */
+function withAlwaysIn(world: World, fields: Record<string, unknown>, list: string, value: unknown): unknown
+{
+    const added = Object.entries(world.system?.alwaysIn ?? {}).find(([name]) => comparableText(name) === comparableText(list))?.[1];
+
+    if (added === undefined || !keepsSheet(world, fields)) {
+        return value;
+    }
+
+    const written = value === undefined || value === null || value === "" ? [] : Array.isArray(value) ? value : [value];
+    const names = new Set(listItems(written).map((item) => comparableText(item.name)));
+    return [...written, ...added.filter((name) => !names.has(comparableText(name)))];
 }
 
 /** A system's computed fields and tables by the name as it is compared, built once for each system: a formula reads many names (D-194). */

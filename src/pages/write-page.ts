@@ -7,7 +7,7 @@ import { introductionText, partContent, readSection, repeatedNames, secretNames,
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
-import { heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
+import { alwaysInList, alwaysInMessage, heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
 import { checkPageName, findPage, heldNames, holdersOf, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
@@ -32,7 +32,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
 
     // The campaign only reads the pages of its game system, and never hides one with a page of its own (SYS-4, SYS-6).
     if (existing?.system !== undefined) {
-        throw new Error(type === undefined ? readOnlyMessage(existing) : hidingMessage(existing, type));
+        throw new Error(type === undefined || alwaysInList(world, existing) !== undefined ? readOnlyMessage(existing, [], world) : hidingMessage(existing, type));
     }
 
     // A type given to a page that has another changes it (D-159): the file moves to the folder of its new type.
@@ -336,6 +336,11 @@ function checkEquipped(world: World, existing: Page | undefined, name: string, f
 
     const before = new Set(linksIn(existing?.fields.equipped).map(comparableText));
     const kind = linksIn(fields.equipped).filter((link) => !before.has(comparableText(link))).map((link) => findPage(world, link)).find((page) => page?.system !== undefined);
+
+    // The unarmed strike is in every sheet's equipped without writing it (DAT-13): a page of the campaign derived from it would count twice.
+    if (kind !== undefined && alwaysInList(world, kind) !== undefined) {
+        throw new Error(`${alwaysInMessage(kind, alwaysInList(world, kind) ?? "")} Nothing changed.`);
+    }
 
     if (kind !== undefined) {
         throw new Error(

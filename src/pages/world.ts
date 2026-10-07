@@ -71,6 +71,8 @@ export interface SystemInfo
     progression?: ProgressionRule;
     /** By list, the fields whose value on each item's page is a formula worked out on who lists it (PRO-5). */
     itemFormulas?: Record<string, string[]>;
+    /** By list, the pages every character who keeps the sheet has in it without writing them, as the unarmed strike in equipped (DAT-13, D-235). */
+    alwaysIn?: Record<string, string[]>;
     /** The counters that come back with a rest, by name or by a name ending in *: a page has them full until it spends them (DAT-9). */
     uses?: string[];
     /** The fields the line of the player character and the companions shows, in order (DAT-2). */
@@ -119,13 +121,13 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = readPages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, itemFormulas, uses, statusLine } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
         root,
         pages: campaign.pages,
         problems,
-        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, uses, statusLine, pages: systemPages.pages },
+        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, pages: systemPages.pages },
         language,
     });
 }

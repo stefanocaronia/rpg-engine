@@ -57,6 +57,8 @@ const systemSchema = z.object({
     rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
     "quest-ends": z.string().min(1).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
+    "always-in": z.record(z.string().min(1), z.array(z.string().min(1)).min(1), { error: "write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]" }).optional(),
+    creation: z.string().min(1).optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
         z.string(),
@@ -157,6 +159,10 @@ export interface GameSystem
     progression?: ProgressionRule;
     /** By list, the fields whose value on the page of each item is a formula worked out on who lists it, as a class's spell-save-dc or an armor's armor-class (PRO-5). */
     itemFormulas: Record<string, string[]>;
+    /** By list, the pages every character who keeps the sheet has in it without writing them, as the unarmed strike in equipped (DAT-13, D-235). */
+    alwaysIn: Record<string, string[]>;
+    /** How a player character is made, which status says until there is one (DAT-12, D-235). */
+    creation?: string;
     /** The counters that come back with a rest, by name or by a name ending in *: a character has them full until it spends them (DAT-9). */
     uses: string[];
     /** The settings it adds to the setup (DAT-10). */
@@ -334,6 +340,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
         itemFormulas: data["item-formulas"] ?? {},
+        alwaysIn: data["always-in"] ?? {},
         uses: usesOf(data),
         settings: Object.entries(data.settings ?? {}).map(([setting, values]) => ({
             name: setting,
@@ -345,6 +352,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             return { field, from: reward.from, counter, value: Number(value) };
         }),
         ...(data["quest-ends"] === undefined ? {} : { questEnds: data["quest-ends"] }),
+        ...(data.creation === undefined ? {} : { creation: data.creation }),
     });
 }
 

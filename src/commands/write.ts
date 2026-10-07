@@ -10,6 +10,7 @@ import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
 import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
 import {
+    alwaysInList,
     baseFieldOf,
     baseValue,
     changedEnvironment,
@@ -189,7 +190,7 @@ export const write = defineCommand({
         // The campaign only reads the pages of its game system, and never hides one with a page of its own (SYS-4, SYS-6).
         if (existing?.system !== undefined) {
             const given = givenFields(fields.set, baseFieldOf(input.type ?? existing.type));
-            throw new Error(input.type === undefined ? readOnlyMessage(existing, given) : hidingMessage(existing, input.type, given));
+            throw new Error(input.type === undefined || alwaysInList(world, existing) !== undefined ? readOnlyMessage(existing, given, world) : hidingMessage(existing, input.type, given));
         }
 
         checkNoEffects(fields, existing);

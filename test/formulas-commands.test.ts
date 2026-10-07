@@ -113,7 +113,9 @@ describe("what show and status give of a sheet (FOR-8)", () => {
         ]));
         // Modifiers, proficiency, saves, skills, initiative and the three passives (D-218); the armor class, from the chain mail and the shield (D-231).
         expect(lines).toEqual(expect.arrayContaining(["ac 18: armor-class 16, armor-class-bonus +2", "armor-class 16", "armor-class-bonus +2"]));
-        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 1 + 3 + 3);
+        // The unarmed strike, which every character with a sheet has ready (D-235).
+        expect(lines).toEqual(expect.arrayContaining(["attack +4: str-mod +2, proficiency +2", "damage-roll 3 bludgeoning: str-mod +2"]));
+        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 1 + 3 + 3 + 2);
         expect(await ok("status")).toContain("PC: Ettore, in Locanda: level 3 · hp 24/24 · ac 18 · passive-perception 13");
     });
 

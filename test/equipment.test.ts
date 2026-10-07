@@ -172,8 +172,10 @@ describe("the attacks (D-231, D-232)", () => {
     });
 
     it("says where they come from while there are none, and validate reports words after a number another formula reads", async () => {
+        // Without the abilities, not even the unarmed strike has a value.
+        await ok("write", "Nuova", "--type", "character", "--set", "role=companion", "--set", "classes=[[Ranger]] 1");
+        expect(await ok("show", "Nuova#Attacks")).toContain("Nuova has nothing in Attacks yet: the pages of the items in its equipped give it, as attack and damage-roll.");
         await character("Mira", "classes=[[Ranger]] 1");
-        expect(await ok("show", "Mira#Attacks")).toContain("Mira has nothing in Attacks yet: the pages of the items in its equipped give it, as attack and damage-roll.");
         await ok("write", "Strana", "--type", "item", "--set", "item=[[Leather Armor]]", "--set", "armor-class=12 + Dex modifier");
         await ok("move", "Strana", "--to", "Mira");
         await ok("write", "Mira", "--set", "equipped=[[Strana]]");
@@ -182,6 +184,80 @@ describe("the attacks (D-231, D-232)", () => {
         );
         await ok("write", "Strana", "--set", "armor-class=12 + dex-mod + bonus");
         expect(await ok("validate")).toBe("No problems.");
+    });
+});
+
+describe("the unarmed strike and the Martial Arts die (D-235)", () => {
+    it("gives every character with a sheet an unarmed strike, 1 + Strength, proficient, after the weapons equipped (p. 92)", async () => {
+        await character("Gara", "classes=[[Fighter]] 1", "weapon-proficiencies=[martial weapons]");
+        expect(await ok("show", "Gara")).toContain("Attacks: Unarmed Strike +5, 4 bludgeoning\n");
+        expect(await ok("show", "Gara#Attacks")).toContain("Unarmed Strike: attack +5: str-mod +3, proficiency +2; damage-roll 4 bludgeoning: str-mod +3");
+        await carry("Gara", { Spada: "Longsword" }, ["Spada"]);
+        expect(await ok("show", "Gara")).toContain("Attacks: Spada +5, 1d8+3 slashing · Unarmed Strike +5, 4 bludgeoning\n");
+        // It is in no list as written: the sheet shows only what the character carries in equipped.
+        expect(await ok("show", "Gara")).toContain("equipped Spada ·");
+        await character("Rana", "classes=[[Wizard]] 1", "str=8");
+        expect(await ok("show", "Rana")).toContain("Attacks: Unarmed Strike +1, 0 bludgeoning\n");
+    });
+
+    it("lets a monk roll the Martial Arts die with Dexterity in its place, and a monk weapon too when the die is larger (p. 26)", async () => {
+        await character("Kai", "classes=[[Monk]] 1", "str=12", "dex=18", "weapon-proficiencies=[simple weapons, shortswords]");
+        await carry("Kai", { Pugnale: "Dagger", Bastone: "Quarterstaff", Lama: "Shortsword" }, ["Pugnale", "Bastone", "Lama"]);
+        expect(await ok("show", "Kai")).toContain("Attacks: Pugnale +6, 1d4+4 piercing · Bastone +6, 1d6+4 bludgeoning · Lama +6, 1d6+4 piercing · Unarmed Strike +6, 1d4+4 bludgeoning\n");
+        expect(await ok("show", "Kai#Attacks")).toContain("Unarmed Strike: attack +6: dex-mod +4, Martial Arts in features, proficiency +2; damage-roll 1d4+4 bludgeoning: martial-arts 1d4, dex-mod +4, Martial Arts in features");
+        await ok("write", "Kai", "--set", "classes=[[Monk]] 5");
+        expect(await ok("show", "Kai")).toContain("Attacks: Pugnale +7, 1d6+4 piercing · Bastone +7, 1d6+4 bludgeoning · Lama +7, 1d6+4 piercing · Unarmed Strike +7, 1d6+4 bludgeoning\n");
+        expect(await ok("show", "Kai#Attacks")).toContain("Pugnale: attack +7: dex-mod +4, proficiency +3, simple weapons in weapon-proficiencies; damage-roll 1d6+4 piercing: martial-arts 1d6, dex-mod +4");
+        await ok("write", "Kai", "--set", "classes=[[Monk]] 11");
+        expect(await ok("show", "Kai")).toContain("Bastone +8, 1d8+4 bludgeoning");
+        // Who is no monk keeps the weapon's die.
+        await character("Gara", "classes=[[Fighter]] 5", "weapon-proficiencies=[simple weapons, martial weapons]");
+        await carry("Gara", { Daga: "Dagger" }, ["Daga"]);
+        expect(await ok("show", "Gara")).toContain("Attacks: Daga +6, 1d4+3 piercing · Unarmed Strike +6, 4 bludgeoning\n");
+    });
+
+    it("leaves creatures and characters without a sheet as their stat block gives them", async () => {
+        expect(await ok("show", "Wolf")).not.toContain("Unarmed Strike");
+        await ok("write", "Sergente", "--type", "character", "--set", "role=npc", "--set", "creature=[[Guard]]", "--set", "level=3");
+        expect(await ok("show", "Sergente")).not.toContain("Unarmed Strike");
+        await ok("write", "Rivale", "--type", "character", "--set", "role=npc", "--set", "classes=[[Fighter]] 2", "--set", "str=14");
+        expect(await ok("show", "Rivale")).not.toContain("bludgeoning");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--creatures", "Wolf=1");
+        expect(await ok("show", "Wolf 1")).not.toContain("bludgeoning");
+    });
+
+    it("says the unarmed strike is in every sheet already, never a page to derive, and validate reports dice from a field no one has", async () => {
+        await character("Gara", "classes=[[Fighter]] 1");
+        const already = "Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet, worked out on each from their own fields: "
+            + "it is there already, and read-only. Nothing changed.";
+        expect(await refused("write", "Gara", "--add", "equipped=[[Unarmed Strike]]")).toBe(already);
+        expect(await refused("write", "Unarmed Strike", "--set", "bonus=1")).toBe(already);
+        expect(await refused("write", "Unarmed Strike", "--type", "item", "--set", "bonus=1")).toBe(already);
+        expect(await refused("effect", "add", "Unarmed Strike", "Furia", "--set", "bonus=1")).toBe(already);
+        // No effect goes on a page of the system: one changes what its formula reads on the character, and not the dice of a monk.
+        expect(await refused("effect", "add", "Gara", "Furia", "--set", "attack=7")).toBe(
+            "attack on Gara is worked out by the system 5e from str, dex, classes, subclasses, equipped: give the effect one of the fields it comes from instead, such as str. Nothing changed.",
+        );
+        expect(await refused("effect", "add", "Gara", "Furia", "--set", "damage-roll=5")).toContain("such as str. Nothing changed.");
+        const page = join(folder, "world", "characters", "Gara.md");
+        writeFileSync(page, readFileSync(page, "utf8").replace("---\n", '---\nequipped:\n  - "[[Unarmed Strike]]"\n'));
+        expect(await ok("validate")).toContain(
+            "Gara has Unarmed Strike in equipped: Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet, worked out on each from their own fields: "
+                + "it is there already, and read-only. Fix: write Gara, remove equipped=[[Unarmed Strike]]",
+        );
+        await ok("write", "Gara", "--remove", "equipped=[[Unarmed Strike]]");
+        await ok("write", "Mazza", "--type", "item", "--set", "item=[[Club]]", "--set", "damage-roll=dice(1d4, martail-arts) + str-mod + bonus bludgeoning");
+        await ok("move", "Mazza", "--to", "Gara");
+        await ok("write", "Gara", "--set", "equipped=[[Mazza]]");
+        // The other dice still count.
+        expect(await ok("show", "Gara")).toContain("Mazza +3, 1d4+3 bludgeoning");
+        expect(await ok("validate")).toContain("damage-roll on Mazza takes dice from martail-arts, which neither the system nor the character has: they never count for Gara.");
+    });
+
+    it("asks a roll from the attacks for the number of the one used", async () => {
+        await character("Gara", "classes=[[Fighter]] 1", "weapon-proficiencies=[martial weapons]");
+        await carry("Gara", { Spada: "Longsword" }, ["Spada"]);
+        expect(await refused("roll", "1d20+attack", "--who", "Gara")).toContain('attack on Gara is "Spada +5, Unarmed Strike +5", one for each item in its equipped: give the number of the one used, such as 1d20+5.');
     });
 });
 
@@ -216,7 +292,7 @@ describe("what a character has equipped (CON-12)", () => {
         expect(await ok("move", "Spada", "--to", "Zaino")).toBe("Nothing changed: Spada is already in Zaino.");
         await ok("write", "Bosco", "--type", "place");
         expect(await ok("move", "Zaino", "--to", "Bosco")).toBe("Moved Zaino: now in Bosco.\nGara has Spada equipped no more.");
-        expect(await ok("show", "Gara")).not.toContain("Attacks:");
+        expect(await ok("show", "Gara")).toContain("Attacks: Unarmed Strike +5, 4 bludgeoning\n");
     });
 
     it("tells the system's name of an item the campaign names in its own language", async () => {
