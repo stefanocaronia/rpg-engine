@@ -572,14 +572,15 @@ class FormulaReader
         if (listNames.includes(lower as ListName)) {
             const list = this.name("the name of a list");
 
-            if (lower === "sum" && this.take(",")) {
+            // sum(classes, hit-die = d10), count(classes, spellcasting = full): only the items whose page has that value (D-215, D-227).
+            if ((lower === "sum" || lower === "count") && this.take(",")) {
                 const [field, value, ...rest] = this.rawUntilClose().split("=").map((part) => part.trim());
 
                 if (field === undefined || field === "" || value === undefined || value === "" || rest.length > 0) {
                     this.fail("a field = value, such as hit-die = d10, then )");
                 }
 
-                return { kind: "list", name: "sum", list, where: { field, value } };
+                return { kind: "list", name: lower, list, where: { field, value } };
             }
 
             if (lower === "count" || lower === "sum") {

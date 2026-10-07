@@ -149,19 +149,24 @@ describe("the order of layers (FOR-3) and the bonus fields (FOR-5)", () => {
 
 describe("the limits of counters (FOR-6)", () => {
     it("keeps the written maximum with what the system works out, and says it", async () => {
-        expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp 24/27 (max 24 → 27: hp-base 18, level 3, con-mod +3): worked out by the system 5e.");
-        expect(pageText("Ettore")).toContain("hp: 24/27");
-        expect(await ok("change", "Ettore", "hp", "--by=10")).toBe("Ettore: hp 24/27 → 27/27: at max, 7 beyond.");
+        // What hp lost stays lost: the 3 more of the maximum come with it (D-228).
+        expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp 27/27 (max 24 → 27: hp-base 18, level 3, con-mod +3): worked out by the system 5e.");
+        expect(pageText("Ettore")).toContain("hp: 27/27");
         expect(await refused("change", "Ettore", "hp", "--to", "20/30")).toBe(
             "The maximum of hp on Ettore is worked out by the game system: 27, from hp-base 18, level 3, con-mod +3. Give the current value alone, such as to 20; to raise the maximum, write hp-base. Nothing changed.",
         );
         expect(await ok("change", "Ettore", "hp", "--to", "20/27")).toBe("Ettore: hp 27/27 → 20/27.");
+        expect(await ok("change", "Ettore", "hp", "--by=10")).toBe("Ettore: hp 20/27 → 27/27: at max, 3 beyond.");
+        await ok("write", "Ettore", "--set", "con=12");
+        expect(pageText("Ettore")).toContain("hp: 21/21");
     });
 
-    it("reads a current above a maximum that fell as the maximum, and keeps it written for an effect that raises it", async () => {
-        await ok("write", "Ettore", "--set", "con=12");
-        expect(pageText("Ettore")).toContain("hp: 24/21");
-        expect(await ok("status")).toContain("hp 21/21");
+    it("keeps a current above the written maximum while an effect allows it, and writes it as it reads when the effect ends (D-228)", async () => {
+        await ok("effect", "add", "Ettore", "Aid", "--set", "hp-base=23");
+        expect(await ok("change", "Ettore", "hp", "--by=5")).toBe("Ettore: hp 24/29 → 29/29: at max.");
+        expect(pageText("Ettore")).toContain("hp: 29/24");
+        await ok("effect", "end", "Ettore", "Aid");
+        expect(pageText("Ettore")).toContain("hp: 24/24");
     });
 
     it("works out the maximum of a counter the page writes without one", async () => {

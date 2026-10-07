@@ -21,7 +21,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | user guide, and the docs for developers and agents: `architecture.md`, `game-systems.md`, `glossary.md`, `commands.md` (generated) | yes | no |
 | `src/` | core, CLI, MCP server, dashboard | yes | built into `dist/` |
-| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/` | yes | yes, without their tests |
+| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/` | yes | yes, without their tests and scripts |
 | `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules): optional | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |

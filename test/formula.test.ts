@@ -148,6 +148,8 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(read(["[[Wizard]] 2"])).toBe(0);
         expect(read(undefined)).toBeUndefined();
         expect(() => parseFormula("sum(classes, hit-die)")).toThrow("a field = value, such as hit-die = d10, then )");
+        const count = parseFormula("count(classes, hit-die = d10)");
+        expect(workOut(count, { ...scope({ classes: ["[[Fighter]] 3", "[[Wizard]] 2", "[[Ranger]] 1"] }), page: (name) => pages[name] }).value).toBe(2);
     });
 
     it("names the place, a table that is not there, and fields that read each other in a circle", () => {

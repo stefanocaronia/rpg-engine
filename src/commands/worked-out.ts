@@ -1,6 +1,6 @@
 // What the game system works out from the fields of a page (D-199, FOR-3–FOR-8): its computed fields, each with the values it came from, and the limits of
 // its counters. The formulas are the system's data; this is where they meet the pages and the counters.
-import { contributingReads, fieldsRead, type Formula, type FormulaRead, type FormulaScope, numberOf, type SystemFormulas, type Table, type WorkedOut, workOut } from "../core/formula.ts";
+import { contributingReads, fieldsRead, type Formula, type FormulaRead, type FormulaScope, numberOf, parseFormula, type SystemFormulas, type Table, type WorkedOut, workOut } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
@@ -26,7 +26,7 @@ export function workedFields(world: World, fields: Record<string, unknown>, expl
         const worked = scope.computed(field);
         return worked?.value === undefined ? [] : [{ field, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
     });
-    return [...computed, ...progressionFields(world, scope.progression())];
+    return [...computed, ...progressionFields(world, scope, explained)];
 }
 
 /**
@@ -46,8 +46,8 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>, she
     const progression = scope.progression();
 
     // What the classes give, then what the formulas work out over it (PRO-2, FOR-3); a column named as a counter is that counter's maximum (DAT-9).
-    for (const { field } of progressionFields(world, progression)) {
-        result[keyOf(result, field) ?? field] = progressionValue(progression, field);
+    for (const worked of progressionFields(world, scope)) {
+        result[keyOf(result, worked.field) ?? worked.field] = progressionValue(progression, worked.field) ?? worked.value;
     }
 
     for (const [field] of formulas.computed) {
@@ -82,8 +82,10 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>, she
  */
 export function hasSheet(world: World, page: Page): boolean
 {
-    const list = world.system?.progression === undefined ? undefined : keyOf(page.fields, world.system.progression.list);
-    const levelled = !isEmptyField(page.fields.level) || (list !== undefined && !isEmptyField(page.fields[list]));
+    // A level or classes the page inherits count too, as a companion deriving from a creature with classes.
+    const fields = page.fields.role === "companion" ? inheritedFields(world, page) : page.fields;
+    const list = world.system?.progression === undefined ? undefined : keyOf(fields, world.system.progression.list);
+    const levelled = !isEmptyField(fields[keyOf(fields, "level") ?? "level"]) || (list !== undefined && !isEmptyField(fields[list]));
     const companion = page.fields.role === "companion" && (isEmptyField(page.fields.creature) || levelled);
     return page.type === "character" && (page.fields.role === "pc" || companion);
 }
@@ -128,11 +130,13 @@ export function formulaValue(world: World, fields: Record<string, unknown>, form
 }
 
 /**
- * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. A column named
- * as a counter of the system is not one: it is that counter's maximum (DAT-9).
+ * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features, then what the
+ * formulas their pages give work out, one value for each class (PRO-5). A column named as a counter of the system is not one: it is that counter's maximum (DAT-9).
  */
-function progressionFields(world: World, progression: Progression | undefined): WorkedField[]
+function progressionFields(world: World, scope: ReturnType<typeof formulaScope>, explained = false): WorkedField[]
 {
+    const progression = scope.progression();
+
     if (progression === undefined) {
         return [];
     }
@@ -147,13 +151,65 @@ function progressionFields(world: World, progression: Progression | undefined): 
         value: progression.features.map((feature) => feature.name).join(", "),
         reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
     }];
-    return [...values, ...features];
+    const each = (world.system?.progression?.formulas ?? []).flatMap((field) => {
+        const worked = scope.each(field, explained);
+        return worked === undefined ? [] : [worked];
+    });
+    return [...values, ...features, ...each];
 }
 
-/** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
-function progressedField(world: World, progression: Progression | undefined, field: string): { name: string; value: number | string; from: string[]; } | undefined
+/**
+ * A formula that each item of the list gives on its page, such as a class's spell-save-dc, worked out on the character for each item that gives one (PRO-5): a
+ * number for one, "Cleric 13, Wizard 12" for several. Undefined when none gives it.
+ */
+function eachItem(world: World, scope: ReturnType<typeof formulaScope>, field: string, explained: boolean): WorkedField | undefined
 {
-    const found = progressionFields(world, progression).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    const progression = scope.progression();
+    const items = (progression?.from ?? []).filter((item) => item.level !== undefined).flatMap((item) => {
+        const formula = itemFormula(scope.page(item.name), field);
+        const worked = formula === undefined ? undefined : workOut(formula, scope);
+        return formula === undefined || worked?.value === undefined ? [] : [{ name: item.name, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
+    });
+
+    if (items.length === 0) {
+        return undefined;
+    }
+
+    const [first] = items;
+    return items.length === 1
+        ? { field, value: first.value, reads: first.reads }
+        : { field, value: items.map((item) => `${item.name} ${signedText(world, field, item.value)}`).join(", "), reads: items.flatMap((item) => item.reads) };
+}
+
+/** The formula an item's page gives in a field, read once for each text; undefined when it gives none, or one that does not read, which validate reports (PRO-5). */
+function itemFormula(fields: Record<string, unknown> | undefined, field: string): Formula | undefined
+{
+    const text = fields === undefined ? undefined : fields[keyOf(fields, field) ?? ""];
+
+    if (typeof text !== "string" && typeof text !== "number") {
+        return undefined;
+    }
+
+    const key = String(text);
+
+    if (!itemFormulas.has(key)) {
+        try {
+            itemFormulas.set(key, parseFormula(key));
+        } catch {
+            itemFormulas.set(key, undefined);
+        }
+    }
+
+    return itemFormulas.get(key);
+}
+
+const itemFormulas = new Map<string, Formula | undefined>();
+
+/** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
+function progressedField(world: World, scope: ReturnType<typeof formulaScope>, field: string): { name: string; value: number | string; from: string[]; } | undefined
+{
+    const progression = scope.progression();
+    const found = progressionFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
     return found === undefined || progression === undefined ? undefined : { name: found.field, value: found.value, from: progression.lists };
 }
 
@@ -190,7 +246,7 @@ export function computedField(world: World, field: string, fields: Record<string
     const value = entry === undefined ? undefined : scope.computed(entry[0])?.value;
 
     if (entry === undefined || value === undefined) {
-        return progressedField(world, scope.progression(), field);
+        return progressedField(world, scope, field);
     }
 
     // Of several formulas, the one that gave the value says what it comes from (D-210).
@@ -218,7 +274,8 @@ export function maximumHint(world: World, fields: Record<string, unknown>, field
     }
 
     const parts = workedParts(world, worked.reads);
-    const [raise] = maximumSources(world, field, fields).filter((name) => declaredKind(world, name) !== "list");
+    // A maximum of 0 says the character lacks what gives it: no field raises it.
+    const [raise] = worked.value === 0 ? [] : maximumSources(world, field, fields).filter((name) => declaredKind(world, name) !== "list");
     return { made: `${worked.value}${parts === "" ? "" : `, from ${parts}`}`, ...(raise === undefined ? {} : { raise }) };
 }
 
@@ -234,7 +291,7 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
         const entry = index?.computed.get(comparableText(name));
 
         // What the classes give comes from the lists that name them (PRO-3).
-        if (entry === undefined && progressedField(world, scope.progression(), name) !== undefined) {
+        if (entry === undefined && progressedField(world, scope, name) !== undefined) {
             return scope.progression()?.lists ?? [name];
         }
 
@@ -348,10 +405,10 @@ export function workedOutProblems(world: World): Problem[]
     const problems = world.pages.filter((page) => Object.keys(page.fields).some(relevant)).flatMap((page) => {
         const fields = inheritedFields(world, page);
         const scope = formulaScope(world, fields);
-        const progressed = new Set(progressionFields(world, scope.progression()).map((worked) => comparableText(worked.field)));
+        const progressed = new Set(progressionFields(world, scope).map((worked) => comparableText(worked.field)));
         // Only the fields the page writes are worked out: a page holds few of them.
         const written = Object.keys(page.fields).filter((key) => computedNames.has(comparableText(key)) || progressed.has(comparableText(key))).flatMap((key): Problem[] => {
-            const value = scope.computed(key)?.value ?? progressedField(world, scope.progression(), key)?.value;
+            const value = scope.computed(key)?.value ?? progressedField(world, scope, key)?.value;
             return value === undefined ? [] : [{
                 path: page.path,
                 message: `${key} is worked out by the system ${world.system?.name ?? ""} (${signedText(world, key, value)}): the value written on ${page.name} is never read.`,
@@ -376,7 +433,10 @@ export function workedOutProblems(world: World): Problem[]
 const checkedWorlds = new WeakMap<World, Problem[]>();
 
 /** The scope a formula reads on these fields: computed fields by their formulas, each worked out once; a bonus field the page lacks as 0 (FOR-4, FOR-5). */
-function formulaScope(world: World, fields: Record<string, unknown>): FormulaScope & { computed(name: string): WorkedOut | undefined; progression(): Progression | undefined; }
+function formulaScope(
+    world: World,
+    fields: Record<string, unknown>,
+): FormulaScope & { computed(name: string): WorkedOut | undefined; progression(): Progression | undefined; each(field: string, explained: boolean): WorkedField | undefined; page(name: string): Record<string, unknown> | undefined; }
 {
     const formulas = world.system?.formulas;
     const index = formulas === undefined ? undefined : formulaIndex(formulas);
@@ -405,12 +465,36 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
         return worked;
     };
 
+    // A formula of the classes' pages, worked out once; one that reads itself, round and round, has no value (PRO-5).
+    const eachDone = new Map<string, WorkedField | undefined>();
+    const working = new Set<string>();
+
+    const each = (field: string, explained: boolean): WorkedField | undefined => {
+        const key = `${comparableText(field)}|${explained}`;
+
+        if (eachDone.has(key) || working.has(comparableText(field))) {
+            return eachDone.get(key);
+        }
+
+        working.add(comparableText(field));
+        const worked = eachItem(world, full, field, explained);
+        working.delete(comparableText(field));
+        eachDone.set(key, worked);
+        return worked;
+    };
+
     const scope: FormulaScope = {
         field: (name) => {
             const worked = computed(name);
 
             if (worked?.value !== undefined) {
                 return worked.value;
+            }
+
+            // A formula of the classes' pages counts in another only as one number, for one class.
+            if ((world.system?.progression?.formulas ?? []).some((field) => comparableText(field) === comparableText(name))) {
+                const value = each(name, false)?.value;
+                return typeof value === "number" ? value : undefined;
             }
 
             const given = isSystemCounter(world, name) ? undefined : progressionValue(progression(), name);
@@ -431,7 +515,8 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
             return page === undefined ? undefined : inheritedFields(world, page);
         },
     };
-    return { ...scope, computed, progression };
+    const full = { ...scope, computed, progression, each, page: (name: string) => scope.page?.(name) };
+    return full;
 }
 
 /** A system's computed fields and tables by the name as it is compared, built once for each system: a formula reads many names (D-194). */

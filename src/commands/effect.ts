@@ -352,7 +352,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     }
 
     if (computed !== undefined && computed.from.length === 0) {
-        throw new Error(`${computed.name} on ${page.name} is ${String(computed.value)} for everyone, as the system ${world.system?.name ?? ""} gives it: an effect cannot change it. Nothing changed.`);
+        throw new Error(`${computed.name} on ${page.name} is ${String(computed.value)} for everyone, a fixed value of the game data (system ${world.system?.name ?? ""} or campaign.yaml): an effect cannot change it. Nothing changed.`);
     }
 
     if (computed !== undefined) {
@@ -392,7 +392,13 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     const given = readCounter(value)?.value;
 
     if (above !== undefined && given !== undefined && given > above) {
-        const from = maximumSources(world, field, fields);
+        // An effect gives no list, such as the classes (PRO-2).
+        const from = maximumSources(world, field, fields).filter((name) => declaredKind(world, name) !== "list");
+
+        if (from.length === 0) {
+            throw new Error(`${field}=${given} on ${page.name} is above its maximum, ${above}, which the system ${world.system?.name ?? ""} works out from what the character's lists give: an effect cannot raise it. Nothing changed.`);
+        }
+
         throw new Error(
             `${field}=${given} on ${page.name} is above its maximum, ${above}, which the system ${world.system?.name ?? ""} works out from ${
                 from.join(", ")

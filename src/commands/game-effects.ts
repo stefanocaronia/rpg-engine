@@ -3,11 +3,12 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
+import { formatCounter, readCounter } from "../counters/index.ts";
 import { type Effect, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
 import { concernsPlayer, isDeclaredUncounted, isEmptyField, type Page, systemFirstFix, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
-import { effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
+import { effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
 import { copyPage, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { shortList } from "./notes.ts";
@@ -19,7 +20,10 @@ export interface EffectHolder
     copy: boolean;
 }
 
-/** Writes a holder's effects; the field goes when none is left. Returns the page as written, or undefined for a copy. */
+/**
+ * Writes a holder's effects; the field goes when none is left. A current that the page's maximum, as these effects leave it, no longer allows is written as it
+ * reads, as when Aid ends (FOR-6). Returns the page as written, or undefined for a copy.
+ */
 export function saveEffects(root: string, world: World, holder: EffectHolder, effects: Effect[]): Page | undefined
 {
     const lines = effects.length === 0 ? undefined : effects.map(formatEffect);
@@ -29,7 +33,21 @@ export function saveEffects(root: string, world: World, holder: EffectHolder, ef
         return undefined;
     }
 
-    return writePage(world, holder.page.name, undefined, lines === undefined ? { unset: ["effects"] } : { set: { effects: lines } }).page;
+    const set = { ...currentsAsRead(world, holder.page, effects), ...(lines === undefined ? {} : { effects: lines }) };
+    return writePage(world, holder.page.name, undefined, lines === undefined ? { set, unset: ["effects"] } : { set }).page;
+}
+
+/** The counters a page writes above the maximum it reads with these effects, at that maximum, with their written maximum (FOR-6). */
+function currentsAsRead(world: World, page: Page, effects: Effect[]): Record<string, string>
+{
+    const read = effectiveFields(world, withEffects(page, effects));
+    return Object.fromEntries(
+        Object.entries(page.fields).flatMap(([field, value]): [string, string][] => {
+            const written = readCounter(value);
+            const now = isDeclaredUncounted(world, field) ? undefined : readCounter(read[field]);
+            return written?.max === undefined || now?.max === undefined || written.value <= now.max ? [] : [[field, String(formatCounter({ value: now.max, max: written.max }))]];
+        }),
+    );
 }
 
 /** An effects field that does not read is never written over: what was written by hand would be lost (EFF-12). */

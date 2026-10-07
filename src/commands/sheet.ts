@@ -40,7 +40,8 @@ export function sheetSummary(system: GameSystem): SheetSummary | undefined
     return {
         system: system.name,
         written: remindedFields(system),
-        whenTheyApply: [...entries.filter((entry) => entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field))), ...lineOnly],
+        // A use is written full by the engine (DAT-9): no one writes it by hand.
+        whenTheyApply: [...entries.filter((entry) => entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field) && !isSystemUse(system, field))), ...lineOnly],
         workedOut,
         // "save-proficiencies (str, dex, con…)": a few names whole, many by the first two, as the system writes them.
         lists: Object.entries(system.values).filter(([field]) => onSheet.has(comparableText(field))).map(([field, names]) => `${field} (${names.length <= 6 ? names.join(", ") : `such as ${names.slice(0, 2).join(", ")}`})`),
@@ -204,10 +205,18 @@ function remindedFields(system: GameSystem): string[]
     return system.sheet.flatMap((group) => group.entries).filter((entry) => !entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field)));
 }
 
+/** Whether the system gives a field as a use with its limits, which write puts on a character full when it has it (DAT-9), as hit dice and spell slots. */
+function isSystemUse(system: GameSystem, field: string): boolean
+{
+    const counted = Object.keys(system.formulas.counters).some((name) => comparableText(name) === comparableText(field));
+    return counted && system.uses.some((name) => name.endsWith("*") ? comparableText(field).startsWith(comparableText(name.slice(0, -1))) : comparableText(name) === comparableText(field));
+}
+
 function isWorkedOut(system: GameSystem, field: string): boolean
 {
-    const features = system.progression === undefined ? undefined : fieldName(system.progression.features);
-    return system.formulas.computed.some(([name]) => comparableText(name) === comparableText(field)) || (features !== undefined && comparableText(features) === comparableText(field));
+    const progression = system.progression;
+    const given = progression === undefined ? [] : [fieldName(progression.features), ...(progression.formulas ?? [])];
+    return [...system.formulas.computed.map(([name]) => name), ...given].some((name) => comparableText(name) === comparableText(field));
 }
 
 /**

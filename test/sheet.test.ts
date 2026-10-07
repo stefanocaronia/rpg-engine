@@ -89,6 +89,8 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
+            // A cleric's spellcasting, worked out from the cleric's page and the slots of its level (D-227).
+            "Spells: caster-level 3 · spell-save-dc 13 · spell-attack +5 · slots-1 4/4 · slots-2 2/2 · max-prepared 6",
             "show Ettore#Spellcasting gives the text of a feature.",
             "",
             "---\nrole: pc\numore: sereno\n---",
@@ -126,7 +128,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
-            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features.',
+            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Spells.',
         );
     });
 
@@ -236,7 +238,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
         expect(subtraction).toMatch(
-            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, cantrips-known 3\. Give one of them, or the number, such as 1d20\+5\./,
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6\. Give one of them, or the number, such as 1d20\+5\./,
         );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");
@@ -275,7 +277,7 @@ describe("what the review of 7 October put right", () => {
     });
 
     it("follows the 5e: hit points at every level, a hit die for each level, expertise only where proficient, inspiration up to 1", async () => {
-        expect(await ok("write", "Ettore", "--set", "hp-per-level=1")).toContain("hp 20/27 (max 24 → 27: hp-base 18, level 3, con-mod +2, hp-per-level +1): worked out by the system 5e.");
+        expect(await ok("write", "Ettore", "--set", "hp-per-level=1")).toContain("hp 23/27 (max 24 → 27: hp-base 18, level 3, con-mod +2, hp-per-level +1): worked out by the system 5e.");
         expect(await ok("write", "Ettore", "--set", "classes=[[Cleric]] 4")).toContain("(max 3 → 4: 4 in classes)");
         await ok("write", "Ettore", "--add", "expertise=Stealth", "--add", "expertise=Insight");
         const shown = await ok("show", "Ettore");

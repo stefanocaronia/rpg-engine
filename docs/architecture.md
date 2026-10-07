@@ -89,6 +89,7 @@ A command is a `Command` object made with `defineCommand` in [core/registry.ts](
 - `text`, `exists`, `files(folder, keep)` read a file or a listing once per store.
 - `read(path, kind, parse)` keeps what a file reads as, by kind (`page <root>`, `yaml ...`, `log`, `rules ...`), deep-frozen with [core/frozen.ts](../src/core/frozen.ts): nothing read from files may be changed in place; copy it first.
 - `remember(key, dependsOn, build)` keeps a value built from many files until one it depends on changes. [commands/game-world.ts](../src/commands/game-world.ts) `campaignWorld` uses it for the `World`.
+- A store made with the systems' folders, as every call's is, keeps their files for the whole process while each has the same size and time of change: many calls in one process, as in the tests, read a system's pages once.
 - `fresh(path)` is read right before a write (the call's text in a plain store, the disk's in a session); `write`, `append`, `remove` update what is kept, the listings and the remembered values.
 
 Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Page` (name, path and holder indexes in [pages/world.ts](../src/pages/world.ts), `checkWorld`, `effectiveFields`, `workedOutProblems`): a world never changes, a write produces a new one with `withPage`.
@@ -147,6 +148,7 @@ systems/<name>/world/        pages, as in a campaign (creatures/, items/, topics
 systems/<name>/rules/        chapters of rules text, one markdown file each
 systems/<name>/LICENSE.md    the license and attribution
 systems/<name>/test/         the system's own tests (not published to npm)
+systems/<name>/build/        scripts that wrote some of its pages from its source, such as 5e's spells (not published)
 ```
 
 [systems/game-system.ts](../src/systems/game-system.ts) finds systems in `context.systemFolders` (a folder with a `system.yaml`), validates the file with zod and returns a frozen `GameSystem`; formulas that do not read make the whole system unreadable (`FOR-9`). `campaign.yaml`'s `system` names the one a campaign uses; `campaignWorld` loads its pages beside the campaign's, each marked with `page.system`.
@@ -228,7 +230,7 @@ A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the s
 
 Files: [progression/](../src/progression/), [core/progression-rule.ts](../src/core/progression-rule.ts), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [systems/game-system.ts](../src/systems/game-system.ts), [commands/config.ts](../src/commands/config.ts). Codes: `PRO-1`–`PRO-4`, `DAT-9`, `CAM-1`–`CAM-3`, `KEP-1`–`KEP-4`.
 
-- The `progression` module reads a page's table of levels and knows no game; `progressionOf` joins it to a character's lists as the system's `progression` says: the row's fields, the features each with the pages that tell it, and every feature as a row or part gives it (`gains`), from which `write` tells what a new level adds.
+- The `progression` module reads a page's table of levels and knows no game; `progressionOf` joins it to a character's lists as the system's `progression` says: the row's fields, the features each with the pages that tell it, and every feature as a row or part gives it (`gains`), from which `write` tells what a new level adds. The formulas the items' pages give (`formulas`, `PRO-5`) are worked out in `worked-out.ts` (`eachItem`), one value for each class.
 - Uses are counters with a `refill` or named by a recipe (`isUse`); `withWorkedOut` reads them full on who keeps the sheet, `write` writes them and takes off those that only the lists give when their maximum falls to 0. `change` with a recipe brings them back by occasion (`refillAmount`, `recipeTargets`) and leaves a choice to the player, or to the master for a companion.
 - What `campaign.yaml` adds is merged over `system.yaml` before it is validated (`findCampaignSystem`): the system with the additions, or the system alone and why. The reader refuses unknown keys, a refill no recipe ends and a recipe that sets kept rolls, each at its place on one line.
 - `roll` with `keep` writes the dice in a field of kind `rolls`, with `use` takes one in place of the die; the page is written before the log line.

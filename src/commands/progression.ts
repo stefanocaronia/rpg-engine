@@ -1,6 +1,6 @@
 // What the classes of a character give (D-201, D-219, PRO-1–PRO-4): the row of each class's table at its level, and the features gained so far, with those its
 // subclasses add. The tables are the pages' own; this is where the system's progression meets the pages of a world.
-import { listItems } from "../core/formula.ts";
+import { listItems, parseFormula } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { type Page, pagesWithName, sectionTitles, systemPageNamed, type World } from "../pages/index.ts";
@@ -142,7 +142,29 @@ export function progressionProblems(world: World, page: Page, fields: Record<str
             : undefined;
         return message === undefined ? [] : [{ path: page.path, message, fix: table === undefined ? `write ${entry.page.name} with its table of levels, as the system's do` : `check the level of ${entry.page.name} in ${rule.list}` }];
     });
-    return [...unread, ...rows, ...partProblems(world, page, fields, rule, entries)];
+    return [...unread, ...rows, ...formulaProblems(page, rule, entries), ...partProblems(world, page, fields, rule, entries)];
+}
+
+/** A formula an item's page gives that does not read, so that the character has no value from it (PRO-5). */
+function formulaProblems(page: Page, rule: NonNullable<NonNullable<World["system"]>["progression"]>, entries: { page: Page; }[]): Problem[]
+{
+    return entries.flatMap((entry) =>
+        (rule.formulas ?? []).flatMap((field): Problem[] => {
+            const text = readField(entry.page.fields, field);
+
+            if (text === undefined || text === null) {
+                return [];
+            }
+
+            try {
+                parseFormula(String(text));
+                return [];
+            } catch (error) {
+                const why = error instanceof Error ? error.message : String(error);
+                return [{ path: page.path, message: `${field} on ${entry.page.name} does not read, so ${page.name} has none from it: ${why}`, fix: `write ${entry.page.name}, set ${field} as a formula` }];
+            }
+        })
+    );
 }
 
 /** The name of a page of the system that an item of the list may link to, for an example: the first one that has a table of levels. */

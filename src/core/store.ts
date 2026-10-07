@@ -1,7 +1,7 @@
 // The files as a command sees them (D-137, D-194): each read at most once in a call, kept as its text and as what it reads as, frozen; what the command writes
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
@@ -13,12 +13,25 @@ interface Kept
     readings: Map<string, { value: unknown; } | { error: unknown; }>;
 }
 
+/**
+ * The files of the installed game systems, kept for the whole process while each stays as it was, by its size and time of change: a process that runs many
+ * calls, as the tests do, reads and parses a system's pages once (D-194). Only a store given the systems' folders uses them.
+ */
+const packageFiles = new Map<string, { stamp: string; entry: Kept; }>();
+
 /** The files of a call, read once and kept: a module asks for them through files(). */
 export class FileStore
 {
     protected readonly kept = new Map<string, Kept>();
+    private readonly packages: string[];
     protected readonly listings = new Map<string, string[]>();
     private readonly remembered = new Map<string, { value: unknown; dependsOn: (path: string) => boolean; }>();
+
+    /** `packages` are the folders of the installed game systems, whose files the process keeps from one call to the next while they do not change. */
+    constructor(packages: string[] = [])
+    {
+        this.packages = packages.map((folder) => resolve(folder));
+    }
 
     /** The text of a file; undefined when there is none. */
     text(path: string): string | undefined
@@ -147,9 +160,32 @@ export class FileStore
         let entry = this.kept.get(key);
 
         if (entry === undefined) {
-            entry = { text: readText(key), readings: new Map() };
+            entry = this.packageEntry(key) ?? { text: readText(key), readings: new Map() };
             this.kept.set(key, entry);
             this.onKept(key);
+        }
+
+        return entry;
+    }
+
+    /** A file of an installed game system as the process last read it, while it has the same size and time of change; undefined for any other file. */
+    private packageEntry(path: string): Kept | undefined
+    {
+        if (!this.packages.some((folder) => isInside(folder, path))) {
+            return undefined;
+        }
+
+        const stamp = stampOf(path);
+        const known = packageFiles.get(path);
+
+        if (known !== undefined && stamp !== undefined && known.stamp === stamp) {
+            return known.entry;
+        }
+
+        const entry: Kept = { text: readText(path), readings: new Map() };
+
+        if (stamp !== undefined) {
+            packageFiles.set(path, { stamp, entry });
         }
 
         return entry;
@@ -214,6 +250,13 @@ export function isInside(folder: string, path: string): boolean
 {
     const below = relative(folder, path);
     return below !== "" && below !== ".." && !below.startsWith(`..${sep}`) && !isAbsolute(below);
+}
+
+/** "1234:5678.9": a file's size and time of change, which change when it is written; undefined when there is no file. */
+function stampOf(path: string): string | undefined
+{
+    const stats = statSync(path, { throwIfNoEntry: false });
+    return stats === undefined ? undefined : `${stats.size}:${stats.mtimeMs}`;
 }
 
 /** The text of a file, or undefined when there is none: a folder or a file that cannot be read fails as before. */

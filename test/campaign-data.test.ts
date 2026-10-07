@@ -105,6 +105,23 @@ describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
         const lena = await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "creature=[[Human]]", "--set", "classes=[[Fighter]] 3");
         expect(lena).toContain("luck-points 3/3");
         expect(await ok("show", "Lena#Features")).toContain("features Fighting Style, Second Wind, Action Surge (one use), Martial Archetype: Fighter 3 in classes");
+        // The classes a companion inherits from its creature count too.
+        await ok("write", "Soldato", "--type", "creature", "--set", "creature=[[Human]]", "--set", "classes=[[Fighter]] 2");
+        expect(await ok("write", "Pia", "--type", "character", "--set", "role=companion", "--set", "creature=[[Soldato]]")).toContain("action-surge 1/1");
+    });
+
+    it("takes nothing off the pages while what campaign.yaml adds does not read (CAM-3)", async () => {
+        await ok("config", "counters", 'luck-points: {max: "3 * has(features, Second Wind)", refill: long rest}');
+        await fighter("Gara", "classes=[[Fighter]] 1");
+        await ok("change", "Gara", "luck-points", "--by=-1");
+        writeFileSync(
+            join(folder, "campaign.yaml"),
+            `${campaignFile()}computed:
+  level: "sum(classes) +"
+`,
+        );
+        await ok("write", "Gara", "--set", "xp=6");
+        expect(readFileSync(join(folder, "world", "characters", "Gara.md"), "utf8")).toContain("luck-points: 2/3");
     });
 
     it("says what an entry given in place of one of the system's leaves out (CAM-2), and lists only the additions the campaign makes", async () => {
@@ -131,7 +148,9 @@ describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
     it("refuses an effect on a value the system gives everyone, and a current above the maximum it works out (FOR-6, FOR-7)", async () => {
         await ok("config", "computed", "speed: 30");
         await fighter("Gara", "classes=[[Fighter]] 1");
-        expect(await refused("effect", "add", "Gara", "Haste", "--for", "1m", "--set", "speed=60")).toBe("speed on Gara is 30 for everyone, as the system 5e gives it: an effect cannot change it. Nothing changed.");
+        expect(await refused("effect", "add", "Gara", "Haste", "--for", "1m", "--set", "speed=60")).toBe(
+            "speed on Gara is 30 for everyone, a fixed value of the game data (system 5e or campaign.yaml): an effect cannot change it. Nothing changed.",
+        );
         expect(await refused("effect", "add", "Gara", "Aid", "--for", "8h", "--set", "hp=50")).toContain("hp=50 on Gara is above its maximum, 42, which the system 5e works out from");
     });
 });

@@ -71,7 +71,7 @@ import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
@@ -229,7 +229,9 @@ export const write = defineCommand({
         }
 
         // The maximum of a counter follows what the game system works out from the page as it is now (FOR-6).
-        const limits = changed ? workedLimitsChange(world, existing, withPage(world, existing, written.page), written.page) : { set: {}, unset: [], notes: [] };
+        // While what campaign.yaml adds does not read, the maxima are not judged by the system alone (CAM-3).
+        const additionsRead = systemProblems(root, context).length === 0;
+        const limits = changed && additionsRead ? workedLimitsChange(system, world, existing, withPage(world, existing, written.page), written.page) : { set: {}, unset: [], notes: [] };
         const worked = Object.keys(limits.set).length > 0 || limits.unset.length > 0;
         const page = worked ? writePage(withPage(world, existing, written.page), written.page.name, undefined, { set: limits.set, unset: limits.unset }).page : written.page;
 
@@ -1054,7 +1056,7 @@ function writtenThresholdNotes(root: string, system: GameSystem | undefined, bef
  * The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). A use
  * that only the lists give and that the page no longer has, with a maximum of 0 or none where it had one, is taken off (DAT-9).
  */
-function workedLimitsChange(before: World, existing: Page | undefined, world: World, page: Page): { set: Record<string, unknown>; unset: string[]; notes: string[]; }
+function workedLimitsChange(system: GameSystem | undefined, before: World, existing: Page | undefined, world: World, page: Page): { set: Record<string, unknown>; unset: string[]; notes: string[]; }
 {
     const fields = inheritedFields(world, page);
     const old = existing === undefined ? undefined : inheritedFields(before, existing);
@@ -1064,14 +1066,26 @@ function workedLimitsChange(before: World, existing: Page | undefined, world: Wo
         const { max } = counterLimits(world, fields, field);
         const had = old === undefined || max !== undefined ? undefined : counterLimits(before, old, field).max;
         const limit = max ?? (had === undefined ? undefined : 0);
-        // A current above the maximum stays written, for an effect that raises it, and reads as the maximum (FOR-6).
-        return key === undefined || counter === undefined || limit === undefined || counter.max === limit
-            ? []
-            : [{ key, before: counter.max, value: formatCounter({ value: counter.value, max: limit }), reads: formatCounter({ value: Math.min(counter.value, limit), max: limit }), max: limit }];
+
+        if (key === undefined || counter === undefined || limit === undefined || counter.max === limit) {
+            return [];
+        }
+
+        // Of a use, what was spent stays spent, as a table counts it: a maximum that grows by 3 gives 3 more (FOR-6, D-228). Any other counter keeps its current.
+        const value = counter.max === undefined || !isUse(world, key) ? counter.value : Math.max(0, counter.value + limit - counter.max);
+        return [{ key, before: counter.max, value: formatCounter({ value, max: limit }), reads: formatCounter({ value: Math.min(value, limit), max: limit }), max: limit, lost: max === undefined }];
     });
-    // Only a use that the lists alone give, such as rages from the classes: hp, from hp-base, stays at any maximum.
-    const givenByLists = (field: string): boolean => maximumSources(world, field, fields).every((name) => declaredKind(world, name) === "list");
-    const gone = changes.filter((change) => change.max <= 0 && isUse(world, change.key) && givenByLists(change.key));
+    // Only a use that the lists give, such as rages from the classes, never one the sheet asks to write, as hp: it stays at any maximum.
+    const asked = new Set((system?.sheet ?? []).flatMap((group) => group.entries.filter((entry) => !entry.optional).map((entry) => comparableText(entry.field))));
+
+    // A maximum from a class's row, with no formula, has no sources: the lists give it.
+    const givenByLists = (field: string): boolean => {
+        const sources = maximumSources(world, field, fields);
+        return !asked.has(comparableText(field)) && (sources.length === 0 || sources.some((name) => declaredKind(world, name) === "list"));
+    };
+
+    // A use whose maximum has no value now, where it had one, as the slots of a caster who is one no more, is no longer the character's either.
+    const gone = changes.filter((change) => change.max <= 0 && isUse(world, change.key) && !asked.has(comparableText(change.key)) && (change.lost || givenByLists(change.key)));
     const kept = changes.filter((change) => !gone.includes(change));
     // "hp 10/17 (max 10 → 17: hp-base 10, level 2, con-mod +2)": what the maximum comes from, so that a written maximum is not taken for the dice.
     const said = kept.map((change) => {
@@ -1080,11 +1094,11 @@ function workedLimitsChange(before: World, existing: Page | undefined, world: Wo
     });
     // A use the page gets, such as a new level's channel-divinity, is written full on who keeps the sheet (DAT-9, D-225).
     const added = hasSheet(world, page) ? missingUses(world, fields).map((use) => ({ key: use.field, value: formatCounter({ value: use.max, max: use.max }) })) : [];
-    const system = world.system?.name ?? "";
+    const name = world.system?.name ?? "";
     const notes = [
-        said.length === 0 ? "" : `${said.join(", ")}: worked out by the system ${system}.`,
-        added.length === 0 ? "" : `${page.name} has ${added.map((use) => `${use.key} ${use.value}`).join(", ")}, full: uses of the system ${system} that come back with a rest.`,
-        gone.length === 0 ? "" : `${page.name} no longer has ${gone.map((change) => change.key).join(", ")}: the system ${system} gives no uses of ${gone.length === 1 ? "it" : "them"} now.`,
+        said.length === 0 ? "" : `${said.join(", ")}: worked out by the system ${name}.`,
+        added.length === 0 ? "" : `${page.name} has ${added.map((use) => `${use.key} ${use.value}`).join(", ")}, full: uses of the system ${name} that come back with a rest.`,
+        gone.length === 0 ? "" : `${page.name} no longer has ${gone.map((change) => change.key).join(", ")}: the system ${name} gives no uses of ${gone.length === 1 ? "it" : "them"} now.`,
     ];
     return {
         set: Object.fromEntries([...kept, ...added].map((change) => [change.key, change.value])),

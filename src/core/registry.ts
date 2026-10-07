@@ -27,5 +27,5 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
 export function defineCommand<Schema extends z.ZodObject, Result>(command: Command<Schema, Result>): Command<Schema, Result>
 {
     // Each call reads and writes through a store of its own, which reads each file once, or through the session's that the MCP server keeps (D-137).
-    return { ...command, run: (input, context) => withFiles(context.files ?? new FileStore(), () => command.run(input, context)) };
+    return { ...command, run: (input, context) => withFiles(context.files ?? new FileStore(context.systemFolders), () => command.run(input, context)) };
 }

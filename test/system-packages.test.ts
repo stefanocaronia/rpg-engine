@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { parseFormula } from "../src/core/formula.ts";
 import { comparableText } from "../src/core/text.ts";
 import { coinsProblem, readCoins } from "../src/money/index.ts";
 import { checkWorld, isStandardField, loadWorld } from "../src/pages/index.ts";
@@ -74,13 +75,20 @@ describe("the installed game systems", () => {
                     number: (value) => typeof value === "number",
                     modifier: (value) => typeof value === "number",
                     bonus: (value) => typeof value === "number",
-                    text: (value) => typeof value === "string",
+                    // Text, or true and false, which write reads as such: a spell's ritual.
+                    text: (value) => typeof value === "string" || typeof value === "boolean",
                     list: (value) => Array.isArray(value),
                     counter: (value) => typeof value === "number" || (typeof value === "string" && /^\d+\/\d+$/.test(value)),
                 };
                 const kinds = new Map(Object.entries(system.fields).map(([field, kind]) => [comparableText(field), kind]));
+                // A field whose value the classes' pages give as a formula holds that formula there (PRO-5).
+                const formulas = new Set((system.progression?.formulas ?? []).map(comparableText));
                 const wrong = world.pages.flatMap((page) =>
                     Object.entries(page.fields).filter(([field, value]) => {
+                        if (formulas.has(comparableText(field))) {
+                            return typeof value !== "string" || !reads(value);
+                        }
+
                         const kind = kinds.get(comparableText(field));
                         return kind !== undefined && (!fits[kind](value) || (typeof value === "string" && value.endsWith(".")));
                     }).map(([field, value]) => `${page.name}: ${field} ${JSON.stringify(value)}`)
@@ -100,3 +108,14 @@ describe("the installed game systems", () => {
         });
     }
 });
+
+/** Whether a text reads as a formula. */
+function reads(text: string): boolean
+{
+    try {
+        parseFormula(text);
+        return true;
+    } catch {
+        return false;
+    }
+}

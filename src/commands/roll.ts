@@ -216,7 +216,7 @@ function otherKeepers(world: World, kept: KeptField, value: number): string
 {
     const others = world.pages.filter((page) => page !== kept.page && page.system === undefined).flatMap((page) => {
         const written = Object.entries(page.fields).find(([key]) => comparableText(key) === comparableText(kept.field))?.[1];
-        const values = (Array.isArray(written) ? written : written === undefined ? [] : [written]).map(numberOf);
+        const values = (Array.isArray(written) ? written : written === undefined ? [] : [written]).map(numberOf).filter((number) => number !== undefined);
         return values.includes(value) ? [`${page.name} keeps ${values.join(", ")} in ${kept.field}: give from ${page.name}.`] : [];
     });
     return others.length === 0 ? "" : ` ${others.join(" ")}`;

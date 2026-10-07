@@ -45,6 +45,7 @@ const systemSchema = z.object({
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
         "level-up": z.string().min(1).optional(),
+        formulas: z.array(z.string().min(1)).optional(),
     }).strict().optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
@@ -277,7 +278,8 @@ function issuesText(error: z.ZodError): string
         const place = issue.path.map(String).join(".");
         const keys = issue.code === "unrecognized_keys" ? issue.keys : [];
         const quotes = keys.some((key) => /[()]/.test(key)) ? ": a formula with commas goes in quotes" : "";
-        const message = keys.length > 0 ? `unknown ${keys.length === 1 ? "key" : "keys"} ${keys.map((key) => `"${key}"`).join(", ")}${quotes}` : issue.message;
+        const vague = issue.message === "Invalid input" ? "not a value it takes, as system.yaml writes it" : issue.message;
+        const message = keys.length > 0 ? `unknown ${keys.length === 1 ? "key" : "keys"} ${keys.map((key) => `"${key}"`).join(", ")}${quotes}` : vague;
         return place === "" ? `${message}.` : `${place}: ${message}.`;
     }).join(" ");
 }
