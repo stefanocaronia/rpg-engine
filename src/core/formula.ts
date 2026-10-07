@@ -42,12 +42,15 @@ export interface WorkedOut
     reads: FormulaRead[];
 }
 
-/** What a game system works out (FOR-1): its computed fields, in the order it gives them, its tables, and the limits of its counters. */
+/**
+ * What a game system works out (FOR-1): its computed fields, in the order it gives them, its tables, and the limits of its counters, with how much of each comes
+ * back on an occasion, such as a long rest, where the field max is the counter's maximum (DAT-9).
+ */
 export interface SystemFormulas
 {
     computed: [string, Formula][];
     tables: Record<string, Table>;
-    counters: Record<string, { min?: Formula; max?: Formula; }>;
+    counters: Record<string, { min?: Formula; max?: Formula; refill?: Record<string, Formula>; }>;
 }
 
 /** What a system.yaml writes of its formulas: computed fields, each a formula, a number or formulas in order, tables, and the limits of counters. */
@@ -55,7 +58,7 @@ export interface FormulaData
 {
     computed?: Record<string, number | string | (number | string)[]>;
     tables?: Record<string, Record<string, number>>;
-    counters?: Record<string, { min?: number | string; max?: number | string; }>;
+    counters?: Record<string, { min?: number | string; max?: number | string; refill?: string | Record<string, number | string>; }>;
 }
 
 /**
@@ -76,11 +79,15 @@ export function readFormulas(data: FormulaData): SystemFormulas
         Object.entries(data.counters ?? {}).map(([name, limits]) => [name, {
             ...(limits.min === undefined ? {} : { min: placed(`counters.${name}.min`, () => formulaOf(limits.min as number | string)) }),
             ...(limits.max === undefined ? {} : { max: placed(`counters.${name}.max`, () => formulaOf(limits.max as number | string)) }),
+            ...(limits.refill === undefined ? {} : { refill: refillOf(name, limits.refill) }),
         }]),
     );
     const all: [string, Formula][] = [
         ...computed.map(([name, formula]): [string, Formula] => [`computed.${name}`, formula]),
-        ...Object.entries(counters).flatMap(([name, limits]) => Object.entries(limits).map(([limit, formula]): [string, Formula] => [`counters.${name}.${limit}`, formula])),
+        ...Object.entries(counters).flatMap(([name, limits]) => [
+            ...[limits.min, limits.max].flatMap((formula, index) => (formula === undefined ? [] : [[`counters.${name}.${index === 0 ? "min" : "max"}`, formula] as [string, Formula]])),
+            ...Object.entries(limits.refill ?? {}).map(([occasion, formula]): [string, Formula] => [`counters.${name}.refill.${occasion}`, formula]),
+        ]),
     ];
 
     for (const [place, formula] of all) {
@@ -104,6 +111,8 @@ const namePattern = /[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*/y;
 const numberPattern = /\d+(?:\.\d+)?/y;
 // "[[Cleric]] 3", "Perception +3": a name in a list, and the number after it.
 const itemPattern = /^(.*?)\s+([+-]?\d+)$/;
+// "Channel Divinity (2/rest)": a name and a value in parentheses after it.
+const valuePattern = /^(.*?\S)\s*\(([^()]*)\)$/;
 // [[Page]], [[Page#Section]], [[Page|label]].
 const linkPattern = /^\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|[^\]]*)?\]\]$/;
 
@@ -381,7 +390,8 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
 
 /**
  * The items of a list field, each with its name and the number after it, if any. A link reads as the page it names, or as its section, as a feature
- * [[Cleric#Channel Divinity]] does. A single value is a list of one.
+ * [[Cleric#Channel Divinity]] does. A value in parentheses after the name is not part of it, and gives the number it begins with when no number follows the
+ * name: Channel Divinity (2/rest) is Channel Divinity with 2, Bardic Inspiration (d8) has none (D-220). A single value is a list of one.
  */
 function itemsOf(value: unknown): { name: string; number?: number; }[]
 {
@@ -389,10 +399,12 @@ function itemsOf(value: unknown): { name: string; number?: number; }[]
     return values.map((item) => {
         const text = String(item).trim();
         const match = itemPattern.exec(text);
-        const written = (match === null ? text : match[1]).trim();
+        const valued = match === null ? valuePattern.exec(text) : null;
+        const written = (match !== null ? match[1] : valued !== null ? valued[1] : text).trim();
         const link = linkPattern.exec(written);
         const name = link === null ? written : (link[2] ?? linkTargetName(link[1])).trim();
-        return { name, number: match === null ? undefined : Number(match[2]) };
+        const inside = valued === null ? null : /^\s*([+-]?\d+)/.exec(valued[2]);
+        return { name, number: match !== null ? Number(match[2]) : inside === null ? undefined : Number(inside[1]) };
     });
 }
 
@@ -414,6 +426,15 @@ function computedFormula(name: string, given: number | string | (number | string
 
     const options = given.map((option, index) => placed(`computed.${name}[${index + 1}]`, () => formulaOf(option)));
     return options.length === 1 ? options[0] : { kind: "first", options };
+}
+
+/** How much of a counter comes back on each occasion (DAT-9): an occasion alone brings it all back, as "long rest" does max; or by occasion, a formula. */
+function refillOf(name: string, refill: string | Record<string, number | string>): Record<string, Formula>
+{
+    const all: Formula = { kind: "field", name: "max" };
+    return typeof refill === "string"
+        ? { [refill.trim()]: all }
+        : Object.fromEntries(Object.entries(refill).map(([occasion, amount]) => [occasion.trim(), placed(`counters.${name}.refill.${occasion}`, () => formulaOf(amount))]));
 }
 
 /** A formula read at its place in system.yaml, such as computed.insight, which a refusal names first. */

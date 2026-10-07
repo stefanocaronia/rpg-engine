@@ -167,6 +167,7 @@ What a rest does:
 recipes:
   long rest:
     set: { hp: max, temp-hp: 0, slots-*: max }
+    regain: { hit-dice-*: "max(1, floor(level / 2))" }
     ends: [long rest, short rest]
     rules: [Long Rest]
   short rest:
@@ -178,6 +179,8 @@ recipes:
 
 - `ends`: the occasions it ends. An effect can last until one of them (`effect add … for "long rest"`); the recipe ends those effects first.
 - `set`: the counters it brings to their maximum (`max`) or to a value; a name ending in `*` stands for every field that begins so.
+- `regain`: how many of the counters a name stands for come back in all, by a formula on the page. When all that is spent comes back, or only one of them is spent, they come back by themselves; otherwise the output asks the player which.
+- It also brings back the uses whose `refill` names one of the occasions it ends (see `counters`).
 - `rules`: the titles of the rules for what it leaves to the master. The output names them, and lists the page's other counters away from their usual value, each with the rule of a threshold that applies.
 
 ### conditions
@@ -217,6 +220,8 @@ counters:
 
   In 5e the first needs a level, so it is a character's; a creature has none, and its saves come from the totals its stat block lists (`saves: [Wis +0]`).
 - `counters`: the `min` and `max` of a counter, each a number or a formula. A limit counts only when it is a whole number. `min` replaces 0 as the lowest value (`momentum: {min: -6, max: 10 - count(debilities)}`).
+- `refill`: what of a counter comes back with a recipe that ends an occasion: `refill: long rest` brings it all back; by occasion, a formula where `max` is its maximum (`{long rest: max, short rest: "4 * has(features, Sorcerous Restoration)"}`). A counter without `max` takes its maximum from the column of a class's row with its name, such as `rages` (see `progression`).
+- **Uses.** A counter with a `refill`, or that a recipe sets or regains, comes back with a rest: a page whose maximum for it is above zero has it full until it spends it. `write` puts it on the page full, and says so; the line of the player character and the sheet show it.
 
 When the system loads, every formula must read, name only tables it has, and computed fields must not read each other in a circle; a field given twice in different cases is refused. The error names the place: `computed.insight: "wis-mod +" is not a formula: …`.
 
@@ -254,7 +259,7 @@ progression:
 
 - **Names.** A field, table or list name starts with a letter and holds letters and digits, with single hyphens between them: `str-mod`, `hit-dice-d10`. A hyphen between two parts is part of the name, so `level-1` is a field called `level-1`: write `level - 1`. Names and functions ignore case. Only ASCII letters, digits and hyphens: a field with an accent or an underscore cannot be read by a formula.
 - **Values.** A field reads as a number when it is one, a counter (its current value: `7/12` reads 7) or signed text (`"+2"`). Anything else is no number.
-- **Lists.** An item is a name with an optional number after it: `"[[Fighter]] 3"` is Fighter with 3, `Perception +3` is Perception with 3. A link reads as the page it names, or as its section: `[[Cleric#Channel Divinity]]` reads as Channel Divinity. A single value is a list of one. The name in `has` and `item` runs up to `)` and may hold spaces.
+- **Lists.** An item is a name with an optional number after it: `"[[Fighter]] 3"` is Fighter with 3, `Perception +3` is Perception with 3. A value in parentheses after the name is not part of it, and gives the number it begins with: `Channel Divinity (2/rest)` is Channel Divinity with 2, `Bardic Inspiration (d8)` has no number. A link reads as the page it names, or as its section: `[[Cleric#Channel Divinity]]` reads as Channel Divinity. A single value is a list of one. The name in `has` and `item` runs up to `)` and may hold spaces.
 - **sum with a field.** For each item it reads the page the item names, the campaign's first, else the system's, with what that page inherits, and keeps the item when its field has the value (ignoring case).
 
 ### When a formula has no value

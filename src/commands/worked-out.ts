@@ -1,6 +1,6 @@
 // What the game system works out from the fields of a page (D-199, FOR-3–FOR-8): its computed fields, each with the values it came from, and the limits of
 // its counters. The formulas are the system's data; this is where they meet the pages and the counters.
-import { contributingReads, fieldsRead, type Formula, type FormulaRead, type FormulaScope, type SystemFormulas, type Table, type WorkedOut, workOut } from "../core/formula.ts";
+import { contributingReads, fieldsRead, type Formula, type FormulaRead, type FormulaScope, numberOf, type SystemFormulas, type Table, type WorkedOut, workOut } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
@@ -26,7 +26,7 @@ export function workedFields(world: World, fields: Record<string, unknown>, expl
         const worked = scope.computed(field);
         return worked?.value === undefined ? [] : [{ field, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
     });
-    return [...computed, ...progressionFields(scope.progression())];
+    return [...computed, ...progressionFields(world, scope.progression())];
 }
 
 /**
@@ -45,8 +45,8 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
     const scope = formulaScope(world, fields);
     const progression = scope.progression();
 
-    // What the classes give, then what the formulas work out over it (PRO-2, FOR-3).
-    for (const field of [...(progression?.values ?? []).map((value) => value.field), ...(progression === undefined || progression.features.length === 0 ? [] : [progression.featuresField])]) {
+    // What the classes give, then what the formulas work out over it (PRO-2, FOR-3); a column named as a counter is that counter's maximum (DAT-9).
+    for (const { field } of progressionFields(world, progression)) {
         result[keyOf(result, field) ?? field] = progressionValue(progression, field);
     }
 
@@ -61,24 +61,71 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
     for (const field of Object.keys(formulas.counters)) {
         const key = keyOf(result, field);
         const counter = key === undefined ? undefined : readCounter(result[key]);
-        const { max } = counterLimits(world, fields, field);
+        const { max } = limitsIn(scope, formulas.counters[field], field);
 
         if (key !== undefined && counter !== undefined && max !== undefined) {
             result[key] = formatCounter({ value: Math.min(counter.value, max), max });
+        }
+
+        // A use the page does not write is full (DAT-9).
+        if (key === undefined && max !== undefined && max > 0 && isUse(world, field)) {
+            result[field] = formatCounter({ value: max, max });
         }
     }
 
     return result;
 }
 
-/** The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. */
-function progressionFields(progression: Progression | undefined): WorkedField[]
+/** Whether a counter of the system comes back with a rest (DAT-9): a page has it full until it spends it. */
+export function isUse(world: World, field: string): boolean
+{
+    return (world.system?.uses ?? []).some((name) => name.endsWith("*") ? comparableText(field).startsWith(comparableText(name.slice(0, -1))) : comparableText(name) === comparableText(field));
+}
+
+/** The uses the system gives a page with these fields that it does not write, each with its maximum (DAT-9): what write puts on the page, full. */
+export function missingUses(world: World, fields: Record<string, unknown>): { field: string; max: number; }[]
+{
+    return Object.keys(world.system?.formulas?.counters ?? {}).flatMap((field) => {
+        const { max } = keyOf(fields, field) === undefined && isUse(world, field) ? counterLimits(world, fields, field) : {};
+        return max === undefined || max <= 0 ? [] : [{ field, max }];
+    });
+}
+
+/**
+ * How much of a counter comes back with these occasions (DAT-9): the sum of what its refill gives for each, where max is the counter's maximum; undefined when
+ * it names none of them.
+ */
+export function refillAmount(world: World, fields: Record<string, unknown>, field: string, occasions: string[], max: number): number | undefined
+{
+    const refill = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field))?.[1].refill;
+    const named = Object.entries(refill ?? {}).filter(([occasion]) => occasions.some((other) => comparableText(other) === comparableText(occasion)));
+
+    if (named.length === 0) {
+        return undefined;
+    }
+
+    const scope = formulaScope(world, fields);
+    const withMax: FormulaScope = { ...scope, field: (name) => (comparableText(name) === "max" ? max : scope.field(name)) };
+    return named.reduce((total, [, formula]) => total + Math.max(0, Math.floor(workOut(formula, withMax).value ?? 0)), 0);
+}
+
+/** A formula of the system worked out on these fields, as a recipe's regain is; undefined when it has no value (FOR-4). */
+export function formulaValue(world: World, fields: Record<string, unknown>, formula: Formula): number | undefined
+{
+    return workOut(formula, formulaScope(world, fields)).value;
+}
+
+/**
+ * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. A column named
+ * as a counter of the system is not one: it is that counter's maximum (DAT-9).
+ */
+function progressionFields(world: World, progression: Progression | undefined): WorkedField[]
 {
     if (progression === undefined) {
         return [];
     }
 
-    const values = progression.values.map((value) => ({
+    const values = progression.values.filter((value) => !isSystemCounter(world, value.field)).map((value) => ({
         field: value.field,
         value: value.value,
         reads: value.from.map((from): FormulaRead => ({ list: progression.lists[0], item: from.name, value: from.level })),
@@ -92,9 +139,9 @@ function progressionFields(progression: Progression | undefined): WorkedField[]
 }
 
 /** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
-function progressedField(progression: Progression | undefined, field: string): { name: string; value: number | string; from: string[]; } | undefined
+function progressedField(world: World, progression: Progression | undefined, field: string): { name: string; value: number | string; from: string[]; } | undefined
 {
-    const found = progressionFields(progression).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    const found = progressionFields(world, progression).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
     return found === undefined || progression === undefined ? undefined : { name: found.field, value: found.value, from: progression.lists };
 }
 
@@ -107,10 +154,16 @@ export function counterLimits(world: World, fields: Record<string, unknown>, fie
         return {};
     }
 
-    const scope = formulaScope(world, fields);
+    return limitsIn(formulaScope(world, fields), limits, field);
+}
+
+/** The limits of a counter worked out in a scope, where they have a whole value (FOR-6); without a max formula, the column of a class's row (DAT-9). */
+function limitsIn(scope: ReturnType<typeof formulaScope>, limits: { min?: Formula; max?: Formula; }, field: string): { min?: number; max?: number; }
+{
     const whole = (worked: WorkedOut | undefined): number | undefined => (worked?.value !== undefined && Number.isSafeInteger(worked.value) ? worked.value : undefined);
     const min = whole(limits.min === undefined ? undefined : workOut(limits.min, scope));
-    const max = whole(limits.max === undefined ? undefined : workOut(limits.max, scope));
+    const row = limits.max === undefined ? numberOf(progressionValue(scope.progression(), field)) : undefined;
+    const max = limits.max === undefined ? (row !== undefined && Number.isSafeInteger(row) ? row : undefined) : whole(workOut(limits.max, scope));
     return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) };
 }
 
@@ -125,7 +178,7 @@ export function computedField(world: World, field: string, fields: Record<string
     const value = entry === undefined ? undefined : scope.computed(entry[0])?.value;
 
     if (entry === undefined || value === undefined) {
-        return progressedField(scope.progression(), field);
+        return progressedField(world, scope.progression(), field);
     }
 
     // Of several formulas, the one that gave the value says what it comes from (D-210).
@@ -218,12 +271,19 @@ export function workedMaximum(world: World, fields: Record<string, unknown>, fie
 {
     const entry = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field.trim()));
     const formula = entry?.[1].max;
+    const scope = formulaScope(world, fields);
 
-    if (entry === undefined || formula === undefined) {
+    if (entry === undefined) {
         return undefined;
     }
 
-    const scope = formulaScope(world, fields);
+    // Without a formula, the maximum a class's row gives, from the classes it comes from (DAT-9).
+    if (formula === undefined) {
+        const row = scope.progression()?.values.find((value) => comparableText(value.field) === comparableText(entry[0]));
+        const max = numberOf(row?.value);
+        return row === undefined || max === undefined ? undefined : { field: entry[0], value: max, reads: row.from.map((from): FormulaRead => ({ list: scope.progression()?.lists[0] ?? "", item: from.name, value: from.level })) };
+    }
+
     const worked = workOut(formula, scope);
     return worked.value === undefined ? undefined : { field: entry[0], value: worked.value, reads: contributingReads(formula, scope, worked) };
 }
@@ -254,10 +314,10 @@ export function workedOutProblems(world: World): Problem[]
     const problems = world.pages.filter((page) => Object.keys(page.fields).some(relevant)).flatMap((page) => {
         const fields = inheritedFields(world, page);
         const scope = formulaScope(world, fields);
-        const progressed = new Set(progressionFields(scope.progression()).map((worked) => comparableText(worked.field)));
+        const progressed = new Set(progressionFields(world, scope.progression()).map((worked) => comparableText(worked.field)));
         // Only the fields the page writes are worked out: a page holds few of them.
         const written = Object.keys(page.fields).filter((key) => computedNames.has(comparableText(key)) || progressed.has(comparableText(key))).flatMap((key): Problem[] => {
-            const value = scope.computed(key)?.value ?? progressedField(scope.progression(), key)?.value;
+            const value = scope.computed(key)?.value ?? progressedField(world, scope.progression(), key)?.value;
             return value === undefined ? [] : [{
                 path: page.path,
                 message: `${key} is worked out by the system ${world.system?.name ?? ""} (${signedText(world, key, value)}): the value written on ${page.name} is never read.`,
@@ -319,7 +379,7 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
                 return worked.value;
             }
 
-            const given = progressionValue(progression(), name);
+            const given = isSystemCounter(world, name) ? undefined : progressionValue(progression(), name);
 
             if (given !== undefined) {
                 return given;
@@ -366,6 +426,12 @@ function formulaIndex(formulas: SystemFormulas): { computed: Map<string, [string
 }
 
 const indexes = new WeakMap<SystemFormulas, { computed: Map<string, [string, Formula]>; tables: Map<string, Table>; }>();
+
+/** Whether the system gives the limits of a counter by this name (FOR-1). */
+function isSystemCounter(world: World, field: string): boolean
+{
+    return Object.keys(world.system?.formulas?.counters ?? {}).some((name) => comparableText(name) === comparableText(field));
+}
 
 /** The name under which the fields hold a field, in any case. */
 function keyOf(fields: Record<string, unknown>, field: string): string | undefined

@@ -69,6 +69,8 @@ export interface SystemInfo
     formulas?: SystemFormulas;
     /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
     progression?: ProgressionRule;
+    /** The counters that come back with a rest, by name or by a name ending in *: a page has them full until it spends them (DAT-9). */
+    uses?: string[];
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -113,9 +115,9 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = readPages(system.folder, system.name);
-    const { name, title, fields, formulas, progression } = system;
+    const { name, title, fields, formulas, progression, uses } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
-    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, progression, pages: systemPages.pages }, language });
+    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, progression, uses, pages: systemPages.pages }, language });
 }
 
 /**

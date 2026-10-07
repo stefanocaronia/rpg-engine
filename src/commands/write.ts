@@ -31,6 +31,7 @@ import {
     isDeclaredUncounted,
     isEmptyField,
     isNeverInherited,
+    isPartyMember,
     isStandardField,
     keepersOf,
     linksIn,
@@ -63,16 +64,18 @@ import {
 } from "../pages/index.ts";
 import { featureParts } from "../progression/index.ts";
 import type { Scene } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
+import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
-import { computedField, counterLimits, signedText, workedMaximum, workedParts } from "./worked-out.ts";
+import { computedField, counterLimits, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -250,11 +253,12 @@ export const write = defineCommand({
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? joiningNotes(system, now, page) : [];
         const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page) : [];
+        const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -981,6 +985,18 @@ function progressionNotes(before: World, after: World, existing: Page, page: Pag
     return parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ")}.`];
 }
 
+/** The thresholds the fields a write gives touch on the player character or a companion, as change says them (DAT-3): exhaustion written with write shows its rule. */
+function writtenThresholdNotes(root: string, system: GameSystem | undefined, before: World, after: World, existing: Page | undefined, page: Page, set: Record<string, unknown>): string[]
+{
+    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const was = existing === undefined ? {} : effectiveFields(before, existing);
+    const is = effectiveFields(after, page);
+    return Object.keys(set).flatMap((field) => {
+        const [from, to] = [read(was, field), read(is, field)];
+        return String(from) === String(to) ? [] : thresholdNotes(root, system, field, { before: from, after: to, amount: {} });
+    });
+}
+
 /** The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). */
 function workedLimitsChange(world: World, page: Page): { set: Record<string, unknown>; notes: string[]; }
 {
@@ -996,9 +1012,15 @@ function workedLimitsChange(world: World, page: Page): { set: Record<string, unk
         const parts = workedParts(world, workedMaximum(world, fields, change.key)?.reads ?? []);
         return `${change.key} max ${change.before ?? "none"} → ${change.max}${parts === "" ? "" : ` (${parts})`}`;
     });
+    // A use the page gets, such as a new level's channel-divinity, is written full (DAT-9).
+    const added = missingUses(world, fields).map((use) => ({ key: use.field, value: formatCounter({ value: use.max, max: use.max }) }));
+    const notes = [
+        said.length === 0 ? "" : `${said.join(", ")}: worked out by the system ${world.system?.name ?? ""}.`,
+        added.length === 0 ? "" : `${page.name} has ${added.map((use) => `${use.key} ${use.value}`).join(", ")}, full: uses of the system ${world.system?.name ?? ""} that come back with a rest.`,
+    ];
     return {
-        set: Object.fromEntries(changes.map((change) => [change.key, change.value])),
-        notes: said.length === 0 ? [] : [`${said.join(", ")}: worked out by the system ${world.system?.name ?? ""}.`],
+        set: Object.fromEntries([...changes, ...added].map((change) => [change.key, change.value])),
+        notes: notes.filter((note) => note !== ""),
     };
 }
 

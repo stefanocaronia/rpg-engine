@@ -68,6 +68,14 @@ describe("what a formula counts (FOR-2)", () => {
         expect(valueOf("has(saves, wis)", fields)).toBe(1);
     });
 
+    it("reads a value in parentheses after a name as no part of it, and the number it begins with as the item's (D-220)", () => {
+        const fields = { features: ["Channel Divinity (2/rest)", "Bardic Inspiration (d8)", "Extra Attack (3)", "Destroy Undead (CR 1/2)", "Rage"] };
+        expect(valueOf("has(features, Channel Divinity) + has(features, Bardic Inspiration) + has(features, Destroy Undead)", fields)).toBe(3);
+        expect(valueOf("item(features, Channel Divinity)", fields)).toBe(2);
+        expect(valueOf("item(features, Extra Attack)", fields)).toBe(3);
+        expect(valueOf("item(features, Bardic Inspiration) + item(features, Destroy Undead) + item(features, Rage)", fields)).toBe(0);
+    });
+
     it("reads a field as a number: a number, a counter's current value, or text such as +2", () => {
         expect([12, "5/12", "+2", "-1", "-3/10", " 7 ", "dex", "[[Wolf]]", true, ["1"]].map(numberOf)).toEqual([12, 5, 2, -1, -3, 7, undefined, undefined, undefined, undefined]);
     });
@@ -146,6 +154,10 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(() => readFormulas({ computed: { "str-mod": "floor((str - 10) /" } })).toThrow(/^computed\.str-mod: "floor\(\(str - 10\) \/" is not a formula/);
         expect(() => readFormulas({ computed: { proficiency: "table(proficiency-by-level, level)" } })).toThrow('computed.proficiency: there is no table "proficiency-by-level" in tables.');
         expect(() => readFormulas({ counters: { hp: { max: "table(hit, level)" } } })).toThrow('counters.hp.max: there is no table "hit" in tables.');
+        // What comes back on an occasion: all of it for an occasion alone, else a formula by occasion, where max is the counter's maximum (DAT-9).
+        expect(readFormulas({ counters: { ki: { refill: "short rest" } } }).counters.ki.refill).toEqual({ "short rest": { kind: "field", name: "max" } });
+        expect(() => readFormulas({ counters: { ki: { refill: { "short rest": "max *" } } } })).toThrow(/^counters\.ki\.refill\.short rest: "max \*" is not a formula/);
+        expect(() => readFormulas({ counters: { ki: { refill: { "long rest": "table(ki, level)" } } } })).toThrow('counters.ki.refill.long rest: there is no table "ki" in tables.');
         expect(() => readFormulas({ computed: { a: "b + 1", b: "c + 1", c: "a + 1" } })).toThrow("computed fields read each other in a circle: a → b → c → a.");
         expect(() => readFormulas({ computed: { a: "a + 1" } })).toThrow("computed fields read each other in a circle: a → a.");
         expect(readFormulas({ computed: { b: "a + 1", a: "1" }, counters: { momentum: { min: -6, max: "10 - count(debilities)" } } }).counters.momentum.min).toEqual({ kind: "number", value: -6 });

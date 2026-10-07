@@ -88,7 +88,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
-            "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3",
+            "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
             "show Ettore#Spellcasting gives the text of a feature.",
             "",
             "---\nrole: pc\numore: sereno\n---",
@@ -317,17 +317,18 @@ describe("what the review of 7 October put right", () => {
 
 describe("races and subraces of the SRD (D-201, SYS-2)", () => {
     it("gives a character what its subrace and race give, through the subrace, with the traits by name and each one's text on asking", async () => {
-        await ok("write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "creature=[[Hill Dwarf]]", "--set", "level=3", "--set", "con=15", "--set", "hp-base=18");
+        const written = await ok("write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "creature=[[Hill Dwarf]]", "--set", "level=3", "--set", "con=15", "--set", "hp-base=18");
         const shown = await ok("show", "Bruna");
         expect(shown).toContain("Derives from: Hill Dwarf (5e) › Dwarf (5e)");
         expect(shown).toContain("Saving Throws: con-save +2 · save-notes advantage on saving throws against poison");
-        expect(shown).toContain("Combat: speed 25 ft · hp-base 18 · darkvision 60 ft · damage-resistances poison");
+        expect(shown).toContain("Combat: speed 25 ft · hp-base 18 · hp 27/27 · darkvision 60 ft · damage-resistances poison");
         expect(shown).toContain("From Hill Dwarf (5e): Ability Score Increase (Hill Dwarf), Dwarven Toughness.");
         expect(shown).toContain("From Dwarf (5e): Ability Score Increase, Age,");
         expect(shown).not.toContain("You have advantage on saving throws against poison");
         expect(await ok("show", "Bruna#Dwarven Resilience")).toContain("You have advantage on saving throws against poison, and you have resistance against poison damage.");
-        // Dwarven Toughness: a hit point more at every level (p. 4).
-        expect(await ok("write", "Bruna", "--set", "hp=10")).toContain("hp max none → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1)");
+        // Dwarven Toughness: a hit point more at every level (p. 4); the hit points come full, as a use that comes back with a rest (DAT-9).
+        expect(written).toContain("Bruna has hp 27/27, full: uses of the system 5e that come back with a rest.");
+        expect(await ok("show", "Bruna#Combat")).toContain("hp 27/27: the maximum from hp-base 18, level 3, con-mod +2, hp-per-level +1");
     });
 
     it("says when a list written whole leaves out what the race gave (INH-7)", async () => {

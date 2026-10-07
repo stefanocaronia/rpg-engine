@@ -8,7 +8,7 @@ import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { progressionOf } from "./progression.ts";
-import { signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { isUse, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -219,7 +219,10 @@ function isWorkedOut(system: GameSystem, field: string): boolean
     return system.formulas.computed.some(([name]) => comparableText(name) === comparableText(field)) || (features !== undefined && comparableText(features) === comparableText(field));
 }
 
-/** The entries of a group: those the system lists, and in the group of the features those the rows of the character's classes give, in order (PRO-4). */
+/**
+ * The entries of a group: those the system lists, and in the group of the features those the rows of the character's classes give, in order (PRO-4), then the
+ * uses it has that no other group shows, such as channel-divinity (DAT-9).
+ */
 function groupEntries(world: World, system: GameSystem, group: SheetGroup, fields: Record<string, unknown>): SheetEntry[]
 {
     const features = system.progression === undefined ? undefined : fieldName(system.progression.features);
@@ -228,9 +231,12 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
         return group.entries;
     }
 
-    const listed = new Set(entryFields(group.entries).map(comparableText));
-    const rows = (progressionOf(world, fields)?.values ?? []).filter((value) => !listed.has(comparableText(value.field)));
-    return [...group.entries, ...rows.map((value) => ({ field: value.field, optional: true }))];
+    const listed = new Set(entryFields(system.sheet.flatMap((other) => other.entries)).map(comparableText));
+    const rows = (progressionOf(world, fields)?.values ?? []).map((value) => value.field).filter((field) => !listed.has(comparableText(field)));
+    const uses = Object.keys(world.system?.formulas?.counters ?? {}).filter((field) =>
+        isUse(world, field) && !listed.has(comparableText(field)) && !rows.some((row) => comparableText(row) === comparableText(field)) && !isEmptyField(readField(fields, field))
+    );
+    return [...group.entries, ...[...rows, ...uses].map((field) => ({ field, optional: true }))];
 }
 
 /** Every field the sheet shows, as names are compared. */

@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
-import { type FormulaData, readFormulas, type SystemFormulas } from "../core/formula.ts";
+import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { comparableText } from "../core/text.ts";
@@ -16,6 +16,7 @@ const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
 
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
+    regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
 });
@@ -45,7 +46,14 @@ const systemSchema = z.object({
         parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
     }).strict().optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
-    counters: z.record(z.string(), z.object({ min: z.union([z.number(), z.string().min(1)]).optional(), max: z.union([z.number(), z.string().min(1)]).optional() }).strict()).optional(),
+    counters: z.record(
+        z.string(),
+        z.object({
+            min: z.union([z.number(), z.string().min(1)]).optional(),
+            max: z.union([z.number(), z.string().min(1)]).optional(),
+            refill: z.union([z.string().min(1), z.record(z.string().min(1), z.union([z.number(), z.string().min(1)]))]).optional(),
+        }).strict(),
+    ).optional(),
 });
 
 /** A recipe of the system (D-185, DAT-4): the fields it brings to their maximum or to a value, the occasions it ends, the rules to read for the rest. */
@@ -54,6 +62,8 @@ export interface Recipe
     name: string;
     /** By field, "max" or a value; a field ending in * stands for every field that begins so, such as slots-*. */
     set: Record<string, "max" | number>;
+    /** By field, or by fields that begin so, how many come back in all, such as half the hit dice (DAT-4). */
+    regain: Record<string, Formula>;
     ends: string[];
     rules: string[];
 }
@@ -117,6 +127,8 @@ export interface GameSystem
     formulas: SystemFormulas;
     /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
     progression?: ProgressionRule;
+    /** The counters that come back with a rest, by name or by a name ending in *: a character has them full until it spends them (DAT-9). */
+    uses: string[];
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
@@ -195,10 +207,17 @@ function readSystem(folder: string, name: string): GameSystem
             const [field, value] = key.split(" ");
             return { field, value: value === undefined ? undefined : Number(value), rule };
         }),
-        recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({ name: recipe, set: value.set ?? {}, ends: value.ends ?? [], rules: value.rules ?? [] })),
+        recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({
+            name: recipe,
+            set: value.set ?? {},
+            regain: regainOf(value.regain ?? {}, name, path, recipe),
+            ends: value.ends ?? [],
+            rules: value.rules ?? [],
+        })),
         conditions: data.conditions ?? [],
         formulas,
         ...(data.progression === undefined ? {} : { progression: { ...data.progression, skip: data.progression.skip ?? [] } }),
+        uses: usesOf(data),
     });
 }
 
@@ -224,6 +243,30 @@ function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string)
             ...(note === undefined ? {} : { note }),
         };
     });
+}
+
+/** The counters that come back with a rest (DAT-9): those with a refill, and those a recipe sets or regains. */
+function usesOf(data: z.infer<typeof systemSchema>): string[]
+{
+    const names = [
+        ...Object.entries(data.counters ?? {}).filter(([, limits]) => limits.refill !== undefined).map(([name]) => name),
+        ...Object.values(data.recipes ?? {}).flatMap((recipe) => [...Object.keys(recipe.set ?? {}), ...Object.keys(recipe.regain ?? {})]),
+    ];
+    return names.filter((name, index) => names.findIndex((other) => comparableText(other) === comparableText(name)) === index);
+}
+
+/** The formulas of a recipe's regain, each read at its place (FOR-9). */
+function regainOf(regain: Record<string, number | string>, name: string, path: string, recipe: string): Record<string, Formula>
+{
+    return Object.fromEntries(
+        Object.entries(regain).map(([field, amount]) => {
+            try {
+                return [field, formulaOf(amount)];
+            } catch (error) {
+                throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: recipes.${recipe}.regain.${field}: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }),
+    );
 }
 
 /** The formulas of a system, read once; a system whose formulas do not read cannot be read either (FOR-9). */

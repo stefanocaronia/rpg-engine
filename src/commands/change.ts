@@ -33,7 +33,7 @@ import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-la
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { campaignCoins } from "./game-money.ts";
-import { effectsAtRecipe, notBroughtBack, partyPages, recipeNamed, recipeTargets } from "./game-recipes.ts";
+import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
@@ -159,12 +159,13 @@ interface StepOutcome
     thresholds: string[];
 }
 
-/** What a recipe did to a page: the effects it ended, the steps it wrote, and the counters it leaves to the master. */
+/** What a recipe did to a page: the effects it ended, the steps it wrote, what it leaves to the player, and the counters it leaves to the master. */
 interface RecipeOutcome
 {
     page: string;
     ended: string[];
     steps: StepOutcome[];
+    choices: string[];
     notBroughtBack: string[];
 }
 
@@ -324,7 +325,13 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         }
     }
 
-    const outcome = { page: name, ended: ending.map((effect) => effect.name), steps, notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)) };
+    const outcome = {
+        page: name,
+        ended: ending.map((effect) => effect.name),
+        steps,
+        choices: recipeChoices(current, recipe, pageCalled(current, name)),
+        notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
+    };
     return { outcome, world: current };
 }
 
@@ -374,7 +381,8 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
     const lines = result.outcomes.flatMap((outcome) => {
         const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
         const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
-        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${left}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
+        const chosen = outcome.choices.map((choice) => ` Ask the player: ${choice}.`).join("");
+        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;

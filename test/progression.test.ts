@@ -109,11 +109,11 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
 
     it("gives the row of the class's table and the features up to the level, with the subclass's at the level of its class", async () => {
         const shown = await ok("show", "Brann");
-        expect(shown).toContain("Features: features Rage, Unarmored Defense, Reckless Attack, Danger Sense, Primal Path, Frenzy · rages 3 · rage-damage +2");
+        expect(shown).toContain("Features: features Rage, Unarmored Defense, Reckless Attack, Danger Sense, Primal Path, Frenzy · rages 3/3 · rage-damage +2");
         expect(shown).toContain("show Brann#Rage gives the text of a feature.");
         expect(await ok("show", "Brann#Features")).toContain(
             "features Rage, Unarmored Defense, Reckless Attack, Danger Sense, Primal Path, Frenzy: Barbarian 3 in classes, Path of the Berserker in subclasses\n"
-                + "rages 3: Barbarian 3 in classes\nrage-damage +2: Barbarian 3 in classes",
+                + "rages 3/3: the maximum from Barbarian 3 in classes\nrage-damage +2: Barbarian 3 in classes",
         );
     });
 
