@@ -52,7 +52,7 @@ describe("pages that derive from a creature", () => {
         await ok("write", "Annegato", "--set", "status=dead");
         await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11");
         await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]");
-        expect(JSON.parse(await ok("show", "Vecchio annegato", "--json")).inherited).toEqual([{ from: "Annegato capo", fields: { hp: "40/40" }, text: "" }, { from: "Annegato", fields: { ac: 13 }, text: "" }]);
+        expect(JSON.parse(await ok("show", "Vecchio annegato", "--json")).inherited).toEqual([{ from: "Annegato capo", fields: { hp: "40/40" }, text: "", parts: [] }, { from: "Annegato", fields: { ac: 13 }, text: "", parts: [] }]);
         expect(await ok("status")).toContain("Companions: Zanna: hp 11/11");
 
         const write = await rpg("write", "Zanna", "--set", "hp=5/11");
@@ -111,7 +111,7 @@ describe("pages that derive from a creature, after the review", () => {
     it("never pass fixed fields and relations from creature to creature", async () => {
         await ok("write", "Tridente", "--type", "item");
         writeFileSync(join(folder, "world", "creatures", "Annegato.md"), '---\nhp: 22/22\nac: 13\nstatus: dead\nknows:\n  - "[[Annegato capo]]"\ninventory:\n  - "[[Tridente]]"\n---\n');
-        expect(JSON.parse(await ok("show", "Annegato capo", "--json")).inherited).toEqual([{ from: "Annegato", fields: { ac: 13 }, text: "" }]);
+        expect(JSON.parse(await ok("show", "Annegato capo", "--json")).inherited).toEqual([{ from: "Annegato", fields: { ac: 13 }, text: "", parts: [] }]);
     });
 
     it("let the pages of a loop report it, not those that only lead into it", async () => {

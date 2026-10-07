@@ -308,6 +308,35 @@ describe("what the review of 7 October put right", () => {
     });
 });
 
+describe("races and subraces of the SRD (D-201, SYS-2)", () => {
+    it("gives a character what its subrace and race give, through the subrace, with the traits by name and each one's text on asking", async () => {
+        await ok("write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "creature=[[Hill Dwarf]]", "--set", "level=3", "--set", "con=15", "--set", "hp-base=18");
+        const shown = await ok("show", "Bruna");
+        expect(shown).toContain("Derives from: Hill Dwarf (5e) › Dwarf (5e)");
+        expect(shown).toContain("Saving Throws: con-save +2 · save-notes advantage on saving throws against poison");
+        expect(shown).toContain("Combat: speed 25 ft · hp-base 18 · darkvision 60 ft · damage-resistances poison");
+        expect(shown).toContain("From Hill Dwarf (5e): Ability Score Increase (Hill Dwarf), Dwarven Toughness.");
+        expect(shown).toContain("From Dwarf (5e): Ability Score Increase, Age,");
+        expect(shown).not.toContain("You have advantage on saving throws against poison");
+        expect(await ok("show", "Bruna#Dwarven Resilience")).toContain("You have advantage on saving throws against poison, and you have resistance against poison damage.");
+        // Dwarven Toughness: a hit point more at every level (p. 4).
+        expect(await ok("write", "Bruna", "--set", "hp=10")).toContain("hp max none → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1)");
+    });
+
+    it("derives a page of the system from its own, even where the campaign has a page of that name", async () => {
+        // Written by hand: write refuses a page that hides one of the system (SYS-6).
+        writeFileSync(join(folder, "world", "creatures", "Dwarf.md"), "---\nspeed: 40 ft\n---\n");
+        await ok("write", "Bruna", "--type", "character", "--set", "role=npc", "--set", "creature=[[Hill Dwarf]]");
+        expect(await ok("show", "Bruna")).toContain("Derives from: Hill Dwarf (5e) › Dwarf (5e)");
+    });
+
+    it("keeps the sheet of a companion with a level who derives from her race, not of one with a stat block", async () => {
+        expect(await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "creature=[[Human]]", "--set", "level=2")).toContain("Lena's sheet of the system 5e still lacks");
+        expect(await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]")).not.toContain("still lacks");
+        expect(await ok("show", "Zanna")).not.toContain("Abilities:");
+    });
+});
+
 describe("laws of rolls from the sheet", () => {
     it("total what the same roll totals with the numbers the sheet gives (DAT-8)", async () => {
         const skills = ["acrobatics", "athletics", "insight", "religion", "stealth", "survival", "wis-save", "initiative", "passive-perception"];

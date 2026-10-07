@@ -125,13 +125,13 @@ describe("rpg find", () => {
         expect((await rpg("find", "FIGLIA")).output).toBe("Varro (character): Un alchimista che vuole riavere la figlia.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
         expect((await rpg("find", "companion")).output).toBe("Lena (character): role: companion\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
         expect((await rpg("find", "varro")).output).toBe("Varro (character)\nLa cripta (place): I servitori di Varro dormono qui.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
-        expect((await rpg("find", "drago")).output).toBe("No page matches.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
+        expect((await rpg("find", "basilisco")).output).toBe("No page matches.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
     });
 
     it("says only that no page matches in a campaign without a game system, and reads only", async () => {
         writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: 5e\n", ""));
         expect((await rpg("find", "--type", "creature")).output).toBe("No page matches.");
-        expect((await rpg("find", "drago")).output).toBe("No page matches.");
+        expect((await rpg("find", "basilisco")).output).toBe("No page matches.");
         expect(commands.find((command) => command.name === "find")?.readOnly).toBe(true);
     });
 

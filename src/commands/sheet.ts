@@ -28,8 +28,10 @@ export function sheetSummary(system: GameSystem): SheetSummary | undefined
     const entries = system.sheet.flatMap((group) => group.entries);
     const workedOut = system.sheet.flatMap((group) => {
         const fields = entryFields(group.entries);
-        // A group the system works out whole is named as a group, such as Skills.
-        return fields.every((field) => isWorkedOut(system, field)) ? [group.name] : fields.filter((field) => isWorkedOut(system, field));
+        // A group the system works out whole, but for what is written only when it applies, is named as a group, such as Saving Throws.
+        const required = entryFields(group.entries.filter((entry) => !entry.optional));
+        const whole = required.length > 0 && required.every((field) => isWorkedOut(system, field));
+        return whole ? [group.name] : fields.filter((field) => isWorkedOut(system, field));
     });
     const onSheet = sheetFields(system);
     const lineOnly = system.statusLine.map((entry) => entry.field).filter((field) => !isWorkedOut(system, field) && !onSheet.has(comparableText(field)));
@@ -175,10 +177,14 @@ function remindedFields(system: GameSystem): string[]
     return system.sheet.flatMap((group) => group.entries).filter((entry) => !entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field)));
 }
 
-/** A player character, or a companion that does not derive from a creature, keeps the sheet of the system (DAT-2). */
+/**
+ * The player character keeps the sheet of the system, and a companion with a level or that derives from no creature (DAT-2): a fighter who derives from her
+ * race does, a wolf with its stat block does not.
+ */
 function isSheeted(page: Page): boolean
 {
-    return page.type === "character" && (page.fields.role === "pc" || (page.fields.role === "companion" && isEmptyField(page.fields.creature)));
+    const companion = page.fields.role === "companion" && (isEmptyField(page.fields.creature) || !isEmptyField(page.fields.level));
+    return page.type === "character" && (page.fields.role === "pc" || companion);
 }
 
 function isWorkedOut(system: GameSystem, field: string): boolean

@@ -36,8 +36,10 @@ describe("the installed game systems", () => {
                 expect(signed).toEqual([]);
             });
 
-            it("derives no page from another (SYS-2)", () => {
-                expect(world.pages.filter((page) => page.fields.creature !== undefined || page.fields.item !== undefined).map((page) => page.name)).toEqual([]);
+            it("derives a page only from another of its own that exists, as a subrace from its race (SYS-2, D-201)", () => {
+                const derived = world.pages.filter((page) => page.fields.creature !== undefined || page.fields.item !== undefined);
+                const named = (link: unknown): string => String(link).replace(/^\[\[|\]\]$/g, "");
+                expect(derived.filter((page) => !world.pages.some((other) => other.name === named(page.fields.creature ?? page.fields.item))).map((page) => page.name)).toEqual([]);
             });
 
             it("gives data the engine can read: coins, declared fields, and rules that its chapters hold (DAT-1–DAT-7)", () => {
@@ -69,6 +71,8 @@ describe("the installed game systems", () => {
             it("gives every declared field a value of its kind, without a final period (SYS-8)", () => {
                 const fits: Record<string, (value: unknown) => boolean> = {
                     number: (value) => typeof value === "number",
+                    modifier: (value) => typeof value === "number",
+                    bonus: (value) => typeof value === "number",
                     text: (value) => typeof value === "string",
                     list: (value) => Array.isArray(value),
                     counter: (value) => typeof value === "number" || (typeof value === "string" && /^\d+\/\d+$/.test(value)),

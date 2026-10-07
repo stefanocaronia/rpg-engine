@@ -339,7 +339,8 @@ function nextBase(world: World, page: Page): Page | undefined
 {
     const field = baseFieldOf(page.type);
     const [name] = field === undefined ? [] : linksIn(page.fields[field]);
-    const base = name === undefined ? undefined : uniquePage(world, name);
+    // A page of the game system derives from one of its own, never from the campaign's (SYS-2, D-201): Hill Dwarf from Dwarf.
+    const base = name === undefined ? undefined : page.system !== undefined ? systemPageNamed(world, name) : uniquePage(world, name);
     return base !== undefined && base.type === field ? base : undefined;
 }
 

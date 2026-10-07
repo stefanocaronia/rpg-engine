@@ -98,7 +98,13 @@ export const show = defineCommand({
             derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
             inherited: reference.section === undefined
-                ? inherited.map((group) => ({ from: nameWithSystem(group.base), fields: group.fields, text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n") }))
+                ? inherited.map((group) => ({
+                    from: nameWithSystem(group.base),
+                    fields: group.fields,
+                    text: [group.introduction, ...group.parts.map((piece) => piece.text)].filter((text) => text !== "").join("\n\n"),
+                    // The parts with text of their own, as a race's traits under its Traits heading.
+                    parts: group.parts.filter((piece) => piece.text.split("\n").slice(1).some((line) => line.trim() !== "")).map((piece) => piece.name),
+                }))
                 : [],
             text: group === undefined ? (part?.text ?? page.body) : "",
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
@@ -142,7 +148,10 @@ export const show = defineCommand({
         const worked = workedLines.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${workedLines.join("\n")}`;
         const inheritedFields = result.inherited.map((group) => ({ from: group.from, fields: offSheet(group.fields) })).filter((group) => Object.keys(group.fields).length > 0)
             .map((group) => `Fields inherited from ${group.from}:\n${formatFields(group.fields)}`);
-        const inheritedText = result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
+        // A character with a sheet names what its bases tell, such as its race's traits, instead of copying their text every time (DAT-2).
+        const inheritedText = onSheet.size > 0
+            ? result.inherited.filter((group) => group.parts.length > 0).map((group) => `From ${group.from}: ${group.parts.join(", ")}. show ${result.page}#${group.parts[0]} gives one.`)
+            : result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
         return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },

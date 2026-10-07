@@ -77,9 +77,10 @@ describe("the character sheet (DAT-2)", () => {
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: level, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, hit-dice, "
-                + "save-proficiencies, skill-proficiencies, languages; and when they apply: inspiration, personality-traits, ideal, bond, flaw, temp-hp, death-successes, "
-                + "death-failures, exhaustion, expertise, slots-1, slots-2, slots-3, slots-4, slots-5, slots-6, slots-7, slots-8, slots-9. It works out str-mod, dex-mod, con-mod, "
-                + "int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, initiative, passive-perception: never write them. Only its names go in save-proficiencies "
+                + "save-proficiencies, skill-proficiencies, languages; and when they apply: inspiration, personality-traits, ideal, bond, flaw, save-notes, temp-hp, darkvision, "
+                + "damage-resistances, death-successes, death-failures, exhaustion, expertise, armor-proficiencies, weapon-proficiencies, tool-proficiencies, slots-1, slots-2, "
+                + "slots-3, slots-4, slots-5, slots-6, slots-7, slots-8, slots-9. It works out str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, "
+                + "Skills, initiative, passive-perception: never write them. Only its names go in save-proficiencies "
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), expertise (such as Acrobatics, Animal Handling), as it writes them: "
                 + "write lists them if a name is not one.",
         );
