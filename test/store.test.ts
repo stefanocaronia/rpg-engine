@@ -1,5 +1,5 @@
 // The store of a call (D-137, D-194): each file read once and kept frozen, what a call writes kept, and the store of the running command reached with files().
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { files, FileStore, isInside, withFiles } from "../src/core/store.ts";
@@ -12,6 +12,28 @@ beforeEach(() => {
 });
 
 afterEach(() => removeFolder(folder));
+
+describe("the files of the installed game systems (D-194)", () => {
+    it("keeps them from one call to the next while they do not change, and reads again one that changed or is too new to trust", () => {
+        const path = join(folder, "Wolf.md");
+        const old = (Date.now() - 60_000) / 1000;
+        writeFileSync(path, "uno");
+        utimesSync(path, old, old);
+        let parsed = 0;
+        const read = (store: FileStore): unknown => store.read(path, "test", (text) => (parsed++, text));
+        expect(read(new FileStore([folder]))).toBe("uno");
+        expect(read(new FileStore([folder]))).toBe("uno");
+        expect(parsed).toBe(1);
+        // Rewritten with the same size: its time of change says it.
+        writeFileSync(path, "due");
+        expect(read(new FileStore([folder]))).toBe("due");
+        // Rewritten again at once: too close to its reading to trust, so read again.
+        writeFileSync(path, "tre");
+        expect(read(new FileStore([folder]))).toBe("tre");
+        // A store without the systems' folders reads the disk, as before.
+        expect(new FileStore().text(path)).toBe("tre");
+    });
+});
 
 describe("the store of a call", () => {
     it("reads a file once, and keeps what it reads as frozen, by kind of reading", () => {

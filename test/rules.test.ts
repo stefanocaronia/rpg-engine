@@ -280,11 +280,14 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
         expect(output).toContain("(Its parts: Escaping a Grapple; Moving a Grappled Creature. Read one by its heading.)");
     });
 
-    it("says when a page of the system or of the campaign has the name searched, since pages hold rules too", async () => {
-        expect(await ok("rules", "Potion of Healing")).toContain("Potion of Healing is also a page of the system 5e (item): show reads it.");
+    it("says first when a page of the system or of the campaign has the name searched, by its name or an alias, and adds little of the rules (D-195)", async () => {
+        const potion = await ok("rules", "Potion of Healing");
+        expect(potion.startsWith("Potion of Healing is a page of the system 5e (item): show Potion of Healing reads it. What the rules say of it:")).toBe(true);
+        expect(potion.length).toBeLessThan(2500);
         await ok("write", "Lanterna", "--type", "item", "--text", "Fa luce.");
-        expect(await ok("rules", "lanterna")).toContain("Lanterna is also a page of the campaign (item): show reads it.");
-        expect(await ok("rules", "grappled")).not.toContain("is also a page");
+        expect(await ok("rules", "lanterna")).toContain("Lanterna is a page of the campaign (item): show Lanterna reads it.");
+        expect(await ok("rules", "Shield spell")).toContain("Shield (spell) is a page of the system 5e (topic): show Shield (spell) reads it.");
+        expect(await ok("rules", "grappled")).not.toContain("is a page");
     });
 
     it("reads a section named by its headings, with its parts", async () => {
@@ -333,7 +336,7 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
         const output = await ok("rules", "Weapons");
         expect(output).toContain("Equipment › Weapons › Weapon Properties › Special Weapons › Weapons (5e):\n**Weapons**\n\n| Name | Cost | Damage | Weight | Properties |");
         expect(output).toContain("| Dagger | 2 gp | 1d4 piercing | 1 lb. | Finesse, light, thrown (range 20/60) |");
-        expect(await ok("rules", "dagger")).toContain("Dagger is also a page of the system 5e (item): show reads it.");
+        expect(await ok("rules", "dagger")).toContain("Dagger is a page of the system 5e (item): show Dagger reads it.");
     });
 
     it("names no language when the campaign plays in the system's own", async () => {

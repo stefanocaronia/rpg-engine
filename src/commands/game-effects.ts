@@ -21,10 +21,10 @@ export interface EffectHolder
 }
 
 /**
- * Writes a holder's effects; the field goes when none is left. A current that the page's maximum, as these effects leave it, no longer allows is written as it
- * reads, as when Aid ends (FOR-6). Returns the page as written, or undefined for a copy.
+ * Writes a holder's effects; the field goes when none is left. What a current has above its written maximum that the maximum, as these effects leave it, no
+ * longer allows goes, as when Aid ends, with a line in the log (FOR-6). Returns the page as written, or undefined for a copy.
  */
-export function saveEffects(root: string, world: World, holder: EffectHolder, effects: Effect[]): Page | undefined
+export function saveEffects(root: string, context: Context, world: World, holder: EffectHolder, effects: Effect[]): Page | undefined
 {
     const lines = effects.length === 0 ? undefined : effects.map(formatEffect);
 
@@ -33,11 +33,20 @@ export function saveEffects(root: string, world: World, holder: EffectHolder, ef
         return undefined;
     }
 
-    const set = { ...currentsAsRead(world, holder.page, effects), ...(lines === undefined ? {} : { effects: lines }) };
-    return writePage(world, holder.page.name, undefined, lines === undefined ? { set, unset: ["effects"] } : { set }).page;
+    const lowered = currentsAsRead(world, holder.page, effects);
+    const set = { ...lowered, ...(lines === undefined ? {} : { effects: lines }) };
+    const page = writePage(world, holder.page.name, undefined, lines === undefined ? { set, unset: ["effects"] } : { set }).page;
+    const visibility = concernsPlayer(world, holder.page) ? "public" : "hidden";
+
+    for (const [field, after] of Object.entries(lowered)) {
+        const data = { page: holder.page.name, field, before: String(holder.page.fields[field]), after, why: "an effect that allowed it ended" };
+        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, data));
+    }
+
+    return page;
 }
 
-/** The counters a page writes above the maximum it reads with these effects, at that maximum, with their written maximum (FOR-6). */
+/** The counters a page writes above their written maximum and above the maximum it reads with these effects, brought down to it, no lower than the written one (FOR-6). */
 function currentsAsRead(world: World, page: Page, effects: Effect[]): Record<string, string>
 {
     const read = effectiveFields(world, withEffects(page, effects));
@@ -45,7 +54,9 @@ function currentsAsRead(world: World, page: Page, effects: Effect[]): Record<str
         Object.entries(page.fields).flatMap(([field, value]): [string, string][] => {
             const written = readCounter(value);
             const now = isDeclaredUncounted(world, field) ? undefined : readCounter(read[field]);
-            return written?.max === undefined || now?.max === undefined || written.value <= now.max ? [] : [[field, String(formatCounter({ value: now.max, max: written.max }))]];
+            // Only what is above the written maximum, which only an effect allows, as Aid's: a form that lowers the maximum leaves the page's own (FOR-6).
+            const excess = written?.max !== undefined && now?.max !== undefined && written.value > written.max && written.value > now.max;
+            return written?.max === undefined || now?.max === undefined || !excess ? [] : [[field, String(formatCounter({ value: Math.max(now.max, written.max), max: written.max }))]];
         }),
     );
 }
@@ -79,11 +90,11 @@ export function endEffects(root: string, context: Context, world: World, scene: 
         }
 
         const remaining = effects.filter((effect) => !ending.includes(effect));
-        const values = ending.flatMap((effect) => valuesChanged(world, holder.page, withEffects(holder.page, remaining), effect));
+        const values = [...new Set(ending.flatMap((effect) => valuesChanged(world, holder.page, withEffects(holder.page, remaining), effect)))];
         const named = `${ending.map((effect) => effect.name).join(", ")} on ${holder.page.name}`;
 
         try {
-            saveEffects(root, world, holder, remaining);
+            saveEffects(root, context, world, holder, remaining);
         } catch (error) {
             ended.push(`${named}: not written, ${error instanceof Error ? error.message : String(error)}`);
             continue;

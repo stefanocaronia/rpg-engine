@@ -1,15 +1,18 @@
 import { join } from "node:path";
 import { z } from "zod";
 import { houseRulesFolderName, readListSetting, readTextSetting, requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { pageFileNamed } from "../pages/index.ts";
+import { pageFileNamed, pageNamed as pageWithName } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
 import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
-import { campaignSystem, foreignLanguage } from "./game-world.ts";
+import { campaignSystem, campaignWorld, foreignLanguage } from "./game-world.ts";
 
 // About how many words an answer shows: a section of the system has about 80 words in the middle (D-178).
 const answerWords = 800;
+// What the rules add when the text is the name of a page, which holds the answer: a spell, an item (D-195).
+const answerWordsBesidePage = 150;
 // How many more sections an answer names after those it shows.
 const namedSections = 8;
 
@@ -57,17 +60,20 @@ export const rules = defineCommand({
             return { ...common, house: undefined, found: undefined, precedents };
         }
 
-        // One search over both, so that a word is rare or common among all the rules (RUL-5); the house rules come first.
+        // One search over both, so that a word is rare or common among all the rules (RUL-5); the house rules come first. A page by that name holds the
+        // answer, and the rules add little.
+        const page = pageNamed(root, context, system, text);
+        const budget = page === undefined ? answerWords : answerWordsBesidePage;
         const found = findRules([...house, ...book], text);
-        const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), answerWords);
-        const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), answerWords - houseAnswer.used);
+        const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
+        const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
         const shownTitles = [...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? "");
         return {
             ...common,
             house: houseAnswer,
             found: systemAnswer,
             precedents: precedents.filter((precedent) => hasAllWords(precedent, text) || isAboutAny(precedent, text, shownTitles)),
-            page: pageNamed(root, system, text),
+            page,
         };
     },
 
@@ -81,9 +87,9 @@ export const rules = defineCommand({
         const others = [...result.house.others, ...result.found.others];
         const lines = [
             missingSystemLine(result.missingSystem),
+            pageLine(result.page),
             ...sections,
             others.length === 0 ? "" : `Also: ${others.slice(0, namedSections).join("; ")}. Read one by its heading.`,
-            pageLine(result.page),
             sections.length === 0 ? notFound(result) : "",
             precedentsLine(result.precedents),
             result.precedents.length > 0 && result.found.shown.length > 0 ? disagreementAdvice : "",
@@ -100,18 +106,35 @@ function isAboutAny(precedent: string, text: string, titles: string[]): boolean
     return rule !== undefined && (hasAllWords(text, rule) || titles.some((title) => comparableText(rule) === comparableText(title)));
 }
 
-/** The page of the campaign, or else of the game system, whose name is the text: it holds rules too, such as how long a potion takes to drink. */
-function pageNamed(root: string, system: { name: string; folder: string; } | undefined, text: string): { name: string; type?: string; system?: string; } | undefined
+/**
+ * The page of the campaign, or else of the game system, whose name or alias is the text: it holds rules too, such as a spell or how long a potion takes to drink.
+ */
+function pageNamed(root: string, context: Context, system: { name: string; folder: string; } | undefined, text: string): { name: string; type?: string; system?: string; } | undefined
 {
     const page = pageFileNamed(root, text);
     const systemPage = page === undefined && system !== undefined ? pageFileNamed(system.folder, text) : undefined;
-    return page ?? (systemPage === undefined ? undefined : { ...systemPage, system: system?.name });
+
+    if (page !== undefined) {
+        return page;
+    }
+
+    if (systemPage !== undefined) {
+        return { ...systemPage, system: system?.name };
+    }
+
+    // By an alias, as "Shield spell": the world knows them.
+    try {
+        const aliased = pageWithName(campaignWorld(root, context), text);
+        return aliased === undefined ? undefined : { name: aliased.name, type: aliased.type, system: aliased.system };
+    } catch {
+        return undefined;
+    }
 }
 
-/** "Potion of Healing is also a page of the system 5e (item): show reads it." */
+/** "Fireball is a page of the system 5e (topic): show Fireball reads it.": first, since the page holds the answer, and the rules after it add to it. */
 function pageLine(page: { name: string; type?: string; system?: string; } | undefined): string
 {
-    return page === undefined ? "" : `${page.name} is also a page of ${page.system === undefined ? "the campaign" : `the system ${page.system}`} (${page.type ?? "page"}): show reads it.`;
+    return page === undefined ? "" : `${page.name} is a page of ${page.system === undefined ? "the campaign" : `the system ${page.system}`} (${page.type ?? "page"}): show ${page.name} reads it. What the rules say of it:`;
 }
 
 function answerOf(found: RuleFinding[], words: number): Answer

@@ -30,7 +30,8 @@ export const find = defineCommand({
         const withText = (input.text?.trim() ?? "") !== "";
         const system = searchSystemPages(world, input);
         const listed = withText ? system.slice(0, listedSystemPages).map(({ page, excerpt }) => ({ page: page.name, type: page.type, excerpt })) : [];
-        const systemFound = { system: world.system?.name, systemMatches: listed, systemMore: system.length - listed.length, withText, type: input.type };
+        const byName = system.slice(listed.length).filter((match) => match.excerpt === undefined).length;
+        const systemFound = { system: world.system?.name, systemMatches: listed, systemMore: system.length - listed.length, systemMoreByName: byName, withText, type: input.type };
         return { matches, ...systemFound, language: foreignSystemLanguage(world), searchHint: systemSearchHint(world).trim(), problems: world.problems };
     },
 
@@ -46,7 +47,7 @@ export const find = defineCommand({
 });
 
 /** What find says of the game system's pages it does not list: how many more there are and how to find them, or that it names them in another language. */
-function systemNote(result: { system?: string; systemMatches: unknown[]; systemMore: number; withText: boolean; type?: string; language?: string; searchHint: string; }, listed: boolean): string
+function systemNote(result: { system?: string; systemMatches: unknown[]; systemMore: number; systemMoreByName: number; withText: boolean; type?: string; language?: string; searchHint: string; }, listed: boolean): string
 {
     if (result.system === undefined) {
         return "";
@@ -60,8 +61,12 @@ function systemNote(result: { system?: string; systemMatches: unknown[]; systemM
         return `The system ${result.system} has ${result.systemMore}${listed ? " more" : ""} ${what}${language}: give part of a name${named === undefined ? "" : `, in ${named},`} to find them.`;
     }
 
+    // Those by name come first: what is left beyond them is found only in fields, which more of a name will not narrow.
     if (result.systemMore > 0) {
-        return `And ${result.systemMore} more of the system ${result.system}: give more of the name.`;
+        const fields = result.systemMore - result.systemMoreByName;
+        const how = result.systemMoreByName > 0 ? "give more of the name" : "find takes one text: give a rarer one, or show a page that lists them";
+        const which = result.systemMoreByName > 0 && fields > 0 ? ` (${result.systemMoreByName} by name, ${fields} in their fields)` : result.systemMoreByName === 0 ? " whose fields name it" : "";
+        return `And ${result.systemMore} more of the system ${result.system}${which}: ${how}.`;
     }
 
     // Nothing of the system found: how find looks for its pages, when nothing at all was found or they are named in another language (D-165).

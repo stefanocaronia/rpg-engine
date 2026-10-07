@@ -89,7 +89,7 @@ A command is a `Command` object made with `defineCommand` in [core/registry.ts](
 - `text`, `exists`, `files(folder, keep)` read a file or a listing once per store.
 - `read(path, kind, parse)` keeps what a file reads as, by kind (`page <root>`, `yaml ...`, `log`, `rules ...`), deep-frozen with [core/frozen.ts](../src/core/frozen.ts): nothing read from files may be changed in place; copy it first.
 - `remember(key, dependsOn, build)` keeps a value built from many files until one it depends on changes. [commands/game-world.ts](../src/commands/game-world.ts) `campaignWorld` uses it for the `World`.
-- A store made with the systems' folders, as every call's is, keeps their files for the whole process while each has the same size and time of change: many calls in one process, as in the tests, read a system's pages once.
+- A store made with the systems' folders, as every call's is, keeps their files for the whole process while none changed since it was read, or in the two seconds before, as git does: many calls in one process, as in the tests, read a system's pages once, and the first reading costs nothing more.
 - `fresh(path)` is read right before a write (the call's text in a plain store, the disk's in a session); `write`, `append`, `remove` update what is kept, the listings and the remembered values.
 
 Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Page` (name, path and holder indexes in [pages/world.ts](../src/pages/world.ts), `checkWorld`, `effectiveFields`, `workedOutProblems`): a world never changes, a write produces a new one with `withPage`.

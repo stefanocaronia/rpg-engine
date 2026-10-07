@@ -14,10 +14,13 @@ interface Kept
 }
 
 /**
- * The files of the installed game systems, kept for the whole process while each stays as it was, by its size and time of change: a process that runs many
- * calls, as the tests do, reads and parses a system's pages once (D-194). Only a store given the systems' folders uses them.
+ * The files of the installed game systems, kept for the whole process while none changes after it was read: a process that runs many calls, as the tests do,
+ * reads and parses a system's pages once (D-194). Only a store given the systems' folders uses them.
  */
-const packageFiles = new Map<string, { stamp: string; entry: Kept; }>();
+const packageFiles = new Map<string, { readAt: number; entry: Kept; }>();
+
+// A file changed this close to its reading may change again within the same tick of the disk's clock: it is read again until it is older, as git does.
+const racyMilliseconds = 2000;
 
 /** The files of a call, read once and kept: a module asks for them through files(). */
 export class FileStore
@@ -168,26 +171,25 @@ export class FileStore
         return entry;
     }
 
-    /** A file of an installed game system as the process last read it, while it has the same size and time of change; undefined for any other file. */
+    /**
+     * A file of an installed game system as the process last read it, while it has not changed since, nor in the two seconds before; undefined for any other
+     * file. The first reading asks the disk nothing more: a call from the command line, the only one of its process, pays nothing for it.
+     */
     private packageEntry(path: string): Kept | undefined
     {
         if (!this.packages.some((folder) => isInside(folder, path))) {
             return undefined;
         }
 
-        const stamp = stampOf(path);
         const known = packageFiles.get(path);
 
-        if (known !== undefined && stamp !== undefined && known.stamp === stamp) {
+        if (known !== undefined && !changedSince(path, known.readAt - racyMilliseconds)) {
             return known.entry;
         }
 
+        const readAt = Date.now();
         const entry: Kept = { text: readText(path), readings: new Map() };
-
-        if (stamp !== undefined) {
-            packageFiles.set(path, { stamp, entry });
-        }
-
+        packageFiles.set(path, { readAt, entry });
         return entry;
     }
 
@@ -252,11 +254,11 @@ export function isInside(folder: string, path: string): boolean
     return below !== "" && below !== ".." && !below.startsWith(`..${sep}`) && !isAbsolute(below);
 }
 
-/** "1234:5678.9": a file's size and time of change, which change when it is written; undefined when there is no file. */
-function stampOf(path: string): string | undefined
+/** Whether a file changed after a time, or is gone. */
+function changedSince(path: string, time: number): boolean
 {
     const stats = statSync(path, { throwIfNoEntry: false });
-    return stats === undefined ? undefined : `${stats.size}:${stats.mtimeMs}`;
+    return stats === undefined || stats.mtimeMs >= time;
 }
 
 /** The text of a file, or undefined when there is none: a folder or a file that cannot be read fails as before. */

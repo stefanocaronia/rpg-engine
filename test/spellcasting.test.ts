@@ -23,6 +23,13 @@ async function ok(...args: string[]): Promise<string>
     return result.output;
 }
 
+async function refused(...args: string[]): Promise<string>
+{
+    const result = await runCommandLine(args, context);
+    expect(result.exitCode, result.output).toBe(1);
+    return result.output;
+}
+
 /** A character of the party with these classes: str 10, dex 14, con 14, int 16, wis 16, cha 14 (+0, +2, +2, +3, +3, +2). */
 async function caster(name: string, classes: string): Promise<string>
 {
@@ -76,7 +83,7 @@ describe("a warlock's Pact Magic and Mystic Arcanum (pp. 47, 49)", () => {
         await ok("change", "Vex", "spell-slots", "--by=-2");
         expect(await ok("change", "Vex", "--recipe", "short rest")).toContain("spell-slots 0/2 → 2/2");
         await ok("write", "Vex", "--set", "classes=[[Warlock]] 11");
-        expect(await ok("show", "Vex#Spells")).toContain("mystic-arcanum 1/1");
+        expect(await ok("show", "Vex#Spells")).toContain("mystic-arcanum-6 1/1: the maximum from Warlock 11 in classes");
     });
 });
 
@@ -92,10 +99,46 @@ describe("the spells a character knows and prepares (D-227)", () => {
     });
 });
 
+describe("what the master is told when it writes and spends spells (D-216, D-227, DAT-9)", () => {
+    it("says when a spell has no page, or shares its name with another page, and gives each class's list by level", async () => {
+        await caster("Ada", "[[Wizard]] 5");
+        const written = await ok("write", "Ada", "--set", "spells=[[Palla di fuoco]], [[Shield]], [[Magic Missile]]");
+        expect(written).toContain("No page for [[Palla di fuoco]] yet: create it with write if it belongs to this world, or link a page that exists.");
+        expect(written).toContain("[[Shield]] is an item of the system 5e; there is also Shield (spell).");
+        expect(await ok("validate")).toContain("Fix: create Palla di fuoco with write if it belongs to this world, or write Ada, remove spells=[[Palla di fuoco]] if the link is wrong.");
+        expect(await ok("show", "Wizard Spells#1st Level")).toContain("- [[Magic Missile]]\n");
+        // After the campaign's own pages, the system's by name first.
+        expect((await ok("find", "shield")).split("\n").slice(1, 3)).toEqual(["Shield (item, system 5e)", "Shield (spell) (topic, system 5e)"]);
+    });
+
+    it("refuses a use the character does not get, by change and by write, without a remedy that would make one up", async () => {
+        await caster("Ada", "[[Wizard]] 5");
+        expect(await refused("change", "Ada", "spell-slots", "--by=-1")).toContain("Ada has no spell-slots: the system 5e gives it from the tables of its classes, and Ada has none from them. Its counters:");
+        expect(await refused("write", "Ada", "--set", "spell-slots=12/12")).toBe("spell-slots is a use the system 5e gives from the tables of its classes, and Ada has none of it: it is not written by hand. Nothing changed.");
+        await caster("Vex", "[[Warlock]] 3");
+        expect(await refused("write", "Vex", "--set", "slots-1=12/12")).toContain("slots-1 is a use the system 5e gives from caster-level, and Vex has none of it");
+    });
+
+    it("adds what an item gives to the save DC and the attack, and says what a new level changes, once", async () => {
+        await caster("Ada", "[[Wizard]] 5");
+        await ok("effect", "add", "Ada", "Robe of the Archmagi", "--set", "bonus-spell-dc=2", "--set", "bonus-spell-attack=2");
+        expect(await ok("show", "Ada")).toContain("spell-save-dc 16 · spell-attack +8");
+        const risen = await ok("write", "Ada", "--set", "classes=[[Wizard]] 6", "--set", "hp-base=34");
+        expect(risen).toContain("max-prepared 8 → 9");
+        expect(risen).not.toContain("A new level gives hit points");
+        expect(await ok("write", "Ada", "--set", "classes=[[Wizard]] 7")).toContain("A new level gives hit points");
+    });
+});
+
 describe("the formulas of a class's page (PRO-5)", () => {
     it("has validate report one that does not read", async () => {
         await ok("write", "Arcanista", "--type", "topic", "--set", "category=class", "--set", 'spell-save-dc="8 + proficiency +"', "--text", "| Level | Features |\n|---|---|\n| 1st | — |");
         await caster("Ugo", "[[Arcanista]] 1");
         expect(await ok("validate")).toContain("spell-save-dc on Arcanista does not read, so Ugo has none from it:");
+        await ok("write", "Arcanista", "--set", 'spell-save-dc="8 + spell-save-dc"', "--set", 'max-prepared="int-mood + 1"', "--set", 'spell-attack="table(nessuna, level)"');
+        const problems = await ok("validate");
+        expect(problems).toContain("spell-save-dc on Arcanista reads itself, so Ugo has none from it.");
+        expect(problems).toContain("max-prepared on Arcanista reads int-mood, which neither the system nor the character has, so Ugo has none from it.");
+        expect(problems).toContain('spell-attack on Arcanista reads the table "nessuna", which the system lacks, so Ugo has none from it.');
     });
 });

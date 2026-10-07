@@ -43,6 +43,7 @@ import {
     ownFieldChange,
     type Page,
     pageNamed,
+    pagesWithName,
     type PageType,
     pageTypeNames,
     parsePageReference,
@@ -214,6 +215,7 @@ export const write = defineCommand({
             }
 
             checkCounters(world, existing, fields.set, coins);
+            checkUses(world, system, existing, fields.set);
             checkClearedCounters(world, existing, ownFieldChange(world, existing, fields), coins);
             checkLists(world, existing, fields);
         }
@@ -255,13 +257,14 @@ export const write = defineCommand({
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? joiningNotes(system, now, page) : [];
-        const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page) : [];
+        const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
+        const links = changed ? linkNotes(now, fields) : [];
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...links, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -403,6 +406,35 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
 
         const hint = current.kind === "counter" ? maximumHint(world, effectiveFields(world, page), name) : undefined;
         throw new Error(hint === undefined ? guardedMessage(page, name, current.kind, next, holdsField(page, name) ? undefined : base?.base, base !== undefined) : workedCounterMessage(page, name, hint));
+    }
+}
+
+/**
+ * A use of the system that the character does not get, as a warlock's spell-slots on a wizard or slots on a warlock, is never written by hand (DAT-9): only on who
+ * keeps the sheet and has the system's lists, and never for one the sheet asks to write, as hp.
+ */
+function checkUses(world: World, system: GameSystem | undefined, page: Page, set: Record<string, unknown> | undefined): void
+{
+    const list = world.system?.progression?.list;
+    const after: Page = { ...page, fields: { ...page.fields, ...set } };
+    const fields = inheritedFields(world, after);
+    const classes = list === undefined ? undefined : Object.entries(fields).find(([name]) => comparableText(name) === comparableText(list))?.[1];
+
+    if (list === undefined || isEmptyField(classes) || !hasSheet(world, after)) {
+        return;
+    }
+
+    const asked = new Set((system?.sheet ?? []).flatMap((group) => group.entries.filter((entry) => !entry.optional).map((entry) => comparableText(entry.field))));
+
+    for (const field of Object.keys(set ?? {}).filter((name) => isUse(world, name) && !asked.has(comparableText(name)))) {
+        const counted = Object.keys(world.system?.formulas?.counters ?? {}).some((name) => comparableText(name) === comparableText(field));
+        const { max } = counterLimits(world, fields, field);
+
+        if (counted && (max === undefined || max <= 0)) {
+            const sources = maximumSources(world, field, fields);
+            const whence = sources.length === 0 ? `the tables of its ${list}` : sources.join(", ");
+            throw new Error(`${field} is a use the system ${world.system?.name ?? ""} gives from ${whence}, and ${page.name} has none of it: it is not written by hand. Nothing changed.`);
+        }
     }
 }
 
@@ -759,6 +791,35 @@ function noBaseNote(now: World, page: Page): string[]
     return hint === "" ? [] : [`${page.name} derives from no ${field}:${hint.replace(" If it", " if it")}`];
 }
 
+/**
+ * What a write should say of the links it gave in fields the game system declares, such as spells (D-216): those to pages that do not exist yet, which the world
+ * gets with write, and those to a page that shares its name with another, as Shield the item beside Shield (spell). A campaign played in another language is
+ * told the system's. The core's fields, as contains or knows, link ahead to pages still to write.
+ */
+function linkNotes(world: World, change: FieldChange): string[]
+{
+    const given = [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})].filter(([field]) => declaredKind(world, field) !== undefined).flatMap(([, value]) => linksIn(value));
+    const names = [...new Set(given)];
+    const exists = (name: string): Page | undefined => pagesWithName(world, name)[0] ?? systemPageNamed(world, name);
+    const missing = names.filter((name) => exists(name) === undefined);
+    const system = world.system;
+    const language = system !== undefined && world.language !== undefined && comparableText(world.language) !== comparableText(system.language)
+        ? ` The system ${system.name} names its pages in ${system.language}: find looks them up.`
+        : "";
+    const absent = missing.length === 0
+        ? []
+        : [`No page for ${missing.map((name) => `[[${name}]]`).join(", ")} yet: create ${missing.length === 1 ? "it" : "them"} with write if ${
+            missing.length === 1 ? "it belongs" : "they belong"
+        } to this world, or link a page that exists.${language}`];
+    const all = [...world.pages, ...(system?.pages ?? [])];
+    const twins = names.flatMap((name) => {
+        const page = exists(name);
+        const others = page === undefined ? [] : all.filter((other) => comparableText(other.name).startsWith(`${comparableText(page.name)} (`));
+        return page === undefined || others.length === 0 ? [] : [`[[${name}]] is ${page.system === undefined ? withArticle(page.type ?? "page") : systemLabel(page)}; there is also ${others.map((other) => other.name).join(", ")}.`];
+    });
+    return [...absent, ...twins];
+}
+
 /** "hp=15/15": the fields a refused write gave, for the call to make instead, without the base field, which that call gives. */
 function givenFields(set: Record<string, unknown> | undefined, baseField: string | undefined): string[]
 {
@@ -968,9 +1029,10 @@ function withoutComputed(world: World, target: Page | undefined, set: Record<str
 
 /**
  * What a change of classes gives or takes (PRO-4): the features of the rows it reaches, new, gained again or with a new value, those no longer had, the values of
- * the rows that change, and, when a class rises, the system's note for a new level (D-226). Nothing when the classes give the same.
+ * the rows and of the formulas of the classes' pages that change, and, when a class rises, the system's note for a new level (D-226), unless the same write sets
+ * a field it names, as hp-base. Nothing when the classes give the same.
  */
-function progressionNotes(before: World, after: World, existing: Page, page: Page): string[]
+function progressionNotes(before: World, after: World, existing: Page, page: Page, set: string[]): string[]
 {
     const was = progressionOf(before, effectiveFields(before, existing));
     const is = progressionOf(after, effectiveFields(after, page));
@@ -989,19 +1051,29 @@ function progressionNotes(before: World, after: World, existing: Page, page: Pag
         const [from, to] = [valueOf(was, field), valueOf(is, field)];
         return from === to ? [] : [`${field} ${from ?? "none"} → ${to ?? "none"}`];
     });
+    // What the formulas of the classes' pages give, as the prepared spells of a new level (PRO-5).
+    const [then, now] = [effectiveFields(before, existing), effectiveFields(after, page)];
+    const formulaValues = (after.system?.progression?.formulas ?? []).flatMap((field) => {
+        const [from, to] = [readField(then, field), readField(now, field)];
+        const text = (value: unknown): string => (value === undefined ? "none" : typeof value === "number" ? signedText(after, field, value) : String(value));
+        return text(from) === text(to) ? [] : [`${field} ${text(from)} → ${text(to)}`];
+    });
     const shown = gains.fresh[0] ?? gains.better[0]?.name;
     const parts = [
         gains.fresh.length === 0 ? "" : `${gains.fresh.join(", ")} ${gains.fresh.length === 1 ? "is" : "are"} new`,
         gains.again.length === 0 ? "" : `${gains.again.join(", ")} again`,
         gains.better.map((feature) => feature.text).join(", "),
         lost.length === 0 ? "" : `no longer ${lost.join(", ")}`,
-        values.join(", "),
+        [...values, ...formulaValues].join(", "),
     ].filter((part) => part !== "");
     const hint = shown === undefined ? "" : ` show ${page.name}#${featureParts(shown).name} gives a feature's text.`;
     const levelUp = after.system?.progression?.levelUp;
     // A new level is one more in all: a class changed for another of a lower level is none.
     const levels = (progression: typeof was): number => (progression?.from ?? []).reduce((total, item) => total + (item.level ?? 0), 0);
-    const risen = levelUp !== undefined && levels(is) > levels(was);
+    // Not said when the same write sets a field the note names, as hp-base: it is already done.
+    const named = new Set((levelUp?.match(/[\p{L}\p{N}-]+/gu) ?? []).map(comparableText));
+    const done = set.some((field) => named.has(comparableText(field)));
+    const risen = levelUp !== undefined && levels(is) > levels(was) && !done;
     // A value that ends in a period, such as +10 ft., ends the line.
     const said = parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ").replace(/\.$/, "")}.${hint}`];
     return [...said, ...(risen ? [levelUp] : [])];
@@ -1071,8 +1143,11 @@ function workedLimitsChange(system: GameSystem | undefined, before: World, exist
             return [];
         }
 
-        // Of a use, what was spent stays spent, as a table counts it: a maximum that grows by 3 gives 3 more (FOR-6, D-228). Any other counter keeps its current.
-        const value = counter.max === undefined || !isUse(world, key) ? counter.value : Math.max(0, counter.value + limit - counter.max);
+        // Of a use, what was spent stays spent, as a table counts it: a maximum that grows by 3 gives 3 more; one that falls only caps the current, as the SRD does,
+        // but for what an effect allows above the written maximum (FOR-6, D-228). Any other counter keeps its current, which reads no higher than the maximum.
+        const grows = counter.max !== undefined && limit > counter.max;
+        const capped = counter.max !== undefined && counter.value <= counter.max ? Math.max(0, Math.min(counter.value, limit)) : counter.value;
+        const value = !isUse(world, key) || counter.max === undefined ? counter.value : grows ? counter.value + limit - counter.max : capped;
         return [{ key, before: counter.max, value: formatCounter({ value, max: limit }), reads: formatCounter({ value: Math.min(value, limit), max: limit }), max: limit, lost: max === undefined }];
     });
     // Only a use that the lists give, such as rages from the classes, never one the sheet asks to write, as hp: it stays at any maximum.

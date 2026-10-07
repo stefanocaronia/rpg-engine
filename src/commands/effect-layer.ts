@@ -1,6 +1,7 @@
 // The values effects give for a while, as a layer over a page (D-123, EFF-3): read by every command that shows or changes a page's fields.
 import { numberOf } from "../core/formula.ts";
 import { comparableText } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
 import { declaredKind, inheritedFields, type Page, readFieldValue, type World } from "../pages/index.ts";
 import { hasSheet, withWorkedOut } from "./worked-out.ts";
@@ -69,7 +70,7 @@ export function valuesChanged(world: World, before: Page, after: Page, effect: E
     const is = effectiveFields(world, after);
     const read = (fields: Record<string, unknown>, field: string): string => String(Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? "none");
 
-    return effect.values.map(([field]) => field).flatMap((field) => {
+    const own = effect.values.map(([field]) => field).flatMap((field) => {
         if (read(was, field) !== read(is, field)) {
             return [`${field} ${read(was, field)} → ${read(is, field)}`];
         }
@@ -77,6 +78,10 @@ export function valuesChanged(world: World, before: Page, after: Page, effect: E
         const other = effectGiving(after, field);
         return other === undefined || comparableText(other.name) === comparableText(effect.name) ? [] : [`${field} stays ${read(is, field)}, from ${other.name}: check it`];
     });
+    // The counters whose maximum follows what the effect gives, as hp after Aid (FOR-6).
+    const given = new Set(effect.values.map(([field]) => comparableText(field)));
+    const counters = Object.keys(is).filter((field) => !given.has(comparableText(field)) && readCounter(is[field])?.max !== undefined && read(was, field) !== read(is, field));
+    return [...own, ...counters.map((field) => `${field} ${read(was, field)} → ${read(is, field)}`)];
 }
 
 /** The effect with a new value for one of its fields, as change writes it (EFF-7). */

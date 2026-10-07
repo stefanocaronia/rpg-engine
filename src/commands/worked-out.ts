@@ -210,7 +210,21 @@ function progressedField(world: World, scope: ReturnType<typeof formulaScope>, f
 {
     const progression = scope.progression();
     const found = progressionFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
-    return found === undefined || progression === undefined ? undefined : { name: found.field, value: found.value, from: progression.lists };
+
+    if (found === undefined || progression === undefined) {
+        return undefined;
+    }
+
+    // A formula of the classes' pages comes from what it reads, as the bonus an item gives (PRO-5); the rows, from the lists alone.
+    const formulas = (world.system?.progression?.formulas ?? []).some((name) => comparableText(name) === comparableText(found.field));
+    const read = formulas
+        ? progression.from.flatMap((item) => {
+            const formula = itemFormula(scope.page(item.name), found.field);
+            return formula === undefined ? [] : writtenSources(world, formula, scope);
+        })
+        : [];
+    const from = [...new Set([...read, ...progression.lists])];
+    return { name: found.field, value: found.value, from };
 }
 
 /** The minimum and maximum the game system works out for a counter with these fields, where they have a whole value (FOR-6). */
@@ -349,8 +363,12 @@ export function workedParts(world: World, reads: FormulaRead[]): string
             return read.value === 0 ? [] : [read.value === 1 && !/\d/.test(read.item) ? `${read.item} in ${read.list}` : `${read.item} ${read.value} in ${read.list}`];
         }
 
-        // The total of a list says nothing more beside one of its items: "Cleric 3 in classes".
-        return reads.some((other) => "item" in other && other.list === read.list && other.value !== 0) ? [] : [`${read.value} in ${read.list}`];
+        // The total of a list says nothing more beside one of its items, "Cleric 3 in classes", nor when it is 0; how many items a list has is no part of a value.
+        if (read.count === true || read.value === 0 || reads.some((other) => "item" in other && other.list === read.list && other.value !== 0)) {
+            return [];
+        }
+
+        return [`${read.value} in ${read.list}${read.where === undefined ? "" : `, ${read.where}`}`];
     });
     // "Perception in skills" says nothing more beside "Perception 3 in skills".
     const named = (part: string): boolean => parts.some((other) => other !== part && other.startsWith(part.replace(/ in [^ ]+$/, " ")) && other.endsWith(part.slice(part.lastIndexOf(" in "))));
@@ -491,10 +509,13 @@ function formulaScope(
                 return worked.value;
             }
 
-            // A formula of the classes' pages counts in another only as one number, for one class.
+            // A formula of the classes' pages counts in another only as one number, for one class; with none, the page's own value, as a witch's written DC.
             if ((world.system?.progression?.formulas ?? []).some((field) => comparableText(field) === comparableText(name))) {
                 const value = each(name, false)?.value;
-                return typeof value === "number" ? value : undefined;
+
+                if (value !== undefined) {
+                    return typeof value === "number" ? value : undefined;
+                }
             }
 
             const given = isSystemCounter(world, name) ? undefined : progressionValue(progression(), name);

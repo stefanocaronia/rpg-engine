@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -165,8 +165,19 @@ describe("the limits of counters (FOR-6)", () => {
         await ok("effect", "add", "Ettore", "Aid", "--set", "hp-base=23");
         expect(await ok("change", "Ettore", "hp", "--by=5")).toBe("Ettore: hp 24/29 → 29/29: at max.");
         expect(pageText("Ettore")).toContain("hp: 29/24");
-        await ok("effect", "end", "Ettore", "Aid");
+        expect(await ok("effect", "end", "Ettore", "Aid")).toContain("hp 29/29 → 24/24");
         expect(pageText("Ettore")).toContain("hp: 24/24");
+        expect(readLogFile(folder).at(-2)?.data).toMatchObject({ page: "Ettore", field: "hp", before: "29/24", after: "24/24" });
+    });
+
+    it("leaves the page's current to a form that lowers the maximum, and caps a use's current when its maximum falls (D-228)", async () => {
+        await ok("change", "Ettore", "hp", "--to", "20");
+        await ok("effect", "add", "Ettore", "Polymorph", "--set", "con=9", "--set", "hp=1");
+        await ok("effect", "end", "Ettore", "Polymorph");
+        expect(pageText("Ettore")).toContain("hp: 20/24");
+        // A Constitution that falls for good lowers the maximum by 3: the current stays within it, as the SRD says.
+        expect(await ok("write", "Ettore", "--set", "con=12")).toContain("hp 20/21 (max 24 → 21");
+        expect(pageText("Ettore")).toContain("hp: 20/21");
     });
 
     it("works out the maximum of a counter the page writes without one", async () => {

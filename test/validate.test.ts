@@ -78,7 +78,7 @@ describe("rpg validate", () => {
 
     it("gives a fix that works when the entry has a label or a path", async () => {
         writeByHand("world/characters/Lena.md", '---\nknows:\n  - "[[Rosa|la ragazza]]"\n---\n');
-        const fix = /Fix: write Lena, remove (knows=.*)\.$/m.exec((await rpg("validate")).output)?.[1];
+        const fix = /write Lena, remove (knows=\[\[[^\]]*\]\])/.exec((await rpg("validate")).output)?.[1];
         expect(fix).toBe("knows=[[Rosa|la ragazza]]");
         expect((await rpg("write", "Lena", "--remove", fix!)).exitCode).toBe(0);
         expect((await rpg("validate")).output).toBe("No problems.");

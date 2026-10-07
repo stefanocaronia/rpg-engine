@@ -40,7 +40,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { keptRolls } from "./page-counters.ts";
-import { computedField, computedMessage, counterLimits, maximumHint } from "./worked-out.ts";
+import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder
@@ -215,7 +215,7 @@ function applyStep(
             after = holder.write(backToBase ? Object.fromEntries(spellings.map((name) => [name, undefined])) : { [written]: storedCounter(world, holder, field, step.after) });
         } else {
             const effects = effectsOf(holder.page).map((effect) => (effect.name === layer.name ? withValue(effect, field, String(step.after)) : effect));
-            after = saveEffects(root, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
+            after = saveEffects(root, context, world, { page: holder.page, copy: holder.kind === "copy" }, effects);
         }
 
         const data = { page, copy: holder.kind === "copy" ? true : undefined, field, effect: layer?.name, before: step.before, after: step.after, ...step.amount, why };
@@ -309,7 +309,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
     const { ending, remaining } = effectsAtRecipe(start.page, recipe);
 
     if (ending.length > 0) {
-        const written = saveEffects(root, current, { page: start.page, copy: false }, remaining);
+        const written = saveEffects(root, context, current, { page: start.page, copy: false }, remaining);
 
         for (const effect of ending) {
             appendLogEntry(root, newDatedLogEntry(root, context, "effect-ended", start.visibility, { page: name, effect: effect.name, why }));
@@ -639,6 +639,15 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     });
     const hasMoney = coins !== undefined && keys.some((key) => declaredKind(world, key) === undefined && readAmount(fields[key], coins) !== undefined);
     const listed = held.length > 0 ? `Its counters${hasMoney ? " and money" : ""}: ${held.join(", ")}.` : "It has no counters.";
+    // A counter the system gives who has what it comes from is not added by hand, as a warlock's spell-slots to a wizard (DAT-9).
+    const given = Object.keys(world.system?.formulas?.counters ?? {}).find((counter) => comparableText(counter) === comparableText(name.trim()));
+
+    if (given !== undefined && holder.kind === "page" && hasSheet(world, page)) {
+        const sources = maximumSources(world, given, fields);
+        const whence = sources.length === 0 ? `the tables of its ${world.system?.progression?.list ?? "lists"}` : sources.join(", ");
+        throw new Error(`${page.name} has no ${given}: the system ${world.system?.name ?? ""} gives it from ${whence}, and ${page.name} has none from them. ${listed}`);
+    }
+
     throw new Error(`${page.name} has no field "${name}". ${listed} ${howToAdd(world, holder, name, example)}`);
 }
 

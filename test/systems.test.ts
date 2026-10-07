@@ -288,7 +288,7 @@ describe("after the round on the code: the system missing, and the remedies (SYS
         expect(await refused("write", "Wolf", "--set", "hp=9/9")).toContain(missing);
         expect(await ok("validate")).toContain(
             "world/creatures/Lupo.md: creature links to [[Wolf]], which does not exist. Fix: if it is a page of the system Quinta edizione, which is not installed, fix the system first, "
-                + "as the problem on campaign.yaml says; otherwise write Lupo, set creature to a page that exists.",
+                + "as the problem on campaign.yaml says; otherwise create Wolf with write if it belongs to this world, or write Lupo, set creature to a page that exists.",
         );
         expect(await ok("status")).toContain("Guadoscuro · it · Quinta edizione (not installed: ask the player, then config, setting system, value 5e) · difficulty normal");
     });

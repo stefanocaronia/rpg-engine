@@ -32,7 +32,7 @@ export interface FormulaScope
 export type FormulaRead =
     | { field: string; value: number; key?: true; }
     | { list: string; item: string; value: number; }
-    | { list: string; value: number; }
+    | { list: string; value: number; where?: string; count?: true; }
     | { table: string; key: string; value: number; };
 
 /** A formula worked out: its value, undefined when the page lacks something it needs (FOR-4), and what it read. */
@@ -384,7 +384,10 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
         : formula.name === "item"
         ? (items.find(named)?.number ?? 0)
         : items.reduce((total, item) => total + (item.number ?? 0), 0);
-    reads.push(formula.item === undefined ? { list: formula.list, value } : { list: formula.list, item: formula.item, value });
+    // "5 in classes, spellcasting full": a filtered total says its filter; a count says how many, not a number of the list.
+    const filter = where === undefined ? {} : { where: `${where.field} ${where.value}` };
+    const counted = formula.name === "count" ? { count: true as const } : {};
+    reads.push(formula.item === undefined ? { list: formula.list, value, ...filter, ...counted } : { list: formula.list, item: formula.item, value });
     return value;
 }
 

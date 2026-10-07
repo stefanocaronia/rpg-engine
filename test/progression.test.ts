@@ -138,9 +138,9 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
         expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 13")).not.toContain("What Brann's classes give");
     });
 
-    it("adds up the same column of two classes, and keeps a feature two classes give once", async () => {
+    it("gives the same column of two classes for each class, and keeps a feature two classes give once (PRO-2)", async () => {
         const written = await ok("write", "Brann", "--set", "classes=[[Bard]] 2, [[Wizard]] 1, [[Cleric]] 6", "--set", "subclasses=[[Life Domain]]");
-        expect(written).toContain("cantrips-known none → 9");
+        expect(written).toContain("cantrips-known none → Bard 2, Wizard 3, Cleric 4");
         const shown = await ok("show", "Brann");
         expect(shown).toContain("Channel Divinity (2/rest)");
         expect(shown).toContain("Jack of All Trades");
@@ -182,7 +182,9 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
         expect(eighth).toContain("What Brann's classes give: Extra Attack, Fast Movement, Mindless Rage, Feral Instinct are new; Ability Score Improvement again.");
         expect(eighth).toContain("A new level gives hit points: roll the hit die of the class that rose");
         await ok("write", "Lio", "--type", "character", "--set", "role=pc", "--set", "creature=[[Human]]", "--set", "classes=[[Bard]] 4", "--set", "cha=14");
-        expect(await ok("write", "Lio", "--set", "classes=[[Bard]] 5")).toContain("Font of Inspiration is new; Bardic Inspiration (d6 → d8); spells-known 7 → 8. show Lio#Font of Inspiration gives a feature's text.");
+        expect(await ok("write", "Lio", "--set", "classes=[[Bard]] 5")).toContain(
+            "Font of Inspiration is new; Bardic Inspiration (d6 → d8); spells-known 7 → 8, spell-save-dc 12 → 13, spell-attack +4 → +5. show Lio#Font of Inspiration gives a feature's text.",
+        );
         const lower = await ok("write", "Brann", "--set", "classes=[[Fighter]] 1", "--unset", "subclasses");
         expect(lower).toContain("Brann no longer has hit-dice-d12, rages: the system 5e gives no uses of them now.");
         expect(lower).not.toContain("A new level gives hit points");

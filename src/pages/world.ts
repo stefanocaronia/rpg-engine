@@ -217,7 +217,7 @@ export function systemPageNamed(world: World, name: string): Page | undefined
 export function searchSystemPages(world: World, query: { text?: string; type?: PageType; }): PageMatch[]
 {
     const text = comparableText(query.text?.trim() ?? "");
-    return (world.system?.pages ?? []).filter((page) => query.type === undefined || page.type === query.type).flatMap((page): PageMatch[] => {
+    const found = (world.system?.pages ?? []).filter((page) => query.type === undefined || page.type === query.type).flatMap((page): PageMatch[] => {
         if (text === "" || comparableText(page.name).includes(text)) {
             return [{ page }];
         }
@@ -225,6 +225,14 @@ export function searchSystemPages(world: World, query: { text?: string; type?: P
         const excerpt = fieldExcerpt(page, text);
         return excerpt === undefined ? [] : [{ page, excerpt }];
     });
+
+    // The name itself first, then names that begin with the text, names that hold it, and last pages whose fields do: Shield before Shield Guardian (D-195).
+    const rank = (match: PageMatch): number => {
+        const name = comparableText(match.page.name);
+        return match.excerpt !== undefined ? 3 : name === text ? 0 : name.startsWith(text) ? 1 : 2;
+    };
+
+    return text === "" ? found : found.map((match, index) => ({ match, index })).sort((first, second) => rank(first.match) - rank(second.match) || first.index - second.index).map(({ match }) => match);
 }
 
 /** The world with a page as it is now written, in its place or added: for what depends on it, without reading every page again. */

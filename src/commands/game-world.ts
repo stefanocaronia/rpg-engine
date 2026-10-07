@@ -25,8 +25,17 @@ export function campaignWorld(root: string, context: Context): World
  */
 export function campaignSystem(root: string, context: Context): GameSystem | undefined
 {
-    const name = readTextSetting(root, "system");
-    return name === undefined ? undefined : findCampaignSystem(context.systemFolders, name, readCampaignData(root)).system;
+    return systemOf(root, context).system;
+}
+
+/** The game system campaign.yaml names, with its additions or why they do not read, read once until campaign.yaml changes: a call asks for it many times. */
+function systemOf(root: string, context: Context): { system?: GameSystem; problem?: string; }
+{
+    const settings = resolve(join(root, campaignFileName));
+    return files().remember(`system ${resolve(root)}`, (path) => path === settings, () => {
+        const name = readTextSetting(root, "system");
+        return name === undefined ? {} : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
+    });
 }
 
 /** The occasions of a game system that end effects (DAT-5): those its recipes name, such as long rest. */
@@ -46,7 +55,7 @@ export function systemOccasions(root: string, context: Context): { system: strin
 export function systemProblems(root: string, context: Context): Problem[]
 {
     const name = readTextSetting(root, "system");
-    const found = name === undefined ? undefined : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
+    const found = name === undefined ? undefined : systemOf(root, context);
 
     // What the campaign adds that does not read: the campaign plays with the system alone (CAM-3).
     if (found?.problem !== undefined) {

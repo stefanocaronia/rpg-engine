@@ -1,6 +1,6 @@
 // What the classes of a character give (D-201, D-219, PRO-1–PRO-4): the row of each class's table at its level, and the features gained so far, with those its
 // subclasses add. The tables are the pages' own; this is where the system's progression meets the pages of a world.
-import { listItems, parseFormula } from "../core/formula.ts";
+import { fieldsRead, type Formula, listItems, parseFormula, tablesRead } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { type Page, pagesWithName, sectionTitles, systemPageNamed, type World } from "../pages/index.ts";
@@ -12,6 +12,8 @@ export interface ProgressionValue
     field: string;
     value: number | string;
     from: { name: string; level: number; }[];
+    /** The value each item's row gives, in the order of `from`. */
+    cells: (number | string)[];
 }
 
 /**
@@ -142,11 +144,14 @@ export function progressionProblems(world: World, page: Page, fields: Record<str
             : undefined;
         return message === undefined ? [] : [{ path: page.path, message, fix: table === undefined ? `write ${entry.page.name} with its table of levels, as the system's do` : `check the level of ${entry.page.name} in ${rule.list}` }];
     });
-    return [...unread, ...rows, ...formulaProblems(page, rule, entries), ...partProblems(world, page, fields, rule, entries)];
+    return [...unread, ...rows, ...formulaProblems(world, page, fields, rule, entries), ...partProblems(world, page, fields, rule, entries)];
 }
 
-/** A formula an item's page gives that does not read, so that the character has no value from it (PRO-5). */
-function formulaProblems(page: Page, rule: NonNullable<NonNullable<World["system"]>["progression"]>, entries: { page: Page; }[]): Problem[]
+/**
+ * A formula an item's page gives that the character can have no value from (PRO-5): one that does not read, that reads itself, a table the system lacks or a
+ * name that neither the system nor the character has.
+ */
+function formulaProblems(world: World, page: Page, fields: Record<string, unknown>, rule: NonNullable<NonNullable<World["system"]>["progression"]>, entries: { page: Page; }[]): Problem[]
 {
     return entries.flatMap((entry) =>
         (rule.formulas ?? []).flatMap((field): Problem[] => {
@@ -156,15 +161,48 @@ function formulaProblems(page: Page, rule: NonNullable<NonNullable<World["system
                 return [];
             }
 
+            let formula: Formula;
+
             try {
-                parseFormula(String(text));
-                return [];
+                formula = parseFormula(String(text));
             } catch (error) {
                 const why = error instanceof Error ? error.message : String(error);
                 return [{ path: page.path, message: `${field} on ${entry.page.name} does not read, so ${page.name} has none from it: ${why}`, fix: `write ${entry.page.name}, set ${field} as a formula` }];
             }
+
+            const why = formulaGap(world, fields, rule, field, formula);
+            return why === undefined ? [] : [{ path: page.path, message: `${field} on ${entry.page.name} ${why}, so ${page.name} has none from it.`, fix: `write ${entry.page.name}, set ${field} as a formula of what the system has` }];
         })
     );
+}
+
+/** Why a formula of an item's page can give no value: it reads itself, a table the system lacks, or a name no one has; undefined when none of these. */
+function formulaGap(world: World, fields: Record<string, unknown>, rule: NonNullable<NonNullable<World["system"]>["progression"]>, field: string, formula: Formula): string | undefined
+{
+    const system = world.system;
+    const read = fieldsRead(formula);
+
+    if (read.some((name) => comparableText(name) === comparableText(field))) {
+        return "reads itself";
+    }
+
+    const table = tablesRead(formula).find((name) => !Object.keys(system?.formulas?.tables ?? {}).some((other) => comparableText(other) === comparableText(name)));
+
+    if (table !== undefined) {
+        return `reads the table "${table}", which the system lacks`;
+    }
+
+    const rows = progressionOf(world, fields)?.values.map((value) => value.field) ?? [];
+    const known = [
+        ...Object.keys(system?.fields ?? {}),
+        ...(system?.formulas?.computed ?? []).map(([name]) => name),
+        ...Object.keys(system?.formulas?.counters ?? {}),
+        ...(rule.formulas ?? []),
+        ...rows,
+        ...Object.keys(fields),
+    ].map(comparableText);
+    const unknown = read.find((name) => !known.includes(comparableText(name)));
+    return unknown === undefined ? undefined : `reads ${unknown}, which neither the system nor the character has`;
 }
 
 /** The name of a page of the system that an item of the list may link to, for an example: the first one that has a table of levels. */
@@ -200,20 +238,23 @@ function readTable(page: Page, column: string): { table?: LevelTable; title: (na
     return read;
 }
 
-/** A cell as a value: a whole number as a number, anything else as written. Two items with the same column add up their numbers; otherwise the first counts (PRO-2). */
+/**
+ * A cell as a value: a whole number as a number, anything else as written. Two items with the same column give a value each, as the cantrips a bard and a
+ * sorcerer know, each from their class (PRO-2): "Bard 3, Sorcerer 4", which no formula reads.
+ */
 function addValue(values: Map<string, ProgressionValue>, field: string, cell: string, from: { name: string; level: number; }): void
 {
     const value = /^\d+$/.test(cell) ? Number(cell) : cell;
     const known = values.get(comparableText(field));
 
     if (known === undefined) {
-        values.set(comparableText(field), { field, value, from: [from] });
+        values.set(comparableText(field), { field, value, from: [from], cells: [value] });
         return;
     }
 
-    if (typeof known.value === "number" && typeof value === "number") {
-        values.set(comparableText(field), { ...known, value: known.value + value, from: [...known.from, from] });
-    }
+    const cells = [...known.cells, value];
+    const every = [...known.from, from];
+    values.set(comparableText(field), { ...known, value: every.map((item, index) => `${item.name} ${String(cells[index])}`).join(", "), from: every, cells });
 }
 
 /** The parts the fields name whose page names an item of the list, each with the level of that item (PRO-3). */

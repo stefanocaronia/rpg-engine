@@ -149,8 +149,10 @@ function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page
     return [...inFields, ...inText].flatMap((found) => {
         const broken = brokenLink(world, pagesByName, found.link);
         // While the campaign's system is missing, the link may be to one of its pages: removing it would break what derives from it.
-        const first = broken === "which does not exist" ? systemFirstFix(world) : undefined;
-        const fix = first === undefined ? linkFix(page, found.field, found.entry, found.inList) : `${first}; otherwise ${linkFix(page, found.field, found.entry, found.inList)}`;
+        const missing = broken === "which does not exist";
+        const first = missing ? systemFirstFix(world) : undefined;
+        const own = missing ? missingFix(world, page, found.link.page, found.field, found.entry, found.inList) : linkFix(page, found.field, found.entry, found.inList);
+        const fix = first === undefined ? own : `${first}; otherwise ${own}`;
         return broken === undefined ? [] : [{ path: page.path, message: `${found.field ?? "The text"} links to ${written(found.link)}, ${broken}.`, fix }];
     });
 }
@@ -202,6 +204,23 @@ function written(link: Link): string
 }
 
 /** How to fix a broken link: remove the list entry as it is written, set the field again, or correct the text. */
+/**
+ * How to fix a link in a field to a page that does not exist: what the world lacks gets its page, as a spell the system does not have (D-216); a wrong link goes. A
+ * campaign played in another language than its system's is told the system's.
+ */
+function missingFix(world: World, page: Page, target: string, field: string | undefined, entry: string | undefined, inList: boolean): string
+{
+    if (field === undefined || field === "effects") {
+        return linkFix(page, field, entry, inList);
+    }
+
+    const system = world.system;
+    const language = system !== undefined && world.language !== undefined && comparableText(world.language) !== comparableText(system.language)
+        ? ` (the system ${system.name} names its pages in ${system.language}: find looks them up)`
+        : "";
+    return `create ${target} with write if it belongs to this world, or ${linkFix(page, field, entry, inList)}${inList ? " if the link is wrong" : ""}${language}`;
+}
+
 function linkFix(page: Page, field: string | undefined, entry: string | undefined, inList: boolean): string
 {
     if (field === undefined) {

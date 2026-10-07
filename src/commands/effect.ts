@@ -101,7 +101,7 @@ export const effect = defineCommand({
 
             const remaining = current.filter((effect) => effect !== ended);
             const values = valuesChanged(world, holder.page, withEffects(holder.page, remaining), ended);
-            saveEffects(root, world, holder, remaining);
+            saveEffects(root, context, world, holder, remaining);
             appendLogEntry(root, newDatedLogEntry(root, context, "effect-ended", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: ended.name, why }));
             return { action: "end", page: holder.page.name, effect: ended.name, values, ended: [], notes: [] };
         }
@@ -127,7 +127,7 @@ export const effect = defineCommand({
         const effects = withEffect(current, added);
         const changed = valuesChanged(world, holder.page, withEffects(holder.page, effects), added);
         const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system)];
-        saveEffects(root, world, holder, effects);
+        saveEffects(root, context, world, holder, effects);
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
         const instead = replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`];
         return { action: "add", page: holder.page.name, effect: added.name, end: added.end === undefined ? undefined : formatEnd(added.end), values: changed, ended: [], notes: [...instead, ...notes] };
@@ -347,7 +347,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
 
     // An effect changes what a computed field comes from, never the field (FOR-7, D-200).
     // What the tables of a character's classes give comes from its lists alone, which no effect gives (PRO-2).
-    if (computed !== undefined && computed.from.length > 0 && computed.from.every((name) => declaredKind(world, name) === "list")) {
+    if (computed !== undefined && computed.from.length > 0 && computed.from.every((name) => declaredKind(world, name) === "list" || computedField(world, name, fields) !== undefined)) {
         throw new Error(`${computed.name} on ${page.name} is what its ${computed.from.join(" and ")} give, from the tables of their pages: an effect cannot change it. Nothing changed.`);
     }
 
