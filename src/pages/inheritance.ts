@@ -10,7 +10,7 @@ import { linksIn, type Page, pagesWithName, systemPageNamed, type World } from "
 const baseFields: Partial<Record<PageType, "creature" | "item">> = { character: "creature", creature: "creature", item: "item" };
 
 // INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, and what holds it for a while. Fields a system declares are inherited.
-const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
+const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "equipped", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
 
 /** A field and its value as a page writes it. */
 export interface FieldValue

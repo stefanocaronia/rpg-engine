@@ -6,7 +6,7 @@ import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./
 import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { systemLabel } from "./system-pages.ts";
-import { linksIn, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
+import { linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -48,6 +48,7 @@ function worldProblems(world: World): Problem[]
             ...linkProblems(world, pagesByName, page),
             ...publicKnowsProblems(world, pagesByName, page),
             ...containerProblems(world, pagesByName, listingsByName, page),
+            ...equippedProblems(world, pagesByName, page),
             ...pageAlone.environment(page),
             ...pageAlone.sections(page),
             ...inheritanceProblems(world, page),
@@ -308,6 +309,43 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
 
             const message = `${holder.name} lists ${page.name} in ${listing.field}, but ${withArticle(holder.type ?? "free page")} holds ${heldTypesText(holder.type)}, and ${page.name} is ${withArticle(page.type ?? "free page")}.`;
             return [{ path: holder.path, message, fix: `move ${page.name}, to a container that holds it, such as a place; or write ${holder.name}, remove ${listing.field}=${listing.entry}` }];
+        })
+    );
+}
+
+/**
+ * What a character has equipped and does not hold, directly or inside what it holds (CON-12): an item that went elsewhere, or a page of the game system, a kind,
+ * which is nowhere.
+ */
+function equippedProblems(world: World, pagesByName: Map<string, Page[]>, character: Page): Problem[]
+{
+    const value = character.fields.equipped;
+
+    if (character.type !== "character" || isEmptyField(value)) {
+        return [];
+    }
+
+    return (Array.isArray(value) ? value : [value]).map(String).flatMap((entry) =>
+        linksIn(entry).flatMap((name): Problem[] => {
+            const held = pagesByName.get(comparableText(name));
+            const system = held === undefined ? systemPageNamed(world, name) : undefined;
+
+            if (system !== undefined) {
+                return [{
+                    path: character.path,
+                    message: `${character.name} has ${system.name} in equipped, but it is ${systemLabel(system)}, a kind: what a character wears or wields is an item of the campaign with item=[[${system.name}]], in its inventory.`,
+                    fix: `write "<name>", type item, set item=[[${system.name}]], move it to ${character.name}, then write ${character.name}, remove equipped=${entry} and add the new one`,
+                }];
+            }
+
+            const page = held?.length === 1 ? held[0] : undefined;
+            return page === undefined || locate(world, page).chain.includes(character)
+                ? []
+                : [{
+                    path: character.path,
+                    message: `${character.name} has ${page.name} in equipped, but does not carry it: a character wears or wields only what it holds.`,
+                    fix: `move ${page.name}, to ${character.name}; or write ${character.name}, remove equipped=${entry}`,
+                }];
         })
     );
 }

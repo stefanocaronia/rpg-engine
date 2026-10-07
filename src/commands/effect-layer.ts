@@ -1,5 +1,5 @@
 // The values effects give for a while, as a layer over a page (D-123, EFF-3): read by every command that shows or changes a page's fields.
-import { numberOf } from "../core/formula.ts";
+import { fieldsRead, numberOf } from "../core/formula.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
@@ -78,10 +78,14 @@ export function valuesChanged(world: World, before: Page, after: Page, effect: E
         const other = effectGiving(after, field);
         return other === undefined || comparableText(other.name) === comparableText(effect.name) ? [] : [`${field} stays ${read(is, field)}, from ${other.name}: check it`];
     });
-    // The counters whose maximum follows what the effect gives, as hp after Aid (FOR-6).
+    // The counters whose maximum follows what the effect gives, as hp after Aid (FOR-6), and the numbers worked out right from it, as ac from Mage Armor's
+    // unarmored-base (FOR-3).
     const given = new Set(effect.values.map(([field]) => comparableText(field)));
     const counters = Object.keys(is).filter((field) => !given.has(comparableText(field)) && readCounter(is[field])?.max !== undefined && read(was, field) !== read(is, field));
-    return [...own, ...counters.map((field) => `${field} ${read(was, field)} → ${read(is, field)}`)];
+    const computed = (world.system?.formulas?.computed ?? [])
+        .filter(([name, formula]) => !given.has(comparableText(name)) && fieldsRead(formula).some((field) => given.has(comparableText(field))) && read(was, name) !== read(is, name))
+        .map(([name]) => name);
+    return [...own, ...[...counters, ...computed].map((field) => `${field} ${read(was, field)} → ${read(is, field)}`)];
 }
 
 /** The effect with a new value for one of its fields, as change writes it (EFF-7). */

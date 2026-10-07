@@ -45,8 +45,8 @@ const systemSchema = z.object({
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
         "level-up": z.string().min(1).optional(),
-        formulas: z.array(z.string().min(1)).optional(),
     }).strict().optional(),
+    "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
         z.string(),
@@ -129,6 +129,8 @@ export interface GameSystem
     formulas: SystemFormulas;
     /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
     progression?: ProgressionRule;
+    /** By list, the fields whose value on the page of each item is a formula worked out on who lists it, as a class's spell-save-dc or an armor's armor-class (PRO-5). */
+    itemFormulas: Record<string, string[]>;
     /** The counters that come back with a rest, by name or by a name ending in *: a character has them full until it spends them (DAT-9). */
     uses: string[];
 }
@@ -264,6 +266,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         conditions: data.conditions ?? [],
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
+        itemFormulas: data["item-formulas"] ?? {},
         uses: usesOf(data),
     });
 }

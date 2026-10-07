@@ -132,7 +132,7 @@ Each file under `world/` is a `Page` ([pages/world.ts](../src/pages/world.ts)): 
 
 - Links are `[[Page]]`, `[[Page#Section]]`, `[[Page|label]]` or `[[folder/Page.md]]`; in YAML they are quoted, `creature: "[[Wolf]]"`. Links inside code fences do not count ([pages/markdown.ts](../src/pages/markdown.ts)).
 - The text before the first heading is the introduction; headings make sections; `> [!secret] Name` followed by quoted lines is a secret block.
-- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `contains`, `knows`, `factions`, `environment`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases` everywhere. Any other field is free, or declared by the game system.
+- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `equipped`, `contains`, `knows`, `factions`, `environment`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases` everywhere. Any other field is free, or declared by the game system.
 - A field written empty counts as missing; a free field's name is the same in any case, the last written winning.
 
 [pages/page-file.ts](../src/pages/page-file.ts) splits and joins the frontmatter and body and applies a `FieldChange` (`set`, `unset`, `add`, `remove`) to the YAML document, keeping comments.
@@ -170,7 +170,7 @@ Files: [pages/world.ts](../src/pages/world.ts), [pages/system-pages.ts](../src/p
 File: [pages/inheritance.ts](../src/pages/inheritance.ts). Codes: `INH-1`–`INH-16`.
 
 - A character or creature derives from the creature its `creature` field links to; an item from the item in its `item` field (`INH-1`, `INH-2`). `baseChain` follows the chain, nearest first; `baseProblem` and `newBaseProblem` refuse wrong types and loops (`INH-3`, `INH-15`).
-- `inheritedFields` layers the bases under the page, nearer winning (`INH-4`–`INH-8`), except a closed list of fields never inherited (`role`, `status`, `inventory`, `knows`, `contains`, `effects` and the other relations).
+- `inheritedFields` layers the bases under the page, nearer winning (`INH-4`–`INH-8`), except a closed list of fields never inherited (`role`, `status`, `inventory`, `equipped`, `knows`, `contains`, `effects` and the other relations).
 - Sections, secrets and the introduction a page lacks are shown from its nearest base (`INH-13`, `inheritedByBase`).
 - A write keeps the field name the page reads (`INH-5`), makes an inherited list the page's own before adding to it (`INH-7`), and drops values equal to the base's, so that a page holds only its differences (`INH-9`). `followersOf` and `keepersOf` say which derived pages a change reaches and which keep their own value (`INH-10`).
 - A copy in a scene is a page that derives from its creature (`INH-14`, `copyPage` in [commands/game-scene.ts](../src/commands/game-scene.ts)).
@@ -179,7 +179,7 @@ File: [pages/inheritance.ts](../src/pages/inheritance.ts). Codes: `INH-1`–`INH
 
 Files: [pages/containers.ts](../src/pages/containers.ts), [commands/game-moves.ts](../src/commands/game-moves.ts), [commands/move.ts](../src/commands/move.ts). Codes: `CON-1`–`CON-10`.
 
-- A page never records where it is: its container lists it, in `contains` (places, items) or `inventory` (characters) (`CON-1`). A place holds places, characters and items; a character carries items; an item holds items and characters (`canHold`).
+- A page never records where it is: its container lists it, in `contains` (places, items) or `inventory` (characters) (`CON-1`). A place holds places, characters and items; a character carries items; an item holds items and characters (`canHold`). What a character wears and wields is in its `equipped`, among what it carries; `move` takes an item out of it when it goes elsewhere, and `validate` reports one it does not carry (`CON-12`).
 - `locate` climbs the holders to give the chain (`CON-1`, `CON-3`); `checkWorld` reports a page listed by two containers or inside itself (`CON-10`).
 - `planMove` checks everything first; `applyMove` removes every entry pointing to the page, however it is written, and writes the destination last, so that a move stopped halfway finishes when repeated (`CON-4`, `CON-7`).
 - `movePages` then logs public and hidden lines, fires events and notes the quests and events linked to what moved (`CON-5`, `CON-9`); the open scene follows the party (`CON-6`).
@@ -230,7 +230,7 @@ A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the s
 
 Files: [progression/](../src/progression/), [core/progression-rule.ts](../src/core/progression-rule.ts), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [systems/game-system.ts](../src/systems/game-system.ts), [commands/config.ts](../src/commands/config.ts). Codes: `PRO-1`–`PRO-4`, `DAT-9`, `CAM-1`–`CAM-3`, `KEP-1`–`KEP-4`.
 
-- The `progression` module reads a page's table of levels and knows no game; `progressionOf` joins it to a character's lists as the system's `progression` says: the row's fields, the features each with the pages that tell it, and every feature as a row or part gives it (`gains`), from which `write` tells what a new level adds. The formulas the items' pages give (`formulas`, `PRO-5`) are worked out in `worked-out.ts` (`eachItem`), one value for each class.
+- The `progression` module reads a page's table of levels and knows no game; `progressionOf` joins it to a character's lists as the system's `progression` says: the row's fields, the features each with the pages that tell it, and every feature as a row or part gives it (`gains`), from which `write` tells what a new level adds. The formulas the items' pages give (`item-formulas`, `PRO-5`), for the classes and for what a character has `equipped` (`CON-12`), are worked out in `worked-out.ts` (`eachItem`, `itemLines`), one value for each item, reading the item's own fields first.
 - Uses are counters with a `refill` or named by a recipe (`isUse`); `withWorkedOut` reads them full on who keeps the sheet, `write` writes them and takes off those that only the lists give when their maximum falls to 0. `change` with a recipe brings them back by occasion (`refillAmount`, `recipeTargets`) and leaves a choice to the player, or to the master for a companion.
 - What `campaign.yaml` adds is merged over `system.yaml` before it is validated (`findCampaignSystem`): the system with the additions, or the system alone and why. The reader refuses unknown keys, a refill no recipe ends and a recipe that sets kept rolls, each at its place on one line.
 - `roll` with `keep` writes the dice in a field of kind `rolls`, with `use` takes one in place of the die; the page is written before the log line.

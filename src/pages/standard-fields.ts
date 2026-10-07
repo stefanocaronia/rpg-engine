@@ -14,7 +14,7 @@ type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "co
 const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
-    character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", knows: "links", factions: "links", status: ["alive", "dead"] },
+    character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"] },
     place: { contains: "list", environment: "lines" },
     item: { contains: "list" },
     creature: { creature: "link" },

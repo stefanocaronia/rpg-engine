@@ -1,6 +1,21 @@
 // What the game system works out from the fields of a page (D-199, FOR-3–FOR-8): its computed fields, each with the values it came from, and the limits of
 // its counters. The formulas are the system's data; this is where they meet the pages and the counters.
-import { contributingReads, fieldsRead, type Formula, type FormulaRead, type FormulaScope, numberOf, parseFormula, type SystemFormulas, type Table, type WorkedOut, workOut } from "../core/formula.ts";
+import {
+    contributingReads,
+    fieldsRead,
+    type Formula,
+    type FormulaRead,
+    type FormulaScope,
+    listItems,
+    numberOf,
+    parseRollFormula,
+    type RollFormula,
+    type SystemFormulas,
+    type Table,
+    tablesRead,
+    type WorkedOut,
+    workOut,
+} from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
@@ -26,7 +41,7 @@ export function workedFields(world: World, fields: Record<string, unknown>, expl
         const worked = scope.computed(field);
         return worked?.value === undefined ? [] : [{ field, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
     });
-    return [...computed, ...progressionFields(world, scope, explained)];
+    return [...computed, ...givenFields(world, scope, explained)];
 }
 
 /**
@@ -46,7 +61,7 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>, she
     const progression = scope.progression();
 
     // What the classes give, then what the formulas work out over it (PRO-2, FOR-3); a column named as a counter is that counter's maximum (DAT-9).
-    for (const worked of progressionFields(world, scope)) {
+    for (const worked of givenFields(world, scope)) {
         result[keyOf(result, worked.field) ?? worked.field] = progressionValue(progression, worked.field) ?? worked.value;
     }
 
@@ -129,11 +144,17 @@ export function formulaValue(world: World, fields: Record<string, unknown>, form
     return workOut(formula, formulaScope(world, fields)).value;
 }
 
+/** What the lists of a page give as computed fields: what its classes give (PRO-2, PRO-3), then what the formulas of its items' pages work out (PRO-5). */
+function givenFields(world: World, scope: ReturnType<typeof formulaScope>, explained = false): WorkedField[]
+{
+    return [...progressionFields(world, scope), ...itemFields(world, scope, explained)];
+}
+
 /**
- * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features, then what the
- * formulas their pages give work out, one value for each class (PRO-5). A column named as a counter of the system is not one: it is that counter's maximum (DAT-9).
+ * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. A column named
+ * as a counter of the system is not one: it is that counter's maximum (DAT-9).
  */
-function progressionFields(world: World, scope: ReturnType<typeof formulaScope>, explained = false): WorkedField[]
+function progressionFields(world: World, scope: ReturnType<typeof formulaScope>): WorkedField[]
 {
     const progression = scope.progression();
 
@@ -151,25 +172,31 @@ function progressionFields(world: World, scope: ReturnType<typeof formulaScope>,
         value: progression.features.map((feature) => feature.name).join(", "),
         reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
     }];
-    const each = (world.system?.progression?.formulas ?? []).flatMap((field) => {
+    return [...values, ...features];
+}
+
+/** The fields the formulas of the items' pages give, one value for each item, for every list the system names (PRO-5). */
+function itemFields(world: World, scope: ReturnType<typeof formulaScope>, explained: boolean): WorkedField[]
+{
+    return Object.values(world.system?.itemFormulas ?? {}).flat().flatMap((field) => {
         const worked = scope.each(field, explained);
         return worked === undefined ? [] : [worked];
     });
-    return [...values, ...features, ...each];
+}
+
+/** The list whose items' pages give a field as a formula, as classes for spell-save-dc (PRO-5); undefined when none does. */
+export function itemList(world: World, field: string): string | undefined
+{
+    return Object.entries(world.system?.itemFormulas ?? {}).find(([, names]) => names.some((name) => comparableText(name) === comparableText(field.trim())))?.[0];
 }
 
 /**
- * A formula that each item of the list gives on its page, such as a class's spell-save-dc, worked out on the character for each item that gives one (PRO-5): a
- * number for one, "Cleric 13, Wizard 12" for several. Undefined when none gives it.
+ * A formula that each item of its list gives on its page, such as a class's spell-save-dc or a weapon's attack, worked out on who lists them for each item that
+ * gives one (PRO-5): a number, or a roll as text, for one; "Cleric 13, Wizard 12" for several. Undefined when none gives it.
  */
 function eachItem(world: World, scope: ReturnType<typeof formulaScope>, field: string, explained: boolean): WorkedField | undefined
 {
-    const progression = scope.progression();
-    const items = (progression?.from ?? []).filter((item) => item.level !== undefined).flatMap((item) => {
-        const formula = itemFormula(scope.page(item.name), field);
-        const worked = formula === undefined ? undefined : workOut(formula, scope);
-        return formula === undefined || worked?.value === undefined ? [] : [{ name: item.name, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
-    });
+    const items = itemValues(world, scope, field, explained);
 
     if (items.length === 0) {
         return undefined;
@@ -181,8 +208,63 @@ function eachItem(world: World, scope: ReturnType<typeof formulaScope>, field: s
         : { field, value: items.map((item) => `${item.name} ${signedText(world, field, item.value)}`).join(", "), reads: items.flatMap((item) => item.reads) };
 }
 
+/**
+ * What a field gives for each item of its list whose page gives it (PRO-5): a number, or a roll as text, as "1d8+3 slashing". The formula reads first the
+ * item's own fields, as a magic weapon's bonus, then those of who lists it.
+ */
+function itemValues(world: World, scope: ReturnType<typeof formulaScope>, field: string, explained: boolean): { name: string; value: number | string; reads: FormulaRead[]; }[]
+{
+    const list = itemList(world, field);
+
+    if (list === undefined) {
+        return [];
+    }
+
+    return listItems(scope.field(list)).flatMap((item) => {
+        const page = scope.page(item.name);
+        const given = itemFormula(page, field);
+
+        if (page === undefined || given === undefined) {
+            return [];
+        }
+
+        const own = itemScope(scope, page);
+        const worked = given.formula === undefined ? undefined : workOut(given.formula, own);
+
+        if (given.formula !== undefined && worked?.value === undefined) {
+            return [];
+        }
+
+        const reads = worked === undefined || given.formula === undefined ? [] : explained ? contributingReads(given.formula, own, worked) : worked.reads;
+        return [{ name: item.name, value: rollValue(given, worked?.value), reads }];
+    });
+}
+
+/** "1d8+3 slashing": a roll's dice, the number its formula works out, unless 0, and its words; the number alone for a plain formula. */
+function rollValue(given: RollFormula, value: number | undefined): number | string
+{
+    if (given.dice === undefined && given.words === undefined && value !== undefined) {
+        return value;
+    }
+
+    const number = value === undefined || (value === 0 && given.dice !== undefined) ? "" : given.dice === undefined ? String(value) : value > 0 ? `+${value}` : String(value);
+    return `${given.dice ?? ""}${number}${given.words === undefined ? "" : ` ${given.words}`}`;
+}
+
+/** The scope of an item's formula: the item's own fields first, as a magic weapon's bonus, then those of who lists it (PRO-5). */
+function itemScope(scope: FormulaScope, page: Record<string, unknown>): FormulaScope
+{
+    return {
+        ...scope,
+        field: (name) => {
+            const key = keyOf(page, name);
+            return key !== undefined && !isEmptyField(page[key]) && typeof page[key] !== "string" ? page[key] : scope.field(name);
+        },
+    };
+}
+
 /** The formula an item's page gives in a field, read once for each text; undefined when it gives none, or one that does not read, which validate reports (PRO-5). */
-function itemFormula(fields: Record<string, unknown> | undefined, field: string): Formula | undefined
+function itemFormula(fields: Record<string, unknown> | undefined, field: string): RollFormula | undefined
 {
     const text = fields === undefined ? undefined : fields[keyOf(fields, field) ?? ""];
 
@@ -194,7 +276,7 @@ function itemFormula(fields: Record<string, unknown> | undefined, field: string)
 
     if (!itemFormulas.has(key)) {
         try {
-            itemFormulas.set(key, parseFormula(key));
+            itemFormulas.set(key, parseRollFormula(key));
         } catch {
             itemFormulas.set(key, undefined);
         }
@@ -203,28 +285,43 @@ function itemFormula(fields: Record<string, unknown> | undefined, field: string)
     return itemFormulas.get(key);
 }
 
-const itemFormulas = new Map<string, Formula | undefined>();
+const itemFormulas = new Map<string, RollFormula | undefined>();
+
+/**
+ * Each item of a list with what the formulas of its page give, field by field, in the order of the list, for a sheet that shows them item by item, as the
+ * attacks of the weapons a character has equipped (PRO-5).
+ */
+export function itemLines(world: World, fields: Record<string, unknown>, list: string, names: string[], explained = false): { item: string; values: WorkedField[]; }[]
+{
+    const scope = formulaScope(world, fields);
+    const items = listItems(scope.field(list)).map((item) => item.name);
+    const byField = names.map((field) => ({ field, values: itemValues(world, scope, field, explained) }));
+    return items.flatMap((item) => {
+        const values = byField.flatMap(({ field, values }) => values.filter((value) => value.name === item).map((value) => ({ field, value: value.value, reads: value.reads })));
+        return values.length === 0 ? [] : [{ item, values }];
+    });
+}
 
 /** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
 function progressedField(world: World, scope: ReturnType<typeof formulaScope>, field: string): { name: string; value: number | string; from: string[]; } | undefined
 {
-    const progression = scope.progression();
-    const found = progressionFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    const found = givenFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    const list = found === undefined ? undefined : itemList(world, found.field);
 
-    if (found === undefined || progression === undefined) {
+    if (found === undefined) {
         return undefined;
     }
 
-    // A formula of the classes' pages comes from what it reads, as the bonus an item gives (PRO-5); the rows, from the lists alone.
-    const formulas = (world.system?.progression?.formulas ?? []).some((name) => comparableText(name) === comparableText(found.field));
-    const read = formulas
-        ? progression.from.flatMap((item) => {
-            const formula = itemFormula(scope.page(item.name), found.field);
-            return formula === undefined ? [] : writtenSources(world, formula, scope);
-        })
-        : [];
-    const from = [...new Set([...read, ...progression.lists])];
-    return { name: found.field, value: found.value, from };
+    // A formula of the items' pages comes from what it reads, as the bonus an item gives, and from its list (PRO-5); the rows, from the lists alone.
+    if (list !== undefined) {
+        const read = listItems(scope.field(list)).flatMap((item) => {
+            const given = itemFormula(scope.page(item.name), found.field);
+            return given?.formula === undefined ? [] : writtenSources(world, given.formula, scope);
+        });
+        return { name: found.field, value: found.value, from: [...new Set([...read, list])] };
+    }
+
+    return { name: found.field, value: found.value, from: scope.progression()?.lists ?? [] };
 }
 
 /** The minimum and maximum the game system works out for a counter with these fields, where they have a whole value (FOR-6). */
@@ -418,12 +515,12 @@ export function workedOutProblems(world: World): Problem[]
 
     const computedNames = new Set(formulas.computed.map(([name]) => comparableText(name)));
     const counterNames = new Set(Object.keys(formulas.counters).map(comparableText));
-    const progressionList = world.system?.progression === undefined ? undefined : comparableText(world.system.progression.list);
-    const relevant = (field: string): boolean => computedNames.has(comparableText(field)) || counterNames.has(comparableText(field)) || comparableText(field) === progressionList;
+    const lists = new Set([...(world.system?.progression === undefined ? [] : [world.system.progression.list]), ...Object.keys(world.system?.itemFormulas ?? {})].map(comparableText));
+    const relevant = (field: string): boolean => computedNames.has(comparableText(field)) || counterNames.has(comparableText(field)) || lists.has(comparableText(field));
     const problems = world.pages.filter((page) => Object.keys(page.fields).some(relevant)).flatMap((page) => {
         const fields = inheritedFields(world, page);
         const scope = formulaScope(world, fields);
-        const progressed = new Set(progressionFields(world, scope).map((worked) => comparableText(worked.field)));
+        const progressed = new Set(givenFields(world, scope).map((worked) => comparableText(worked.field)));
         // Only the fields the page writes are worked out: a page holds few of them.
         const written = Object.keys(page.fields).filter((key) => computedNames.has(comparableText(key)) || progressed.has(comparableText(key))).flatMap((key): Problem[] => {
             const value = scope.computed(key)?.value ?? progressedField(world, scope, key)?.value;
@@ -442,13 +539,77 @@ export function workedOutProblems(world: World): Problem[]
                 fix: `change ${page.name}, field ${key}, to ${counter.value}/${max}`,
             }];
         });
-        return [...written, ...limits, ...progressionProblems(world, page, fields)];
+        return [...written, ...limits, ...progressionProblems(world, page, fields), ...itemFormulaProblems(world, page, fields)];
     });
     checkedWorlds.set(world, problems);
     return problems;
 }
 
 const checkedWorlds = new WeakMap<World, Problem[]>();
+
+/**
+ * A formula an item's page gives that who lists it can have no value from (PRO-5): one that does not read, that reads itself, a table the system lacks or a name
+ * that neither the system, the item nor who lists it has.
+ */
+function itemFormulaProblems(world: World, page: Page, fields: Record<string, unknown>): Problem[]
+{
+    const scope = formulaScope(world, fields);
+    return Object.entries(world.system?.itemFormulas ?? {}).flatMap(([list, names]) =>
+        listItems(keyOf(fields, list) === undefined ? undefined : fields[keyOf(fields, list) ?? ""]).flatMap((item) => {
+            const holder = scope.page(item.name);
+            return holder === undefined ? [] : names.flatMap((field): Problem[] => {
+                const key = keyOf(holder, field);
+                const text = key === undefined ? undefined : holder[key];
+
+                if (typeof text !== "string" && typeof text !== "number") {
+                    return [];
+                }
+
+                let given: RollFormula;
+
+                try {
+                    given = parseRollFormula(String(text));
+                } catch (error) {
+                    const why = error instanceof Error ? error.message : String(error);
+                    return [{ path: page.path, message: `${field} on ${item.name} does not read, so ${page.name} has none from it: ${why}`, fix: `write ${item.name}, set ${field} as a formula` }];
+                }
+
+                const why = given.formula === undefined ? undefined : formulaGap(world, fields, holder, field, given.formula);
+                return why === undefined ? [] : [{ path: page.path, message: `${field} on ${item.name} ${why}, so ${page.name} has none from it.`, fix: `write ${item.name}, set ${field} as a formula of what the system has` }];
+            });
+        })
+    );
+}
+
+/** Why a formula of an item's page can give no value: it reads itself, a table the system lacks, or a name no one has; undefined when none of these. */
+function formulaGap(world: World, fields: Record<string, unknown>, item: Record<string, unknown>, field: string, formula: Formula): string | undefined
+{
+    const system = world.system;
+    const read = fieldsRead(formula);
+
+    if (read.some((name) => comparableText(name) === comparableText(field))) {
+        return "reads itself";
+    }
+
+    const table = tablesRead(formula).find((name) => !Object.keys(system?.formulas?.tables ?? {}).some((other) => comparableText(other) === comparableText(name)));
+
+    if (table !== undefined) {
+        return `reads the table "${table}", which the system lacks`;
+    }
+
+    const rows = progressionOf(world, fields)?.values.map((value) => value.field) ?? [];
+    const known = [
+        ...Object.keys(system?.fields ?? {}),
+        ...(system?.formulas?.computed ?? []).map(([name]) => name),
+        ...Object.keys(system?.formulas?.counters ?? {}),
+        ...Object.values(system?.itemFormulas ?? {}).flat(),
+        ...rows,
+        ...Object.keys(fields),
+        ...Object.keys(item),
+    ].map(comparableText);
+    const unknown = read.find((name) => !known.includes(comparableText(name)));
+    return unknown === undefined ? undefined : `reads ${unknown}, which neither the system nor the character has`;
+}
 
 /** The scope a formula reads on these fields: computed fields by their formulas, each worked out once; a bonus field the page lacks as 0 (FOR-4, FOR-5). */
 function formulaScope(
@@ -509,8 +670,8 @@ function formulaScope(
                 return worked.value;
             }
 
-            // A formula of the classes' pages counts in another only as one number, for one class; with none, the page's own value, as a witch's written DC.
-            if ((world.system?.progression?.formulas ?? []).some((field) => comparableText(field) === comparableText(name))) {
+            // A formula of the items' pages counts in another only as one number, for one item; with none, the page's own value, as a witch's written DC.
+            if (itemList(world, name) !== undefined) {
                 const value = each(name, false)?.value;
 
                 if (value !== undefined) {

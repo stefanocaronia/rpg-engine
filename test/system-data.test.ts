@@ -76,21 +76,21 @@ describe("the character sheet (DAT-2)", () => {
         const other = { ...context, folder: empty };
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
-            "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, "
-                + "save-proficiencies, skill-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, inspiration, personality-traits, ideal, bond, flaw, save-notes, temp-hp, "
+            "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
+                + "save-proficiencies, skill-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, inspiration, personality-traits, ideal, bond, flaw, save-notes, equipped, temp-hp, "
                 + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, expertise, "
-                + "armor-proficiencies, weapon-proficiencies, tool-proficiencies, spells, prepared. It works out "
-                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, initiative, passive-perception, passive-insight, passive-investigation, Features, "
+                + "armor-proficiencies, weapon-proficiencies, tool-proficiencies, fighting-styles, spells, prepared. It works out "
+                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
                 + "caster-level, spell-save-dc, spell-attack, max-prepared: never write them. Only its names go in save-proficiencies "
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), as it writes them: "
                 + "write lists them if a name is not one.",
         );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
-            "Bruna's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, save-proficiencies, "
+            "Bruna's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, "
                 + "skill-proficiencies, languages.\nPersonality: a player character's personality traits, ideal, bond and flaw are the player's,",
         );
         expect((await runCommandLine(["write", "Bruna", "--set", "classes=[[Fighter]] 1"], other)).output).not.toContain("still lacks");
-        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, str, dex, con, int, wis, cha, ac, speed, hp-base,");
+        expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, str, dex, con, int, wis, cha, speed, hp-base,");
         removeFolder(empty);
     });
 

@@ -19,6 +19,10 @@ beforeEach(async () => {
     await ok("write", "Locanda", "--type", "place");
     await ok(...ettore());
     await ok("write", "Locanda", "--add", "contains=[[Ettore]]");
+    // His chain mail and shield, which he wears: his armor class, 18 (D-231).
+    await ok("write", "Cotta di Ettore", "--type", "item", "--set", "item=[[Chain Mail]]");
+    await ok("write", "Scudo di Ettore", "--type", "item", "--set", "item=[[Shield]]");
+    await ok("write", "Ettore", "--set", "inventory=[[Cotta di Ettore]], [[Scudo di Ettore]]", "--set", "equipped=[[Cotta di Ettore]], [[Scudo di Ettore]]");
 });
 
 afterEach(() => removeFolder(folder));
@@ -38,7 +42,6 @@ function ettore(): string[]
         "cha=12",
         "hp-base=18",
         "hp=20/24",
-        "ac=18",
         "speed=25 ft.",
         "hit-dice-d8=3/3",
         "save-proficiencies=[wis, cha]",
@@ -85,7 +88,8 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Saving Throws: str-save +2 · dex-save -1 · con-save +2 · int-save +0 · wis-save +5 ● · cha-save +3 ●",
             "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 ● · intimidation +1 · investigation +0 · "
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
-            "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
+            // The armor class from the chain mail and the shield he wears (D-231).
+            "Combat: ac 18 · initiative -1 · speed 25 ft. · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
@@ -93,7 +97,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Spells: caster-level 3 · spell-save-dc 13 · spell-attack +5 · slots-1 4/4 · slots-2 2/2 · max-prepared 6",
             "show Ettore#Spellcasting gives the text of a feature.",
             "",
-            "---\nrole: pc\numore: sereno\n---",
+            '---\nrole: pc\numore: sereno\ninventory:\n  - "[[Cotta di Ettore]]"\n  - "[[Scudo di Ettore]]"\n---',
         ].join("\n"));
         expect(shown).not.toContain("Worked out by the system");
         // The result keeps every field as written and every value with what it came from, for whoever reads it as data.
@@ -116,7 +120,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         expect(await ok("show", "Ettore#combat")).toBe([
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
-            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes, hit-die d8",
+            "ac 18: armor-class 16, armor-class-bonus +2\ninitiative -1: dex-mod -1\nspeed 25 ft.\nequipped Cotta di Ettore, Scudo di Ettore\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes, hit-die d8",
             "passive-perception 13: perception +3\npassive-insight 15: insight +5\npassive-investigation 10: investigation +0",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
@@ -128,7 +132,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
-            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Spells.',
+            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Attacks, Spells.',
         );
     });
 
@@ -145,7 +149,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
 describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
     it("says once, when a character joins the party, what the sheet lacks and the system's notes; what is written only when it applies is never reminded", async () => {
         const joined = await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "level=1");
-        expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, save-proficiencies, skill-proficiencies, languages.");
+        expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, save-proficiencies, skill-proficiencies, languages.");
         expect(joined).toContain(
             "Personality: a player character's personality traits, ideal, bond and flaw are the player's, in their words, with links to what they name: propose some if they ask, "
                 + "never write one they did not choose. A companion's are yours to write in the companion's voice, from what the story has shown; ask the player only for a "
@@ -238,7 +242,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
         expect(subtraction).toMatch(
-            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6\. Give one of them, or the number, such as 1d20\+5\./,
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2\. Give one of them, or the number, such as 1d20\+5\./,
         );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");

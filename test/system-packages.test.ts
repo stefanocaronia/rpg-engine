@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseFormula } from "../src/core/formula.ts";
+import { parseRollFormula } from "../src/core/formula.ts";
 import { comparableText } from "../src/core/text.ts";
 import { coinsProblem, readCoins } from "../src/money/index.ts";
 import { checkWorld, isStandardField, loadWorld } from "../src/pages/index.ts";
@@ -52,8 +52,8 @@ describe("the installed game systems", () => {
                     expect(coinsProblem(typeof system.coins === "string" ? readCoins(system.coins) : system.coins)).toBeUndefined();
                 }
 
-                // The sheet may show a fixed field of the core, such as creature, the race (D-201).
-                const onSheet = system.sheet.flatMap((group) => group.entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside]))).filter((field) => field !== "creature");
+                // The sheet may show a fixed field of the core, such as creature, the race (D-201), or what the character has equipped (CON-12).
+                const onSheet = system.sheet.flatMap((group) => group.entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside]))).filter((field) => !isStandardField("character", field));
                 expect([...onSheet, ...system.statusLine.map((entry) => entry.field), ...Object.keys(system.values)].filter((field) => !declared(field))).toEqual([]);
                 expect(system.thresholds.filter((threshold) => system.fields[threshold.field] !== "counter" || !hasRule(threshold.rule))).toEqual([]);
                 expect(system.recipes.flatMap((recipe) => [...Object.keys(recipe.set).filter((field) => !declared(field)), ...recipe.rules.filter((rule) => !hasRule(rule))])).toEqual([]);
@@ -82,7 +82,7 @@ describe("the installed game systems", () => {
                 };
                 const kinds = new Map(Object.entries(system.fields).map(([field, kind]) => [comparableText(field), kind]));
                 // A field whose value the classes' pages give as a formula holds that formula there (PRO-5).
-                const formulas = new Set((system.progression?.formulas ?? []).map(comparableText));
+                const formulas = new Set(Object.values(system.itemFormulas).flat().map(comparableText));
                 const wrong = world.pages.flatMap((page) =>
                     Object.entries(page.fields).filter(([field, value]) => {
                         if (formulas.has(comparableText(field))) {
@@ -109,11 +109,11 @@ describe("the installed game systems", () => {
     }
 });
 
-/** Whether a text reads as a formula. */
+/** Whether a text reads as a formula, which may begin with dice and end with words, as a weapon's damage (PRO-5). */
 function reads(text: string): boolean
 {
     try {
-        parseFormula(text);
+        parseRollFormula(text);
         return true;
     } catch {
         return false;

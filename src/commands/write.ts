@@ -1053,7 +1053,7 @@ function progressionNotes(before: World, after: World, existing: Page, page: Pag
     });
     // What the formulas of the classes' pages give, as the prepared spells of a new level (PRO-5).
     const [then, now] = [effectiveFields(before, existing), effectiveFields(after, page)];
-    const formulaValues = (after.system?.progression?.formulas ?? []).flatMap((field) => {
+    const formulaValues = (after.system?.itemFormulas?.[after.system.progression?.list ?? ""] ?? []).flatMap((field) => {
         const [from, to] = [readField(then, field), readField(now, field)];
         const text = (value: unknown): string => (value === undefined ? "none" : typeof value === "number" ? signedText(after, field, value) : String(value));
         return text(from) === text(to) ? [] : [`${field} ${text(from)} → ${text(to)}`];

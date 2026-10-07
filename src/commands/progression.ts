@@ -1,6 +1,6 @@
 // What the classes of a character give (D-201, D-219, PRO-1–PRO-4): the row of each class's table at its level, and the features gained so far, with those its
 // subclasses add. The tables are the pages' own; this is where the system's progression meets the pages of a world.
-import { fieldsRead, type Formula, listItems, parseFormula, tablesRead } from "../core/formula.ts";
+import { listItems } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { type Page, pagesWithName, sectionTitles, systemPageNamed, type World } from "../pages/index.ts";
@@ -144,65 +144,7 @@ export function progressionProblems(world: World, page: Page, fields: Record<str
             : undefined;
         return message === undefined ? [] : [{ path: page.path, message, fix: table === undefined ? `write ${entry.page.name} with its table of levels, as the system's do` : `check the level of ${entry.page.name} in ${rule.list}` }];
     });
-    return [...unread, ...rows, ...formulaProblems(world, page, fields, rule, entries), ...partProblems(world, page, fields, rule, entries)];
-}
-
-/**
- * A formula an item's page gives that the character can have no value from (PRO-5): one that does not read, that reads itself, a table the system lacks or a
- * name that neither the system nor the character has.
- */
-function formulaProblems(world: World, page: Page, fields: Record<string, unknown>, rule: NonNullable<NonNullable<World["system"]>["progression"]>, entries: { page: Page; }[]): Problem[]
-{
-    return entries.flatMap((entry) =>
-        (rule.formulas ?? []).flatMap((field): Problem[] => {
-            const text = readField(entry.page.fields, field);
-
-            if (text === undefined || text === null) {
-                return [];
-            }
-
-            let formula: Formula;
-
-            try {
-                formula = parseFormula(String(text));
-            } catch (error) {
-                const why = error instanceof Error ? error.message : String(error);
-                return [{ path: page.path, message: `${field} on ${entry.page.name} does not read, so ${page.name} has none from it: ${why}`, fix: `write ${entry.page.name}, set ${field} as a formula` }];
-            }
-
-            const why = formulaGap(world, fields, rule, field, formula);
-            return why === undefined ? [] : [{ path: page.path, message: `${field} on ${entry.page.name} ${why}, so ${page.name} has none from it.`, fix: `write ${entry.page.name}, set ${field} as a formula of what the system has` }];
-        })
-    );
-}
-
-/** Why a formula of an item's page can give no value: it reads itself, a table the system lacks, or a name no one has; undefined when none of these. */
-function formulaGap(world: World, fields: Record<string, unknown>, rule: NonNullable<NonNullable<World["system"]>["progression"]>, field: string, formula: Formula): string | undefined
-{
-    const system = world.system;
-    const read = fieldsRead(formula);
-
-    if (read.some((name) => comparableText(name) === comparableText(field))) {
-        return "reads itself";
-    }
-
-    const table = tablesRead(formula).find((name) => !Object.keys(system?.formulas?.tables ?? {}).some((other) => comparableText(other) === comparableText(name)));
-
-    if (table !== undefined) {
-        return `reads the table "${table}", which the system lacks`;
-    }
-
-    const rows = progressionOf(world, fields)?.values.map((value) => value.field) ?? [];
-    const known = [
-        ...Object.keys(system?.fields ?? {}),
-        ...(system?.formulas?.computed ?? []).map(([name]) => name),
-        ...Object.keys(system?.formulas?.counters ?? {}),
-        ...(rule.formulas ?? []),
-        ...rows,
-        ...Object.keys(fields),
-    ].map(comparableText);
-    const unknown = read.find((name) => !known.includes(comparableText(name)));
-    return unknown === undefined ? undefined : `reads ${unknown}, which neither the system nor the character has`;
+    return [...unread, ...rows, ...partProblems(world, page, fields, rule, entries)];
 }
 
 /** The name of a page of the system that an item of the list may link to, for an example: the first one that has a table of levels. */

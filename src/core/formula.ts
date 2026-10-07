@@ -102,10 +102,10 @@ export function readFormulas(data: FormulaData): SystemFormulas
     return { computed, tables, counters };
 }
 
-type MathName = "floor" | "ceil" | "min" | "max";
+type MathName = "floor" | "ceil" | "min" | "max" | "best";
 type ListName = "has" | "count" | "item" | "sum";
 
-const mathNames: MathName[] = ["floor", "ceil", "min", "max"];
+const mathNames: MathName[] = ["floor", "ceil", "min", "max", "best"];
 const listNames: ListName[] = ["has", "count", "item", "sum"];
 const namePattern = /[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*/y;
 const numberPattern = /\d+(?:\.\d+)?/y;
@@ -123,6 +123,58 @@ export function parseFormula(text: string): Formula
     const formula = reader.expression();
     reader.end();
     return formula;
+}
+
+/** A formula of a page that may begin with dice and end with words, as a weapon's damage "1d8 + str-mod slashing" (PRO-5): its parts. */
+export interface RollFormula
+{
+    /** The dice it begins with, such as 1d8; none for a plain formula. */
+    dice?: string;
+    /** The formula after the dice; none for dice alone. */
+    formula?: Formula;
+    /** The words it ends with, such as slashing. */
+    words?: string;
+}
+
+/**
+ * Reads a formula that may begin with dice, such as 1d8 or 2d6, and end with words, such as a damage type: "1d8 + str-mod + bonus slashing". Refused, with why,
+ * when what is between does not read as a formula (FOR-9).
+ */
+export function parseRollFormula(text: string): RollFormula
+{
+    const dice = /^\s*(\d*d\d+)\b/i.exec(text);
+    const rest = (dice === null ? text : text.slice(dice[0].length)).trim();
+    const words = rest.split(/\s+/).filter((word) => word !== "");
+
+    if (dice !== null && words.length > 0 && !/^[+-]/.test(rest)) {
+        return { dice: dice[1], words: rest };
+    }
+
+    // The longest beginning that reads as a formula; the words after it are said as they are.
+    for (let count = words.length; count > 0; count--) {
+        const formula = tryFormula(words.slice(0, count).join(" ").replace(/^\+\s*/, ""));
+        const tail = words.slice(count).join(" ");
+
+        if (formula !== undefined && /^[\p{L} ]*$/u.test(tail)) {
+            return { ...(dice === null ? {} : { dice: dice[1] }), formula, ...(tail === "" ? {} : { words: tail }) };
+        }
+    }
+
+    if (dice !== null && words.length === 0) {
+        return { dice: dice[1] };
+    }
+
+    // Read again whole, for the reason it does not read.
+    return { formula: parseFormula(text) };
+}
+
+function tryFormula(text: string): Formula | undefined
+{
+    try {
+        return parseFormula(text);
+    } catch {
+        return undefined;
+    }
 }
 
 /** A formula given as a number or as text, as system.yaml writes it. */
@@ -319,6 +371,12 @@ function operate(operator: "+" | "-" | "*" | "/", left: number | undefined, righ
 
 function mathOf(name: MathName, operands: (number | undefined)[]): number | undefined
 {
+    // The highest of those that have a value, as the best of the ways to work out an armor class (FOR-2).
+    if (name === "best") {
+        const values = operands.filter((operand) => operand !== undefined);
+        return values.length === 0 ? undefined : Math.max(...values);
+    }
+
     if (operands.some((operand) => operand === undefined)) {
         return undefined;
     }

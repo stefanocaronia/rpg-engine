@@ -18,6 +18,10 @@ beforeEach(async () => {
     await ok("write", "Locanda", "--type", "place");
     await ok(...ettore());
     await ok("write", "Locanda", "--add", "contains=[[Ettore]]");
+    // His chain mail and shield, which he wears: his armor class, 18 (D-231).
+    await ok("write", "Cotta di Ettore", "--type", "item", "--set", "item=[[Chain Mail]]");
+    await ok("write", "Scudo di Ettore", "--type", "item", "--set", "item=[[Shield]]");
+    await ok("write", "Ettore", "--set", "inventory=[[Cotta di Ettore]], [[Scudo di Ettore]]", "--set", "equipped=[[Cotta di Ettore]], [[Scudo di Ettore]]");
 });
 
 afterEach(() => removeFolder(folder));
@@ -50,8 +54,6 @@ function ettore(): string[]
         "hp-base=18",
         "--set",
         "hp=24/24",
-        "--set",
-        "ac=18",
         "--set",
         "save-proficiencies=[wis, cha]",
         "--set",
@@ -109,8 +111,9 @@ describe("what show and status give of a sheet (FOR-8)", () => {
             "passive-perception 13: perception +3",
             "passive-insight 15: insight +5",
         ]));
-        // Modifiers, proficiency, saves, skills, initiative and the three passives (D-218).
-        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 1 + 3);
+        // Modifiers, proficiency, saves, skills, initiative and the three passives (D-218); the armor class, from the chain mail and the shield (D-231).
+        expect(lines).toEqual(expect.arrayContaining(["ac 18: armor-class 16, armor-class-bonus +2", "armor-class 16", "armor-class-bonus +2"]));
+        expect(lines).toHaveLength(6 + 1 + 6 + 18 + 1 + 3 + 3);
         expect(await ok("status")).toContain("PC: Ettore, in Locanda: level 3 · hp 24/24 · ac 18 · passive-perception 13");
     });
 
@@ -204,7 +207,7 @@ describe("a computed field is never written (FOR-7)", () => {
     });
 
     it("is said by validate when written by hand, with a maximum that does not match", async () => {
-        writeFileSync(join(folder, "world", "characters", "Ettore.md"), pageText("Ettore").replace("hp: 24/24", "hp: 24/30").replace("ac: 18", "ac: 18\nperception: 7"));
+        writeFileSync(join(folder, "world", "characters", "Ettore.md"), pageText("Ettore").replace("hp: 24/24", "hp: 24/30").replace("hp-base: 18", "hp-base: 18\nperception: 7"));
         const output = await ok("validate");
         expect(output).toContain("- world/characters/Ettore.md: perception is worked out by the system 5e (+3): the value written on Ettore is never read. Fix: write Ettore, unset perception.");
         expect(output).toContain("- world/characters/Ettore.md: hp on Ettore has the maximum 30 written, but the system 5e works out 24. Fix: change Ettore, field hp, to 24/24.");

@@ -45,6 +45,8 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | ricetta | recipe | `recipes`; `change recipe "long rest"` |
 | occasione | occasion | what a recipe `ends`, such as long rest |
 | uso | use | a counter that comes back with a rest: `refill`, or named by a recipe |
+| equipaggiato | equipped | the `equipped` list of a character: what it wears and wields, among what it carries |
+| formule delle voci | item formulas | `item-formulas`: formulas the pages of a list's items give, worked out on who lists them |
 | tiri tenuti | kept rolls | a field of kind `rolls`, written by `roll keep` and taken by `roll use` |
 | classe, riga della classe | class, the class's row | an item of the system's `progression` list; the row of its table at its level |
 | privilegi | features | the `features` list the rows and parts give |

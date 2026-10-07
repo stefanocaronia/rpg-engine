@@ -8,7 +8,7 @@ import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { progressionOf } from "./progression.ts";
-import { hasSheet, isUse, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -90,6 +90,14 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
     const fields = effectiveFields(world, page);
     const marks = markCounts(world, system, fields);
     return system.sheet.flatMap((group) => {
+        const list = itemGroupList(world, group);
+
+        // A group of what the items of one list give is shown item by item, as the attacks of the weapons equipped (PRO-5).
+        if (list !== undefined) {
+            const items = itemLines(world, fields, list, entryFields(group.entries));
+            return items.length === 0 ? [] : [`${group.name}: ${items.map((item) => `${item.item} ${item.values.map((value) => valueText(world, value.field, value.value)).join(", ")}`).join(" · ")}`];
+        }
+
         const shown = groupEntries(world, system, group, fields).flatMap((entry) => {
             const value = readField(fields, entry.field);
             const marked = "●".repeat(marks.get(comparableText(entry.field)) ?? 0);
@@ -112,6 +120,14 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
     }
 
     const fields = effectiveFields(world, page);
+    const list = itemGroupList(world, group);
+
+    if (list !== undefined) {
+        const items = itemLines(world, fields, list, entryFields(group.entries), true);
+        const lines = items.map((item) => `${item.item}: ${item.values.map((value) => workedLine(world, value)).join("; ")}`);
+        return { name: group.name, lines: lines.length === 0 ? [`${page.name} has nothing in ${group.name} yet.`] : lines };
+    }
+
     const worked = workedFields(world, fields, true);
     const lines = groupEntries(world, system, group, fields).flatMap((entry) => {
         const value = readField(fields, entry.field);
@@ -138,7 +154,10 @@ export function sheetGroupNames(world: World, system: GameSystem | undefined, pa
     return system === undefined || !hasSheet(world, page) ? [] : system.sheet.map((group) => group.name);
 }
 
-/** The fields the sheet of a character shows (DAT-2), those the rows of its classes give included (PRO-4), which show leaves out of the fields as written; none for a page that shows no sheet. */
+/**
+ * The fields the sheet of a character shows (DAT-2), those the rows of its classes give included (PRO-4), and what the items of its lists give (PRO-5), which
+ * show leaves out of the fields as written; none for a page that shows no sheet.
+ */
 export function sheetFieldNames(world: World, system: GameSystem | undefined, page: Page): string[]
 {
     if (system === undefined || !hasSheet(world, page)) {
@@ -146,7 +165,12 @@ export function sheetFieldNames(world: World, system: GameSystem | undefined, pa
     }
 
     const fields = effectiveFields(world, page);
-    return entryFields(system.sheet.flatMap((group) => groupEntries(world, system, group, fields)));
+    const shown = entryFields(system.sheet.flatMap((group) => groupEntries(world, system, group, fields)));
+    // What the items of a list the sheet shows give is part of the values that read it, as an armor's armor-class in ac (PRO-5).
+    const given = Object.entries(system.itemFormulas).filter(([list]) => shown.some((field) => comparableText(field) === comparableText(list)) || comparableText(list) === comparableText(system.progression?.list ?? "")).flatMap((
+        [, names],
+    ) => names);
+    return [...shown, ...given.filter((field) => !shown.some((other) => comparableText(other) === comparableText(field)))];
 }
 
 /** Refuses items given to a list that the game system does not take, with the names it takes, and links in place of its names (SYS-8). */
@@ -215,7 +239,7 @@ function isSystemUse(system: GameSystem, field: string): boolean
 function isWorkedOut(system: GameSystem, field: string): boolean
 {
     const progression = system.progression;
-    const given = progression === undefined ? [] : [fieldName(progression.features), ...(progression.formulas ?? [])];
+    const given = [...(progression === undefined ? [] : [fieldName(progression.features)]), ...Object.values(system.itemFormulas).flat()];
     return [...system.formulas.computed.map(([name]) => name), ...given].some((name) => comparableText(name) === comparableText(field));
 }
 
@@ -237,6 +261,13 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
         isUse(world, field) && !listed.has(comparableText(field)) && !rows.some((row) => comparableText(row) === comparableText(field)) && !isEmptyField(readField(fields, field))
     );
     return [...group.entries, ...[...rows, ...uses].map((field) => ({ field, optional: true }))];
+}
+
+/** The list whose items' formulas give every field of a group, as equipped for the attacks; undefined for any other group (PRO-5). */
+function itemGroupList(world: World, group: SheetGroup): string | undefined
+{
+    const lists = [...new Set(entryFields(group.entries).map((field) => itemList(world, field)))];
+    return lists.length === 1 ? lists[0] : undefined;
 }
 
 /** Every field the sheet shows, as names are compared. */

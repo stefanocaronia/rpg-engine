@@ -1,7 +1,7 @@
 // The formulas of a game system (FOR-1–FOR-9): what they read, how they count, where they have no value, and what refuses a system.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { contributingReads, type FormulaScope, numberOf, parseFormula, readFormulas, tableOf, workOut } from "../src/core/formula.ts";
+import { contributingReads, type FormulaScope, numberOf, parseFormula, parseRollFormula, readFormulas, tableOf, workOut } from "../src/core/formula.ts";
 
 /** A scope over plain fields and the tables given. */
 function scope(fields: Record<string, unknown>, tables: Record<string, Record<string, number>> = {}): FormulaScope
@@ -119,7 +119,7 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         ["str +", '"str +" is not a formula: a number, a field, a function or ( was expected at the end.'],
         ["floor(str, 2)", "one value in floor()"],
         ["max(str)", "at least two values in max()"],
-        ["square(str)", "a function: floor, ceil, min, max, table, has, count, item, sum"],
+        ["square(str)", "a function: floor, ceil, min, max, best, table, has, count, item, sum"],
         ["has(skills)", '"," was expected'],
         ["str 2", "an operator, or the end of the formula was expected"],
         ["has(skills, )", "the name of an item, then )"],
@@ -149,6 +149,15 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(read(undefined)).toBeUndefined();
         expect(() => parseFormula("sum(classes, hit-die)")).toThrow("a field = value, such as hit-die = d10, then )");
         const count = parseFormula("count(classes, hit-die = d10)");
+        // best: the highest of those that have a value; none when none has one (FOR-2).
+        expect(valueOf("best(10 + dex, armor, 12)", { dex: 2 })).toBe(12);
+        expect(valueOf("best(armor, shield)", {})).toBeUndefined();
+        // A formula of a page may begin with dice and end with words (PRO-5).
+        expect(parseRollFormula("1d8 + str-mod + bonus slashing")).toMatchObject({ dice: "1d8", words: "slashing" });
+        expect(parseRollFormula("1 + dex-mod piercing")).toMatchObject({ words: "piercing" });
+        expect(parseRollFormula("2d6 fire")).toEqual({ dice: "2d6", words: "fire" });
+        expect(parseRollFormula("16 + bonus").dice).toBeUndefined();
+        expect(() => parseRollFormula("1d8 + str-mod +")).toThrow(/is not a formula/);
         expect(workOut(count, { ...scope({ classes: ["[[Fighter]] 3", "[[Wizard]] 2", "[[Ranger]] 1"] }), page: (name) => pages[name] }).value).toBe(2);
     });
 

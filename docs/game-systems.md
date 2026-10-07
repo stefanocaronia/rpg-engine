@@ -239,7 +239,6 @@ progression:
   skip: [Proficiency Bonus, 1st, 2nd, 3rd, 4th, 5th, 6th, 7th, 8th, 9th]
   parts: {list: subclasses, field: class}
   level-up: "A new level gives hit points: roll the hit die of the class that rose, … and add it to hp-base with write."
-  formulas: [spell-save-dc, spell-attack, max-prepared]
 ```
 
 - `list`: the list whose items name a page with a number, `[[Barbarian]] 3`. The page's first table that has the `features` column and whose first column counts levels (`1st`, `2nd`… or `1`, `2`…) gives its row 3.
@@ -248,7 +247,23 @@ progression:
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class.
 - The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
 - `level-up`: what `write` says when the character's levels rise in all, such as how hit points are added; the engine knows nothing of what it says.
-- `formulas`: fields to which each item's page gives a formula, worked out on the character once for each item, as a class's `spell-save-dc: "8 + proficiency + wis-mod"`. With one class the field is that number; with several, "Cleric 13, Wizard 12", which no other formula reads. Never written, like computed fields. `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
+- `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
+
+### item-formulas
+
+For a list of a character, the fields to which the page of each item gives a formula, worked out on the character once for each item:
+
+```yaml
+item-formulas:
+  classes: [spell-save-dc, spell-attack, max-prepared, unarmored-ac]
+  equipped: [armor-class, armor-class-bonus, attack, damage-roll]
+```
+
+- A class's page gives `spell-save-dc: "8 + proficiency + wis-mod + bonus-spell-dc"`; an armor's `armor-class: "14 + min(dex-mod, 2) + bonus"`; a weapon's `attack: "str-mod + proficiency * max(has(weapon-proficiencies, martial weapons), …) + bonus"`.
+- The formula reads the item's own fields first, as the `bonus` of a magic weapon written on the campaign's item, then the character's.
+- With one item the field is that number; with several, "Cleric 13, Wizard 12", which no other formula reads. A formula may begin with dice and end with words, as a damage `"1d8 + str-mod + bonus slashing"`: the dice and the words stay, the rest is worked out, "1d8+3 slashing".
+- A group of the sheet whose fields all come from one list is shown item by item: `Attacks: [attack, damage-roll]` gives "Attacks: Longsword +5, 1d8+3 slashing · Light Crossbow +2, 1d8 piercing".
+- Never written, like computed fields; `validate` reports a formula of an item's page that does not read, reads itself, or reads a table or a name no one has.
 
 ## 4. The formula language
 
@@ -257,6 +272,7 @@ progression:
 | numbers, fields, `+ - * /`, `( )`, `-x` | arithmetic; `/` gives fractions | `floor((str - 10) / 2)` |
 | `floor(x)`, `ceil(x)` | rounded down, up: one value | `ceil(level / 2)` |
 | `min(a, b, …)`, `max(a, b, …)` | at least two values | `max(1, con-mod)` |
+| `best(a, b, …)` | the highest of those that have a value; none when none has | `best(10 + dex-mod, unarmored-ac)` |
 | `table(name, key)` | the table's row for the key | `table(ranks, rank)` |
 | `has(list, Name)` | 1 when the list holds Name, else 0 | `has(skill-proficiencies, Sleight of Hand)` |
 | `count(list)` | how many items | `10 - count(debilities)` |
@@ -288,7 +304,7 @@ Each result keeps the values it read, and the outputs name those that changed it
 
 Every command that shows or changes a page's fields reads it in four layers ([effect-layer.ts](../src/commands/effect-layer.ts), [inheritance.ts](../src/pages/inheritance.ts), [worked-out.ts](../src/commands/worked-out.ts)):
 
-1. **Bases.** A character or creature derives from the creature its `creature` field links to, an item from the item in its `item` field, and so on up the chain. The farthest base is read first and a nearer one wins. Some fields are never inherited: `role`, `status`, `creature`, `item`, `inventory`, `knows`, `factions`, `contains`, `date`, `place`, `tags`, `aliases`, `effects`. Every other field is, those a system declares included. An empty value counts as missing.
+1. **Bases.** A character or creature derives from the creature its `creature` field links to, an item from the item in its `item` field, and so on up the chain. The farthest base is read first and a nearer one wins. Some fields are never inherited: `role`, `status`, `creature`, `item`, `inventory`, `equipped`, `knows`, `factions`, `contains`, `date`, `place`, `tags`, `aliases`, `effects`. Every other field is, those a system declares included. An empty value counts as missing.
 2. **The page**, over its bases. A field written in another case is the same field.
 3. **Effects**, in the page's `effects` field: the newest that gives a field wins; a `bonus` adds up the page's value and every effect's.
 4. **What the system works out**: the fields the rows of the classes give and the features (`progression`), then each computed field with a value, and each counter with a worked-out maximum takes that maximum.

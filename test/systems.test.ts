@@ -239,7 +239,7 @@ describe("SYS-8: the fields the system declares", () => {
         expect(await refused("effect", "add", "Ennio", "Forza", "--set", "str=+2")).toBe(
             'str on Ennio is a number, 16: give the value it reads while the effect lasts, such as str=18, not "+2". Nothing changed.',
         );
-        expect(await ok("effect", "add", "Ennio", "Forza del gigante", "--set", "str=21")).toBe("Ennio: Forza del gigante, until it is ended; str 16 → 21.");
+        expect(await ok("effect", "add", "Ennio", "Forza del gigante", "--set", "str=21")).toBe("Ennio: Forza del gigante, until it is ended; str 16 → 21, str-mod 3 → 5.");
         expect(await ok("write", "Ennio", "--set", "str=17")).toContain("set str");
         expect(readLogFile(folder).some((entry) => entry.type === "counter-changed" && (entry.data as { field?: string; }).field === "str")).toBe(false);
     });

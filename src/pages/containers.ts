@@ -47,6 +47,17 @@ export function planMove(world: World, pages: Page[], destination: Page): MovePl
         }
     }
 
+    // Who had one of them equipped and holds it no more, around the destination, has it no more (CON-12).
+    const around = new Set([destination, ...locate(world, destination).chain]);
+
+    for (const holder of world.pages.filter((page) => page.type === "character" && !around.has(page))) {
+        const remove = pages.flatMap((page) => entriesOf(holder, "equipped").filter((entry) => pointsTo(entry, page)));
+
+        if (remove.length > 0) {
+            edits.push({ holder, field: "equipped", remove: distinctLinks(remove), add: [] });
+        }
+    }
+
     // A page only written twice in the destination does not move: its double goes in silence.
     const inDestination = (page: Page): boolean => entriesOf(destination, field).some((entry) => pointsTo(entry, page));
     const moving = pages.filter((page) => !inDestination(page) || edits.some((edit) => edit.remove.some((entry) => pointsTo(entry, page))));
@@ -68,14 +79,18 @@ export function planMove(world: World, pages: Page[], destination: Page): MovePl
  */
 export function applyMove(world: World, plan: MovePlan): World
 {
-    const changed = plan.edits.map(({ holder, field, remove, add }) => {
+    // A page with more than one field to change, as a character's inventory and what it has equipped, is written once, with all of them.
+    const holders = plan.edits.map((edit) => edit.holder).filter((holder, index, all) => all.indexOf(holder) === index);
+    const changed = holders.map((holder) => {
         const fullPath = join(world.root, holder.path);
         const file = splitPageFile(files().fresh(fullPath) ?? "");
-        const removed = remove.length === 0 ? file.frontmatter : changeFields(file.frontmatter, { remove: { [field]: remove } }, holder.path);
-        // A container left with nothing loses the field, as if it had never held anything.
-        const emptied = add.length === 0 && isEmptyList(readFields(removed, holder.path)[field]) ? changeFields(removed, { unset: [field] }, holder.path) : removed;
-        const added = add.length === 0 ? emptied : changeFields(emptied, { add: { [field]: add } }, holder.path);
-        return { holder, fullPath, text: joinPageFile({ frontmatter: added, body: file.body }) };
+        const frontmatter = plan.edits.filter((edit) => edit.holder === holder).reduce((text, { field, remove, add }) => {
+            const removed = remove.length === 0 ? text : changeFields(text, { remove: { [field]: remove } }, holder.path);
+            // A container left with nothing loses the field, as if it had never held anything.
+            const emptied = add.length === 0 && isEmptyList(readFields(removed, holder.path)[field]) ? changeFields(removed, { unset: [field] }, holder.path) : removed;
+            return add.length === 0 ? emptied : changeFields(emptied, { add: { [field]: add } }, holder.path);
+        }, file.frontmatter);
+        return { holder, fullPath, text: joinPageFile({ frontmatter, body: file.body }) };
     });
     let after = world;
 

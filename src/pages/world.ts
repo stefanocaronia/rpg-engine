@@ -69,6 +69,8 @@ export interface SystemInfo
     formulas?: SystemFormulas;
     /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
     progression?: ProgressionRule;
+    /** By list, the fields whose value on each item's page is a formula worked out on who lists it (PRO-5). */
+    itemFormulas?: Record<string, string[]>;
     /** The counters that come back with a rest, by name or by a name ending in *: a page has them full until it spends them (DAT-9). */
     uses?: string[];
 }
@@ -115,9 +117,9 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = readPages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, uses } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, uses } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
-    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, progression, uses, pages: systemPages.pages }, language });
+    return frozen({ root, pages: campaign.pages, problems, system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, uses, pages: systemPages.pages }, language });
 }
 
 /**

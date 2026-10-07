@@ -12,6 +12,4 @@ export interface ProgressionRule
     parts?: { list: string; field: string; };
     /** What write says when an item rises to a new level, such as raising hp-base (D-226). */
     levelUp?: string;
-    /** Fields whose value on an item's page is a formula worked out on the character, one value for each item, such as spell-save-dc (PRO-5, D-227). */
-    formulas?: string[];
 }
