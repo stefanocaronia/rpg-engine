@@ -81,7 +81,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
     it("gives a player character's sheet in the system's groups, a modifier beside its score, and the fields as written without what the sheet shows", async () => {
         const shown = await ok("show", "Ettore");
         expect(shown).toContain([
-            "Character: classes Cleric 3 · level 3 · xp 900",
+            "Character: classes Cleric 3 · level 3 · xp 900 (1800 to level 4)",
             "Personality: personality-traits Cito le scritture, sempre.",
             "Abilities: str 14 (+2) · dex 8 (-1) · con 15 (+2) · int 10 (+0) · wis 16 (+3) · cha 12 (+1) · proficiency +2",
             // A number the character is proficient in has a mark (D-217).

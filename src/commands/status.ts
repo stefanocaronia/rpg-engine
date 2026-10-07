@@ -6,10 +6,11 @@ import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageRe
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { formatGameDate } from "../time/index.ts";
-import { effectsOf } from "./effect-layer.ts";
+import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
+import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
@@ -74,7 +75,7 @@ export const status = defineCommand({
         const closed = closedScenes(root);
         return {
             campaign: [settings.name, settings.language, systemInStatus(root, context), named("difficulty", settings.difficulty), named("lethality", settings.lethality)].filter((part) => part !== undefined),
-            missing: missingWithSystems(missingSettings(settings), context),
+            missing: missingWithSystems(root, missingSettings(settings), context),
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
             table: settings.table ?? [],
@@ -102,6 +103,8 @@ export const status = defineCommand({
                 const missing = missingSheetFields(system, world, page);
                 return missing.length === 0 ? [] : [`${characterName(page)}'s sheet still lacks, by these names: ${missing.join(", ")}.`];
             }),
+            // A level the points reach, until the classes rise (PRO-6).
+            levelsDue: characters.filter(isInParty).flatMap((page) => levelDueNote(characterName(page), experienceOf(world, effectiveFields(world, page))) ?? []),
         };
     },
 
@@ -121,6 +124,7 @@ export const status = defineCommand({
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             ...result.incompleteSheets,
+            ...result.levelsDue,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,

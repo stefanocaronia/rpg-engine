@@ -8,7 +8,7 @@ import { eventProblems } from "./game-events.ts";
 import { moneyProblems } from "./game-money.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
-import { campaignSystem, systemOccasions, systemProblems } from "./game-world.ts";
+import { campaignSystem, systemOccasions, systemProblems, systemSettingProblems } from "./game-world.ts";
 import { listValueProblems } from "./sheet.ts";
 import { workedOutProblems } from "./worked-out.ts";
 
@@ -19,6 +19,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
     return [
         ...checkSettings(root),
         ...system,
+        ...systemSettingProblems(root, context),
         ...moneyProblems(root, context),
         ...checkLog(root),
         ...checkWorld(world),

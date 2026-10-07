@@ -1,22 +1,25 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import { numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, withArticle } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
 import { findPage, isEmptyField, isInParty, isPartyMember, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
-import { effectsOf } from "./effect-layer.ts";
+import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
-import { copyCounters, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
+import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
+import { hasSheet } from "./worked-out.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "close"] as const;
 type Action = (typeof actions)[number];
@@ -80,7 +83,7 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; };
+    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; };
 
 export const scene = defineCommand({
     name: "scene",
@@ -437,7 +440,41 @@ function close(root: string, world: World, summary: string, context: Context): S
     const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless };
+    const rewards = rewardLines(world, campaignSystem(root, context), current);
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless, ...(rewards.length === 0 ? {} : { rewards }) };
+}
+
+/**
+ * What the creatures overcome in a scene give the party there (DAT-11): for each reward of the system, the copies and the characters outside the party at its
+ * counter's value or below, or dead, with what each gives, shared, rounded down, among the living party members there who keep the sheet. Said with the calls
+ * to make, never given: who is overcome another way is the master's to judge.
+ */
+function rewardLines(world: World, system: GameSystem | undefined, scene: Scene): string[]
+{
+    const there = scene.with.flatMap((link) => findPage(world, parsePageReference(link).name) ?? []);
+    const party = there.filter((page) => isPartyMember(page) && page.fields.status !== "dead" && hasSheet(world, page));
+    const others = [...Object.entries(scene.copies).map(([name, copy]) => copyPage(name, copy)), ...there.filter((page) => !isPartyMember(page))];
+    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+
+    return (system?.rewards ?? []).flatMap((reward) => {
+        const overcome = others.flatMap((page) => {
+            const fields = effectiveFields(world, page);
+            const worth = numberOf(read(fields, reward.from));
+            const counter = readCounter(read(fields, reward.counter))?.value;
+            const down = page.fields.status === "dead" || (counter !== undefined && counter <= reward.value);
+            return worth === undefined || worth <= 0 || !down ? [] : [{ name: page.name, worth }];
+        });
+        const total = overcome.reduce((sum, item) => sum + item.worth, 0);
+
+        if (total === 0 || party.length === 0) {
+            return [];
+        }
+
+        const share = Math.floor(total / party.length);
+        const to = party.length === 1 ? `${share} to ${party[0].name}` : `${share} each to ${party.map((page) => page.name).join(", ")}`;
+        const calls = party.map((page) => `change ${page.name}, field ${reward.field}, by ${share}`).join("; ");
+        return [`${reward.field} of those overcome: ${overcome.map((item) => `${item.name} ${item.worth}`).join(", ")}, ${total} in all; ${to}: ${calls}. Those overcome another way count too, as you judge.`];
+    });
 }
 
 /** The title and type of a scene that cannot be read, as far as they can be, so that the log still holds a closed scene. */
@@ -449,7 +486,7 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; }): string
 {
     const advance = "Advance any time it took that you have not advanced yet.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
@@ -461,7 +498,8 @@ function closedText(result: { title?: string; rounds?: number; copies: Member[];
 
     const rounds = result.rounds === undefined ? "" : ` after ${result.rounds} ${result.rounds === 1 ? "round" : "rounds"}`;
     const gone = result.copies.length === 0 ? "" : ` Copies gone: ${membersText(result.copies)}.`;
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}`;
+    const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${rewards}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */

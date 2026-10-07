@@ -33,7 +33,8 @@ describe("rpg init", () => {
 
     it("names the campaign after its folder and takes the settings it is given", async () => {
         const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
-        expect(result.output).not.toContain("missing");
+        // What the system adds to the setup is asked after (DAT-10).
+        expect(result.output).toContain("Still missing: advancement (xp or milestones). Ask the player,");
         expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\n");
     });
 
@@ -106,6 +107,7 @@ describe("rpg config", () => {
         await runCommandLine(["config", "system", "5e"], context);
         await runCommandLine(["config", "difficulty", "normal"], context);
         await runCommandLine(["config", "lethality", "dice"], context);
+        await runCommandLine(["config", "advancement", "xp"], context);
         expect((await runCommandLine(["config", "lines", "--add", "ragni", "--add", "corpi descritti nei dettagli"], context)).output).toBe("lines: ragni; corpi descritti nei dettagli");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("lines:\n  - ragni\n  - corpi descritti nei dettagli\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", data: { setting: "lines", add: ["ragni", "corpi descritti nei dettagli"] } });
@@ -126,7 +128,7 @@ describe("rpg config", () => {
     });
 
     it("keeps the comments of a hand-written list, and reads accents written either way", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nlines:\n  - ragni # da sempre\n  - morte di città\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n  - ragni # da sempre\n  - morte di città\n");
         expect((await runCommandLine(["config", "lines", "--add", "Morte di città"], context)).output).toBe("lines: ragni; morte di città");
         await runCommandLine(["config", "lines", "--add", "lupi"], context);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("  - ragni # da sempre\n");
@@ -134,7 +136,7 @@ describe("rpg config", () => {
     });
 
     it("reads an empty list written by hand, and refuses one that is not a list", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nlines:\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n");
         expect((await runCommandLine(["config", "lines"], context)).output).toBe("lines: (none)");
         expect((await runCommandLine(["config", "lines", "--add", "ragni"], context)).output).toBe("lines: ragni");
 

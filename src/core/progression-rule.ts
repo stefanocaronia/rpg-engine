@@ -12,4 +12,6 @@ export interface ProgressionRule
     parts?: { list: string; field: string; };
     /** What write says when an item rises to a new level, such as raising hp-base (D-226). */
     levelUp?: string;
+    /** The field of the experience points, the table of the points each level needs, and the rule to read when they reach a new one (PRO-6). */
+    experience?: { field: string; table: string; rules?: string; };
 }

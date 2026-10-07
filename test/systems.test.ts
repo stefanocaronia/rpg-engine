@@ -14,6 +14,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await ok("config", "advancement", "xp");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12");
     await ok("write", "Ossario", "--type", "place", "--add", "contains=[[Ennio]]");
 });

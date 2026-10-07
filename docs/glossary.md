@@ -47,6 +47,10 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | uso | use | a counter that comes back with a rest: `refill`, or named by a recipe |
 | equipaggiato | equipped | the `equipped` list of a character: what it wears and wields, among what it carries |
 | formule delle voci | item formulas | `item-formulas`: formulas the pages of a list's items give, worked out on who lists them |
+| impostazioni del sistema | system settings | `settings` in system.yaml: what the setup asks for the system, as advancement |
+| punti esperienza, PE | experience points, xp | the points a character gains; `progression.experience` counts the level they reach |
+| premi della scena | rewards | `rewards`: what the creatures overcome in a scene give the party |
+| traguardi | milestones | the value of advancement where the story says when the characters rise |
 | tiri tenuti | kept rolls | a field of kind `rolls`, written by `roll keep` and taken by `roll use` |
 | classe, riga della classe | class, the class's row | an item of the system's `progression` list; the row of its table at its level |
 | privilegi | features | the `features` list the rows and parts give |

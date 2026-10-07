@@ -33,7 +33,7 @@ export const init = defineCommand({
         const root = createCampaign(folder, settings, context.platform);
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
-        return { root, name: settings.name, missing: missingWithSystems(missingSettings(settings), context) };
+        return { root, name: settings.name, missing: missingWithSystems(root, missingSettings(settings), context) };
     },
 
     format(result)

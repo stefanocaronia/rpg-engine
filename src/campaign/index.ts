@@ -5,6 +5,7 @@ export {
     type CampaignSettings,
     changeListSetting,
     changeMapSetting,
+    changeOtherSetting,
     changeSetting,
     checkSettingName,
     checkSettings,

@@ -71,7 +71,7 @@ export function readCoinsSetting(root: string): unknown
  * A text setting as campaign.yaml writes it, such as the system or the language, read even when another setting breaks the file: YAML still gives the keys it can (SYS-1).
  * Undefined when it is missing, not text, or the file cannot be read.
  */
-export function readTextSetting(root: string, name: SettingName): string | undefined
+export function readTextSetting(root: string, name: string): string | undefined
 {
     try {
         const value: unknown = parseDocument(files().text(join(root, campaignFileName)) ?? "").get(name);
@@ -123,6 +123,27 @@ export function changeSetting(root: string, name: string, value: unknown): boole
     }
 
     document.set(setting, parsed.data);
+    saveSettings(root, document);
+    return true;
+}
+
+/**
+ * Writes a setting that is not the campaign's own but one a game system adds (DAT-10), as text, keeping the rest of campaign.yaml as it is; its value is checked by
+ * who knows the system. Returns whether it changed.
+ */
+export function changeOtherSetting(root: string, name: string, value: string): boolean
+{
+    if ((settingNames as string[]).some((setting) => comparableText(setting) === comparableText(name))) {
+        throw new Error(`${name} is a setting of the campaign: change it as one.`);
+    }
+
+    const document = readSettingsDocument(root);
+
+    if ((document.toJS() as Record<string, unknown> | null)?.[name] === value) {
+        return false;
+    }
+
+    document.set(name, value);
     saveSettings(root, document);
     return true;
 }

@@ -7,6 +7,7 @@ import { isEmptyField, type Page, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { experienceOf, experienceText } from "./game-experience.ts";
 import { progressionOf } from "./progression.ts";
 import { hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
@@ -285,6 +286,14 @@ function entryFields(entries: SheetEntry[]): string[]
 /** " (+2)": the field shown beside an entry, such as str-mod by str, when it has a value. */
 function besideText(world: World, fields: Record<string, unknown>, entry: SheetEntry): string
 {
+    // Beside the points, how many the next level needs, or the level they reach (PRO-6).
+    const experience = comparableText(entry.field) === comparableText(world.system?.progression?.experience?.field ?? "") ? experienceOf(world, fields) : undefined;
+    const text = experience === undefined ? undefined : experienceText(experience);
+
+    if (text !== undefined) {
+        return ` (${text})`;
+    }
+
     const value = entry.beside === undefined ? undefined : readField(fields, entry.beside);
     return entry.beside === undefined || isEmptyField(value) ? "" : ` (${valueText(world, entry.beside, value)})`;
 }

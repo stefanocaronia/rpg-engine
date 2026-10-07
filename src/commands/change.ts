@@ -32,6 +32,7 @@ import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
+import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
@@ -230,7 +231,10 @@ function applyStep(
     const due = after !== undefined && layer === undefined && isCounterField(after.type, field) ? fireEvents(root, context, world, updated, readPresent(root).date).due : [];
     // The rules a counter of the player character or a companion touches (DAT-3): never for a copy, nor for a page that is not in the party.
     const touched = changed || (step.amount.beyond ?? 0) !== 0;
-    const thresholds = touched && holder.kind === "page" && isPartyMember(holder.page) ? thresholdNotes(root, system, field, step, layer?.name) : [];
+    const party = holder.kind === "page" && isPartyMember(holder.page);
+    // Points that reach a new level are said with the rule to read (PRO-6).
+    const levels = changed && party && after !== undefined ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after))) : [];
+    const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...levels];
     const outcome = {
         page,
         field,

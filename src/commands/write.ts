@@ -69,6 +69,7 @@ import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
+import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
@@ -260,6 +261,10 @@ export const write = defineCommand({
         const sheet = joined ? joiningNotes(system, now, page) : [];
         const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
+        // Points that reach a level the classes have not (PRO-6).
+        const levels = changed && isPartyMember(page)
+            ? newLevelNotes(page.name, existing === undefined ? undefined : experienceOf(world, effectiveFields(world, existing)), experienceOf(now, effectiveFields(now, page)))
+            : [];
         const links = changed ? linkNotes(now, fields) : [];
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
@@ -268,7 +273,7 @@ export const write = defineCommand({
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },

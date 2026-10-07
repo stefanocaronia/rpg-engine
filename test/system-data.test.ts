@@ -59,7 +59,7 @@ describe("the coins of the system (DAT-1)", () => {
 describe("the character sheet (DAT-2)", () => {
     it("orders the status line as the system says, with its numbers, hides what is marked at zero, and keeps the other counters after", async () => {
         await ok("write", "Ennio", "--set", "temp-hp=0", "--set", "exhaustion=0/6", "--set", "death-failures=0/3", "--set", "xp=0", "--set", "frecce=18", "--set", "passive-perception=12");
-        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · hp 5/12 · ac 14 · passive-perception 12 · frecce 18");
+        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · xp 0 · hp 5/12 · ac 14 · passive-perception 12 · frecce 18");
         await ok("change", "Ennio", "exhaustion", "--by", "1");
         expect(await ok("status")).toContain("ac 14 · passive-perception 12 · exhaustion 1/6 · frecce 18");
     });

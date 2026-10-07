@@ -5,6 +5,7 @@ import {
     type CampaignSettings,
     changeListSetting,
     changeMapSetting,
+    changeOtherSetting,
     changeSetting,
     checkSettingName,
     listSettingNames,
@@ -25,11 +26,11 @@ import { getVersion } from "../core/version.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
-import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName } from "../systems/index.ts";
+import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld, installedSystemName, missingWithSystems } from "./game-world.ts";
+import { campaignSystem, campaignWorld, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
@@ -46,6 +47,7 @@ export const config = defineCommand({
         + "table is a list too: what you promise the player about how you play, in the words you said. "
         + "precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. "
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
+        + "The game system may add settings of its own, such as advancement for 5e: config lists them with what each value means. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
         + "each taking the place of one with that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the line of the player character. "
         + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
@@ -53,7 +55,7 @@ export const config = defineCommand({
     group: "campaign",
     positionals: ["setting", "value"],
     input: z.object({
-        setting: z.string().optional().describe(`setting to show or change: ${settingNames.join(", ")}`),
+        setting: z.string().optional().describe(`setting to show or change: ${settingNames.join(", ")}, or one the game system adds`),
         value: z.string().optional().describe("new value of the setting"),
         add: z.array(z.string()).optional().describe(`items to add to a list setting (${listSettingNames.join(", ")}), repeatable`),
         remove: z.array(z.string()).optional().describe(`items to remove from a list setting (${listSettingNames.join(", ")}), repeatable`),
@@ -63,6 +65,17 @@ export const config = defineCommand({
     {
         const root = requireCampaign(context.folder);
         const listChange = input.add !== undefined || input.remove !== undefined;
+        const own = input.setting === undefined ? undefined : systemSetting(root, context, input.setting);
+
+        // A setting the game system adds, with one of its values (DAT-10).
+        if (own !== undefined) {
+            return systemSettingResult(root, context, own, input);
+        }
+
+        if (input.setting !== undefined && !(settingNames as string[]).includes(input.setting.trim())) {
+            const added = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
+            throw new Error(`There is no setting "${input.setting}". The settings are: ${[...settingNames, ...added].join(", ")}.`);
+        }
 
         if (input.add !== undefined && input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting))) {
             throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
@@ -95,9 +108,10 @@ export const config = defineCommand({
         // Listed all together, what the campaign adds to its system only when it adds something.
         const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
         const listed = input.setting === undefined ? shown.filter((name) => !added(name) || settings[name] !== undefined) : shown;
+        const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
         return {
-            settings: Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])),
-            missing: missingWithSystems(missingSettings(settings), context),
+            settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
+            missing: missingWithSystems(root, missingSettings(settings), context),
             replaced,
         };
     },
@@ -108,6 +122,42 @@ export const config = defineCommand({
         return [[...lines, ...result.replaced].join("\n"), missingSettingsNote(result.missing)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** A setting the game system adds, shown, or changed to one of its values (DAT-10); refused with them for any other. */
+function systemSettingResult(
+    root: string,
+    context: Context,
+    setting: SystemSetting,
+    input: { value?: string; add?: string[]; remove?: string[]; },
+): { settings: Record<string, unknown>; missing: string[]; replaced: string[]; }
+{
+    if (input.add !== undefined || input.remove !== undefined) {
+        throw new Error(`${setting.name} takes one value, ${valuesText(setting)}, such as setting ${setting.name}, value ${setting.values[0].value}. Nothing changed.`);
+    }
+
+    if (input.value !== undefined) {
+        const given = input.value.trim();
+        const value = setting.values.find((candidate) => comparableText(candidate.value) === comparableText(given));
+
+        if (value === undefined) {
+            throw new Error(`"${given}" is not a value of ${setting.name}, which takes ${setting.values.map((candidate) => `${candidate.value} (${candidate.means})`).join("; or ")}. Nothing changed.`);
+        }
+
+        if (changeOtherSetting(root, setting.name, value.value)) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: setting.name, value: value.value }));
+        }
+    }
+
+    return { settings: { [setting.name]: systemShownValue(root, setting) }, missing: missingWithSystems(root, missingSettings(readSettings(root)), context), replaced: [] };
+}
+
+/** A setting of the system as config shows it: its value with what it means, or missing with every value and what it means (DAT-10). */
+function systemShownValue(root: string, setting: SystemSetting): string
+{
+    const value = systemSettingValue(root, setting);
+    const chosen = setting.values.find((candidate) => candidate.value === value);
+    return chosen === undefined ? `(missing; ${setting.values.map((candidate) => `${candidate.value}: ${candidate.means}`).join("; ")})` : `${chosen.value}: ${chosen.means}`;
+}
 
 /** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173). */
 function shownValue(root: string, context: Context, settings: CampaignSettings, name: SettingName): unknown

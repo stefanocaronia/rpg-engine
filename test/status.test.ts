@@ -52,6 +52,7 @@ describe("rpg status", () => {
 
         expect(await state()).toBe([
             "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic",
+            "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
             "PC: Ennio, in Laboratorio › Cripta: hp 5/12 · arrows 18",

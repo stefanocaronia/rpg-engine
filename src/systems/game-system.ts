@@ -45,7 +45,16 @@ const systemSchema = z.object({
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
         "level-up": z.string().min(1).optional(),
+        experience: z.object({ field: z.string().min(1), table: z.string().min(1), rules: z.string().min(1).optional() }).strict().optional(),
     }).strict().optional(),
+    settings: z.record(
+        z.string().min(1),
+        z.record(z.string().min(1), z.object({ means: z.string().min(1), without: z.array(z.string().min(1)).optional() }).strict()).refine(
+            (values) => Object.keys(values).length >= 2,
+            "give at least two values, each with what it means, such as {xp: {means: ...}, milestones: {means: ...}}",
+        ),
+    ).optional(),
+    rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
@@ -94,6 +103,22 @@ export interface SheetEntry
     beside?: string;
 }
 
+/** A setting the setup asks for the system (D-212, DAT-10): its values, each with what it means and the fields it leaves out of the sheet. */
+export interface SystemSetting
+{
+    name: string;
+    values: { value: string; means: string; without: string[]; }[];
+}
+
+/** What the creatures overcome in a scene give the party (DAT-11): the field of the party, the creatures' field that gives it, and the counter at which one is overcome. */
+export interface Reward
+{
+    field: string;
+    from: string;
+    counter: string;
+    value: number;
+}
+
 /** An installed game system: what it is and what it declares (SYS-1). */
 export interface GameSystem
 {
@@ -133,6 +158,39 @@ export interface GameSystem
     itemFormulas: Record<string, string[]>;
     /** The counters that come back with a rest, by name or by a name ending in *: a character has them full until it spends them (DAT-9). */
     uses: string[];
+    /** The settings it adds to the setup (DAT-10). */
+    settings: SystemSetting[];
+    /** The fields the campaign's settings leave out, as xp with milestones (DAT-10). */
+    leftOut: string[];
+    /** What the creatures overcome in a scene give the party (DAT-11). */
+    rewards: Reward[];
+}
+
+/**
+ * The system as a campaign plays it, with the values its settings have (DAT-10): the fields a value leaves out are gone from the sheet, the line, the experience
+ * and the rewards. A setting without a value, or with one the system lacks, leaves out nothing.
+ */
+export function withSettings(system: GameSystem, valueOf: (setting: string) => string | undefined): GameSystem
+{
+    const leftOut = system.settings.flatMap((setting) => {
+        const chosen = valueOf(setting.name);
+        return setting.values.find((value) => chosen !== undefined && comparableText(value.value) === comparableText(chosen))?.without ?? [];
+    });
+
+    if (leftOut.length === 0) {
+        return system;
+    }
+
+    const kept = (field: string): boolean => !leftOut.some((name) => comparableText(name) === comparableText(field));
+    const progression = system.progression === undefined ? undefined : withoutExperience(system.progression, kept);
+    return frozen({
+        ...system,
+        sheet: system.sheet.map((group) => ({ ...group, entries: group.entries.filter((entry) => kept(entry.field)) })).filter((group) => group.entries.length > 0),
+        statusLine: system.statusLine.filter((entry) => kept(entry.field)),
+        ...(progression === undefined ? {} : { progression }),
+        rewards: system.rewards.filter((reward) => kept(reward.field)),
+        leftOut,
+    });
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
@@ -239,6 +297,12 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${notMarking} is not declared as a list in fields, as marks and progression need.`);
     }
 
+    const experience = data.progression?.experience?.table;
+
+    if (experience !== undefined && !Object.keys(formulas.tables).some((table) => comparableText(table) === comparableText(experience))) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: progression.experience.table: there is no table ${experience} in tables.`);
+    }
+
     return frozen({
         name,
         folder,
@@ -268,6 +332,15 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
         itemFormulas: data["item-formulas"] ?? {},
         uses: usesOf(data),
+        settings: Object.entries(data.settings ?? {}).map(([setting, values]) => ({
+            name: setting,
+            values: Object.entries(values).map(([value, meaning]) => ({ value, means: meaning.means, without: meaning.without ?? [] })),
+        })),
+        leftOut: [],
+        rewards: Object.entries(data.rewards ?? {}).map(([field, reward]) => {
+            const [counter, value] = reward.overcome.split(" ");
+            return { field, from: reward.from, counter, value: Number(value) };
+        }),
     });
 }
 
@@ -316,11 +389,23 @@ function strayOccasion(data: z.infer<typeof systemSchema>, formulas: SystemFormu
     return undefined;
 }
 
-/** The progression as the system declares it (PRO-1–PRO-4, D-226). */
+/** The progression as the system declares it (PRO-1–PRO-4, PRO-6, D-226). */
 function progressionRule(data: NonNullable<z.infer<typeof systemSchema>["progression"]>): ProgressionRule
 {
     const { "level-up": levelUp, skip, ...rule } = data;
     return { ...rule, skip: skip ?? [], ...(levelUp === undefined ? {} : { levelUp }) };
+}
+
+/** The progression without its experience, when a setting leaves its field out (DAT-10). */
+function withoutExperience(progression: ProgressionRule, kept: (field: string) => boolean): ProgressionRule
+{
+    if (progression.experience === undefined || kept(progression.experience.field)) {
+        return progression;
+    }
+
+    const rest = { ...progression };
+    delete rest.experience;
+    return rest;
 }
 
 /** The groups of a system's sheet, each with its note; a note for a group the sheet does not have is refused. */

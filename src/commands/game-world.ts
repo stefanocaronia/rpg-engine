@@ -3,8 +3,9 @@ import { campaignFileName, readCampaignData, readTextSetting } from "../campaign
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
+import { comparableText } from "../core/text.ts";
 import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
-import { findCampaignSystem, findSystem, type GameSystem, installedSystems } from "../systems/index.ts";
+import { findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemSetting, withSettings } from "../systems/index.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
@@ -28,14 +29,51 @@ export function campaignSystem(root: string, context: Context): GameSystem | und
     return systemOf(root, context).system;
 }
 
-/** The game system campaign.yaml names, with its additions or why they do not read, read once until campaign.yaml changes: a call asks for it many times. */
+/**
+ * The game system campaign.yaml names, with its additions or why they do not read, and as its settings have it (DAT-10), read once until campaign.yaml changes:
+ * a call asks for it many times.
+ */
 function systemOf(root: string, context: Context): { system?: GameSystem; problem?: string; }
 {
     const settings = resolve(join(root, campaignFileName));
     return files().remember(`system ${resolve(root)}`, (path) => path === settings, () => {
         const name = readTextSetting(root, "system");
-        return name === undefined ? {} : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
+        const found = name === undefined ? {} : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
+        return found.system === undefined ? found : { ...found, system: withSettings(found.system, (setting) => readTextSetting(root, setting)) };
     });
+}
+
+/** A setting the campaign's game system adds to the setup (DAT-10), by its name in any case; undefined when the system has none by that name. */
+export function systemSetting(root: string, context: Context, name: string): SystemSetting | undefined
+{
+    return campaignSystem(root, context)?.settings.find((setting) => comparableText(setting.name) === comparableText(name.trim()));
+}
+
+/** The value campaign.yaml gives a setting of the system, when it is one the system has (DAT-10). */
+export function systemSettingValue(root: string, setting: SystemSetting): string | undefined
+{
+    const written = readTextSetting(root, setting.name);
+    return setting.values.find((value) => written !== undefined && comparableText(value.value) === comparableText(written))?.value;
+}
+
+/** A setting of the system written by hand with a value the system does not have (DAT-10): what it takes instead. */
+export function systemSettingProblems(root: string, context: Context): Problem[]
+{
+    return (campaignSystem(root, context)?.settings ?? []).flatMap((setting): Problem[] => {
+        const written = readTextSetting(root, setting.name);
+        return written === undefined || systemSettingValue(root, setting) !== undefined ? [] : [{
+            path: campaignFileName,
+            message: `${setting.name} is "${written}", which the system ${campaignSystem(root, context)?.name ?? ""} does not take: ${valuesText(setting)}.`,
+            fix: `config, setting ${setting.name}, value ${setting.values[0].value}`,
+        }];
+    });
+}
+
+/** "xp or milestones": the values of a setting of the system. */
+export function valuesText(setting: SystemSetting): string
+{
+    const values = setting.values.map((value) => value.value);
+    return values.length === 1 ? values[0] : `${values.slice(0, -1).join(", ")} or ${values.at(-1) ?? ""}`;
 }
 
 /** The occasions of a game system that end effects (DAT-5): those its recipes name, such as long rest. */
@@ -165,12 +203,14 @@ export function systemPagesHint(world: World, type: PageType): string
 }
 
 /** The settings still missing, with the installed game systems beside system, the one to ask for among them (D-167): "system (installed: 5e)". */
-export function missingWithSystems(missing: string[], context: Context): string[]
+export function missingWithSystems(root: string, missing: string[], context: Context): string[]
 {
     const names = installedSystems(context.systemFolders).map((system) => system.name);
     const system = names.length > 0 ? `system (installed: ${names.join(", ")})` : "system";
+    // What the system adds to the setup, with its values: config says what each means (DAT-10).
+    const added = (campaignSystem(root, context)?.settings ?? []).filter((setting) => systemSettingValue(root, setting) === undefined).map((setting) => `${setting.name} (${valuesText(setting)})`);
     // The system first (D-167): the other settings may depend on the game.
-    return missing.includes("system") ? [system, ...missing.filter((name) => name !== "system")] : missing;
+    return [...(missing.includes("system") ? [system, ...missing.filter((name) => name !== "system")] : missing), ...added];
 }
 
 /**

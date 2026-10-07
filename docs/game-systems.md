@@ -94,6 +94,20 @@ round: 6 seconds
 
 How long a round lasts. In a scene with turns, an effect of up to a minute on someone in the scene ends after as many rounds (`1m is 10 rounds of 6 seconds.`).
 
+### settings
+
+What the setup asks for the system, with the campaign's own settings (`DAT-10`):
+
+```yaml
+settings:
+  advancement:
+    xp: {means: "experience points, as the SRD: …"}
+    milestones: {means: "the characters rise when the story reaches a milestone …", without: [xp]}
+```
+
+- Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
+- `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, and the experience and rewards of that field say nothing. Without a value, nothing is left out.
+
 ### sheet and sheet-notes
 
 The character sheet, in groups, each with its fields in order:
@@ -146,6 +160,17 @@ status-line: [level, hp, temp-hp?, ac, passive-perception, inspiration?, exhaust
 ```
 
 With `?`, a field usually at zero: shown only when it is not, reported by a recipe only when it is not, and named before a roll of that character when it is not. The page's other counters follow the listed fields.
+
+### rewards
+
+What the creatures overcome in a scene give the party (`DAT-11`):
+
+```yaml
+rewards:
+  xp: {from: xp-value, overcome: hp 0}
+```
+
+`scene close` adds up `from` on the copies and on the characters outside the party who were in the scene and are at the `overcome` value or below, or dead, and shares it, rounded down, among the living party members there who keep the sheet. It says the share with the calls of `change`, and gives nothing by itself: who was overcome another way, and what the story rewards, are the master's to judge.
 
 ### thresholds
 
@@ -239,6 +264,7 @@ progression:
   skip: [Proficiency Bonus, 1st, 2nd, 3rd, 4th, 5th, 6th, 7th, 8th, 9th]
   parts: {list: subclasses, field: class}
   level-up: "A new level gives hit points: roll the hit die of the class that rose, … and add it to hp-base with write."
+  experience: {field: xp, table: xp-by-level, rules: Beyond 1st Level}
 ```
 
 - `list`: the list whose items name a page with a number, `[[Barbarian]] 3`. The page's first table that has the `features` column and whose first column counts levels (`1st`, `2nd`… or `1`, `2`…) gives its row 3.
@@ -247,6 +273,7 @@ progression:
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class.
 - The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
 - `level-up`: what `write` says when the character's levels rise in all, such as how hit points are added; the engine knows nothing of what it says.
+- `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, or the highest level they reach beyond the classes', `xp 950 (level 3 due)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule, and `status` says it at every session until the classes rise. Only the classes change the level.
 - `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
 
 ### item-formulas

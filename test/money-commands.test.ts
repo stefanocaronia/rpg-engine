@@ -15,6 +15,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await ok("config", "advancement", "xp");
     await ok("config", "coins", "gp/mo 100, pp 1000 rare, ep 50 rare, sp/ma 10, cp/mr 1");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "money=34 gp 4 sp");
     await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "borsa=3 sp");
@@ -45,7 +46,7 @@ describe("the coins of the campaign (MON-1, MON-8)", () => {
         expect(await ok("config", "coins")).toBe("coins: gp/mo 100, pp 1000 rare, ep 50 rare, sp/ma 10, cp/mr 1");
         expect((await rpg("config", "coins", "gp 100, sp 10")).output).toBe("No coin is worth 1: the smallest coin is worth 1, and the others are worth so many of it.");
         expect(await ok("config")).not.toMatch(/Still missing: .*coins/);
-        expect(readLogFile(folder).find((entry) => entry.type === "config-changed")).toMatchObject({ visibility: "public", data: { setting: "coins" } });
+        expect(readLogFile(folder).find((entry) => entry.type === "config-changed" && entry.data.setting === "coins")).toMatchObject({ visibility: "public" });
 
         writeFileSync(join(folder, "campaign.yaml"), file("campaign.yaml").replace("cp/mr: 1", "cp/mr: 2"));
         expect(await ok("validate")).toContain(

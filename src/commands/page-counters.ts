@@ -4,6 +4,7 @@ import { type Coin, formatAmount, readAmount } from "../money/index.ts";
 import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { experienceOf, experienceText } from "./game-experience.ts";
 import { signedText } from "./worked-out.ts";
 
 /**
@@ -54,12 +55,24 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
         }
     }
 
+    // A field the campaign's settings leave out, as xp with milestones, is not shown (DAT-10).
+    const leftOut = (field: string): boolean => (system?.leftOut ?? []).some((name) => comparableText(name) === comparableText(field));
+
     for (const [field, value] of Object.entries(counters)) {
         const counter = readCounter(value);
 
-        if (!used.has(field) && !(declaredKind(world, field) === "counter" && counter?.max === undefined && counter?.value === 0)) {
+        if (!used.has(field) && !leftOut(field) && !(declaredKind(world, field) === "counter" && counter?.max === undefined && counter?.value === 0)) {
             shown[field] = value;
         }
+    }
+
+    // The points with how many the next level needs, or the level they reach (PRO-6).
+    const experience = experienceOf(world, fields);
+    const text = experience === undefined ? undefined : experienceText(experience);
+    const key = experience === undefined ? undefined : Object.keys(shown).find((field) => comparableText(field) === comparableText(experience.field));
+
+    if (key !== undefined && text !== undefined) {
+        shown[key] = `${String(shown[key])} (${text})`;
     }
 
     // Rolls kept for later, such as a diviner's Portent, when there are any (KEP-1).
