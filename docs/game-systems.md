@@ -222,7 +222,8 @@ counters:
   In 5e the first needs a level, so it is a character's; a creature has none, and its saves come from the totals its stat block lists (`saves: [Wis +0]`).
 - `counters`: the `min` and `max` of a counter, each a number or a formula. A limit counts only when it is a whole number. `min` replaces 0 as the lowest value (`momentum: {min: -6, max: 10 - count(debilities)}`).
 - `refill`: what of a counter comes back with a recipe that ends an occasion: `refill: long rest` brings it all back; by occasion, a formula where `max` is its maximum (`{long rest: max, short rest: "4 * has(features, Sorcerous Restoration)"}`). A counter without `max` takes its maximum from the column of a class's row with its name, such as `rages` (see `progression`).
-- **Uses.** A counter with a `refill`, or that a recipe sets or regains, comes back with a rest: a page whose maximum for it is above zero has it full until it spends it. `write` puts it on the page full, and says so; the line of the player character and the sheet show it.
+- **Uses.** A counter with a `refill`, or that a recipe sets or regains, comes back with a rest: a character who keeps the sheet (the player character, and a companion with a level, written or given by its classes, or that derives from no creature) and whose maximum for it is above zero has it full until it spends it; other pages, places, items and copies in a scene never have it. `write` puts it on the page full, and says so; the line of the player character and the sheet show it. A use that only the lists give, such as `rages` from the classes, leaves the page when its maximum falls to 0, as after a lower level.
+- A `refill` names occasions that a recipe `ends`: one that no recipe ends would never bring the use back, and the system does not load.
 
 When the system loads, every formula must read, name only tables it has, and computed fields must not read each other in a circle; a field given twice in different cases is refused. The error names the place: `computed.insight: "wis-mod +" is not a formula: …`.
 
@@ -236,13 +237,15 @@ progression:
   features: Features
   skip: [Proficiency Bonus, 1st, 2nd, 3rd, 4th, 5th, 6th, 7th, 8th, 9th]
   parts: {list: subclasses, field: class}
+  level-up: "A new level gives hit points: roll the hit die of the class that rose, … and add it to hp-base with write."
 ```
 
 - `list`: the list whose items name a page with a number, `[[Barbarian]] 3`. The page's first table that has the `features` column and whose first column counts levels (`1st`, `2nd`… or `1`, `2`…) gives its row 3.
 - Every other column of the row is a field of the character, named in lowercase with hyphens (Rage Damage gives `rage-damage +2`), except those in `skip`; an empty cell or a dash gives nothing. Two classes with the same column add up their numbers. These fields are worked out like computed ones: never written, refused by `change` and `effect`, read by formulas.
 - `features`: the column of the features. The rows up to the level give them, each once: one written again with a value in parentheses takes the place of the earlier (`Bardic Inspiration (d8)`). Only names that are titles of the page's sections count, also when the column has the singular (`Signature Spell` for `Signature Spells`): "Path feature" or "Wild Shape improvement" do not.
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class.
-- The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the new features and the values that change. `validate` reports a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
+- The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
+- `level-up`: what `write` says when the character's levels rise in all, such as how hit points are added; the engine knows nothing of what it says. `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
 
 ## 4. The formula language
 
@@ -376,11 +379,16 @@ What the system's data lacks, `campaign.yaml` adds in the same keys as `system.y
 ```text
 config tables "superiority-dice-by-level: {0: 0, 3: 4, 7: 5, 15: 6}"
 config counters "superiority-dice: {max: 'has(subclasses, Battle Master) * table(superiority-dice-by-level, item(classes, Fighter))', refill: short rest}"
+```
+
+A formula with commas goes in quotes, or YAML reads its commas as the map's. A use's `max` reads what gives it, as above, so that only who has the feature has the use.
+
+```text
 config computed "passive-perception: 10 + perception + 5 * has(feats, Observant)"
 config fields "portent: rolls"
 ```
 
-The nearest layer wins: an entry of `fields`, `tables`, `computed` or `counters` with the name of one of the system's takes its place (a house rule changes the formula, never the number on the page); a recipe adds to the system's of that name, field by field, with its occasions and rules; `status-line` adds fields at the end. `config` refuses what the system would not read with, saying where and why, and `remove` takes an entry away by name; written wrongly by hand, the campaign plays with the system alone and `validate` says why.
+The nearest layer wins: an entry of `fields`, `tables`, `computed` or `counters` with the name of one of the system's takes its place (a house rule changes the formula, never the number on the page), and `config` says what the system's entry was, since what the new one leaves out is gone; a recipe adds to the system's of that name, field by field, with its occasions and rules; `status-line` adds fields at the end. `config` refuses what the system would not read with, saying where and why, and `remove` takes an entry away by name; written wrongly by hand, the campaign plays with the system alone and `validate` says why.
 
 ## 8. The checks every system passes
 

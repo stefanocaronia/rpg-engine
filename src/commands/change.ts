@@ -40,7 +40,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { keptRolls } from "./page-counters.ts";
-import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
+import { computedField, computedMessage, counterLimits, maximumHint } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder
@@ -119,7 +119,7 @@ export const change = defineCommand({
             throw new Error(`${field} on ${page} looks like money, but the campaign's coins cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
         }
 
-        const limits = counterLimits(world, fields, field);
+        const limits = { ...counterLimits(world, fields, field), hint: maximumHint(world, fields, field) };
         const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
         const why = input.why?.trim() === "" ? undefined : input.why;
         return { ...applyStep(root, context, world, holder, field, step, why, system).outcome, problems: world.problems };
@@ -160,10 +160,14 @@ interface StepOutcome
     thresholds: string[];
 }
 
-/** What a recipe did to a page: the effects it ended, the steps it wrote, what it leaves to the player, and the counters it leaves to the master. */
+/**
+ * What a recipe did to a page: the effects it ended, the steps it wrote, what it leaves to the player or, for a companion, to the master (D-206), and the
+ * counters it leaves to the master.
+ */
 interface RecipeOutcome
 {
     page: string;
+    pc: boolean;
     ended: string[];
     steps: StepOutcome[];
     choices: string[];
@@ -329,6 +333,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
 
     const outcome = {
         page: name,
+        pc: pageCalled(current, name).fields.role === "pc",
         ended: ending.map((effect) => effect.name),
         steps,
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
@@ -384,9 +389,11 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
     const lines = result.outcomes.flatMap((outcome) => {
         const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
         const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
-        const chosen = outcome.choices.map((choice) => ` Ask the player: ${choice}.`).join("");
-        // Rolls kept for later: if this rest brings them back, the player rolls them again (KEP-4).
-        const kept = outcome.kept.length === 0 ? "" : ` Kept rolls: ${outcome.kept.join("; ")}; if this rest brings them back, the player rolls them again, with roll and keep.`;
+        // The player chooses and rolls for the player character, the master for a companion (D-206, D-213).
+        const chosen = outcome.choices.map((choice) => ` ${outcome.pc ? "Ask the player" : `Choose for ${outcome.page}`}: ${choice}.`).join("");
+        // Rolls kept for later: if this rest brings them back, they are rolled again (KEP-4).
+        const roller = outcome.pc ? "the player rolls" : "roll";
+        const kept = outcome.kept.length === 0 ? "" : ` ${outcome.page} keeps ${outcome.kept.join("; ")}: if this rest brings them back, ${roller} them again, with roll and keep.`;
         return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${kept}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
@@ -410,7 +417,7 @@ function counterStep(
     page: string,
     field: string,
     coins: Coin[] | undefined,
-    limits: { min?: number; max?: number; } = {},
+    limits: { min?: number; max?: number; hint?: { made: string; raise?: string; }; } = {},
 ): Step
 {
     const read = readCounter(value);
@@ -424,7 +431,10 @@ function counterStep(
 
     // A maximum the game system works out is given only as it works it out (FOR-7).
     if ("to" in counterChange && limits.max !== undefined && counterChange.to.max !== undefined && counterChange.to.max !== limits.max) {
-        throw new Error(`The maximum of ${field} on ${page} is worked out by the game system: ${limits.max}. Give the current value alone, such as to ${Math.min(counterChange.to.value, limits.max)}. Nothing changed.`);
+        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}`;
+        throw new Error(
+            `The maximum of ${field} on ${page} is worked out by the game system: ${limits.hint?.made ?? limits.max}. Give the current value alone, such as to ${Math.min(counterChange.to.value, limits.max)}${raise}. Nothing changed.`,
+        );
     }
 
     const { counter: after, beyond } = changeCounter(before, counterChange);

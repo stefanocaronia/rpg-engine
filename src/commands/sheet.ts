@@ -8,7 +8,7 @@ import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { progressionOf } from "./progression.ts";
-import { isUse, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { hasSheet, isUse, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -53,7 +53,7 @@ export function sheetSummary(system: GameSystem): SheetSummary | undefined
  */
 export function missingSheetFields(system: GameSystem | undefined, world: World, page: Page): string[]
 {
-    if (system === undefined || !isSheeted(page)) {
+    if (system === undefined || !hasSheet(world, page)) {
         return [];
     }
 
@@ -67,7 +67,7 @@ export function missingSheetFields(system: GameSystem | undefined, world: World,
  */
 export function joiningNotes(system: GameSystem | undefined, world: World, page: Page): string[]
 {
-    if (system === undefined || !isSheeted(page)) {
+    if (system === undefined || !hasSheet(world, page)) {
         return [];
     }
 
@@ -82,7 +82,7 @@ export function joiningNotes(system: GameSystem | undefined, world: World, page:
  */
 export function sheetLines(world: World, system: GameSystem | undefined, page: Page): string[]
 {
-    if (system === undefined || !isSheeted(page)) {
+    if (system === undefined || !hasSheet(world, page)) {
         return [];
     }
 
@@ -104,7 +104,7 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
  */
 export function sheetGroup(world: World, system: GameSystem | undefined, page: Page, name: string): { name: string; lines: string[]; } | undefined
 {
-    const group = system === undefined || !isSheeted(page) ? undefined : system.sheet.find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
+    const group = system === undefined || !hasSheet(world, page) ? undefined : system.sheet.find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
 
     if (system === undefined || group === undefined) {
         return undefined;
@@ -132,15 +132,15 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
 }
 
 /** The names of the groups of a character's sheet, for a message; none for a page that shows no sheet. */
-export function sheetGroupNames(system: GameSystem | undefined, page: Page): string[]
+export function sheetGroupNames(world: World, system: GameSystem | undefined, page: Page): string[]
 {
-    return system === undefined || !isSheeted(page) ? [] : system.sheet.map((group) => group.name);
+    return system === undefined || !hasSheet(world, page) ? [] : system.sheet.map((group) => group.name);
 }
 
 /** The fields the sheet of a character shows (DAT-2), those the rows of its classes give included (PRO-4), which show leaves out of the fields as written; none for a page that shows no sheet. */
 export function sheetFieldNames(world: World, system: GameSystem | undefined, page: Page): string[]
 {
-    if (system === undefined || !isSheeted(page)) {
+    if (system === undefined || !hasSheet(world, page)) {
         return [];
     }
 
@@ -202,16 +202,6 @@ function markCounts(world: World, system: GameSystem, fields: Record<string, unk
 function remindedFields(system: GameSystem): string[]
 {
     return system.sheet.flatMap((group) => group.entries).filter((entry) => !entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field)));
-}
-
-/**
- * The player character keeps the sheet of the system, and a companion with a level or that derives from no creature (DAT-2): a fighter who derives from her
- * race does, a wolf with its stat block does not.
- */
-function isSheeted(page: Page): boolean
-{
-    const companion = page.fields.role === "companion" && (isEmptyField(page.fields.creature) || !isEmptyField(page.fields.level));
-    return page.type === "character" && (page.fields.role === "pc" || companion);
 }
 
 function isWorkedOut(system: GameSystem, field: string): boolean

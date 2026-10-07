@@ -16,7 +16,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | oggetto, evento, argomento, creatura | item, event, topic, creature | `items/`, `events/`, `topics/`, `creatures/` |
 | campo | field | a key of a page's frontmatter |
 | campo fisso | standard field | a field the core gives a type, such as `role` or `contains` |
-| genere (di un campo) | kind | `counter`, `number`, `modifier`, `bonus`, `text`, `list`, declared in `fields` |
+| genere (di un campo) | kind | `counter`, `number`, `modifier`, `bonus`, `text`, `list`, `rolls`, declared in `fields` |
 | sezione, introduzione | section, introduction | a heading and its text; the text before the first heading |
 | segreto | secret | a `> [!secret] Name` block |
 | alias | alias | `aliases` |
@@ -44,6 +44,13 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | soglia | threshold | `thresholds` |
 | ricetta | recipe | `recipes`; `change recipe "long rest"` |
 | occasione | occasion | what a recipe `ends`, such as long rest |
+| uso | use | a counter that comes back with a rest: `refill`, or named by a recipe |
+| tiri tenuti | kept rolls | a field of kind `rolls`, written by `roll keep` and taken by `roll use` |
+| classe, riga della classe | class, the class's row | an item of the system's `progression` list; the row of its table at its level |
+| privilegi | features | the `features` list the rows and parts give |
+| sottoclasse | subclass | a part of `progression`, naming its class |
+| salita di livello | level up | `level-up` under `progression`: what `write` says |
+| aggiunte della campagna | campaign additions | `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line` in `campaign.yaml` |
 | condizione | condition | `conditions` of a system; also what an event waits for in `when` |
 | regole, capitolo | rules, chapter | the `rules/` folder and its files; the `rules` command |
 | regole di casa | house rules | the campaign's own `rules/` folder |

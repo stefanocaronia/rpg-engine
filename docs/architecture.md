@@ -4,7 +4,7 @@ rpg-engine lets a high-level AI run a tabletop RPG campaign: the AI invents, pla
 
 This is a map of the code for developers and AI agents. It describes what the code does today; [AGENTS.md](../AGENTS.md) holds the development rules and conventions.
 
-Code comments cite two kinds of codes. Rule codes such as `INH-4`, `CON-1`, `FOR-7` or `DAT-2` name the numbered rules of a mechanic (families: `INH` inheritance, `CON` containers, `SYS` game systems, `FOR` formulas, `DAT` system data, `EFF` effects, `ENV` environment, `EVT` events, `MON` money, `REV` reveal, `RUL` rules, `ASK` asking the player). Codes such as `D-137` name decisions. Both are kept in the maintainer's private documents; tests cite the same codes, so `grep -r "INH-5" src test` finds the code and the tests of a rule.
+Code comments cite two kinds of codes. Rule codes such as `INH-4`, `CON-1`, `FOR-7` or `DAT-2` name the numbered rules of a mechanic (families: `INH` inheritance, `CON` containers, `SYS` game systems, `FOR` formulas, `DAT` system data, `PRO` progression, `CAM` what a campaign adds to its system, `KEP` rolls kept for later, `EFF` effects, `ENV` environment, `EVT` events, `MON` money, `REV` reveal, `RUL` rules, `ASK` asking the player). Codes such as `D-137` name decisions. Both are kept in the maintainer's private documents; tests cite the same codes, so `grep -r "INH-5" src test` finds the code and the tests of a rule.
 
 ## 1. Where things are
 
@@ -37,6 +37,7 @@ There is no dashboard and no `extensions/` folder in the code today: the registr
 | `rules` | Rules as text: sections of markdown files, word search, what an answer shows | [rules/index.ts](../src/rules/index.ts) |
 | `triggers` | Event conditions such as `party in [[Ossario]]`, judged through `TriggerFacts` | [triggers/index.ts](../src/triggers/index.ts) |
 | `instructions` | Reads the files in `instructions/` from the installed package | [instructions/index.ts](../src/instructions/index.ts) |
+| `progression` | Tables whose first column counts levels: the row at a level, the features up to it, those a part lists with their level | [progression/index.ts](../src/progression/index.ts) |
 
 None of the modules names a game's concepts: hit points, ability modifiers or conditions exist only as data in a system's `system.yaml` and pages.
 
@@ -140,8 +141,8 @@ Few places write files, all through the store: `writePage` in [pages/write-page.
 ### A game system package
 
 ```
-systems/<name>/system.yaml   title, language, attribution, fields, coins, round, sheet, sheet-notes, values,
-                             status-line, thresholds, recipes, conditions, tables, computed, counters
+systems/<name>/system.yaml   title, language, attribution, fields, coins, round, sheet, sheet-notes, values, marks,
+                             status-line, thresholds, recipes, conditions, tables, computed, counters, progression
 systems/<name>/world/        pages, as in a campaign (creatures/, items/, topics/ in 5e)
 systems/<name>/rules/        chapters of rules text, one markdown file each
 systems/<name>/LICENSE.md    the license and attribution
@@ -221,7 +222,16 @@ Files: [core/formula.ts](../src/core/formula.ts), [commands/worked-out.ts](../sr
 
 Files: [commands/sheet.ts](../src/commands/sheet.ts), [commands/page-counters.ts](../src/commands/page-counters.ts). Codes: `DAT-2`, `SYS-8`.
 
-A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the sheet of the player character and of companions that keep one (`isSheeted`). `show` prints it by group (`sheetLines`), and one group with how each number is made (`show Page#Group`). `status` summarizes the sheet before there is a player character and reminds what a character still lacks (`missingSheetFields`). `write` gives the sheet's notes when a character joins the party (`joiningNotes`) and refuses list items the system does not take (`checkListValues`). The line of counters shown for the party is `partyCounters`.
+A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the sheet of the player character and of companions that keep one (`hasSheet` in [commands/worked-out.ts](../src/commands/worked-out.ts), which also decides who has the system's uses full, `DAT-9`). `show` prints it by group (`sheetLines`), and one group with how each number is made (`show Page#Group`). `status` summarizes the sheet before there is a player character and reminds what a character still lacks (`missingSheetFields`). `write` gives the sheet's notes when a character joins the party (`joiningNotes`) and refuses list items the system does not take (`checkListValues`). The line of counters shown for the party is `partyCounters`.
+
+### Classes, uses and what a campaign adds
+
+Files: [progression/](../src/progression/), [core/progression-rule.ts](../src/core/progression-rule.ts), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [systems/game-system.ts](../src/systems/game-system.ts), [commands/config.ts](../src/commands/config.ts). Codes: `PRO-1`–`PRO-4`, `DAT-9`, `CAM-1`–`CAM-3`, `KEP-1`–`KEP-4`.
+
+- The `progression` module reads a page's table of levels and knows no game; `progressionOf` joins it to a character's lists as the system's `progression` says: the row's fields, the features each with the pages that tell it, and every feature as a row or part gives it (`gains`), from which `write` tells what a new level adds.
+- Uses are counters with a `refill` or named by a recipe (`isUse`); `withWorkedOut` reads them full on who keeps the sheet, `write` writes them and takes off those that only the lists give when their maximum falls to 0. `change` with a recipe brings them back by occasion (`refillAmount`, `recipeTargets`) and leaves a choice to the player, or to the master for a companion.
+- What `campaign.yaml` adds is merged over `system.yaml` before it is validated (`findCampaignSystem`): the system with the additions, or the system alone and why. The reader refuses unknown keys, a refill no recipe ends and a recipe that sets kept rolls, each at its place on one line.
+- `roll` with `keep` writes the dice in a field of kind `rolls`, with `use` takes one in place of the die; the page is written before the log line.
 
 ### Rolls and asking the player
 

@@ -15,13 +15,15 @@ import { workedOutProblems } from "./worked-out.ts";
 /** Every problem in a campaign: its settings, its game system and coins, its log, its world, its game time, its planned events, its effects and its open scene. */
 export function campaignProblems(root: string, world: World, context: Context): Problem[]
 {
+    const system = systemProblems(root, context);
     return [
         ...checkSettings(root),
-        ...systemProblems(root, context),
+        ...system,
         ...moneyProblems(root, context),
         ...checkLog(root),
         ...checkWorld(world),
-        ...workedOutProblems(world),
+        // While what campaign.yaml adds does not read, what the pages hold is not judged by the system alone: that fix comes first (CAM-3).
+        ...(system.length === 0 ? workedOutProblems(world) : []),
         ...listValueProblems(world, campaignSystem(root, context)),
         ...timeProblems(root),
         ...eventProblems(world),

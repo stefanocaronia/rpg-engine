@@ -14,7 +14,10 @@ export interface ProgressionValue
     from: { name: string; level: number; }[];
 }
 
-/** What the classes of a character give: the fields of their rows, in the order of their columns, and its features, each with the page that tells it (PRO-2, PRO-3). */
+/**
+ * What the classes of a character give: the fields of their rows, in the order of their columns, and its features, each with the pages that tell it, more than
+ * one when two classes give the same name (PRO-2–PRO-4).
+ */
 export interface Progression
 {
     /** The list the items come from, such as classes, and the list of the parts, such as subclasses. */
@@ -22,7 +25,9 @@ export interface Progression
     values: ProgressionValue[];
     /** The name of the field that holds the features, such as features. */
     featuresField: string;
-    features: { name: string; page: Page; }[];
+    features: { name: string; pages: Page[]; }[];
+    /** Each feature as a row or a part gives it, before they are merged, with its level and page: what a new level adds, even a feature gained again. */
+    gains: { name: string; level: number; page: Page; }[];
     /** The items that give them: each class with its level, and each part that adds features. */
     from: { list: string; name: string; level?: number; }[];
 }
@@ -72,7 +77,8 @@ export function progressionOf(world: World, fields: Record<string, unknown>): Pr
         lists: rule.parts === undefined ? [rule.list] : [rule.list, rule.parts.list],
         values: [...values.values()],
         featuresField,
-        features: mergedFeatures(features).map(({ name, page }) => ({ name, page })),
+        features: mergedFeatures(features).map(({ name }) => ({ name, pages: pagesGiving(features, name) })),
+        gains: features.map(({ name, level, page }) => ({ name, level, page })),
         from: [...entries.map((entry) => ({ list: rule.list, name: entry.page.name, level: entry.level })), ...parts.map((part) => ({ list: rule.parts?.list ?? "", name: part.page.name }))],
     };
 }
@@ -91,12 +97,15 @@ export function progressionValue(progression: Progression | undefined, field: st
     return progression.values.find((value) => comparableText(value.field) === comparableText(field))?.value;
 }
 
-/** The page that tells a feature a character has, and its section's title, found by the name with or without its value in parentheses (PRO-4). */
-export function featureSource(progression: Progression | undefined, name: string): { page: Page; title: string; } | undefined
+/**
+ * The pages that tell a feature a character has, in the order of the classes, and its section's title, found by the name with or without its value in
+ * parentheses (PRO-4); undefined when the character has no such feature.
+ */
+export function featureSource(progression: Progression | undefined, name: string): { pages: Page[]; title: string; } | undefined
 {
     const wanted = comparableText(featureParts(name).name);
     const feature = progression?.features.find((candidate) => comparableText(featureParts(candidate.name).name) === wanted);
-    return feature === undefined ? undefined : { page: feature.page, title: featureParts(feature.name).name };
+    return feature === undefined ? undefined : { pages: feature.pages, title: featureParts(feature.name).name };
 }
 
 /**
@@ -112,10 +121,18 @@ export function progressionProblems(world: World, page: Page, fields: Record<str
         return [];
     }
 
-    const entries = listItems(written).flatMap((item, order) => {
-        const found = pageNamed(world, item.name);
-        return item.number === undefined || found === undefined ? [] : [{ name: item.name, level: item.number, page: found, order }];
-    });
+    const items = listItems(written).map((item, order) => ({ ...item, order, page: pageNamed(world, item.name) }));
+    const entries = items.flatMap((item) => (item.number === undefined || item.page === undefined ? [] : [{ name: item.name, level: item.number, page: item.page, order: item.order }]));
+    // An item without a level or without a page gives nothing (PRO-1).
+    const unread = items.filter((item) => item.number === undefined || item.page === undefined).map((item): Problem => ({
+        path: page.path,
+        message: item.page === undefined
+            ? `${rule.list} on ${page.name} names ${item.name}, which has no page, so it gives nothing.`
+            : `${item.name} in ${rule.list} on ${page.name} has no level, so it gives nothing.`,
+        fix: item.page === undefined
+            ? `write ${item.name} with its table of levels, or link one of the system's, such as [[${systemExample(world, rule.list)}]] ${item.number ?? 1}`
+            : `write ${page.name}, set ${rule.list} with each level, such as [[${item.page.name}]] 1`,
+    }));
     const rows = entries.flatMap((entry): Problem[] => {
         const { table } = readTable(entry.page, rule.features);
         const message = table === undefined
@@ -125,7 +142,22 @@ export function progressionProblems(world: World, page: Page, fields: Record<str
             : undefined;
         return message === undefined ? [] : [{ path: page.path, message, fix: table === undefined ? `write ${entry.page.name} with its table of levels, as the system's do` : `check the level of ${entry.page.name} in ${rule.list}` }];
     });
-    return [...rows, ...partProblems(world, page, fields, rule, entries)];
+    return [...unread, ...rows, ...partProblems(world, page, fields, rule, entries)];
+}
+
+/** The name of a page of the system that an item of the list may link to, for an example: the first one that has a table of levels. */
+function systemExample(world: World, list: string): string
+{
+    const rule = world.system?.progression;
+    const page = rule === undefined ? undefined : world.system?.pages.find((candidate) => readTable(candidate, rule.features).table !== undefined);
+    return page?.name ?? list;
+}
+
+/** The pages that give a feature by this name, with or without its value in parentheses, each once, in the order they come (D-224). */
+function pagesGiving(features: { name: string; page: Page; }[], name: string): Page[]
+{
+    const wanted = comparableText(featureParts(name).name);
+    return [...new Set(features.filter((feature) => comparableText(featureParts(feature.name).name) === wanted).map((feature) => feature.page))];
 }
 
 const tables = new WeakMap<Page, { table?: LevelTable; title: (name: string) => string | undefined; }>();
@@ -206,7 +238,11 @@ function partProblems(world: World, page: Page, fields: Record<string, unknown>,
             : [{
                 path: page.path,
                 message,
-                fix: owner === undefined || unlevelled ? `write ${part.name}, set ${field}=[[...]] and ${featuresField} with their levels` : `add ${owner} to ${rule.list} on ${page.name}, or remove ${part.name} from ${list}`,
+                fix: owner === undefined
+                    ? `write ${part.name}, set ${field}=[[...]] and ${featuresField} with their levels`
+                    : unlevelled
+                    ? `write ${part.name}, set ${featuresField} with the level of each, such as [Improved Critical 3]`
+                    : `add ${owner} to ${rule.list} on ${page.name}, or remove ${part.name} from ${list}`,
             }];
     });
 }

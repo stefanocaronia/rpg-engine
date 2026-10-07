@@ -38,7 +38,7 @@ export const roll = defineCommand({
         + "When the player must not see the result, make it hidden; give the player its fingerprint only if they ask for it. reveal shows a hidden roll's proof later. "
         + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
         + "With who, a field of their sheet stands for its value, such as 1d20+athletics. "
-        + "keep writes the dice rolled in a field of who that keeps rolls for later, such as the two d20 of a diviner's Portent, rolled by the player; "
+        + "keep writes the dice rolled in a field of who that keeps rolls for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
         + "use takes one of those instead of the die, as field=value, from who or from the page in from, and logs which roll it replaced. "
         + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
     group: "game",
@@ -102,9 +102,10 @@ export const roll = defineCommand({
             Object.assign(entry.data, { proof, fingerprint: shownFingerprint });
         }
 
+        // The page first: a page that cannot be written leaves no line in the log saying it was (KEP-2, KEP-3).
+        const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         appendLogEntry(root, entry);
         const note = roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
-        const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
     },
 
@@ -158,17 +159,21 @@ function keptRoll(root: string, context: Context, holder: string | undefined, us
         throw new Error(`Give who keeps the roll, with from or who, such as from Elara. Nothing rolled.`);
     }
 
-    const kept = keptOn(campaignWorld(root, context), holder, match[1]);
+    const world = campaignWorld(root, context);
+    const kept = keptOn(world, holder, match[1]);
     const value = Number(match[2]);
 
     if (!kept.values.includes(value)) {
-        throw new Error(`${kept.page.name} keeps no ${value} in ${kept.field}: it keeps ${kept.values.length === 0 ? "none" : kept.values.join(", ")}. Nothing rolled.`);
+        throw new Error(`${kept.page.name} keeps no ${value} in ${kept.field}: it keeps ${kept.values.length === 0 ? "none" : kept.values.join(", ")}.${otherKeepers(world, kept, value)} Nothing rolled.`);
     }
 
     return { ...kept, value };
 }
 
-/** A page's field of kept rolls, with the numbers it holds; refused for a copy in the scene and for a field the system does not declare as kept rolls. */
+/**
+ * A page's field of kept rolls, with the numbers it holds; refused for a copy in the scene, for a field the system does not declare as kept rolls, and for one
+ * that holds something other than numbers.
+ */
 function keptOn(world: World, name: string, field: string): KeptField
 {
     const page = findPage(world, name);
@@ -177,13 +182,44 @@ function keptOn(world: World, name: string, field: string): KeptField
         throw new Error(`There is no page named ${name} to keep rolls: kept rolls go on a character's page, not on a copy in the scene. Nothing rolled.`);
     }
 
+    const written = Object.entries(effectiveFields(world, page)).find(([key]) => comparableText(key) === comparableText(field));
+
     if (declaredKind(world, field) !== "rolls") {
-        throw new Error(`${field} keeps no rolls: declare it so first, such as config, setting fields, value "${field}: rolls". Nothing rolled.`);
+        throw new Error(`${notRollsText(world, field, written?.[1])} Nothing rolled.`);
     }
 
-    const written = Object.entries(effectiveFields(world, page)).find(([key]) => comparableText(key) === comparableText(field));
-    const values = (Array.isArray(written?.[1]) ? written[1] : written?.[1] === undefined ? [] : [written[1]]).map(Number).filter((value) => Number.isFinite(value));
-    return { world, page, field: written?.[0] ?? field, values };
+    const items = Array.isArray(written?.[1]) ? written[1] : written?.[1] === undefined ? [] : [written[1]];
+    const wrong = items.find((item) => !Number.isFinite(numberOf(item)));
+
+    if (wrong !== undefined) {
+        throw new Error(`${field} on ${page.name} holds ${JSON.stringify(wrong)}, which is no roll: write its numbers only, such as ${field}=[14, 3]. Nothing rolled.`);
+    }
+
+    return { world, page, field: written?.[0] ?? field, values: items.map((item) => numberOf(item) as number) };
+}
+
+/** Why a field keeps no rolls: a counter or another field of the system is something else; a field of no system must first be declared as kept rolls (KEP-1). */
+function notRollsText(world: World, field: string, value: unknown): string
+{
+    if (world.system === undefined) {
+        return `${field} keeps no rolls, and the campaign has no installed game system to declare it in.${missingSystemHint(world)}`;
+    }
+
+    const kind = declaredKind(world, field) ?? (readCounter(value) === undefined ? undefined : "counter");
+    return kind === undefined
+        ? `${field} keeps no rolls: declare it so first, such as config, setting fields, value "${field}: rolls".`
+        : `${field} is ${kind === "counter" ? "a counter" : `a field of kind ${kind}`}, not kept rolls: keep and use take a field declared as rolls, such as portent.`;
+}
+
+/** " Elara keeps 3, 4 in portent: give from Elara.": the characters whose field holds the number use asked for, when the page asked does not (KEP-3). */
+function otherKeepers(world: World, kept: KeptField, value: number): string
+{
+    const others = world.pages.filter((page) => page !== kept.page && page.system === undefined).flatMap((page) => {
+        const written = Object.entries(page.fields).find(([key]) => comparableText(key) === comparableText(kept.field))?.[1];
+        const values = (Array.isArray(written) ? written : written === undefined ? [] : [written]).map(numberOf);
+        return values.includes(value) ? [`${page.name} keeps ${values.join(", ")} in ${kept.field}: give from ${page.name}.`] : [];
+    });
+    return others.length === 0 ? "" : ` ${others.join(" ")}`;
 }
 
 /** The roll, with a kept number in place of its one die when use gives one (KEP-3). */
@@ -196,8 +232,9 @@ function rollWith(notation: string, used: { value: number; } | undefined, source
     try {
         return rollDice(notation, { values: [used.value] });
     } catch (error) {
-        const why = error instanceof DiceError ? error.message : String(error);
-        throw new Error(`A kept roll takes the place of one die: give a notation with one, such as 1d20+2 (${why}). Nothing rolled.`);
+        // A kept number is not a face rolled now: there is nothing to roll again.
+        const why = (error instanceof DiceError ? error.message : String(error)).replace(/: ask the player to roll it again\.$/, "");
+        throw new Error(`A kept roll takes the place of one die, of the kind it was rolled with: give a notation with that one die, such as 1d20+2 (${why}). Nothing rolled.`);
     }
 }
 
@@ -320,7 +357,8 @@ function rollerNote(world: World, system: GameSystem | undefined, page: Page): s
 {
     const fields = effectiveFields(world, page);
     const effects = effectsOf(page).filter((effect) => effect.values.length === 0 || sameName(system?.conditions ?? [], effect.name) !== undefined);
-    const marked = (system?.statusLine ?? []).filter((entry) => entry.whenSet).flatMap((entry) => {
+    // Kept rolls are no number that changes a roll: use takes them.
+    const marked = (system?.statusLine ?? []).filter((entry) => entry.whenSet && declaredKind(world, entry.field) !== "rolls").flatMap((entry) => {
         const value = Object.entries(fields).find(([field]) => comparableText(field) === comparableText(entry.field))?.[1];
         const number = readCounter(value)?.value ?? numberOf(value);
         return number === undefined || number === 0 ? [] : [`${entry.field} ${number}`];

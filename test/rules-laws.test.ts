@@ -32,9 +32,10 @@ describe("the laws of rules as text", () => {
 
                 for (const [index, section] of sections.entries()) {
                     expect(text).toContain(section.text);
-                    // Its parts come before the next section of its level or above: two sections may have the same title and the same parts (# Cover, ## Hiding twice).
+                    // Its parts come before the next section of its level or above, or the first that its text does not hold: two sections may have the same title
+                    // and the same parts (# Cover, ## Hiding twice), and a caption after a heading of a lower level is that heading's (seed -333507324).
                     const after = sections.slice(index + 1);
-                    const next = after.findIndex((other) => other.level <= section.level);
+                    const next = after.findIndex((other) => other.level <= section.level || !section.text.includes(other.text));
                     const within = next === -1 ? after : after.slice(0, next);
                     const parts = within.filter((other) => other.path.length === section.path.length + 1 && other.path.slice(0, -1).join("\n") === section.path.join("\n") && section.text.includes(other.text));
                     expect(parts.map((part) => part.path.at(-1))).toEqual(section.parts);

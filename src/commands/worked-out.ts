@@ -4,7 +4,7 @@ import { contributingReads, fieldsRead, type Formula, type FormulaRead, type For
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { declaredKind, inheritedFields, pagesWithName, systemPageNamed, type World } from "../pages/index.ts";
+import { declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, systemPageNamed, type World } from "../pages/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
 /** A computed field that has a value, and the values it came from (FOR-8); a field the rows of the classes give may hold text, such as martial-arts 1d6 (PRO-2). */
@@ -31,9 +31,9 @@ export function workedFields(world: World, fields: Record<string, unknown>, expl
 
 /**
  * The fields with what the game system works out over them: each computed field that has a value takes it, over what the page writes (FOR-4); a counter
- * takes the maximum the system works out, and a current above it reads as the maximum (FOR-6).
+ * takes the maximum the system works out, and a current above it reads as the maximum (FOR-6). With `sheeted`, the uses it does not write read full (DAT-9).
  */
-export function withWorkedOut(world: World, fields: Record<string, unknown>): Record<string, unknown>
+export function withWorkedOut(world: World, fields: Record<string, unknown>, sheeted: boolean): Record<string, unknown>
 {
     const formulas = world.system?.formulas;
 
@@ -67,8 +67,8 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
             result[key] = formatCounter({ value: Math.min(counter.value, max), max });
         }
 
-        // A use the page does not write is full (DAT-9).
-        if (key === undefined && max !== undefined && max > 0 && isUse(world, field)) {
+        // A use the page does not write is full, for who keeps the sheet (DAT-9, D-225).
+        if (sheeted && key === undefined && max !== undefined && max > 0 && isUse(world, field)) {
             result[field] = formatCounter({ value: max, max });
         }
     }
@@ -76,13 +76,25 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
     return result;
 }
 
-/** Whether a counter of the system comes back with a rest (DAT-9): a page has it full until it spends it. */
+/**
+ * Whether a page keeps the sheet of the system (DAT-2, D-225): the player character, and a companion with a level, written or given by its classes, or that
+ * derives from no creature. A fighter who derives from her race does, a wolf with its stat block does not; nor does any other page.
+ */
+export function hasSheet(world: World, page: Page): boolean
+{
+    const list = world.system?.progression === undefined ? undefined : keyOf(page.fields, world.system.progression.list);
+    const levelled = !isEmptyField(page.fields.level) || (list !== undefined && !isEmptyField(page.fields[list]));
+    const companion = page.fields.role === "companion" && (isEmptyField(page.fields.creature) || levelled);
+    return page.type === "character" && (page.fields.role === "pc" || companion);
+}
+
+/** Whether a counter of the system comes back with a rest (DAT-9): who keeps the sheet has it full until it spends it. */
 export function isUse(world: World, field: string): boolean
 {
     return (world.system?.uses ?? []).some((name) => name.endsWith("*") ? comparableText(field).startsWith(comparableText(name.slice(0, -1))) : comparableText(name) === comparableText(field));
 }
 
-/** The uses the system gives a page with these fields that it does not write, each with its maximum (DAT-9): what write puts on the page, full. */
+/** The uses the system gives a page with these fields that it does not write, each with its maximum (DAT-9): what write puts, full, on who keeps the sheet. */
 export function missingUses(world: World, fields: Record<string, unknown>): { field: string; max: number; }[]
 {
     return Object.keys(world.system?.formulas?.counters ?? {}).flatMap((field) => {
@@ -191,6 +203,23 @@ export function maximumSources(world: World, field: string, fields: Record<strin
 {
     const max = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field.trim()))?.[1].max;
     return max === undefined ? [] : writtenSources(world, max, formulaScope(world, fields));
+}
+
+/**
+ * How the maximum the game system works out for a counter is made, "38, from hp-base 28, level 11, con-mod +1", and the written field to raise it with, as at a
+ * new level (FOR-6, D-226); undefined where the system works out none.
+ */
+export function maximumHint(world: World, fields: Record<string, unknown>, field: string): { made: string; raise?: string; } | undefined
+{
+    const worked = workedMaximum(world, fields, field);
+
+    if (worked === undefined) {
+        return undefined;
+    }
+
+    const parts = workedParts(world, worked.reads);
+    const [raise] = maximumSources(world, field, fields).filter((name) => declaredKind(world, name) !== "list");
+    return { made: `${worked.value}${parts === "" ? "" : `, from ${parts}`}`, ...(raise === undefined ? {} : { raise }) };
 }
 
 /**
@@ -334,7 +363,7 @@ export function workedOutProblems(world: World): Problem[]
             const { max } = counterLimits(world, fields, key);
             return counter === undefined || max === undefined || counter.max === max ? [] : [{
                 path: page.path,
-                message: `${key} on ${page.name} has the maximum ${counter.max ?? "none"} written, but the system ${world.system?.name ?? ""} works out ${max}.`,
+                message: `${key} on ${page.name} has ${counter.max === undefined ? "no maximum" : `the maximum ${counter.max}`} written, but the system ${world.system?.name ?? ""} works out ${max}.`,
                 fix: `change ${page.name}, field ${key}, to ${counter.value}/${max}`,
             }];
         });

@@ -19,7 +19,7 @@ const recipeSchema = z.object({
     regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
-});
+}).strict();
 
 const systemSchema = z.object({
     title: z.string().min(1),
@@ -44,6 +44,7 @@ const systemSchema = z.object({
         features: z.string().min(1),
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
+        "level-up": z.string().min(1).optional(),
     }).strict().optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
@@ -209,11 +210,17 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     const parsed = systemSchema.safeParse(merged);
 
     if (!parsed.success) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid:\n${z.prettifyError(parsed.error)}`);
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${issuesText(parsed.error)}`);
     }
 
     const data = parsed.data;
     const formulas = systemFormulas(data, name, path);
+    const stray = strayOccasion(data, formulas);
+
+    if (stray !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${stray}`);
+    }
+
     const sheet = sheetOf(data, name, path);
     const values = data.values ?? {};
     const kindOf = (field: string): string | undefined => Object.entries(data.fields ?? {}).find(([declared]) => comparableText(declared) === comparableText(field))?.[1];
@@ -255,9 +262,60 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         })),
         conditions: data.conditions ?? [],
         formulas,
-        ...(data.progression === undefined ? {} : { progression: { ...data.progression, skip: data.progression.skip ?? [] } }),
+        ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
         uses: usesOf(data),
     });
+}
+
+/**
+ * "counters.superiority-dice: unknown key "Combat Superiority)", a formula with commas goes in quotes": the problems of a system's data, one after the other on
+ * a line, each at its place.
+ */
+function issuesText(error: z.ZodError): string
+{
+    return error.issues.map((issue) => {
+        const place = issue.path.map(String).join(".");
+        const keys = issue.code === "unrecognized_keys" ? issue.keys : [];
+        const quotes = keys.some((key) => /[()]/.test(key)) ? ": a formula with commas goes in quotes" : "";
+        const message = keys.length > 0 ? `unknown ${keys.length === 1 ? "key" : "keys"} ${keys.map((key) => `"${key}"`).join(", ")}${quotes}` : issue.message;
+        return place === "" ? `${message}.` : `${place}: ${message}.`;
+    }).join(" ");
+}
+
+/**
+ * A recipe that sets kept rolls (KEP-4), or a refill on an occasion that no recipe ends, which would never bring the use back (DAT-9): where it is and why;
+ * undefined when there is none.
+ */
+function strayOccasion(data: z.infer<typeof systemSchema>, formulas: SystemFormulas): string | undefined
+{
+    const occasions = Object.values(data.recipes ?? {}).flatMap((recipe) => recipe.ends ?? []).filter((occasion, index, all) => all.findIndex((other) => comparableText(other) === comparableText(occasion)) === index);
+
+    // Kept rolls come back as the player rolls them again (KEP-4), never at a value a recipe gives.
+    for (const [recipe, value] of Object.entries(data.recipes ?? {})) {
+        const rolls = Object.keys(value.set ?? {}).find((field) => Object.entries(data.fields ?? {}).some(([declared, kind]) => kind === "rolls" && comparableText(declared) === comparableText(field)));
+
+        if (rolls !== undefined) {
+            return `recipes.${recipe}.set.${rolls}: ${rolls} keeps rolls, which come back as they are rolled again with roll and keep, not at a value.`;
+        }
+    }
+
+    for (const [counter, limits] of Object.entries(formulas.counters)) {
+        const occasion = Object.keys(limits.refill ?? {}).find((candidate) => !occasions.some((other) => comparableText(other) === comparableText(candidate)));
+
+        if (occasion !== undefined) {
+            const known = occasions.length === 0 ? "no recipe ends one yet: give a recipe its ends" : `the occasions are ${occasions.join(", ")}`;
+            return `counters.${counter}.refill: ${occasion} is no occasion a recipe ends, so it would never come back; ${known}.`;
+        }
+    }
+
+    return undefined;
+}
+
+/** The progression as the system declares it (PRO-1–PRO-4, D-226). */
+function progressionRule(data: NonNullable<z.infer<typeof systemSchema>["progression"]>): ProgressionRule
+{
+    const { "level-up": levelUp, skip, ...rule } = data;
+    return { ...rule, skip: skip ?? [], ...(levelUp === undefined ? {} : { levelUp }) };
 }
 
 /** The groups of a system's sheet, each with its note; a note for a group the sheet does not have is refused. */
@@ -314,7 +372,8 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
 
         const own = Array.isArray(base["status-line"]) ? base["status-line"].map(String) : [];
         const plain = (entry: string): string => comparableText(entry.replace(/\?$/, ""));
-        merged["status-line"] = [...own, ...line.map(String).filter((entry) => !own.some((other) => plain(other) === plain(entry)))];
+        const added = line.map(String).filter((entry, index, all) => all.findIndex((other) => plain(other) === plain(entry)) === index);
+        merged["status-line"] = [...own, ...added.filter((entry) => !own.some((other) => plain(other) === plain(entry)))];
     }
 
     return merged;

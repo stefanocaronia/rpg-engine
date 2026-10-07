@@ -10,4 +10,6 @@ export interface ProgressionRule
     features: string;
     skip: string[];
     parts?: { list: string; field: string; };
+    /** What write says when an item rises to a new level, such as raising hp-base (D-226). */
+    levelUp?: string;
 }

@@ -1,4 +1,6 @@
 // The rows of their tables that the classes of a character give, and its features (D-201, D-219, PRO-1–PRO-4): the module on tables, then the commands on the 5e.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
@@ -128,8 +130,8 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
 
     it("says what a new level gives, and a later value in parentheses replaces the earlier", async () => {
         expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 9")).toContain(
-            "What Brann's classes give: Ability Score Improvement, Extra Attack, Fast Movement, Mindless Rage, Feral Instinct, Brutal Critical (1 die) are new "
-                + "(show Brann#Ability Score Improvement gives one); rages 3 → 4, rage-damage +2 → +3.",
+            "What Brann's classes give: Ability Score Improvement, Extra Attack, Fast Movement, Mindless Rage, Feral Instinct, Brutal Critical (1 die) are new; "
+                + "rage-damage +2 → +3. show Brann#Ability Score Improvement gives a feature's text.",
         );
         await ok("write", "Brann", "--set", "classes=[[Barbarian]] 13");
         expect(await ok("show", "Brann")).toContain("Brutal Critical (2 dice)");
@@ -163,6 +165,40 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
         const shown = await ok("show", "Vex");
         expect(shown).toContain("Features: features Hunter's Bane, Crimson Rite, Heightened Senses · blood-maledict 1");
         expect(await ok("show", "Vex#Heightened Senses")).toContain("You smell.");
+    });
+
+    it("gives the text of a feature two classes give from each, in the order of the classes (D-224)", async () => {
+        await ok("write", "Brann", "--set", "classes=[[Cleric]] 3, [[Wizard]] 2", "--unset", "subclasses");
+        const spellcasting = await ok("show", "Brann#Spellcasting");
+        expect(spellcasting).toContain("A feature of Brann, from Cleric, Wizard.");
+        expect(spellcasting.indexOf("From Cleric:")).toBeLessThan(spellcasting.indexOf("From Wizard:"));
+        expect(spellcasting).toContain("Wisdom is your spellcasting ability");
+        expect(spellcasting).toContain("Intelligence is your spellcasting ability");
+    });
+
+    it("says a feature gained again or with a new value, the system's note for a new level, and takes off the uses a lower level no longer gives (D-226, DAT-9)", async () => {
+        expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 4")).toContain("Ability Score Improvement is new");
+        const eighth = await ok("write", "Brann", "--set", "classes=[[Barbarian]] 8");
+        expect(eighth).toContain("What Brann's classes give: Extra Attack, Fast Movement, Mindless Rage, Feral Instinct are new; Ability Score Improvement again.");
+        expect(eighth).toContain("A new level gives hit points: roll the hit die of the class that rose");
+        await ok("write", "Lio", "--type", "character", "--set", "role=pc", "--set", "creature=[[Human]]", "--set", "classes=[[Bard]] 4", "--set", "cha=14");
+        expect(await ok("write", "Lio", "--set", "classes=[[Bard]] 5")).toContain("Font of Inspiration is new; Bardic Inspiration (d6 → d8); spells-known 7 → 8. show Lio#Font of Inspiration gives a feature's text.");
+        const lower = await ok("write", "Brann", "--set", "classes=[[Fighter]] 1", "--unset", "subclasses");
+        expect(lower).toContain("Brann no longer has hit-dice-d12, rages: the system 5e gives no uses of them now.");
+        expect(lower).not.toContain("A new level gives hit points");
+        expect(readFileSync(join(folder, "world", "characters", "Brann.md"), "utf8")).not.toContain("rages:");
+    });
+
+    it("gives a paladin Channel Divinity from the Sacred Oath, whatever oath (p. 32)", async () => {
+        await ok("write", "Brann", "--set", "classes=[[Paladin]] 3", "--unset", "subclasses");
+        expect(await ok("show", "Brann")).toContain("channel-divinity 1/1");
+    });
+
+    it("has validate report a class without a level or without a page", async () => {
+        await ok("write", "Brann", "--set", "classes=[[Barbarian]]", "--unset", "subclasses");
+        expect(await ok("validate")).toContain("Barbarian in classes on Brann has no level, so it gives nothing. Fix: write Brann, set classes with each level, such as [[Barbarian]] 1.");
+        await ok("write", "Brann", "--set", "classes=Guerriero 3");
+        expect(await ok("validate")).toContain("classes on Brann names Guerriero, which has no page, so it gives nothing.");
     });
 
     it("has validate report a class without a table of levels or a row, and a subclass that gives nothing", async () => {

@@ -86,6 +86,54 @@ describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
         expect(await ok("status")).toContain("level 2");
         expect(await ok("validate")).toContain('What campaign.yaml adds to the system 5e does not read, so the campaign plays with the system alone: computed.level: "sum(classes) +" is not a formula');
     });
+
+    it("gives a use only to who keeps the sheet, a companion with classes included, never to an item, a place, a non-player character or a copy (DAT-9, D-225)", async () => {
+        await ok("config", "counters", "luck-points: {max: 3, refill: long rest}");
+        expect(await fighter("Gara", "classes=[[Fighter]] 1")).toContain("luck-points 3/3");
+        const others = [
+            ["Lanterna", "--type", "item", "--set", "cost=5 sp"],
+            ["Pozzo", "--type", "place", "--text", "Un pozzo."],
+            ["Bruno", "--type", "character", "--set", "role=npc", "--set", "classes=[[Wizard]] 3"],
+        ];
+
+        for (const args of others) {
+            expect(await ok("write", ...args)).not.toContain("luck-points");
+        }
+
+        expect(readFileSync(join(folder, "world", "items", "Lanterna.md"), "utf8")).not.toContain("luck-points");
+        expect(await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--creatures", "Wolf=1")).toContain("Wolf 1: hp 11/11.");
+        const lena = await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "creature=[[Human]]", "--set", "classes=[[Fighter]] 3");
+        expect(lena).toContain("luck-points 3/3");
+        expect(await ok("show", "Lena#Features")).toContain("features Fighting Style, Second Wind, Action Surge (one use), Martial Archetype: Fighter 3 in classes");
+    });
+
+    it("says what an entry given in place of one of the system's leaves out (CAM-2), and lists only the additions the campaign makes", async () => {
+        expect(await ok("config", "counters", "channel-divinity: {refill: long rest}")).toContain(
+            'counters channel-divinity takes the place of the system 5e\'s channel-divinity, { max: "max(item(features, Channel Divinity), has(features, Channel Divinity), has(features, Sacred Oath))", refill: short rest }: what this one leaves out of it is gone.',
+        );
+        const listed = await ok("config");
+        expect(listed).toContain("counters: { channel-divinity: { refill: long rest } }");
+        expect(listed).not.toContain("tables:");
+    });
+
+    it("refuses a refill no recipe brings back, a recipe that sets kept rolls or names what it does not know, and says when a formula needs quotes (CAM-3, DAT-9, KEP-4)", async () => {
+        expect(await refused("config", "counters", "superiority-dice: {max: 4, refill: short-rest}")).toBe(
+            "With this, the system 5e would not read: counters.superiority-dice.refill: short-rest is no occasion a recipe ends, so it would never come back; the occasions are long rest, short rest. Nothing changed.",
+        );
+        expect(await refused("config", "counters", "superiority-dice: {max: 4 * has(features, Combat Superiority), refill: short rest}")).toContain(
+            'counters.superiority-dice: unknown key "Combat Superiority)": a formula with commas goes in quotes.',
+        );
+        expect(await refused("config", "recipes", "long rest: {sett: {hp: max}}")).toContain('recipes.long rest: unknown key "sett".');
+        await ok("config", "fields", "portent: rolls");
+        expect(await refused("config", "recipes", "long rest: {set: {portent: max}}")).toContain("recipes.long rest.set.portent: portent keeps rolls, which come back as they are rolled again with roll and keep, not at a value.");
+    });
+
+    it("refuses an effect on a value the system gives everyone, and a current above the maximum it works out (FOR-6, FOR-7)", async () => {
+        await ok("config", "computed", "speed: 30");
+        await fighter("Gara", "classes=[[Fighter]] 1");
+        expect(await refused("effect", "add", "Gara", "Haste", "--for", "1m", "--set", "speed=60")).toBe("speed on Gara is 30 for everyone, as the system 5e gives it: an effect cannot change it. Nothing changed.");
+        expect(await refused("effect", "add", "Gara", "Aid", "--for", "8h", "--set", "hp=50")).toContain("hp=50 on Gara is above its maximum, 42, which the system 5e works out from");
+    });
 });
 
 describe("rolls kept for later (KEP-1–KEP-4)", () => {
@@ -111,15 +159,26 @@ describe("rolls kept for later (KEP-1–KEP-4)", () => {
         expect(await ok("status")).not.toContain("portent");
     });
 
+    it("says who keeps the number use asks for, and refuses kept rolls in a counter or a field of no number", async () => {
+        await ok("roll", "2d20", "--who", "Elara", "--keep", "portent", "--values=14,3");
+        await fighter("Lio", "classes=[[Fighter]] 1");
+        expect(await refused("roll", "1d20", "--who", "Lio", "--use", "portent=3")).toBe("Lio keeps no 3 in portent: it keeps none. Elara keeps 14, 3 in portent: give from Elara. Nothing rolled.");
+        expect(await refused("roll", "2d20", "--who", "Elara", "--keep", "hp")).toBe("hp is a counter, not kept rolls: keep and use take a field declared as rolls, such as portent. Nothing rolled.");
+        writeFileSync(join(folder, "world", "characters", "Elara.md"), readFileSync(join(folder, "world", "characters", "Elara.md"), "utf8").replace(/portent:.*\n(?:\s+- .*\n)*/, "portent: [abc, 5]\n"));
+        expect(await refused("roll", "1d20", "--use", "portent=5", "--from", "Elara")).toBe('portent on Elara holds "abc", which is no roll: write its numbers only, such as portent=[14, 3]. Nothing rolled.');
+    });
+
     it("refuses a number not kept, a notation with more than one die, and a field not declared as kept rolls", async () => {
         await ok("roll", "2d20", "--who", "Elara", "--keep", "portent", "--values=14,3");
         expect(await refused("roll", "1d20", "--use", "portent=7", "--from", "Elara")).toBe("Elara keeps no 7 in portent: it keeps 14, 3. Nothing rolled.");
-        expect(await refused("roll", "2d20kh1", "--use", "portent=3", "--from", "Elara")).toContain("A kept roll takes the place of one die: give a notation with one, such as 1d20+2");
+        expect(await refused("roll", "2d20kh1", "--use", "portent=3", "--from", "Elara")).toContain("A kept roll takes the place of one die, of the kind it was rolled with: give a notation with that one die, such as 1d20+2");
         expect(await refused("roll", "2d20", "--who", "Elara", "--keep", "luck")).toBe('luck keeps no rolls: declare it so first, such as config, setting fields, value "luck: rolls". Nothing rolled.');
     });
 
-    it("reminds the kept rolls at a rest, for the player to roll them again when it brings them back", async () => {
+    it("reminds the kept rolls at a rest, for the player to roll them again when it brings them back, and the master for a companion", async () => {
         await ok("roll", "2d20", "--who", "Elara", "--keep", "portent", "--values=14,3");
-        expect(await ok("change", "--recipe", "long rest")).toContain("Kept rolls: portent 14, 3; if this rest brings them back, the player rolls them again, with roll and keep.");
+        expect(await ok("change", "--recipe", "long rest")).toContain("Elara keeps portent 14, 3: if this rest brings them back, the player rolls them again, with roll and keep.");
+        await ok("write", "Elara", "--set", "role=companion");
+        expect(await ok("change", "Elara", "--recipe", "long rest")).toContain("Elara keeps portent 14, 3: if this rest brings them back, roll them again, with roll and keep.");
     });
 });

@@ -347,8 +347,12 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
 
     // An effect changes what a computed field comes from, never the field (FOR-7, D-200).
     // What the tables of a character's classes give comes from its lists alone, which no effect gives (PRO-2).
-    if (computed !== undefined && computed.from.every((name) => declaredKind(world, name) === "list")) {
+    if (computed !== undefined && computed.from.length > 0 && computed.from.every((name) => declaredKind(world, name) === "list")) {
         throw new Error(`${computed.name} on ${page.name} is what its ${computed.from.join(" and ")} give, from the tables of their pages: an effect cannot change it. Nothing changed.`);
+    }
+
+    if (computed !== undefined && computed.from.length === 0) {
+        throw new Error(`${computed.name} on ${page.name} is ${String(computed.value)} for everyone, as the system ${world.system?.name ?? ""} gives it: an effect cannot change it. Nothing changed.`);
     }
 
     if (computed !== undefined) {
@@ -380,6 +384,19 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
             `The maximum of ${field} on ${page.name} is worked out by the system ${world.system?.name ?? ""}: ${limits.max}, from ${from.join(", ")}. Give the effect the current value alone, such as ${field}=${
                 readCounter(value)?.value ?? 0
             }, or one of those fields, such as ${from[0] ?? field}. Nothing changed.`,
+        );
+    }
+
+    // A current above the maximum would read as the maximum: the maximum comes from what it is made of (FOR-6).
+    const above = readCounter(value)?.max === undefined ? counterLimits(world, fields, field).max : undefined;
+    const given = readCounter(value)?.value;
+
+    if (above !== undefined && given !== undefined && given > above) {
+        const from = maximumSources(world, field, fields);
+        throw new Error(
+            `${field}=${given} on ${page.name} is above its maximum, ${above}, which the system ${world.system?.name ?? ""} works out from ${
+                from.join(", ")
+            }: to raise the maximum while the effect lasts, give the effect one of those, such as ${from[0] ?? field}. Nothing changed.`,
         );
     }
 

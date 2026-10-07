@@ -3,7 +3,7 @@ import { numberOf } from "../core/formula.ts";
 import { comparableText } from "../core/text.ts";
 import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
 import { declaredKind, inheritedFields, type Page, readFieldValue, type World } from "../pages/index.ts";
-import { withWorkedOut } from "./worked-out.ts";
+import { hasSheet, withWorkedOut } from "./worked-out.ts";
 
 /** The effects field of a page or copy, written in any case (EFF-1). */
 export function effectsField(page: Page): unknown
@@ -50,7 +50,7 @@ function layeredFields(world: World, page: Page): Record<string, unknown>
         }
     }
 
-    return withWorkedOut(world, fields);
+    return withWorkedOut(world, fields, hasSheet(world, page));
 }
 
 /** The newest effect that gives a field to a page: change changes its value, not the page's (EFF-7). */

@@ -71,7 +71,7 @@ export const show = defineCommand({
         const group = reference.section === undefined || part !== undefined ? undefined : sheetGroup(world, system, page, reference.section);
 
         if (reference.section !== undefined && part === undefined && group === undefined) {
-            const groups = sheetGroupNames(system, page).length === 0 ? "" : ` The groups of its sheet are: ${sheetGroupNames(system, page).join(", ")}.`;
+            const groups = sheetGroupNames(world, system, page).length === 0 ? "" : ` The groups of its sheet are: ${sheetGroupNames(world, system, page).join(", ")}.`;
             throw new Error(`${page.name} has no section or secret "${reference.section}". ${partsOf(world, page)}${groups}`);
         }
 
@@ -216,10 +216,19 @@ function findPart(world: World, page: Page, name: string): { text: string; from?
         }
     }
 
-    // A feature the character's classes give, with the text of the page that tells it (PRO-4).
+    // A feature the character's classes give, with the text of each page that tells it, in the order of the classes (PRO-4, D-224).
     const source = featureSource(progressionOf(world, effectiveFields(world, page)), name);
-    const text = source === undefined ? undefined : readSection(source.page.body, source.title);
-    return source === undefined || text === undefined ? undefined : { text, from: source.page.name, feature: true };
+    const texts = (source?.pages ?? []).flatMap((giver) => {
+        const text = source === undefined ? undefined : readSection(giver.body, source.title);
+        return text === undefined ? [] : [{ from: giver.name, text }];
+    });
+
+    if (texts.length === 0) {
+        return undefined;
+    }
+
+    const text = texts.length === 1 ? texts[0].text : texts.map((given) => `From ${given.from}:\n${given.text}`).join("\n\n");
+    return { text, from: texts.map((given) => given.from).join(", "), feature: true };
 }
 
 /** "show Ettore#Rage gives the text of a feature.": said under a sheet that lists features (PRO-4). */

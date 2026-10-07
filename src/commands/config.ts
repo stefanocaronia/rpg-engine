@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
 import {
@@ -21,14 +22,18 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
+import { readYamlValues } from "../core/yaml-file.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
-import { findCampaignSystem, findSystem, installedSystems } from "../systems/index.ts";
+import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName } from "../systems/index.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld, installedSystemName, missingWithSystems } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
+
+// A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
+const counterExample = 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}';
 
 export const config = defineCommand({
     name: "config",
@@ -43,7 +48,8 @@ export const config = defineCommand({
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
         + "each taking the place of one with that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the line of the player character. "
-        + 'Example: setting language, value it; or setting lines, add "spiders"; or setting coins, value "gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1".',
+        + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
+        + `Example: setting language, value it; or setting lines, add "spiders"; or setting counters, value '${counterExample}'.`,
     group: "campaign",
     positionals: ["setting", "value"],
     input: z.object({
@@ -59,7 +65,7 @@ export const config = defineCommand({
         const listChange = input.add !== undefined || input.remove !== undefined;
 
         if (input.add !== undefined && input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting))) {
-            throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value "superiority-dice: {max: 4, refill: short rest}"; remove takes their names.`);
+            throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
         }
 
         if (listChange && (input.setting === undefined || (input.value !== undefined && !mapSettingNames.includes(checkSettingName(input.setting))))) {
@@ -68,11 +74,13 @@ export const config = defineCommand({
 
         const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
         const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
+        let replaced: string[] = [];
 
         // What the campaign adds to its game system, checked with the system before it is written (CAM-1, CAM-3).
         if (mapped && input.setting !== undefined && (input.value !== undefined || input.remove !== undefined)) {
             const change = { set: input.value === undefined ? undefined : entriesOf(input.setting, input.value), remove: input.remove };
             checkAdditions(root, context, input.setting, change);
+            replaced = replacedEntries(root, context, input.setting, Object.keys(change.set ?? {}));
 
             if (changeMapSetting(root, input.setting, change)) {
                 appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value, remove: input.remove }));
@@ -84,13 +92,20 @@ export const config = defineCommand({
         }
 
         const settings = readSettings(root);
-        return { settings: Object.fromEntries(shown.map((name) => [name, shownValue(root, context, settings, name)])), missing: missingWithSystems(missingSettings(settings), context) };
+        // Listed all together, what the campaign adds to its system only when it adds something.
+        const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
+        const listed = input.setting === undefined ? shown.filter((name) => !added(name) || settings[name] !== undefined) : shown;
+        return {
+            settings: Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])),
+            missing: missingWithSystems(missingSettings(settings), context),
+            replaced,
+        };
     },
 
     format(result)
     {
         const lines = Object.entries(result.settings).map(([name, value]) => `${name}: ${formatValue(value)}`);
-        return [lines.join("\n"), missingSettingsNote(result.missing)].filter((block) => block !== "").join("\n\n");
+        return [[...lines, ...result.replaced].join("\n"), missingSettingsNote(result.missing)].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -184,10 +199,31 @@ function entriesOf(setting: string, text: string): Record<string, unknown>
     }
 
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error(`${setting} takes entries by name, written as in system.yaml, such as ${setting === "counters" ? '"superiority-dice: {max: 4, refill: short rest}"' : '"name: value"'}. Nothing changed.`);
+        throw new Error(`${setting} takes entries by name, written as in system.yaml, such as ${setting === "counters" ? `'${counterExample}'` : '"name: value"'}. Nothing changed.`);
     }
 
     return value as Record<string, unknown>;
+}
+
+/**
+ * "counters channel-divinity takes the place of the system 5e's {max: …, refill: short rest}": what an entry given in place of one of the system's leaves out,
+ * said so that nothing is lost unseen (CAM-2). A recipe adds to the system's and replaces nothing.
+ */
+function replacedEntries(root: string, context: Context, setting: string, names: string[]): string[]
+{
+    const system = findSystem(context.systemFolders, readTextSetting(root, "system") ?? "");
+
+    if (system === undefined || setting === "recipes") {
+        return [];
+    }
+
+    const data = readYamlValues(join(system.folder, systemFileName), "what the system is");
+    const own = data !== null && typeof data === "object" ? (data as Record<string, unknown>)[setting] : undefined;
+    const entries = own !== null && typeof own === "object" && !Array.isArray(own) ? Object.entries(own) : [];
+    return names.flatMap((name) => {
+        const [found, value] = entries.find(([other]) => comparableText(other) === comparableText(name)) ?? [];
+        return found === undefined ? [] : [`${setting} ${name} takes the place of the system ${system.name}'s ${found}, ${formatValue(value)}: what this one leaves out of it is gone.`];
+    });
 }
 
 /** Refuses what the campaign would add to its game system when the system would not read with it (CAM-3), saying where and why; and when it has no system yet. */

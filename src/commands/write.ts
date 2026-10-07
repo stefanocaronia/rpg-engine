@@ -62,7 +62,7 @@ import {
     writePage,
     writtenFieldName,
 } from "../pages/index.ts";
-import { featureParts } from "../progression/index.ts";
+import { featureParts, mergedFeatures } from "../progression/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
@@ -75,7 +75,7 @@ import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, syste
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
-import { computedField, counterLimits, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
+import { computedField, counterLimits, hasSheet, isUse, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -229,11 +229,12 @@ export const write = defineCommand({
         }
 
         // The maximum of a counter follows what the game system works out from the page as it is now (FOR-6).
-        const limits = changed ? workedLimitsChange(withPage(world, existing, written.page), written.page) : { set: {}, notes: [] };
-        const page = Object.keys(limits.set).length === 0 ? written.page : writePage(withPage(world, existing, written.page), written.page.name, undefined, { set: limits.set }).page;
+        const limits = changed ? workedLimitsChange(world, existing, withPage(world, existing, written.page), written.page) : { set: {}, unset: [], notes: [] };
+        const worked = Object.keys(limits.set).length > 0 || limits.unset.length > 0;
+        const page = worked ? writePage(withPage(world, existing, written.page), written.page.name, undefined, { set: limits.set, unset: limits.unset }).page : written.page;
 
         if (page !== written.page) {
-            appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: page.name, set: limits.set, why: "worked out by the game system" }));
+            appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: page.name, set: limits.set, unset: limits.unset, why: "worked out by the game system" }));
         }
 
         const now = withPage(world, existing, page);
@@ -398,7 +399,8 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
             continue;
         }
 
-        throw new Error(guardedMessage(page, name, current.kind, next, holdsField(page, name) ? undefined : base?.base, base !== undefined));
+        const hint = current.kind === "counter" ? maximumHint(world, effectiveFields(world, page), name) : undefined;
+        throw new Error(hint === undefined ? guardedMessage(page, name, current.kind, next, holdsField(page, name) ? undefined : base?.base, base !== undefined) : workedCounterMessage(page, name, hint));
     }
 }
 
@@ -421,6 +423,13 @@ function sameKind(kind: "counter" | "money", value: unknown, coins: Coin[] | und
     const counter = kind === "counter" ? readCounter(value) : undefined;
     const purse = kind === "money" && coins !== undefined ? readAmount(value, coins) : undefined;
     return counter !== undefined ? String(formatCounter(counter)) : purse !== undefined && coins !== undefined ? formatAmount(purse, coins) : undefined;
+}
+
+/** "hp is a counter whose maximum the game system works out": what to change instead, the current value with change and the maximum through what it comes from (D-226). */
+function workedCounterMessage(page: Page, field: string, hint: { made: string; raise?: string; }): string
+{
+    const raise = hint.raise === undefined ? "" : `; to raise the maximum, write ${hint.raise}`;
+    return `${field} is a counter whose maximum the game system works out: ${hint.made}. Change its current value with change, page "${page.name}", field ${field}${raise}. Nothing changed.`;
 }
 
 function guardedMessage(page: Page, field: string, kind: "counter" | "money", next: string | undefined, readFrom: Page | undefined, hasBase: boolean): string
@@ -956,33 +965,77 @@ function withoutComputed(world: World, target: Page | undefined, set: Record<str
 }
 
 /**
- * What a change of classes gives or takes (PRO-4): "Ettore's features: Reckless Attack, Danger Sense are new; rage-damage +2 → +3", with how to read one. Nothing
- * when the classes give the same.
+ * What a change of classes gives or takes (PRO-4): the features of the rows it reaches, new, gained again or with a new value, those no longer had, the values of
+ * the rows that change, and, when a class rises, the system's note for a new level (D-226). Nothing when the classes give the same.
  */
 function progressionNotes(before: World, after: World, existing: Page, page: Page): string[]
 {
     const was = progressionOf(before, effectiveFields(before, existing));
     const is = progressionOf(after, effectiveFields(after, page));
-    const names = (progression: typeof was): string[] => (progression?.features ?? []).map((feature) => feature.name);
-    const gained = names(is).filter((name) => !names(was).some((other) => comparableText(other) === comparableText(name)));
-    const lost = names(was).filter((name) => !names(is).some((other) => comparableText(featureParts(other).name) === comparableText(featureParts(name).name)));
+    const gains = rowGains(was, is);
+    const lost = (was?.features ?? []).map((feature) => feature.name).filter((name) => !(is?.features ?? []).some((other) => sameFeature(other.name, name)));
+    // The maximum of a use the rows give is said with the counters (FOR-6).
+    const counters = Object.keys(after.system?.formulas?.counters ?? {});
 
     const valueOf = (progression: typeof was, field: string): string | undefined => {
         const found = progression?.values.find((value) => comparableText(value.field) === comparableText(field));
         return found === undefined ? undefined : signedText(after, found.field, found.value);
     };
 
-    const fields = [...new Set([...(was?.values ?? []), ...(is?.values ?? [])].map((value) => value.field))];
+    const fields = [...new Set([...(was?.values ?? []), ...(is?.values ?? [])].map((value) => value.field))].filter((field) => !counters.some((counter) => comparableText(counter) === comparableText(field)));
     const values = fields.flatMap((field) => {
         const [from, to] = [valueOf(was, field), valueOf(is, field)];
         return from === to ? [] : [`${field} ${from ?? "none"} → ${to ?? "none"}`];
     });
+    const shown = gains.fresh[0] ?? gains.better[0]?.name;
     const parts = [
-        gained.length === 0 ? "" : `${gained.join(", ")} ${gained.length === 1 ? "is" : "are"} new (show ${page.name}#${featureParts(gained[0]).name} gives one)`,
+        gains.fresh.length === 0 ? "" : `${gains.fresh.join(", ")} ${gains.fresh.length === 1 ? "is" : "are"} new`,
+        gains.again.length === 0 ? "" : `${gains.again.join(", ")} again`,
+        gains.better.map((feature) => feature.text).join(", "),
         lost.length === 0 ? "" : `no longer ${lost.join(", ")}`,
         values.join(", "),
     ].filter((part) => part !== "");
-    return parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ")}.`];
+    const hint = shown === undefined ? "" : ` show ${page.name}#${featureParts(shown).name} gives a feature's text.`;
+    const levelUp = after.system?.progression?.levelUp;
+    // A new level is one more in all: a class changed for another of a lower level is none.
+    const levels = (progression: typeof was): number => (progression?.from ?? []).reduce((total, item) => total + (item.level ?? 0), 0);
+    const risen = levelUp !== undefined && levels(is) > levels(was);
+    // A value that ends in a period, such as +10 ft., ends the line.
+    const said = parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ").replace(/\.$/, "")}.${hint}`];
+    return [...said, ...(risen ? [levelUp] : [])];
+}
+
+/**
+ * The features the rows and parts give now that they did not before, each name once (PRO-3): new to the character, gained again, as a later Ability Score
+ * Improvement, or with a new value, as "Bardic Inspiration (d6 → d8)".
+ */
+function rowGains(was: ReturnType<typeof progressionOf>, is: ReturnType<typeof progressionOf>): { fresh: string[]; again: string[]; better: { name: string; text: string; }[]; }
+{
+    const key = (gain: { name: string; level: number; page: Page; }): string => `${gain.page.path}|${gain.level}|${comparableText(gain.name)}`;
+    const old = new Set((was?.gains ?? []).map(key));
+    const had = was?.features ?? [];
+    const result = { fresh: [] as string[], again: [] as string[], better: [] as { name: string; text: string; }[] };
+
+    for (const gain of mergedFeatures((is?.gains ?? []).filter((candidate) => !old.has(key(candidate))))) {
+        const before = had.find((feature) => sameFeature(feature.name, gain.name))?.name;
+        const [then, now] = [featureParts(before ?? "").value, featureParts(gain.name).value];
+
+        if (before === undefined) {
+            result.fresh.push(gain.name);
+        } else if (now !== undefined && then !== undefined && comparableText(now) !== comparableText(then)) {
+            result.better.push({ name: gain.name, text: `${featureParts(gain.name).name} (${then.slice(1, -1)} → ${now.slice(1, -1)})` });
+        } else {
+            result.again.push(featureParts(gain.name).name);
+        }
+    }
+
+    return result;
+}
+
+/** Whether two names are the same feature, with or without a value in parentheses (PRO-3). */
+function sameFeature(first: string, second: string): boolean
+{
+    return comparableText(featureParts(first).name) === comparableText(featureParts(second).name);
 }
 
 /** The thresholds the fields a write gives touch on the player character or a companion, as change says them (DAT-3): exhaustion written with write shows its rule. */
@@ -997,29 +1050,45 @@ function writtenThresholdNotes(root: string, system: GameSystem | undefined, bef
     });
 }
 
-/** The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). */
-function workedLimitsChange(world: World, page: Page): { set: Record<string, unknown>; notes: string[]; }
+/**
+ * The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). A use
+ * that only the lists give and that the page no longer has, with a maximum of 0 or none where it had one, is taken off (DAT-9).
+ */
+function workedLimitsChange(before: World, existing: Page | undefined, world: World, page: Page): { set: Record<string, unknown>; unset: string[]; notes: string[]; }
 {
     const fields = inheritedFields(world, page);
+    const old = existing === undefined ? undefined : inheritedFields(before, existing);
     const changes = Object.keys(world.system?.formulas?.counters ?? {}).flatMap((field) => {
         const key = Object.keys(page.fields).find((name) => comparableText(name) === comparableText(field));
         const counter = key === undefined ? undefined : readCounter(page.fields[key]);
         const { max } = counterLimits(world, fields, field);
-        return key === undefined || counter === undefined || max === undefined || counter.max === max ? [] : [{ key, before: counter.max, value: formatCounter({ value: counter.value, max }), max }];
+        const had = old === undefined || max !== undefined ? undefined : counterLimits(before, old, field).max;
+        const limit = max ?? (had === undefined ? undefined : 0);
+        // A current above the maximum stays written, for an effect that raises it, and reads as the maximum (FOR-6).
+        return key === undefined || counter === undefined || limit === undefined || counter.max === limit
+            ? []
+            : [{ key, before: counter.max, value: formatCounter({ value: counter.value, max: limit }), reads: formatCounter({ value: Math.min(counter.value, limit), max: limit }), max: limit }];
     });
-    // "hp max 27 → 33 (hp-base 27, level 3, con-mod +2)": what the maximum comes from, so that a written maximum is not taken for the dice.
-    const said = changes.map((change) => {
+    // Only a use that the lists alone give, such as rages from the classes: hp, from hp-base, stays at any maximum.
+    const givenByLists = (field: string): boolean => maximumSources(world, field, fields).every((name) => declaredKind(world, name) === "list");
+    const gone = changes.filter((change) => change.max <= 0 && isUse(world, change.key) && givenByLists(change.key));
+    const kept = changes.filter((change) => !gone.includes(change));
+    // "hp 10/17 (max 10 → 17: hp-base 10, level 2, con-mod +2)": what the maximum comes from, so that a written maximum is not taken for the dice.
+    const said = kept.map((change) => {
         const parts = workedParts(world, workedMaximum(world, fields, change.key)?.reads ?? []);
-        return `${change.key} max ${change.before ?? "none"} → ${change.max}${parts === "" ? "" : ` (${parts})`}`;
+        return `${change.key} ${change.reads} (max ${change.before ?? "none"} → ${change.max}${parts === "" ? "" : `: ${parts}`})`;
     });
-    // A use the page gets, such as a new level's channel-divinity, is written full (DAT-9).
-    const added = missingUses(world, fields).map((use) => ({ key: use.field, value: formatCounter({ value: use.max, max: use.max }) }));
+    // A use the page gets, such as a new level's channel-divinity, is written full on who keeps the sheet (DAT-9, D-225).
+    const added = hasSheet(world, page) ? missingUses(world, fields).map((use) => ({ key: use.field, value: formatCounter({ value: use.max, max: use.max }) })) : [];
+    const system = world.system?.name ?? "";
     const notes = [
-        said.length === 0 ? "" : `${said.join(", ")}: worked out by the system ${world.system?.name ?? ""}.`,
-        added.length === 0 ? "" : `${page.name} has ${added.map((use) => `${use.key} ${use.value}`).join(", ")}, full: uses of the system ${world.system?.name ?? ""} that come back with a rest.`,
+        said.length === 0 ? "" : `${said.join(", ")}: worked out by the system ${system}.`,
+        added.length === 0 ? "" : `${page.name} has ${added.map((use) => `${use.key} ${use.value}`).join(", ")}, full: uses of the system ${system} that come back with a rest.`,
+        gone.length === 0 ? "" : `${page.name} no longer has ${gone.map((change) => change.key).join(", ")}: the system ${system} gives no uses of ${gone.length === 1 ? "it" : "them"} now.`,
     ];
     return {
-        set: Object.fromEntries([...changes, ...added].map((change) => [change.key, change.value])),
+        set: Object.fromEntries([...kept, ...added].map((change) => [change.key, change.value])),
+        unset: gone.map((change) => change.key),
         notes: notes.filter((note) => note !== ""),
     };
 }

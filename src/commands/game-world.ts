@@ -50,7 +50,11 @@ export function systemProblems(root: string, context: Context): Problem[]
 
     // What the campaign adds that does not read: the campaign plays with the system alone (CAM-3).
     if (found?.problem !== undefined) {
-        return [{ path: "campaign.yaml", message: `What campaign.yaml adds to the system ${name ?? ""} does not read, so the campaign plays with the system alone: ${found.problem}`, fix: "fix it with the config command, or by hand" }];
+        return [{
+            path: "campaign.yaml",
+            message: `What campaign.yaml adds to the system ${name ?? ""} does not read, so the campaign plays with the system alone: ${found.problem}`,
+            fix: "fix it first, with the config command or by hand: until then validate does not check what the system works out on the pages",
+        }];
     }
 
     if (name === undefined || found?.system !== undefined) {
