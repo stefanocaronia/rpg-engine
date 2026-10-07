@@ -344,10 +344,16 @@ describe("classes and subclasses of the SRD (D-201)", () => {
             "hit-dice-d6 max none → 2 (Wizard 2 in classes)",
         );
         const shown = await ok("show", "Aria");
-        expect(shown).toContain("Character: classes Fighter 3, Wizard 2 · subclasses Champion · level 5");
+        expect(shown).toContain("Character: creature Human · size Medium · classes Fighter 3, Wizard 2 · subclasses Champion · level 5");
         expect(shown).toContain("Abilities: con 14 (+2) · proficiency +3");
         expect(shown).toContain("hp 40/40 · hit-dice-d6 1/2 · hit-dice-d10 3/3");
         expect(await refused("write", "Aria", "--set", "level=6")).toContain("Not written, the system 5e works it out: level 5 (you gave 6). They come from classes.");
+        expect(await ok("validate")).not.toContain("Aria");
+        // Who the character is comes first on the sheet, the background and the feat as links to the system's pages (D-207).
+        await ok("write", "Aria", "--set", "background=[[Acolyte (background)]]", "--set", "feats=[[Grappler]]", "--set", "alignment=neutral good");
+        expect(await ok("show", "Aria")).toContain(
+            "Character: creature Human · size Medium · classes Fighter 3, Wizard 2 · subclasses Champion · background Acolyte (background) · feats Grappler · alignment neutral good · level 5",
+        );
         expect(await ok("validate")).not.toContain("Aria");
     });
 

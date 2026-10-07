@@ -77,7 +77,7 @@ describe("the character sheet (DAT-2)", () => {
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, "
-                + "save-proficiencies, skill-proficiencies, languages; and when they apply: subclasses, inspiration, personality-traits, ideal, bond, flaw, save-notes, temp-hp, "
+                + "save-proficiencies, skill-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, inspiration, personality-traits, ideal, bond, flaw, save-notes, temp-hp, "
                 + "hit-dice-d6, hit-dice-d8, hit-dice-d10, hit-dice-d12, darkvision, damage-resistances, death-successes, death-failures, exhaustion, expertise, "
                 + "armor-proficiencies, weapon-proficiencies, tool-proficiencies, slots-1, slots-2, slots-3, slots-4, slots-5, slots-6, slots-7, slots-8, slots-9. It works out "
                 + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, initiative, passive-perception: never write them. Only its names go in save-proficiencies "

@@ -51,7 +51,8 @@ describe("the installed game systems", () => {
                     expect(coinsProblem(typeof system.coins === "string" ? readCoins(system.coins) : system.coins)).toBeUndefined();
                 }
 
-                const onSheet = system.sheet.flatMap((group) => group.entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside])));
+                // The sheet may show a fixed field of the core, such as creature, the race (D-201).
+                const onSheet = system.sheet.flatMap((group) => group.entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside]))).filter((field) => field !== "creature");
                 expect([...onSheet, ...system.statusLine.map((entry) => entry.field), ...Object.keys(system.values)].filter((field) => !declared(field))).toEqual([]);
                 expect(system.thresholds.filter((threshold) => system.fields[threshold.field] !== "counter" || !hasRule(threshold.rule))).toEqual([]);
                 expect(system.recipes.flatMap((recipe) => [...Object.keys(recipe.set).filter((field) => !declared(field)), ...recipe.rules.filter((rule) => !hasRule(rule))])).toEqual([]);
