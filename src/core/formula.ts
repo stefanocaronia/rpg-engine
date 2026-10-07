@@ -10,7 +10,7 @@ export type Formula =
     | { kind: "operation"; operator: "+" | "-" | "*" | "/"; left: Formula; right: Formula; }
     | { kind: "math"; name: MathName; operands: Formula[]; }
     | { kind: "table"; table: string; key: Formula; }
-    | { kind: "list"; name: ListName; list: string; item?: string; }
+    | { kind: "list"; name: ListName; list: string; item?: string; where?: { field: string; value: string; }; }
     | { kind: "first"; options: Formula[]; };
 
 /** A table read by value: by number, the highest row not above the key; by name, the row with that name (FOR-2). */
@@ -24,6 +24,8 @@ export interface FormulaScope
 {
     field(name: string): unknown;
     table(name: string): Table | undefined;
+    /** The fields of the page an item of a list names, such as the class of [[Fighter]] 3, for sum with a field and a value (D-215). */
+    page?(name: string): Record<string, unknown> | undefined;
 }
 
 /** A value a formula read to work out its result: a field and the number it read, a name looked for in a list, or a row of a table. */
@@ -352,7 +354,13 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
         return undefined;
     }
 
-    const items = itemsOf(raw);
+    // sum(classes, hit-die = d10): only the items whose page has that value in that field (D-215).
+    const where = formula.where;
+    const items = itemsOf(raw).filter((item) => {
+        const fields = where === undefined ? undefined : scope.page?.(item.name);
+        const value = fields === undefined || where === undefined ? undefined : Object.entries(fields).find(([field]) => comparableText(field) === comparableText(where.field))?.[1];
+        return where === undefined || (value !== undefined && comparableText(String(value).trim()) === comparableText(where.value));
+    });
     const named = (item: { name: string; }): boolean => comparableText(item.name) === comparableText(formula.item ?? "");
     const value = formula.name === "has"
         ? (items.some(named) ? 1 : 0)
@@ -536,6 +544,16 @@ class FormulaReader
 
         if (listNames.includes(lower as ListName)) {
             const list = this.name("the name of a list");
+
+            if (lower === "sum" && this.take(",")) {
+                const [field, value, ...rest] = this.rawUntilClose().split("=").map((part) => part.trim());
+
+                if (field === undefined || field === "" || value === undefined || value === "" || rest.length > 0) {
+                    this.fail("a field = value, such as hit-die = d10, then )");
+                }
+
+                return { kind: "list", name: "sum", list, where: { field, value } };
+            }
 
             if (lower === "count" || lower === "sum") {
                 this.expect(")");

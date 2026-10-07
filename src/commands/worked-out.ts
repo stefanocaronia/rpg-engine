@@ -4,7 +4,7 @@ import { contributingReads, fieldsRead, type Formula, type FormulaRead, type For
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { declaredKind, inheritedFields, type World } from "../pages/index.ts";
+import { declaredKind, inheritedFields, pagesWithName, systemPageNamed, type World } from "../pages/index.ts";
 
 /** A computed field that has a value, and the values it came from (FOR-8). */
 export interface WorkedField
@@ -277,6 +277,12 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
             return value === undefined && declaredKind(world, name) === "bonus" ? 0 : value;
         },
         table: (name) => index?.tables.get(comparableText(name)),
+        // The page an item names, of the campaign or of the system, as a class with its hit die (D-215).
+        page: (name) => {
+            const [named] = pagesWithName(world, name);
+            const page = named ?? systemPageNamed(world, name);
+            return page === undefined ? undefined : inheritedFields(world, page);
+        },
     };
     return { ...scope, computed };
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { numberOf } from "../core/formula.ts";
+import { listItemNames, numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -240,13 +240,14 @@ export const write = defineCommand({
         }
 
         const notes = !changed ? [] : existing === undefined ? [...derivesFromNothingNote(now, page), ...noBaseNote(now, page)] : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
+        const dropped = changed ? droppedFromBaseNotes(now, page, fields.set) : [];
         const story = changed && changedFieldNames(fields).length > 0 ? storyNotes(root, context, world, now, existing, page) : [];
         const was = retyped === undefined ? undefined : `${retyped.type ?? "free page"} (${retyped.path})`;
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? joiningNotes(system, now, page) : [];
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...limits.notes, ...sheet, ...moneyNotes], problems: world.problems };
+        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...dropped, ...limits.notes, ...sheet, ...moneyNotes], problems: world.problems };
     },
 
     format(result)
@@ -668,6 +669,25 @@ function moneyNotesOf(world: World, page: string, set: Record<string, unknown> |
     const notes = unread.map(([field, value]) => `${field} on ${page} is "${value}", which is not money: write the coins one after the other, such as ${field}=12 ${coins?.[0].name ?? ""}, to count them.`);
     const looksLikeMoney = texts.some(([, value]) => /\d+\s*\p{L}/u.test(value));
     return problem !== undefined && looksLikeMoney ? [...notes, `The campaign's coins cannot be read, so no money is counted: ${problem.message} To fix it, ${problem.fix}.`] : notes;
+}
+
+/**
+ * A list written whole that leaves out items the page read from a base, as an elf's Perception from its race: said, since the page no longer reads them (INH-7).
+ */
+function droppedFromBaseNotes(now: World, page: Page, set: Record<string, unknown> | undefined): string[]
+{
+    return Object.entries(set ?? {}).filter(([, value]) => Array.isArray(value)).flatMap(([field, value]) => {
+        const base = baseValue(now, page, field);
+
+        if (base === undefined || !Array.isArray(base.value)) {
+            return [];
+        }
+
+        const held = new Set(listItemNames(value).map(comparableText));
+        const missing = listItemNames(base.value).filter((name) => !held.has(comparableText(name)));
+        const them = missing.length === 1 ? "it" : "them";
+        return missing.length === 0 ? [] : [`${field} on ${page.name} leaves out ${missing.join(", ")}, which it read from ${base.base.name}: if the character keeps ${them}, add ${them}, such as add ${field}=${missing[0]}.`];
+    });
 }
 
 /** A page created with a name that other pages give as their creature or item, though it is not one: they derive from nothing (INH-2). */

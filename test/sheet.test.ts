@@ -110,7 +110,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         expect(await ok("show", "Ettore#combat")).toBe([
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
-            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from Cleric 3 in classes",
+            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes",
             "passive-perception 13: perception +3",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
@@ -164,8 +164,8 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         expect(await refused("write", "Ettore", "--set", "skill-proficiencies=[Insight, Furtività]", "--set", "umore=teso")).toBe(
             `"Furtività" is not one of the names skill-proficiencies takes in the system 5e: ${skills}. Nothing changed.`,
         );
-        expect(await refused("write", "Ettore", "--add", "expertise=Stealthh", "--add", "expertise=Arcanna")).toBe(
-            `"Stealthh", "Arcanna" are not names expertise takes in the system 5e: ${skills}, Thieves' Tools. Nothing changed.`,
+        expect(await refused("write", "Ettore", "--add", "skill-proficiencies=Stealthh", "--add", "skill-proficiencies=Arcanna")).toBe(
+            `"Stealthh", "Arcanna" are not names skill-proficiencies takes in the system 5e: ${skills}. Nothing changed.`,
         );
         expect(await refused("write", "Ettore", "--set", "skill-proficiencies=Insight, Religion")).toContain("A list is written [a, b]. Nothing changed.");
         expect(pageText("Ettore")).toBe(before);
@@ -270,7 +270,7 @@ describe("what the review of 7 October put right", () => {
 
     it("follows the 5e: hit points at every level, a hit die for each level, expertise only where proficient, inspiration up to 1", async () => {
         expect(await ok("write", "Ettore", "--set", "hp-per-level=1")).toContain("hp max 24 → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1): worked out by the system 5e.");
-        expect(await ok("write", "Ettore", "--set", "classes=[[Cleric]] 4")).toContain("hit-dice-d8 max 3 → 4 (Cleric 4 in classes)");
+        expect(await ok("write", "Ettore", "--set", "classes=[[Cleric]] 4")).toContain("hit-dice-d8 max 3 → 4 (4 in classes)");
         await ok("write", "Ettore", "--add", "expertise=Stealth", "--add", "expertise=Insight");
         const shown = await ok("show", "Ettore");
         expect(shown).toContain("insight +7");
@@ -323,6 +323,13 @@ describe("races and subraces of the SRD (D-201, SYS-2)", () => {
         expect(await ok("write", "Bruna", "--set", "hp=10")).toContain("hp max none → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1)");
     });
 
+    it("says when a list written whole leaves out what the race gave (INH-7)", async () => {
+        await ok("write", "Elia", "--type", "character", "--set", "role=pc", "--set", "creature=[[Elf]]");
+        const written = await ok("write", "Elia", "--set", "skill-proficiencies=[Insight, Religion]", "--set", "languages=[Common, Elvish, Dwarvish]");
+        expect(written).toContain("skill-proficiencies on Elia leaves out Perception, which it read from Elf: if the character keeps it, add it, such as add skill-proficiencies=Perception.");
+        expect(written).not.toContain("languages on Elia leaves out");
+    });
+
     it("derives a page of the system from its own, even where the campaign has a page of that name", async () => {
         // Written by hand: write refuses a page that hides one of the system (SYS-6).
         writeFileSync(join(folder, "world", "creatures", "Dwarf.md"), "---\nspeed: 40 ft\n---\n");
@@ -341,7 +348,7 @@ describe("classes and subclasses of the SRD (D-201)", () => {
     it("works out the level from the classes and counts hit dice by each class's die, for a character of two classes", async () => {
         await ok("write", "Aria", "--type", "character", "--set", "role=pc", "--set", "creature=[[Human]]", "--set", "con=14", "--set", "hp-base=30", "--set", "hp=40", "--set", "hit-dice-d6=1");
         expect(await ok("write", "Aria", "--set", "classes=[[Fighter]] 3, [[Wizard]] 2", "--set", "subclasses=[[Champion]]", "--set", "hit-dice-d10=3")).toContain(
-            "hit-dice-d6 max none → 2 (Wizard 2 in classes)",
+            "hit-dice-d6 max none → 2 (2 in classes)",
         );
         const shown = await ok("show", "Aria");
         expect(shown).toContain("Character: creature Human · size Medium · classes Fighter 3, Wizard 2 · subclasses Champion · level 5");
@@ -355,6 +362,12 @@ describe("classes and subclasses of the SRD (D-201)", () => {
             "Character: creature Human · size Medium · classes Fighter 3, Wizard 2 · subclasses Champion · background Acolyte (background) · feats Grappler · alignment neutral good · level 5",
         );
         expect(await ok("validate")).not.toContain("Aria");
+    });
+
+    it("counts the hit dice of a class the campaign writes, from the die its page gives (D-215)", async () => {
+        await ok("write", "Cacciatore di sangue", "--type", "topic", "--set", "category=class", "--set", "hit-die=d10");
+        const written = await ok("write", "Vex", "--type", "character", "--set", "role=pc", "--set", "classes=[[Cacciatore di sangue]] 3, [[Fighter]] 2", "--set", "hit-dice-d10=5");
+        expect(written).toContain("hit-dice-d10 max none → 5 (5 in classes)");
     });
 
     it("adds a hit point at every sorcerer level for the Draconic Bloodline (p. 45)", async () => {

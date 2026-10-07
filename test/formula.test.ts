@@ -132,6 +132,16 @@ describe("a system's formulas that do not read (FOR-9)", () => {
         expect(() => readFormulas({ computed: { a: "1", A: "2" } })).toThrow("computed.A: the field is given twice, in different cases: give it once.");
     });
 
+    it("sums the numbers of the items whose page has a value in a field, and refuses one written otherwise (D-215)", () => {
+        const pages: Record<string, Record<string, unknown>> = { Fighter: { "hit-die": "d10" }, Wizard: { "hit-die": "d6" }, Ranger: { "Hit-Die": "D10" } };
+        const formula = parseFormula("sum(classes, hit-die = d10)");
+        const read = (classes: unknown) => workOut(formula, { ...scope({ classes }), page: (name) => pages[name] }).value;
+        expect(read(["[[Fighter]] 3", "[[Wizard]] 2", "[[Ranger]] 1", "[[Unknown]] 4"])).toBe(4);
+        expect(read(["[[Wizard]] 2"])).toBe(0);
+        expect(read(undefined)).toBeUndefined();
+        expect(() => parseFormula("sum(classes, hit-die)")).toThrow("a field = value, such as hit-die = d10, then )");
+    });
+
     it("names the place, a table that is not there, and fields that read each other in a circle", () => {
         expect(() => readFormulas({ computed: { "str-mod": "floor((str - 10) /" } })).toThrow(/^computed\.str-mod: "floor\(\(str - 10\) \/" is not a formula/);
         expect(() => readFormulas({ computed: { proficiency: "table(proficiency-by-level, level)" } })).toThrow('computed.proficiency: there is no table "proficiency-by-level" in tables.');
