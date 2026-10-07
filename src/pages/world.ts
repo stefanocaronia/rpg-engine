@@ -236,10 +236,11 @@ export function searchSystemPages(world: World, query: { text?: string; type?: P
         return excerpt === undefined ? [] : [{ page, excerpt }];
     });
 
-    // The name itself first, then names that begin with the text, names that hold it, and last pages whose fields do: Shield before Shield Guardian (D-195).
+    // The name itself first, then its twins, as Shield (spell) beside the item, names that begin with the text, names that hold it, and last pages whose
+    // fields do: Shield before Shield (spell) and Shield Guardian (D-195).
     const rank = (match: PageMatch): number => {
         const name = comparableText(match.page.name);
-        return match.excerpt !== undefined ? 3 : name === text ? 0 : name.startsWith(text) ? 1 : 2;
+        return match.excerpt !== undefined ? 4 : name === text ? 0 : name.startsWith(`${text} (`) ? 1 : name.startsWith(text) ? 2 : 3;
     };
 
     return text === "" ? found : found.map((match, index) => ({ match, index })).sort((first, second) => rank(first.match) - rank(second.match) || first.index - second.index).map(({ match }) => match);

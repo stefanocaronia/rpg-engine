@@ -89,9 +89,10 @@ describe("SYS-2, SYS-3: the system's pages, found after the campaign's", () => {
         expect(wolf).toContain("Wolf (creature of the system 5e, read-only)\n\n---\nsize: Medium\ncategory: beast");
         expect(wolf).toContain("### Bite\n*Melee Weapon Attack:* +4 to hit");
         expect(wolf).not.toContain("world/creatures/Wolf.md");
-        expect(await ok("find", "wolf")).toBe("Wolf (creature, system 5e)");
+        const wolves = "Wolf (creature, system 5e)\nDire Wolf (creature, system 5e)\nGiant Wolf Spider (creature, system 5e)\nWerewolf (creature, system 5e)\nWinter Wolf (creature, system 5e)";
+        expect(await ok("find", "wolf")).toBe(wolves);
         await ok("write", "Lupo della valle", "--type", "creature", "--set", "creature=[[Wolf]]");
-        expect(await ok("find", "wol")).toBe("Lupo della valle (creature): creature: [[Wolf]]\nWolf (creature, system 5e)");
+        expect(await ok("find", "wol")).toBe(`Lupo della valle (creature): creature: [[Wolf]]\n${wolves}`);
         expect(await ok("find", "lupo")).toBe("Lupo della valle (creature)\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
     });
 
