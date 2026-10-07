@@ -17,7 +17,7 @@ systems/5e/
     items/*.md         armor, weapons, gear, magic items
     topics/*.md        classes, subclasses, backgrounds, feats, spells
   rules/*.md           the chapters of its rules, as markdown
-  build/               the scripts that wrote some of its pages from its source (not shipped)
+  build/               the scripts that wrote some of its pages and rules from its source (not shipped)
   test/                the system's own tests (not shipped)
 ```
 

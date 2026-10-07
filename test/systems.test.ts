@@ -351,7 +351,9 @@ describe("after the round on the code: the system missing, and the remedies (SYS
         expect(await ok("write", "Lama fiammeggiante", "--type", "item", "--set", "magic=[[Weapon, +1, +2, or +3]]", "--set", "bonus=1")).toContain(
             "Lama fiammeggiante derives from no item: if it is a kind of one of the system 5e",
         );
-        expect(await ok("show", "Weapon, +1, +2, or +3")).toContain("item=[[Longsword]], magic=[[Weapon, +1, +2, or +3]], bonus=1");
+        // How a magic weapon of the campaign is written is the system's note on the attacks, said when a character joins the party (D-206), not the item's page (D-170).
+        expect(await ok("write", "Bruna", "--type", "character", "--set", "role=companion", "--set", "level=1")).toContain("item=[[Longsword]], magic=[[Weapon, +1, +2, or +3]], bonus=1");
+        expect(await ok("show", "Weapon, +1, +2, or +3")).not.toContain("In the campaign");
     });
 
     it("shows in status the values an effect gives that no counter shows", async () => {

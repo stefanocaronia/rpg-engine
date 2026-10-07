@@ -107,8 +107,10 @@ describe("what the master is told when it writes and spends spells (D-216, D-227
         expect(written).toContain("[[Shield]] is an item of the system 5e; there is also Shield (spell).");
         expect(await ok("validate")).toContain("Fix: create Palla di fuoco with write if it belongs to this world, or write Ada, remove spells=[[Palla di fuoco]] if the link is wrong.");
         expect(await ok("show", "Wizard Spells#1st Level")).toContain("- [[Magic Missile]]\n");
-        // After the campaign's own pages, the system's by name first.
-        expect((await ok("find", "shield")).split("\n").slice(1, 3)).toEqual(["Shield (item, system 5e)", "Shield (spell) (topic, system 5e)"]);
+        // After the campaign's own pages, the system's by name first: the name itself, then those that begin with it, as Shield (spell) and the magic shields.
+        const found = (await ok("find", "shield")).split("\n");
+        expect(found[1]).toBe("Shield (item, system 5e)");
+        expect(found.slice(2, 5)).toContain("Shield (spell) (topic, system 5e)");
     });
 
     it("refuses a use the character does not get, by change and by write, without a remedy that would make one up", async () => {
