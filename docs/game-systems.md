@@ -321,7 +321,7 @@ always-in:
   equipped: [Unarmed Strike]
 ```
 
-The formulas read the list with these pages after the written ones, so the attacks of every player character and companion with a sheet end with the unarmed strike: "Attacks: Longsword +5, 1d8+3 slashing · Unarmed Strike +5, 4 bludgeoning". The list as written does not change: the sheet's `equipped` shows only what the character carries. `write` and `effect` on such a page, or equipping it, and `validate` on a character who lists it, say that it is there already, never how to derive an item from it, which would count it twice. Creatures and characters without a sheet never have them. The list is one the system declares or a list of the core, such as `equipped`, and each name a page of the system: [test/system-packages.test.ts](../test/system-packages.test.ts) checks both.
+The formulas read the list with these pages after the written ones, so the attacks of every player character and companion with a sheet end with the unarmed strike: "Attacks: Longsword +5, 1d8+3 slashing · Unarmed Strike +5, 4 bludgeoning". The list as written does not change: the sheet's `equipped` shows only what the character carries. `write`, `effect` and `move` on such a page, equipping or carrying it, deriving an item from it, and `validate` on a page that lists it, say what it is, never how to derive an item from it, which would count it twice. Creatures and characters without a sheet never have them. The list is one the system declares or a list of the core, such as `equipped`, and each name a page of the system: [test/system-packages.test.ts](../test/system-packages.test.ts) checks both.
 
 ## 4. The formula language
 

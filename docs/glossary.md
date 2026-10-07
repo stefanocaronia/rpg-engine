@@ -50,7 +50,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | dadi da un campo | dice from a field | `dice(…)` at the start of an item's formula: the largest of dice, numbers and fields, as a monk's `martial-arts` |
 | ciò che tutti hanno | always in | `always-in`: the pages every character with a sheet has in a list, as the unarmed strike in `equipped` |
 | colpo senz'armi | unarmed strike | the system page `Unarmed Strike` |
-| creazione del personaggio | character creation | the system's `creation` note, which `status` says until there is a player character |
+| creazione del personaggio | character creation | the system's `creation` note, which `status` says until there is a player character, and while its sheet lacks fields before the first scene |
 | impostazioni del sistema | system settings | `settings` in system.yaml: what the setup asks for the system, as advancement |
 | punti esperienza, PE | experience points, xp | the points a character gains; `progression.experience` counts the level they reach |
 | premi della scena | rewards | `rewards`: what the creatures overcome in a scene give the party |

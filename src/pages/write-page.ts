@@ -359,7 +359,7 @@ function holdProblem(world: World, holder: Page, target: string): string | undef
     const page = findPage(world, target);
 
     if (page?.system !== undefined) {
-        return `${heldSystemPageMessage(page, holder)} Nothing changed.`;
+        return `${heldSystemPageMessage(page, holder, world)} Nothing changed.`;
     }
 
     if (page !== undefined && !canHold(holder.type, page.type)) {

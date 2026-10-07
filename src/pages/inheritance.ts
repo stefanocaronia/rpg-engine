@@ -3,6 +3,7 @@ import { introductionText, secretNames, sectionTitles, textParts } from "./markd
 import type { FieldChange } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
 import { isEmptyField, isStandardField, misspelledStandardField } from "./standard-fields.ts";
+import { alwaysInList, alwaysInMessage } from "./system-pages.ts";
 import { linksIn, type Page, pagesWithName, systemPageNamed, type World } from "./world.ts";
 
 // The field in which a page of a type names what it derives from, named after the type of its base: for a character or a creature, the creature it is a kind of;
@@ -314,6 +315,13 @@ export function newBaseProblem(world: World, page: { name: string; type?: PageTy
 
     if (target.type !== field) {
         return `${field} must link to ${withArticle(field)}, and ${target.name} is ${withArticle(target.type ?? "free page")}.`;
+    }
+
+    // What the system puts in every sheet's list, as the unarmed strike, would count twice through an item that derives from it (DAT-13).
+    const always = alwaysInList(world, target);
+
+    if (always !== undefined) {
+        return alwaysInMessage(target, always);
     }
 
     // The chain, and the page its last base links to, where the chain stops: it may be this one, a page of the same type about to be created.

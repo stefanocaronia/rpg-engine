@@ -292,6 +292,14 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
             const held = pagesByName.get(comparableText(name));
             const system = held === undefined ? systemPageNamed(world, name) : undefined;
 
+            if (system !== undefined && alwaysInList(world, system) !== undefined) {
+                return [{
+                    path: holder.path,
+                    message: `${holder.name} lists ${system.name} in ${listing.field}: ${alwaysInMessage(system, alwaysInList(world, system) ?? "")}`,
+                    fix: `write ${holder.name}, remove ${listing.field}=${listing.entry}`,
+                }];
+            }
+
             if (system !== undefined) {
                 const instead = system.type === "item" ? `; one that ${holder.name} has is an item of the campaign with item=[[${system.name}]], or text` : "";
                 return [{

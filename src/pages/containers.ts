@@ -138,7 +138,7 @@ export function holdRefusal(holder: { name: string; type?: PageType; }, held: { 
 function checkMove(world: World, page: Page, destination: Page): void
 {
     if (page.system !== undefined) {
-        throw new Error(`${heldSystemPageMessage(page, destination)} Nothing moved.`);
+        throw new Error(`${heldSystemPageMessage(page, destination, world)} Nothing moved.`);
     }
 
     if (destination.system !== undefined) {

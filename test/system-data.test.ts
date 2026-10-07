@@ -99,6 +99,8 @@ describe("the character sheet (DAT-2)", () => {
         expect((await runCommandLine(["status"], other)).output).toContain("Creating the player character");
         await runCommandLine(["scene", "open", "--title", "Il molo", "--type", "exploration"], other);
         expect((await runCommandLine(["status"], other)).output).not.toContain("Creating the player character");
+        await runCommandLine(["scene", "close", "--summary", "Arrivati al molo."], other);
+        expect((await runCommandLine(["status"], other)).output).not.toContain("Creating the player character");
         removeFolder(empty);
     });
 

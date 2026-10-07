@@ -225,6 +225,10 @@ function openingDice(text: string): { choices: DiceChoice[]; length: number; } |
 
     const call = /^\s*dice\s*\(([^()]*)\)/i.exec(text);
 
+    if (call === null && /^\s*dice\s*\(/i.test(text)) {
+        throw new Error(`"${text}" is not a formula: dice() holds only dice, numbers and fields, between commas, such as dice(1d6, martial-arts).`);
+    }
+
     if (call === null) {
         return undefined;
     }

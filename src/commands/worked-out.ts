@@ -394,7 +394,8 @@ function progressedField(world: World, scope: ReturnType<typeof formulaScope>, f
             const page = scope.page(item.name);
             const given = itemFormula(page, found.field);
             // What the item holds itself, as a weapon's bonus, comes from it, not from who lists it.
-            const dice = (given === undefined ? [] : diceFields(given)).flatMap((name) => writtenSources(world, { kind: "field", name }, scope));
+            // Only the dice a field gives count, as a monk's martial-arts: one no one has is no source.
+            const dice = (given === undefined ? [] : diceFields(given)).filter((name) => scope.field(name) !== undefined).flatMap((name) => writtenSources(world, { kind: "field", name }, scope));
             const formula = given?.formula === undefined ? [] : writtenSources(world, given.formula, scope);
             return [...formula, ...dice].filter((name) => page === undefined || keyOf(page, name) === undefined);
         });
@@ -482,7 +483,8 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
         const entry = index?.computed.get(comparableText(name));
 
         // What the classes give comes from the lists that name them (PRO-3); what the items' pages give, from their list, as armor-class from equipped (PRO-5).
-        if (entry === undefined && progressedField(world, scope, name) !== undefined) {
+        // Whether the classes or the items give it, without asking where they come from, which may read this field again.
+        if (entry === undefined && givenFields(world, scope).some((worked) => comparableText(worked.field) === comparableText(name))) {
             const list = itemList(world, name);
             return list === undefined ? (scope.progression()?.lists ?? [name]) : [list];
         }
@@ -715,7 +717,7 @@ function itemFormulaProblems(world: World, page: Page, fields: Record<string, un
                         message: `${field} on ${item.name} takes dice from ${dice}, which ${
                             comparableText(dice) === comparableText(field) ? "is the field itself" : "neither the system nor the character has"
                         }: they never count for ${page.name}.`,
-                        fix: `write ${item.name}, set ${field} with dice from a field the system has, such as dice(1d6, martial-arts)`,
+                        fix: `write ${item.name}, set ${field}="${withoutDiceField(String(text), dice)}"`,
                     }];
                 }
 
@@ -728,6 +730,15 @@ function itemFormulaProblems(world: World, page: Page, fields: Record<string, un
             });
         })
     );
+}
+
+/** A roll formula without one of the fields its dice(…) names: "dice(1d6) + dex-mod bludgeoning" for ki-die in "dice(1d6, ki-die) + dex-mod bludgeoning". */
+function withoutDiceField(text: string, field: string): string
+{
+    return text.replace(/^(\s*dice\s*\()([^()]*)\)/i, (_whole, opening: string, inside: string) => {
+        const kept = inside.split(",").map((part) => part.trim()).filter((part) => comparableText(part) !== comparableText(field));
+        return kept.length === 0 ? "" : `${opening}${kept.join(", ")})`;
+    }).trim().replace(/^\+\s*/, "");
 }
 
 /** Whether a field is a number for the system: declared as one, or read by one of its computed fields, as an armor's armor-class by ac. */

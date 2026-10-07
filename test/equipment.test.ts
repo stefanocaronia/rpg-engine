@@ -228,12 +228,16 @@ describe("the unarmed strike and the Martial Arts die (D-235)", () => {
 
     it("says the unarmed strike is in every sheet already, never a page to derive, and validate reports dice from a field no one has", async () => {
         await character("Gara", "classes=[[Fighter]] 1");
-        const already = "Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet, worked out on each from their own fields: "
-            + "it is there already, and read-only. Nothing changed.";
+        const reason = "Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet, worked out on each from their own fields: "
+            + "read-only, and never equipped, carried or derived from by hand, which would count it twice.";
+        const already = `${reason} Nothing changed.`;
         expect(await refused("write", "Gara", "--add", "equipped=[[Unarmed Strike]]")).toBe(already);
         expect(await refused("write", "Unarmed Strike", "--set", "bonus=1")).toBe(already);
         expect(await refused("write", "Unarmed Strike", "--type", "item", "--set", "bonus=1")).toBe(already);
         expect(await refused("effect", "add", "Unarmed Strike", "Furia", "--set", "bonus=1")).toBe(already);
+        expect(await refused("move", "Unarmed Strike", "--to", "Gara")).toBe(`${reason} Nothing moved.`);
+        expect(await refused("write", "Gara", "--add", "inventory=[[Unarmed Strike]]")).toBe(already);
+        expect(await refused("write", "Pugno", "--type", "item", "--set", "item=[[Unarmed Strike]]")).toContain(reason);
         // No effect goes on a page of the system: one changes what its formula reads on the character, and not the dice of a monk.
         expect(await refused("effect", "add", "Gara", "Furia", "--set", "attack=7")).toBe(
             "attack on Gara is worked out by the system 5e from str, dex, classes, subclasses, equipped: give the effect one of the fields it comes from instead, such as str. Nothing changed.",
@@ -241,17 +245,25 @@ describe("the unarmed strike and the Martial Arts die (D-235)", () => {
         expect(await refused("effect", "add", "Gara", "Furia", "--set", "damage-roll=5")).toContain("such as str. Nothing changed.");
         const page = join(folder, "world", "characters", "Gara.md");
         writeFileSync(page, readFileSync(page, "utf8").replace("---\n", '---\nequipped:\n  - "[[Unarmed Strike]]"\n'));
-        expect(await ok("validate")).toContain(
-            "Gara has Unarmed Strike in equipped: Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet, worked out on each from their own fields: "
-                + "it is there already, and read-only. Fix: write Gara, remove equipped=[[Unarmed Strike]]",
-        );
+        expect(await ok("validate")).toContain(`Gara has Unarmed Strike in equipped: ${reason} Fix: write Gara, remove equipped=[[Unarmed Strike]]`);
         await ok("write", "Gara", "--remove", "equipped=[[Unarmed Strike]]");
         await ok("write", "Mazza", "--type", "item", "--set", "item=[[Club]]", "--set", "damage-roll=dice(1d4, martail-arts) + str-mod + bonus bludgeoning");
         await ok("move", "Mazza", "--to", "Gara");
         await ok("write", "Gara", "--set", "equipped=[[Mazza]]");
         // The other dice still count.
         expect(await ok("show", "Gara")).toContain("Mazza +3, 1d4+3 bludgeoning");
-        expect(await ok("validate")).toContain("damage-roll on Mazza takes dice from martail-arts, which neither the system nor the character has: they never count for Gara.");
+        expect(await ok("validate")).toContain(
+            'damage-roll on Mazza takes dice from martail-arts, which neither the system nor the character has: they never count for Gara. Fix: write Mazza, set damage-roll="dice(1d4) + str-mod + bonus bludgeoning"',
+        );
+        // A formula whose dice read the field it gives is refused as any worked-out field, never a crash.
+        await ok("write", "Mazza", "--set", "damage-roll=dice(1d6, damage-roll) + str-mod bludgeoning");
+        expect(await refused("write", "Gara", "--set", "damage-roll=5")).toBe(
+            "Not written, the system 5e works it out: damage-roll Mazza 1d6+3 bludgeoning, Unarmed Strike 4 bludgeoning (you gave 5). They come from str, dex, classes, subclasses, equipped. Nothing changed.",
+        );
+        expect(await refused("change", "Gara", "damage-roll", "--by=1")).toContain("worked out by the system 5e");
+        expect(await refused("effect", "add", "Gara", "Furia", "--set", "damage-roll=5")).toContain("Nothing changed.");
+        await ok("write", "Mazza", "--set", "damage-roll=dice(1d6, max(martial-arts, 1)) + str-mod bludgeoning");
+        expect(await ok("validate")).toContain("dice() holds only dice, numbers and fields, between commas, such as dice(1d6, martial-arts).");
     });
 
     it("asks a roll from the attacks for the number of the one used", async () => {

@@ -55,7 +55,9 @@ export function alwaysInList(world: World, page: Page): string | undefined
 /** "Unarmed Strike is an item of the system 5e that it puts in the equipped of every character with a sheet…": why no one writes or equips it (DAT-13). */
 export function alwaysInMessage(page: Page, list: string): string
 {
-    return `${page.name} is ${systemLabel(page)} that it puts in the ${list} of every character with a sheet, worked out on each from their own fields: it is there already, and read-only.`;
+    return `${page.name} is ${
+        systemLabel(page)
+    } that it puts in the ${list} of every character with a sheet, worked out on each from their own fields: read-only, and never equipped, carried or derived from by hand, which would count it twice.`;
 }
 
 /**
@@ -100,8 +102,14 @@ export function hidingMessage(page: Page, type: PageType | undefined, fields: st
 }
 
 /** Why a page of the game system goes into no container (SYS-6), and what to do instead; `holder` is where it was to go. */
-export function heldSystemPageMessage(page: Page, holder: { name: string; type?: PageType; }): string
+export function heldSystemPageMessage(page: Page, holder: { name: string; type?: PageType; }, world?: World): string
 {
+    const always = world === undefined ? undefined : alwaysInList(world, page);
+
+    if (always !== undefined) {
+        return alwaysInMessage(page, always);
+    }
+
     if (page.type === "item") {
         const list = holder.type === "character" ? "the inventory" : "the contents";
         return `${page.name} is ${systemLabel(page)}, a kind: no one holds it. To give ${holder.name} one, create it under a name in the campaign's language: `
