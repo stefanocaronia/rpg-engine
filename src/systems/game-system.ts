@@ -147,8 +147,37 @@ export function installedSystems(folders: string[]): GameSystem[]
     return systems;
 }
 
-/** The installed system with this name, ignoring case, from the nearest folder that has it; undefined when none is. Only its own system.yaml is read. */
-export function findSystem(folders: string[], name: string): GameSystem | undefined
+/** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes and line of the player character. */
+export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line"] as const;
+
+/** What campaign.yaml adds to the game system, as it writes it: checked when the system is read with it (CAM-3). */
+export type CampaignData = Partial<Record<(typeof campaignDataNames)[number], unknown>>;
+
+/**
+ * The installed system with what the campaign adds to it, the nearest layer winning (CAM-2); when the additions do not read, the system alone and why (CAM-3).
+ * Undefined as a system when none is installed by that name.
+ */
+export function findCampaignSystem(folders: string[], name: string, data: CampaignData): { system?: GameSystem; problem?: string; }
+{
+    const system = findSystem(folders, name);
+
+    if (system === undefined || campaignDataNames.every((key) => data[key] === undefined || data[key] === null)) {
+        return { system };
+    }
+
+    try {
+        return { system: findSystem(folders, name, data) };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { system, problem: message.replace(/^The game system .*? cannot be read, because .*? is not valid:\s*/s, "") };
+    }
+}
+
+/**
+ * The installed system with this name, ignoring case, from the nearest folder that has it, with what a campaign adds to it; undefined when none is. Only its own
+ * system.yaml is read.
+ */
+export function findSystem(folders: string[], name: string, data?: CampaignData): GameSystem | undefined
 {
     for (const folder of folders.filter((candidate) => existsSync(candidate))) {
         const entry = readdirSync(folder, { withFileTypes: true })
@@ -157,17 +186,27 @@ export function findSystem(folders: string[], name: string): GameSystem | undefi
             .find((candidate) => existsSync(join(folder, candidate.name, systemFileName)));
 
         if (entry !== undefined) {
-            return readSystem(join(folder, entry.name), entry.name);
+            return readSystem(join(folder, entry.name), entry.name, data);
         }
     }
 
     return undefined;
 }
 
-function readSystem(folder: string, name: string): GameSystem
+function readSystem(folder: string, name: string, additions?: CampaignData): GameSystem
 {
-    const path = join(folder, systemFileName);
-    const parsed = systemSchema.safeParse(readYamlValues(path, 'what the system is, such as "title: ..."'));
+    const file = join(folder, systemFileName);
+    const path = additions === undefined ? file : `${file} with the additions of campaign.yaml`;
+    const raw = readYamlValues(file, 'what the system is, such as "title: ..."');
+    let merged: unknown = raw;
+
+    try {
+        merged = additions === undefined ? raw : withCampaignData(raw, additions);
+    } catch (error) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    const parsed = systemSchema.safeParse(merged);
 
     if (!parsed.success) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid:\n${z.prettifyError(parsed.error)}`);
@@ -243,6 +282,93 @@ function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string)
             ...(note === undefined ? {} : { note }),
         };
     });
+}
+
+/**
+ * A system's data with a campaign's additions over it (CAM-2): fields, tables, formulas and counters by name, the campaign's taking the place of the system's
+ * with that name; a recipe added to the system's of that name, field by field, with its occasions and rules; the line's fields after the system's.
+ */
+function withCampaignData(raw: unknown, data: CampaignData): Record<string, unknown>
+{
+    const base = isMap(raw) ? raw : {};
+    const merged: Record<string, unknown> = { ...base };
+
+    for (const key of ["fields", "tables", "computed", "counters"] as const) {
+        const added = mapOf(data[key], key);
+        merged[key] = added === undefined ? base[key] : { ...withoutNames(isMap(base[key]) ? base[key] : {}, Object.keys(added)), ...added };
+    }
+
+    const recipes = mapOf(data.recipes, "recipes");
+
+    if (recipes !== undefined) {
+        const own = isMap(base.recipes) ? base.recipes : {};
+        merged.recipes = { ...own, ...Object.fromEntries(Object.entries(recipes).map(([recipe, added]) => [nameIn(own, recipe) ?? recipe, recipeWith(own[nameIn(own, recipe) ?? ""], added, recipe)])) };
+    }
+
+    const line = data["status-line"];
+
+    if (line !== undefined && line !== null) {
+        if (!Array.isArray(line)) {
+            throw new Error("status-line: give it as a list of fields, such as [portent?].");
+        }
+
+        const own = Array.isArray(base["status-line"]) ? base["status-line"].map(String) : [];
+        const plain = (entry: string): string => comparableText(entry.replace(/\?$/, ""));
+        merged["status-line"] = [...own, ...line.map(String).filter((entry) => !own.some((other) => plain(other) === plain(entry)))];
+    }
+
+    return merged;
+}
+
+/** A system's recipe with a campaign's over it (CAM-2): what both set and regain, the campaign's first, and the occasions and rules of both. */
+function recipeWith(own: unknown, added: unknown, name: string): Record<string, unknown>
+{
+    if (!isMap(added)) {
+        throw new Error(`recipes.${name}: give it as what it sets, regains, ends and the rules to read, such as {set: {superiority-dice: max}}.`);
+    }
+
+    const base = isMap(own) ? own : {};
+    const map = (key: string): Record<string, unknown> | undefined =>
+        isMap(base[key]) || isMap(added[key]) ? { ...withoutNames(isMap(base[key]) ? base[key] : {}, Object.keys(isMap(added[key]) ? added[key] : {})), ...(isMap(added[key]) ? added[key] : {}) } : undefined;
+
+    const list = (key: string): unknown[] | undefined => {
+        const items = [...(Array.isArray(base[key]) ? base[key] : []), ...(Array.isArray(added[key]) ? added[key] : [])];
+        return items.length === 0 ? undefined : items.filter((item, index) => items.findIndex((other) => comparableText(String(other)) === comparableText(String(item))) === index);
+    };
+
+    const merged = { ...base, ...added, set: map("set"), regain: map("regain"), ends: list("ends"), rules: list("rules") };
+    return Object.fromEntries(Object.entries(merged).filter(([, value]) => value !== undefined));
+}
+
+/** An addition that must be a map by name, such as counters; undefined when the campaign gives none. */
+function mapOf(value: unknown, key: string): Record<string, unknown> | undefined
+{
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+
+    if (!isMap(value)) {
+        throw new Error(`${key}: give it as a map by name, such as {superiority-dice: ...}.`);
+    }
+
+    return value;
+}
+
+/** The entries of a map whose names are none of these, as names are compared. */
+function withoutNames(map: Record<string, unknown>, names: string[]): Record<string, unknown>
+{
+    return Object.fromEntries(Object.entries(map).filter(([name]) => !names.some((other) => comparableText(other) === comparableText(name))));
+}
+
+/** The name under which a map holds this one, as names are compared. */
+function nameIn(map: Record<string, unknown>, name: string): string | undefined
+{
+    return Object.keys(map).find((key) => comparableText(key) === comparableText(name));
+}
+
+function isMap(value: unknown): value is Record<string, unknown>
+{
+    return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 /** The counters that come back with a rest (DAT-9): those with a refill, and those a recipe sets or regains. */

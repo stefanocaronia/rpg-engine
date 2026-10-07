@@ -39,6 +39,7 @@ import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+import { keptRolls } from "./page-counters.ts";
 import { computedField, computedMessage, counterLimits } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -167,6 +168,7 @@ interface RecipeOutcome
     steps: StepOutcome[];
     choices: string[];
     notBroughtBack: string[];
+    kept: string[];
 }
 
 /**
@@ -331,6 +333,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         steps,
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
+        kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
     };
     return { outcome, world: current };
 }
@@ -382,7 +385,9 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
         const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
         const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
         const chosen = outcome.choices.map((choice) => ` Ask the player: ${choice}.`).join("");
-        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
+        // Rolls kept for later: if this rest brings them back, the player rolls them again (KEP-4).
+        const kept = outcome.kept.length === 0 ? "" : ` Kept rolls: ${outcome.kept.join("; ")}; if this rest brings them back, the player rolls them again, with roll and keep.`;
+        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${kept}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;

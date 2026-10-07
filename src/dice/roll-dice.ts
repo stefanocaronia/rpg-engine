@@ -11,13 +11,15 @@ export interface DiceRoll
     total: number;
     /** One line such as `2d20kh1+5 = 19 [14, (7)] + 5`. */
     text: string;
+    /** The value of each die, in order, dropped ones included: what a roll kept for later holds (KEP-2). */
+    faces: number[];
 }
 
 export function rollDice(notation: string, source: FaceSource): DiceRoll
 {
     const terms = parseNotation(notation);
     const breakdown = "values" in source ? rollPhysical(terms, source.values) : evaluateTerms(terms, digitalFaces(source.random));
-    return { notation, total: breakdown.total, text: formatRoll(notation, breakdown) };
+    return { notation, total: breakdown.total, text: formatRoll(notation, breakdown), faces: breakdown.terms.flatMap((term) => term.dice.map((die) => die.value)) };
 }
 
 function rollPhysical(terms: Term[], values: number[]): RollBreakdown

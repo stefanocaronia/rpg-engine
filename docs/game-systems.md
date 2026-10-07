@@ -61,6 +61,7 @@ The kind of each field the system's pages and sheets use:
 | `bonus` | A number that effects add up: two effects giving `bonus-saves=1` read 2. A bonus the page lacks reads as 0 in formulas. |
 | `text` | Text, never counted, never money. |
 | `list` | A list, never counted. Given one item, a write makes it a list of one. |
+| `rolls` | Rolls kept for later, such as a diviner's Portent: `roll` with `keep` writes the dice rolled there, `roll` with `use` takes one in place of a die and logs which roll it replaced. The line of the character shows them; a rest reminds them. |
 
 ```yaml
 fields:
@@ -369,6 +370,17 @@ hit-die: d10
 A character with `classes: ["[[Cacciatore di sangue]] 3", "[[Fighter]] 2"]` has level 5 and five d10 hit dice: `sum(classes)` and `sum(classes, hit-die = d10)` read the campaign's class as they read the system's Fighter. A class is not a base: the character inherits none of its fields, and adds what it gives (proficiencies, languages) with `add` in `write`, which copies a list the character only inherits before adding to it, so that what the race gives stays.
 
 In the same way, a creature of the campaign with `creature: "[[Elf]]"` is a new race that reads the Elf's fields and traits, and an item with `item: "[[Longsword]]"` is one sword with a name of its own. A campaign page cannot take the name of a system's page, which it would hide: `write` refuses it and `validate` reports one written by hand. The campaign's own `rules/` folder (its house rules) comes before the system's rules, and `coins` in `campaign.yaml` replace the system's.
+
+What the system's data lacks, `campaign.yaml` adds in the same keys as `system.yaml`: `fields`, `tables`, `computed`, `counters`, `recipes` and `status-line`, written with `config`:
+
+```text
+config tables "superiority-dice-by-level: {0: 0, 3: 4, 7: 5, 15: 6}"
+config counters "superiority-dice: {max: 'has(subclasses, Battle Master) * table(superiority-dice-by-level, item(classes, Fighter))', refill: short rest}"
+config computed "passive-perception: 10 + perception + 5 * has(feats, Observant)"
+config fields "portent: rolls"
+```
+
+The nearest layer wins: an entry of `fields`, `tables`, `computed` or `counters` with the name of one of the system's takes its place (a house rule changes the formula, never the number on the page); a recipe adds to the system's of that name, field by field, with its occasions and rules; `status-line` adds fields at the end. `config` refuses what the system would not read with, saying where and why, and `remove` takes an entry away by name; written wrongly by hand, the campaign plays with the system alone and `validate` says why.
 
 ## 8. The checks every system passes
 

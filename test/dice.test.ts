@@ -39,6 +39,11 @@ describe("dice notation", () => {
 });
 
 describe("physical dice", () => {
+    it("gives the value of each die, dropped ones included, for a roll kept for later (KEP-2)", () => {
+        expect(rollDice("2d20kh1+3", { values: [14, 3] }).faces).toEqual([14, 3]);
+        expect(rollDice("1d6+2", { values: [5] }).faces).toEqual([5]);
+    });
+
     it("rejects an impossible face", () => {
         expect(() => rollDice("1d6", { values: [9] })).toThrow("Impossible value 9 on a d6");
         expect(() => rollDice("4dF", { values: [2, 0, 0, 0] })).toThrow("Impossible value 2 on a Fudge die");

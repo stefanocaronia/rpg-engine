@@ -62,7 +62,21 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
         }
     }
 
+    // Rolls kept for later, such as a diviner's Portent, when there are any (KEP-1).
+    for (const [field, value] of keptRolls(world, page)) {
+        shown[field] = value.join(", ");
+    }
+
     return shown;
+}
+
+/** The fields of kept rolls a page holds that are not empty, each with its numbers (KEP-1). */
+export function keptRolls(world: World, page: Page): [string, number[]][]
+{
+    return Object.entries(effectiveFields(world, page)).flatMap(([field, value]): [string, number[]][] => {
+        const numbers = (Array.isArray(value) ? value : [value]).map(Number).filter((number) => Number.isFinite(number));
+        return declaredKind(world, field) !== "rolls" || isEmptyField(value) || numbers.length === 0 ? [] : [[field, numbers]];
+    });
 }
 
 /** "hp 5/12 · arrows 18": counters as the outputs show them. */

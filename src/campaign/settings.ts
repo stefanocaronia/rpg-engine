@@ -31,6 +31,14 @@ export const settingsSchema = z.object({
     precedents: z.array(listItem).nullish().describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
+    // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
+    // other settings.
+    fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as portent: rolls"),
+    tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as superiority-dice-by-level: {3: 4, 7: 5, 15: 6}"),
+    computed: z.unknown().optional().describe("formulas the campaign adds to its game system or puts in place of its own, as a house rule, by field"),
+    counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
+    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {superiority-dice: max}}"),
+    "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
 }).loose();
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;
@@ -40,10 +48,13 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "status-line"];
+
+/** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
+export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes"];
 
 // Settings that only some games have: never asked for when missing.
-const optionalSettingNames: SettingName[] = ["coins"];
+const optionalSettingNames: SettingName[] = ["coins", ...mapSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -155,6 +166,70 @@ export function changeListSetting(root: string, name: string, change: { add?: st
 
     if (list.items.length === 0) {
         document.delete(setting);
+    }
+
+    saveSettings(root, document);
+    return true;
+}
+
+/** What campaign.yaml adds to the game system, as it writes it, read even when another setting breaks the file (CAM-1); empty when it cannot be read. */
+export function readCampaignData(root: string): Record<string, unknown>
+{
+    try {
+        const values: unknown = parseDocument(files().text(join(root, campaignFileName)) ?? "").toJS();
+        const names: string[] = [...mapSettingNames, "status-line"];
+        return values !== null && typeof values === "object" ? Object.fromEntries(Object.entries(values).filter(([name]) => names.includes(name))) : {};
+    } catch {
+        return {};
+    }
+}
+
+/**
+ * Gives entries by name to a setting that holds them, such as counters, each in place of one with that name, or removes entries by name (CAM-1); keeps the
+ * rest of campaign.yaml as it is. Returns whether it changed.
+ */
+export function changeMapSetting(root: string, name: string, change: { set?: Record<string, unknown>; remove?: string[]; }): boolean
+{
+    const setting = checkSettingName(name);
+
+    if (!mapSettingNames.includes(setting)) {
+        throw new Error(`"${setting}" holds no entries by name: ${listSettingNames.includes(setting) ? "change it with add and remove" : "give the new value"}.`);
+    }
+
+    const document = readSettingsDocument(root);
+    const held = document.get(setting);
+    const before = (held !== null && typeof held === "object" && "toJSON" in held ? (held as { toJSON(): unknown; }).toJSON() : held) ?? {};
+
+    if (typeof before !== "object" || Array.isArray(before)) {
+        throw new Error(`"${setting}" in ${campaignFileName} is not entries by name; write it by hand as ${setting}: {name: value}.`);
+    }
+
+    const entries = { ...(before as Record<string, unknown>) };
+    const named = (wanted: string): string | undefined => Object.keys(entries).find((key) => sameText(key, wanted));
+    const missing = (change.remove ?? []).find((item) => named(item) === undefined);
+
+    if (missing !== undefined) {
+        const keys = Object.keys(entries);
+        throw new Error(`"${setting}" has no entry "${missing}", so nothing changed. It has: ${keys.length > 0 ? keys.join(", ") : "none"}.`);
+    }
+
+    for (const item of change.remove ?? []) {
+        delete entries[named(item) as string];
+    }
+
+    for (const [key, value] of Object.entries(change.set ?? {})) {
+        delete entries[named(key) ?? key];
+        entries[key] = value;
+    }
+
+    if (JSON.stringify(entries) === JSON.stringify(before)) {
+        return false;
+    }
+
+    if (Object.keys(entries).length === 0) {
+        document.delete(setting);
+    } else {
+        document.set(setting, document.createNode(entries, { flow: false }));
     }
 
     saveSettings(root, document);

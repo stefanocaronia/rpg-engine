@@ -1,10 +1,10 @@
 import { join, resolve } from "node:path";
-import { campaignFileName, readTextSetting } from "../campaign/index.ts";
+import { campaignFileName, readCampaignData, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
-import { findSystem, type GameSystem, installedSystems } from "../systems/index.ts";
+import { findCampaignSystem, findSystem, type GameSystem, installedSystems } from "../systems/index.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
@@ -19,11 +19,14 @@ export function campaignWorld(root: string, context: Context): World
     });
 }
 
-/** The installed game system that campaign.yaml names; undefined when it names none, or one that is not installed (SYS-1). */
+/**
+ * The installed game system that campaign.yaml names, with what the campaign adds to it (CAM-1, CAM-2): alone when the additions do not read (CAM-3). Undefined
+ * when it names none, or one that is not installed (SYS-1).
+ */
 export function campaignSystem(root: string, context: Context): GameSystem | undefined
 {
     const name = readTextSetting(root, "system");
-    return name === undefined ? undefined : findSystem(context.systemFolders, name);
+    return name === undefined ? undefined : findCampaignSystem(context.systemFolders, name, readCampaignData(root)).system;
 }
 
 /** The occasions of a game system that end effects (DAT-5): those its recipes name, such as long rest. */
@@ -43,8 +46,14 @@ export function systemOccasions(root: string, context: Context): { system: strin
 export function systemProblems(root: string, context: Context): Problem[]
 {
     const name = readTextSetting(root, "system");
+    const found = name === undefined ? undefined : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
 
-    if (name === undefined || findSystem(context.systemFolders, name) !== undefined) {
+    // What the campaign adds that does not read: the campaign plays with the system alone (CAM-3).
+    if (found?.problem !== undefined) {
+        return [{ path: "campaign.yaml", message: `What campaign.yaml adds to the system ${name ?? ""} does not read, so the campaign plays with the system alone: ${found.problem}`, fix: "fix it with the config command, or by hand" }];
+    }
+
+    if (name === undefined || found?.system !== undefined) {
         return [];
     }
 

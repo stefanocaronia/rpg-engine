@@ -6,8 +6,8 @@ import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { createProof, fingerprint, rollDice, sha256 } from "../dice/index.ts";
-import { findPage, type Page, pagesWithName, type World } from "../pages/index.ts";
+import { createProof, DiceError, type DiceRoll, fingerprint, rollDice, sha256 } from "../dice/index.ts";
+import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
@@ -27,7 +27,7 @@ const namePattern = /(^|[+-])(\s*)([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)/g;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =
-    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; physical: boolean; hidden: boolean; fingerprint?: string; note?: string; }
+    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; physical: boolean; hidden: boolean; fingerprint?: string; note?: string; kept?: string; }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
 export const roll = defineCommand({
@@ -38,6 +38,8 @@ export const roll = defineCommand({
         + "When the player must not see the result, make it hidden; give the player its fingerprint only if they ask for it. reveal shows a hidden roll's proof later. "
         + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
         + "With who, a field of their sheet stands for its value, such as 1d20+athletics. "
+        + "keep writes the dice rolled in a field of who that keeps rolls for later, such as the two d20 of a diviner's Portent, rolled by the player; "
+        + "use takes one of those instead of the die, as field=value, from who or from the page in from, and logs which roll it replaced. "
         + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
     group: "game",
     positionals: ["notation"],
@@ -48,6 +50,9 @@ export const roll = defineCommand({
         values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
         hidden: z.boolean().optional().describe("only the master sees the result; its fingerprint goes to the player only if they ask for it"),
         reveal: z.string().optional().describe("id of a hidden roll to reveal"),
+        keep: z.string().optional().describe("a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held"),
+        use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
+        from: z.string().optional().describe("who keeps the roll that use takes, when it is not who rolls"),
     }),
 
     run(input, context): RollOutput
@@ -70,16 +75,24 @@ export const roll = defineCommand({
             throw new Error("Physical dice are rolled by the player, so they cannot be hidden.");
         }
 
+        if (input.use !== undefined && (input.keep !== undefined || input.values !== undefined || input.hidden === true)) {
+            throw new Error("A kept roll takes the place of the die: give use without keep or values, and not hidden.");
+        }
+
         const physical = input.values !== undefined;
         const system = campaignSystem(root, context);
         const roller = rollerOf(root, context, input.who, hasNames(input.notation));
         const named = withSheetValues(input.notation, roller, input.who, system);
-        const diceRoll = rollDice(named.notation, input.values ? { values: input.values } : { random: context.random });
+        const keeper = input.keep === undefined ? undefined : keptField(root, context, input.who, input.keep);
+        const used = input.use === undefined ? undefined : keptRoll(root, context, input.from ?? input.who, input.use);
+        const diceRoll = rollWith(named.notation, used, input.values ? { values: input.values } : { random: context.random });
         // The notation as it was given, with the values its names took from the sheet (DAT-8).
         const taken = Object.entries(named.taken).map(([field, value]) => `${field} ${roller === undefined ? value : signedText(roller.world, field, value)}`);
         const text = taken.length === 0 ? diceRoll.text : `${input.notation}${diceRoll.text.slice(diceRoll.notation.length)} (${taken.join(", ")})`;
         const sheet = taken.length === 0 ? {} : { sheet: named.taken };
-        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, physical };
+        const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
+        const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
+        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, physical, ...keeping, ...using };
         const entry = newDatedLogEntry(root, context, "roll", input.hidden ? "hidden" : "public", data);
         let shownFingerprint: string | undefined;
 
@@ -91,7 +104,8 @@ export const roll = defineCommand({
 
         appendLogEntry(root, entry);
         const note = roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
-        return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note };
+        const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
+        return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
     },
 
     format(output)
@@ -101,7 +115,7 @@ export const roll = defineCommand({
             return `Hidden roll ${output.id} revealed: ${output.text}. ${tell}\nProof: ${output.proof}\nSHA-256 of the proof: ${output.sha256} (it starts with the fingerprint ${output.fingerprint})`;
         }
 
-        const note = output.note === undefined ? "" : `\n${output.note}`;
+        const note = [output.kept, output.note].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
 
         if (output.hidden) {
             return `Hidden roll ${output.id}, only for the master: ${output.text}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
@@ -111,6 +125,97 @@ export const roll = defineCommand({
         return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${note}`;
     },
 });
+
+/** A field that keeps rolls for later on a page (KEP-1): what keep writes to, or use takes from. */
+interface KeptField
+{
+    world: World;
+    page: Page;
+    field: string;
+    values: number[];
+}
+
+/** The field of who rolls that keep writes to (KEP-2): a page's, declared as kept rolls. */
+function keptField(root: string, context: Context, who: string | undefined, field: string): KeptField
+{
+    if (who === undefined) {
+        throw new Error(`Give who rolls, whose ${field} keeps the dice, such as who Elara. Nothing rolled.`);
+    }
+
+    return keptOn(campaignWorld(root, context), who, field);
+}
+
+/** The kept roll that use names, such as portent=3, on who keeps it (KEP-3); refused, with the numbers the field holds, when it holds no such number. */
+function keptRoll(root: string, context: Context, holder: string | undefined, use: string): KeptField & { value: number; }
+{
+    const match = /^\s*([^=]+?)\s*=\s*([+-]?\d+)\s*$/.exec(use);
+
+    if (match === null) {
+        throw new Error(`Give use as the field and the kept number, such as portent=3, not "${use}". Nothing rolled.`);
+    }
+
+    if (holder === undefined) {
+        throw new Error(`Give who keeps the roll, with from or who, such as from Elara. Nothing rolled.`);
+    }
+
+    const kept = keptOn(campaignWorld(root, context), holder, match[1]);
+    const value = Number(match[2]);
+
+    if (!kept.values.includes(value)) {
+        throw new Error(`${kept.page.name} keeps no ${value} in ${kept.field}: it keeps ${kept.values.length === 0 ? "none" : kept.values.join(", ")}. Nothing rolled.`);
+    }
+
+    return { ...kept, value };
+}
+
+/** A page's field of kept rolls, with the numbers it holds; refused for a copy in the scene and for a field the system does not declare as kept rolls. */
+function keptOn(world: World, name: string, field: string): KeptField
+{
+    const page = findPage(world, name);
+
+    if (page === undefined) {
+        throw new Error(`There is no page named ${name} to keep rolls: kept rolls go on a character's page, not on a copy in the scene. Nothing rolled.`);
+    }
+
+    if (declaredKind(world, field) !== "rolls") {
+        throw new Error(`${field} keeps no rolls: declare it so first, such as config, setting fields, value "${field}: rolls". Nothing rolled.`);
+    }
+
+    const written = Object.entries(effectiveFields(world, page)).find(([key]) => comparableText(key) === comparableText(field));
+    const values = (Array.isArray(written?.[1]) ? written[1] : written?.[1] === undefined ? [] : [written[1]]).map(Number).filter((value) => Number.isFinite(value));
+    return { world, page, field: written?.[0] ?? field, values };
+}
+
+/** The roll, with a kept number in place of its one die when use gives one (KEP-3). */
+function rollWith(notation: string, used: { value: number; } | undefined, source: { values: number[]; } | { random(sides: number): number; }): DiceRoll
+{
+    if (used === undefined) {
+        return rollDice(notation, source);
+    }
+
+    try {
+        return rollDice(notation, { values: [used.value] });
+    } catch (error) {
+        const why = error instanceof DiceError ? error.message : String(error);
+        throw new Error(`A kept roll takes the place of one die: give a notation with one, such as 1d20+2 (${why}). Nothing rolled.`);
+    }
+}
+
+/** Writes the dice rolled in the field of kept rolls, in place of what it held (KEP-2), and says so. */
+function keepFaces(kept: KeptField, faces: number[]): string
+{
+    writePage(kept.world, kept.page.name, undefined, { set: { [kept.field]: faces } });
+    return `${kept.page.name} keeps in ${kept.field}: ${faces.join(", ")}${kept.values.length === 0 ? "" : `, in place of ${kept.values.join(", ")}`}.`;
+}
+
+/** Takes the kept number used from its field (KEP-3), and says what is left. */
+function takeKept(kept: KeptField & { value: number; }): string
+{
+    const left = [...kept.values];
+    left.splice(left.indexOf(kept.value), 1);
+    writePage(kept.world, kept.page.name, undefined, left.length === 0 ? { unset: [kept.field] } : { set: { [kept.field]: left } });
+    return `${kept.value} from ${kept.page.name}'s ${kept.field} took the place of the die; ${left.length === 0 ? "none is left" : `left: ${left.join(", ")}`}.`;
+}
 
 /**
  * The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. Without names to
