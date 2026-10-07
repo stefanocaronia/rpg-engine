@@ -164,6 +164,8 @@ describe("field values", () => {
         expect(readFieldValue("{ value: 7, max: 12 }")).toEqual({ value: 7, max: 12 });
         expect(readFieldValue("nella cripta: #2")).toBe("nella cripta: #2");
         expect(readFieldValue("[[Rossi, Mario]], [[Varro]]")).toEqual(["[[Rossi, Mario]]", "[[Varro]]"]);
+        expect(readFieldValue("[[Fighter]] 3, [[Wizard]] 2")).toEqual(["[[Fighter]] 3", "[[Wizard]] 2"]);
+        expect(readFieldValue("[[La cripta]], piano inferiore")).toBe("[[La cripta]], piano inferiore");
     });
 
     it("keeps as plain text what does not read as YAML", () => {

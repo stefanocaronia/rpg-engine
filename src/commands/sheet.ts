@@ -219,11 +219,17 @@ function valueText(world: World, field: string, value: unknown): string
 
     // Items with commas of their own are told apart by semicolons.
     if (Array.isArray(value)) {
-        const items = value.map((item) => String(item).trim());
+        const items = value.map((item) => linkText(String(item).trim()));
         return items.join(items.some((item) => item.includes(",")) ? "; " : ", ");
     }
 
-    return typeof value === "object" && value !== null ? JSON.stringify(value) : String(value).trim();
+    return typeof value === "object" && value !== null ? JSON.stringify(value) : linkText(String(value).trim());
+}
+
+/** "Cleric 3" for "[[Cleric]] 3": a sheet reads as on paper, with the name or label of a link. */
+function linkText(text: string): string
+{
+    return text.replace(/\[\[(?:[^\]|]*\|)?([^\]|]+)\]\]/g, "$1");
 }
 
 function readField(fields: Record<string, unknown>, field: string): unknown

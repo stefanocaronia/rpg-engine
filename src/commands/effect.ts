@@ -370,7 +370,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     const limits = readCounter(value)?.max === undefined ? {} : counterLimits(world, fields, field);
 
     if (limits.max !== undefined && readCounter(value)?.max !== limits.max) {
-        const from = maximumSources(world, field);
+        const from = maximumSources(world, field, fields);
         throw new Error(
             `The maximum of ${field} on ${page.name} is worked out by the system ${world.system?.name ?? ""}: ${limits.max}, from ${from.join(", ")}. Give the effect the current value alone, such as ${field}=${
                 readCounter(value)?.value ?? 0

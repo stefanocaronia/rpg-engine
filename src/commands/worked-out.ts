@@ -90,30 +90,37 @@ export function computedField(world: World, field: string, fields: Record<string
 
     // Of several formulas, the one that gave the value says what it comes from (D-210).
     const used = entry[1].kind === "first" ? (entry[1].options.find((option) => workOut(option, scope).value !== undefined) ?? entry[1]) : entry[1];
-    return { name: entry[0], value, from: writtenSources(world, used) };
+    return { name: entry[0], value, from: writtenSources(world, used, scope) };
 }
 
-/** The written fields the maximum of a counter comes from, as hp-base, level and con for hp (FOR-6); none when the system works out no maximum for it. */
-export function maximumSources(world: World, field: string): string[]
+/** The written fields the maximum of a counter comes from with these fields, as hp-base, level and con for hp (FOR-6); none when the system works out no maximum. */
+export function maximumSources(world: World, field: string, fields: Record<string, unknown>): string[]
 {
     const max = Object.entries(world.system?.formulas?.counters ?? {}).find(([name]) => comparableText(name) === comparableText(field.trim()))?.[1].max;
-    return max === undefined ? [] : writtenSources(world, max);
+    return max === undefined ? [] : writtenSources(world, max, formulaScope(world, fields));
 }
 
-/** The written fields a formula comes from, through the computed fields it reads: what can be changed, as wis for passive-perception (FOR-7). */
-function writtenSources(world: World, formula: Formula, seen = new Set<string>()): string[]
+/**
+ * The written fields a formula comes from, through the computed fields it reads that have a value: what can be changed, as wis for passive-perception, and
+ * level where the page writes it, having no classes (FOR-7).
+ */
+function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof formulaScope>, seen = new Set<string>()): string[]
 {
     const formulas = world.system?.formulas;
     const index = formulas === undefined ? undefined : formulaIndex(formulas);
     const sources = fieldsRead(formula).flatMap((name) => {
         const entry = index?.computed.get(comparableText(name));
 
-        if (entry === undefined || seen.has(comparableText(name))) {
-            return entry === undefined ? [name] : [];
+        if (entry === undefined || scope.computed(name)?.value === undefined) {
+            return [name];
+        }
+
+        if (seen.has(comparableText(name))) {
+            return [];
         }
 
         seen.add(comparableText(name));
-        return writtenSources(world, entry[1], seen);
+        return writtenSources(world, entry[1], scope, seen);
     });
     return sources.filter((name, position) => sources.findIndex((other) => comparableText(other) === comparableText(name)) === position);
 }
@@ -158,7 +165,8 @@ export function workedParts(world: World, reads: FormulaRead[]): string
             return read.value === 0 ? [] : [read.value === 1 && !/\d/.test(read.item) ? `${read.item} in ${read.list}` : `${read.item} ${read.value} in ${read.list}`];
         }
 
-        return [`${read.value} in ${read.list}`];
+        // The total of a list says nothing more beside one of its items: "Cleric 3 in classes".
+        return reads.some((other) => "item" in other && other.list === read.list && other.value !== 0) ? [] : [`${read.value} in ${read.list}`];
     });
     // "Perception in skills" says nothing more beside "Perception 3 in skills".
     const named = (part: string): boolean => parts.some((other) => other !== part && other.startsWith(part.replace(/ in [^ ]+$/, " ")) && other.endsWith(part.slice(part.lastIndexOf(" in "))));

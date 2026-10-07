@@ -28,7 +28,7 @@ function ettore(): string[]
 {
     const fields = [
         "role=pc",
-        "level=3",
+        "classes=[[Cleric]] 3",
         "xp=900",
         "str=14",
         "dex=8",
@@ -40,7 +40,7 @@ function ettore(): string[]
         "hp=20/24",
         "ac=18",
         "speed=25 ft.",
-        "hit-dice=3/3",
+        "hit-dice-d8=3/3",
         "save-proficiencies=[wis, cha]",
         "skill-proficiencies=[Insight, Religion]",
         "languages=[Common, Dwarvish]",
@@ -78,13 +78,13 @@ describe("the sheet in show (DAT-2, D-207)", () => {
     it("gives a player character's sheet in the system's groups, a modifier beside its score, and the fields as written without what the sheet shows", async () => {
         const shown = await ok("show", "Ettore");
         expect(shown).toContain([
-            "Character: level 3 · xp 900",
+            "Character: classes Cleric 3 · level 3 · xp 900",
             "Personality: personality-traits Cito le scritture, sempre.",
             "Abilities: str 14 (+2) · dex 8 (-1) · con 15 (+2) · int 10 (+0) · wis 16 (+3) · cha 12 (+1) · proficiency +2",
             "Saving Throws: str-save +2 · dex-save -1 · con-save +2 · int-save +0 · wis-save +5 · cha-save +3",
             "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 · intimidation +1 · investigation +0 · "
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 · sleight-of-hand -1 · stealth -1 · survival +3",
-            "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice 3/3 · passive-perception 13",
+            "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             "",
             "---\nrole: pc\numore: sereno\n---",
@@ -110,7 +110,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         expect(await ok("show", "Ettore#combat")).toBe([
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
-            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice 3/3: the maximum from level 3",
+            "ac 18\ninitiative -1: dex-mod -1\nspeed 25 ft.\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from Cleric 3 in classes",
             "passive-perception 13: perception +3",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
@@ -139,7 +139,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
 describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
     it("says once, when a character joins the party, what the sheet lacks and the system's notes; what is written only when it applies is never reminded", async () => {
         const joined = await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "level=1");
-        expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, hit-dice, save-proficiencies, skill-proficiencies, languages.");
+        expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, ac, speed, hp-base, hp, save-proficiencies, skill-proficiencies, languages.");
         expect(joined).toContain(
             "Personality: a player character's personality traits, ideal, bond and flaw are the player's, in their words, with links to what they name: propose some if they ask, "
                 + "never write one they did not choose. A companion's are yours to write in the companion's voice, from what the story has shown; ask the player only for a "
@@ -148,7 +148,7 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         expect(joined).toContain("Combat: hp-base is the hit points the class's hit dice gave at each level, without Constitution:");
         expect(await ok("write", "Mira", "--set", "xp=0")).not.toContain("Personality");
         const status = await ok("status");
-        expect(status).toContain("Mira's sheet still lacks, by these names: str, dex,");
+        expect(status).toContain("Mira's sheet still lacks, by these names: classes, str, dex,");
         expect(status).not.toMatch(/personality|inspiration|temp-hp|exhaustion|expertise/);
         expect(await ok("write", "Rosa", "--type", "character", "--set", "role=npc")).toBe("Created Rosa (character, world/characters/Rosa.md): set role.");
     });
@@ -270,7 +270,7 @@ describe("what the review of 7 October put right", () => {
 
     it("follows the 5e: hit points at every level, a hit die for each level, expertise only where proficient, inspiration up to 1", async () => {
         expect(await ok("write", "Ettore", "--set", "hp-per-level=1")).toContain("hp max 24 → 27 (hp-base 18, level 3, con-mod +2, hp-per-level +1): worked out by the system 5e.");
-        expect(await ok("write", "Ettore", "--set", "level=4")).toContain("hit-dice max 3 → 4 (level 4)");
+        expect(await ok("write", "Ettore", "--set", "classes=[[Cleric]] 4")).toContain("hit-dice-d8 max 3 → 4 (Cleric 4 in classes)");
         await ok("write", "Ettore", "--add", "expertise=Stealth", "--add", "expertise=Insight");
         const shown = await ok("show", "Ettore");
         expect(shown).toContain("insight +7");
@@ -284,7 +284,7 @@ describe("what the review of 7 October put right", () => {
         await ok("effect", "add", "Ettore", "Cloak of Protection", "--set", "bonus-saves=1");
         expect(await ok("show", "Ettore")).toContain("wis-save +7");
         expect(await refused("effect", "add", "Ettore", "Aid", "--set", "hp=25/31")).toBe(
-            "The maximum of hp on Ettore is worked out by the system 5e: 24, from hp-base, level, con, hp-per-level. Give the effect the current value alone, such as hp=25, "
+            "The maximum of hp on Ettore is worked out by the system 5e: 24, from hp-base, classes, con, hp-per-level, subclasses. Give the effect the current value alone, such as hp=25, "
                 + "or one of those fields, such as hp-base. Nothing changed.",
         );
     });
@@ -334,6 +334,45 @@ describe("races and subraces of the SRD (D-201, SYS-2)", () => {
         expect(await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "creature=[[Human]]", "--set", "level=2")).toContain("Lena's sheet of the system 5e still lacks");
         expect(await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]")).not.toContain("still lacks");
         expect(await ok("show", "Zanna")).not.toContain("Abilities:");
+    });
+});
+
+describe("classes and subclasses of the SRD (D-201)", () => {
+    it("works out the level from the classes and counts hit dice by each class's die, for a character of two classes", async () => {
+        await ok("write", "Aria", "--type", "character", "--set", "role=pc", "--set", "creature=[[Human]]", "--set", "con=14", "--set", "hp-base=30", "--set", "hp=40", "--set", "hit-dice-d6=1");
+        expect(await ok("write", "Aria", "--set", "classes=[[Fighter]] 3, [[Wizard]] 2", "--set", "subclasses=[[Champion]]", "--set", "hit-dice-d10=3")).toContain(
+            "hit-dice-d6 max none → 2 (Wizard 2 in classes)",
+        );
+        const shown = await ok("show", "Aria");
+        expect(shown).toContain("Character: classes Fighter 3, Wizard 2 · subclasses Champion · level 5");
+        expect(shown).toContain("Abilities: con 14 (+2) · proficiency +3");
+        expect(shown).toContain("hp 40/40 · hit-dice-d6 1/2 · hit-dice-d10 3/3");
+        expect(await refused("write", "Aria", "--set", "level=6")).toContain("Not written, the system 5e works it out: level 5 (you gave 6). They come from classes.");
+        expect(await ok("validate")).not.toContain("Aria");
+    });
+
+    it("adds a hit point at every sorcerer level for the Draconic Bloodline (p. 45)", async () => {
+        const written = await ok(
+            "write",
+            "Sera",
+            "--type",
+            "character",
+            "--set",
+            "role=companion",
+            "--set",
+            "creature=[[Rock Gnome]]",
+            "--set",
+            "classes=[[Sorcerer]] 3",
+            "--set",
+            "subclasses=[[Draconic Bloodline]]",
+            "--set",
+            "con=12",
+            "--set",
+            "hp-base=14",
+            "--set",
+            "hp=1",
+        );
+        expect(written).toContain("hp max none → 20 (hp-base 14, level 3, con-mod +1, Draconic Bloodline in subclasses, Sorcerer 3 in classes)");
     });
 });
 
