@@ -27,7 +27,8 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
-    "lint": "eslint . && dprint check && tsc -p tsconfig.test.json"
+    "lint": "eslint . && dprint check && tsc -p tsconfig.test.json",
+    "docs": "node --experimental-strip-types --input-type=module -e \"import { writeFileSync } from 'node:fs'; import { commands } from './src/commands/index.ts'; import { commandReference } from './src/core/command-reference.ts'; writeFileSync('docs/commands.md', commandReference(commands));\""
   },
   "engines": {
     "node": ">=22"
