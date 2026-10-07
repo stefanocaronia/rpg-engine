@@ -20,11 +20,13 @@ import {
     textParts,
     type World,
 } from "../pages/index.ts";
+import { featureParts } from "../progression/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { featureSource, progressionOf } from "./progression.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./sheet.ts";
 import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./worked-out.ts";
 
@@ -74,6 +76,7 @@ export const show = defineCommand({
         }
 
         const { chain, alsoIn } = isCopy ? { chain: [], alsoIn: [] } : locate(world, page);
+        const sheet = group?.lines ?? (reference.section === undefined ? sheetLines(world, system, page) : []);
         const inherited = inheritedByBase(world, page);
         return {
             page: page.name,
@@ -88,8 +91,9 @@ export const show = defineCommand({
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
             around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
-            sheet: group?.lines ?? (reference.section === undefined ? sheetLines(world, system, page) : []),
-            onSheet: sheetFieldNames(system, page),
+            sheet,
+            featureHint: sheet.length === 0 || group !== undefined ? undefined : featureHint(world, page),
+            onSheet: sheetFieldNames(world, system, page),
             fields: reference.section === undefined ? page.fields : undefined,
             covered: coveredValues(world, page),
             worked: reference.section === undefined ? workedFields(world, effectiveFields(world, page), true).map((worked) => ({ field: worked.field, line: workedLine(world, worked), repeats: repeatsRead(world, worked) })) : [],
@@ -97,6 +101,7 @@ export const show = defineCommand({
             systemName: world.system?.name,
             derivesFrom: baseChain(world, page).map(nameWithSystem),
             sectionFrom: part?.from,
+            featureOf: part?.feature === true,
             inherited: reference.section === undefined
                 ? inherited.map((group) => ({
                     from: nameWithSystem(group.base),
@@ -134,13 +139,17 @@ export const show = defineCommand({
             result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: move it where it is, such as move, page ${result.page}, to ${result.isIn[0]}.` : "",
             result.around === "" ? "" : `Around: ${result.around}`,
             result.derivesFrom.length > 0 ? `Derives from: ${result.derivesFrom.join(" › ")}` : "",
-            result.sectionFrom === undefined ? "" : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
+            result.sectionFrom === undefined
+                ? ""
+                : result.featureOf
+                ? `A feature of ${result.page}, from ${result.sectionFrom}.`
+                : `Inherited from ${result.sectionFrom}: ${result.page} has no section or secret of its own by this name.`,
             result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`,
         ].filter((line) => line !== "").join("\n");
         // What a character's sheet shows is not said again with the fields as written (D-207).
         const onSheet = new Set(result.onSheet.map(comparableText));
         const offSheet = (fields: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(fields).filter(([field]) => !onSheet.has(comparableText(field))));
-        const sheet = result.sheet.join("\n");
+        const sheet = [...result.sheet, ...(result.featureHint === undefined ? [] : [result.featureHint])].join("\n");
         const own = offSheet(result.fields ?? {});
         const fields = Object.keys(own).length > 0 ? `---\n${formatFields(own)}\n---` : "";
         // A value that only repeats the one it comes from, as a creature's athletics its str-mod, is not said again.
@@ -187,7 +196,7 @@ function coveredValues(world: World, page: Page): string[]
 }
 
 /** A section or secret of a page; when it has none by that name, the one of its nearest base that has it (INH-13); undefined when none has it. */
-function findPart(world: World, page: Page, name: string): { text: string; from?: string; } | undefined
+function findPart(world: World, page: Page, name: string): { text: string; from?: string; feature?: true; } | undefined
 {
     const own = readSection(page.body, name);
 
@@ -207,7 +216,17 @@ function findPart(world: World, page: Page, name: string): { text: string; from?
         }
     }
 
-    return undefined;
+    // A feature the character's classes give, with the text of the page that tells it (PRO-4).
+    const source = featureSource(progressionOf(world, effectiveFields(world, page)), name);
+    const text = source === undefined ? undefined : readSection(source.page.body, source.title);
+    return source === undefined || text === undefined ? undefined : { text, from: source.page.name, feature: true };
+}
+
+/** "show Ettore#Rage gives the text of a feature.": said under a sheet that lists features (PRO-4). */
+function featureHint(world: World, page: Page): string | undefined
+{
+    const [first] = progressionOf(world, effectiveFields(world, page))?.features ?? [];
+    return first === undefined ? undefined : `show ${page.name}#${featureParts(first.name).name} gives the text of a feature.`;
 }
 
 /** Lists a page's sections and secrets, and those it shows from its bases, for an error message. */

@@ -220,6 +220,24 @@ counters:
 
 When the system loads, every formula must read, name only tables it has, and computed fields must not read each other in a circle; a field given twice in different cases is refused. The error names the place: `computed.insight: "wis-mod +" is not a formula: …`.
 
+### progression
+
+How the classes of a character give the row of their table at the level the character has in each, and the features gained so far:
+
+```yaml
+progression:
+  list: classes
+  features: Features
+  skip: [Proficiency Bonus, 1st, 2nd, 3rd, 4th, 5th, 6th, 7th, 8th, 9th]
+  parts: {list: subclasses, field: class}
+```
+
+- `list`: the list whose items name a page with a number, `[[Barbarian]] 3`. The page's first table that has the `features` column and whose first column counts levels (`1st`, `2nd`… or `1`, `2`…) gives its row 3.
+- Every other column of the row is a field of the character, named in lowercase with hyphens (Rage Damage gives `rage-damage +2`), except those in `skip`; an empty cell or a dash gives nothing. Two classes with the same column add up their numbers. These fields are worked out like computed ones: never written, refused by `change` and `effect`, read by formulas.
+- `features`: the column of the features. The rows up to the level give them, each once: one written again with a value in parentheses takes the place of the earlier (`Bardic Inspiration (d8)`). Only names that are titles of the page's sections count, also when the column has the singular (`Signature Spell` for `Signature Spells`): "Path feature" or "Wild Shape improvement" do not.
+- `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class.
+- The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the new features and the values that change. `validate` reports a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
+
 ## 4. The formula language
 
 | Form | Gives | Example |
@@ -260,7 +278,7 @@ Every command that shows or changes a page's fields reads it in four layers ([ef
 1. **Bases.** A character or creature derives from the creature its `creature` field links to, an item from the item in its `item` field, and so on up the chain. The farthest base is read first and a nearer one wins. Some fields are never inherited: `role`, `status`, `creature`, `item`, `inventory`, `knows`, `factions`, `contains`, `date`, `place`, `tags`, `aliases`, `effects`. Every other field is, those a system declares included. An empty value counts as missing.
 2. **The page**, over its bases. A field written in another case is the same field.
 3. **Effects**, in the page's `effects` field: the newest that gives a field wins; a `bonus` adds up the page's value and every effect's.
-4. **Formulas**: each computed field with a value takes it, and each counter with a worked-out maximum takes that maximum.
+4. **What the system works out**: the fields the rows of the classes give and the features (`progression`), then each computed field with a value, and each counter with a worked-out maximum takes that maximum.
 
 The maximum written in the file is worked out from the page without its effects; the one shown, from the page with them. A copy of a creature in the open scene reads as a page that derives from its creature.
 

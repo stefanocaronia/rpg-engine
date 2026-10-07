@@ -87,6 +87,9 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
             "Combat: ac 18 · initiative -1 · speed 25 ft. · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
+            // The cleric's table gives its features and its other columns (D-219).
+            "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3",
+            "show Ettore#Spellcasting gives the text of a feature.",
             "",
             "---\nrole: pc\numore: sereno\n---",
         ].join("\n"));
@@ -123,7 +126,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
-            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies.',
+            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features.',
         );
     });
 
@@ -232,7 +235,9 @@ describe("rolls from the sheet (DAT-8)", () => {
             "There is no page named Bruno, nor a copy of that name in the open scene, to take athletics from: give who as the name of a character, or the number in the notation.",
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
-        expect(subtraction).toMatch(/^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10\. Give one of them, or the number, such as 1d20\+5\./);
+        expect(subtraction).toMatch(
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, cantrips-known 3\. Give one of them, or the number, such as 1d20\+5\./,
+        );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");
         expect(await refused("roll", "1d20+str", "--who", "Ettore")).toBe(

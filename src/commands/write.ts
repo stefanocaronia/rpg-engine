@@ -61,6 +61,7 @@ import {
     writePage,
     writtenFieldName,
 } from "../pages/index.ts";
+import { featureParts } from "../progression/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
@@ -69,6 +70,7 @@ import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScen
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemBaseHint, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+import { progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
 import { computedField, counterLimits, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
@@ -247,7 +249,14 @@ export const write = defineCommand({
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? joiningNotes(system, now, page) : [];
-        return { ...result, followers: followers.pages.map((follower) => follower.name), followersWhy: followers.why, notes: [...story, ...notes, ...dropped, ...limits.notes, ...sheet, ...moneyNotes], problems: world.problems };
+        const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page) : [];
+        return {
+            ...result,
+            followers: followers.pages.map((follower) => follower.name),
+            followersWhy: followers.why,
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...sheet, ...moneyNotes],
+            problems: world.problems,
+        };
     },
 
     format(result)
@@ -940,6 +949,36 @@ function withoutComputed(world: World, target: Page | undefined, set: Record<str
     const bonus = bonuses.length === 0 ? "" : ` A bonus such as ${bonuses[0]} comes from an effect, for what gives one, such as a magic item.`;
     const note = `Not written, the system ${world.system?.name ?? ""} works ${computed.length === 1 ? "it" : "them"} out: ${values.join("; ")}. They come from ${sources.join(", ")}.${bonus}`;
     return { set: kept, note };
+}
+
+/**
+ * What a change of classes gives or takes (PRO-4): "Ettore's features: Reckless Attack, Danger Sense are new; rage-damage +2 → +3", with how to read one. Nothing
+ * when the classes give the same.
+ */
+function progressionNotes(before: World, after: World, existing: Page, page: Page): string[]
+{
+    const was = progressionOf(before, effectiveFields(before, existing));
+    const is = progressionOf(after, effectiveFields(after, page));
+    const names = (progression: typeof was): string[] => (progression?.features ?? []).map((feature) => feature.name);
+    const gained = names(is).filter((name) => !names(was).some((other) => comparableText(other) === comparableText(name)));
+    const lost = names(was).filter((name) => !names(is).some((other) => comparableText(featureParts(other).name) === comparableText(featureParts(name).name)));
+
+    const valueOf = (progression: typeof was, field: string): string | undefined => {
+        const found = progression?.values.find((value) => comparableText(value.field) === comparableText(field));
+        return found === undefined ? undefined : signedText(after, found.field, found.value);
+    };
+
+    const fields = [...new Set([...(was?.values ?? []), ...(is?.values ?? [])].map((value) => value.field))];
+    const values = fields.flatMap((field) => {
+        const [from, to] = [valueOf(was, field), valueOf(is, field)];
+        return from === to ? [] : [`${field} ${from ?? "none"} → ${to ?? "none"}`];
+    });
+    const parts = [
+        gained.length === 0 ? "" : `${gained.join(", ")} ${gained.length === 1 ? "is" : "are"} new (show ${page.name}#${featureParts(gained[0]).name} gives one)`,
+        lost.length === 0 ? "" : `no longer ${lost.join(", ")}`,
+        values.join(", "),
+    ].filter((part) => part !== "");
+    return parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ")}.`];
 }
 
 /** The counters of a page whose written maximum is not what the game system works out from the page without its effects, set to it, and a note (FOR-6). */

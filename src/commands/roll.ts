@@ -192,7 +192,8 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
     const number = numberOf(value);
 
     if (value === undefined) {
-        const numbers = workedFields(roller.world, fields).map((worked) => `${worked.field} ${signedText(roller.world, worked.field, worked.value)}`);
+        // Only numbers: a class's martial-arts 1d6 or its features are no bonus (PRO-2).
+        const numbers = workedFields(roller.world, fields).filter((worked) => numberOf(worked.value) !== undefined).map((worked) => `${worked.field} ${signedText(roller.world, worked.field, worked.value)}`);
         const has = numbers.length === 0 ? "" : ` Its numbers: ${numbers.join(", ")}.`;
         const subtraction = /-\d+$/.test(name) ? " To subtract, put spaces around the minus, such as 1d20+athletics - 1." : "";
         const hyphens = words ? " A name of several words is written with hyphens, such as sleight-of-hand." : "";

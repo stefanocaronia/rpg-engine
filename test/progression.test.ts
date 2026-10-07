@@ -1,0 +1,178 @@
+// The rows of their tables that the classes of a character give, and its features (D-201, D-219, PRO-1–PRO-4): the module on tables, then the commands on the 5e.
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runCommandLine } from "../src/command-line.ts";
+import type { Context } from "../src/core/context.ts";
+import { fieldName, gainedFeatures, levelledFeatures, levelTable, mergedFeatures, rowFields } from "../src/progression/index.ts";
+import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+
+const classPage = [
+    "**The Bard**",
+    "",
+    "| d6 | Mood |",
+    "|---|---|",
+    "| 1 | Sad |",
+    "",
+    "| Level | Proficiency Bonus | Features | Inspirations | Song \\| Die |",
+    "|---|---|---|---|---|",
+    "| 1st | +2 | Inspiration (d6), Path feature | 1 | — |",
+    "| 2nd | +2 | Jack of All Trade | 2 | d6 |",
+    "| 3rd | +2 | Inspiration (d8), Wild improvement | — | d8 |",
+    "",
+    "## Features",
+    "### Inspiration",
+    "### Jack of All Trades",
+].join("\n");
+
+describe("the table of levels (PRO-1–PRO-3)", () => {
+    const table = levelTable(classPage, "Features");
+    const titles = ["Inspiration", "Jack of All Trades"];
+    const title = (name: string): string | undefined => titles.find((candidate) => [name.toLowerCase(), `${name.toLowerCase()}s`].includes(candidate.toLowerCase()));
+
+    it("reads the first table with the features column whose first column counts levels, past a table of a die; a bar written \\| stays in its cell", () => {
+        expect(table?.columns).toEqual(["Level", "Proficiency Bonus", "Features", "Inspirations", "Song | Die"]);
+        expect([...(table?.rows.keys() ?? [])]).toEqual([1, 2, 3]);
+        expect(levelTable("| Level | Features |\n|---|---|\n| 1 | Rage |\n| 2 | — |", "features")?.rows.get(2)).toEqual(["2", "—"]);
+        expect(levelTable("| Name | Features |\n|---|---|\n| Rope | Knots |", "Features")).toBeUndefined();
+        expect(levelTable("| Level | Cost |\n|---|---|\n| 1 | 5 |", "Features")).toBeUndefined();
+    });
+
+    it("gives the columns of a row as fields, but the first and those skipped; an empty cell or a dash gives nothing", () => {
+        expect(rowFields(table!, 2, ["Proficiency Bonus", "Features"])).toEqual([["inspirations", "2"], ["song-die", "d6"]]);
+        expect(rowFields(table!, 1, ["proficiency bonus", "features"])).toEqual([["inspirations", "1"]]);
+        expect(rowFields(table!, 4, [])).toEqual([]);
+        expect(fieldName("Rage Damage")).toBe("rage-damage");
+        expect(fieldName(" Max. CR ")).toBe("max-cr");
+    });
+
+    it("gives the features up to a level, only those that are titles of the page, as the page titles them", () => {
+        expect(gainedFeatures(table!, "Features", 3, title)).toEqual([
+            { level: 1, name: "Inspiration (d6)" },
+            { level: 2, name: "Jack of All Trades" },
+            { level: 3, name: "Inspiration (d8)" },
+        ]);
+        expect(gainedFeatures(table!, "Features", 1, title)).toEqual([{ level: 1, name: "Inspiration (d6)" }]);
+        expect(gainedFeatures(table!, "Talents", 3, title)).toEqual([]);
+    });
+
+    it("keeps each feature once: a later value in parentheses takes the place of the earlier, a later name without one does not", () => {
+        const merged = mergedFeatures([
+            { level: 1, name: "Inspiration (d6)" },
+            { level: 2, name: "Jack of All Trades" },
+            { level: 3, name: "Inspiration (d8)" },
+            { level: 3, name: "inspiration" },
+        ]);
+        expect(merged.map((feature) => feature.name)).toEqual(["Inspiration (d8)", "Jack of All Trades"]);
+    });
+
+    it("reads the features a part lists with their levels, and marks those without one", () => {
+        expect(levelledFeatures(["Improved Critical 3", "Channel Divinity: Preserve Life 2", "Survivor"])).toEqual([
+            { level: 3, name: "Improved Critical" },
+            { level: 2, name: "Channel Divinity: Preserve Life" },
+            undefined,
+        ]);
+    });
+});
+
+describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
+    let folder: string;
+    let context: Context;
+
+    beforeEach(async () => {
+        folder = makeTempFolder();
+        context = testContext(folder);
+        await ok("init", "--name", "Prova", "--system", "5e", "--language", "en", "--difficulty", "normal", "--lethality", "dice");
+        await ok(
+            "write",
+            "Brann",
+            "--type",
+            "character",
+            ...["role=pc", "creature=[[Human]]", "classes=[[Barbarian]] 3", "subclasses=[[Path of the Berserker]]", "str=16", "dex=14", "con=15", "int=8", "wis=12", "cha=10"]
+                .flatMap((field) => ["--set", field]),
+        );
+    });
+
+    afterEach(() => removeFolder(folder));
+
+    async function ok(...args: string[]): Promise<string>
+    {
+        const result = await runCommandLine(args, context);
+        expect(result.exitCode, result.output).toBe(0);
+        return result.output;
+    }
+
+    async function refused(...args: string[]): Promise<string>
+    {
+        const result = await runCommandLine(args, context);
+        expect(result.exitCode, result.output).toBe(1);
+        return result.output;
+    }
+
+    it("gives the row of the class's table and the features up to the level, with the subclass's at the level of its class", async () => {
+        const shown = await ok("show", "Brann");
+        expect(shown).toContain("Features: features Rage, Unarmored Defense, Reckless Attack, Danger Sense, Primal Path, Frenzy · rages 3 · rage-damage +2");
+        expect(shown).toContain("show Brann#Rage gives the text of a feature.");
+        expect(await ok("show", "Brann#Features")).toContain(
+            "features Rage, Unarmored Defense, Reckless Attack, Danger Sense, Primal Path, Frenzy: Barbarian 3 in classes, Path of the Berserker in subclasses\n"
+                + "rages 3: Barbarian 3 in classes\nrage-damage +2: Barbarian 3 in classes",
+        );
+    });
+
+    it("gives the text of a feature from the page that tells it", async () => {
+        const rage = await ok("show", "Brann#rage");
+        expect(rage).toContain("A feature of Brann, from Barbarian.");
+        expect(rage).toContain("In battle, you fight with primal ferocity.");
+        expect(await ok("show", "Brann#Frenzy")).toContain("A feature of Brann, from Path of the Berserker.");
+        // A feature of a level not reached yet is not Brann's.
+        expect(await refused("show", "Brann#Mindless Rage")).toContain('Brann has no section or secret "Mindless Rage".');
+    });
+
+    it("says what a new level gives, and a later value in parentheses replaces the earlier", async () => {
+        expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 9")).toContain(
+            "What Brann's classes give: Ability Score Improvement, Extra Attack, Fast Movement, Mindless Rage, Feral Instinct, Brutal Critical (1 die) are new "
+                + "(show Brann#Ability Score Improvement gives one); rages 3 → 4, rage-damage +2 → +3.",
+        );
+        await ok("write", "Brann", "--set", "classes=[[Barbarian]] 13");
+        expect(await ok("show", "Brann")).toContain("Brutal Critical (2 dice)");
+        expect(await ok("write", "Brann", "--set", "classes=[[Barbarian]] 13")).not.toContain("What Brann's classes give");
+    });
+
+    it("adds up the same column of two classes, and keeps a feature two classes give once", async () => {
+        const written = await ok("write", "Brann", "--set", "classes=[[Bard]] 2, [[Wizard]] 1, [[Cleric]] 6", "--set", "subclasses=[[Life Domain]]");
+        expect(written).toContain("cantrips-known none → 9");
+        const shown = await ok("show", "Brann");
+        expect(shown).toContain("Channel Divinity (2/rest)");
+        expect(shown).toContain("Jack of All Trades");
+        expect(shown).not.toContain("Divine Domain feature");
+        expect(shown).not.toContain("Frenzy");
+    });
+
+    it("never writes what the classes give, and refuses to change it", async () => {
+        const written = await ok("write", "Brann", "--set", "rage-damage=+3", "--set", "features=[Rage]", "--set", "xp=900");
+        expect(written).toContain("Not written, the system 5e works them out: rage-damage +2 (you gave +3); features Rage, Unarmored Defense");
+        expect(written).toContain("They come from classes, subclasses.");
+        expect(await refused("effect", "add", "Brann", "Furia sacra", "--set", "rage-damage=+4")).toBe(
+            "rage-damage on Brann is what its classes and subclasses give, from the tables of their pages: an effect cannot change it. Nothing changed.",
+        );
+    });
+
+    it("works the same with a class and a subclass the campaign writes (D-216)", async () => {
+        const table = "| Level | Proficiency Bonus | Features | Blood Maledict |\n|---|---|---|---|\n| 1st | +2 | Hunter's Bane | — |\n| 2nd | +2 | Crimson Rite, Path feature | 1 |";
+        await ok("write", "Blood Hunter", "--type", "topic", "--set", "category=class", "--set", "hit-die=d10", "--text", `${table}\n\n### Hunter's Bane\nYou track.\n\n### Crimson Rite\nYou bleed.`);
+        await ok("write", "Order of the Lycan", "--type", "topic", "--set", "category=subclass", "--set", "class=[[Blood Hunter]]", "--set", "features=[Heightened Senses 2]", "--text", "### Heightened Senses\nYou smell.");
+        await ok("write", "Vex", "--type", "character", "--set", "role=companion", "--set", "classes=[[Blood Hunter]] 2", "--set", "subclasses=[[Order of the Lycan]]");
+        const shown = await ok("show", "Vex");
+        expect(shown).toContain("Features: features Hunter's Bane, Crimson Rite, Heightened Senses · blood-maledict 1");
+        expect(await ok("show", "Vex#Heightened Senses")).toContain("You smell.");
+    });
+
+    it("has validate report a class without a table of levels or a row, and a subclass that gives nothing", async () => {
+        await ok("write", "Blood Hunter", "--type", "topic", "--set", "category=class", "--text", "No table here.");
+        await ok("write", "Order of the Lycan", "--type", "topic", "--set", "category=subclass", "--set", "features=[Heightened Senses]");
+        await ok("write", "Brann", "--set", "classes=[[Barbarian]] 21, [[Blood Hunter]] 1", "--set", "subclasses=[[Path of the Berserker]], [[Order of the Lycan]], [[Champion]]");
+        const problems = await ok("validate");
+        expect(problems).toContain("Barbarian has no row for level 21 in its table, so classes on Brann gives nothing from it.");
+        expect(problems).toContain("Blood Hunter has no table with a Features column whose first column counts levels, so classes on Brann gives nothing from it.");
+        expect(problems).toContain("Order of the Lycan names no class, so it adds no features to Brann.");
+        expect(problems).toContain("Champion is a part of Fighter, which is not in classes on Brann: it adds nothing.");
+    });
+});

@@ -346,6 +346,11 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     const computed = computedField(world, field, fields);
 
     // An effect changes what a computed field comes from, never the field (FOR-7, D-200).
+    // What the tables of a character's classes give comes from its lists alone, which no effect gives (PRO-2).
+    if (computed !== undefined && computed.from.every((name) => declaredKind(world, name) === "list")) {
+        throw new Error(`${computed.name} on ${page.name} is what its ${computed.from.join(" and ")} give, from the tables of their pages: an effect cannot change it. Nothing changed.`);
+    }
+
     if (computed !== undefined) {
         // A bonus field first, which is what an effect is for; else a field the page writes.
         const from = [...computed.from.filter((name) => declaredKind(world, name) === "bonus"), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];

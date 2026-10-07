@@ -5,12 +5,13 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { declaredKind, inheritedFields, pagesWithName, systemPageNamed, type World } from "../pages/index.ts";
+import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
-/** A computed field that has a value, and the values it came from (FOR-8). */
+/** A computed field that has a value, and the values it came from (FOR-8); a field the rows of the classes give may hold text, such as martial-arts 1d6 (PRO-2). */
 export interface WorkedField
 {
     field: string;
-    value: number;
+    value: number | string;
     reads: FormulaRead[];
 }
 
@@ -21,10 +22,11 @@ export interface WorkedField
 export function workedFields(world: World, fields: Record<string, unknown>, explained = false): WorkedField[]
 {
     const scope = formulaScope(world, fields);
-    return (world.system?.formulas?.computed ?? []).flatMap(([field, formula]) => {
+    const computed = (world.system?.formulas?.computed ?? []).flatMap(([field, formula]) => {
         const worked = scope.computed(field);
         return worked?.value === undefined ? [] : [{ field, value: worked.value, reads: explained ? contributingReads(formula, scope, worked) : worked.reads }];
     });
+    return [...computed, ...progressionFields(scope.progression())];
 }
 
 /**
@@ -40,9 +42,20 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
     }
 
     const result = { ...fields };
+    const scope = formulaScope(world, fields);
+    const progression = scope.progression();
 
-    for (const { field, value } of workedFields(world, fields)) {
-        result[keyOf(result, field) ?? field] = value;
+    // What the classes give, then what the formulas work out over it (PRO-2, FOR-3).
+    for (const field of [...(progression?.values ?? []).map((value) => value.field), ...(progression === undefined || progression.features.length === 0 ? [] : [progression.featuresField])]) {
+        result[keyOf(result, field) ?? field] = progressionValue(progression, field);
+    }
+
+    for (const [field] of formulas.computed) {
+        const worked = scope.computed(field);
+
+        if (worked?.value !== undefined) {
+            result[keyOf(result, field) ?? field] = worked.value;
+        }
     }
 
     for (const field of Object.keys(formulas.counters)) {
@@ -56,6 +69,33 @@ export function withWorkedOut(world: World, fields: Record<string, unknown>): Re
     }
 
     return result;
+}
+
+/** The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. */
+function progressionFields(progression: Progression | undefined): WorkedField[]
+{
+    if (progression === undefined) {
+        return [];
+    }
+
+    const values = progression.values.map((value) => ({
+        field: value.field,
+        value: value.value,
+        reads: value.from.map((from): FormulaRead => ({ list: progression.lists[0], item: from.name, value: from.level })),
+    }));
+    const features = progression.features.length === 0 ? [] : [{
+        field: progression.featuresField,
+        value: progression.features.map((feature) => feature.name).join(", "),
+        reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
+    }];
+    return [...values, ...features];
+}
+
+/** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
+function progressedField(progression: Progression | undefined, field: string): { name: string; value: number | string; from: string[]; } | undefined
+{
+    const found = progressionFields(progression).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    return found === undefined || progression === undefined ? undefined : { name: found.field, value: found.value, from: progression.lists };
 }
 
 /** The minimum and maximum the game system works out for a counter with these fields, where they have a whole value (FOR-6). */
@@ -78,14 +118,14 @@ export function counterLimits(world: World, fields: Record<string, unknown>, fie
  * The game system's computed field with this name, in any case, and the fields it comes from, when its formula has a value with these fields (FOR-7):
  * where it has none, as on a creature without a level, the field is written like any other.
  */
-export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number; from: string[]; } | undefined
+export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number | string; from: string[]; } | undefined
 {
     const entry = world.system?.formulas?.computed.find(([name]) => comparableText(name) === comparableText(field.trim()));
     const scope = formulaScope(world, fields);
     const value = entry === undefined ? undefined : scope.computed(entry[0])?.value;
 
     if (entry === undefined || value === undefined) {
-        return undefined;
+        return progressedField(scope.progression(), field);
     }
 
     // Of several formulas, the one that gave the value says what it comes from (D-210).
@@ -126,7 +166,7 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
 }
 
 /** Why a computed field is not written or changed, and what to change instead: the fields it comes from, or an effect on a bonus among them (FOR-7). */
-export function computedMessage(world: World, computed: { name: string; value: number; from: string[]; }, page: string): string
+export function computedMessage(world: World, computed: { name: string; value: number | string; from: string[]; }, page: string): string
 {
     const bonuses = computed.from.filter((field) => declaredKind(world, field) === "bonus");
     const instead = bonuses.length === 0 ? "change one of those" : `change one of those, or give ${bonuses.join(" or ")} with an effect`;
@@ -134,10 +174,10 @@ export function computedMessage(world: World, computed: { name: string; value: n
 }
 
 /** A value of a field as the outputs show it: with its sign when the system declares the field a modifier or a bonus (FOR-8). */
-export function signedText(world: World, field: string, value: number): string
+export function signedText(world: World, field: string, value: number | string): string
 {
     const kind = declaredKind(world, field);
-    return (kind === "modifier" || kind === "bonus") && value >= 0 ? `+${value}` : String(value);
+    return typeof value === "number" && (kind === "modifier" || kind === "bonus") && value >= 0 ? `+${value}` : String(value);
 }
 
 /** "insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies": a computed field and what it came from, leaving out what adds nothing (FOR-8). */
@@ -190,7 +230,8 @@ export function workedMaximum(world: World, fields: Record<string, unknown>, fie
 
 /**
  * What validate says of the pages of the campaign about what the game system works out (FOR-7): a computed field written on a page, where the system works it
- * out and the page's value is never read; a written maximum that is not the one the system works out from the page without its effects. Found once for each world.
+ * out and the page's value is never read; a written maximum that is not the one the system works out from the page without its effects; what the classes of a
+ * page cannot give (PRO-1, PRO-4). Found once for each world.
  */
 export function workedOutProblems(world: World): Problem[]
 {
@@ -208,12 +249,15 @@ export function workedOutProblems(world: World): Problem[]
 
     const computedNames = new Set(formulas.computed.map(([name]) => comparableText(name)));
     const counterNames = new Set(Object.keys(formulas.counters).map(comparableText));
-    const problems = world.pages.filter((page) => Object.keys(page.fields).some((field) => computedNames.has(comparableText(field)) || counterNames.has(comparableText(field)))).flatMap((page) => {
+    const progressionList = world.system?.progression === undefined ? undefined : comparableText(world.system.progression.list);
+    const relevant = (field: string): boolean => computedNames.has(comparableText(field)) || counterNames.has(comparableText(field)) || comparableText(field) === progressionList;
+    const problems = world.pages.filter((page) => Object.keys(page.fields).some(relevant)).flatMap((page) => {
         const fields = inheritedFields(world, page);
         const scope = formulaScope(world, fields);
+        const progressed = new Set(progressionFields(scope.progression()).map((worked) => comparableText(worked.field)));
         // Only the fields the page writes are worked out: a page holds few of them.
-        const written = Object.keys(page.fields).filter((key) => computedNames.has(comparableText(key))).flatMap((key): Problem[] => {
-            const value = scope.computed(key)?.value;
+        const written = Object.keys(page.fields).filter((key) => computedNames.has(comparableText(key)) || progressed.has(comparableText(key))).flatMap((key): Problem[] => {
+            const value = scope.computed(key)?.value ?? progressedField(scope.progression(), key)?.value;
             return value === undefined ? [] : [{
                 path: page.path,
                 message: `${key} is worked out by the system ${world.system?.name ?? ""} (${signedText(world, key, value)}): the value written on ${page.name} is never read.`,
@@ -229,7 +273,7 @@ export function workedOutProblems(world: World): Problem[]
                 fix: `change ${page.name}, field ${key}, to ${counter.value}/${max}`,
             }];
         });
-        return [...written, ...limits];
+        return [...written, ...limits, ...progressionProblems(world, page, fields)];
     });
     checkedWorlds.set(world, problems);
     return problems;
@@ -238,12 +282,15 @@ export function workedOutProblems(world: World): Problem[]
 const checkedWorlds = new WeakMap<World, Problem[]>();
 
 /** The scope a formula reads on these fields: computed fields by their formulas, each worked out once; a bonus field the page lacks as 0 (FOR-4, FOR-5). */
-function formulaScope(world: World, fields: Record<string, unknown>): FormulaScope & { computed(name: string): WorkedOut | undefined; }
+function formulaScope(world: World, fields: Record<string, unknown>): FormulaScope & { computed(name: string): WorkedOut | undefined; progression(): Progression | undefined; }
 {
     const formulas = world.system?.formulas;
     const index = formulas === undefined ? undefined : formulaIndex(formulas);
     const keys = new Map<string, string>();
     const done = new Map<string, WorkedOut>();
+    let progressed: { progression?: Progression; } | undefined;
+    // What the classes give, worked out once and only when a formula reads a field it may give (PRO-2).
+    const progression = (): Progression | undefined => (progressed ??= { progression: progressionOf(world, fields) }).progression;
 
     for (const key of Object.keys(fields)) {
         if (!keys.has(comparableText(key))) {
@@ -272,6 +319,12 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
                 return worked.value;
             }
 
+            const given = progressionValue(progression(), name);
+
+            if (given !== undefined) {
+                return given;
+            }
+
             const key = keys.get(comparableText(name));
             const value = key === undefined ? undefined : fields[key];
             return value === undefined && declaredKind(world, name) === "bonus" ? 0 : value;
@@ -284,7 +337,7 @@ function formulaScope(world: World, fields: Record<string, unknown>): FormulaSco
             return page === undefined ? undefined : inheritedFields(world, page);
         },
     };
-    return { ...scope, computed };
+    return { ...scope, computed, progression };
 }
 
 /** A system's computed fields and tables by the name as it is compared, built once for each system: a formula reads many names (D-194). */

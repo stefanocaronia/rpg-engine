@@ -4,6 +4,7 @@ import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type FormulaData, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
+import type { ProgressionRule } from "../core/progression-rule.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -37,6 +38,12 @@ const systemSchema = z.object({
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
+    progression: z.object({
+        list: z.string().min(1),
+        features: z.string().min(1),
+        skip: z.array(z.string().min(1)).optional(),
+        parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
+    }).strict().optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(z.string(), z.object({ min: z.union([z.number(), z.string().min(1)]).optional(), max: z.union([z.number(), z.string().min(1)]).optional() }).strict()).optional(),
 });
@@ -108,6 +115,8 @@ export interface GameSystem
     conditions: string[];
     /** What it works out from the fields of a page (D-199, FOR-1). */
     formulas: SystemFormulas;
+    /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
+    progression?: ProgressionRule;
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
@@ -163,10 +172,10 @@ function readSystem(folder: string, name: string): GameSystem
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list in fields, or give no values to it.`);
     }
 
-    const notMarking = (data.marks ?? []).find((field) => kindOf(field) !== "list");
+    const notMarking = [...(data.marks ?? []), ...[data.progression?.list, data.progression?.parts?.list].filter((field) => field !== undefined)].find((field) => kindOf(field) !== "list");
 
     if (notMarking !== undefined) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: marks: ${notMarking} is not declared as a list in fields.`);
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${notMarking} is not declared as a list in fields, as marks and progression need.`);
     }
 
     return frozen({
@@ -189,6 +198,7 @@ function readSystem(folder: string, name: string): GameSystem
         recipes: Object.entries(data.recipes ?? {}).map(([recipe, value]) => ({ name: recipe, set: value.set ?? {}, ends: value.ends ?? [], rules: value.rules ?? [] })),
         conditions: data.conditions ?? [],
         formulas,
+        ...(data.progression === undefined ? {} : { progression: { ...data.progression, skip: data.progression.skip ?? [] } }),
     });
 }
 

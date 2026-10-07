@@ -203,6 +203,12 @@ export function listItemNames(value: unknown): string[]
     return itemsOf(value).map((item) => item.name);
 }
 
+/** The items of a list field with the number after each name, such as Fighter and 3 for [[Fighter]] 3 (FOR-2); a single value is a list of one. */
+export function listItems(value: unknown): { name: string; number?: number; }[]
+{
+    return itemsOf(value);
+}
+
 /** A field's value read as a number (FOR-2): a number, a counter's current value, or text such as +2. Undefined for anything else. */
 export function numberOf(value: unknown): number | undefined
 {
