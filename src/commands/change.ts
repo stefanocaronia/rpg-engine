@@ -447,6 +447,12 @@ function counterStep(
 
     const { counter: after, beyond } = changeCounter(before, counterChange);
 
+    // Above a maximum the game system works out, a value reads as the maximum (FOR-6): what change says it wrote would not be what is read.
+    if ("to" in counterChange && limits.max !== undefined && after.value > limits.max) {
+        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}`;
+        throw new Error(`${field} on ${page} goes no higher than its maximum, which the game system works out: ${limits.hint?.made ?? limits.max}. Give to ${limits.max} or less${raise}. Nothing changed.`);
+    }
+
     if (!isSafeCounter(after)) {
         throw new Error(`${field} on ${page} would be too large to count exactly. Nothing changed.`);
     }

@@ -266,7 +266,8 @@ function applyByModel(model: Record<string, Counter>, operation: Operation): Cou
         return counter.max === undefined ? "refused" : { ...counter, value: counter.max };
     }
 
-    if (target === undefined || (target.max !== undefined && worked.max !== undefined && target.max !== worked.max)) {
+    // A maximum the system works out is given only as it is, and the value goes no higher (FOR-6, FOR-7).
+    if (target === undefined || (worked.max !== undefined && ((target.max !== undefined && target.max !== worked.max) || target.value > worked.max))) {
         return "refused";
     }
 

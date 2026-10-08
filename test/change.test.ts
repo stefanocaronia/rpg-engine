@@ -28,17 +28,17 @@ function brunaFile(): string
 }
 
 // The table of cases of change (CNT-2–CNT-9): each kind of counter crossed with each way of changing it, on a character of the test system based on Ironsworn,
-// whose momentum goes from -6 to a maximum the system works out, 10. What the change gives, with its note; "same" when nothing changed; "refused" when nothing could.
+// whose momentum goes from -6 to a maximum the system works out, 10, above which it never goes (FOR-6). What the change gives, with its note; "same" when nothing changed; "refused" when nothing could.
 const kinds = { frecce: "5", ferite: "5/12", "ferite a 0": "0/12", "ferite al massimo": "12/12", "ferite sotto": "-3/10", "ferite sopra": "15/12", momentum: "-6/10" };
-const asks = ["--by=-7", "--by=7", "--by=0", "--spend=5", "--spend=6", "--to=3", "--to=max", "--to=4/8"];
+const asks = ["--by=-7", "--by=7", "--by=0", "--spend=5", "--spend=6", "--to=3", "--to=max", "--to=4/8", "--to=13"];
 const outcomes: Record<keyof typeof kinds, string[]> = {
-    frecce: ["0: at 0, 2 beyond", "12", "same 5", "0: at 0", "refused", "3", "refused", "4/8"],
-    ferite: ["0/12: at 0, 2 beyond", "12/12: at max", "same 5/12", "0/12: at 0", "refused", "3/12", "12/12: at max", "4/8"],
-    "ferite a 0": ["same 0/12: at 0, 7 beyond", "7/12", "same 0/12: at 0", "refused", "refused", "3/12", "12/12: at max", "4/8"],
-    "ferite al massimo": ["5/12", "same 12/12: at max, 7 beyond", "same 12/12: at max", "7/12", "6/12", "3/12", "same 12/12: at max", "4/8"],
-    "ferite sotto": ["same -3/10: outside 0–10, 7 beyond", "4/10", "same -3/10: outside 0–10", "refused", "refused", "3/10", "10/10: at max", "4/8"],
-    "ferite sopra": ["8/12", "same 15/12: outside 0–12, 7 beyond", "same 15/12: outside 0–12", "10/12", "9/12", "3/12", "12/12: at max", "4/8"],
-    momentum: ["same -6/10: at min, 7 beyond", "1/10", "same -6/10: at min", "refused", "refused", "3/10", "10/10: at max", "refused"],
+    frecce: ["0: at 0, 2 beyond", "12", "same 5", "0: at 0", "refused", "3", "refused", "4/8", "13"],
+    ferite: ["0/12: at 0, 2 beyond", "12/12: at max", "same 5/12", "0/12: at 0", "refused", "3/12", "12/12: at max", "4/8", "13/12: outside 0–12"],
+    "ferite a 0": ["same 0/12: at 0, 7 beyond", "7/12", "same 0/12: at 0", "refused", "refused", "3/12", "12/12: at max", "4/8", "13/12: outside 0–12"],
+    "ferite al massimo": ["5/12", "same 12/12: at max, 7 beyond", "same 12/12: at max", "7/12", "6/12", "3/12", "same 12/12: at max", "4/8", "13/12: outside 0–12"],
+    "ferite sotto": ["same -3/10: outside 0–10, 7 beyond", "4/10", "same -3/10: outside 0–10", "refused", "refused", "3/10", "10/10: at max", "4/8", "13/10: outside 0–10"],
+    "ferite sopra": ["8/12", "same 15/12: outside 0–12, 7 beyond", "same 15/12: outside 0–12", "10/12", "9/12", "3/12", "12/12: at max", "4/8", "13/12: outside 0–12"],
+    momentum: ["same -6/10: at min, 7 beyond", "1/10", "same -6/10: at min", "refused", "refused", "3/10", "10/10: at max", "refused", "refused"],
 };
 
 describe("the table of cases of change", () => {
@@ -70,6 +70,21 @@ describe("the table of cases of change", () => {
                     }
                 }
             }
+        } finally {
+            removeFolder(root);
+        }
+    });
+
+    it("CNT-5: sets no value above a maximum the game system works out, which would read as the maximum", async () => {
+        const root = makeTempFolder();
+        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+        mkdirSync(join(root, "world", "characters"), { recursive: true });
+        writeFileSync(join(root, "world", "characters", "Kira.md"), "---\nrole: npc\nmomentum: 0/9\ndebilities: [wounded]\n---\n");
+
+        try {
+            expect((await runCommandLine(["change", "Kira", "momentum", "--to", "10"], testContext(root))).output).toBe(
+                "momentum on Kira goes no higher than its maximum, which the game system works out: 9. Give to 9 or less. Nothing changed.",
+            );
         } finally {
             removeFolder(root);
         }
