@@ -115,7 +115,7 @@ describe("SYS-2, SYS-3: the system's pages, found after the campaign's", () => {
         expect(await refused("reveal", "Wolf")).toBe("Wolf is a creature of the system 5e: it holds no secrets, and anyone may know what it says. Nothing recorded.");
         handWrite("world/characters/Ennio.md", '---\nrole: pc\nhp: 12/12\nknows: ["[[Wolf]]"]\n---\n');
         expect(await ok("validate")).toContain(
-            "world/characters/Ennio.md: Ennio knows [[Wolf]], a creature of the system 5e, which anyone may know: knows lists pages and secrets of the campaign. Fix: write Ennio, remove knows=[[Wolf]].",
+            "world/characters/Ennio.md: Ennio knows [[Wolf]], a creature of the system 5e, whose numbers are the master's, never shown in the player's view (what a character learns of it goes in a secret of a page of the campaign): knows lists pages and secrets of the campaign. Fix: write Ennio, remove knows=[[Wolf]].",
         );
     });
 
@@ -322,7 +322,7 @@ describe("after the round on the code: the system missing, and the remedies (SYS
 
     it("keeps the system's pages out of knows, and names the field an item would stay text in", async () => {
         expect(await refused("write", "Ennio", "--add", "knows=[[Wolf]]")).toBe(
-            "Wolf is a creature of the system 5e, which anyone may know: knows lists pages and secrets of the campaign. Nothing changed.",
+            "Wolf is a creature of the system 5e, whose numbers are the master's, never shown in the player's view (what a character learns of it goes in a secret of a page of the campaign): knows lists pages and secrets of the campaign. Nothing changed.",
         );
         expect(await refused("write", "Ossario", "--add", "contains=[[Torch]]")).toContain("An item that matters little can stay text in the contents. Nothing changed.");
     });

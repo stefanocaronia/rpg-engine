@@ -95,20 +95,28 @@ describe("the player's view", () => {
         await ok("reveal", "Varro", "Varro#Paura", "--to", "Kira");
         expect(await ok("view", "Varro")).toBe("Varro (character)\n\nIl mugnaio.\n\n## Passato\n\nEra un soldato.\n\n> [!secret] Paura\n> Teme il fiume.");
         expect(await ok("view", "Varro#Paura")).toBe("Varro#Paura\n\n> [!secret] Paura\n> Teme il fiume.");
-        expect(await ok("view", "Varro#Passato")).toBe("Varro#Passato\n\n## Passato\n\nEra un soldato.");
+        // The secrets written after a section are in it, as show reads it: the one discovered shows with it.
+        expect(await ok("view", "Varro#Passato")).toBe("Varro#Passato\n\n## Passato\n\nEra un soldato.\n\n> [!secret] Paura\n> Teme il fiume.");
         expect(await ok("view", "Varro#Colpa")).toBe("Kira knows nothing of Varro called Colpa.");
         expect(await ok("view", "Strega#Bosco")).toBe("Kira does not know Strega.");
     });
 
-    it("VIEW-3: shows what a page shows from its bases, and a secret of a base only as discovered by the base's link (REV-2)", async () => {
+    it("VIEW-3: shows the text of a base only when the character knows it, never a creature's, and a secret of a base as discovered by the base's link (REV-2)", async () => {
         await ok("write", "Mugnaio", "--type", "creature", "--text", "Chi macina il grano.");
         await ok("write", "Mugnaio#Mestiere", "--text", "Lavora all'alba.");
         await ok("write", "Mugnaio#Debito", "--secret", "--text", "Deve soldi al conte.");
         await ok("write", "Dario", "--type", "character", "--set", "role=npc", "--set", "creature=[[Mugnaio]]");
         await ok("reveal", "Dario", "--to", "Kira");
-        expect(await ok("view", "Dario")).toBe("Dario (character)\n\nChi macina il grano.\n\n## Mestiere\n\nLavora all'alba.");
+        // Mugnaio is a creature: its text is the master's (D-254).
+        expect(await ok("view", "Dario")).toBe("Dario (character)");
         await ok("reveal", "Dario#Debito", "--to", "Kira");
-        expect(await ok("view", "Dario")).toContain("> [!secret] Debito\n> Deve soldi al conte.");
+        expect(await ok("view", "Dario")).toBe("Dario (character)\n\n> [!secret] Debito\n> Deve soldi al conte.");
+        // The secret is known, the creature that writes it is not.
+        expect(await ok("view", "Mugnaio")).toBe("Kira does not know Mugnaio.");
+        // An item of the campaign shows the text of the system's item it derives from, which anyone may know.
+        await ok("write", "Spada di Kira", "--type", "item", "--set", "item=[[Alchemist's Fire]]");
+        await ok("write", "Kira", "--add", "inventory=[[Spada di Kira]]");
+        expect(await ok("view", "Spada di Kira")).toMatch(/^Spada di Kira \(item\)\n\n\S/);
     });
 
     it("VIEW-4: gives the party, the open quests, the open scene and the diary of the public facts, without the master's reasons", async () => {
@@ -125,11 +133,12 @@ describe("the player's view", () => {
         expect(await ok("view")).toBe(
             [
                 "Kira, in Mulino: hp 7/12",
-                "Bran (companion), in Guado › Valle",
+                // Kira knows Guado, where she came from, no more Valle around it (VIEW-2).
+                "Bran (companion), in Guado",
                 "",
                 "Open quests: La lanterna",
                 "",
-                "Scene: Al mulino (social), at Mulino, with Kira, Varro",
+                "Scene: Al mulino (social), at Mulino, with Kira and Varro",
                 "",
                 "Diary:",
                 "- day 1, 18:00 · The story starts on day 1, 18:00",
@@ -170,6 +179,57 @@ describe("the player's view", () => {
         expect(await ok("view")).toBe("There is no player character yet: the player's view starts with one.");
         writeFileSync(join(folder, "world", "characters", "Kira.md"), '---\nrole: pc\nclasses: ["[[Fighter]] 1"]\nstr: 16\ndex: 12\ncon: 14\nint: 10\nwis: 10\ncha: 8\nhp-base: 10\nhp: 12/12\n---\nUna cacciatrice.\n');
         expect(await ok("view", "Kira")).toMatch(/^Kira \(character\)\n\n.*str 16 \(\+3\)/s);
+        // A group of the sheet, as show gives it (DAT-2).
+        expect(await ok("view", "Kira#Abilities")).toMatch(/^Kira#Abilities\n\n.*str 16 \(\+3\)/s);
+    });
+});
+
+describe("the player's view, after Matteo's round", () => {
+    it("D-254: names only who and what the character knows: copies are counted, strangers are someone, unknown places elsewhere", async () => {
+        await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
+        await ok("write", "Covo segreto", "--type", "place");
+        // A scene Kira is not in: Bran with the witch, whom Kira never met.
+        await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Bran", "--with", "Strega", "--creatures", "Lupo mannaro=2");
+        await ok("roll", "1d20+4", "--who", "Lupo mannaro 1");
+        await ok("move", "Zaino", "--to", "Strega");
+        await ok("move", "Bran", "--to", "Covo segreto");
+        const view = await ok("view");
+        // The scene went with Bran to a place Kira does not know (CON-6): it has no place she can name.
+        expect(view).toContain("Scene: Nel bosco (combat), with Bran, someone and 2 creatures");
+        expect(view).toContain("Bran (companion), elsewhere");
+        expect(view).toContain("- A creature: 1d20+4 = 8 [4] + 4");
+        expect(view).toContain("- Bran to somewhere");
+        expect(view).not.toMatch(/Lupo mannaro|Strega|Covo segreto|Zaino/);
+    });
+
+    it("VIEW-1: is the view of the living player character, when the first one died", async () => {
+        await ok("write", "Kira", "--set", "status=dead");
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc");
+        expect(await ok("view")).toMatch(/^Lia\n/);
+        expect(await ok("view", "Lia")).toBe("Lia (character)");
+    });
+
+    it("VIEW-3: leaves out comments and undiscovered secrets a few spaces in, gives a section whole, and a group of the party's sheet", async () => {
+        writeFileSync(
+            join(folder, "world", "characters", "Varro.md"),
+            "---\nrole: npc\n---\nIl mugnaio. %% master: è il fratello del conte %%\n<!-- tradirà Kira -->\n\n%%\n> [!secret] Piano\n> Fuggire.\n%%\n\n## Casa\n\nUna casa sul fiume.\n\n### Cantina\n\nUmida.\n\n- Nota\n  > [!secret] Botola\n  > Sotto il tavolo.\n",
+        );
+        await ok("reveal", "Varro", "--to", "Kira");
+        const varro = await ok("view", "Varro");
+        expect(varro).toBe("Varro (character)\n\nIl mugnaio.\n\n## Casa\n\nUna casa sul fiume.\n\n### Cantina\n\nUmida.\n\n- Nota");
+        expect(await ok("view", "Varro#Casa")).toBe("Varro#Casa\n\n## Casa\n\nUna casa sul fiume.\n\n### Cantina\n\nUmida.\n\n- Nota");
+        expect(await ok("view", "Varro#Botola")).toBe("Kira knows nothing of Varro called Botola.");
+        writeFileSync(join(folder, "world", "places", "Mulino.md"), "---\n---\nUna ruota.\n\n    > [!secret] Troppo dentro\n    > Non letto.\n");
+        expect(await ok("validate")).toContain('Mulino marks a secret that is read as public text: "> [!secret] Troppo dentro".');
+    });
+
+    it("VIEW-2: of two pages with one name, gives the one the character knows, and tells nothing of the other", async () => {
+        await ok("reveal", "Strega", "--to", "Kira");
+        // Pages written by hand with the name of another: validate reports them, the view never tells them.
+        writeFileSync(join(folder, "world", "places", "Strega.md"), "---\n---\nUna rupe.\n");
+        writeFileSync(join(folder, "world", "places", "Coppa.md"), "---\n---\nUna conca.\n");
+        expect(await ok("view", "Strega")).toBe("Strega (character)\n\nVive nel bosco.");
+        expect(await ok("view", "Coppa")).toBe("Kira does not know Coppa.");
     });
 });
 
@@ -181,9 +241,9 @@ const parts = fc.uniqueArray(fc.record({ name: fc.constantFrom("Uno", "Due", "Tr
 });
 
 describe("the laws of the player's view, on pages made at random", () => {
-    it("VIEW-3: a known page shows every public part it shows and every secret discovered by the page that writes it, and no other secret", () => {
+    it("VIEW-3: a known page shows its public parts, those of its base when the character knows the base, and every secret discovered, and no other secret", () => {
         fc.assert(
-            fc.property(parts, fc.array(fc.tuple(fc.constantFrom("Pagina", "Base"), fc.constantFrom("Uno", "Due", "Tre", "Quattro")), { maxLength: 4 }), (made, discovered) => {
+            fc.property(parts, fc.array(fc.tuple(fc.constantFrom("Pagina", "Base"), fc.constantFrom("Uno", "Due", "Tre", "Quattro")), { maxLength: 4 }), fc.boolean(), (made, discovered, baseKnown) => {
                 const write = (holder: string): string =>
                     made.filter((part) => part.base === (holder === "Base") && (part.secret || part.name !== "")).map((part, index) => {
                         const text = `Testo ${holder} ${part.name} ${index}.`;
@@ -193,7 +253,8 @@ describe("the laws of the player's view, on pages made at random", () => {
                 const page: Page = { name: "Pagina", type: "character", path: "world/characters/Pagina.md", fields: { creature: "[[Base]]" }, body: write("Pagina") };
                 const world: World = { root: "", problems: [], pages: [page, base] };
                 const secrets = new Set(discovered.map(([holder, name]) => `${holder.toLowerCase()}#${name.toLowerCase()}`));
-                const knowledge: Knowledge = { pc: page, pages: new Set([page]), secrets };
+                // A creature is known only when knows lists it (D-254).
+                const knowledge: Knowledge = { pc: page, pages: new Set(baseKnown ? [page, base] : [page]), secrets };
                 const shown = knownText(world, knowledge, page);
                 const own = new Set(made.filter((part) => !part.base && part.name !== "").map((part) => part.name));
 
@@ -203,8 +264,8 @@ describe("the laws of the player's view, on pages made at random", () => {
                     // A part of the base that the page writes by the same name is the page's (INH-13).
                     const hidden = part.base && part.name !== "" && own.has(part.name);
 
-                    if (!part.secret && part.name !== "" && !hidden) {
-                        expect(shown, `${index}`).toContain(text);
+                    if (!part.secret && part.name !== "") {
+                        expect(shown.includes(text), `${index}`).toBe(!hidden && (!part.base || baseKnown));
                     }
 
                     if (part.secret) {

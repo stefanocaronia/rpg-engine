@@ -4,6 +4,17 @@ import { comparableText, withArticle } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
 import type { Page, World } from "./world.ts";
 
+/**
+ * Why a page of the game system never goes in a knows: anyone may know its rules, and a creature's numbers are the master's, which the player's view never
+ * shows (SYS-6, D-254); what a character learns of a creature goes in a secret of a page of the campaign.
+ */
+export function systemKnowsReason(page: Page): string
+{
+    return page.type === "creature"
+        ? "whose numbers are the master's, never shown in the player's view (what a character learns of it goes in a secret of a page of the campaign)"
+        : "which anyone may know";
+}
+
 /** The kind the game system declares for a field, by its name in any case (SYS-8); undefined when it declares none. */
 export function declaredKind(world: World, field: string): FieldKind | undefined
 {

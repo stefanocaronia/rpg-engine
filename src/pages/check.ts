@@ -3,9 +3,9 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { readEnvironment } from "./environment.ts";
 import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./inheritance.ts";
-import { type Link, links, readSection, repeatedNames } from "./markdown.ts";
+import { type Link, links, readSection, repeatedNames, unreadSecretLines } from "./markdown.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
-import { alwaysInList, alwaysInMessage, systemLabel } from "./system-pages.ts";
+import { alwaysInList, alwaysInMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
 import { linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
@@ -188,7 +188,11 @@ function publicKnowsProblems(world: World, pagesByName: Map<string, Page[]>, pag
             const target = pagesByName.get(comparableText(link.page))?.[0] ?? systemPageNamed(world, link.page);
 
             if (target?.system !== undefined) {
-                return [{ path: page.path, message: `${page.name} knows ${written(link)}, ${systemLabel(target)}, which anyone may know: knows lists pages and secrets of the campaign.`, fix: `write ${page.name}, remove knows=${entry}` }];
+                return [{
+                    path: page.path,
+                    message: `${page.name} knows ${written(link)}, ${systemLabel(target)}, ${systemKnowsReason(target)}: knows lists pages and secrets of the campaign.`,
+                    fix: `write ${page.name}, remove knows=${entry}`,
+                }];
             }
 
             const part = section === undefined || target === undefined ? undefined : shownPart(world, target, section);
@@ -416,5 +420,12 @@ function inheritanceProblems(world: World, page: Page): Problem[]
 
 function sectionProblems(page: Page): Problem[]
 {
-    return repeatedNames(page.body).map((name) => ({ path: page.path, message: `${page.name} has two sections or secrets named "${name}".`, fix: `rename one of them by hand, so that ${page.name}#${name} finds one place` }));
+    const repeated = repeatedNames(page.body).map((name) => ({ path: page.path, message: `${page.name} has two sections or secrets named "${name}".`, fix: `rename one of them by hand, so that ${page.name}#${name} finds one place` }));
+    // A secret the engine reads as public text would reach the player's view (VIEW-3).
+    const unread = unreadSecretLines(page.body).map((line) => ({
+        path: page.path,
+        message: `${page.name} marks a secret that is read as public text: "${page.body.split("\n")[line - 1].trim()}".`,
+        fix: "start its line with > [!secret] Name, at most three spaces in, by hand",
+    }));
+    return [...repeated, ...unread];
 }

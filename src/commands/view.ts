@@ -4,7 +4,7 @@ import { type LogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { readEffect } from "../effects/index.ts";
-import { findPage, locate, type Page, parsePageReference, textsIn, type World } from "../pages/index.ts";
+import { locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
@@ -12,7 +12,7 @@ import { campaignCoins } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, partyCounters } from "./page-counters.ts";
-import { sheetLines } from "./sheet.ts";
+import { sheetGroup, sheetLines } from "./sheet.ts";
 
 // How many lines of the diary the view gives when no number is asked.
 const diaryLines = 10;
@@ -56,40 +56,52 @@ export const view = defineCommand({
             }
 
             const reference = parsePageReference(input.page);
-            const page = findPage(world, reference.name) ?? knownByAlias(world, knowledge, reference.name);
-            const unknown = { kind: "unknown" as const, text: `${pc.name} does not know ${reference.name}.` };
+            const page = knownPage(world, knowledge, reference.name);
+            const system = campaignSystem(root, context);
 
-            if (page === undefined || !knowsPage(knowledge, page)) {
-                return unknown;
-            }
-
-            if (reference.section !== undefined && reference.section !== "") {
-                const part = knownPart(world, knowledge, page, reference.section);
-                return part === undefined ? { kind: "unknown", text: `${pc.name} knows nothing of ${page.name} called ${reference.section}.` } : { kind: "page", title: `${page.name}#${reference.section}`, sheet: [], text: part };
+            if (page === undefined) {
+                return { kind: "unknown", text: `${pc.name} does not know ${reference.name}.` };
             }
 
             const party = page === pc || page.fields.role === "companion";
-            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, sheet: party ? sheetLines(world, campaignSystem(root, context), page) : [], text: knownText(world, knowledge, page) };
+
+            if (reference.section !== undefined && reference.section !== "") {
+                const part = knownPart(world, knowledge, page, reference.section);
+                // A group of the sheet of the character or a companion, as show gives it (DAT-2).
+                const group = part === undefined && party ? sheetGroup(world, system, page, reference.section) : undefined;
+
+                if (part === undefined && group === undefined) {
+                    return { kind: "unknown", text: `${pc.name} knows nothing of ${page.name} called ${reference.section}.` };
+                }
+
+                return { kind: "page", title: `${page.name}#${group?.name ?? reference.section}`, sheet: group?.lines ?? [], text: part ?? "" };
+            }
+
+            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, sheet: party ? sheetLines(world, system, page) : [], text: knownText(world, knowledge, page) };
         }
 
         const { coins } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
 
+        // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): string => {
-            const where = locate(world, page).chain.map((holder) => holder.name);
+            const chain = locate(world, page).chain;
+            const where = chain.filter((holder) => knowsPage(knowledge, holder)).map((holder) => holder.name);
             const shown = [countersText(partyCounters(world, page, coins, system)), ...effectsOf(page).map((effect) => effectShown(world, effect))].filter((part) => part !== "");
             const role = page === pc ? "" : page.fields.status === "dead" ? " (companion, dead)" : " (companion)";
-            return `${page.name}${role}${where.length === 0 ? "" : `, in ${where.join(" › ")}`}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
+            const place = where.length > 0 ? `, in ${where.join(" › ")}` : chain.length > 0 ? ", elsewhere" : "";
+            return `${page.name}${role}${place}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
         };
 
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
-        const diary = readLog(root).filter((entry) => entry.visibility === "public").flatMap((entry) => diaryLine(world, entry));
+        const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
+        const diary = readLog(root).filter((entry) => entry.visibility === "public").flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         return {
             kind: "overview",
             party: [pc, ...companions].map(member),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
-            scene: sceneLine(root),
+            scene: sceneLine(root, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
         };
@@ -118,11 +130,33 @@ export const view = defineCommand({
     },
 });
 
-/** The page the player character knows by this other name, in its aliases; only one it knows, so that an alias never tells that a page exists (VIEW-2). */
-function knownByAlias(world: World, knowledge: Knowledge, name: string): Page | undefined
+/**
+ * The page the player character knows by this name, of the campaign or of the system, or by one of its aliases (VIEW-2): only one it knows, so that neither two
+ * pages of one name nor an alias tells that a page it does not know exists.
+ */
+function knownPage(world: World, knowledge: Knowledge, name: string): Page | undefined
 {
-    const named = world.pages.filter((page) => knowsPage(knowledge, page) && textsIn(page.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
-    return named.length === 1 ? named[0] : undefined;
+    const one = (pages: Page[]): Page | undefined => {
+        const known = pages.filter((page) => knowsPage(knowledge, page));
+        return known.length === 1 ? known[0] : undefined;
+    };
+
+    const system = systemPageNamed(world, name);
+    const named = pagesWithName(world, name);
+    const aliased = world.pages.filter((page) => textsIn(page.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
+    return one(named) ?? (named.length === 0 && system !== undefined ? one([system]) : undefined) ?? one(aliased);
+}
+
+/** A name as the view may write it: one of a page the player character knows; undefined for any other, which the view tells another way (D-254). */
+function shownName(world: World, knowledge: Knowledge, name: unknown): string | undefined
+{
+    if (typeof name !== "string") {
+        return undefined;
+    }
+
+    const reference = parsePageReference(name).name;
+    const page = pagesWithName(world, reference)[0] ?? systemPageNamed(world, reference);
+    return page !== undefined && knowsPage(knowledge, page) ? page.name : undefined;
 }
 
 /** How many lines of the diary are asked: a whole number from 1. */
@@ -141,8 +175,11 @@ function diaryCount(asked: string | undefined): number
     return count;
 }
 
-/** "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, Annegato 1": the open scene as the player sees it. */
-function sceneLine(root: string): string | undefined
+/**
+ * "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, someone and 2 creatures": the open scene as the player sees it; who the character does not know
+ * is someone, and the copies are counted, never named (D-254).
+ */
+function sceneLine(root: string, named: (name: unknown) => string | undefined): string | undefined
 {
     const { scene } = readOpenScene(root);
 
@@ -150,16 +187,30 @@ function sceneLine(root: string): string | undefined
         return undefined;
     }
 
-    const present = [...scene.with.map((link) => parsePageReference(link).name), ...Object.keys(scene.copies)];
-    const place = scene.place === undefined ? "" : `, at ${parsePageReference(scene.place).name}`;
-    return `${scene.title} (${scene.type})${place}${present.length === 0 ? "" : `, with ${present.join(", ")}`}`;
+    const people = scene.with.map((link) => named(link));
+    const strangers = people.filter((name) => name === undefined).length;
+    const copies = Object.keys(scene.copies).length;
+    const present = [
+        ...people.filter((name): name is string => name !== undefined),
+        ...(strangers === 0 ? [] : [strangers === 1 ? "someone" : `${strangers} others`]),
+        ...(copies === 0 ? [] : [copies === 1 ? "1 creature" : `${copies} creatures`]),
+    ];
+    const place = named(scene.place);
+    const listed = present.length <= 1 ? present.join("") : `${present.slice(0, -1).join(", ")} and ${present.at(-1)}`;
+    return `${scene.title} (${scene.type})${place === undefined ? "" : `, at ${place}`}${present.length === 0 ? "" : `, with ${listed}`}`;
 }
 
-/** A public line of the log as the diary tells it (VIEW-4): the facts, with the game date, never the master's why. Lines of no story, as a setting changed, are left out. */
-function diaryLine(world: World, entry: LogEntry): string[]
+/**
+ * A public line of the log as the diary tells it (VIEW-4): the facts, with the game date, never the master's why; who and where the character does not know as
+ * someone and somewhere (D-254). Lines of no story, as a setting changed, are left out.
+ */
+function diaryLine(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): string[]
 {
     const data = entry.data as Record<string, unknown>;
     const text = (value: unknown): string => (Array.isArray(value) ? value.map(String).join(", ") : String(value ?? ""));
+    const who = (name: unknown): string => named(name) ?? (isCopyName(world, name) ? "A creature" : "Someone");
+    const where = (name: unknown): string => named(name) ?? "somewhere";
+    const pages = Array.isArray(data.pages) ? data.pages.map((name) => named(name) ?? "someone") : [];
     const fact = ((): string | undefined => {
         switch (entry.type) {
             case "scene-opened":
@@ -167,21 +218,21 @@ function diaryLine(world: World, entry: LogEntry): string[]
             case "scene-closed":
                 return `Scene: ${text(data.title)} (${text(data.type)}): ${text(data.summary)}`;
             case "roll":
-                return `${data.who === undefined ? "Roll" : text(data.who)}: ${text(data.result)}`;
+                return `${data.who === undefined ? "Roll" : who(data.who)}: ${text(data.result)}`;
             case "roll-revealed":
                 return "A hidden roll was shown";
             case "counter-changed":
-                return `${text(data.page)}: ${text(data.field)} ${text(data.before)} → ${text(data.after)}`;
+                return `${who(data.page)}: ${text(data.field)} ${text(data.before)} → ${text(data.after)}`;
             case "time-advanced":
                 return data.from === undefined ? `The story starts on ${text(data.to)}` : `Time passes: ${text(data.from)} → ${text(data.to)}`;
             case "moved":
-                return `${text(data.pages)} to ${text(data.to)}`;
+                return pages.every((name) => name === "someone") && named(data.to) === undefined ? undefined : `${pages.join(", ")} to ${where(data.to)}`;
             case "learned":
                 return `${text(data.page)} learned: ${textsIn(data.knows).map(learnedText).join(", ")}`;
             case "effect-added":
-                return `${text(data.page)}: ${effectText(world, text(data.effect))}`;
+                return `${who(data.page)}: ${effectText(world, text(data.effect))}`;
             case "effect-ended":
-                return `${text(data.page)}: ${text(data.effect)} ended`;
+                return `${who(data.page)}: ${text(data.effect)} ended`;
             case "saved":
                 return `Saved: ${text(data.save)}${data.label === undefined ? "" : ` - ${text(data.label)}`}`;
             case "save-loaded":
@@ -193,6 +244,13 @@ function diaryLine(world: World, entry: LogEntry): string[]
         }
     })();
     return fact === undefined ? [] : [entry.date === undefined ? fact : `${entry.date} · ${fact}`];
+}
+
+/** Whether a name is a copy's in a scene, such as Lupo mannaro 1: a creature's name and a number, with no page of its own. */
+function isCopyName(world: World, name: unknown): boolean
+{
+    const match = typeof name === "string" ? /^(.+) \d+$/.exec(name.trim()) : null;
+    return match !== null && pagesWithName(world, match[0]).length === 0 && [...pagesWithName(world, match[1]), systemPageNamed(world, match[1])].some((page) => page?.type === "creature");
 }
 
 /** "Coppa#Veleno": what was learned, as a link names it. */

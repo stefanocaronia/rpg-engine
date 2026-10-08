@@ -25,7 +25,7 @@ export {
     uniquePage,
     writtenFieldName,
 } from "./inheritance.ts";
-export { everyGoalTicked, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
+export { everyGoalTicked, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export {
@@ -43,7 +43,7 @@ export {
     newPageFields,
     standardValues,
 } from "./standard-fields.ts";
-export { alwaysInList, alwaysInMessage, declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
+export { alwaysInList, alwaysInMessage, declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
 export {
     type Backlink,
     backlinks,

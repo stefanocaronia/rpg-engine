@@ -1,7 +1,7 @@
 // What the player character knows, as the player's view reads it (D-250, VIEW-2, VIEW-3): the pages it knows and the text of each as it knows it.
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
-import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithName, parsePageReference, textParts, textsIn, type World } from "../pages/index.ts";
+import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithName, parsePageReference, readSection, textParts, textsIn, withoutComments, type World } from "../pages/index.ts";
 import { readOpenScene } from "./game-scene.ts";
 
 /** What the player character knows: the pages, and the secrets by the page that writes them. */
@@ -13,10 +13,11 @@ export interface Knowledge
     secrets: Set<string>;
 }
 
-/** The player character, the first page of a character with role pc; undefined before there is one. */
+/** The player character: the first living character with role pc, else the first dead one; undefined before there is one. */
 export function playerCharacter(world: World): Page | undefined
 {
-    return world.pages.find((page) => page.type === "character" && page.fields.role === "pc");
+    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    return players.find((page) => page.fields.status !== "dead") ?? players[0];
 }
 
 /**
@@ -32,7 +33,8 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
     const secrets = new Set(known.filter((link) => link.section !== undefined).map((link) => secretKey(link.page, link.section ?? "")));
     const pages = new Set<Page>([
         pc,
-        ...known.flatMap((link) => named(link.page)),
+        // A secret discovered makes its page known, but a creature's: the secret is known, the creature's numbers stay the master's (D-254).
+        ...known.flatMap((link) => named(link.page).filter((page) => link.section === undefined || page.type !== "creature")),
         ...world.pages.filter((page) => page.type === "character" && page.fields.role === "companion"),
         // The quests the player took (D-250).
         ...world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))),
@@ -50,34 +52,51 @@ export function knowsPage(knowledge: Knowledge, page: Page): boolean
 }
 
 /**
- * A page's text as the player character knows it (VIEW-3): its introduction, or its nearest base's; its sections and those it shows from its bases (INH-13); of
- * its secrets, only those discovered, recorded by the page that writes them (REV-2). A secret without a name is never known.
+ * A page's text as the player character knows it (VIEW-3): its introduction, or that of its nearest base it knows; its sections and those it shows from the bases
+ * it knows (INH-13), never a creature's (D-254); of the secrets, only those discovered, recorded by the page that writes them (REV-2), from any base. A secret
+ * without a name is never known; comments are left out (LNK-2).
  */
 export function knownText(world: World, knowledge: Knowledge, page: Page): string
 {
     const parts = [
         ...partsOf(page),
         ...inheritedByBase(world, page).flatMap((group) => group.parts.map((part) => ({ ...part, holder: group.base }))),
-    ].filter((part) => !isSecretText(part.text) || knowledge.secrets.has(secretKey(part.holder.name, part.name)));
-    const introduction = introductionText(page.body) || (baseChain(world, page).map((base) => introductionText(base.body)).find((text) => text !== "") ?? "");
-    return [introduction, ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n");
+    ].filter((part) => isShown(knowledge, page, part));
+    const introduction = introductionText(page.body) || (baseChain(world, page).filter((base) => knowsPage(knowledge, base)).map((base) => introductionText(base.body)).find((text) => text !== "") ?? "");
+    return withoutComments([introduction, ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n"));
 }
 
-/** The section or secret of a page the player character knows by this name, with its text (VIEW-3); undefined when it knows none. */
+/**
+ * The section or secret of a page the player character knows by this name (VIEW-3): a section whole, with its subsections and the secrets in it it discovered;
+ * from a base, only one it knows, or a secret it discovered. Undefined when it knows none.
+ */
 export function knownPart(world: World, knowledge: Knowledge, page: Page, name: string): string | undefined
 {
     const wanted = comparableText(name.trim());
-    const holders = [page, ...baseChain(world, page)];
 
-    for (const holder of holders) {
+    for (const holder of [page, ...baseChain(world, page)]) {
         const part = partsOf(holder).find((candidate) => comparableText(candidate.name) === wanted);
 
-        if (part !== undefined) {
-            return !isSecretText(part.text) || knowledge.secrets.has(secretKey(holder.name, part.name)) ? part.text : undefined;
+        if (part === undefined) {
+            continue;
         }
+
+        if (!isShown(knowledge, page, part)) {
+            return undefined;
+        }
+
+        const whole = isSecretText(part.text) ? part.text : (readSection(holder.body, part.name) ?? part.text);
+        const kept = isSecretText(part.text) ? [part] : partsOf({ ...holder, body: whole }).map((inner) => ({ ...inner, holder })).filter((inner) => isShown(knowledge, page, inner));
+        return withoutComments(kept.map((inner) => inner.text).join("\n\n"));
     }
 
     return undefined;
+}
+
+/** Whether a part shows to the player character: a secret it discovered, or a section of the page or of a base it knows (D-254). */
+function isShown(knowledge: Knowledge, page: Page, part: { name: string; text: string; holder: Page; }): boolean
+{
+    return isSecretText(part.text) ? knowledge.secrets.has(secretKey(part.holder.name, part.name)) : part.holder === page || knowsPage(knowledge, part.holder);
 }
 
 /** The sections and secrets of a page's own text, each with the page. */
@@ -88,7 +107,7 @@ function partsOf(page: Page): { name: string; text: string; holder: Page; }[]
 
 function isSecretText(text: string): boolean
 {
-    return /^>[ \t]*\[!secret\]/i.test(text);
+    return /^[ \t]{0,3}>[ \t]*\[!secret\]/i.test(text);
 }
 
 function secretKey(page: string, secret: string): string

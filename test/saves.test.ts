@@ -130,7 +130,8 @@ describe("the table of cases of the saves", () => {
         await ok("write", "Kira", "--set", "status=dead");
         expect(await scene("La caduta")).toMatch(/\nNo save: the player character is dead\. If the player wants to go back, save load, as the campaign's saves setting allows\.$/);
         expect(await ok("save", "load")).toBe(
-            "Back to 2 - day 1, 18.00 - Alla locanda: the campaign's files are as they were then, and what happened since is gone from the game. Call status, and go on from there.",
+            "Back to 2 - day 1, 18.00 - Alla locanda: the campaign's files are as they were then, and what happened since is gone from the game. "
+                + "What the load replaced is in .saves/before load 002.zip, to undo it by hand. Call status, and go on from there.",
         );
         expect(readFileSync(join(folder, "world", "characters", "Kira.md"), "utf8")).not.toContain("dead");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", visibility: "public", data: { save: 2 } });
@@ -256,6 +257,9 @@ describe("the saves, after Matteo's round", () => {
         expect(readFileSync(join(folder, "agents.md"), "utf8")).toBe("il mio testo");
         expect(readFileSync(join(folder, "CLAUDE.local.md"), "utf8")).toBe("le mie istruzioni");
         expect(existsSync(join(folder, "Appunti", "idee.md"))).toBe(false);
+        expect(new TextDecoder().decode(unpackFiles(readFileSync(join(folder, ".saves", "before load 001.zip")))["Appunti/idee.md"])).toBe("un'idea");
+        // A second load of the same save keeps the first copy, and names its own.
+        expect(await ok("save", "load", "1")).toContain("What the load replaced is in .saves/before load 001 (2).zip, to undo it by hand.");
         expect(new TextDecoder().decode(unpackFiles(readFileSync(join(folder, ".saves", "before load 001.zip")))["Appunti/idee.md"])).toBe("un'idea");
     });
 });

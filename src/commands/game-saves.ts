@@ -65,11 +65,11 @@ export function makeSave(root: string, context: Context, label: string | undefin
 
 /**
  * Gives the campaign back as a save holds it (SAV-5): its game files as they were, those made since removed, and the later saves removed; then a public line in
- * the log. What it removes or rewrites goes first into `before load NNN.zip`, so that a load can be undone by hand. A save that cannot be read, holds a file
- * outside the game's or no campaign.yaml is refused before anything is written; a load that stops halfway leaves its mark, and save load finishes it. Returns
- * the saves removed.
+ * the log. What it removes or rewrites goes first into `before load NNN.zip`, never in place of an older one, so that a load can be undone by hand. A save that
+ * cannot be read, holds a file outside the game's or no campaign.yaml is refused before anything is written; a load that stops halfway leaves its mark, and save
+ * load finishes it. Returns the saves removed and the copy made, none when it finishes a load.
  */
-export function loadSave(root: string, context: Context, save: Save): Save[]
+export function loadSave(root: string, context: Context, save: Save): { removed: Save[]; copy?: string; }
 {
     const targets = Object.entries(readSave(root, save)).map(([path, bytes]) => ({ path: resolve(root, ...path.split("/")), bytes }));
     const stranger = targets.find((target) => !isGameFile(root, target.path));
@@ -97,9 +97,10 @@ export function loadSave(root: string, context: Context, save: Save): Save[]
         }
     };
 
-    if (interruptedLoad(root) === undefined) {
-        const before = `before load ${String(save.number).padStart(3, "0")}.zip`;
-        step(join(folder, before), () => files().writeBytes(join(folder, before), packFiles(gameFileBytes(root))));
+    const copy = interruptedLoad(root) === undefined ? freeCopyName(root, save) : undefined;
+
+    if (copy !== undefined) {
+        step(join(folder, copy), () => files().writeBytes(join(folder, copy), packFiles(gameFileBytes(root))));
         step(join(folder, loadingMarkName), () => files().writeBytes(join(folder, loadingMarkName), new TextEncoder().encode(String(save.number))));
     }
 
@@ -117,7 +118,22 @@ export function loadSave(root: string, context: Context, save: Save): Save[]
 
     appendLogEntry(root, newDatedLogEntry(root, context, "save-loaded", "public", { save: save.number, label: save.label, removed: later.length === 0 ? undefined : later.map((other) => other.number) }));
     files().remove(join(folder, loadingMarkName));
-    return later;
+    return { removed: later, copy };
+}
+
+/** "before load 003.zip", or "before load 003 (2).zip" when that one is there: a copy before a load never takes the place of another. */
+function freeCopyName(root: string, save: Save): string
+{
+    const taken = new Set(files().entries(join(root, savesFolderName)).map((entry) => entry.name.toLowerCase()));
+    const base = `before load ${String(save.number).padStart(3, "0")}`;
+
+    for (let count = 1;; count++) {
+        const name = count === 1 ? `${base}.zip` : `${base} (${count}).zip`;
+
+        if (!taken.has(name.toLowerCase())) {
+            return name;
+        }
+    }
 }
 
 /** "3 - day 2, 06.10 - Scontro all'ossario": a save as outputs name it. */

@@ -2,7 +2,11 @@ import { rememberedByText } from "../core/memo.ts";
 import { comparableText, linkTargetName } from "../core/text.ts";
 
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
-const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
+// A callout may stand up to three spaces in, as under an item of a list, and Obsidian still draws it as one.
+const secretPattern = /^[ \t]{0,3}>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
+const quotePattern = /^[ \t]{0,3}>[ \t]?/;
+// Comments as Obsidian hides them in reading view: between %% marks, and HTML ones.
+const htmlCommentPattern = /<!--[\s\S]*?(?:-->|$)/g;
 const fencePattern = /^[ \t]*(`{3,}|~{3,})(.*)$/;
 // Inline code, as `x` or ``x``: a run of backticks closed by a run just as long.
 const inlineCodePattern = /(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)/g;
@@ -99,7 +103,7 @@ export function partContent(text: string, name: string): { secret: boolean; cont
     }
 
     const secret = findSecret(lines, name);
-    return secret === undefined ? undefined : { secret: true, content: trimBlankLines(lines.slice(secret.start + 1, secret.end).map((line) => line.replace(/^>[ \t]?/, "")).join("\n")) };
+    return secret === undefined ? undefined : { secret: true, content: trimBlankLines(lines.slice(secret.start + 1, secret.end).map((line) => line.replace(quotePattern, "")).join("\n")) };
 }
 
 /** A section with its subsections, down to the next heading of the same or a higher level, or a secret block. Names ignore case. */
@@ -149,7 +153,7 @@ export function writeText(text: string, newText: string, options: { section?: st
             return joinBlocks(lines.slice(0, secret.start).join("\n"), lines.slice(secret.end).join("\n"));
         }
 
-        const content = lines.slice(secret.start + 1, secret.end).map((line) => line.replace(/^>[ \t]?/, "")).join("\n");
+        const content = lines.slice(secret.start + 1, secret.end).map((line) => line.replace(quotePattern, "")).join("\n");
         const quoted = quoteLines(options.mode === "append" ? joinBlocks(content, newText) : newText);
         return [...lines.slice(0, secret.start + 1), ...quoted, ...lines.slice(secret.end)].join("\n");
     }
@@ -286,7 +290,7 @@ function secretsOf(lines: string[]): (Range & { title: string; })[]
         if (match) {
             let end = index + 1;
 
-            while (end < lines.length && lines[end].startsWith(">") && !secretPattern.test(lines[end])) {
+            while (end < lines.length && quotePattern.test(lines[end]) && !secretPattern.test(lines[end])) {
                 end++;
             }
 
@@ -294,6 +298,27 @@ function secretsOf(lines: string[]): (Range & { title: string; })[]
         }
     });
     return secrets;
+}
+
+/** A text without its comments, as Obsidian shows it in reading view: what lies between %% marks, also across lines, and HTML comments; code stays as it is (LNK-2). */
+export function withoutComments(text: string): string
+{
+    const lines = text.split("\n");
+    const views = lineViews(lines);
+    const shown = lines.map((line, index) => {
+        const parts = line.split("%%");
+        // A line that loses a comment loses the space before it too.
+        return views[index].code || (parts.length === 1 && !views[index].commented) ? line : parts.filter((_, part) => (part % 2 === 0) === !views[index].commented).join("").trimEnd();
+    });
+    return trimBlankLines(shown.join("\n").replace(htmlCommentPattern, "").replace(/\n[ \t]*(?:\n[ \t]*){2,}/g, "\n\n"));
+}
+
+/** The lines, counted from 1, that mark a secret the engine does not read as one, as a callout four spaces in: written for a secret, read as public text. */
+export function unreadSecretLines(text: string): number[]
+{
+    const lines = text.split("\n");
+    const views = lineViews(lines);
+    return lines.flatMap((line, index) => (isProse(views[index]) && /\[!secret\]/i.test(line) && !secretPattern.test(line) ? [index + 1] : []));
 }
 
 /** Whether a text lists goals as checkboxes, outside code blocks, and every one is ticked. */

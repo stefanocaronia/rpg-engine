@@ -57,6 +57,7 @@ import {
     removedFieldName,
     sameAsBase,
     sectionFollowersOf,
+    systemKnowsReason,
     systemLabel,
     systemPageNamed,
     type TextMode,
@@ -534,7 +535,7 @@ function checkKnows(world: World, change: FieldChange): void
     const known = [...linksIn(change.set?.knows), ...linksIn(change.add?.knows)].map((name) => systemPageNamed(world, name)).find((page) => page !== undefined && findPage(world, page.name) === page);
 
     if (known !== undefined) {
-        throw new Error(`${known.name} is ${systemLabel(known)}, which anyone may know: knows lists pages and secrets of the campaign. Nothing changed.`);
+        throw new Error(`${known.name} is ${systemLabel(known)}, ${systemKnowsReason(known)}: knows lists pages and secrets of the campaign. Nothing changed.`);
     }
 }
 

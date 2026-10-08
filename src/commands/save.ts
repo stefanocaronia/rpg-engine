@@ -10,7 +10,7 @@ const actions = ["list", "make", "load"] as const;
 type SaveResult =
     | { action: "list"; mode: SaveMode; saves: Save[]; }
     | { action: "make"; save: Save; }
-    | { action: "load"; save: Save; removed: Save[]; finished: boolean; };
+    | { action: "load"; save: Save; removed: Save[]; copy?: string; finished: boolean; };
 
 export const save = defineCommand({
     name: "save",
@@ -50,12 +50,12 @@ export const save = defineCommand({
         const interrupted = interruptedLoad(root);
 
         if (interrupted !== undefined) {
-            return { action: "load", save: interrupted, removed: loadSave(root, context, interrupted), finished: true };
+            return { action: "load", save: interrupted, ...loadSave(root, context, interrupted), finished: true };
         }
 
         const chosen = chosenSave(saves, input.save);
         checkLoad(mode, saves, chosen, isPlayerDead(campaignWorld(root, context)));
-        return { action: "load", save: chosen, removed: loadSave(root, context, chosen), finished: false };
+        return { action: "load", save: chosen, ...loadSave(root, context, chosen), finished: false };
     },
 
     format(result)
@@ -67,7 +67,8 @@ export const save = defineCommand({
         if (result.action === "load") {
             const removed = result.removed.length === 0 ? "" : ` The later saves are gone: ${result.removed.map((removed) => removed.number).join(", ")}.`;
             const finished = result.finished ? "The load that had stopped halfway is finished. " : "";
-            return `${finished}Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed} Call status, and go on from there.`;
+            const copy = result.copy === undefined ? "" : ` What the load replaced is in .saves/${result.copy}, to undo it by hand.`;
+            return `${finished}Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed}${copy} Call status, and go on from there.`;
         }
 
         const listed = result.saves.length === 0 ? "No saves yet: one is made at the end of each scene." : `Saves: ${result.saves.map(saveText).join(" · ")}.`;
