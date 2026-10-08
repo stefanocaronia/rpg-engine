@@ -10,11 +10,11 @@ That was the last evening for now. Someone from the team that makes the game ask
 6. Did the dice feel honest? a) yes b) not sure c) no
 7. Did it ever feel like talking to a program rather than a game master? a) never b) once c) more than once
 8. How was the pace? a) right b) slow, too much description c) rushed
-9. How did these go? a) quick and clear b) too long, too many questions c) confusing or wrong d) there was none
+9. How did these go? Answer each line below, not this one: a) quick and clear b) too long, too many questions c) confusing or wrong d) there was none
    - 9a. the questions before playing
    - 9b. making your character
    - 9c. picking up where you left off, on a later evening
-10. When it happened, how did the master take it? a) well b) so-so c) badly d) it didn't happen
+10. When it happened, how did the master take it? Answer each line below, not this one: a) well b) so-so c) badly d) it didn't happen
     - 10a. you said stop
     - 10b. you tried something impossible
     - 10c. you asked something off-game

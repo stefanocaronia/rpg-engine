@@ -88,6 +88,8 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         ["always-in: [Pugno]", "always-in: write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]."],
         ["always-in: { equipped: [] }", "always-in.equipped"],
         ['creation: ""', "creation"],
+        // A misspelled key is no key the system has (SYS-1).
+        ["sheet-note: { Corpo: del giocatore }", 'unknown key "sheet-note"'],
     ])("refuses %j, saying where and how to write it", (yaml, message) => {
         system(near, "prova", `${declared}${yaml}\n`);
         expect(() => findSystem([near], "prova")).toThrow(message);

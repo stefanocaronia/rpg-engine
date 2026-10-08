@@ -56,6 +56,7 @@ export {
     linksIn,
     loadWorld,
     locate,
+    namesakes,
     type Page,
     pageFileNamed,
     type PageMatch,

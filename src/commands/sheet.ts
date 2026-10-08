@@ -175,10 +175,17 @@ export function sheetFieldNames(world: World, system: GameSystem | undefined, pa
     return [...shown, ...given.filter((field) => !shown.some((other) => comparableText(other) === comparableText(field)))];
 }
 
-/** Refuses items given to a list that the game system does not take, with the names it takes, and links in place of its names (SYS-8). */
+/**
+ * Refuses items given to a list that the game system does not take, with the names it takes, and links in place of its names (SYS-8); and text with commas for a
+ * list the system declares without names, which would be one item, as "simple weapons, martial weapons".
+ */
 export function checkListValues(system: GameSystem | undefined, lists: Record<string, unknown>): void
 {
     for (const [field, value] of Object.entries(lists)) {
+        if (system !== undefined && isOpenList(system, field) && isCommaText(value)) {
+            throw new Error(`${field} is a list in the system ${system.name}: write its names apart, as ${field}=[${String(value)}]. Nothing changed.`);
+        }
+
         const wrong = wrongValues(system, field, value);
         const links = allowedValues(system, field) === undefined ? [] : (Array.isArray(value) ? value : [value]).filter((item) => /\[\[/.test(String(item)));
 
@@ -192,15 +199,34 @@ export function checkListValues(system: GameSystem | undefined, lists: Record<st
     }
 }
 
-/** The lists written on the campaign's pages with names the game system does not take (SYS-8), such as one written by hand. */
+/** Text with commas outside links and parentheses, as "simple weapons, martial weapons": several names that a list holds apart. */
+function isCommaText(value: unknown): boolean
+{
+    return typeof value === "string" && value.replace(/\[\[[^\]]*\]\]/g, "").replace(/\([^)]*\)/g, "").includes(",");
+}
+
+/** A list the system declares without the names it takes, which are checked by name, as weapon-proficiencies (SYS-8). */
+function isOpenList(system: GameSystem, field: string): boolean
+{
+    return allowedValues(system, field) === undefined && Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
+}
+
+/**
+ * The lists written on the campaign's pages with names the game system does not take, or as text with commas, which reads as one name (SYS-8), such as one
+ * written by hand.
+ */
 export function listValueProblems(world: World, system: GameSystem | undefined): Problem[]
 {
-    if (system === undefined || Object.keys(system.values).length === 0) {
+    if (system === undefined) {
         return [];
     }
 
     return world.pages.filter((page) => page.system === undefined).flatMap((page) =>
         Object.entries(page.fields).flatMap(([field, value]): Problem[] => {
+            if (isOpenList(system, field) && isCommaText(value)) {
+                return [{ path: page.path, message: `${field} on ${page.name} is text with commas, read as one name: a list is written [a, b].`, fix: `write ${page.name}, set ${field}=[${String(value)}]` }];
+            }
+
             const wrong = wrongValues(system, field, value);
             return wrong.length === 0 ? [] : [{ path: page.path, message: `On ${page.name}: ${wrongText(system, field, wrong)}`, fix: `write ${page.name}, remove ${field}=${wrong[0]}, then add the right name` }];
         })

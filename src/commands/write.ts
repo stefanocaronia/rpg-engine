@@ -40,6 +40,7 @@ import {
     listFieldNames,
     misspelledFieldProblem,
     misspelledStandardField,
+    namesakes,
     newBaseProblem,
     newPageFields,
     ownFieldChange,
@@ -828,10 +829,9 @@ function linkNotes(world: World, change: FieldChange): string[]
         : [`No page for ${missing.map((name) => `[[${name}]]`).join(", ")} yet: create ${missing.length === 1 ? "it" : "them"} with write if ${
             missing.length === 1 ? "it belongs" : "they belong"
         } to this world, or link a page that exists.${language}`];
-    const all = [...world.pages, ...(system?.pages ?? [])];
     const twins = names.flatMap((name) => {
         const page = exists(name);
-        const others = page === undefined ? [] : all.filter((other) => comparableText(other.name).startsWith(`${comparableText(page.name)} (`));
+        const others = page === undefined ? [] : namesakes(world, page);
         return page === undefined || others.length === 0 ? [] : [`[[${name}]] is ${page.system === undefined ? withArticle(page.type ?? "page") : systemLabel(page)}; there is also ${others.map((other) => other.name).join(", ")}.`];
     });
     return [...absent, ...twins];

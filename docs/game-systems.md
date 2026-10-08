@@ -30,7 +30,7 @@ systems/5e/
 - The engine looks for systems in the folders of `context.systemFolders` ([src/core/context.ts](../src/core/context.ts)): by default only the package's own `systems/` folder. Every subfolder with a `system.yaml` is an installed system; its name is the folder's name, compared ignoring case. When several folders are given (the tests add `test/systems/`), the nearest folder wins for a name found twice.
 - So today a system is installed by putting its folder in `systems/`. The npm package ships `systems/` without each system's `test/` folder.
 - A campaign names its system in `campaign.yaml` (`system: 5e`), through `init` (option `system`) or `config` (setting `system`); both accept only an installed system and list those that are. A campaign whose system is not installed still works without its pages; `validate` reports it with the fix.
-- `system.yaml` is read when a command needs it. One that is not valid stops the command: `The game system 5e cannot be read, because …/system.yaml is not valid:` followed by the key at fault. Keys the engine does not know are ignored.
+- `system.yaml` is read when a command needs it. One that is not valid stops the command: `The game system 5e cannot be read, because …/system.yaml is not valid:` followed by the key at fault; a key the engine does not know is refused by name, so a misspelled one never goes unnoticed.
 - An MCP server keeps the systems it started with: after changing a system, reconnect it.
 
 ## 3. system.yaml
@@ -61,7 +61,7 @@ The kind of each field the system's pages and sheets use:
 | `modifier` | A number shown with its sign (`+2`), never counted. |
 | `bonus` | A number that effects add up: two effects giving `bonus-saves=1` read 2. A bonus the page lacks reads as 0 in formulas. |
 | `text` | Text, never counted, never money; or `true` and `false`, such as a spell's `ritual`. |
-| `list` | A list, never counted. Given one item, a write makes it a list of one. |
+| `list` | A list, never counted. Given one item, a write makes it a list of one; text with commas, which would read as one item, is refused, and `validate` reports it written by hand. |
 | `rolls` | Rolls kept for later, such as a diviner's Portent: `roll` with `keep` writes the dice rolled there, `roll` with `use` takes one in place of a die and logs which roll it replaced. The line of the character shows them; a rest reminds them. |
 
 ```yaml

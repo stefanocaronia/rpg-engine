@@ -68,7 +68,7 @@ const systemSchema = z.object({
             refill: z.union([z.string().min(1), z.record(z.string().min(1), z.union([z.number(), z.string().min(1)]))]).optional(),
         }).strict(),
     ).optional(),
-});
+}).strict();
 
 /** A recipe of the system (D-185, DAT-4): the fields it brings to their maximum or to a value, the occasions it ends, the rules to read for the rest. */
 export interface Recipe

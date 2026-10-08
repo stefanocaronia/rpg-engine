@@ -44,6 +44,14 @@ function stateFile(): string
 }
 
 describe("rpg scene", () => {
+    it("says that the title of a scene, open or closed, is no page when show is given it", async () => {
+        await ok("scene", "open", "--title", "Al molo", "--type", "exploration");
+        expect((await rpg("show", "Al molo")).output).toContain("Al molo is the open scene, not a page: status gives it.");
+        await ok("scene", "close", "--summary", "Arrivati al molo.");
+        expect((await rpg("show", "al molo")).output).toBe("There is no page named al molo. Al molo is a scene that closed, not a page (exploration): Arrivati al molo.");
+        expect((await rpg("show", "Altrove")).output).toBe("There is no page named Altrove. Look for it with the find command.");
+    });
+
     it("never takes the scene away when its close cannot find a page: the close stops with the scene still open", async () => {
         await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Lupo=1");
         writeFileSync(join(folder, "world", "Lena.md"), "Un'altra Lena.\n");

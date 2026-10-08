@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { comparableText, sameName, withArticle } from "../core/text.ts";
 import {
     backlinks,
     baseChain,
@@ -10,12 +10,14 @@ import {
     inheritedByBase,
     inheritedFields,
     locate,
+    namesakes,
     type Page,
     pagesWithName,
     parsePageReference,
     readSection,
     secretNames,
     sectionTitles,
+    systemLabel,
     systemPageNamed,
     textParts,
     type World,
@@ -23,7 +25,7 @@ import {
 import { featureParts } from "../progression/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
-import { copyLink, copyPage, readOpenScene } from "./game-scene.ts";
+import { closedScenes, copyLink, copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
 import { featureSource, progressionOf } from "./progression.ts";
@@ -62,7 +64,14 @@ export const show = defineCommand({
         const page = found ?? (scene !== undefined && copy !== undefined ? copyPage(copy, scene.copies[copy]) : undefined);
 
         if (page === undefined) {
-            throw new Error(`There is no page named ${reference.name}${scene === undefined ? "" : ", nor a copy of that name in the open scene"}. Look for it with the find command.${missingSystemHint(world)}`);
+            // A scene's title is no page, as the last scenes status lists.
+            const closed = closedScenes(root).find((other) => sameName([other.title], reference.name) !== undefined);
+            const named = scene !== undefined && sameName([scene.title], reference.name) !== undefined
+                ? ` ${scene.title} is the open scene, not a page: status gives it.`
+                : closed === undefined
+                ? ""
+                : ` ${closed.title} is a scene that closed, not a page (${closed.type}): ${closed.summary}`;
+            throw new Error(`There is no page named ${reference.name}${scene === undefined ? "" : ", nor a copy of that name in the open scene"}.${named || " Look for it with the find command."}${missingSystemHint(world)}`);
         }
 
         const isCopy = found === undefined && scene !== undefined && copy !== undefined;
@@ -84,6 +93,8 @@ export const show = defineCommand({
             path: page.path,
             system: page.system,
             hides: page.system === undefined && !isCopy && systemPageNamed(world, page.name) !== undefined ? world.system?.name : undefined,
+            // Acolyte (background) beside the creature Acolyte: the name alone leads here (SYS-2).
+            namesakes: isCopy || reference.section !== undefined ? [] : namesakes(world, page).map((other) => `${other.name}, ${other.system === undefined ? withArticle(other.type ?? "page") : systemLabel(other)}`),
             section: group?.name ?? reference.section,
             copyOf: isCopy ? copyLink(scene.copies[copy]) : undefined,
             scene: isCopy ? scene.title : undefined,
@@ -134,6 +145,7 @@ export const show = defineCommand({
         const header = [
             title,
             result.hides === undefined ? "" : `This page hides the system ${result.hides}'s ${result.page}: links to that name lead here.`,
+            result.namesakes.length === 0 ? "" : `There is also ${result.namesakes.join("; ")}: show it by that name.`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
             result.isIn.length > 0 ? `Is in: ${result.isIn.join(" › ")}` : "",
             result.alsoIn.length > 0 ? `Also listed in: ${result.alsoIn.join(", ")}. A thing can be in one place only: move it where it is, such as move, page ${result.page}, to ${result.isIn[0]}.` : "",

@@ -20,9 +20,9 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `private/` | the maintainer's private repository: project docs (`project/`, Italian) and the colleagues (`.claude/`) | no | no |
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | user guide, and the docs for developers and agents: `architecture.md`, `game-systems.md`, `glossary.md`, `commands.md` (generated) | yes | no |
-| `src/` | core, CLI, MCP server, dashboard | yes | built into `dist/` |
+| `src/` | core, CLI, MCP server (the dashboard comes in phase 3) | yes | built into `dist/` |
 | `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/` | yes | yes, without their tests and scripts |
-| `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules): optional | yes | yes |
+| `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules), optional: none yet, phase 4 | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
 | `playtests/` | playtest scenarios: player profiles, starting points, checklists | yes | no |
@@ -49,7 +49,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - **A system works out the sheet, not the game.** It computes only the numbers of the character sheet and the resources that are spent and come back, as D&D Beyond does; every other feature, item or interaction stays text the AI reads and applies. A new mechanic comes only when a playtest shows the AI getting that count wrong, never because a review finds an edge case: in a review, an edge case of the rules becomes text for the AI.
 - **Core, system or extension?** Core code must make sense for a game very different from D&D. Anything that names a game's concepts (HP, spell slots, advantage) belongs in a system or an extension, as data; their code only when data is not enough.
 - **Data is object-oriented and SOLID.** Each page describes only itself. A relation lives in whoever holds it: who contains, owns or knows something keeps the list, with links, in its frontmatter; a thing never records where it is, who has it or who knows it. The engine works out where a thing is by climbing its containers. Systems and extensions add types and fields without changing the core ones.
-- Every operation is a command defined once, from which the CLI, the MCP server and the dashboard API are generated. Every command validates its input, checks the caller's role and, when it changes something, writes a line to the log.
+- Every operation is a command defined once, from which the CLI and the MCP server are generated, and later the dashboard's API. Every command validates its input and, when it changes something, writes a line to the log; the caller's role is checked once roles exist (phase 2).
 
 ## Coding guidelines
 

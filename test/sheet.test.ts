@@ -196,6 +196,17 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         expect(await ok("validate")).not.toContain("Nero");
     });
 
+    it("refuses text with commas for a list of the system, which would read as one name, and validate reports it written by hand", async () => {
+        expect(await refused("write", "Ettore", "--set", "weapon-proficiencies=simple weapons, martial weapons")).toBe(
+            "weapon-proficiencies is a list in the system 5e: write its names apart, as weapon-proficiencies=[simple weapons, martial weapons]. Nothing changed.",
+        );
+        await ok("write", "Ettore", "--set", "weapon-proficiencies=[[Weapon, +1, +2, or +3]]");
+        writeFileSync(join(folder, "world", "characters", "Nero.md"), "---\nrole: npc\nlanguages: Common, Elvish\n---\n");
+        expect(await ok("validate")).toContain(
+            "- world/characters/Nero.md: languages on Nero is text with commas, read as one name: a list is written [a, b]. Fix: write Nero, set languages=[Common, Elvish].",
+        );
+    });
+
     it("takes the names of another game system: the debilities of the test system based on Ironsworn", async () => {
         removeFolder(folder);
         folder = makeTempFolder();

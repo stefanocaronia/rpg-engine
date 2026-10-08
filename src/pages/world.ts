@@ -199,6 +199,13 @@ export function pageWithPath(world: World, path: string): Page | undefined
 
 const pathsByWorld = new WeakMap<World, Map<string, Page>>();
 
+/** The pages, of the campaign or of its game system, named as this one with a note in parentheses, such as Acolyte (background) beside Acolyte (SYS-2). */
+export function namesakes(world: World, page: Page): Page[]
+{
+    const prefix = `${comparableText(page.name)} (`;
+    return [...world.pages, ...(world.system?.pages ?? [])].filter((other) => comparableText(other.name).startsWith(prefix));
+}
+
 /** The page of the campaign's game system with this name, ignoring case; undefined when there is none (SYS-3). */
 export function systemPageNamed(world: World, name: string): Page | undefined
 {
