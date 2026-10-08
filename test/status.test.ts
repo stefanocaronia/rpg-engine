@@ -107,6 +107,15 @@ describe("rpg status", () => {
         expect((await rpg("find", "open", "--type", "quest")).output).not.toContain("Chiusa");
     });
 
+    it("puts first the open quests whose goals are all ticked, and asks whether their story is over (D-239)", async () => {
+        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
+        await rpg("write", "Altra", "--type", "quest", "--set", "status=open", "--text=- [x] Uno\n- [ ] Due");
+        await rpg("write", "Il pozzo", "--type", "quest", "--set", "status=open", "--text", "Trovare l'acqua.\n\n- [x] Scendere\n- [X] Riempire il secchio");
+        await rpg("write", "Senza compiti", "--type", "quest", "--set", "status=open");
+        await rpg("write", "Non presa", "--type", "quest", "--text=- [x] Fatto");
+        expect(await state()).toContain("Open quests: Il pozzo (every goal ticked: if it is over, set status done; if not, add the goal that is left) · Altra · Senza compiti");
+    });
+
     it("marks the dead, shows the companions before a character exists, and says with whom only when they share a place", async () => {
         await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=0/7", "--set", "status=dead");
         expect(await state()).toContain("No player character yet.\nCompanions: Lena (dead): hp 0/7");

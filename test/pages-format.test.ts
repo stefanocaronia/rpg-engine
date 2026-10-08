@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { everyGoalTicked } from "../src/pages/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 // The page format decided with the maintainer: introduction, sections and secrets, lists, standard fields, containers.
@@ -108,6 +109,16 @@ describe("introduction, sections and secrets", () => {
     it("refuses to remove a section that holds a secret", async () => {
         await rpg("write", "Varro", "--type", "character", "--text", "## Cosa vuole\n\nLa figlia.\n\n> [!secret] La cripta\n> Sotto il mulino.");
         expect((await rpg("write", "Varro#Cosa vuole", "--text=")).output).toBe(`"Cosa vuole" holds the secret "La cripta": remove or move it first, then the section.`);
+    });
+});
+
+describe("goals", () => {
+    it("are all ticked when every checkbox outside code blocks is, a secret's too (D-239)", () => {
+        expect(everyGoalTicked("- [x] Uno\n- [X] Due")).toBe(true);
+        expect(everyGoalTicked("Nessun compito.")).toBe(false);
+        expect(everyGoalTicked("- [x] Uno\n\n> [!secret] Il vero scopo\n> - [ ] Tre")).toBe(false);
+        expect(everyGoalTicked("- [x] Uno\n\n```\n- [ ] un esempio\n```")).toBe(true);
+        expect(everyGoalTicked("* [x] Uno\r\n  + [ ] Due")).toBe(false);
     });
 });
 

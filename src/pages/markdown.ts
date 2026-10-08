@@ -5,6 +5,8 @@ const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
 const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
 const fencePattern = /^[ \t]*(```|~~~)/;
 const linkPattern = /\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+// A goal as a quest lists it, a checkbox: - [ ] to do, - [x] done; in a quote or a secret too.
+const goalPattern = /^[ \t>]*[-*+][ \t]+\[([ xX])\]/;
 
 /** Where a link points: a page, and a section or secret of it. */
 export interface Link
@@ -283,6 +285,15 @@ function secretsOf(lines: string[]): (Range & { title: string; })[]
         }
     });
     return secrets;
+}
+
+/** Whether a text lists goals as checkboxes, outside code blocks, and every one is ticked. */
+export function everyGoalTicked(text: string): boolean
+{
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    const code = codeLines(lines);
+    const marks = lines.flatMap((line, index) => (code[index] ? [] : (goalPattern.exec(line)?.slice(1) ?? [])));
+    return marks.length > 0 && marks.every((mark) => mark !== " ");
 }
 
 /** Which lines belong to fenced code blocks, the fences included. */

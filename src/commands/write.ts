@@ -73,6 +73,7 @@ import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
+import { tickedQuestNotes } from "./game-quests.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
@@ -271,7 +272,7 @@ export const write = defineCommand({
         const companion = page.fields.role === "companion";
         const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, system?.progression?.levelUp), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
-        const quest = changed ? questEndNotes(system, existing, page) : [];
+        const quest = changed ? [...questEndNotes(system, existing, page), ...tickedQuestNotes(existing, page)] : [];
         const shadows = changed && section !== undefined ? featureSectionNotes(now, page, section) : [];
         const links = changed ? linkNotes(now, fields) : [];
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).

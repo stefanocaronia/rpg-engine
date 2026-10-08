@@ -155,9 +155,19 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
     it("of the story come when a quest ends, as the system says", async () => {
         await ok("write", "Il pozzo", "--type", "quest");
         expect(await ok("write", "Il pozzo", "--set", "status=done")).toContain(
-            "Il pozzo is done. What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, level up the characters with the player.",
+            "Il pozzo is done. What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, tell the player in brackets what they achieved and that the characters rise, then level them up with the player, now or at the next rest, as they prefer.",
         );
         expect(await ok("write", "Il pozzo", "--set", "status=done", "--set", "goal=trovato")).not.toContain("What the story rewards");
+    });
+
+    it("of a quest wait until it ends: write asks once whether it is over, when its last goal is ticked (D-239)", async () => {
+        const ticked = "Every goal of Il pozzo is ticked and it is still open: if it is over, set status done; if not, add the goal that is left.";
+        await ok("write", "Il pozzo", "--type", "quest", "--set", "status=open", "--text=- [x] Scendere\n- [ ] Riempire il secchio");
+        expect(await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio")).toContain(ticked);
+        expect(await ok("write", "Il pozzo#Note", "--text", "L'acqua è dolce.")).not.toContain(ticked);
+        expect(await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio\n- [ ] Portarla al paese")).not.toContain(ticked);
+        expect(await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio\n- [x] Portarla al paese")).toContain(ticked);
+        expect(await ok("write", "Il pozzo", "--set", "status=done")).toContain("Il pozzo is done. What the story rewards:");
     });
 });
 

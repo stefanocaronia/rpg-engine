@@ -12,6 +12,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
+import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
@@ -99,7 +100,7 @@ export const status = defineCommand({
             scene: sceneText(world, openScene.scene),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
-            openQuests: pagesWith(world, "quest", "open"),
+            openQuests: openQuests(world),
             now: now === undefined ? undefined : formatGameDate(now),
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
@@ -266,9 +267,11 @@ function sceneCounts(scenes: ClosedScene[]): string
     return [...counts].sort((first, second) => second[1] - first[1] || rank(first[0]) - rank(second[0])).map(([type, count]) => `${count} ${type}`).join(", ");
 }
 
-function pagesWith(world: World, type: Page["type"], wanted: string): string[]
+/** The open quests, those whose goals are all ticked first, with what to do about them (D-239). */
+function openQuests(world: World): string[]
 {
-    return world.pages.filter((page) => page.type === type && page.fields.status === wanted).map((page) => page.name);
+    const open = world.pages.filter((page) => page.type === "quest" && page.fields.status === "open");
+    return [...open.filter(isTickedOpenQuest), ...open.filter((page) => !isTickedOpenQuest(page))].map(openQuestText);
 }
 
 /** "Label: A · B · C, and 2 more: find …", or nothing when there are none. */

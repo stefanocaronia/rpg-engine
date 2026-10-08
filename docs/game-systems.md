@@ -188,7 +188,7 @@ rewards:
 What `write` says when a quest becomes done or failed, such as the experience the story gives:
 
 ```yaml
-quest-ends: "What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, level up the characters with the player."
+quest-ends: "What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, tell the player in brackets what they achieved and that the characters rise, then level them up with the player, now or at the next rest, as they prefer."
 ```
 
 ### thresholds

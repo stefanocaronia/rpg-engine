@@ -25,7 +25,7 @@ export {
     uniquePage,
     writtenFieldName,
 } from "./inheritance.ts";
-export { introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
+export { everyGoalTicked, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export {
