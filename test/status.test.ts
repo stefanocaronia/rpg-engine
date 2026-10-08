@@ -56,6 +56,9 @@ describe("rpg status", () => {
 
         expect(await state()).toBe([
             "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
+            "Difficulty normal: fights medium to hard; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
+            + "random encounters normal; threat clocks at their pace.",
+            "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them.",
             "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
@@ -80,6 +83,7 @@ describe("rpg status", () => {
         expect(await state()).toBe(
             [
                 "Guadoscuro · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
+                "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them.",
                 "Still missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
                 "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
                 "PC: Ennio",

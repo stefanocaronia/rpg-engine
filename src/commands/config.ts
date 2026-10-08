@@ -16,6 +16,7 @@ import {
     readSettings,
     readTextSetting,
     requireCampaign,
+    settingMeaning,
     type SettingName,
     settingNames,
     setupSettingNames,
@@ -172,9 +173,15 @@ function systemShownValue(root: string, setting: SystemSetting): string
     return chosen === undefined ? `(missing; ${setting.values.map((candidate) => `${candidate.value}: ${candidate.means}`).join("; ")})` : `${chosen.value}: ${chosen.means}`;
 }
 
-/** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173). */
+/** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173); difficulty and rigor with what they mean (D-263). */
 function shownValue(root: string, context: Context, settings: CampaignSettings, name: SettingName): unknown
 {
+    const meaning = settingMeaning(name, settings[name]);
+
+    if (meaning !== undefined) {
+        return `${String(settings[name])}: ${meaning}`;
+    }
+
     // Lines and veils not yet answered are missing: [] is the answer none (MOD-3).
     if (listSettingNames.includes(name)) {
         return settings[name] ?? (setupSettingNames.includes(name) ? undefined : []);

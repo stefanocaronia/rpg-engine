@@ -120,7 +120,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await ok("write", "Bran", "--type", "character", "--set", "role=companion", "--set", "status=dead");
         expect(await refused("mode", "play")).toContain("still to make with the player: a companion, made with the player.");
         await ok("write", "Bran", "--set", "status=alive");
-        expect(await ok("status")).toContain("· mode session zero\nNothing is missing. When the player confirms: mode, to play.");
+        expect(await ok("status")).toMatch(/· mode session zero\n(?:.+\n)*Nothing is missing\. When the player confirms: mode, to play\./);
         // The part of play comes with it, the core's: this test system adds none (MOD-5).
         expect(await ok("mode", "play")).toMatch(/^The campaign is now in play\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./);
     });
@@ -165,12 +165,21 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await setUp(["dice"]);
         expect(await ok("status")).toContain(
             "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
+                + "Difficulty normal: fights medium to hard; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; "
+                + "resources standard (treasure, supplies, prices); random encounters normal; threat clocks at their pace.\n"
+                + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them.\n"
                 + 'Still to agree with the player: dice (digital, physical); set each with config. When none is left and the player confirms: mode, to "session zero".',
         );
         await ok("config", "dice", "physical");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc");
         await ok("mode", "play");
-        expect(await ok("status")).toMatch(/^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\n(?!Still)/);
+        expect(await ok("status")).toMatch(
+            /^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\nDifficulty normal: .+\nRigor smooth: .+\n(?!Still)/,
+        );
+        // config gives the chosen value with what it means in play, and status follows a change (D-263).
+        expect(await ok("config", "rigor", "rules")).toMatch(/^rigor: rules: as written: charge with change what is used up, food and water each day, light as it burns .+ the rule applies$/m);
+        expect(await ok("config", "difficulty")).toMatch(/^difficulty: normal: fights medium to hard; .+$/m);
+        expect(await ok("status")).toContain("\nRigor rules: as written: charge with change what is used up");
     });
 
     it("answers a list with none only while it holds nothing, and an emptied list stays answered", async () => {

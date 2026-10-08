@@ -22,6 +22,33 @@ export const saveModes = ["permadeath", "checkpoint", "free"] as const;
 /** How closely the rules are followed, apart from difficulty (D-42): the master glosses over them, as they are written, or beyond them. */
 export const rigors = ["smooth", "rules", "simulation"] as const;
 
+/** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263). */
+export const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
+    story: "fights easy; foes naive, at their weakest, quick to flee; clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow; you may soften your own rolls",
+    easy: "fights easy to medium; foes with simple tactics, below average toughness; three clues or more; resources generous; random encounters rare; threat clocks slow",
+    normal: "fights medium to hard; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
+        + "random encounters normal; threat clocks at their pace",
+    hard: "fights hard to deadly; foes smart (focus, control), above average toughness, tenacious; three subtle clues; resources scarce; random encounters frequent; threat clocks fast",
+    brutal: "fights deadly and beyond; foes optimized (retreats, ambushes, finishing the fallen), at their toughest, fanatical; three subtle clues; resources very scarce; "
+        + "random encounters frequent; threat clocks fast; rests at their harshest",
+};
+
+/** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
+export const rigorMeanings: Record<(typeof rigors)[number], string> = {
+    smooth: "you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them",
+    rules: "as written: charge with change what is used up, food and water each day, light as it burns (the count, and an effect for as long as it lasts), lifestyle and wages; "
+        + "encumbrance, fatigue and spell components as the rules say; warn before something runs out, and once it has, the rule applies",
+    simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
+};
+
+/** What the chosen difficulty or rigor means, as status and config give it; undefined for another setting or a value it does not take. */
+export function settingMeaning(name: string, value: unknown): string | undefined
+{
+    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings };
+    const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
+    return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
+}
+
 /** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
 export const diceWays = ["digital", "physical"] as const;
 

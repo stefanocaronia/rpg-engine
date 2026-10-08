@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
+import { houseRulesFolderName, missingSettings, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
@@ -96,6 +96,11 @@ export const status = defineCommand({
                 ...(system?.settings ?? []).map((setting) => named(setting.name, systemSettingValue(root, setting))),
                 named("mode", mode),
             ].filter((part) => part !== undefined),
+            // What the chosen difficulty and rigor mean in play, one line each (D-263).
+            meanings: (["difficulty", "rigor"] as const).flatMap((name) => {
+                const meaning = settingMeaning(name, settings[name]);
+                return meaning === undefined ? [] : [`${name.charAt(0).toUpperCase()}${name.slice(1)} ${settings[name]}: ${meaning}.`];
+            }),
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
             note: campaignNote(root, context),
             premise: settings.premise === undefined ? undefined : `${settings.premise}${settings.preparation === undefined ? "" : ` (preparation ${settings.preparation})`}`,
@@ -140,6 +145,7 @@ export const status = defineCommand({
         const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${memberCounters(member)}`;
         const state = [
             result.campaign.join(" · "),
+            ...result.meanings,
             result.note,
             result.premise === undefined ? "" : `Premise: ${result.premise}`,
             boundariesLine(result.lines, result.veils),
