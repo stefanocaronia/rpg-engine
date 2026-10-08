@@ -3,6 +3,9 @@
 import { join } from "node:path";
 import { files } from "../core/store.ts";
 
+/** The files of the AI hosts at the top of a campaign, which are not the game's: a save leaves them as they are (SAV-2). */
+export const hostFileNames = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "GEMINI.md"];
+
 /** A file to write, with its new text. */
 export interface HostFile
 {

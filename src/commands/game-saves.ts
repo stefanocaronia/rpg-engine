@@ -1,8 +1,9 @@
 // The saves of a campaign as commands use them (D-54, D-55): which files a save holds, a save made at the end of a scene or when asked, and given back.
 import { join, relative, resolve, sep } from "node:path";
-import { readSettings, saveModes } from "../campaign/index.ts";
+import { campaignFileName, hostFileNames, readSettings, saveModes } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { appendLogEntry } from "../core/log.ts";
+import { filesIn } from "../core/files.ts";
+import { appendLogEntry, logFileName, logLine } from "../core/log.ts";
 import { files, isInside } from "../core/store.ts";
 import type { World } from "../pages/index.ts";
 import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../saves/index.ts";
@@ -14,19 +15,14 @@ export const savesFolderName = ".saves";
 
 export type SaveMode = (typeof saveModes)[number];
 
-// The files of the AI host, which a save leaves as they are: the player's own text in AGENTS.md is not part of the game.
-const hostFiles = ["AGENTS.md", "CLAUDE.md", "GEMINI.md"];
-// The files the engine reads as text, which the store may already keep.
-const textFile = /\.(md|ya?ml|jsonl?)$/i;
+// The mark of a load under way, with the number of its save: while it is there, save load finishes it (SAV-5).
+const loadingMarkName = "loading.txt";
+const hostNames = new Set(hostFileNames.map((name) => name.toLowerCase()));
 
-/** The campaign's mode of saves; checkpoint until the setup asks it (D-55). A campaign.yaml that cannot be read says so elsewhere. */
+/** The campaign's mode of saves (SAV-1); checkpoint until the setup asks it. A campaign.yaml that cannot be read stops the command, with how to fix it. */
 export function saveMode(root: string): SaveMode
 {
-    try {
-        return readSettings(root).saves ?? "checkpoint";
-    } catch {
-        return "checkpoint";
-    }
+    return readSettings(root).saves ?? "checkpoint";
 }
 
 /** The saves of the campaign, in order. */
@@ -35,55 +31,92 @@ export function campaignSaves(root: string): Save[]
     return readSaves(files().entries(join(root, savesFolderName)).filter((entry) => !entry.isFolder).map((entry) => entry.name));
 }
 
-/** Whether the player character is dead: then no save is made, since going back is what one is for (SAV-3). */
+/** Whether the player character is dead: every one the campaign has, when it has one. Then no save is made, since going back is what one is for (SAV-3). */
 export function isPlayerDead(world: World): boolean
 {
-    return world.pages.some((page) => page.type === "character" && page.fields.role === "pc" && page.fields.status === "dead");
+    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    return players.length > 0 && players.every((page) => page.fields.status === "dead");
 }
 
-/** Makes a save, numbered after the last and named by the game date and `label`, after its public line in the log, which it holds (SAV-3). */
+/** The save whose load stopped halfway, which save load finishes (SAV-5); undefined when none did. */
+export function interruptedLoad(root: string): Save | undefined
+{
+    const mark = files().bytes(join(root, savesFolderName, loadingMarkName));
+    const number = mark === undefined ? undefined : Number(new TextDecoder().decode(mark).trim());
+    return campaignSaves(root).find((save) => save.number === number);
+}
+
+/**
+ * Makes a save, numbered after the last and named by the game date and `label` (SAV-3, SAV-4): the game's files as the disk has them, with the public line of
+ * the save already in the log; the line is written once the zip is. Fails, writing nothing, when the zip cannot be written.
+ */
 export function makeSave(root: string, context: Context, label: string | undefined, why: string): Save
 {
     const number = (campaignSaves(root).at(-1)?.number ?? 0) + 1;
     const date = readPresent(root).date;
     const file = saveFileName(number, [date === undefined ? undefined : formatGameDate(date), label]);
-    appendLogEntry(root, newDatedLogEntry(root, context, "saved", "public", { save: number, label, why }));
-    const held = Object.fromEntries(gameFiles(root).map((path) => [relative(root, path).split(sep).join("/"), fileBytes(path)]));
+    const entry = newDatedLogEntry(root, context, "saved", "public", { save: number, label, why });
+    const held = gameFileBytes(root);
+    held[logFileName] = joinBytes(held[logFileName], new TextEncoder().encode(logLine(entry)));
     files().writeBytes(join(root, savesFolderName, file), packFiles(held));
+    appendLogEntry(root, entry);
     return readSaves([file])[0];
 }
 
 /**
  * Gives the campaign back as a save holds it (SAV-5): its game files as they were, those made since removed, and the later saves removed; then a public line in
- * the log. A save that holds a file outside the game's is refused before anything is written. Returns the saves removed.
+ * the log. What it removes or rewrites goes first into `before load NNN.zip`, so that a load can be undone by hand. A save that cannot be read, holds a file
+ * outside the game's or no campaign.yaml is refused before anything is written; a load that stops halfway leaves its mark, and save load finishes it. Returns
+ * the saves removed.
  */
 export function loadSave(root: string, context: Context, save: Save): Save[]
 {
-    const held = unpackFiles(files().bytes(join(root, savesFolderName, save.file)) ?? new Uint8Array());
-    const targets = Object.entries(held).map(([path, bytes]) => ({ path: resolve(root, ...path.split("/")), bytes }));
+    const targets = Object.entries(readSave(root, save)).map(([path, bytes]) => ({ path: resolve(root, ...path.split("/")), bytes }));
     const stranger = targets.find((target) => !isGameFile(root, target.path));
 
     if (stranger !== undefined) {
-        throw new Error(`${save.file} holds ${relative(root, stranger.path)}, which is not one of the game's files: it was not made by rpg. Nothing changed.`);
+        throw new Error(`${save.file} holds ${relative(root, stranger.path)}, which is not one of the game's files: it was not made by rpg. Nothing changed; load another save.`);
     }
 
+    if (!targets.some((target) => target.path === resolve(root, campaignFileName))) {
+        throw new Error(`${save.file} holds no ${campaignFileName}: it is not a whole save made by rpg. Nothing changed; load another save.`);
+    }
+
+    const folder = join(root, savesFolderName);
+    const later = campaignSaves(root).filter((other) => other.number > save.number);
     const kept = new Set(targets.map((target) => target.path));
 
+    const step = (path: string, work: () => void): void => {
+        try {
+            work();
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            throw new Error(
+                `Loading ${saveText(save)} stopped at ${relative(root, path)}: ${reason}. Close what holds that file, or let it be written, then call save load again: it finishes the load.`,
+            );
+        }
+    };
+
+    if (interruptedLoad(root) === undefined) {
+        const before = `before load ${String(save.number).padStart(3, "0")}.zip`;
+        step(join(folder, before), () => files().writeBytes(join(folder, before), packFiles(gameFileBytes(root))));
+        step(join(folder, loadingMarkName), () => files().writeBytes(join(folder, loadingMarkName), new TextEncoder().encode(String(save.number))));
+    }
+
     for (const path of gameFiles(root).filter((candidate) => !kept.has(resolve(candidate)))) {
-        files().remove(path);
+        step(path, () => files().remove(path));
     }
 
     for (const target of targets) {
-        files().writeBytes(target.path, target.bytes);
+        step(target.path, () => files().writeBytes(target.path, target.bytes));
     }
 
-    const later = campaignSaves(root).filter((other) => other.number > save.number);
-
     for (const other of later) {
-        files().remove(join(root, savesFolderName, other.file));
+        step(join(folder, other.file), () => files().remove(join(folder, other.file)));
     }
 
     appendLogEntry(root, newDatedLogEntry(root, context, "save-loaded", "public", { save: save.number, label: save.label, removed: later.length === 0 ? undefined : later.map((other) => other.number) }));
+    files().remove(join(folder, loadingMarkName));
     return later;
 }
 
@@ -93,19 +126,32 @@ export function saveText(save: Save): string
     return `${save.number} - ${save.label}`;
 }
 
-/** The files a save holds (SAV-2): every file of the campaign but those of the AI host and those under a name with a dot at its top, as .saves, .git, .obsidian. */
+/** The files a save holds, by their path inside it; refused, with what to do, when the zip cannot be read. */
+function readSave(root: string, save: Save): Record<string, Uint8Array>
+{
+    try {
+        return unpackFiles(files().bytes(join(root, savesFolderName, save.file)) ?? new Uint8Array());
+    } catch (error) {
+        throw new Error(`${save.file} cannot be read as a save (${error instanceof Error ? error.message : String(error)}): it is broken, or was not made by rpg. Nothing changed; load another save.`);
+    }
+}
+
+/** The game's files with their bytes as the disk has them now, by their path inside a save. */
+function gameFileBytes(root: string): Record<string, Uint8Array>
+{
+    return Object.fromEntries(gameFiles(root).map((path) => [relative(root, path).split(sep).join("/"), files().bytes(path) ?? new Uint8Array()]));
+}
+
+/**
+ * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts and those under a
+ * name with a dot at its top, as .saves, .git, .obsidian.
+ */
 function gameFiles(root: string): string[]
 {
     return files().entries(root).filter((entry) => isGameName(entry.name)).flatMap((entry) => {
         const path = join(root, entry.name);
-        return entry.isFolder ? files().files(path, () => true) : [path];
+        return entry.isFolder ? filesIn(path, () => true) : [path];
     });
-}
-
-/** A file's bytes: those of a text the store already keeps, as the pages a command has read, without reading the disk again; any other's as they are. */
-function fileBytes(path: string): Uint8Array
-{
-    return textFile.test(path) ? new TextEncoder().encode(files().text(path) ?? "") : (files().bytes(path) ?? new Uint8Array());
 }
 
 function isGameFile(root: string, path: string): boolean
@@ -113,7 +159,16 @@ function isGameFile(root: string, path: string): boolean
     return isInside(root, path) && isGameName(relative(root, path).split(sep)[0]);
 }
 
+/** Whether a name at the top of a campaign is the game's: not the host's, in any case, as Windows reads them, and not starting with a dot. */
 function isGameName(name: string): boolean
 {
-    return !name.startsWith(".") && !hostFiles.includes(name);
+    return !name.startsWith(".") && !hostNames.has(name.toLowerCase());
+}
+
+function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array
+{
+    const joined = new Uint8Array((first?.length ?? 0) + second.length);
+    joined.set(first ?? new Uint8Array(), 0);
+    joined.set(second, first?.length ?? 0);
+    return joined;
 }

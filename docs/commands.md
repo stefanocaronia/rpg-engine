@@ -205,9 +205,9 @@ Read-only: no. Positional parameters: `action`.
 
 ### save
 
-The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. Going back removes what happened since, the later saves too: load only when the player has said so. Example: action load, save last.
+The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. Going back removes what happened since, the later saves too: load only when the player has said so. A load that stopped halfway is finished by save load. Example: action load, save last.
 
-Read-only: no. Positional parameters: `action`.
+Read-only: no. Positional parameters: `action`, `save`.
 
 - `action` (`"list" | "make" | "load"`, optional): list, make or load
 - `label` (`string`, optional): make: a few words that name the save, such as before the duel

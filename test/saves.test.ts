@@ -98,7 +98,7 @@ describe("the table of cases of the saves", () => {
             writeFileSync(join(folder, "world", "characters", "Kira.md"), `---\nrole: pc\nhealth: 5/5\n${player === "dead" ? "status: dead\n" : ""}---\n`);
             const before = gameFiles(folder);
             const [action, save] = asked.split(" ");
-            const result = await rpg("save", action, ...(save === undefined ? [] : ["--save", save]));
+            const result = await rpg("save", action, ...(save === undefined ? [] : [save]));
             expect(result.exitCode === 0 ? "done" : "refused", `${mode} ${player} ${asked}: ${result.output}`).toBe(expected);
 
             if (expected === "refused") {
@@ -145,13 +145,14 @@ describe("the table of cases of the saves", () => {
         await ok("write", "Bran", "--type", "character", "--set", "role=npc");
         await ok("save", "make", "--label", "prima del duello");
         await scene("Tre");
-        expect(await ok("save", "load", "--save", "1")).toContain("The later saves are gone: 2, 3.");
+        expect(await ok("save", "load", "1")).toContain("The later saves are gone: 2, 3.");
         expect(existsSync(join(folder, "world", "characters", "Bran.md"))).toBe(false);
         expect(readFileSync(join(folder, "AGENTS.md"), "utf8")).toBe("il mio testo");
         expect(readFileSync(join(folder, ".obsidian", "app.json"), "utf8")).toBe("{}");
-        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip"]);
-        expect((await rpg("save", "load", "--save", "7")).output).toBe('There is no save "7": give its number or last. Saves: 1 - Uno.');
-        expect((await rpg("save", "list", "--save", "1")).output).toBe("save list does not take save: only load does.");
+        // What the load replaced waits in a zip of its own, to undo it by hand.
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip"]);
+        expect((await rpg("save", "load", "7")).output).toBe('There is no save "7": give its number or last. Saves: 1 - Uno.');
+        expect((await rpg("save", "list", "1")).output).toBe("save list does not take save: only load does.");
     });
 
     it("SAV-5: refuses a save that holds files outside the game's, before writing anything", async () => {
@@ -159,8 +160,79 @@ describe("the table of cases of the saves", () => {
         mkdirSync(join(folder, ".saves"));
         writeFileSync(join(folder, ".saves", "001 - strano.zip"), packFiles({ "AGENTS.md": new TextEncoder().encode("altro") }));
         const before = gameFiles(folder);
-        expect((await rpg("save", "load", "--save", "1")).output).toBe("001 - strano.zip holds AGENTS.md, which is not one of the game's files: it was not made by rpg. Nothing changed.");
+        expect((await rpg("save", "load", "1")).output).toBe("001 - strano.zip holds AGENTS.md, which is not one of the game's files: it was not made by rpg. Nothing changed; load another save.");
         expect(gameFiles(folder)).toEqual(before);
+    });
+});
+
+describe("the saves, after Matteo's round", () => {
+    it("SAV-5: a load that stops halfway leaves its mark, status says so, and save load finishes it in any mode", async () => {
+        await scene("Uno");
+        await ok("write", "Ossario", "--type", "place", "--text", "Ossa.");
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc", "--set", "status=dead");
+        // A folder where the save has a file: the load stops there. Lia, dead, is the only player character left.
+        rmSync(join(folder, "world", "characters", "Kira.md"));
+        mkdirSync(join(folder, "world", "characters", "Kira.md"));
+        const stopped = await rpg("save", "load");
+        expect(stopped.output).toMatch(/^Loading 1 - Uno stopped at world.characters.Kira\.md: .+\. Close what holds that file, or let it be written, then call save load again: it finishes the load\.$/);
+        expect(await ok("status")).toContain("The load of save 1 stopped halfway: call save load to finish it, before anything else.");
+        rmSync(join(folder, "world", "characters", "Kira.md"), { recursive: true });
+        // Kira is alive again in the log restored, which checkpoint would refuse: the load that began is finished all the same.
+        expect(await ok("save", "load")).toMatch(/^The load that had stopped halfway is finished\. Back to 1 - Uno:/);
+        expect(readFileSync(join(folder, "world", "characters", "Kira.md"), "utf8")).not.toContain("dead");
+        expect(existsSync(join(folder, "world", "places", "Ossario.md"))).toBe(false);
+        expect(await ok("status")).not.toContain("stopped halfway");
+    });
+
+    it("SAV-5: refuses a save without campaign.yaml, or that cannot be read, and two saves with one number", async () => {
+        await ok("config", "saves", "free");
+        await scene("Uno");
+        writeFileSync(join(folder, ".saves", "002 - mondo.zip"), packFiles({ "world/characters/Kira.md": new TextEncoder().encode("---\nrole: pc\n---\n") }));
+        writeFileSync(join(folder, ".saves", "003 - rotto.zip"), "non è uno zip");
+        const before = gameFiles(folder);
+        expect((await rpg("save", "load", "2")).output).toBe("002 - mondo.zip holds no campaign.yaml: it is not a whole save made by rpg. Nothing changed; load another save.");
+        expect((await rpg("save", "load", "3")).output).toMatch(/^003 - rotto\.zip cannot be read as a save \(.+\): it is broken, or was not made by rpg\. Nothing changed; load another save\.$/);
+        writeFileSync(join(folder, ".saves", "001 - Uno - Copia.zip"), readFileSync(join(folder, ".saves", "001 - Uno.zip")));
+        expect((await rpg("save", "load", "1")).output).toBe("Two saves have the number 1: 001 - Uno - Copia.zip and 001 - Uno.zip. Rename or remove the one that is a copy, in .saves. Nothing changed.");
+        expect(gameFiles(folder)).toEqual(before);
+    });
+
+    it("SAV-3: a save that cannot be written never stops the close, nor leaves a line saying it was made", async () => {
+        writeFileSync(join(folder, ".saves"), "un file, non una cartella");
+        expect(await scene("Uno")).toMatch(/\nNo save: it could not be written \(.+\)\. Make \.saves a folder that can be written; the next scene's end saves again\.$/);
+        expect(readLogFile(folder).map((entry) => entry.type)).not.toContain("saved");
+        expect(readLogFile(folder).at(-1)?.type).toBe("scene-closed");
+    });
+
+    it("SAV-3: a new player character after a dead one saves again", async () => {
+        await ok("write", "Kira", "--set", "status=dead");
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc");
+        expect(await scene("Uno")).toMatch(/\nSaved: 1 - Uno\.$/);
+    });
+
+    it("SAV-1: a campaign.yaml that cannot be read stops save with how to fix it, instead of a mode it does not have", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), `${readFileSync(join(folder, "campaign.yaml"), "utf8")}lines: [ragni\n`);
+        const result = await rpg("save");
+        expect(result.exitCode).toBe(1);
+        expect(result.output).toContain("campaign.yaml");
+        expect(result.output).not.toContain("checkpoint");
+    });
+
+    it("SAV-2: keeps every byte, the host's files in any case and the files of the player, which a load puts aside in a zip of their own", async () => {
+        await ok("config", "saves", "free");
+        mkdirSync(join(folder, "Appunti"));
+        writeFileSync(join(folder, "Appunti", "latin.md"), new Uint8Array([67, 105, 116, 116, 224, 10]));
+        await ok("save", "make", "--label", "prima\tdel\nduello");
+        writeFileSync(join(folder, "agents.md"), "il mio testo");
+        writeFileSync(join(folder, "CLAUDE.local.md"), "le mie istruzioni");
+        writeFileSync(join(folder, "Appunti", "idee.md"), "un'idea");
+        expect(await ok("save", "list")).toContain("1 - prima del duello");
+        await ok("save", "load", "last");
+        expect([...readFileSync(join(folder, "Appunti", "latin.md"))]).toEqual([67, 105, 116, 116, 224, 10]);
+        expect(readFileSync(join(folder, "agents.md"), "utf8")).toBe("il mio testo");
+        expect(readFileSync(join(folder, "CLAUDE.local.md"), "utf8")).toBe("le mie istruzioni");
+        expect(existsSync(join(folder, "Appunti", "idee.md"))).toBe(false);
+        expect(new TextDecoder().decode(unpackFiles(readFileSync(join(folder, ".saves", "before load 001.zip")))["Appunti/idee.md"])).toBe("un'idea");
     });
 });
 
@@ -198,14 +270,14 @@ describe("the laws of the saves, on runs made at random", () => {
                         made.push(gameFiles(folder));
                     } else if (made.length > 0) {
                         const index = step.index % made.length;
-                        await ok("save", "load", "--save", String(index + 1));
+                        await ok("save", "load", String(index + 1));
                         const now = gameFiles(folder);
                         expect({ ...now, "log.jsonl": "" }).toEqual({ ...made[index], "log.jsonl": "" });
                         const text = (files: Record<string, string>): string => Buffer.from(files["log.jsonl"], "base64").toString("utf8");
                         expect(text(now).startsWith(text(made[index]))).toBe(true);
                         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", data: { save: index + 1 } });
                         made.splice(index + 1);
-                        expect(readdirSync(join(folder, ".saves")).length).toBe(made.length);
+                        expect(readdirSync(join(folder, ".saves")).filter((file) => /^\d/.test(file)).length).toBe(made.length);
                     }
                 }
             }),

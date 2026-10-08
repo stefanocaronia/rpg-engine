@@ -19,7 +19,8 @@ export interface LogEntry
     data: Record<string, unknown>;
 }
 
-const logFileName = "log.jsonl";
+/** The log of a campaign, at its top. */
+export const logFileName = "log.jsonl";
 
 /** A new line for the log, stamped with a new id, the real time, the game date when there is one, and who acts. */
 export function newLogEntry(context: Context, type: string, visibility: LogEntry["visibility"], data: Record<string, unknown>, date?: string): LogEntry
@@ -29,7 +30,13 @@ export function newLogEntry(context: Context, type: string, visibility: LogEntry
 
 export function appendLogEntry(folder: string, entry: LogEntry): void
 {
-    files().append(join(folder, logFileName), JSON.stringify(entry) + "\n");
+    files().append(join(folder, logFileName), logLine(entry));
+}
+
+/** An entry as the log writes it: one line of JSON. */
+export function logLine(entry: LogEntry): string
+{
+    return JSON.stringify(entry) + "\n";
 }
 
 /** The entries of the log; lines that are not entries, such as lines edited by hand, are left out: checkLog reports them. */

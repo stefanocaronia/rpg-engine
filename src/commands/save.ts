@@ -2,7 +2,7 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import type { Save } from "../saves/index.ts";
-import { campaignSaves, isPlayerDead, loadSave, makeSave, type SaveMode, saveMode, saveText } from "./game-saves.ts";
+import { campaignSaves, interruptedLoad, isPlayerDead, loadSave, makeSave, type SaveMode, saveMode, saveText } from "./game-saves.ts";
 import { campaignWorld } from "./game-world.ts";
 
 const actions = ["list", "make", "load"] as const;
@@ -10,17 +10,17 @@ const actions = ["list", "make", "load"] as const;
 type SaveResult =
     | { action: "list"; mode: SaveMode; saves: Save[]; }
     | { action: "make"; save: Save; }
-    | { action: "load"; save: Save; removed: Save[]; };
+    | { action: "load"; save: Save; removed: Save[]; finished: boolean; };
 
 export const save = defineCommand({
     name: "save",
     description: "The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. "
         + "list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; "
         + "load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. "
-        + "Going back removes what happened since, the later saves too: load only when the player has said so. "
+        + "Going back removes what happened since, the later saves too: load only when the player has said so. A load that stopped halfway is finished by save load. "
         + "Example: action load, save last.",
     group: "game",
-    positionals: ["action"],
+    positionals: ["action", "save"],
     input: z.object({
         action: z.enum(actions).default("list").describe("list, make or load"),
         label: z.string().optional().describe("make: a few words that name the save, such as before the duel"),
@@ -46,9 +46,16 @@ export const save = defineCommand({
             return { action: "make", save: makeSave(root, context, input.label?.trim() === "" ? undefined : input.label?.trim(), "asked") };
         }
 
+        // A load that stopped halfway is finished first, whatever the mode: it was allowed when it began (SAV-5).
+        const interrupted = interruptedLoad(root);
+
+        if (interrupted !== undefined) {
+            return { action: "load", save: interrupted, removed: loadSave(root, context, interrupted), finished: true };
+        }
+
         const chosen = chosenSave(saves, input.save);
         checkLoad(mode, saves, chosen, isPlayerDead(campaignWorld(root, context)));
-        return { action: "load", save: chosen, removed: loadSave(root, context, chosen) };
+        return { action: "load", save: chosen, removed: loadSave(root, context, chosen), finished: false };
     },
 
     format(result)
@@ -59,7 +66,8 @@ export const save = defineCommand({
 
         if (result.action === "load") {
             const removed = result.removed.length === 0 ? "" : ` The later saves are gone: ${result.removed.map((removed) => removed.number).join(", ")}.`;
-            return `Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed} Call status, and go on from there.`;
+            const finished = result.finished ? "The load that had stopped halfway is finished. " : "";
+            return `${finished}Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed} Call status, and go on from there.`;
         }
 
         const listed = result.saves.length === 0 ? "No saves yet: one is made at the end of each scene." : `Saves: ${result.saves.map(saveText).join(" · ")}.`;
@@ -88,6 +96,11 @@ function chosenSave(saves: Save[], asked: string | undefined): Save
     }
 
     const wanted = asked === undefined || asked.trim().toLowerCase() === "last" ? saves.at(-1) : saves.find((candidate) => candidate.number === Number(asked.trim()));
+    const twins = wanted === undefined ? [] : saves.filter((candidate) => candidate.number === wanted.number);
+
+    if (twins.length > 1) {
+        throw new Error(`Two saves have the number ${wanted?.number}: ${twins.map((twin) => twin.file).join(" and ")}. Rename or remove the one that is a copy, in .saves. Nothing changed.`);
+    }
 
     if (wanted === undefined) {
         throw new Error(`There is no save "${asked}": give its number or last. Saves: ${saves.map(saveText).join(" · ")}.`);

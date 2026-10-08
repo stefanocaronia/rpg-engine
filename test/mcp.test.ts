@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { type ChildProcessByStdio, spawn } from "node:child_process";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import { commands } from "../src/commands/index.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
+import { unpackFiles } from "../src/saves/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -248,6 +249,17 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
             await tool("save", { action: "load", save: "1" });
             expect(await tool("status", {})).toContain("hp 12/12");
             expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
+
+            // A save holds the files as the disk has them, also those the session read before they were changed by hand, outside world and rules.
+            writeFileSync(join(folder, "sessions", "note.md"), "v1");
+            await tool("save", { action: "make" });
+            writeFileSync(join(folder, "sessions", "note.md"), "v2");
+            writeFileSync(join(folder, "sessions", "nuova.md"), "nuova");
+            await tool("save", { action: "make" });
+            const [last] = readdirSync(join(folder, ".saves")).filter((file) => file.startsWith("003"));
+            const held = unpackFiles(readFileSync(join(folder, ".saves", last)));
+            expect(new TextDecoder().decode(held["sessions/note.md"])).toBe("v2");
+            expect(new TextDecoder().decode(held["sessions/nuova.md"])).toBe("nuova");
         } finally {
             await host.close();
             session.close();

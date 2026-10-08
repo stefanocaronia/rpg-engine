@@ -15,6 +15,7 @@ import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
+import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
@@ -117,6 +118,8 @@ export const status = defineCommand({
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
+            // A load that stopped halfway leaves the campaign between two times (SAV-5).
+            halfLoaded: interruptedLoad(root)?.number,
             sheet: system === undefined ? undefined : sheetSummary(system),
             // A dead character's sheet is no longer kept (D-190); before play, the checklist says what it lacks.
             incompleteSheets: mode !== "play" ? [] : characters.filter(isInParty).flatMap((page) => {
@@ -154,6 +157,7 @@ export const status = defineCommand({
             namesLine("Open quests", result.openQuests, "find text open, type quest"),
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
             result.clocks.length === 0 ? "" : `Clocks: ${result.clocks.join(" · ")}`,
+            result.halfLoaded === undefined ? "" : `The load of save ${result.halfLoaded} stopped halfway: call save load to finish it, before anything else.`,
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
         return state.filter((line) => line !== "").join("\n");

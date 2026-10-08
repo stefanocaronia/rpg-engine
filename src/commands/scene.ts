@@ -449,7 +449,7 @@ function close(root: string, world: World, summary: string, context: Context): S
     if (current === undefined) {
         const titled = rawTitleAndType(raw);
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...titled, closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests, ...checkpoint(root, context, world, titled.title) };
+        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests, ...endOfSceneSave(root, context, world, titled.title) };
     }
 
     logCopies(root, context, current.title, current.copies);
@@ -458,14 +458,26 @@ function close(root: string, world: World, summary: string, context: Context): S
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
     // The copies that left during the scene, fled or fallen, end with it too: one that may come back needs a page now, with its wounds (D-246).
     const gone = copyMembers(world, current.gone ?? {});
-    const saved = checkpoint(root, context, world, current.title);
+    const saved = endOfSceneSave(root, context, world, current.title);
     return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), gone, ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests, ...saved };
 }
 
-/** The save at the end of a scene, named by its title (D-55, SAV-3): none while the player character is dead, since going back is what one is for. */
-function checkpoint(root: string, context: Context, world: World, title: string): Saved
+/**
+ * The save at the end of a scene, named by its title (D-55, SAV-3): none while the player character is dead, since going back is what one is for. A save that
+ * cannot be written never stops the close, which is already done: it says why.
+ */
+function endOfSceneSave(root: string, context: Context, world: World, title: string): Saved
 {
-    return isPlayerDead(world) ? { unsaved: "No save: the player character is dead. If the player wants to go back, save load, as the campaign's saves setting allows." } : { saved: saveText(makeSave(root, context, title, "scene closed")) };
+    if (isPlayerDead(world)) {
+        return { unsaved: "No save: the player character is dead. If the player wants to go back, save load, as the campaign's saves setting allows." };
+    }
+
+    try {
+        return { saved: saveText(makeSave(root, context, title, "scene closed")) };
+    } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        return { unsaved: `No save: it could not be written (${reason}). Make .saves a folder that can be written; the next scene's end saves again.` };
+    }
 }
 
 /**

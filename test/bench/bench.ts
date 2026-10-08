@@ -3,7 +3,7 @@
 // Run it with: node test/bench/bench.ts [sizes, such as 100,1000,5000] [--big for a game system as large as a whole SRD]. The command line runs dist/cli.js when
 // the engine is built, else src/cli.ts, which loads more slowly.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,6 +48,8 @@ for (const size of sizes) {
     await must(context, ["init", "--name", "Banco", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"]);
     await must(context, ["advance", "--to", "day 1, 18:00"]);
     generateWorld(folder, size);
+    // In play, as after the setup and session zero, so that scenes open (MOD-6); written by hand like the world, which the session reads next.
+    writeFileSync(join(folder, "state.yaml"), readFileSync(join(folder, "state.yaml"), "utf8").replace(/^mode: setup$/m, "mode: play"));
     // The world was written by hand: the server's first call reads it all, as after a chat starts.
     await session.ready(true);
 
