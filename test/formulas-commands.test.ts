@@ -185,6 +185,13 @@ describe("the limits of counters (FOR-6)", () => {
         expect(pageText("Ettore")).toContain("hp: 20/21");
     });
 
+    it("never writes a maximum below 0, and raises it again from 0", async () => {
+        await ok("write", "Ettore", "--set", "con=3");
+        expect(await ok("write", "Ettore", "--set", "level=5")).toContain("hp 0/0 (max 6 → 0: hp-base 18, level 5, con-mod -4)");
+        expect(await ok("write", "Ettore", "--set", "level=1")).toContain("hp 14/14 (max 0 → 14");
+        expect(pageText("Ettore")).toContain("hp: 14/14");
+    });
+
     it("works out the maximum of a counter the page writes without one", async () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion", "--set", "level=1", "--set", "con=14", "--set", "hp-base=8", "--set", "hp=10");
         expect(pageText("Mira")).toContain("hp: 10/10");
@@ -316,8 +323,8 @@ describe("laws of the worked-out sheet", () => {
                         insight: mod(scores.wis) + (skills.has("Insight") ? proficiency : 0),
                         "passive-perception": 10 + perception,
                     });
-                    // Written without the effects, which never change the scores here but the strength.
-                    expect(pageText("Ettore")).toMatch(new RegExp(`hp: \\d+/${18 + level * mod(scores.con)}\\n`));
+                    // Written without the effects, which never change the scores here but the strength, and never below 0.
+                    expect(pageText("Ettore")).toMatch(new RegExp(`hp: \\d+/${Math.max(0, 18 + level * mod(scores.con))}\\n`));
                 }
             }),
             { numRuns: 12 },

@@ -424,7 +424,13 @@ function limitsIn(scope: ReturnType<typeof formulaScope>, limits: { min?: Formul
     const min = whole(limits.min === undefined ? undefined : workOut(limits.min, scope));
     const row = limits.max === undefined ? numberOf(progressionValue(scope.progression(), field)) : undefined;
     const max = limits.max === undefined ? (row !== undefined && Number.isSafeInteger(row) ? row : undefined) : whole(workOut(limits.max, scope));
-    return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }) };
+    return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max: atLeastZero(max) }) };
+}
+
+/** A maximum worked out below 0, as 1 + cha-mod with Charisma 7, is 0: a counter is never written with a maximum below 0 (FOR-6). */
+function atLeastZero(max: number): number
+{
+    return Math.max(0, max);
 }
 
 /**
@@ -609,7 +615,7 @@ export function workedMaximum(world: World, fields: Record<string, unknown>, fie
     }
 
     const worked = workOut(formula, scope);
-    return worked.value === undefined ? undefined : { field: entry[0], value: worked.value, reads: contributingReads(formula, scope, worked) };
+    return worked.value === undefined ? undefined : { field: entry[0], value: atLeastZero(worked.value), reads: contributingReads(formula, scope, worked) };
 }
 
 /**
