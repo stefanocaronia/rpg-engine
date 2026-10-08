@@ -12,9 +12,11 @@ import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
+import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
+import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { problemText, readPresent } from "./game-time.ts";
@@ -108,6 +110,7 @@ export const status = defineCommand({
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
             around: players.length === 0 ? "" : surroundingsText(surroundings(world, players[0])),
             scene: sceneText(world, openScene.scene),
+            journey: journeyText(world, roadsOf(world), readJourney(root), measuresOf(root, system)),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
             openQuests: openQuests(world),
@@ -151,6 +154,7 @@ export const status = defineCommand({
             ...result.levelsDue,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
+            result.journey === undefined ? "" : `Journey: ${result.journey}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
             result.sceneCounts === "" ? "" : `Scenes so far: ${result.sceneCounts}`,
             dueLine(result.dueEvents),

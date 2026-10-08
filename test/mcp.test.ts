@@ -44,7 +44,7 @@ describe("MCP server", () => {
 
         const write = tools.find((tool) => tool.name === "write");
         expect(write?.description).toBe(commands.find((command) => command.name === "write")?.description);
-        expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "add", "remove", "text", "section", "append", "secret"]);
+        expect(Object.keys(write?.inputSchema.properties ?? {})).toEqual(["page", "type", "set", "unset", "add", "remove", "text", "section", "append", "secret", "here"]);
     });
 
     it("sends the host to instructions, then status, marks the tools that change nothing, and loads both at once", async () => {

@@ -73,7 +73,9 @@ import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
+import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
 import { campaignCoins } from "./game-money.ts";
+import { shortRoadNotes } from "./game-positions.ts";
 import { tickedQuestNotes } from "./game-quests.ts";
 import { deathNotes, isPlayerDead } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
@@ -128,6 +130,7 @@ export const write = defineCommand({
         + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
         + "The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. "
         + 'A list field changes one item at a time with add and remove; a place\'s environment, one line at a time, such as add environment="light: dark". '
+        + 'A place\'s position on the map is given from a place that has one, such as set position="12 km NE of [[Guadoscuro]]"; a region has a radius, such as set radius=10 km. '
         + "It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",
@@ -143,6 +146,7 @@ export const write = defineCommand({
         section: z.string().optional().describe("section or secret to write; a missing one is added at the end of the page, as a secret if secret is given; empty text removes it"),
         append: z.boolean().optional().describe("add the text at the end instead of replacing"),
         secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
+        here: z.boolean().optional().describe("a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it"),
     }),
 
     run(input, context): WriteResult
@@ -167,10 +171,10 @@ export const write = defineCommand({
         const copy = copyName(world, open.scene, reference.name);
         // A field the game system works out is never written, on a page or a copy: the rest is (FOR-7, D-200).
         const target = open.scene !== undefined && copy !== undefined ? copyPage(copy, open.scene.copies[copy]) : findPage(world, reference.name);
-        const given = input.set === undefined ? undefined : withoutComputed(world, target, oneItemLists(world, readFields(input.set)), reference.name, input.type);
+        const given = input.set === undefined ? undefined : withoutComputed(world, target, oneItemLists(world, readFields(input.set), input.type ?? target?.type), reference.name, input.type);
         const added = listsWithoutComputed(world, target, input.add === undefined ? undefined : readListItems(input.add));
         const removed = listsWithoutComputed(world, target, input.remove === undefined ? undefined : readListItems(input.remove));
-        const fields: FieldChange = {
+        let fields: FieldChange = {
             set: given === undefined || Object.keys(given.set).length === 0 ? undefined : asAmounts(world, given.set, coins),
             unset: input.unset,
             add: added.lists,
@@ -212,6 +216,10 @@ export const write = defineCommand({
         }
 
         const type = input.type ?? existing?.type;
+        // A place written where the journey stopped, and a position given as relations, turned into the coordinates to write (TRV-14, POS-2).
+        const here = input.here === true ? hereOf(root, world, reference.name, existing, type, fields) : undefined;
+        const positioned = type === "place" ? positionToWrite(world, reference.name, here === undefined ? fields : hereFields(here, fields)) : { change: fields, placed: { notes: [] } };
+        fields = positioned.change;
         conditionsAsList(existing, fields);
         checkFieldNames(type, fields);
         checkFieldChange(type, fields);
@@ -253,7 +261,9 @@ export const write = defineCommand({
             appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: page.name, set: limits.set, unset: limits.unset, why: "worked out by the game system" }));
         }
 
-        const now = withPage(world, existing, page);
+        const placed = positioned.placed.origin === undefined ? withPage(world, existing, page) : writeOrigin(root, context, withPage(world, existing, page), positioned.placed.origin);
+        const hereDone = here === undefined || !changed ? undefined : placeHere(root, context, placed, page, here);
+        const now = hereDone?.world ?? placed;
         const followers = changed ? followersOfWrite(now, existing, page) : { pages: [], why: "" };
 
         if (changed && existing !== undefined) {
@@ -284,13 +294,14 @@ export const write = defineCommand({
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
         const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
+        const map = changed ? [...positioned.placed.notes, ...(hereDone?.notes ?? []), ...(["stops", "position"].some((field) => changedFieldNames(fields).includes(field)) ? shortRoadNotes(now, page) : [])] : [];
         // The death of the last living player character: what the saves allow, said at once (SAV-7).
         const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : [];
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...death, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...map, ...sheet, ...death, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -1287,12 +1298,21 @@ function workedLimitsChange(system: GameSystem | undefined, before: World, exist
 
 /**
  * A field that is always a list, or that the game system declares one, given one item, such as contains=[[Locanda]] or tags=boss, holds a list of that one item;
- * text with commas is left to the checks that ask for a list.
+ * text with commas is left to the checks that ask for a list, but a road's stops, links and lengths taking turns, which are split at the commas (ROA-6).
  */
-function oneItemLists(world: World, set: Record<string, unknown>): Record<string, unknown>
+function oneItemLists(world: World, set: Record<string, unknown>, type: PageType | undefined): Record<string, unknown>
 {
     const isList = (name: string): boolean => listFieldNames.some((field) => comparableText(field) === comparableText(name)) || declaredKind(world, name) === "list";
-    return Object.fromEntries(Object.entries(set).map(([name, value]) => [name, isList(name) && typeof value === "string" && !value.includes(",") && value.trim() !== "" ? [value] : value]));
+
+    const listOf = (name: string, value: unknown): unknown => {
+        if (typeof value !== "string" || !isList(name) || value.trim() === "") {
+            return value;
+        }
+
+        return comparableText(name) === "stops" && type === "place" ? value.split(",").map((item) => item.trim()) : value.includes(",") ? value : [value];
+    };
+
+    return Object.fromEntries(Object.entries(set).map(([name, value]) => [name, listOf(name, value)]));
 }
 
 /** Text given through MCP to a field that is always a list, such as "[[A]], [[B]]", read as the command line reads it (D-136); any other value as it is. */

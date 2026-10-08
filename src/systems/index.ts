@@ -14,5 +14,7 @@ export {
     systemFileName,
     type SystemSetting,
     type Threshold,
+    type Travel,
+    type TravelKind,
     withSettings,
 } from "./game-system.ts";

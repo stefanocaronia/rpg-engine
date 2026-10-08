@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { type Document, isMap, isScalar, isSeq, parseDocument, type YAMLSeq } from "yaml";
 import { z } from "zod";
+import { unitSystems } from "../core/length.ts";
 import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
@@ -24,8 +25,7 @@ export const rigors = ["smooth", "rules", "simulation"] as const;
 /** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
 export const diceWays = ["digital", "physical"] as const;
 
-/** The units of measure of the story (D-33). */
-export const unitSystems = ["metric", "imperial"] as const;
+export { unitSystems };
 
 /** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
 export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
@@ -69,6 +69,7 @@ export const settingsSchema = z.object({
     counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
     recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {superiority-dice: max}}"),
     "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
+    travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
 }).loose();
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;
@@ -81,7 +82,7 @@ export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
-export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes"];
+export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel"];
 
 /** What only the setup asks (D-241, MOD-3): how the companions come, and the lines and veils, which "none" answers too. */
 export const setupSettingNames: SettingName[] = ["companions", "lines", "veils"];

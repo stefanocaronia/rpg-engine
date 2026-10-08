@@ -96,6 +96,40 @@ round: 6 seconds
 
 How long a round lasts. In a scene with turns, an effect of up to a minute on someone in the scene ends after as many rounds (`1m is 10 rounds of 6 seconds.`).
 
+### imperial
+
+```yaml
+imperial: {mile: 1.5 km, foot: 0.3 m}
+```
+
+What the game's mile and foot are worth in metric (D-262). Every measure the engine reads is written in metric, in `system.yaml` and in the pages (road lengths, paces, vehicle speeds); outputs give them in the campaign's `units`, and in imperial with these values, so that a player hears the book's numbers (the normal pace of 4.5 km an hour is 3 miles). Without it, the true mile and foot. Text stays as written: a page may say `30 ft.`, and the AI reads it so.
+
+### travel
+
+How one travels (D-261, `TRV-1`–`TRV-3`, `TRV-8`), read by `route` and `travel`:
+
+```yaml
+travel:
+  paces: {fast: 6 km, normal: 4.5 km, slow: 3 km}
+  pace: normal
+  hours: 8
+  rule: Travel Pace
+  beyond: Forced March
+  terrain: {difficult: 1/2}
+  kinds:
+    road: {}
+    path: {}
+    river: {vehicle: {category: waterborne vehicle}, speed: speed, hours: 24, current: 4.5 km}
+    sea: {vehicle: {category: waterborne vehicle}, speed: speed, hours: 24}
+```
+
+- `paces`: each with the distance of an hour, in metric (`4.5 km` or `4.5 km/h`); `pace`, the one used when none is given, else the first. What a pace does (a penalty, stealth) stays in the rule `rule` names. A system without paces makes `travel` ask for a speed.
+- `hours`: the hours of a day's travel; `travel` stops when they end, and names the rule `beyond`. Without it, 8.
+- `terrain`: what a value of the environment's `terrain` entry does to a pace, as a factor (`1/2` or `0.5`); the entry is read on the road and the places around it, as the environment is (`ENV-2`).
+- `kinds`: the kinds of road the system knows, by the name a road's `kind` gives. A kind with `vehicle` is travelled only in an item whose field has that value, at the speed its field `speed` names (in metric, as `speed: 1.5 km/h`), with no pace; `hours` gives its hours of a day; `current` is added going downstream, the way a river's stops are written. A kind without them is travelled at the pace. A kind the system does not know is travelled as `road`, and `validate` reports it.
+
+A campaign adds to it in `campaign.yaml`, key by key, its paces, terrain and kinds by name (section 7).
+
 ### settings
 
 What the setup asks for the system, with the campaign's own settings (`DAT-10`):
@@ -460,14 +494,18 @@ A character with `classes: ["[[Cacciatore di sangue]] 3", "[[Fighter]] 2"]` has 
 
 In the same way, a creature of the campaign with `creature: "[[Elf]]"` is a new race that reads the Elf's fields and traits, and an item with `item: "[[Longsword]]"` is one sword with a name of its own. A campaign page cannot take the name of a system's page, which it would hide: `write` refuses it and `validate` reports one written by hand. The campaign's own `rules/` folder (its house rules) comes before the system's rules, and `coins` in `campaign.yaml` replace the system's.
 
-What the system's data lacks, `campaign.yaml` adds in the same keys as `system.yaml`: `fields`, `tables`, `computed`, `counters`, `recipes` and `status-line`, written with `config`:
+What the system's data lacks, `campaign.yaml` adds in the same keys as `system.yaml`: `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line` and `travel`, written with `config`:
 
 ```text
 config tables "superiority-dice-by-level: {0: 0, 3: 4, 7: 5, 15: 6}"
 config counters "superiority-dice: {max: 'has(subclasses, Battle Master) * table(superiority-dice-by-level, item(classes, Fighter))', refill: short rest}"
 ```
 
-A formula with commas goes in quotes, or YAML reads its commas as the map's. A use's `max` reads what gives it, as above, so that only who has the feature has the use.
+A formula with commas goes in quotes, or YAML reads its commas as the map's. A use's `max` reads what gives it, as above, so that only who has the feature has the use. `travel` takes a campaign's own kinds of road or terrain, key by key:
+
+```text
+config travel "kinds: {canal: {vehicle: {category: waterborne vehicle}, speed: speed, hours: 12}}"
+```
 
 ```text
 config computed "passive-perception: 10 + perception + 5 * has(feats, Observant)"

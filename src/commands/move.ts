@@ -8,6 +8,7 @@ import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, 
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
+import { roadsOf, sameSpot, stopOf } from "./game-roads.ts";
 import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -63,6 +64,7 @@ export const move = defineCommand({
         // The characters who go, by themselves or inside a place that goes, such as a cart or a ship (CON-8, ENV-5).
         const riders = world.pages.filter((page) => page.type === "character" && (pages.includes(page) || locate(world, page).chain.some((holder) => pages.includes(holder))));
         const before = new Map(riders.map((page) => [page.path, surroundings(world, page)]));
+        const journey = journeyNote(world, riders, destination);
         const done = movePages(root, context, world, pages, destination);
         const after = done.world;
         const now = (page: Page): Page => after.pages.find((other) => other.path === page.path) ?? page;
@@ -81,7 +83,7 @@ export const move = defineCommand({
             there: there.map((page) => (page.fields.status === "dead" ? `${page.name} (dead)` : page.name)),
             here: distinctTexts(changes.flatMap((change) => change.here)),
             noLonger: distinctTexts(changes.flatMap((change) => change.noLonger)),
-            notes: [...done.notes, ...(sceneNote === undefined ? [] : [sceneNote])],
+            notes: [...done.notes, ...(sceneNote === undefined ? [] : [sceneNote]), ...(done.moved.length === 0 || journey === undefined ? [] : [journey])],
             problems: world.problems,
         };
     },
@@ -164,6 +166,23 @@ function followParty(root: string, context: Context, world: World, scene: Scene,
     const left = gone.filter(outside).map((page) => page.name);
     const who = left.length === 1 ? left[0] : `[${left.join(", ")}]`;
     return left.length === 0 ? undefined : `${left.join(", ")} left ${place.name}, where the open scene is: if they left the scene, scene leave, who ${who}.`;
+}
+
+/**
+ * A journey made with move (TRV-15): the party taken from one stop of the roads to another, which travel would walk stop by stop, letting the time pass; undefined
+ * for any other move.
+ */
+function journeyNote(world: World, riders: Page[], destination: Page): string | undefined
+{
+    const roads = roadsOf(world);
+    const member = riders.find(isInParty);
+    const [from, to] = [member === undefined ? undefined : stopOf(world, roads, member), stopOf(world, roads, destination)];
+
+    if (from === undefined || to === undefined || sameSpot(world, from, to) !== undefined) {
+        return undefined;
+    }
+
+    return `${from.name} and ${to.name} are joined by roads: a journey goes with travel, which lets the time pass and moves them stop by stop (route to ${destination.name} says how long). If the time has passed already, advance it.`;
 }
 
 /** The texts of what changed around those who moved, each once. */

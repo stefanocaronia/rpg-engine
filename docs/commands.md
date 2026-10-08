@@ -23,7 +23,7 @@ Show or change the campaign settings. Without a setting it shows them all and sa
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, travel, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, status-line), repeatable
@@ -64,7 +64,7 @@ No parameters.
 
 ### write
 
-Create or change a page of the world. The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. Add secret to create a missing one as a secret; empty text removes the section or secret. The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. A list field changes one item at a time with add and remove; a place's environment, one line at a time, such as add environment="light: dark". It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."
+Create or change a page of the world. The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. Add secret to create a missing one as a secret; empty text removes the section or secret. The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. A list field changes one item at a time with add and remove; a place's environment, one line at a time, such as add environment="light: dark". A place's position on the map is given from a place that has one, such as set position="12 km NE of [[Guadoscuro]]"; a region has a radius, such as set radius=10 km. It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."
 
 Read-only: no. Positional parameters: `page`.
 
@@ -78,6 +78,7 @@ Read-only: no. Positional parameters: `page`.
 - `section` (`string`, optional): section or secret to write; a missing one is added at the end of the page, as a secret if secret is given; empty text removes it
 - `append` (`boolean`, optional): add the text at the end instead of replacing
 - `secret` (`boolean`, optional): with a section: create it, if missing, as a secret block > [!secret] Name
+- `here` (`boolean`, optional): a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it
 
 ### move
 
@@ -195,6 +196,31 @@ Read-only: no.
 - `by` (`string`, optional): how much time passes, in days, hours and minutes: 10m, 4h, 1d 6h
 - `to` (`string`, optional): the game date to reach, such as day 3, 06:00 (day 3 alone is its midnight); the first one sets when play starts, at the hour of the first scene, such as day 1, 18:00
 - `why` (`string`, optional): what the time is spent on
+
+### travel
+
+Make a journey: whenever the party goes somewhere, use it instead of advance and move. By road it takes the quickest way at the game's pace, or in the vehicle the party is in; off the roads, across goes straight to a place with a position, toward goes one way for a distance or until the day's travel ends, through the regions and their terrain. It moves the travellers, lets the time pass, stops on arrival, at an event that comes due and at the end of the day's travel, and remembers where they are: travel again goes on from there. Name in who the mounts and hirelings who go too. Example: to Rocca; or to Torre, across; or toward west, distance 12 km.
+
+Read-only: no. Positional parameters: `to`.
+
+- `to` (`string`, optional): where to: a place; by road, or straight across country with across
+- `across` (`boolean`, optional): go to the place straight across country, off the roads; both need a position
+- `toward` (`string`, optional): off the roads, the way to go instead of a place: a point of the compass, such as west or NNE
+- `distance` (`string`, optional): with toward, how far, such as 12 km; if left out, until the day's travel ends
+- `who` (`string | string[]`, optional): who travels: characters, mounts and hirelings among them; if left out, the party where the player character is, with the vehicle they are in
+- `pace` (`string`, optional): one of the game's paces, such as fast or slow, or a speed, such as 4.5 km; if left out, the game's usual pace, or the one the journey had
+- `hours` (`any`, optional): the hours of travel today, when they differ from the game's: more for a forced march, 24 for a ship with its crew, 8 for a boat the party rows
+
+### route
+
+How far a place is by road, and how long the journey takes: the stops and roads of the quickest way, the distance and the days, at the party's pace or another. With across, straight across country to a place with a position, through the regions and their terrain. It moves no one and lets no time pass: to make the journey, use travel. Example: to Rocca; or to Rocca, from Guadoscuro, pace fast; or to Torre, across.
+
+Read-only: yes. Positional parameters: `to`.
+
+- `to` (`string`, required): where to: a place
+- `from` (`string`, optional): where from: a place, or a character; if left out, where the party is, or where its journey stopped
+- `pace` (`string`, optional): one of the game's paces, such as fast, or a speed, such as 4.5 km; if left out, the game's usual pace
+- `across` (`boolean`, optional): straight across country, off the roads, when both places have a position
 
 ### scene
 

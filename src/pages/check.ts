@@ -4,6 +4,7 @@ import { comparableText, withArticle } from "../core/text.ts";
 import { readEnvironment } from "./environment.ts";
 import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./inheritance.ts";
 import { type Link, links, readSection, repeatedNames, unreadSecretLines } from "./markdown.ts";
+import { readStops } from "./roads.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
 import { linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
@@ -49,6 +50,7 @@ function worldProblems(world: World): Problem[]
             ...publicKnowsProblems(world, pagesByName, page),
             ...containerProblems(world, pagesByName, listingsByName, page),
             ...equippedProblems(world, pagesByName, page),
+            ...stopProblems(world, pagesByName, page),
             ...pageAlone.environment(page),
             ...pageAlone.sections(page),
             ...inheritanceProblems(world, page),
@@ -329,6 +331,24 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
 export function equippedNotes(world: World, character: Page): string[]
 {
     return equippedProblems(world, groupBy(world.pages, (page) => [page.name]), character).map((problem) => `${problem.message} Fix: ${problem.fix}.`);
+}
+
+/** A road's stop that is a page but not a place of the campaign (ROA-4, ROA-7): its stretches lead nowhere. A stop that does not exist is a broken link, said above. */
+function stopProblems(world: World, pagesByName: Map<string, Page[]>, road: Page): Problem[]
+{
+    const read = road.type === "place" ? readStops(road.fields.stops) : undefined;
+
+    if (read === undefined || "problem" in read) {
+        return [];
+    }
+
+    return [...new Set(read.stops)].flatMap((name) => {
+        const page = pagesByName.get(comparableText(name))?.[0] ?? systemPageNamed(world, name);
+        const what = page === undefined || (page.type === "place" && page.system === undefined) ? undefined : page.system === undefined ? withArticle(page.type ?? "free page") : systemLabel(page);
+        return what === undefined
+            ? []
+            : [{ path: road.path, message: `${road.name} has ${page?.name} among its stops, but it is ${what}, not a place of the campaign: the stretches to it lead nowhere.`, fix: `write ${road.name}, set stops again with places` }];
+    });
 }
 
 /**

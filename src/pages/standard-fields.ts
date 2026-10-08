@@ -1,21 +1,25 @@
+import { readLength } from "../core/length.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
+import { positionHelp, readPosition } from "./positions.ts";
+import { readStops } from "./roads.ts";
 
 const linkPattern = /^\[\[[^\]]+\]\]$/;
 const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
 
 /**
  * What a standard field holds: text, a link, a list of links or text, a list of links only, a link or a list of links, a counter, conditions as text or a list of texts,
- * lines of text (a line written without quotes, which YAML reads as a map of one key, counts as the line it was), or one of some values.
+ * lines of text (a line written without quotes, which YAML reads as a map of one key, counts as the line it was), a road's stops (ROA-1), a place's position (POS-1),
+ * a length in metric, or one of some values.
  * Counters, conditions and lines are read fully by the commands that use them.
  */
-type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | readonly string[];
+type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | "stops" | "position" | "length" | readonly string[];
 
 const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"] },
-    place: { contains: "list", environment: "lines" },
+    place: { contains: "list", environment: "lines", stops: "stops", position: "position", radius: "length" },
     item: { contains: "list" },
     creature: { creature: "link" },
     quest: { status: ["planned", "open", "done", "failed"] },
@@ -67,7 +71,7 @@ export function isFieldName(name: string): boolean
 
 /** The standard fields that are always lists, of links, words or lines, on the pages that have them: read from text as the command line reads them (D-136). */
 export const listFieldNames = [
-    ...new Set([commonRules, ...Object.values(typeRules)].flatMap((rules) => Object.entries(rules ?? {}).filter(([, rule]) => ["list", "links", "linkOrLinks", "lines"].includes(rule as string)).map(([name]) => name))),
+    ...new Set([commonRules, ...Object.values(typeRules)].flatMap((rules) => Object.entries(rules ?? {}).filter(([, rule]) => ["list", "links", "linkOrLinks", "lines", "stops"].includes(rule as string)).map(([name]) => name))),
 ];
 
 /** Whether a field has a fixed meaning on pages of this type, such as an event's date: such a field is never a counter, but for an event's clock. */
@@ -164,6 +168,16 @@ function problemWith(value: unknown, rule: Rule): string | undefined
             return typeof value === "string" || (Array.isArray(value) && value.every((item) => typeof item === "string")) ? undefined : "must be a condition or a list of conditions, as text, such as party in [[Ossario]].";
         case "lines":
             return Array.isArray(value) && value.every((item) => typeof item === "string" || isOneKeyMap(item)) ? undefined : 'must be a list of lines, such as ["light: dark"].';
+
+        case "stops": {
+            const stops = readStops(value);
+            return "problem" in stops ? stops.problem : undefined;
+        }
+
+        case "position":
+            return readPosition(value) !== undefined ? undefined : `must be a point of the map, ${positionHelp}; write gives one from a relation, such as 12 km NE of [[Guadoscuro]].`;
+        case "length":
+            return readLength(value) !== undefined ? undefined : "must be a length in km or m, such as 10 km.";
     }
 }
 

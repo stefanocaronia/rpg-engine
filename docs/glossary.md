@@ -60,7 +60,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | privilegi | features | the `features` list the rows and parts give |
 | sottoclasse | subclass | a part of `progression`, naming its class |
 | salita di livello | level up | `level-up` under `progression`: what `write` says |
-| aggiunte della campagna | campaign additions | `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line` in `campaign.yaml` |
+| aggiunte della campagna | campaign additions | `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel` in `campaign.yaml` |
 | condizione | condition | `conditions` of a system; also what an event waits for in `when` |
 | regole, capitolo | rules, chapter | the `rules/` folder and its files; the `rules` command |
 | regole di casa | house rules | the campaign's own `rules/` folder |
@@ -98,6 +98,27 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | checklist (del setup, della sessione zero) | checklist | what a mode needs before the campaign leaves it: `unansweredSettings`, `blockingMode` |
 | righe d'avvio | start lines | `instructions/start.md`: the MCP server's instructions and the start of the campaign's `AGENTS.md` |
 | partita di prova | playtest | `playtests/` |
+
+## The world map
+
+| Italian | English | In the code |
+|---|---|---|
+| mappa del mondo | world map | the roads and, later, the positions of places; the `map` module |
+| strada, tappa, tratto | road, stop, stretch | a place with `stops`; a place in them; two stops next to each other, with the length between them |
+| incrocio | crossroads | a stop of several roads |
+| tipo di strada | kind of road | a road's `kind`: road, path, river, sea, as the system's `travel.kinds` says |
+| viaggio, viaggio in corso | journey, journey under way | the `travel` command; `journey` in `state.yaml` |
+| andatura, velocità | pace, speed | `travel.paces` of a system; a distance of an hour |
+| ore del giorno, marcia forzata | the day's hours, forced march | `travel.hours`; the rule `travel.beyond` |
+| terreno | terrain | the `terrain` entry of the environment, and the factor the system gives it |
+| veicolo, corrente | vehicle, current | the item a kind of road is travelled in; `current`, added downstream |
+| unità, metrico, imperiale | units, metric, imperial | the `units` setting; measures are written in metric, outputs follow `units` with the system's `imperial` |
+| posizione, centro della mappa | position, the map's centre | a place's `position`, km east and north of the first place given one |
+| relazione | relation | how a position is written: `12 km NE of [[Guadoscuro]]` |
+| regione, raggio | region, radius | a place with a position and a `radius`, which covers the circle |
+| fuori strada, attraverso i campi, verso | off the roads, across, toward | `travel` with `across` or `toward` |
+| all'aperto | in the open | in no place: a journey stopped where no region covers the point |
+| qui | here | `write … here`: a new place where the journey stopped |
 
 ## Development
 

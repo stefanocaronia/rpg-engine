@@ -7,6 +7,7 @@ import { readEffect } from "../effects/index.ts";
 import { locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
+import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
@@ -83,13 +84,16 @@ export const view = defineCommand({
         const { coins } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
 
+        const open = readJourney(root)?.at !== undefined;
+
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): string => {
             const chain = locate(world, page).chain;
             const where = chain.filter((holder) => knowsPage(knowledge, holder)).map((holder) => holder.name);
             const shown = [countersText(partyCounters(world, page, coins, system)), ...effectsOf(page).map((effect) => effectShown(world, effect))].filter((part) => part !== "");
             const role = page === pc ? "" : page.fields.status === "dead" ? " (companion, dead)" : " (companion)";
-            const place = where.length > 0 ? `, in ${where.join(" › ")}` : chain.length > 0 ? ", elsewhere" : "";
+            // In no place at all while a journey stopped in the open (TRV-13).
+            const place = where.length > 0 ? `, in ${where.join(" › ")}` : chain.length > 0 ? ", elsewhere" : open ? ", in the open" : "";
             return `${page.name}${role}${place}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
         };
 
@@ -226,7 +230,7 @@ function diaryLine(world: World, entry: LogEntry, named: (name: unknown) => stri
             case "time-advanced":
                 return data.from === undefined ? `The story starts on ${text(data.to)}` : `Time passes: ${text(data.from)} → ${text(data.to)}`;
             case "moved":
-                return pages.every((name) => name === "someone") && named(data.to) === undefined ? undefined : `${pages.join(", ")} to ${where(data.to)}`;
+                return pages.every((name) => name === "someone") && named(data.to) === undefined ? undefined : `${pages.join(", ")} to ${data.to === null ? "the open" : where(data.to)}`;
             case "learned":
                 return `${text(data.page)} learned: ${textsIn(data.knows).map(learnedText).join(", ")}`;
             case "effect-added":

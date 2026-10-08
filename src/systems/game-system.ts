@@ -5,6 +5,7 @@ import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
+import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
@@ -23,6 +24,33 @@ const recipeSchema = z.object({
     rules: z.array(z.string().min(1)).optional(),
 }).strict();
 
+const lengthSchema = z.string().refine((text) => readLength(text) !== undefined, `write it ${lengthHelp}`);
+const speedSchema = z.string().refine((text) => readSpeed(text) !== undefined, `write ${speedHelp}`);
+// A factor of speed, such as 1/2 for difficult terrain, or 0.5.
+const factorSchema = z.union([z.number().positive(), z.string().regex(/^\d+\/[1-9]\d*$/, "write it as 1/2, or as a number such as 0.5")]);
+const hoursSchema = z.number().positive().max(24);
+
+const travelSchema = z.object({
+    paces: z.record(z.string().min(1), speedSchema).optional(),
+    pace: z.string().min(1).optional(),
+    hours: hoursSchema.optional(),
+    rule: z.string().min(1).optional(),
+    beyond: z.string().min(1).optional(),
+    terrain: z.record(z.string().min(1), factorSchema).optional(),
+    kinds: z.record(
+        z.string().min(1),
+        z.object({
+            vehicle: z.record(z.string().min(1), z.string().min(1)).refine((match) => Object.keys(match).length === 1, "give one field and its value, such as {category: waterborne vehicle}").optional(),
+            speed: z.string().min(1).optional(),
+            hours: hoursSchema.optional(),
+            current: speedSchema.optional(),
+        }).strict().refine((kind) => (kind.vehicle === undefined) === (kind.speed === undefined), "give vehicle and speed together: what carries one on it, and its field that holds its speed"),
+    ).optional(),
+}).strict().refine((travel) => travel.pace === undefined || Object.keys(travel.paces ?? {}).some((pace) => comparableText(pace) === comparableText(travel.pace ?? "")), {
+    message: "pace must be one of paces",
+    path: ["pace"],
+});
+
 const systemSchema = z.object({
     title: z.string().min(1),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/),
@@ -30,6 +58,8 @@ const systemSchema = z.object({
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
+    imperial: z.object({ mile: lengthSchema, foot: lengthSchema }).strict().optional(),
+    travel: travelSchema.optional(),
     sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies')).min(1), {
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
@@ -121,6 +151,33 @@ export interface Reward
     value: number;
 }
 
+/** How one travels in the game (TRV-1–TRV-3, TRV-8): its paces, the hours of a day's travel, what terrain does to a pace, the kinds of road. */
+export interface Travel
+{
+    /** By name, the distance of an hour, in metres. */
+    paces: Record<string, number>;
+    /** The pace used when none is given: the one the system names, else the first. */
+    pace?: string;
+    /** How many hours one travels in a day; beyond them, the rule `beyond` says what happens. */
+    hours?: number;
+    /** The title of the rule that tells what each pace does. */
+    rule?: string;
+    beyond?: string;
+    /** By value of the environment's terrain entry, what it multiplies the speed of a pace by. */
+    terrain: Record<string, number>;
+    kinds: TravelKind[];
+}
+
+/** A kind of road (D-260, TRV-2): travelled at a pace, or only in a vehicle that has a field with a value, at the speed its field holds; its hours of a day; its current, downstream. */
+export interface TravelKind
+{
+    name: string;
+    vehicle?: { field: string; value: string; speed: string; };
+    hours?: number;
+    /** Metres an hour, added going downstream. */
+    current?: number;
+}
+
 /** An installed game system: what it is and what it declares (SYS-1). */
 export interface GameSystem
 {
@@ -140,6 +197,10 @@ export interface GameSystem
     coins?: string | Record<string, unknown>;
     /** How long a round lasts, in seconds (D-187, DAT-7). */
     roundSeconds?: number;
+    /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
+    imperial?: ImperialUnits;
+    /** How one travels, when the game says so (D-261, TRV-1). */
+    travel?: Travel;
     /** The groups of a character sheet, in order (D-183, D-207, DAT-2). */
     sheet: SheetGroup[];
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
@@ -225,8 +286,8 @@ export function installedSystems(folders: string[]): GameSystem[]
     return systems;
 }
 
-/** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes and line of the player character. */
-export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line"] as const;
+/** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes, line of the player character and travel. */
+export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel"] as const;
 
 /** What campaign.yaml adds to the game system, as it writes it: checked when the system is read with it (CAM-3). */
 export type CampaignData = Partial<Record<(typeof campaignDataNames)[number], unknown>>;
@@ -328,6 +389,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         fields: data.fields ?? {},
         coins: data.coins,
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
+        ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
+        ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
         sheet,
         values,
         marks: data.marks ?? [],
@@ -486,7 +549,8 @@ function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string)
 
 /**
  * A system's data with a campaign's additions over it (CAM-2): fields, tables, formulas and counters by name, the campaign's taking the place of the system's
- * with that name; a recipe added to the system's of that name, field by field, with its occasions and rules; the line's fields after the system's.
+ * with that name; a recipe added to the system's of that name, field by field, with its occasions and rules; the line's fields after the system's; travel key
+ * by key, its paces, terrain and kinds by name.
  */
 function withCampaignData(raw: unknown, data: CampaignData): Record<string, unknown>
 {
@@ -503,6 +567,14 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
     if (recipes !== undefined) {
         const own = isMap(base.recipes) ? base.recipes : {};
         merged.recipes = { ...own, ...Object.fromEntries(Object.entries(recipes).map(([recipe, added]) => [nameIn(own, recipe) ?? recipe, recipeWith(own[nameIn(own, recipe) ?? ""], added, recipe)])) };
+    }
+
+    const travel = mapOf(data.travel, "travel");
+
+    if (travel !== undefined) {
+        const own = isMap(base.travel) ? base.travel : {};
+        const byName = (key: string): unknown => (isMap(travel[key]) ? { ...withoutNames(isMap(own[key]) ? own[key] : {}, Object.keys(travel[key])), ...travel[key] } : own[key]);
+        merged.travel = Object.fromEntries(Object.entries({ ...own, ...travel, paces: byName("paces"), terrain: byName("terrain"), kinds: byName("kinds") }).filter(([, value]) => value !== undefined));
     }
 
     const line = data["status-line"];
@@ -565,6 +637,40 @@ function withoutNames(map: Record<string, unknown>, names: string[]): Record<str
 function nameIn(map: Record<string, unknown>, name: string): string | undefined
 {
     return sameName(Object.keys(map), name);
+}
+
+/** The system's travel as the engine reads it (TRV-1–TRV-3): speeds in metres an hour, factors as numbers. */
+function travelOf(data: z.infer<typeof travelSchema>): Travel
+{
+    const paces = Object.fromEntries(Object.entries(data.paces ?? {}).map(([name, speed]) => [name, readSpeed(speed) ?? 0]));
+    return {
+        paces,
+        pace: data.pace === undefined ? Object.keys(paces)[0] : sameName(Object.keys(paces), data.pace),
+        hours: data.hours,
+        rule: data.rule,
+        beyond: data.beyond,
+        terrain: Object.fromEntries(Object.entries(data.terrain ?? {}).map(([value, factor]) => [value, factorOf(factor)])),
+        kinds: Object.entries(data.kinds ?? {}).map(([name, kind]) => {
+            const [field, value] = Object.entries(kind.vehicle ?? {})[0] ?? [];
+            return {
+                name,
+                ...(field === undefined || value === undefined || kind.speed === undefined ? {} : { vehicle: { field, value, speed: kind.speed } }),
+                hours: kind.hours,
+                current: kind.current === undefined ? undefined : readSpeed(kind.current),
+            };
+        }),
+    };
+}
+
+/** A factor of speed as a number: 1/2 is 0.5. */
+function factorOf(factor: number | string): number
+{
+    if (typeof factor === "number") {
+        return factor;
+    }
+
+    const [numerator, denominator] = factor.split("/").map(Number);
+    return numerator / denominator;
 }
 
 function isMap(value: unknown): value is Record<string, unknown>

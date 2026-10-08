@@ -1,6 +1,6 @@
 // The pages of the world: one markdown file with a YAML frontmatter for each thing with a name.
 export { checkWorld, equippedNotes } from "./check.ts";
-export { applyMove, type MovePlan, planMove } from "./containers.ts";
+export { applyMove, type MovePlan, planLeave, planMove } from "./containers.ts";
 export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
 export {
     baseChain,
@@ -28,6 +28,8 @@ export {
 export { everyGoalTicked, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFieldValue } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
+export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";
+export { readStops, type Stops, stopsHelp } from "./roads.ts";
 export {
     canHold,
     containerFieldOf,

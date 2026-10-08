@@ -81,6 +81,23 @@ export function planMove(world: World, pages: Page[], destination: Page): MovePl
     return { edits, moving };
 }
 
+/** Plans taking pages out of every container (TRV-12): in the open, between the places of the map, they are in none. What they carry goes with them. */
+export function planLeave(world: World, pages: Page[]): MovePlan
+{
+    const edits: MovePlan["edits"] = [];
+
+    for (const holder of world.pages) {
+        const own = containerFieldOf(holder.type);
+        const remove = own === undefined ? [] : pages.flatMap((page) => checkedEntries(holder, own, page));
+
+        if (own !== undefined && remove.length > 0) {
+            edits.push({ holder, field: own, remove: distinctLinks(remove), add: [] });
+        }
+    }
+
+    return { edits, moving: pages.filter((page) => edits.some((edit) => edit.remove.some((entry) => pointsTo(entry, page)))) };
+}
+
 /**
  * Writes a planned move, the destination last, so that a move stopped halfway is finished by doing it again (CON-4). Every file is worked out first, so that
  * one that cannot be read stops the move before anything is written. Returns the world after it.

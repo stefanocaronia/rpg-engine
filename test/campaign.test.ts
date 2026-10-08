@@ -216,7 +216,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line.`,
+            `There is no setting "colour". The settings are: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, travel.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

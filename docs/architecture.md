@@ -38,6 +38,7 @@ There is no dashboard and no `extensions/` folder in the code today: the registr
 | `triggers` | Event conditions such as `party in [[Ossario]]`, judged through `TriggerFacts` | [triggers/index.ts](../src/triggers/index.ts) |
 | `instructions` | Reads the files in `instructions/` from the installed package | [instructions/index.ts](../src/instructions/index.ts) |
 | `progression` | Tables whose first column counts levels: the row at a level, the features up to it, those a part lists with their level | [progression/index.ts](../src/progression/index.ts) |
+| `map` | The world map: roads as stretches between stops, the quickest way across them; points, the 16 directions of the compass, distances, crossings | [map/index.ts](../src/map/index.ts) |
 
 None of the modules names a game's concepts: hit points, ability modifiers or conditions exist only as data in a system's `system.yaml` and pages.
 
@@ -45,7 +46,7 @@ None of the modules names a game's concepts: hit points, ability modifiers or co
 
 A module (a folder of `src/` other than `core` and `commands`) imports only its own files, `src/core/`, Node and npm packages. It never imports another module, a command, the CLI or the MCP server. Commands are the glue: they read the campaign through `campaign` and `pages`, call the modules and write the results.
 
-So `core` holds what several modules share: [core/formula.ts](../src/core/formula.ts) (read by `systems` when a system loads, worked out by commands), [core/field-kind.ts](../src/core/field-kind.ts) (declared by `systems`, read by `pages`), [core/text.ts](../src/core/text.ts) (how names compare), [core/problem.ts](../src/core/problem.ts).
+So `core` holds what several modules share: [core/formula.ts](../src/core/formula.ts) (read by `systems` when a system loads, worked out by commands), [core/field-kind.ts](../src/core/field-kind.ts) (declared by `systems`, read by `pages`), [core/length.ts](../src/core/length.ts) (lengths and speeds in metric, told in the story's units: read by `pages`, `systems` and commands), [core/text.ts](../src/core/text.ts) (how names compare), [core/problem.ts](../src/core/problem.ts).
 
 [test/architecture.test.ts](../test/architecture.test.ts) enforces two rules:
 
@@ -71,7 +72,7 @@ A command is a `Command` object made with `defineCommand` in [core/registry.ts](
 | `run(input, context)` | Does the work, returns a result object |
 | `format(result)` | Renders the result as plain text for the AI |
 
-`defineCommand` wraps `run` so that it runs inside a file store (`withFiles`): the session's store when the context has one, else a new `FileStore` for that call. The commands are listed in [commands/index.ts](../src/commands/index.ts): `init`, `config`, `instructions`, `status`, `validate`, `write`, `move`, `reveal`, `show`, `find`, `rules`, `roll`, `ask`, `change`, `effect`, `advance`, `scene`.
+`defineCommand` wraps `run` so that it runs inside a file store (`withFiles`): the session's store when the context has one, else a new `FileStore` for that call. The commands are listed in [commands/index.ts](../src/commands/index.ts): `init`, `config`, `instructions`, `status`, `mode`, `validate`, `write`, `move`, `reveal`, `show`, `view`, `find`, `rules`, `roll`, `ask`, `change`, `effect`, `advance`, `travel`, `route`, `scene`, `save`.
 
 ### The context
 
@@ -115,8 +116,8 @@ Error messages and outputs are read by an AI: they say what went wrong and what 
 ### A campaign folder
 
 ```
-campaign.yaml      settings: name, language, system, difficulty, lethality, saves, lines, veils, table, precedents, coins (other keys are kept)
-state.yaml         the present: mode (setup, session zero, play), date ("day 1, 18:00") and the open scene under scene
+campaign.yaml      settings: name, language, system, difficulty, lethality, saves, units, lines, veils, table, precedents, coins, what it adds to its system (other keys are kept)
+state.yaml         the present: mode (setup, session zero, play), date ("day 1, 18:00"), the open scene under scene, the journey under way under journey
 log.jsonl          one JSON line per change
 .mcp.json          registers `rpg mcp` for AI hosts (through cmd /c on Windows)
 AGENTS.md          opens with the start lines between rpg's marks, kept up to date; the player's own text may follow
@@ -136,7 +137,7 @@ Each file under `world/` is a `Page` ([pages/world.ts](../src/pages/world.ts)): 
 
 - Links are `[[Page]]`, `[[Page#Section]]`, `[[Page|label]]` or `[[folder/Page.md]]`; in YAML they are quoted, `creature: "[[Wolf]]"`. Links inside code fences do not count ([pages/markdown.ts](../src/pages/markdown.ts)).
 - The text before the first heading is the introduction; headings make sections; `> [!secret] Name` followed by quoted lines is a secret block.
-- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `equipped`, `contains`, `knows`, `factions`, `environment`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases` everywhere. Any other field is free, or declared by the game system.
+- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `equipped`, `contains`, `knows`, `factions`, `environment`, a place's `stops`, `position` and `radius`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases` everywhere. Any other field is free, or declared by the game system.
 - A field written empty counts as missing; a free field's name is the same in any case, the last written winning.
 
 [pages/page-file.ts](../src/pages/page-file.ts) splits and joins the frontmatter and body and applies a `FieldChange` (`set`, `unset`, `add`, `remove`) to the YAML document, keeping comments.
@@ -146,7 +147,7 @@ Few places write files, all through the store: `writePage` in [pages/write-page.
 ### A game system package
 
 ```
-systems/<name>/system.yaml   title, language, attribution, fields, coins, round, settings, sheet, sheet-notes, creation,
+systems/<name>/system.yaml   title, language, attribution, fields, coins, round, imperial, travel, settings, sheet, sheet-notes, creation,
                              values, marks, status-line, thresholds, recipes, conditions, tables, computed, counters,
                              progression, item-formulas, always-in, rewards, quest-ends
 systems/<name>/world/        pages, as in a campaign (creatures/, items/, topics/ in 5e)
@@ -286,6 +287,16 @@ Files: [triggers/trigger.ts](../src/triggers/trigger.ts), [commands/game-events.
 Files: [pages/environment.ts](../src/pages/environment.ts), [commands/game-environment.ts](../src/commands/game-environment.ts). Codes: `ENV-1`–`ENV-6`.
 
 A place's `environment` lines (`light: dark`) hold for everything inside it, from the nearest place of its chain; effects on a place hold the same way (`ENV-1`–`ENV-3`). `write` changes one line at a time (`ENV-4`); `move` says what changes around whoever moves (`ENV-5`).
+
+### Roads and travel
+
+Files: [map/](../src/map/), [core/length.ts](../src/core/length.ts), [pages/roads.ts](../src/pages/roads.ts), [commands/game-roads.ts](../src/commands/game-roads.ts), [commands/game-journey.ts](../src/commands/game-journey.ts), [commands/game-advance.ts](../src/commands/game-advance.ts), [commands/route.ts](../src/commands/route.ts), [commands/travel.ts](../src/commands/travel.ts). Codes: `ROA-1`–`ROA-7`, `TRV-1`–`TRV-11`.
+
+- A road is a place with `stops`: links and lengths taking turns, as `[[Guadoscuro]], 12 km, [[Bivio]]`, read by `readStops`; its `kind` (road when it has none) says what the system's `travel.kinds` make of it. Lengths and speeds are always metric (`readLength`, `readSpeed`, D-262); outputs give them in the campaign's `units`, imperial with the system's `imperial` mile and foot (`formatLength`, `measuresOf`).
+- `roadsOf` turns the world's roads into the `map` module's stretches, only between places of the campaign, once per world. A journey starts and ends at the nearest stop of a page's chain (`stopOf`, `ROA-5`). `speedOf` gives metres a minute on each stretch: in a vehicle on a kind it travels, its speed plus the current downstream; at the pace on the others, times the factor of the `terrain` entry of the road's environment (`TRV-2`, `TRV-3`). `quickestWay` in `map/ways.ts` is a Dijkstra on time, then length, then the order of the stretches (`TRV-4`).
+- `route` says the way, the distance and the time, from where the party is or its journey stopped, and with `across` the straight line (`TRV-5`). `travel` walks the way step by step: the travellers, or the vehicle they are all in (`moversOf`, `TRV-6`), enter each road with `movePages`, time passes with `passTime` (the heart of `advance`, which stops at the first dated event), and they enter each stop, then the destination itself. It stops at an event a move or the time made due, even one due right as it reaches a stop, and when the day's hours end (`TRV-7`, `TRV-8`), which start again after a stop of 8 hours (`travelledSinceRest`); stopped, `journey` in `state.yaml` keeps who travels, where to, where on a road (`road`, `stretch`, `from`, `toward`, `done` in metres), the pace, when the last travel ended, the minutes since the last rest and the hours given (`TRV-9`), and the next `travel` goes on from there. One journey at a time: another group's `travel` is refused while one is stopped between places. `status` says it. The loop over the legs is `walk` in `travel.ts`, which counts minutes on the whole way so that rounding never adds up.
+- Positions ([pages/positions.ts](../src/pages/positions.ts), [commands/game-positions.ts](../src/commands/game-positions.ts), [commands/game-here.ts](../src/commands/game-here.ts); `POS-1`–`POS-6`): a place's `position` is written by the engine as `8.5 km E, 3 km S` from the map's centre; `write` turns relations such as `12 km NE of [[Guadoscuro]]` into it, averaging several, and makes the first place named the centre (`positionFromWrite`, `writeOrigin`). `positionOf` gives a page's position: its own, a stop's on the line between the nearest stops of its road that have one, or its nearest container's; the positions and the regions are worked out once for each world. A place with a position and a `radius` is a region; `regionAt` gives the smallest that covers a point. `shortRoadProblems` reports a road shorter than the straight line between two of its stops.
+- Off the roads ([commands/game-open.ts](../src/commands/game-open.ts); `TRV-12`–`TRV-15`): `travel` with `across` or `toward` starts from where the movers are on the map (`moversPosition`: the journey's point in the open, its point on a road, or their place's position), cuts the straight line into legs where the region changes (`openLegs`, every 250 m), and walks them as it walks a road's stretches: the movers enter each region, or leave every place in the open (`planLeave`), and the journey keeps the point as `at`. At a stop it says the region, the places near (`nearPlaces`), the roads crossed (`crossedRoads`) and how to make the spot a place. `write` with `here` writes a new place where the journey stopped: a stop splitting the road's stretch, or a place at the point inside the region that covers it, and moves the movers into it (`placeHere`). `move` between two stops of the roads says that a journey goes with `travel`.
 
 ### Rules lookup
 
