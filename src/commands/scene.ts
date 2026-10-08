@@ -15,6 +15,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { movePages } from "./game-moves.ts";
+import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
@@ -84,7 +85,7 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; };
+    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; };
 
 export const scene = defineCommand({
     name: "scene",
@@ -432,19 +433,21 @@ function close(root: string, world: World, summary: string, context: Context): S
         return page === undefined ? [] : effectsOf(page).filter((effect) => effect.end === undefined && !keptByCopy(effect)).map((effect) => `${effect.name} on ${page.name}`);
     });
     const rewards = current === undefined ? [] : rewardLines(world, campaignSystem(root, context), current);
+    // A scene that ends may end the story of a quest whose goals are all ticked: the master says whether it did (D-239).
+    const quests = world.pages.filter(isTickedOpenQuest).map(tickedQuestNote);
     const ended = endEffects(root, context, world, undefined, (effect) => endsWithScene(effect) || keptByCopy(effect), "scene closed");
     saveScene(root, undefined);
 
     if (current === undefined) {
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...rawTitleAndType(raw), closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [] };
+        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests };
     }
 
     logCopies(root, context, current.title, current.copies);
     const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless, ...(rewards.length === 0 ? {} : { rewards }) };
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests };
 }
 
 /**
@@ -509,20 +512,21 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; }): string
 {
     const advance = "Advance any time it took that you have not advanced yet.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
     const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
+    const quests = result.quests.map((line) => `\n${line}`).join("");
 
     if (result.unreadable !== undefined) {
-        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}`;
+        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}${quests}`;
     }
 
     const rounds = result.rounds === undefined ? "" : ` after ${result.rounds} ${result.rounds === 1 ? "round" : "rounds"}`;
     const gone = result.copies.length === 0 ? "" : ` Copies gone: ${membersText(result.copies)}.`;
     const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${rewards}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${rewards}${quests}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */

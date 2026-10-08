@@ -169,6 +169,19 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         expect(await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio\n- [x] Portarla al paese")).toContain(ticked);
         expect(await ok("write", "Il pozzo", "--set", "status=done")).toContain("Il pozzo is done. What the story rewards:");
     });
+
+    it("of a quest whose goals are all ticked: each scene that closes asks whether it ended its story, until it is done (D-239)", async () => {
+        const ticked = "Every goal of Il pozzo is ticked and it is still open: if the story has ended it, write status done.";
+        await ok("write", "Il pozzo", "--type", "quest", "--set", "status=open", "--text=- [x] Scendere\n- [ ] Riempire il secchio");
+        await ok("scene", "open", "--title", "Al pozzo", "--type", "exploration");
+        expect(await ok("scene", "close", "--summary", "Ennio scende nel pozzo.")).not.toContain(ticked);
+        await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio");
+        await ok("scene", "open", "--title", "Il ritorno", "--type", "travel");
+        expect(await ok("scene", "close", "--summary", "Ennio torna col secchio pieno.")).toContain(`Advance any time it took that you have not advanced yet.\n${ticked}`);
+        await ok("write", "Il pozzo", "--set", "status=done");
+        await ok("scene", "open", "--title", "La festa", "--type", "social");
+        expect(await ok("scene", "close", "--summary", "Il paese beve.")).not.toContain(ticked);
+    });
 });
 
 describe("what a new level gives, written by the player's choices (PRO-4, FOR-7)", () => {

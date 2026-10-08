@@ -1,4 +1,4 @@
-// An open quest whose goals are all ticked (D-239): whether its story has ended is the master's to say, and status and write ask it, as the playtests showed
+// An open quest whose goals are all ticked (D-239): whether its story has ended is the master's to say; status, write and scene close ask it, as the playtests showed
 // the master leaving such a quest open for evenings, so the story's reward, a new level with milestones included, never came.
 import { everyGoalTicked, type Page } from "../pages/index.ts";
 
@@ -14,7 +14,13 @@ export function openQuestText(page: Page): string
 /** What write says when it leaves an open quest with every goal ticked that was not so before, as when its last goal is ticked. */
 export function tickedQuestNotes(existing: Page | undefined, page: Page): string[]
 {
-    return isTickedOpenQuest(page) && !isTickedOpenQuest(existing) ? [`Every goal of ${page.name} is ticked and it is still open: ${advice}.`] : [];
+    return isTickedOpenQuest(page) && !isTickedOpenQuest(existing) ? [tickedQuestNote(page)] : [];
+}
+
+/** What scene close says of each open quest whose goals are all ticked, and write of the one it leaves so. */
+export function tickedQuestNote(page: Page): string
+{
+    return `Every goal of ${page.name} is ticked and it is still open: ${advice}.`;
 }
 
 /** Whether a page is an open quest whose goals are all ticked. */
