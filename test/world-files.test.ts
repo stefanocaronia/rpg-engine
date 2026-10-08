@@ -117,7 +117,8 @@ describe("links", () => {
     it("finds links written as paths, with .md or with an escaped label, but not those in code or in comments", async () => {
         await rpg("write", "Varro", "--type", "character", "--text", "Un alchimista.");
         await rpg("write", "Lena", "--type", "character", "--set", "fonte=[[world/characters/Varro.md]]", "--text", "| chi | link |\n|---|---|\n| lui | [[Varro\\|l'alchimista]] |");
-        await rpg("write", "Codice", "--type", "item", "--text", "```\n[[Varro]]\n```\nIn linea `[[Varro]]`, e %% [[Varro]] %% in un commento.");
+        await rpg("write", "Codice", "--type", "item", "--text", "```\n[[Varro]]\n```\nIn linea `[[Varro]]`, e %% [[Varro]] %% in un commento. ![[mappa.png]]");
+        expect((await rpg("validate")).output).not.toContain("mappa");
         expect((await rpg("show", "Varro")).output).toContain("Linked from:\n- Lena: fonte, text");
         expect((await rpg("show", "Varro")).output).not.toContain("Codice");
     });

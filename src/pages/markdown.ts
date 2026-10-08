@@ -154,7 +154,10 @@ export function linkedPages(text: string): string[]
     return links(text).map((link) => link.page);
 }
 
-/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code and in %% comments %% do not count. Read once for each text. */
+/**
+ * The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code and in %% comments %%, and attachments as ![[map.png]],
+ * do not count. Read once for each text.
+ */
 export function links(text: string): Link[]
 {
     return rememberedLinks(text);
@@ -164,7 +167,9 @@ const rememberedLinks = rememberedByText((text: string): Link[] => {
     const lines = text.split("\n");
     const code = codeLines(lines);
     const prose = (line: string): string => line.replace(/`[^`]*`/g, "").replace(/%%.*?%%/g, "");
-    return lines.flatMap((line, index) => (code[index] ? [] : [...prose(line).matchAll(linkPattern)].map((match) => linkOf(match[1], match[2]))));
+    // A file of another kind, as ![[map.png]], is an attachment, not a page.
+    const page = (target: string): boolean => !/\.(?!md$)[a-z0-9]+$/i.test(target.trim());
+    return lines.flatMap((line, index) => (code[index] ? [] : [...prose(line).matchAll(linkPattern)].filter((match) => page(match[1])).map((match) => linkOf(match[1], match[2]))));
 }, 20_000);
 
 /** Removes the blank lines at the start and the white space at the end. */

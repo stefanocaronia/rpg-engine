@@ -48,7 +48,8 @@ export function readLogFile(folder: string): LogEntry[]
 
 /** What scene open says about telling a fight (D-139). */
 export const fightGuidance = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
-    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets.";
+    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
+    + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.";
 
 /** What a turn of the player's character says after its name (D-139). */
 export const playerTurn = ", the player's character";

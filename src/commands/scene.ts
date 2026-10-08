@@ -32,7 +32,8 @@ const mostCopies = 50;
 
 // How a fight is told, given when one opens (D-139).
 const fightText = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
-    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets.";
+    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
+    + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.";
 
 // A list, or one text, as an MCP client may send it; run turns one text into a list of one.
 const textList = z.union([z.string(), z.array(z.string())]);
