@@ -2,7 +2,7 @@
 // classes have not.
 import { listItems, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { isInParty, type World } from "../pages/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
@@ -138,5 +138,5 @@ export function experienceProblems(world: World): Problem[]
 
 function fieldOf(fields: Record<string, unknown>, field: string): unknown
 {
-    return Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    return valueNamed(fields, field);
 }

@@ -4,7 +4,7 @@ import type { Context } from "../core/context.ts";
 import { numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName, withArticle } from "../core/text.ts";
+import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
 import { findPage, isEmptyField, isInParty, isPartyMember, linksIn, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
@@ -217,7 +217,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     }
 
     const place = input.place === undefined ? leadPlace(world) : placePage(world, input.place);
-    const characters = unique(input.with === undefined ? enteringParty(world, place) : input.with.map((name) => characterPage(world, name)));
+    const characters = [...new Set(input.with === undefined ? enteringParty(world, place) : input.with.map((name) => characterPage(world, name)))];
     const copies = newCopies(world, input.creatures, characters.map((page) => page.name));
     const brought = bringParty(root, context, world, characters, place, input.type);
     const opened = readPresent(root).date;
@@ -247,7 +247,7 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     }
 
     const members = memberNames(current);
-    const characters = unique((input.with ?? []).map((name) => characterPage(world, name)));
+    const characters = [...new Set((input.with ?? []).map((name) => characterPage(world, name)))];
     const already = characters.filter((page) => sameName(members, page.name) !== undefined);
 
     if (already.length > 0) {
@@ -458,7 +458,7 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
     const party = there.filter((page, index) => there.indexOf(page) === index && isPartyMember(page) && page.fields.status !== "dead" && hasSheet(world, page));
     const copies = [...Object.entries(scene.copies), ...Object.entries(scene.gone ?? {})].map(([name, copy]) => ({ page: copyPage(name, copy), left: name in (scene.gone ?? {}) }));
     const others = [...copies, ...there.filter((page) => !isPartyMember(page)).map((page) => ({ page, left: (scene.left ?? []).includes(page.name) }))];
-    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const read = (fields: Record<string, unknown>, field: string): unknown => valueNamed(fields, field);
 
     return (system?.rewards ?? []).flatMap((reward) => {
         const worth = others.flatMap(({ page, left }) => {
@@ -704,11 +704,6 @@ function enteringParty(world: World, place: Page | undefined): Page[]
     const lead = leadPlace(world);
     const nearestPlace = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
     return world.pages.filter((page) => isInParty(page) && (place === undefined || locate(world, page).chain.includes(place) || (lead !== undefined && nearestPlace(page) === lead)));
-}
-
-function unique(pages: Page[]): Page[]
-{
-    return pages.filter((page, index) => pages.indexOf(page) === index);
 }
 
 function withoutUndefined(current: Scene): Scene

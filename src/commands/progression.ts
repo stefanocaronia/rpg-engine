@@ -2,7 +2,7 @@
 // subclasses add. The tables are the pages' own; this is where the system's progression meets the pages of a world.
 import { listItems } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
 import { type Page, pagesWithName, sectionTitles, systemPageNamed, type World } from "../pages/index.ts";
 import { featureParts, fieldName, gainedFeatures, levelledFeatures, type LevelTable, levelTable, mergedFeatures, rowFields } from "../progression/index.ts";
 
@@ -38,7 +38,7 @@ export interface Progression
 export function progressionOf(world: World, fields: Record<string, unknown>): Progression | undefined
 {
     const rule = world.system?.progression;
-    const written = rule === undefined ? undefined : readField(fields, rule.list);
+    const written = rule === undefined ? undefined : valueNamed(fields, rule.list);
 
     if (rule === undefined || written === undefined || written === null) {
         return undefined;
@@ -69,7 +69,7 @@ export function progressionOf(world: World, fields: Record<string, unknown>): Pr
     const parts = partsOf(world, fields, rule.parts, entries);
 
     for (const part of parts) {
-        const levelled = levelledFeatures(listItemsOf(readField(part.page.fields, featuresField)));
+        const levelled = levelledFeatures(listItemsOf(valueNamed(part.page.fields, featuresField)));
         features.push(...levelled.flatMap((gained) => (gained === undefined || gained.level > part.level ? [] : [{ ...gained, order: part.order, part: 1, page: part.page }])));
     }
 
@@ -117,7 +117,7 @@ export function featureSource(progression: Progression | undefined, name: string
 export function progressionProblems(world: World, page: Page, fields: Record<string, unknown>): Problem[]
 {
     const rule = world.system?.progression;
-    const written = rule === undefined ? undefined : readField(fields, rule.list);
+    const written = rule === undefined ? undefined : valueNamed(fields, rule.list);
 
     if (rule === undefined || written === undefined || written === null) {
         return [];
@@ -206,7 +206,7 @@ function partsOf(world: World, fields: Record<string, unknown>, parts: { list: s
         return [];
     }
 
-    return listItems(readField(fields, parts.list)).flatMap((item) => {
+    return listItems(valueNamed(fields, parts.list)).flatMap((item) => {
         const page = pageNamed(world, item.name);
         const owner = page === undefined ? undefined : ownerName(page, parts.field);
         const entry = owner === undefined ? undefined : entries.find((candidate) => [comparableText(candidate.name), comparableText(candidate.page.name)].includes(comparableText(owner)));
@@ -222,7 +222,7 @@ function partProblems(world: World, page: Page, fields: Record<string, unknown>,
 
     const { list, field } = rule.parts;
     const featuresField = fieldName(rule.features);
-    return listItems(readField(fields, list)).flatMap((item): Problem[] => {
+    return listItems(valueNamed(fields, list)).flatMap((item): Problem[] => {
         const part = pageNamed(world, item.name);
 
         if (part === undefined) {
@@ -230,7 +230,7 @@ function partProblems(world: World, page: Page, fields: Record<string, unknown>,
         }
 
         const owner = ownerName(part, field);
-        const unlevelled = levelledFeatures(listItemsOf(readField(part.fields, featuresField))).some((gained) => gained === undefined);
+        const unlevelled = levelledFeatures(listItemsOf(valueNamed(part.fields, featuresField))).some((gained) => gained === undefined);
         const message = owner === undefined
             ? `${part.name} names no ${field}, so it adds no ${featuresField} to ${page.name}.`
             : !entries.some((entry) => [comparableText(entry.name), comparableText(entry.page.name)].includes(comparableText(owner)))
@@ -255,7 +255,7 @@ function partProblems(world: World, page: Page, fields: Record<string, unknown>,
 /** The name of the item a part names in its field, such as Fighter for class: [[Fighter]]. */
 function ownerName(page: Page, field: string): string | undefined
 {
-    return listItems(readField(page.fields, field))[0]?.name;
+    return listItems(valueNamed(page.fields, field))[0]?.name;
 }
 
 /** The items of a list as text, a single value as a list of one. */
@@ -269,9 +269,4 @@ function pageNamed(world: World, name: string): Page | undefined
 {
     const [named] = pagesWithName(world, name);
     return named ?? systemPageNamed(world, name);
-}
-
-function readField(fields: Record<string, unknown>, field: string): unknown
-{
-    return Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 }

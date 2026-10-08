@@ -26,6 +26,13 @@ export function sameName(names: string[], name: string): string | undefined
     return names.find((candidate) => comparableText(candidate) === comparableText(name.trim()));
 }
 
+/** The value a record holds under a name, as names are compared (INH-5); undefined when it holds none. */
+export function valueNamed(record: Record<string, unknown>, name: string): unknown
+{
+    const key = sameName(Object.keys(record), name);
+    return key === undefined ? undefined : record[key];
+}
+
 /** The page a link's target names: [[folder/Page.md]], and [[Page\|label]] as written in tables, name Page. */
 export function linkTargetName(target: string): string
 {

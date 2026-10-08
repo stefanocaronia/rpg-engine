@@ -1,6 +1,6 @@
 // The values effects give for a while, as a layer over a page (D-123, EFF-3): read by every command that shows or changes a page's fields.
 import { fieldsRead } from "../core/formula.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, formatEffect, readEffects } from "../effects/index.ts";
 import { declaredKind, type Page, type World } from "../pages/index.ts";
@@ -54,7 +54,7 @@ export function valuesChanged(world: World, before: Page, after: Page, effect: E
 {
     const was = effectiveFields(world, before);
     const is = effectiveFields(world, after);
-    const value = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const value = (fields: Record<string, unknown>, field: string): unknown => valueNamed(fields, field);
     const read = (fields: Record<string, unknown>, field: string): string => valueText(world, field, value(fields, field));
     const changed = (field: string): boolean => read(was, field) !== read(is, field);
     const given = new Set(effect.values.map(([field]) => comparableText(field)));

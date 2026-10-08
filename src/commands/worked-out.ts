@@ -19,7 +19,7 @@ import {
     workOut,
 } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
 import { declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
@@ -914,5 +914,5 @@ function isSystemCounter(world: World, field: string): boolean
 /** The name under which the fields hold a field, in any case. */
 function keyOf(fields: Record<string, unknown>, field: string): string | undefined
 {
-    return Object.keys(fields).find((key) => comparableText(key) === comparableText(field));
+    return sameName(Object.keys(fields), field);
 }

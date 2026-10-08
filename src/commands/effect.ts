@@ -3,7 +3,7 @@ import { requireCampaign } from "../campaign/index.ts";
 import { numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readRounds, withEffect } from "../effects/index.ts";
 import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
@@ -348,7 +348,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
         throw new Error(`${error instanceof Error ? error.message : String(error)} Nothing changed.`);
     }
 
-    const current = Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const current = valueNamed(fields, field);
     const computed = computedField(world, field, fields);
 
     // An effect changes what a computed field comes from, never the field (FOR-7, D-200).
@@ -447,7 +447,7 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
 {
     const others = withEffects(page, current.filter((effect) => comparableText(effect.name) !== comparableText(added.name)));
     const fields = effectiveFields(world, others);
-    const read = (field: string): string => String(Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1] ?? "none");
+    const read = (field: string): string => String(valueNamed(fields, field) ?? "none");
     const counters = added.values.filter(([field, value]) => !isDeclaredUncounted(world, field) && readCounter(value)?.max !== undefined).map(([field]) => field);
     // A bonus field adds up the effects that give it, so none goes over another (FOR-5).
     const over = added.values.filter(([field]) => declaredKind(world, field) !== "bonus").flatMap(([field]) => {

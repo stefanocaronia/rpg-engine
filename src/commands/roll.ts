@@ -4,7 +4,7 @@ import type { Context } from "../core/context.ts";
 import { numberOf } from "../core/formula.ts";
 import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { createProof, DiceError, type DiceRoll, fingerprint, rollDice, sha256 } from "../dice/index.ts";
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
@@ -215,7 +215,7 @@ function notRollsText(world: World, field: string, value: unknown): string
 function otherKeepers(world: World, kept: KeptField, value: number): string
 {
     const others = world.pages.filter((page) => page !== kept.page && page.system === undefined).flatMap((page) => {
-        const written = Object.entries(page.fields).find(([key]) => comparableText(key) === comparableText(kept.field))?.[1];
+        const written = valueNamed(page.fields, kept.field);
         const values = (Array.isArray(written) ? written : written === undefined ? [] : [written]).map(numberOf).filter((number) => number !== undefined);
         return values.includes(value) ? [`${page.name} keeps ${values.join(", ")} in ${kept.field}: give from ${page.name}.`] : [];
     });
@@ -330,7 +330,7 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
         );
     }
 
-    const value = Object.entries(fields).find(([field]) => comparableText(field) === comparableText(name))?.[1];
+    const value = valueNamed(fields, name);
     const number = numberOf(value);
 
     if (value === undefined) {
@@ -367,7 +367,7 @@ function rollerNote(world: World, system: GameSystem | undefined, page: Page): s
     const effects = effectsOf(page).filter((effect) => effect.values.length === 0 || sameName(system?.conditions ?? [], effect.name) !== undefined);
     // Kept rolls are no number that changes a roll: use takes them.
     const marked = (system?.statusLine ?? []).filter((entry) => entry.whenSet && declaredKind(world, entry.field) !== "rolls").flatMap((entry) => {
-        const value = Object.entries(fields).find(([field]) => comparableText(field) === comparableText(entry.field))?.[1];
+        const value = valueNamed(fields, entry.field);
         const number = readCounter(value)?.value ?? numberOf(value);
         return number === undefined || number === 0 ? [] : [`${entry.field} ${number}`];
     });

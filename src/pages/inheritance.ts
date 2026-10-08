@@ -1,4 +1,4 @@
-import { comparableText, withArticle } from "../core/text.ts";
+import { comparableText, sameName, withArticle } from "../core/text.ts";
 import { introductionText, secretNames, sectionTitles, textParts } from "./markdown.ts";
 import type { FieldChange } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
@@ -168,7 +168,7 @@ export function ownField(page: Page, field: string): string | undefined
         return field;
     }
 
-    return heldName(page, field) ?? Object.keys(page.fields).find((name) => comparableText(name) === comparableText(field));
+    return heldName(page, field) ?? sameName(Object.keys(page.fields), field);
 }
 
 /**

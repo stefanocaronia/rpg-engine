@@ -49,7 +49,7 @@ export const reveal = defineCommand({
 
         // An empty to, as an MCP client may send it, is left out.
         const to = input.to === undefined ? [] : listOf(input.to);
-        const learners = to.length === 0 ? [playerCharacter(world)] : unique(to.map((name) => learnerOf(world, scene, name)));
+        const learners = to.length === 0 ? [playerCharacter(world)] : [...new Set(to.map((name) => learnerOf(world, scene, name)))];
         const found = asked.map((item) => learnableOf(root, world, item));
         const known = found.filter((item) => item.kind === "known").filter((item, index, all) => all.findIndex((other) => sameLink(other.link, item.link)) === index);
         learners.forEach(checkKnows);
@@ -237,9 +237,4 @@ function sameLink(first: string, second: string): boolean
 function listOf(value: string | string[]): string[]
 {
     return (typeof value === "string" ? [value] : value).filter((item) => item.trim() !== "");
-}
-
-function unique(pages: Page[]): Page[]
-{
-    return pages.filter((page, index) => pages.indexOf(page) === index);
 }

@@ -5,7 +5,7 @@ import { fieldsRead, listItemNames, numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, withArticle } from "../core/text.ts";
+import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
 import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
@@ -412,7 +412,7 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
     const fields = inheritedFields(world, page);
 
     for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
-        const name = Object.keys(fields).find((key) => comparableText(key) === comparableText(field));
+        const name = sameName(Object.keys(fields), field);
         const current = name === undefined || (isStandardField(page.type, name) && !isCounterField(page.type, name)) || isDeclaredUncounted(world, name) ? undefined : guarded(fields[name], coins);
         const next = current === undefined ? undefined : sameKind(current.kind, value, coins);
         const base = baseValue(world, page, field);
@@ -435,7 +435,7 @@ function checkUses(world: World, system: GameSystem | undefined, page: Page, set
     const list = world.system?.progression?.list;
     const after: Page = { ...page, fields: { ...page.fields, ...set } };
     const fields = inheritedFields(world, after);
-    const classes = list === undefined ? undefined : Object.entries(fields).find(([name]) => comparableText(name) === comparableText(list))?.[1];
+    const classes = list === undefined ? undefined : valueNamed(fields, list);
 
     if (list === undefined || isEmptyField(classes) || !hasSheet(world, after)) {
         return;
@@ -704,7 +704,7 @@ function logCounterChanges(root: string, context: Context, world: World, now: Wo
         const old = inheritedFields(world, before);
 
         for (const [field, value] of Object.entries(inheritedFields(now, after)).filter(([name]) => !isStandardField(after.type, name) && !isDeclaredUncounted(now, name))) {
-            const was = countedText(readField(old, field), coins);
+            const was = countedText(valueNamed(old, field), coins);
             const is = countedText(value, coins);
 
             if (was !== undefined && is !== undefined && was !== is) {
@@ -882,7 +882,7 @@ function keepersNotes(now: World, before: Page, after: Page): string[]
     }
 
     return changedNames(before, after).flatMap((field) => {
-        const keepers = keepersOf(now, after, field).map((keeper) => `${keeper.name} (${field} ${valueText(readField(inheritedFields(now, keeper), field))})`);
+        const keepers = keepersOf(now, after, field).map((keeper) => `${keeper.name} (${field} ${valueText(valueNamed(inheritedFields(now, keeper), field))})`);
         const note = keepersNote(keepers, field);
         return note === "" ? [] : [note];
     });
@@ -923,10 +923,6 @@ function changedNames(before: Page, after: Page): string[]
 }
 
 /** The value a page reads for a field, written in any case. */
-function readField(fields: Record<string, unknown>, field: string): unknown
-{
-    return Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
-}
 
 /** A value as the outputs show it: a list as its items, anything else as written. */
 function valueText(value: unknown): string
@@ -1131,7 +1127,7 @@ function progressionNotes(before: World, after: World, existing: Page, page: Pag
     // What the formulas of the classes' pages give, as the prepared spells of a new level (PRO-5).
     const [then, now] = [effectiveFields(before, existing), effectiveFields(after, page)];
     const formulaValues = (after.system?.itemFormulas?.[after.system.progression?.list ?? ""] ?? []).flatMap((field) => {
-        const [from, to] = [readField(then, field), readField(now, field)];
+        const [from, to] = [valueNamed(then, field), valueNamed(now, field)];
         const text = (value: unknown): string => (value === undefined ? "none" : typeof value === "number" ? signedText(after, field, value) : String(value));
         return text(from) === text(to) ? [] : [`${field} ${text(from)} → ${text(to)}`];
     });
@@ -1192,7 +1188,7 @@ function sameFeature(first: string, second: string): boolean
 /** The thresholds the fields a write gives touch on the player character or a companion, as change says them (DAT-3): exhaustion written with write shows its rule. */
 function writtenThresholdNotes(root: string, system: GameSystem | undefined, before: World, after: World, existing: Page | undefined, page: Page, set: Record<string, unknown>): string[]
 {
-    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const read = (fields: Record<string, unknown>, field: string): unknown => valueNamed(fields, field);
     const was = existing === undefined ? {} : effectiveFields(before, existing);
     const is = effectiveFields(after, page);
     return Object.keys(set).flatMap((field) => {
@@ -1210,7 +1206,7 @@ function workedLimitsChange(system: GameSystem | undefined, before: World, exist
     const fields = inheritedFields(world, page);
     const old = existing === undefined ? undefined : inheritedFields(before, existing);
     const changes = Object.keys(world.system?.formulas?.counters ?? {}).flatMap((field) => {
-        const key = Object.keys(page.fields).find((name) => comparableText(name) === comparableText(field));
+        const key = sameName(Object.keys(page.fields), field);
         const counter = key === undefined ? undefined : readCounter(page.fields[key]);
         const { max } = counterLimits(world, fields, field);
         const had = old === undefined || max !== undefined ? undefined : counterLimits(before, old, field).max;

@@ -1,4 +1,4 @@
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Coin, formatAmount, readAmount } from "../money/index.ts";
 import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
@@ -39,7 +39,7 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
     const used = new Set<string>();
 
     for (const { field, whenSet } of system?.statusLine ?? []) {
-        const key = Object.keys(fields).find((name) => comparableText(name) === comparableText(field));
+        const key = sameName(Object.keys(fields), field);
 
         // A value written by hand as a map or a list, such as ac: {base: 14, shield: 2}, is not one a line can show.
         if (key === undefined || isEmptyField(fields[key]) || !["number", "string"].includes(typeof fields[key])) {
@@ -69,7 +69,7 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
     // The points with how many the next level needs, or the level they reach (PRO-6).
     const experience = experienceOf(world, fields);
     const text = experience === undefined ? undefined : experienceText(experience);
-    const key = experience === undefined ? undefined : Object.keys(shown).find((field) => comparableText(field) === comparableText(experience.field));
+    const key = experience === undefined ? undefined : sameName(Object.keys(shown), experience.field);
 
     if (key !== undefined && text !== undefined) {
         shown[key] = `${String(shown[key])} (${text})`;

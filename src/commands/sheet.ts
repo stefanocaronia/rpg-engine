@@ -1,7 +1,7 @@
 // The character sheet of the game system (D-204, D-207, DAT-2): its groups as show gives them, the fields a character still lacks, and the names a list takes (SYS-8).
 import { listItemNames } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { isEmptyField, type Page, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
@@ -100,7 +100,7 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
         }
 
         const shown = groupEntries(world, system, group, fields).flatMap((entry) => {
-            const value = readField(fields, entry.field);
+            const value = valueNamed(fields, entry.field);
             const marked = "●".repeat(marks.get(comparableText(entry.field)) ?? 0);
             return isEmptyField(value) ? [] : [`${entry.field} ${valueText(world, entry.field, value)}${marked === "" ? "" : ` ${marked}`}${besideText(world, fields, entry)}`];
         });
@@ -132,7 +132,7 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
 
     const worked = workedFields(world, fields, true);
     const lines = groupEntries(world, system, group, fields).flatMap((entry) => {
-        const value = readField(fields, entry.field);
+        const value = valueNamed(fields, entry.field);
         const computed = worked.find((candidate) => comparableText(candidate.field) === comparableText(entry.field));
 
         if (computed !== undefined) {
@@ -286,7 +286,7 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
     const listed = new Set(entryFields(system.sheet.flatMap((other) => other.entries)).map(comparableText));
     const rows = (progressionOf(world, fields)?.values ?? []).map((value) => value.field).filter((field) => !listed.has(comparableText(field)));
     const uses = Object.keys(world.system?.formulas?.counters ?? {}).filter((field) =>
-        isUse(world, field) && !listed.has(comparableText(field)) && !rows.some((row) => comparableText(row) === comparableText(field)) && !isEmptyField(readField(fields, field))
+        isUse(world, field) && !listed.has(comparableText(field)) && !rows.some((row) => comparableText(row) === comparableText(field)) && !isEmptyField(valueNamed(fields, field))
     );
     return [...group.entries, ...[...rows, ...uses].map((field) => ({ field, optional: true }))];
 }
@@ -320,7 +320,7 @@ function besideText(world: World, fields: Record<string, unknown>, entry: SheetE
         return ` (${text})`;
     }
 
-    const value = entry.beside === undefined ? undefined : readField(fields, entry.beside);
+    const value = entry.beside === undefined ? undefined : valueNamed(fields, entry.beside);
     return entry.beside === undefined || isEmptyField(value) ? "" : ` (${valueText(world, entry.beside, value)})`;
 }
 
@@ -344,11 +344,6 @@ function valueText(world: World, field: string, value: unknown): string
 function linkText(text: string): string
 {
     return text.replace(/\[\[(?:[^\]|]*\|)?([^\]|]+)\]\]/g, "$1");
-}
-
-function readField(fields: Record<string, unknown>, field: string): unknown
-{
-    return Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
 }
 
 /** The items of a list that the game system does not take, by the names they are read as (SYS-8); none for a field without values. */

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName, withArticle } from "../core/text.ts";
+import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import {
     backlinks,
     baseChain,
@@ -202,7 +202,7 @@ function coveredValues(world: World, page: Page): string[]
 {
     const without = inheritedFields(world, page);
     const withThem = effectiveFields(world, page);
-    const read = (fields: Record<string, unknown>, field: string): unknown => Object.entries(fields).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const read = (fields: Record<string, unknown>, field: string): unknown => valueNamed(fields, field);
     const fields = [...new Set(effectsOf(page).flatMap((effect) => effect.values.map(([field]) => field)))];
     return fields.map((field) => `${field} ${String(read(withThem, field))} (${read(without, field) === undefined ? "none" : String(read(without, field))} without)`);
 }

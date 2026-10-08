@@ -1,4 +1,4 @@
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
 
 const linkPattern = /^\[\[[^\]]+\]\]$/;
@@ -120,7 +120,7 @@ export function standardFieldProblem(type: PageType | undefined, fields: Record<
 export function misspelledStandardField(type: PageType | undefined, name: string): string | undefined
 {
     const rules = rulesOf(type);
-    return Object.hasOwn(rules, name) ? undefined : Object.keys(rules).find((standard) => comparableText(standard) === comparableText(name));
+    return Object.hasOwn(rules, name) ? undefined : sameName(Object.keys(rules), name);
 }
 
 /** Why a field named like a standard one in another case is not read, such as Status; undefined for any other name. */

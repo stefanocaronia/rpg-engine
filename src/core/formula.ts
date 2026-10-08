@@ -1,6 +1,6 @@
 // The formulas of a game system (FOR-1–FOR-9, D-199): arithmetic on the fields of a page, read once and worked out on any page. They know no game: a system
 // writes what a modifier or a bonus is, and the core only counts.
-import { comparableText, linkTargetName } from "./text.ts";
+import { comparableText, linkTargetName, valueNamed } from "./text.ts";
 
 /** A formula read from its text (FOR-2). */
 export type Formula =
@@ -533,7 +533,7 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
     const where = formula.where;
     const items = itemsOf(raw).filter((item) => {
         const fields = where === undefined ? undefined : scope.page?.(item.name);
-        const value = fields === undefined || where === undefined ? undefined : Object.entries(fields).find(([field]) => comparableText(field) === comparableText(where.field))?.[1];
+        const value = fields === undefined || where === undefined ? undefined : valueNamed(fields, where.field);
         return where === undefined || (value !== undefined && comparableText(String(value).trim()) === comparableText(where.value));
     });
     const named = (item: { name: string; }): boolean => comparableText(item.name) === comparableText(formula.item ?? "");

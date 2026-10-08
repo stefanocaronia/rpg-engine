@@ -5,7 +5,7 @@ import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
 /** The file that makes a folder a game system and says what it is. */
@@ -524,7 +524,7 @@ function withoutNames(map: Record<string, unknown>, names: string[]): Record<str
 /** The name under which a map holds this one, as names are compared. */
 function nameIn(map: Record<string, unknown>, name: string): string | undefined
 {
-    return Object.keys(map).find((key) => comparableText(key) === comparableText(name));
+    return sameName(Object.keys(map), name);
 }
 
 function isMap(value: unknown): value is Record<string, unknown>

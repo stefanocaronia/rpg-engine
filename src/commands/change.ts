@@ -3,7 +3,7 @@ import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, withArticle } from "../core/text.ts";
+import { comparableText, valueNamed, withArticle } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
 import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../money/index.ts";
 import {
@@ -723,7 +723,7 @@ function uncountedMessage(world: World, page: string, field: string, suggested: 
 /** The value a change would give a number, such as 18 for by 2 on ac 16; "<value>" when it gives none. */
 function suggestedNumber(fields: Record<string, unknown>, input: { field: string; by?: number | string; to?: number | string; }): string
 {
-    const current = Object.entries(fields).find(([name]) => comparableText(name) === comparableText(input.field.trim()))?.[1];
+    const current = valueNamed(fields, input.field.trim());
 
     // From a command line a number arrives as text.
     if (input.to !== undefined && /^[+-]?\d+$/.test(String(input.to).trim())) {
