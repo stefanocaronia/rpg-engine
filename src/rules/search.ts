@@ -77,7 +77,7 @@ export function hasAllWords(text: string, search: string): boolean
 }
 
 /** The words of a text as a search compares them: letters and digits, in any case and however accents are written. */
-export function searchWords(text: string): string[]
+function searchWords(text: string): string[]
 {
     return comparableText(text).match(/[\p{L}\p{N}]+/gu) ?? [];
 }

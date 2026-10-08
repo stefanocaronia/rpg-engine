@@ -151,7 +151,7 @@ export function installedSystemName(name: string, context: Context, how: "init" 
 }
 
 /** "Installed: 5e (the fifth edition, from the SRD 5.1)." */
-export function installedText(context: Context): string
+function installedText(context: Context): string
 {
     const systems = installedSystems(context.systemFolders);
     return systems.length === 0 ? "No system is installed." : `Installed: ${systems.map((system) => `${system.name} (${system.title})`).join(", ")}.`;

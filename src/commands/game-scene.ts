@@ -160,7 +160,7 @@ export function checkNotSystemPage(world: World, open: { scene?: Scene; }, page:
 }
 
 /** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */
-export function copiesReadingFrom(world: World, scene: Scene, page: Page): string[]
+function copiesReadingFrom(world: World, scene: Scene, page: Page): string[]
 {
     return Object.entries(scene.copies).filter(([name, copy]) => baseChain(world, copyPage(name, copy)).includes(page)).map(([name, copy]) => {
         const counters = countersText(copyCounters(world, copy));
