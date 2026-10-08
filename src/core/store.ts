@@ -1,7 +1,7 @@
 // The files as a command sees them (D-137, D-194): each read at most once in a call, kept as its text and as what it reads as, frozen; what the command writes
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { appendFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
@@ -94,6 +94,20 @@ export class FileStore
         return listing.filter((path) => keep(basename(path)));
     }
 
+    /** The files and folders right inside `folder`, as they are now, by name; none when there is no such folder. */
+    entries(folder: string): { name: string; isFolder: boolean; }[]
+    {
+        return existsSync(folder) && statSync(folder).isDirectory()
+            ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isFile() || entry.isDirectory()).map((entry) => ({ name: entry.name, isFolder: entry.isDirectory() }))
+            : [];
+    }
+
+    /** A file's bytes as they are now, as a save holds them; undefined when there is no file. */
+    bytes(path: string): Uint8Array | undefined
+    {
+        return existsSync(path) ? new Uint8Array(readFileSync(path)) : undefined;
+    }
+
     /** The text of a file as it is now, for a command about to write it: in a call, the text the call reads; a session checks the disk (D-193). */
     fresh(path: string): string | undefined
     {
@@ -133,6 +147,14 @@ export class FileStore
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, text, "utf8");
         this.changed(path, { text }, true);
+    }
+
+    /** Writes a file's bytes as they are, with the folders it needs, as a save gives them back: what the store kept of it is read again. */
+    writeBytes(path: string, bytes: Uint8Array): void
+    {
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, bytes);
+        this.changed(path, undefined, true);
     }
 
     /** Adds text at the end of a file, as the log grows. */

@@ -98,12 +98,15 @@ describe("rpg scene", () => {
             "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken."
                 // A creature of the campaign written without its experience points is named, not left out in silence (DAT-11).
                 + "\nxp: Annegato 2 counts nothing, with no xp-value on Annegato: write it, such as write Annegato, set xp-value=…, and share it. Leave out what the party summoned; "
-                + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",
+                + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained."
+                + "\nSaved: 1 - Ossario.",
         );
         expect(stateFile()).not.toContain("scene:");
-        const [copies, closed] = readLogFile(folder).slice(-2);
+        // The close, then the save it makes (SAV-3).
+        const [copies, closed, saved] = readLogFile(folder).slice(-3);
         expect(copies).toMatchObject({ type: "scene-changed", visibility: "hidden", data: { copies: { "Annegato 1": { hp: "13/22" } } } });
         expect(closed).toMatchObject({ type: "scene-closed", visibility: "public", data: { title: "Ossario", type: "combat", rounds: 2, summary: "Gli annegati cadono; Lena è ferita." } });
+        expect(saved).toMatchObject({ type: "saved", visibility: "public", data: { save: 1, label: "Ossario", why: "scene closed" } });
         expect(closed.data.copies).toBeUndefined();
         expect((await rpg("change", "Annegato 1", "hp", "--by=-1")).output).toBe("There is no page named Annegato 1. Look for it with the find command.");
     });
@@ -291,7 +294,7 @@ describe("rpg scene, after the second review", () => {
         writeFileSync(join(folder, "state.yaml"), stateFile().replace("type: combat", "type: duel"));
         expect((await rpg("change", "Annegato", "hp", "--by=-1")).output).toContain("Annegato is a creature, and the open scene, which may hold its copies, cannot be read:");
         await ok("scene", "close", "--summary", "Finita.");
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "scene-closed", data: { title: "Ossario", type: "other", summary: "Finita." } });
+        expect(readLogFile(folder).at(-2)).toMatchObject({ type: "scene-closed", data: { title: "Ossario", type: "other", summary: "Finita." } });
         expect(await ok("status")).toContain("Last scenes: Ossario (other): Finita.");
     });
 
@@ -367,7 +370,7 @@ describe("rpg scene, numbers and the log after leave", () => {
         expect(await ok("scene", "add", "--creatures", "Annegato")).toBe("Added to Ossario: Annegato 2: hp 22/22 · uses 1/1.");
         await ok("scene", "leave", "--who", "Lena");
         await ok("scene", "close", "--summary", "Fuggono.");
-        const closed = readLogFile(folder).at(-1);
+        const closed = readLogFile(folder).at(-2);
         expect(closed).toMatchObject({ type: "scene-closed", visibility: "public", data: { with: ["[[Ennio]]"], left: ["Lena"] } });
         expect(JSON.stringify(closed)).not.toContain("Annegato 1");
     });

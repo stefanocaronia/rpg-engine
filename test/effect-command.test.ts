@@ -302,7 +302,7 @@ describe("the edges of the command, case by case", () => {
         await ok("effect", "add", "Lena", "Schivata", "--for", "1 round");
         expect((await rpg("validate")).output).toBe("No problems.");
         expect(await ok("scene", "close", "--summary", "Fatto.")).toBe(
-            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: hp 22/22; Annegato 2: hp 22/22. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.\nEnded with the scene: Schivata on Lena.\nStill there, with no end: Maledizione on Ennio. End those the scene ended, with effect end.",
+            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: hp 22/22; Annegato 2: hp 22/22. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.\nEnded with the scene: Schivata on Lena.\nStill there, with no end: Maledizione on Ennio. End those the scene ended, with effect end.\nSaved: 1 - day 2, 18.00 - Scontro.",
         );
         expect(page("characters/Ennio.md")).toContain("Maledizione");
     });

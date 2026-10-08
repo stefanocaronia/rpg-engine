@@ -112,6 +112,12 @@ export class SessionStore extends FileStore
         this.wrote = true;
     }
 
+    override writeBytes(path: string, bytes: Uint8Array): void
+    {
+        super.writeBytes(path, bytes);
+        this.wrote = true;
+    }
+
     override remove(path: string): void
     {
         super.remove(path);

@@ -115,7 +115,7 @@ Error messages and outputs are read by an AI: they say what went wrong and what 
 ### A campaign folder
 
 ```
-campaign.yaml      settings: name, language, system, difficulty, lethality, lines, veils, table, precedents, coins (other keys are kept)
+campaign.yaml      settings: name, language, system, difficulty, lethality, saves, lines, veils, table, precedents, coins (other keys are kept)
 state.yaml         the present: mode (setup, session zero, play), date ("day 1, 18:00") and the open scene under scene
 log.jsonl          one JSON line per change
 .mcp.json          registers `rpg mcp` for AI hosts (through cmd /c on Windows)
@@ -125,6 +125,7 @@ CLAUDE.md          imports AGENTS.md (@AGENTS.md)
 sessions/          created by init
 world/             characters/ places/ factions/ quests/ items/ events/ topics/ creatures/
 rules/             house rules, one markdown file each (optional)
+.saves/            the saves, one zip each, made at the end of each scene (SAV-2–SAV-4)
 ```
 
 `init` ([commands/init.ts](../src/commands/init.ts), [campaign/create-campaign.ts](../src/campaign/create-campaign.ts)) creates all but `rules/`; the host files come from [campaign/host-files.ts](../src/campaign/host-files.ts), which keeps what a folder already had: its own text after the start lines, other settings, a memory choice already written. A campaign is the nearest folder upwards with a `campaign.yaml` (`findCampaign`); one cannot hold another. Settings are validated by `settingsSchema` in [campaign/settings.ts](../src/campaign/settings.ts); YAML files are rewritten keeping their comments ([core/yaml-file.ts](../src/core/yaml-file.ts)).
@@ -253,6 +254,12 @@ Files: [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [comm
 Files: [scene/scene.ts](../src/scene/scene.ts), [commands/scene.ts](../src/commands/scene.ts), [commands/game-scene.ts](../src/commands/game-scene.ts). Codes: `SCN-1`–`SCN-9`, `DAT-11`.
 
 The open scene lives in `state.yaml` under `scene`: title, type, place, who is in it, numbered copies of creatures holding only what changed (`Annegato 1`, numbered after the highest number their name already takes, so that no name comes back: `SCN-3`), and when there are turns, `order`, `round` and `turn` (`SCN-6`). The `scene` command opens, adds, leaves, orders, passes the turn and closes; closing removes the scene from `state.yaml` and logs a `scene-closed` line, from which `status` lists the last scenes. Closing also says what the creatures overcome give the party, as the system's `rewards` say (`DAT-11`), with the calls of `change` and without giving it: a copy that leaves is kept under `gone`, without its effects, for it. What the close says is worked out before the scene goes, so that a page it cannot find stops it with the scene still open.
+
+### Saves
+
+Files: [saves/saves.ts](../src/saves/saves.ts), [commands/game-saves.ts](../src/commands/game-saves.ts), [commands/save.ts](../src/commands/save.ts). Codes: `SAV-1`–`SAV-6`.
+
+A save is a zip, made with `fflate`, of the game's files: everything in the campaign but `.saves/`, what has a name starting with a dot at its top (`.git`, `.obsidian`, `.claude`, `.mcp.json`) and the host's `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` (`SAV-2`). `scene close` makes one, after its own line, unless the player character is dead; `save make` too, with `saves: free` (`SAV-3`). `save load` gives the files back through the store, so that a session reads them at the next call, removes those made since and the later saves, and logs `save-loaded`; the campaign's `saves` setting decides what may be loaded (`SAV-5`). The store reads and writes bytes for it: `entries`, `bytes`, `writeBytes`.
 
 ### Game time
 

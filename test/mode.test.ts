@@ -46,7 +46,18 @@ async function setUp(left: string[] = []): Promise<void>
 {
     await ok("init", "--name", "Ferro", "--system", "ironsworn");
     await ok("write", "Guado", "--type", "place");
-    const answers: [string, string][] = [["language", "it"], ["difficulty", "normal"], ["lethality", "dice"], ["rigor", "smooth"], ["dice", "digital"], ["units", "metric"], ["companions", "none"], ["lines", "none"], ["veils", "none"]];
+    const answers: [string, string][] = [
+        ["language", "it"],
+        ["difficulty", "normal"],
+        ["lethality", "dice"],
+        ["saves", "checkpoint"],
+        ["rigor", "smooth"],
+        ["dice", "digital"],
+        ["units", "metric"],
+        ["companions", "none"],
+        ["lines", "none"],
+        ["veils", "none"],
+    ];
 
     for (const [setting, value] of answers.filter(([setting]) => !left.includes(setting))) {
         await ok("config", setting, value);
@@ -153,13 +164,13 @@ describe("the mode (MOD-1–MOD-7)", () => {
     it("MOD-7: status says the mode on the campaign's line, and before play what the next one needs; in play the settings the master follows", async () => {
         await setUp(["dice"]);
         expect(await ok("status")).toContain(
-            "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · rigor smooth · units metric · mode setup\n"
+            "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
                 + 'Still to agree with the player: dice (digital, physical); set each with config. When none is left and the player confirms: mode, to "session zero".',
         );
         await ok("config", "dice", "physical");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc");
         await ok("mode", "play");
-        expect(await ok("status")).toMatch(/^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · rigor smooth · dice physical · units metric · mode play\n(?!Still)/);
+        expect(await ok("status")).toMatch(/^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\n(?!Still)/);
     });
 
     it("answers a list with none only while it holds nothing, and an emptied list stays answered", async () => {
@@ -181,6 +192,7 @@ const answers: Record<string, string> = {
     language: "language: it",
     difficulty: "difficulty: normal",
     lethality: "lethality: dice",
+    saves: "saves: checkpoint",
     rigor: "rigor: smooth",
     dice: "dice: digital",
     units: "units: metric",
@@ -219,7 +231,7 @@ describe("the laws of the mode, on campaigns made at random", () => {
                     page(root, "characters", "Bran", made.companion, "companion");
                     page(root, "places", "Guado", made.place ? "alive" : "none");
                     const written = made.player !== "none" || made.companion !== "none" || made.place;
-                    const setup = ["language", "difficulty", "lethality", "rigor", "dice", "units", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) => setting !== made.unanswered)
+                    const setup = ["language", "difficulty", "lethality", "saves", "rigor", "dice", "units", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) => setting !== made.unanswered)
                         && made.companions !== undefined;
                     const made0 = made.companions === "made with the player" || made.companions === "made by the master";
                     const zero = made.player === "alive" && (!made0 || made.companion === "alive");

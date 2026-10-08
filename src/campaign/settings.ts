@@ -15,6 +15,9 @@ export const difficulties = ["story", "easy", "normal", "hard", "brutal"] as con
 /** What a fall means (D-13, D-141): the character never dies, dies only when it matters, or as the dice say. */
 export const lethalities = ["narrative", "epic", "dice"] as const;
 
+/** When the game may go back (D-55): never, to the last end of a scene once the player character dies, or to any save, which the player may also ask for. */
+export const saveModes = ["permadeath", "checkpoint", "free"] as const;
+
 /** How closely the rules are followed, apart from difficulty (D-42): the master glosses over them, as they are written, or beyond them. */
 export const rigors = ["smooth", "rules", "simulation"] as const;
 
@@ -45,6 +48,9 @@ export const settingsSchema = z.object({
     preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
+    saves: z.enum(saveModes).optional().describe(
+        "when the game may go back: permadeath (never), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
+    ),
     rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food, spell components and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),

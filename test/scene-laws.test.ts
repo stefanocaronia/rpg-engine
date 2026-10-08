@@ -74,7 +74,7 @@ interface Model
 }
 
 describe("the laws of scenes, on runs of actions made at random", () => {
-    it("SCN-1–SCN-9: each action changes the scene as the model says, refuses what it refuses without writing anything, and logs only the opening and the close publicly", async () => {
+    it("SCN-1–SCN-9: each action changes the scene as the model says, refuses what it refuses without writing anything, and logs only the opening, the close and its save publicly", async () => {
         const outcomes = new Set<string>();
         await fc.assert(
             fc.asyncProperty(fc.array(actions, { minLength: 1, maxLength: 16 }), async (run) => {
@@ -116,11 +116,12 @@ describe("the laws of scenes, on runs of actions made at random", () => {
                         }
 
                         const logged = readLog(root).slice(lines);
-                        expect(logged.every((entry) => entry.visibility === (["scene-opened", "scene-closed"].includes(entry.type) ? "public" : "hidden")), label).toBe(true);
+                        expect(logged.every((entry) => entry.visibility === (["scene-opened", "scene-closed", "saved"].includes(entry.type) ? "public" : "hidden")), label).toBe(true);
 
                         if (action.action === "close") {
-                            expect(logged.at(-1)?.type, label).toBe("scene-closed");
-                            expect(logged.at(-1)?.data.rounds, label).toBe(model.round);
+                            // The close, then the save it makes (SAV-3).
+                            expect(logged.slice(-2).map((entry) => entry.type), label).toEqual(["scene-closed", "saved"]);
+                            expect(logged.at(-2)?.data.rounds, label).toBe(model.round);
                         }
 
                         model = expected;

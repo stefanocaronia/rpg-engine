@@ -8,7 +8,7 @@ import { makeTempFolder, readLogFile, removeFolder, testContext } from "./suppor
 
 // The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
 const asked = "premise (the genre, the tone and a few elements of the world, in the player's words), preparation (on the fly, all at the start), "
-    + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), rigor (smooth, rules, simulation), dice (digital, physical), units (metric, imperial), "
+    + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), units (metric, imperial), "
     + 'companions (none, made with the player, made by the master, met in play), lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
 
@@ -142,7 +142,7 @@ describe("rpg config", () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\npremise: (missing)\npreparation: (missing)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "rigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
     });
@@ -203,7 +203,7 @@ describe("rpg config", () => {
         expect(refused.output).toContain('"deadly" is not a valid difficulty');
         const lethality = (await runCommandLine(["config", "lethality", "epic"], context)).output;
         expect(shown(lethality)).toBe("lethality: epic");
-        expect(lethality).toContain("difficulty (story, easy, normal, hard, brutal), rigor (smooth, rules, simulation)");
+        expect(lethality).toContain("difficulty (story, easy, normal, hard, brutal), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation)");
         expect((await runCommandLine(["config", "table", "--add", "rolls shown as they fall"], context)).output).toContain("table: rolls shown as they fall");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("table:\n  - rolls shown as they fall\n");
     });
@@ -216,7 +216,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, premise, preparation, difficulty, lethality, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line.`,
+            `There is no setting "colour". The settings are: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

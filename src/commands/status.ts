@@ -84,6 +84,7 @@ export const status = defineCommand({
                 systemInStatus(root, context),
                 named("difficulty", settings.difficulty),
                 named("lethality", settings.lethality),
+                named("saves", settings.saves),
                 // What the master follows in play (D-241).
                 named("rigor", settings.rigor),
                 named("dice", settings.dice),

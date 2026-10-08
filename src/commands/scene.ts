@@ -17,6 +17,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
+import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
@@ -82,7 +83,14 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; };
+    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
+
+/** The save the end of a scene made, or why it made none (SAV-3). */
+interface Saved
+{
+    saved?: string;
+    unsaved?: string;
+}
 
 export const scene = defineCommand({
     name: "scene",
@@ -439,8 +447,9 @@ function close(root: string, world: World, summary: string, context: Context): S
     saveScene(root, undefined);
 
     if (current === undefined) {
-        appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...rawTitleAndType(raw), closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests };
+        const titled = rawTitleAndType(raw);
+        appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...titled, closed, summary: summary.trim() }));
+        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests, ...checkpoint(root, context, world, titled.title) };
     }
 
     logCopies(root, context, current.title, current.copies);
@@ -449,7 +458,14 @@ function close(root: string, world: World, summary: string, context: Context): S
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
     // The copies that left during the scene, fled or fallen, end with it too: one that may come back needs a page now, with its wounds (D-246).
     const gone = copyMembers(world, current.gone ?? {});
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), gone, ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests };
+    const saved = checkpoint(root, context, world, current.title);
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), gone, ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests, ...saved };
+}
+
+/** The save at the end of a scene, named by its title (D-55, SAV-3): none while the player character is dead, since going back is what one is for. */
+function checkpoint(root: string, context: Context, world: World, title: string): Saved
+{
+    return isPlayerDead(world) ? { unsaved: "No save: the player character is dead. If the player wants to go back, save load, as the campaign's saves setting allows." } : { saved: saveText(makeSave(root, context, title, "scene closed")) };
 }
 
 /**
@@ -514,15 +530,16 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved): string
 {
+    const saved = result.saved === undefined ? (result.unsaved === undefined ? "" : `\n${result.unsaved}`) : `\nSaved: ${result.saved}.`;
     const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
     const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
     const quests = result.quests.map((line) => `\n${line}`).join("");
 
     if (result.unreadable !== undefined) {
-        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}${quests}`;
+        return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}${quests}${saved}`;
     }
 
     const rounds = result.rounds === undefined ? "" : ` after ${result.rounds} ${result.rounds === 1 ? "round" : "rounds"}`;
@@ -531,7 +548,7 @@ function closedText(result: { title?: string; rounds?: number; copies: Member[];
         ? ""
         : `\nLeft during the scene: ${membersText(result.gone ?? [])}. A copy ends with its scene: if one may come back, give it a page now, with its wounds.`;
     const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${rewards}${quests}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${rewards}${quests}${saved}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */

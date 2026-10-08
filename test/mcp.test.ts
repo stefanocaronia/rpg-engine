@@ -227,6 +227,34 @@ describe("MCP server, with the files of a session (D-193)", () => {
     });
 });
 
+describe("MCP server, loading a save in a session (SAV-5)", () => {
+    it("reads the campaign as the save gave it back, at the very next call", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["config", "saves", "free"], testContext(folder));
+        const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+        const tool = async (name: string, args: Record<string, unknown>): Promise<string> => ((await host.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
+
+        try {
+            await tool("instructions", {});
+            await tool("write", { page: "Bruna", type: "character", set: { role: "pc", hp: "12/12" } });
+            await tool("save", { action: "make" });
+            await tool("change", { page: "Bruna", field: "hp", by: -5 });
+            await tool("write", { page: "Varro", type: "character", set: { role: "npc" } });
+            expect(await tool("status", {})).toContain("hp 7/12");
+            await tool("save", { action: "load", save: "1" });
+            expect(await tool("status", {})).toContain("hp 12/12");
+            expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+});
+
 describe("MCP server, starting a session (D-194)", () => {
     it("lists the tools to a host that asks for them after initialized before it reads the campaign", async () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));

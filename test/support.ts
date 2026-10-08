@@ -66,7 +66,7 @@ export function inPlay(folder: string): void
     writeFileSync(state, readFileSync(state, "utf8").replace(/^mode: setup$/m, "mode: play"));
     const settings = join(folder, "campaign.yaml");
     const written = readFileSync(settings, "utf8");
-    const usual = ["rigor: smooth", "dice: digital", "units: metric"].filter((line) => !new RegExp(`^${line.split(":")[0]}:`, "m").test(written));
+    const usual = ["saves: checkpoint", "rigor: smooth", "dice: digital", "units: metric"].filter((line) => !new RegExp(`^${line.split(":")[0]}:`, "m").test(written));
     writeFileSync(
         settings,
         `${written}${

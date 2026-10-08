@@ -26,6 +26,7 @@ export {
     readSettings,
     readTextSetting,
     rigors,
+    saveModes,
     type SettingName,
     settingNames,
     setupSettingNames,
