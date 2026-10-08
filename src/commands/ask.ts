@@ -53,7 +53,7 @@ export const ask = defineCommand({
         const player = context.player;
 
         if (player === undefined) {
-            throw new Error("The player cannot be asked with buttons here: ask them in words, and stop (core 6.2).");
+            throw new Error("The player cannot be asked with buttons here: ask them in words, and stop.");
         }
 
         const question = input.question.trim();

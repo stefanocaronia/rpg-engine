@@ -51,7 +51,8 @@ export function layeredPart(layers: (PartLayer | undefined)[]): string | undefin
 
     for (const layer of layers) {
         if (layer !== undefined) {
-            text = layer.replace || text === undefined ? layer.text : `${text}\n${layer.text}`;
+            // A blank line between layers, so that a system's text never reads as the last item of the core's list.
+            text = layer.replace || text === undefined ? layer.text : `${text}\n\n${layer.text}`;
         }
     }
 

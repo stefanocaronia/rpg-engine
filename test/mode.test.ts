@@ -110,7 +110,8 @@ describe("the mode (MOD-1–MOD-7)", () => {
         expect(await refused("mode", "play")).toContain("still to make with the player: a companion, made with the player.");
         await ok("write", "Bran", "--set", "status=alive");
         expect(await ok("status")).toContain("· mode session zero\nNothing is missing. When the player confirms: mode, to play.");
-        expect(await ok("mode", "play")).toBe("The campaign is now in play. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00.");
+        // The part of play comes with it, the core's: this test system adds none (MOD-5).
+        expect(await ok("mode", "play")).toMatch(/^The campaign is now in play\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./);
     });
 
     it("MOD-2: the setup is always open, play is not without its checklists, and session zero again makes a new character", async () => {

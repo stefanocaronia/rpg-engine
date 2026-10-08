@@ -89,7 +89,7 @@ describe("the character sheet (DAT-2)", () => {
         // How a character is made: the system's part of session zero, after the core's (D-235, MOD-5).
         writeFileSync(join(empty, "state.yaml"), "mode: session zero\n");
         expect((await runCommandLine(["instructions"], other)).output).toContain(
-            "When the characters are made and the player confirms, mode to play.\nAgree first, and set with config in table: how the ability scores are made, multiclassing, feats,",
+            "When the characters are made and the player confirms, mode to play.\n\nAgree first, and set with config in table: how the ability scores are made, multiclassing, feats,",
         );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
             "Bruna's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, "

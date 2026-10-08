@@ -37,11 +37,20 @@ describe("the parts of the instructions (D-121)", () => {
 
     it("add each layer to those below, unless a layer says it takes their place", () => {
         const core = { text: "Core.", replace: false };
-        expect(layeredPart([core, { text: "System.", replace: false }])).toBe("Core.\nSystem.");
+        expect(layeredPart([core, { text: "System.", replace: false }])).toBe("Core.\n\nSystem.");
         expect(layeredPart([core, { text: "System alone.", replace: true }])).toBe("System alone.");
         expect(layeredPart([undefined, { text: "System.", replace: false }])).toBe("System.");
         expect(layeredPart([core, undefined])).toBe("Core.");
         expect(layeredPart([undefined, undefined])).toBeUndefined();
+    });
+
+    it("give, in play, the core, then the part of play with the system's after a blank line (MOD-5)", async () => {
+        await ok("init", "--name", "Rocca", "--system", "5e");
+        inPlay(folder);
+        const given = await ok("instructions");
+        expect(given).toMatch(/^# Game master: core instructions\n/);
+        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### Fifth edition\n\n- At difficulty normal, fights run from medium to hard/);
+        expect(given).not.toContain("## Setup");
     });
 
     it("come from the system of the campaign too: a game without turns tells a fight its own way (D-111)", async () => {
