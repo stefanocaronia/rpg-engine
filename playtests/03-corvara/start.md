@@ -30,10 +30,10 @@ Pop-Location
 | Session | Days | First message | Options |
 |---|---|---|---|
 | 1: the road | 1–2, Ponteselce to Guado dei Salici | «Ciao! Si parte per Corvara, cominciamo?» | `--prepared playtests\03-corvara\brief.md --max 30` |
-| 2: a new master | 3–6: the river, the heath, Torre Mozza, Corvara | «Ciao, riprendiamo?» | `--from <run>\results\session-1 --prepared playtests\03-corvara\brief.md --max 35` |
-| 3: a new master | three weeks in Corvara, to the consecration on day 27 | «Ciao, riprendiamo?» | `--from <run>\results\session-2 --prepared playtests\03-corvara\brief.md --max 20` |
+| 2: a new master | 3–6: the river, the heath, Torre Mozza, Corvara | «Ciao, riprendiamo?» | `--session 2 --max 35` |
+| 3: a new master | three weeks in Corvara, to the consecration on day 27 | «Ciao, riprendiamo?» | `--session 3 --max 20` |
 
-Then the questionnaire, and the checklist's parts on what the run touches, with the watch list below.
+Sessions 2 and 3 go on in the same campaign and output folder. A party faster than the table goes on to what comes next: session 2 may already reach the downtime. Then the questionnaire, and the checklist's parts on what the run touches, with the watch list below.
 
 ## The pages
 
