@@ -1,12 +1,12 @@
 import { basename, resolve } from "node:path";
 import { z } from "zod";
-import { createCampaign, difficulties, lethalities, missingSettings } from "../campaign/index.ts";
+import { createCampaign, difficulties, lethalities } from "../campaign/index.ts";
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { startInstructions } from "../instructions/index.ts";
 import { createWorld } from "../pages/index.ts";
-import { installedSystemName, missingWithSystems } from "./game-world.ts";
-import { missingSettingsNote } from "./notes.ts";
+import { campaignNote } from "./game-mode.ts";
+import { installedSystemName } from "./game-world.ts";
 
 export const init = defineCommand({
     name: "init",
@@ -35,11 +35,11 @@ export const init = defineCommand({
         const root = createCampaign(folder, settings, context.platform, startInstructions());
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
-        return { root, name: settings.name, missing: missingWithSystems(root, missingSettings(settings), context) };
+        return { root, name: settings.name, note: campaignNote(root, context) };
     },
 
     format(result)
     {
-        return [`Created the campaign "${result.name}" in ${result.root}.`, missingSettingsNote(result.missing)].filter((line) => line !== "").join("\n");
+        return [`Created the campaign "${result.name}" in ${result.root}.`, result.note].filter((line) => line !== "").join("\n");
     },
 });

@@ -15,6 +15,21 @@ export const difficulties = ["story", "easy", "normal", "hard", "brutal"] as con
 /** What a fall means (D-13, D-141): the character never dies, dies only when it matters, or as the dice say. */
 export const lethalities = ["narrative", "epic", "dice"] as const;
 
+/** How closely the rules are followed, apart from difficulty (D-42): the master glosses over them, as they are written, or beyond them. */
+export const rigors = ["smooth", "rules", "simulation"] as const;
+
+/** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
+export const diceWays = ["digital", "physical"] as const;
+
+/** The units of measure of the story (D-33). */
+export const unitSystems = ["metric", "imperial"] as const;
+
+/** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
+export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
+
+/** How far ahead a world without a written campaign is made (D-80): as it is needed, or all at the start. */
+export const preparations = ["on the fly", "all at the start"] as const;
+
 /** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
 const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
 
@@ -26,8 +41,14 @@ export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
     system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
+    premise: z.string().min(1).optional().describe("without a written campaign: the genre, the tone and a few elements of the world, in the player's words"),
+    preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
+    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food, spell components and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
+    dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
+    units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
+    companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
@@ -50,14 +71,20 @@ export type SettingName = keyof typeof settingsSchema.shape;
 /** The settings that the config command shows and changes. */
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
-/** The settings that hold a list, changed one item at a time; none of them is ever missing. */
+/** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
 export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes"];
 
-// Settings that only some games have: never asked for when missing.
-const optionalSettingNames: SettingName[] = ["coins", ...mapSettingNames];
+/** What only the setup asks (D-241, MOD-3): how the companions come, and the lines and veils, which "none" answers too. */
+export const setupSettingNames: SettingName[] = ["companions", "lines", "veils"];
+
+/** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
+export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
+
+// Settings that only some games have, or that only the setup asks: never asked for in play when missing.
+const optionalSettingNames: SettingName[] = ["coins", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -110,7 +137,7 @@ export function changeSetting(root: string, name: string, value: unknown): boole
     const setting = checkSettingName(name);
 
     if (listSettingNames.includes(setting)) {
-        throw new Error(`"${setting}" is a list: change it one item at a time with add and remove.`);
+        throw new Error(`"${setting}" is a list: change it one item at a time with add and remove, or give the value none when the player wants none.`);
     }
 
     const parsed = settingsSchema.shape[setting].safeParse(value);
@@ -184,12 +211,34 @@ export function changeListSetting(root: string, name: string, change: { add?: st
         }
     }
 
+    // A list emptied stays, as []: it still answers the setup (MOD-3).
     if (JSON.stringify(list.toJSON()) === before) {
         return false;
     }
 
-    if (list.items.length === 0) {
-        document.delete(setting);
+    saveSettings(root, document);
+    return true;
+}
+
+/** Answers a list setting with none (MOD-3): an empty list, refused while it holds items, which are removed one by one. Returns whether it changed. */
+export function changeListSettingToNone(root: string, name: string): boolean
+{
+    const setting = checkSettingName(name);
+
+    if (!listSettingNames.includes(setting)) {
+        throw new Error(`"${setting}" holds one value: give one of its values, not none.`);
+    }
+
+    const document = readSettingsDocument(root);
+    const before = (document.toJS() as Record<string, unknown> | null)?.[setting];
+    const held = listNode(document, setting).items.map((node) => String(isScalar(node) ? node.value : node));
+
+    if (held.length > 0) {
+        throw new Error(`"${setting}" holds ${held.join("; ")}: remove each one with remove, if the player no longer wants it. Nothing changed.`);
+    }
+
+    if (Array.isArray(before)) {
+        return false;
     }
 
     saveSettings(root, document);
@@ -280,6 +329,16 @@ export function checkSettings(root: string): Problem[]
 export function missingSettings(settings: CampaignSettings): SettingName[]
 {
     return settingNames.filter((name) => !listSettingNames.includes(name) && !optionalSettingNames.includes(name) && settings[name] === undefined);
+}
+
+/**
+ * The settings the setup still has to ask, in order (MOD-3): those every campaign needs, how the companions come, the lines and veils until answered, even
+ * with none, and, for a campaign without a written world, its premise and preparation.
+ */
+export function unansweredSettings(settings: CampaignSettings, writtenWorld: boolean): SettingName[]
+{
+    const asked = [...setupSettingNames, ...(writtenWorld ? [] : premiseSettingNames)];
+    return settingNames.filter((name) => missingSettings(settings).includes(name) || (asked.includes(name) && (settings[name] === undefined || settings[name] === null)));
 }
 
 export function checkSettingName(name: string): SettingName

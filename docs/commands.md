@@ -19,11 +19,11 @@ Read-only: no. Positional parameters: `folder`.
 
 ### config
 
-Show or change the campaign settings. Without a setting it shows them all and says which are still missing; with a setting and a value it changes that one. Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. system is one of the game systems installed: config lists them while it is missing. difficulty (story, easy, normal, hard, brutal) is how hard the world plays; lethality what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide). lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove: when the player signals stop, add that content to lines. table is a list too: what you promise the player about how you play, in the words you said. precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. The game system may add settings of its own, such as advancement for 5e: config lists them with what each value means. fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, each taking the place of one with that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the line of the player character. A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. Example: setting language, value it; or setting lines, add "spiders"; or setting counters, value 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}'.
+Show or change the campaign settings. Without a setting it shows them all and says which are still missing; with a setting and a value it changes that one. Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. system is one of the game systems installed: config lists them while it is missing. difficulty (story, easy, normal, hard, brutal) is how hard the world plays; lethality what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide). rigor is how closely travel, fatigue, food, spell components and the like follow the rules: smooth (you gloss over them), rules (as written) or simulation (beyond them); dice who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values); units metric or imperial; companions how they come: none, made with the player or made by you in session zero, or met in play. premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start) are for a campaign without a written world. lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove, and value none when the player wants none: when the player signals stop, add that content to lines. table is a list too: what you promise the player about how you play, in the words you said. precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. The game system may add settings of its own, such as advancement for 5e: config lists them with what each value means. fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, each taking the place of one with that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the line of the player character. A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. Example: setting language, value it; or setting lines, add "spiders"; or setting counters, value 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}'.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, difficulty, lethality, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, premise, preparation, difficulty, lethality, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, status-line), repeatable
@@ -32,7 +32,7 @@ Read-only: no. Positional parameters: `setting`, `value`.
 
 ### instructions
 
-Your instructions as game master, in full: how to run this campaign and use these tools. Call it before your first reply in every chat, and again after the conversation has been summarized; then call status. Read-only, no parameters.
+Your instructions as game master, in full: how to run this campaign and use these tools. They end with the part of the mode the campaign is in. Call it before your first reply in every chat, and again after the conversation has been summarized; then call status. Read-only, no parameters.
 
 Read-only: yes.
 
@@ -45,6 +45,14 @@ Show where the game stands. It gives the campaign's settings, the player charact
 Read-only: yes.
 
 No parameters.
+
+### mode
+
+Move the campaign to another mode, the main state of the game: setup (the settings, out of the game), session zero (the player character and the companions, made in play) or play. It goes on only when the checklist before that mode is complete, and otherwise says what is still missing; then it gives the instructions of the mode it enters. Call it when status says nothing is missing and the player confirms; back to session zero to make a new player character. Example: to "session zero".
+
+Read-only: no. Positional parameters: `to`.
+
+- `to` (`"setup" | "session zero" | "play"`, required): the mode to enter: setup, session zero, play
 
 ### validate
 

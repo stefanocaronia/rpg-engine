@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -14,6 +14,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await ok("init", "--name", "Prova", "--system", "5e", "--language", "en", "--difficulty", "normal", "--lethality", "dice");
+    inPlay(folder);
 });
 
 afterEach(() => removeFolder(folder));
@@ -59,7 +60,7 @@ describe("the setting of advancement (DAT-10, D-212)", () => {
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", visibility: "public", data: { setting: "advancement", value: "milestones" } });
         expect(await ok("config")).toContain("\nadvancement: milestones: the characters rise");
         // The campaign's line says it at every session.
-        expect(await ok("status")).toContain("Prova · en · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality dice · advancement milestones\n");
+        expect(await ok("status")).toContain("Prova · en · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality dice · rigor smooth · dice digital · units metric · advancement milestones · mode play\n");
         expect(await refused("config", "advancment", "xp")).toContain('There is no setting "advancment". The settings are: name, language, system,');
         writeFileSync(join(folder, "campaign.yaml"), campaignFile().replace("advancement: milestones", "advancement: livelli"));
         expect(await ok("validate")).toContain(

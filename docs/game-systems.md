@@ -128,7 +128,7 @@ sheet-notes:
 - `field (beside)`: a field shown in parentheses beside it: `str 14 (+2)`.
 - The player character (`role: pc`) keeps the sheet, and so does a companion with a `level` or with no `creature` (a wolf with its stat block does not).
 - `show` gives a sheet one line per group, effects and formulas included: `Abilities: str 14 (+2) · dex 12 (+1) · proficiency +2`. `show Page#Group` gives one group with how each number is made (a section or secret of that name comes first).
-- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, then how to make one (its part `creation`, section 6.6); afterwards it reminds what each character still lacks.
+- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, and the system's part `session-zero` says how to make one (section 6.6). In session zero its checklist says what each sheet still lacks; in play `status` reminds it.
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
 
 ### values
@@ -436,13 +436,13 @@ The parts the engine gives today, and when:
 
 | Part | Given by | When |
 |---|---|---|
-| `creation` | `status` | until there is a player character, then while a player character's sheet still lacks fields before the first scene (`DAT-12`) |
+| `setup`, `session-zero`, `play` | `instructions`, `mode` | the mode the campaign is in, or enters: the 5e's `session-zero` says how its player character is made (`DAT-12`) |
 | `combat`, and any scene type | `scene open` | a scene of that type opens; the core has `combat`, how a fight is told (D-139) |
 | `new-day` | `advance` | the time reaches a new day with clocks to move; the core says how to move them (D-134) |
 | `quest-ends` | `write` | a quest becomes done or failed, such as the experience the story gives |
 | `level-up` | `write`, `change` | the character's levels rise, or the points reach a new level (`PRO-6`) |
 
-In a chat with the MCP server a part comes once, the first time its situation opens, and again after `instructions`, which a chat calls at its start and after a summary (D-97); on the command line it comes every time. The 5e's parts are `creation` (what the table agrees first, that every choice is the player's, the steps in order and what a character who starts above 1st level has), `quest-ends` and `level-up`. The engine knows nothing of what a part says, and the frontmatter takes nothing but `replace`.
+In a chat with the MCP server a part comes once, the first time its situation opens, and again after `instructions`, which a chat calls at its start and after a summary (D-97); on the command line it comes every time. The 5e's parts are `session-zero` (what the table agrees first, that every choice is the player's, the steps in order and what a character who starts above 1st level has), `quest-ends` and `level-up`. The part of a mode comes with every `instructions`, not once a chat. The engine knows nothing of what a part says, and the frontmatter takes nothing but `replace`.
 
 ## 7. A campaign's own options
 

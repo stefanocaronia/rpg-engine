@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,3 +54,25 @@ export const fightGuidance = "Tell the turns in order, as story, each roll in br
 /** What a turn of the player's character says after its name (D-139). */
 export const playerTurn = ", the player's character";
 export const playerStop = ": stop here and hand them the turn, even if all they can do is roll to stay alive.";
+
+/**
+ * Puts a campaign that init made in play, as after its setup and session zero (MOD-1): the settings the master follows in play that are not yet there take
+ * their usual values, and the tests of play open scenes at once.
+ */
+export function inPlay(folder: string): void
+{
+    const state = join(folder, "state.yaml");
+    writeFileSync(state, readFileSync(state, "utf8").replace(/^mode: setup$/m, "mode: play"));
+    const settings = join(folder, "campaign.yaml");
+    const written = readFileSync(settings, "utf8");
+    const usual = ["rigor: smooth", "dice: digital", "units: metric"].filter((line) => !new RegExp(`^${line.split(":")[0]}:`, "m").test(written));
+    writeFileSync(
+        settings,
+        `${written}${
+            usual.map((line) =>
+                `${line}
+`
+            ).join("")
+        }`,
+    );
+}

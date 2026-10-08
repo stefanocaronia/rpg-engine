@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -12,6 +12,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    inPlay(folder);
 });
 
 afterEach(() => removeFolder(folder));
@@ -50,7 +51,7 @@ describe("rpg advance", () => {
         expect(before.output).toBe('The game has no date yet: set the date it starts on with to, such as to "day 1, 18:00".');
 
         expect((await rpg("advance", "--to", "day 1, 18:00", "--why", "arrivo a Guadoscuro")).output).toBe("The game starts on day 1, 18:00.");
-        expect(stateFile()).toBe("# The present of the game, kept by rpg: date and current scene.\n\ndate: day 1, 18:00\n");
+        expect(stateFile()).toBe("# The present of the game, kept by rpg: mode, date and current scene.\nmode: play\ndate: day 1, 18:00\n");
         expect(readLogFile(folder).at(-1)).toEqual({ id: "id2", at: "2026-10-02T10:00:00.000Z", date: "day 1, 18:00", type: "time-advanced", by: "master", visibility: "public", data: { to: "day 1, 18:00", why: "arrivo a Guadoscuro" } });
     });
 

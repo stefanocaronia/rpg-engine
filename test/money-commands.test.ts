@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { change } from "../src/commands/change.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -15,6 +15,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    inPlay(folder);
     await ok("config", "advancement", "xp");
     await ok("config", "coins", "gp/mo 100, pp 1000 rare, ep 50 rare, sp/ma 10, cp/mr 1");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "money=34 gp 4 sp");

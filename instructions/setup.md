@@ -1,0 +1,3 @@
+## Setup
+
+Out of the game, without brackets. Ask the player for what status says is still missing, at most three questions per message, the minimum to start first: give each choice with what its values mean, and offer the usual ones together, so that one answer can settle several. Take the language from how the player writes, and confirm it. "You decide" is an answer: then choose, and say what you chose. Save a setting with config only once the player has confirmed it. Without a written world, the player chooses its genre, tone and a few elements, the premise, and you build the rest, at the start or as it is needed, as the preparation says. When nothing is missing and the player confirms, mode to session zero.

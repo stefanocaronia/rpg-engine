@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
     type CampaignSettings,
     changeListSetting,
+    changeListSettingToNone,
     changeMapSetting,
     changeOtherSetting,
     changeSetting,
@@ -17,6 +18,7 @@ import {
     requireCampaign,
     type SettingName,
     settingNames,
+    setupSettingNames,
 } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
@@ -27,6 +29,7 @@ import { readYamlValues } from "../core/yaml-file.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
+import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -43,7 +46,11 @@ export const config = defineCommand({
         + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
         + "system is one of the game systems installed: config lists them while it is missing. "
         + "difficulty (story, easy, normal, hard, brutal) is how hard the world plays; lethality what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide). "
-        + "lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove: when the player signals stop, add that content to lines. "
+        + "rigor is how closely travel, fatigue, food, spell components and the like follow the rules: smooth (you gloss over them), rules (as written) or simulation (beyond them); "
+        + "dice who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values); units metric or imperial; "
+        + "companions how they come: none, made with the player or made by you in session zero, or met in play. "
+        + "premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start) are for a campaign without a written world. "
+        + "lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove, and value none when the player wants none: when the player signals stop, add that content to lines. "
         + "table is a list too: what you promise the player about how you play, in the words you said. "
         + "precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. "
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
@@ -100,6 +107,11 @@ export const config = defineCommand({
             }
         } else if (input.setting !== undefined && listChange && changeListSetting(root, input.setting, { add: input.add, remove: input.remove })) {
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, add: input.add, remove: input.remove }));
+        } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && listSettingNames.includes(checkSettingName(input.setting))) {
+            // A list answered with none still answers the setup (MOD-3).
+            if (changeListSettingToNone(root, input.setting)) {
+                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
+            }
         } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
         }
@@ -111,7 +123,7 @@ export const config = defineCommand({
         const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
         return {
             settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
-            missing: missingWithSystems(root, missingSettings(settings), context),
+            note: campaignNote(root, context),
             replaced,
         };
     },
@@ -119,7 +131,7 @@ export const config = defineCommand({
     format(result)
     {
         const lines = Object.entries(result.settings).map(([name, value]) => `${name}: ${formatValue(value)}`);
-        return [[...lines, ...result.replaced].join("\n"), missingSettingsNote(result.missing)].filter((block) => block !== "").join("\n\n");
+        return [[...lines, ...result.replaced].join("\n"), result.note].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -129,7 +141,7 @@ function systemSettingResult(
     context: Context,
     setting: SystemSetting,
     input: { value?: string; add?: string[]; remove?: string[]; },
-): { settings: Record<string, unknown>; missing: string[]; replaced: string[]; }
+): { settings: Record<string, unknown>; note: string; replaced: string[]; }
 {
     if (input.add !== undefined || input.remove !== undefined) {
         throw new Error(`${setting.name} takes one value, ${valuesText(setting)}, such as setting ${setting.name}, value ${setting.values[0].value}. Nothing changed.`);
@@ -148,7 +160,7 @@ function systemSettingResult(
         }
     }
 
-    return { settings: { [setting.name]: systemShownValue(root, setting) }, missing: missingWithSystems(root, missingSettings(readSettings(root)), context), replaced: [] };
+    return { settings: { [setting.name]: systemShownValue(root, setting) }, note: campaignNote(root, context), replaced: [] };
 }
 
 /** A setting of the system as config shows it: its value with what it means, or missing with every value and what it means (DAT-10). */
@@ -162,8 +174,9 @@ function systemShownValue(root: string, setting: SystemSetting): string
 /** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173). */
 function shownValue(root: string, context: Context, settings: CampaignSettings, name: SettingName): unknown
 {
+    // Lines and veils not yet answered are missing: [] is the answer none (MOD-3).
     if (listSettingNames.includes(name)) {
-        return settings[name] ?? [];
+        return settings[name] ?? (setupSettingNames.includes(name) ? undefined : []);
     }
 
     if (mapSettingNames.includes(name)) {

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -13,6 +13,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    inPlay(folder);
     await ok("write", "Ossario", "--type", "place", "--set", "contains=[[Ennio]], [[Lena]]");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "ac=13");
     await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=9/9");

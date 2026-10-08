@@ -1,12 +1,14 @@
 // The parts of the master's instructions, layered from the core to the game system, and given once in a chat (D-97, D-121).
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, layeredPart } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
-import { fightGuidance, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { fightGuidance, inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -44,6 +46,7 @@ describe("the parts of the instructions (D-121)", () => {
 
     it("come from the system of the campaign too: a game without turns tells a fight its own way (D-111)", async () => {
         await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        inPlay(folder);
         const opened = await ok("scene", "open", "--title", "Il guado", "--type", "combat");
         expect(opened).toContain("A fight has no turns: whoever has initiative acts");
         expect(opened).not.toContain(fightGuidance);
@@ -54,6 +57,7 @@ describe("the parts of the instructions (D-121)", () => {
 describe("a part of the instructions in a chat (D-97)", () => {
     it("comes the first time its situation opens, again after instructions, and every time on the command line", async () => {
         await ok("init", "--name", "Rocca", "--system", "5e");
+        inPlay(folder);
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
         await createMcpServer(testContext(folder)).connect(serverTransport);
         const host = new Client({ name: "host", version: "1.0.0" });
@@ -73,12 +77,12 @@ describe("a part of the instructions in a chat (D-97)", () => {
             expect(await fight()).toContain(fightGuidance);
             expect(await ok("scene", "open", "--title", "Ancora", "--type", "combat")).toContain(fightGuidance);
 
-            // The system's part, as status gives it while the player character is being made (DAT-12).
-            const creation = "Creating the player character (5e): agree first";
-            expect(await call("status", {})).toContain(creation);
-            expect(await call("status", {})).not.toContain(creation);
-            await call("instructions", {});
-            expect(await call("status", {})).toContain(creation);
+            // The part of a mode, with the system's, comes with every instructions (MOD-5).
+            await ok("scene", "close", "--summary", "Basta.");
+            writeFileSync(join(folder, "state.yaml"), "mode: session zero\n");
+            const zero = "## Session zero\n\nPlay, as with a human game master";
+            expect(await call("instructions", {})).toContain(zero);
+            expect(await call("instructions", {})).toContain("Agree first, and set with config in table");
         } finally {
             await host.close();
         }

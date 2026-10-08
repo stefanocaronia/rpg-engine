@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { getVersion } from "../src/core/version.ts";
-import { makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -14,6 +14,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    inPlay(folder);
     await ok("config", "advancement", "xp");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12");
     await ok("write", "Ossario", "--type", "place", "--add", "contains=[[Ennio]]");
@@ -55,7 +56,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
             const result = await runCommandLine(["init", "--system", "Quinta edizione"], testContext(other));
             expect(result.output).toBe(`"Quinta edizione" is not an installed system. ${installed} Give one of them, such as system 5e. Nothing changed.`);
             expect(existsSync(join(other, "campaign.yaml"))).toBe(false);
-            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain("Still missing: language, difficulty, lethality.");
+            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain("Still to agree with the player: language, premise (");
             expect(readFileSync(join(other, "campaign.yaml"), "utf8")).toContain("system: ironsworn");
         } finally {
             removeFolder(other);
@@ -71,7 +72,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
         expect(await ok("validate")).toBe(
             `1 problem:\n- campaign.yaml: The system Quinta edizione is not installed: no creatures, items or rules come from a system. ${installed} Fix: ask the player which game you play, then config, setting system, value 5e.`,
         );
-        expect(await ok("config", "system")).toBe("system: Quinta edizione (not installed; installed: 5e, ironsworn)");
+        expect((await ok("config", "system")).split("\n\n")[0]).toBe("system: Quinta edizione (not installed; installed: 5e, ironsworn)");
         expect(await ok("status")).toContain("1 problem in the campaign");
         expect(await refused("show", "Wolf")).toBe(
             "There is no page named Wolf. Look for it with the find command. The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.",
@@ -405,7 +406,7 @@ describe("the messages, case by case (SYS-1, SYS-3, SYS-4, SYS-6)", () => {
 
         try {
             const none = { ...testContext(other), systemFolders: [] };
-            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain("Still missing: system, difficulty, lethality.");
+            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain("Still to agree with the player: system, premise (");
             expect((await runCommandLine(["config", "system", "5e"], none)).output).toBe('"5e" is not an installed system. No system is installed. Nothing changed.');
             writeFileSync(join(other, "campaign.yaml"), "name: Nuda\nlanguage: it\nsystem: 5e\n");
             expect((await runCommandLine(["validate"], none)).output).toContain("Fix: install the game system.");

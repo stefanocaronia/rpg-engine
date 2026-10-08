@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -20,6 +20,7 @@ async function campaign(): Promise<void>
     folder = makeTempFolder();
     context = testContext(folder);
     await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    inPlay(folder);
     await ok("advance", "--to", "day 1, 18:00");
     await ok("write", "Locanda", "--type", "place");
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=5/12", "--set", "level=1", "--set", "ac=14");
@@ -85,22 +86,19 @@ describe("the character sheet (DAT-2)", () => {
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), as it writes them: "
                 + "write lists them if a name is not one.",
         );
-        // How a character is made, until there is one (D-235).
-        expect((await runCommandLine(["status"], other)).output).toContain(
-            "\nCreating the player character (5e): agree first, and set with config in table: how the ability scores are made, multiclassing, feats,",
+        // How a character is made: the system's part of session zero, after the core's (D-235, MOD-5).
+        writeFileSync(join(empty, "state.yaml"), "mode: session zero\n");
+        expect((await runCommandLine(["instructions"], other)).output).toContain(
+            "When the characters are made and the player confirms, mode to play.\nAgree first, and set with config in table: how the ability scores are made, multiclassing, feats,",
         );
         expect((await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=8/8"], other)).output).toContain(
             "Bruna's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, "
                 + "skill-proficiencies, weapon-proficiencies, languages.\nPersonality: a player character's personality traits, ideal, bond and flaw are the player's,",
         );
         expect((await runCommandLine(["write", "Bruna", "--set", "classes=[[Fighter]] 1"], other)).output).not.toContain("still lacks");
+        // In play status reminds what a sheet lacks (D-190); before, the checklist of session zero says it (MOD-4).
+        writeFileSync(join(empty, "state.yaml"), "mode: play\n");
         expect((await runCommandLine(["status"], other)).output).toContain("Bruna's sheet still lacks, by these names: xp, str, dex, con, int, wis, cha, speed, hp-base,");
-        // While the sheet is being made, until the first scene (DAT-12).
-        expect((await runCommandLine(["status"], other)).output).toContain("Creating the player character");
-        await runCommandLine(["scene", "open", "--title", "Il molo", "--type", "exploration"], other);
-        expect((await runCommandLine(["status"], other)).output).not.toContain("Creating the player character");
-        await runCommandLine(["scene", "close", "--summary", "Arrivati al molo."], other);
-        expect((await runCommandLine(["status"], other)).output).not.toContain("Creating the player character");
         removeFolder(empty);
     });
 
@@ -325,6 +323,7 @@ describe("conditions and rounds (DAT-6, DAT-7)", () => {
         folder = makeTempFolder();
         context = { ...testContext(folder), systemFolders: [systems] };
         await ok("init", "--name", "Clessidra", "--system", "clessidra");
+        inPlay(folder);
         await ok("advance", "--to", "day 1, 18:00");
         await ok("write", "Ennio", "--type", "character", "--set", "role=pc");
         await ok("scene", "open", "--title", "Scontro", "--type", "combat", "--with", "Ennio");
@@ -360,6 +359,7 @@ describe("other game systems", () => {
         folder = makeTempFolder();
         context = { ...testContext(folder), systemFolders: [systems] };
         await ok("init", "--name", "Prova", "--system", "prova");
+        inPlay(folder);
         expect(await ok("status")).toMatch(/The system prova keeps on a character sheet, by these names: vigore, fatica\.(\n|$)/);
         await ok("advance", "--to", "day 1, 18:00");
         await ok("write", "Bea", "--type", "character", "--set", "role=pc", "--set", "vigore=1/5", "--set", "fatica=0/5", "--set", "punti-a=0/2", "--set", "punti-b=1/2", "--set", "pozioni=0/3");
@@ -389,6 +389,7 @@ describe("other game systems", () => {
         folder = makeTempFolder();
         context = testContext(folder);
         await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        inPlay(folder);
         expect(await ok("status")).not.toContain("keeps on a character sheet");
         await ok("advance", "--to", "day 1, 18:00");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "health=5/5");

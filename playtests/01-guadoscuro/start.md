@@ -15,7 +15,7 @@ Copy-Item -Recurse -Force playtests\01-guadoscuro\world\* $campaign\world
 Push-Location $campaign; rpg find; Pop-Location
 ```
 
-- The name and the system: the adventure's creatures and people derive from pages of 5e, as with an adventure installed for it. Language, difficulty and lethality stay missing, so setup really happens.
+- The name and the system: the adventure's creatures and people derive from pages of 5e, as with an adventure installed for it. Everything else stays to agree, so setup really happens: the campaign starts in setup, and play begins with `mode` once session zero is done.
 - `world/`: the whole adventure, no player character; `rpg find` lists its 40 pages and `rpg validate` finds no problems.
 - `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are as `rpg init` writes them: the lines that send the master to `instructions` and `status`, the import of `AGENTS.md`, and Claude Code's auto memory off. Nothing else: no other settings, no `CLAUDE.local.md`, no word about the test.
 

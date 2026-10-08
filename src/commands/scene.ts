@@ -14,6 +14,7 @@ import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
+import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
@@ -213,6 +214,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
         throw new Error(`Give the scene a title and a type: ${sceneTypes.join(", ")}.`);
     }
 
+    checkInPlay(root, context, world);
     const place = input.place === undefined ? leadPlace(world) : placePage(world, input.place);
     const characters = [...new Set(input.with === undefined ? enteringParty(world, place) : input.with.map((name) => characterPage(world, name)))];
     const copies = newCopies(world, input.creatures, characters.map((page) => page.name));
@@ -688,6 +690,16 @@ function placePage(world: World, name: string): Page
     }
 
     return page;
+}
+
+/** A scene opens only in play: the game starts once the checklists of setup and session zero are complete (D-221, MOD-6). */
+function checkInPlay(root: string, context: Context, world: World): void
+{
+    const mode = campaignMode(root, world);
+
+    if (mode !== "play") {
+        throw new Error(`The game has not started: the campaign is in ${mode}, and scenes open in play. ${checklistLine(mode, root, context, world) ?? ""}`.trim());
+    }
 }
 
 /** Where the player character is: the nearest place among its containers. */

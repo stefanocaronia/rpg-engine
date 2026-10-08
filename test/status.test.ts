@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -27,12 +27,16 @@ async function state(): Promise<string>
 }
 
 describe("rpg status", () => {
-    it("says what is missing before the game starts, and leaves the instructions to their own command", async () => {
-        expect(await state()).toBe("Guadoscuro\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).\nNo player character yet.");
-        expect((await rpg("instructions")).output).toBe(readFileSync(new URL("../instructions/core.md", import.meta.url), "utf8").replace(/\r\n/g, "\n").trim());
+    it("says the mode and what the setup still needs before the game starts, and leaves the instructions to their own command (MOD-7)", async () => {
+        const status = await state();
+        expect(status).toMatch(/^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, ironsworn\), language, premise \(/);
+        expect(status).toMatch(/veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nNo player character yet\.$/);
+        const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
+        expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}`);
     });
 
     it("shows the party, where they are, their counters and who is with them", async () => {
+        inPlay(folder);
         await rpg("config", "language", "it");
         await rpg("config", "system", "5e");
         await rpg("config", "difficulty", "normal");
@@ -50,11 +54,8 @@ describe("rpg status", () => {
         await rpg("write", "Ritrovare la lanterna", "--type", "quest");
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned");
 
-        // The system's note on making a character comes while the sheets lack fields, before the first scene (DAT-12).
-        const shown = await state();
-        expect(shown).toMatch(/\nCreating the player character \(5e\): agree first, .*\nAlso there: Varro/);
-        expect(shown.replace(/^Creating the player character.*\n/m, "")).toBe([
-            "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic",
+        expect(await state()).toBe([
+            "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic · rigor smooth · dice digital · units metric · mode play",
             "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
@@ -69,6 +70,7 @@ describe("rpg status", () => {
     });
 
     it("shows the game date, the events that are due, and the planned ones in order, with how long until then", async () => {
+        inPlay(folder);
         await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
         await rpg("write", "Il drago si sveglia", "--type", "event");
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned", "--set", "date=day 2, 23:00");
@@ -77,7 +79,7 @@ describe("rpg status", () => {
         await rpg("write", "La festa", "--type", "event", "--set", "status=cancelled", "--set", "date=day 1, 20:00");
         expect(await state()).toBe(
             [
-                "Guadoscuro",
+                "Guadoscuro · rigor smooth · dice digital · units metric · mode play",
                 "Still missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
                 "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
                 "PC: Ennio",

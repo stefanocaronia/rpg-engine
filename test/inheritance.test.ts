@@ -5,7 +5,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { baseChain, inheritedFields, type Page } from "../src/pages/index.ts";
-import { fightGuidance, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { fightGuidance, inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -14,6 +14,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    inPlay(folder);
     await ok("write", "Annegato", "--type", "creature", "--set", "hp=22/22", "--set", "ac=13", "--set", "tags=[mostri]");
     await ok("write", "Annegato capo", "--type", "creature", "--set", "creature=[[Annegato]]", "--set", "hp=40/40");
     await ok("write", "Vecchio annegato", "--type", "character", "--set", "role=npc", "--set", "creature=[[Annegato capo]]");

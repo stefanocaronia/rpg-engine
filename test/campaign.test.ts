@@ -6,6 +6,18 @@ import type { Context } from "../src/core/context.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
+// The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
+const asked = "premise (the genre, the tone and a few elements of the world, in the player's words), preparation (on the fly, all at the start), "
+    + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), rigor (smooth, rules, simulation), dice (digital, physical), units (metric, imperial), "
+    + 'companions (none, made with the player, made by the master, met in play), lines ("none" is an answer), veils ("none" is an answer)';
+const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
+
+/** What config shows of the settings, before what the campaign still needs. */
+function shown(output: string): string
+{
+    return output.split("\n\n")[0];
+}
+
 // The marks around the start lines in a campaign's AGENTS.md.
 const startMark = "<!-- rpg: rpg keeps the lines up to the end mark up to date; the player's own instructions go after it. -->";
 const endMark = "<!-- rpg: end -->";
@@ -25,7 +37,9 @@ describe("rpg init", () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
-        expect(result.output).toContain("Still missing: system (installed: 5e, ironsworn), language, difficulty, lethality.");
+        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, ironsworn), language, ${asked}; ${onward}`);
+        // A new campaign starts in setup (MOD-1).
+        expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("\nmode: setup\n");
 
         const typeFolders = ["characters", "places", "factions", "quests", "items", "events", "topics", "creatures"].map((type) => `world/${type}`);
 
@@ -39,14 +53,14 @@ describe("rpg init", () => {
     it("names the campaign after its folder and takes the settings it is given", async () => {
         const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
         // What the system adds to the setup is asked after (DAT-10).
-        expect(result.output).toContain("Still missing: advancement (xp or milestones). Ask the player,");
+        expect(result.output).toContain('veils ("none" is an answer), advancement (xp or milestones); set each with config.');
         expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\n");
     });
 
     it("says how to set what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
         expect(result.output).toBe(
-            `Created the campaign "${basename(folder)}" in ${folder}.\nStill missing: system (installed: 5e, ironsworn), difficulty, lethality. Ask the player, then set each one with the config command (setting and value).`,
+            `Created the campaign "${basename(folder)}" in ${folder}.\nStill to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`,
         );
     });
 
@@ -127,13 +141,15 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\ndifficulty: (missing)\nlethality: (missing)\nlines: (none)\nveils: (none)\ntable: (none)\nprecedents: (none)\ncoins: (none: neither the campaign nor its game system gives coins)\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\npremise: (missing)\npreparation: (missing)\ndifficulty: (missing)\nlethality: (missing)\n"
+                + "rigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\n"
+                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language, ${asked}; ${onward}`,
         );
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe("language: it\n\nStill missing: system (installed: 5e, ironsworn), difficulty, lethality. Ask the player, then set each one with the config command (setting and value).");
+        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });
@@ -144,37 +160,38 @@ describe("rpg config", () => {
         await runCommandLine(["config", "difficulty", "normal"], context);
         await runCommandLine(["config", "lethality", "dice"], context);
         await runCommandLine(["config", "advancement", "xp"], context);
-        expect((await runCommandLine(["config", "lines", "--add", "ragni", "--add", "corpi descritti nei dettagli"], context)).output).toBe("lines: ragni; corpi descritti nei dettagli");
+        expect(shown((await runCommandLine(["config", "lines", "--add", "ragni", "--add", "corpi descritti nei dettagli"], context)).output)).toBe("lines: ragni; corpi descritti nei dettagli");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("lines:\n  - ragni\n  - corpi descritti nei dettagli\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", data: { setting: "lines", add: ["ragni", "corpi descritti nei dettagli"] } });
 
         const logLines = readLogFile(folder).length;
-        expect((await runCommandLine(["config", "lines", "--add", "Ragni"], context)).output).toBe("lines: ragni; corpi descritti nei dettagli");
+        expect(shown((await runCommandLine(["config", "lines", "--add", "Ragni"], context)).output)).toBe("lines: ragni; corpi descritti nei dettagli");
         expect(readLogFile(folder)).toHaveLength(logLines);
 
-        expect((await runCommandLine(["config", "lines", "--remove", "ragni"], context)).output).toBe("lines: corpi descritti nei dettagli");
+        expect(shown((await runCommandLine(["config", "lines", "--remove", "ragni"], context)).output)).toBe("lines: corpi descritti nei dettagli");
         expect((await runCommandLine(["config", "lines", "--remove", "lupi"], context)).output).toBe(`"lines" does not hold "lupi", so nothing changed. It holds: corpi descritti nei dettagli.`);
         expect((await runCommandLine(["config", "lines", "--remove", "corpi descritti nei dettagli", "--remove", "lupi"], context)).output).toBe(
             `"lines" does not hold "lupi", so nothing changed. It holds: corpi descritti nei dettagli.`,
         );
-        expect((await runCommandLine(["config", "lines", "lupi"], context)).output).toBe(`"lines" is a list: change it one item at a time with add and remove.`);
+        expect((await runCommandLine(["config", "lines", "lupi"], context)).output).toBe(`"lines" is a list: change it one item at a time with add and remove, or give the value none when the player wants none.`);
         expect((await runCommandLine(["config", "language", "--add", "it"], context)).output).toBe(`"language" holds one value: give the new value instead of add or remove.`);
-        expect((await runCommandLine(["config", "veils", "--add", "torture"], context)).output).toBe("veils: torture");
+        expect(shown((await runCommandLine(["config", "veils", "--add", "torture"], context)).output)).toBe("veils: torture");
         expect((await runCommandLine(["config", "veils", "--add", " "], context)).output).toBe("Give the text of each item to add or remove.");
     });
 
     it("keeps the comments of a hand-written list, and reads accents written either way", async () => {
         writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n  - ragni # da sempre\n  - morte di città\n");
-        expect((await runCommandLine(["config", "lines", "--add", "Morte di città"], context)).output).toBe("lines: ragni; morte di città");
+        expect(shown((await runCommandLine(["config", "lines", "--add", "Morte di città"], context)).output)).toBe("lines: ragni; morte di città");
         await runCommandLine(["config", "lines", "--add", "lupi"], context);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("  - ragni # da sempre\n");
-        expect((await runCommandLine(["config", "lines", "--remove", "morte di città"], context)).output).toBe("lines: ragni; lupi");
+        expect(shown((await runCommandLine(["config", "lines", "--remove", "morte di città"], context)).output)).toBe("lines: ragni; lupi");
     });
 
     it("reads an empty list written by hand, and refuses one that is not a list", async () => {
         writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n");
-        expect((await runCommandLine(["config", "lines"], context)).output).toBe("lines: (none)");
-        expect((await runCommandLine(["config", "lines", "--add", "ragni"], context)).output).toBe("lines: ragni");
+        // Written empty, as Obsidian does, a list is not yet answered (D-107, MOD-3).
+        expect(shown((await runCommandLine(["config", "lines"], context)).output)).toBe("lines: (missing)");
+        expect(shown((await runCommandLine(["config", "lines", "--add", "ragni"], context)).output)).toBe("lines: ragni");
 
         writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nveils: torture\n");
         expect((await runCommandLine(["config", "veils", "--add", "sangue"], context)).output).toBe(`"veils" in campaign.yaml is not a list of text; write it by hand as veils: [item, item].`);
@@ -184,9 +201,9 @@ describe("rpg config", () => {
         const refused = await runCommandLine(["config", "difficulty", "deadly"], context);
         expect(refused.exitCode).toBe(1);
         expect(refused.output).toContain('"deadly" is not a valid difficulty');
-        expect((await runCommandLine(["config", "lethality", "epic"], context)).output).toBe(
-            "lethality: epic\n\nStill missing: system (installed: 5e, ironsworn), language, difficulty. Ask the player, then set each one with the config command (setting and value).",
-        );
+        const lethality = (await runCommandLine(["config", "lethality", "epic"], context)).output;
+        expect(shown(lethality)).toBe("lethality: epic");
+        expect(lethality).toContain("difficulty (story, easy, normal, hard, brutal), rigor (smooth, rules, simulation)");
         expect((await runCommandLine(["config", "table", "--add", "rolls shown as they fall"], context)).output).toContain("table: rolls shown as they fall");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("table:\n  - rolls shown as they fall\n");
     });
@@ -199,7 +216,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, difficulty, lethality, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line.`,
+            `There is no setting "colour". The settings are: name, language, system, premise, preparation, difficulty, lethality, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

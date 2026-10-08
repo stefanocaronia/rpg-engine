@@ -6,13 +6,13 @@ import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
-import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
+import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
@@ -20,7 +20,6 @@ import { problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
-import { situationPart } from "./parts.ts";
 import { campaignProblems } from "./problems.ts";
 import { missingSheetFields, type SheetSummary, sheetSummary } from "./sheet.ts";
 
@@ -77,8 +76,7 @@ export const status = defineCommand({
         const facts = worldFacts(world);
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
-        // Until there is a player character, or while its sheet is being made, before the first scene (DAT-12).
-        const creating = players.length === 0 || (openScene.scene === undefined && closed.length === 0 && players.some((page) => missingSheetFields(system, world, page).length > 0));
+        const mode = campaignMode(root, world);
         return {
             campaign: [
                 settings.name,
@@ -86,10 +84,17 @@ export const status = defineCommand({
                 systemInStatus(root, context),
                 named("difficulty", settings.difficulty),
                 named("lethality", settings.lethality),
+                // What the master follows in play (D-241).
+                named("rigor", settings.rigor),
+                named("dice", settings.dice),
+                named("units", settings.units),
                 // What the system adds to the setup, as advancement xp (DAT-10).
                 ...(system?.settings ?? []).map((setting) => named(setting.name, systemSettingValue(root, setting))),
+                named("mode", mode),
             ].filter((part) => part !== undefined),
-            missing: missingWithSystems(root, missingSettings(settings), context),
+            // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
+            note: campaignNote(root, context),
+            premise: settings.premise === undefined ? undefined : `${settings.premise}${settings.preparation === undefined ? "" : ` (preparation ${settings.preparation})`}`,
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
             table: settings.table ?? [],
@@ -112,10 +117,8 @@ export const status = defineCommand({
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
             sheet: system === undefined ? undefined : sheetSummary(system),
-            // How the player character is made, the part creation (DAT-12, D-235): once in a chat (D-97).
-            creation: creating ? creationNote(context, system) : undefined,
-            // A dead character's sheet is no longer kept (D-190).
-            incompleteSheets: characters.filter(isInParty).flatMap((page) => {
+            // A dead character's sheet is no longer kept (D-190); before play, the checklist says what it lacks.
+            incompleteSheets: mode !== "play" ? [] : characters.filter(isInParty).flatMap((page) => {
                 const missing = missingSheetFields(system, world, page);
                 return missing.length === 0 ? [] : [`${characterName(page)}'s sheet still lacks, by these names: ${missing.join(", ")}.`];
             }),
@@ -130,7 +133,8 @@ export const status = defineCommand({
         const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${memberCounters(member)}`;
         const state = [
             result.campaign.join(" · "),
-            missingSettingsNote(result.missing),
+            result.note,
+            result.premise === undefined ? "" : `Premise: ${result.premise}`,
             boundariesLine(result.lines, result.veils),
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,
@@ -141,7 +145,6 @@ export const status = defineCommand({
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             ...result.incompleteSheets,
             ...result.levelsDue,
-            result.creation === undefined ? "" : `Creating the player character (${result.creation.system}): ${result.creation.note}`,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
@@ -268,13 +271,6 @@ function sceneCounts(scenes: ClosedScene[]): string
 
     const rank = (type: string): number => (sceneTypes as readonly string[]).indexOf(type);
     return [...counts].sort((first, second) => second[1] - first[1] || rank(first[0]) - rank(second[0])).map(([type, count]) => `${count} ${type}`).join(", ");
-}
-
-/** How the system makes the player character, its part creation (DAT-12): undefined when it has none, or this chat was already told. */
-function creationNote(context: Context, system: GameSystem | undefined): { system: string; note: string; } | undefined
-{
-    const note = situationPart("creation", context, system);
-    return note === "" || system === undefined ? undefined : { system: system.name, note };
 }
 
 /** The open quests, those whose goals are all ticked first, with what to do about them (D-239). */

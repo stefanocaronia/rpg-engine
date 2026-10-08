@@ -25,7 +25,8 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     const hostFiles = hostFileChanges(root, startLines);
     files().makeFolder(join(root, "sessions"));
     files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
-    files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: date and current scene.\n");
+    // A new campaign starts in setup (MOD-1).
+    files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: mode, date and current scene.\nmode: setup\n");
     files().write(join(root, ".mcp.json"), JSON.stringify(mcpConfig, null, 2) + "\n");
     hostFiles.forEach((file) => files().write(file.path, file.text));
     return root;
