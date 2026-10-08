@@ -1,0 +1,5 @@
+(Organizer: tonight's game goes on with a character you already know, as if you had played him for a few evenings with this master; you remember what follows, and nothing else of the world.
+
+Your character is Corrado, the soldier and field medic you had in mind: now a cleric of the Mother of Springs, 3rd level, in chain mail with mace and shield. He heals (Cura ferite, Parola guaritrice), blesses his friends before a fight (Benedizione), protects one of them (Scudo della fede), calls a spectral weapon (Arma spirituale), can hold a man in place (Blocca persone) and burns with sacred flame (Fiamma sacra). In his pack: five torches and a flask of alchemist's fire. With him travels Viola, a bard he stitched up after an ambush a month ago: she sings, mocks and fights with a rapier. The master keeps both sheets.
+
+Last night the Figli della Fame, a cult of the village of Valdorso, took Ada, the daughter of Bertone the miller; Bertone promised thirty gold coins to have her back alive. It is almost eleven at night, and you two stand in the ruined chapel of San Ruffo on the hill, at the top of the stairs down to the crypt.)

@@ -10,6 +10,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `questionnaire.md` | the player's questionnaire, after the last session |
 | `players/` | player profiles |
 | `01-guadoscuro/` | a scenario: `start.md` and the pages it starts from (`world/`) |
+| `02-cripta-del-culto/` | a scenario that starts in play, with the campaign prepared: `start.md`, `world/`, and `brief.md`, what the player remembers |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
@@ -42,6 +43,8 @@ To try a moment again, a run can start from a save: `--from` with the `session-N
 node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\results\session-2 --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
 ```
 
+A scenario may start in play, from a campaign its `start.md` prepares (settings, characters, the date): `--prepared` with the scenario's brief accepts it for session 1, and gives the brief to the player with the first turn, as what they remember of their character. Give it again to every run from a save of that scenario.
+
 Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a subscription. Writing the pages, the trial run and reading the results for the checklist cost extra. `end.json` records the master's cost for the session and the player's for the run so far.
 
 ## Checks
@@ -51,7 +54,7 @@ Before the first turn the run stops unless:
 - the repo has no uncommitted changes, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
 - the campaign's `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are what this commit's `rpg init` writes (the start lines, the import, auto memory off), and it has nothing else in `.claude/` and no `CLAUDE.local.md`;
-- session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`;
+- session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`; with `--prepared`, no scene opened and no roll;
 - a later session continues the player's chat and the campaign of the session before, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
 - a run from a save has a new output folder and a new campaign folder, and starts after a session that stopped in play;
 - `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and no custom agents.

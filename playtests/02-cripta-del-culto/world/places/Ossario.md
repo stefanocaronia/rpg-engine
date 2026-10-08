@@ -1,0 +1,1 @@
+Pareti di nicchie piene di teschi e di ossa lunghe, impilate dai monaci secoli fa. Sul pavimento, ossa spezzate di fresco, rosicchiate da denti che sembrano umani. Dal corridoio in fondo arrivano una cantilena sommessa e un chiarore tremolante.

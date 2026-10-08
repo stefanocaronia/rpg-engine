@@ -10,8 +10,8 @@ import { parseArgs } from "node:util";
 
 const usage = [
     "Usage, from the repo (see playtests/README.md):",
-    '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--max 50] [--hard 60] [--budget 15]',
-    '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--max 50]',
+    '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50] [--hard 60] [--budget 15]',
+    '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
 ].join("\n");
 const options = readOptions();
@@ -48,7 +48,7 @@ function playSession()
     const campaign = resolve(options.campaign);
     const folder = join(out, `session-${Number(options.session)}`);
     checkFolders(campaign);
-    const memory = options.from ? earlierEvenings() : "";
+    const memory = [options.prepared ? readFileSync(options.prepared, "utf8").trim() : "", options.from ? earlierEvenings() : ""].filter(Boolean).join("\n\n");
     const rpg = checkBuild();
     const hostFiles = initHostFiles(rpg);
 
@@ -316,7 +316,10 @@ function checkRestart(folder, campaign)
     }
 }
 
-/** Session 1 starts from the campaign as the scenario makes it: a new player's chat, nothing logged after the campaign's creation, and no player's character. */
+/**
+ * Session 1 starts from the campaign as the scenario makes it: a new player's chat, nothing logged after the campaign's creation, and no player's character;
+ * a campaign the scenario prepared (--prepared) has its settings and characters, but no scene opened and no roll.
+ */
 function checkUnplayed(campaign)
 {
     if (existsSync(playerChatFile)) {
@@ -324,9 +327,13 @@ function checkUnplayed(campaign)
     }
 
     const log = join(campaign, "log.jsonl");
-    const logged = (existsSync(log) ? readFileSync(log, "utf8") : "").split("\n").filter((line) => line.trim() !== "" && parseJson(line)?.type !== "campaign-created");
-    const playerCharacters = worldPages(campaign).filter((page) => /^role:[ \t]*["']?pc["']?[ \t]*(#.*)?$/m.test(frontmatter(readFileSync(page, "utf8"))));
-    const signs = [...(logged.length > 0 ? [`log.jsonl has entries after campaign-created (${logged.length})`] : []), ...playerCharacters.map((page) => `${page} has role: pc`)];
+    const played = (type) => options.prepared ? ["scene-opened", "roll"].includes(type) : type !== "campaign-created";
+    const logged = (existsSync(log) ? readFileSync(log, "utf8") : "").split("\n").filter((line) => line.trim() !== "" && played(parseJson(line)?.type));
+    const playerCharacters = options.prepared ? [] : worldPages(campaign).filter((page) => /^role:[ \t]*["']?pc["']?[ \t]*(#.*)?$/m.test(frontmatter(readFileSync(page, "utf8"))));
+    const signs = [
+        ...(logged.length > 0 ? [`log.jsonl has ${options.prepared ? "scenes or rolls" : "entries after campaign-created"} (${logged.length})`] : []),
+        ...playerCharacters.map((page) => `${page} has role: pc`),
+    ];
 
     if (signs.length > 0) {
         throw new Error(`${campaign} has been played already (${signs.join("; ")}): every run starts from a new campaign, made as the scenario's start.md says.`);
@@ -520,6 +527,7 @@ function readOptions()
                 hard: { type: "string" },
                 budget: { type: "string", default: "15" },
                 questionnaire: { type: "string" },
+                prepared: { type: "string" },
                 "master-model": { type: "string", default: "claude-opus-5-5" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
             },
@@ -527,7 +535,7 @@ function readOptions()
         const required = values.questionnaire ? ["profile", "out"] : ["campaign", "profile", "out", "first"];
         const missing = required.filter((name) => !values[name]);
         const notCounts = ["session", "max", "hard"].filter((name) => values[name] !== undefined && !(Number.isInteger(Number(values[name])) && Number(values[name]) > 0));
-        const notFiles = ["profile", "questionnaire"].filter((name) => values[name] && !existsSync(values[name]));
+        const notFiles = ["profile", "questionnaire", "prepared"].filter((name) => values[name] && !existsSync(values[name]));
 
         if (missing.length > 0) {
             throw new Error(`Missing ${missing.map((name) => `--${name}`).join(", ")}.`);
