@@ -65,6 +65,7 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 | `--setting-sources project,local` | none of the developer's settings, `~/.claude/CLAUDE.md`, agents or plugins; the campaign's own settings turn auto memory off, so session 2 starts from the files alone (D-242) |
 | `--strict-mcp-config --mcp-config .mcp.json` | only the `rpg` server, approved without a person |
 | `--permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: any other write or command is denied, and the denial recorded |
+| `--settings` with an `Elicitation` hook | the rpg server's buttons (`ask`) go to the AI player, who reads what the master wrote so far and presses one, as in a chat that shows them: [answer-form.mjs](answer-form.mjs); each press is in `dialogue.md` as **Buttons**, and one that fails in `forms-errors.txt` (D-148, D-246) |
 | `--model claude-opus-5-5`, `--session-id`, then `--resume` | the same master at every phase; one chat per session |
 
 Claude Code runs without the `CLAUDE*` variables of the shell, so a Claude Code session the run is started from cannot leak into it.

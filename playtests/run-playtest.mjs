@@ -173,17 +173,23 @@ function stopReason(master, playerEnded, atHardCap)
     return atHardCap ? "hard cap" : "";
 }
 
-/** Claude Code as a new user would have it, with only the campaign: no personal settings, instructions, plugins or connectors; the campaign's own settings turn auto memory off. */
-function masterArgs()
+/**
+ * Claude Code as a new user would have it, with only the campaign: no personal settings, instructions, plugins or connectors; the campaign's own settings turn auto memory off.
+ * The rpg server's forms go to the AI player through the Elicitation hook, so that the buttons are played as in a chat that shows them (D-148, D-246).
+ */
+function masterArgs(folder)
 {
     const isolation = "--setting-sources project,local --strict-mcp-config --mcp-config .mcp.json --permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch";
-    return ["--model", options["master-model"], ...isolation.split(" ")];
+    const path = (file) => `"${resolve(file).replaceAll("\\", "/")}"`;
+    const command = ["node", path(join(repo, "playtests", "answer-form.mjs")), path(out), path(folder), path(options.profile), options["player-model"]].join(" ");
+    const hooks = { hooks: { Elicitation: [{ matcher: "rpg", hooks: [{ type: "command", command, timeout: 300 }] }] } };
+    return ["--model", options["master-model"], "--settings", JSON.stringify(hooks), ...isolation.split(" ")];
 }
 
 /** One master turn; returns the text the player sees, the session's cost so far, and what went wrong, if anything. */
 function masterTurn(campaign, session, prompt, streamFile)
 {
-    const args = ["-p", "--output-format", "stream-json", "--verbose", ...masterArgs(), ...(session.started ? ["--resume", session.id] : ["--session-id", session.id])];
+    const args = ["-p", "--output-format", "stream-json", "--verbose", ...masterArgs(dirname(dirname(streamFile))), ...(session.started ? ["--resume", session.id] : ["--session-id", session.id])];
     const run = claude(args, campaign, prompt);
     session.started = true;
     writeFileSync(streamFile, run.stdout);
@@ -455,7 +461,7 @@ function checkCampaign(campaign, hostFiles)
 /** Stops unless the master would load exactly the campaign's CLAUDE.md and AGENTS.md and only the rpg server; /context costs nothing. */
 function checkIsolation(campaign, contextFile)
 {
-    const run = claude(["-p", "/context", "--output-format", "json", "--no-session-persistence", ...masterArgs()], campaign, "");
+    const run = claude(["-p", "/context", "--output-format", "json", "--no-session-persistence", ...masterArgs(dirname(contextFile))], campaign, "");
     const context = parseJson(run.stdout)?.result;
 
     if (typeof context !== "string") {
