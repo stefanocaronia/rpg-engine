@@ -15,7 +15,8 @@ const one =
     "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
 const many =
     "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
-const judge = "If one no longer goes as planned, write it: its status, date or by.";
+const judge = "If an event no longer goes as planned, write it: its status, date or by.";
+const questJudge = "If the story of a quest has ended, set its status.";
 const turn = "move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan";
 
 beforeEach(async () => {
@@ -180,7 +181,7 @@ describe("who makes it happen, and consequences (EVT-6, EVT-7)", () => {
         expect(await ok("write", "Varro", "--set", "status=dead")).toBe([
             "Updated Varro (character, world/characters/Varro.md): set status.",
             `Now due: Lena fugge (day 1, 18:00), since Varro dead. ${one}`,
-            `Linked to Varro: Il rituale (day 3, 23:00, in 2d 5h) · Fermare Varro (quest, open) · Il segreto (quest, planned). ${judge}`,
+            `Linked to Varro: Il rituale (day 3, 23:00, in 2d 5h) · Fermare Varro (quest, open) · Il segreto (quest, planned). ${judge} ${questJudge}`,
         ].join("\n"));
     });
 
@@ -195,7 +196,7 @@ describe("who makes it happen, and consequences (EVT-6, EVT-7)", () => {
     it("lists what is linked to a thing that moves", async () => {
         await ok("write", "Ritrovare la lanterna", "--type", "quest", "--set", "status=open", "--text", "Trova la [[Lanterna]].");
         expect(await ok("write", "Locanda", "--remove", "contains=[[Lanterna]]")).toBe(
-            `Updated Locanda (place, world/places/Locanda.md): removed from contains.\nLinked to Lanterna: Ritrovare la lanterna (quest, open). ${judge}`,
+            `Updated Locanda (place, world/places/Locanda.md): removed from contains.\nLinked to Lanterna: Ritrovare la lanterna (quest, open). ${questJudge}`,
         );
         expect(await ok("write", "Ennio", "--set", "hp=12/12")).toBe("Updated Ennio (character, world/characters/Ennio.md): set hp.");
     });
@@ -351,7 +352,7 @@ describe("consequences, case by case (EVT-6, EVT-7)", () => {
         await ok("write", "Ritrovare la lanterna", "--type", "quest", "--set", "status=open", "--text", "Trova la [[Lanterna]].");
         await ok("write", "Locanda", "--remove", "contains=[[Lanterna]]");
         expect(await ok("write", "Ennio", "--add", "inventory=[[Lanterna]]")).toBe("Updated Ennio (character, world/characters/Ennio.md): added to inventory.");
-        expect(await ok("write", "Ennio", "--remove", "inventory=[[Lanterna]]")).toContain(`Linked to Lanterna: Ritrovare la lanterna (quest, open). ${judge}`);
+        expect(await ok("write", "Ennio", "--remove", "inventory=[[Lanterna]]")).toContain(`Linked to Lanterna: Ritrovare la lanterna (quest, open). ${questJudge}`);
         await ok("write", "Il rituale", "--type", "event", "--text", "[[Varro]].");
         expect(await ok("write", "Varro", "--set", "status=alive")).toBe("Updated Varro (character, world/characters/Varro.md): set status.");
     });
@@ -378,7 +379,7 @@ describe("the gaps the second mutation run found", () => {
         await ok("write", "Seguire Ennio", "--type", "quest", "--text", "Seguire [[Ennio]].");
         await ok("write", "Ritrovare la lanterna", "--type", "quest", "--text", "Trova la [[Lanterna]].");
         expect(await ok("write", "Locanda", "--remove", "contains=[[Lanterna]]")).toBe(
-            `Updated Locanda (place, world/places/Locanda.md): removed from contains.\nLinked to Lanterna: Ritrovare la lanterna (quest, planned). ${judge}`,
+            `Updated Locanda (place, world/places/Locanda.md): removed from contains.\nLinked to Lanterna: Ritrovare la lanterna (quest, planned). ${questJudge}`,
         );
     });
 

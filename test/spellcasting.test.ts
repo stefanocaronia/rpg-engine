@@ -144,3 +144,27 @@ describe("the formulas of a class's page (PRO-5)", () => {
         expect(problems).toContain('spell-attack on Arcanista reads the table "nessuna", which the system lacks, so Ugo has none from it.');
     });
 });
+
+describe("the spells a subclass keeps prepared (PRO-7, pp. 16, 32)", () => {
+    it("adds a domain's spells by the cleric's level, apart and not counted, and says when one is written by hand", async () => {
+        await caster("Marta", "[[Cleric]] 1");
+        await ok("write", "Marta", "--set", "subclasses=[[Life Domain]]", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
+        expect(await ok("show", "Marta#Spells")).toContain("max-prepared 4: wis-mod +3, Cleric in classes\n");
+        expect(await ok("show", "Marta")).toContain("prepared Healing Word, Guiding Bolt; always, from Life Domain: Bless, Cure Wounds");
+        expect(await ok("write", "Marta", "--add", "prepared=[[Cure Wounds]]")).toContain(
+            "Cure Wounds is always in prepared, from Life Domain, and not counted with the rest: write Marta, remove prepared=Cure Wounds, to choose another in its place.",
+        );
+        expect(await ok("show", "Marta")).toContain("prepared Healing Word, Guiding Bolt; always, from Life Domain: Bless, Cure Wounds");
+        await ok("write", "Marta", "--set", "classes=[[Cleric]] 3");
+        expect(await ok("show", "Marta#Spells")).toContain("always, from Life Domain: Bless, Cure Wounds, Lesser Restoration, Spiritual Weapon");
+    });
+
+    it("gives an oath's spells from the paladin's 3rd level, and none to a class whose subclass lists none", async () => {
+        await caster("Paolo", "[[Paladin]] 2");
+        await ok("write", "Paolo", "--set", "subclasses=[[Oath of Devotion]]");
+        expect(await ok("show", "Paolo")).not.toContain("always, from");
+        await ok("write", "Paolo", "--set", "classes=[[Paladin]] 3");
+        expect(await ok("show", "Paolo#Spells")).toContain("prepared always, from Oath of Devotion: Protection from Evil and Good, Sanctuary");
+        expect(await caster("Ada", "[[Wizard]] 2")).not.toContain("always, from");
+    });
+});

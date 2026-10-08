@@ -514,7 +514,7 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
 
 function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; }): string
 {
-    const advance = "Advance any time it took that you have not advanced yet.";
+    const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
     const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
     const quests = result.quests.map((line) => `\n${line}`).join("");

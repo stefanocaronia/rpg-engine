@@ -29,11 +29,13 @@ interface Range
     end: number;
 }
 
-/** The titles of the sections in a markdown text. */
+/** The titles of the sections in a markdown text. Read once for each text: rules looks through every page's (RUL-6). */
 export function sectionTitles(text: string): string[]
 {
-    return headingsOf(text.split("\n")).map((heading) => heading.title);
+    return rememberedTitles(text);
 }
+
+const rememberedTitles = rememberedByText((text: string): string[] => headingsOf(text.split("\n")).map((heading) => heading.title), 20_000);
 
 /** The names of the secret blocks, written `> [!secret] Name`, in a markdown text. */
 export function secretNames(text: string): string[]

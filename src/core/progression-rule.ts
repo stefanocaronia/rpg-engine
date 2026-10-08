@@ -9,7 +9,8 @@ export interface ProgressionRule
     list: string;
     features: string;
     skip: string[];
-    parts?: { list: string; field: string; };
+    /** `lists`: the character's lists a part's page adds to by the level of its item, written as its features, such as a domain's spells always prepared (PRO-7). */
+    parts?: { list: string; field: string; lists?: string[]; };
     /** What write says when an item rises to a new level, such as raising hp-base (D-226). */
     levelUp?: string;
     /** The field of the experience points, the table of the points each level needs, and the rule to read when they reach a new one (PRO-6). */

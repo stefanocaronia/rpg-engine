@@ -94,7 +94,7 @@ describe("rpg scene", () => {
         expect(await ok("status")).toContain("Scene: Ossario (combat) at Ossario, with Ennio, Lena; round 2, Lena's turn; copies: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1");
 
         expect(await ok("scene", "close", "--summary", "Gli annegati cadono; Lena è ferita.")).toBe(
-            "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1. Advance any time it took that you have not advanced yet."
+            "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: hp 13/22 · uses 1/1; Annegato 2: hp 0/22 · uses 1/1. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken."
                 // A creature of the campaign written without its experience points is named, not left out in silence (DAT-11).
                 + "\nxp: Annegato 2 counts nothing, with no xp-value on Annegato: write it, such as write Annegato, set xp-value=…, and share it. Leave out what the party summoned; "
                 + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",

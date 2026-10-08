@@ -43,7 +43,7 @@ const systemSchema = z.object({
         list: z.string().min(1),
         features: z.string().min(1),
         skip: z.array(z.string().min(1)).optional(),
-        parts: z.object({ list: z.string().min(1), field: z.string().min(1) }).strict().optional(),
+        parts: z.object({ list: z.string().min(1), field: z.string().min(1), lists: z.array(z.string().min(1)).optional() }).strict().optional(),
         "level-up": z.string().min(1).optional(),
         experience: z.object({ field: z.string().min(1), table: z.string().min(1), rules: z.string().min(1).optional() }).strict().optional(),
     }).strict().optional(),

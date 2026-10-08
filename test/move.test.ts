@@ -148,7 +148,7 @@ describe("rpg move (CON-4)", () => {
         expect(moved).toContain("\nNow due: I dormienti, since party in Laboratorio.");
         expect(moved).not.toContain("Linked to");
         expect(readLogFile(folder).filter((entry) => entry.type === "event-due")).toHaveLength(1);
-        expect(await ok("move", "Varro", "--to", "Ossario")).toContain("\nLinked to Varro: La fuga. If one no longer goes as planned, write it: its status, date or by.");
+        expect(await ok("move", "Varro", "--to", "Ossario")).toContain("\nLinked to Varro: La fuga. If an event no longer goes as planned, write it: its status, date or by.");
         expect(await ok("move", "Livia", "--to", "Ossario")).toContain("\nLinked to Livia: Un funerale (quest, open).");
     });
 

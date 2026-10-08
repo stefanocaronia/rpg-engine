@@ -30,6 +30,8 @@ export interface Progression
     features: { name: string; pages: Page[]; }[];
     /** Each feature as a row or a part gives it, before they are merged, with its level and page: what a new level adds, even a feature gained again. */
     gains: { name: string; level: number; page: Page; }[];
+    /** What the parts add to the character's lists by their level, each with its list and page: a domain's spells, always prepared (PRO-7). */
+    given: { list: string; name: string; page: Page; }[];
     /** The items that give them: each class with its level, and each part that adds features. */
     from: { list: string; name: string; level?: number; }[];
 }
@@ -68,9 +70,17 @@ export function progressionOf(world: World, fields: Record<string, unknown>): Pr
     const featuresField = fieldName(rule.features);
     const parts = partsOf(world, fields, rule.parts, entries);
 
+    const given: { list: string; name: string; page: Page; }[] = [];
+
     for (const part of parts) {
         const levelled = levelledFeatures(listItemsOf(valueNamed(part.page.fields, featuresField)));
         features.push(...levelled.flatMap((gained) => (gained === undefined || gained.level > part.level ? [] : [{ ...gained, order: part.order, part: 1, page: part.page }])));
+
+        // What it adds to the character's lists up to its item's level, as a domain's spells, always prepared (PRO-7).
+        for (const list of rule.parts?.lists ?? []) {
+            const items = levelledFeatures(listItemsOf(valueNamed(part.page.fields, list)));
+            given.push(...items.flatMap((item) => (item === undefined || item.level > part.level ? [] : [{ list, name: item.name, page: part.page }])));
+        }
     }
 
     // Item by item, then level by level; at the same level, a class's own features before its subclass's.
@@ -81,8 +91,15 @@ export function progressionOf(world: World, fields: Record<string, unknown>): Pr
         featuresField,
         features: mergedFeatures(features).map(({ name }) => ({ name, pages: pagesGiving(features, name) })),
         gains: features.map(({ name, level, page }) => ({ name, level, page })),
+        given,
         from: [...entries.map((entry) => ({ list: rule.list, name: entry.page.name, level: entry.level })), ...parts.map((part) => ({ list: rule.parts?.list ?? "", name: part.page.name }))],
     };
+}
+
+/** What the parts add to a list of the character, each with the page that adds it, as Bless from Life Domain in prepared (PRO-7). */
+export function givenItems(progression: Progression | undefined, list: string): { name: string; page: Page; }[]
+{
+    return (progression?.given ?? []).filter((item) => comparableText(item.list) === comparableText(list));
 }
 
 /** The value the progression gives a field, or the features for its features field; undefined for any other field (PRO-2, PRO-3). */

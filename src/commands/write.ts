@@ -79,7 +79,7 @@ import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
-import { progressionOf } from "./progression.ts";
+import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
 import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
 
@@ -273,6 +273,7 @@ export const write = defineCommand({
         const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, system?.progression?.levelUp), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
         const quest = changed ? [...questEndNotes(system, existing, page), ...tickedQuestNotes(existing, page)] : [];
+        const twice = changed && page.type === "character" ? givenListNotes(now, page, changedFieldNames(fields)) : [];
         const shadows = changed && section !== undefined ? featureSectionNotes(now, page, section) : [];
         const links = changed ? linkNotes(now, fields) : [];
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
@@ -282,7 +283,7 @@ export const write = defineCommand({
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -1092,6 +1093,22 @@ function questEndNotes(system: GameSystem | undefined, existing: Page | undefine
 {
     const ended = (candidate: Page | undefined): boolean => ["done", "failed"].includes(String(candidate?.fields.status));
     return page.type !== "quest" || system?.questEnds === undefined || !ended(page) || ended(existing) ? [] : [`${page.name} is ${String(page.fields.status)}. ${system.questEnds}`];
+}
+
+/** Items written in a list where the parts of the classes already put them, as a domain's spell in prepared: always there, they do not count with the rest (PRO-7). */
+function givenListNotes(world: World, page: Page, changed: string[]): string[]
+{
+    const progression = progressionOf(world, effectiveFields(world, page));
+    return changed.flatMap((field) => {
+        const written = listItemNames(valueNamed(page.fields, field));
+        const twice = givenItems(progression, field).filter((item) => sameName(written, item.name) !== undefined);
+        const pages = [...new Set(twice.map((item) => item.page.name))].join(" and ");
+        return twice.length === 0
+            ? []
+            : [`${twice.map((item) => item.name).join(", ")} ${twice.length === 1 ? "is" : "are"} always in ${field}, from ${pages}, and not counted with the rest: write ${page.name}, remove ${field}=${
+                twice[0].name
+            }, to choose another in its place.`];
+    });
 }
 
 /** A section of a character with the name of a feature its classes give: show gives it in place of the feature's text (PRO-4). */

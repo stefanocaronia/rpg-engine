@@ -8,7 +8,7 @@ import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText } from "./game-experience.ts";
-import { progressionOf } from "./progression.ts";
+import { givenItems, progressionOf } from "./progression.ts";
 import { hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
@@ -99,9 +99,16 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
             return items.length === 0 ? [] : [`${group.name}: ${items.map((item) => `${item.item} ${item.values.map((value) => valueText(world, value.field, value.value)).join(", ")}`).join(" · ")}`];
         }
 
+        const progression = progressionOf(world, fields);
         const shown = groupEntries(world, system, group, fields).flatMap((entry) => {
             const value = valueNamed(fields, entry.field);
             const marked = "●".repeat(marks.get(comparableText(entry.field)) ?? 0);
+            const given = givenItems(progression, entry.field);
+
+            if (given.length > 0) {
+                return [`${entry.field} ${listWithGiven(world, entry.field, value, given)}`];
+            }
+
             return isEmptyField(value) ? [] : [`${entry.field} ${valueText(world, entry.field, value)}${marked === "" ? "" : ` ${marked}`}${besideText(world, fields, entry)}`];
         });
         return shown.length === 0 ? [] : [`${group.name}: ${shown.join(" · ")}`];
@@ -137,6 +144,12 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
 
         if (computed !== undefined) {
             return [workedLine(world, computed)];
+        }
+
+        const given = givenItems(progressionOf(world, fields), entry.field);
+
+        if (given.length > 0) {
+            return [`${entry.field} ${listWithGiven(world, entry.field, value, given)}`];
         }
 
         if (isEmptyField(value)) {
@@ -325,6 +338,14 @@ function besideText(world: World, fields: Record<string, unknown>, entry: SheetE
 }
 
 /** A value as the sheet shows it: a modifier with its sign (FOR-8), the items of a list one after the other. */
+/** "Healing Word, Guiding Bolt; always, from Life Domain: Bless, Cure Wounds": a list with what the parts add to it, apart and not counted with it (PRO-7). */
+function listWithGiven(world: World, field: string, value: unknown, given: { name: string; page: Page; }[]): string
+{
+    const written = listItemNames(value).filter((name) => !given.some((item) => comparableText(item.name) === comparableText(name)));
+    const always = `always, from ${[...new Set(given.map((item) => item.page.name))].join(" and ")}: ${given.map((item) => item.name).join(", ")}`;
+    return written.length === 0 ? always : `${valueText(world, field, written)}; ${always}`;
+}
+
 function valueText(world: World, field: string, value: unknown): string
 {
     if (typeof value === "number") {

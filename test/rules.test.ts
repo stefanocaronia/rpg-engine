@@ -290,6 +290,17 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
         expect(await ok("rules", "grappled")).not.toContain("is a page");
     });
 
+    it("says first where a section of pages is, as a class's features, by its title alone or after its page's name (RUL-6)", async () => {
+        const domain = await ok("rules", "Domain Spells");
+        expect(domain.startsWith("Domain Spells is a section of Cleric, a page of the system 5e (topic): show Cleric#Domain Spells reads it. What the rules say of it:")).toBe(true);
+        expect(domain.length).toBeLessThan(2500);
+        expect(await ok("rules", "Cleric › Class Features")).toContain("Class Features is a section of Cleric, a page of the system 5e (topic): show Cleric#Class Features reads it.");
+        expect(await ok("rules", "Channel Divinity")).toContain("Channel Divinity is a section of several pages: show Cleric#Channel Divinity; show Oath of Devotion#Channel Divinity; show Paladin#Channel Divinity.");
+        await ok("write", "Pozzo", "--type", "place", "--section", "La corda", "--text", "Regge un uomo solo.");
+        expect(await ok("rules", "la corda")).toContain("La corda is a section of Pozzo, a page of the campaign (place): show Pozzo#La corda reads it.");
+        expect(await ok("rules", "Combat › Grappling")).not.toContain("is a section of");
+    });
+
     it("reads a section named by its headings, with its parts", async () => {
         const output = await ok("rules", "Combat › Grappling");
         expect(output).toContain("***Escaping a Grapple.***");

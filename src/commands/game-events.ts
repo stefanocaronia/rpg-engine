@@ -240,8 +240,16 @@ export function linkedStoryNotes(world: World, pages: Page[], skipped: string[],
 
     return pages.flatMap((page) => {
         const linked = backlinks(world, page).map((link) => link.page).filter((other) => isOpenStory(other) && !shown.has(comparableText(other.name)));
-        return linked.length === 0 ? [] : [`Linked to ${page.name}: ${shortList(linked.map((other) => storyText(other, now)), " · ")}. If one no longer goes as planned, write it: its status, date or by.`];
+        return linked.length === 0 ? [] : [`Linked to ${page.name}: ${shortList(linked.map((other) => storyText(other, now)), " · ")}. ${storyAdvice(linked)}`];
     });
+}
+
+/** What the master may write of the stories linked to a page: an event's status, date or by; a quest's status, when its story has ended. */
+function storyAdvice(linked: Page[]): string
+{
+    const events = linked.some((page) => page.type !== "quest") ? "If an event no longer goes as planned, write it: its status, date or by." : "";
+    const quests = linked.some((page) => page.type === "quest") ? "If the story of a quest has ended, set its status." : "";
+    return [events, quests].filter((advice) => advice !== "").join(" ");
 }
 
 /** The clocks of the planned events not due yet, with who carries them (EVT-8, D-135): "La marcia della Confraternita 2/4 (Fratello Odo)". */

@@ -4,7 +4,7 @@ import { houseRulesFolderName, readListSetting, readTextSetting, requireCampaign
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { pageFileNamed, pageNamed as pageWithName } from "../pages/index.ts";
+import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
 import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
 import { campaignSystem, campaignWorld, foreignLanguage } from "./game-world.ts";
@@ -15,6 +15,15 @@ const answerWords = 800;
 const answerWordsBesidePage = 150;
 // How many more sections an answer names after those it shows.
 const namedSections = 8;
+
+/** A section of a page that a search names, with where the page comes from. */
+interface PageSection
+{
+    page: string;
+    section: string;
+    type?: string;
+    system?: string;
+}
 
 /** What an answer shows of one source of rules, the house rules or the game system's: some sections with their text, the others by their path. */
 interface Answer
@@ -63,7 +72,9 @@ export const rules = defineCommand({
         // One search over both, so that a word is rare or common among all the rules (RUL-5); the house rules come first. A page by that name holds the
         // answer, and the rules add little.
         const page = pageNamed(root, context, system, text);
-        const budget = page === undefined ? answerWords : answerWordsBesidePage;
+        // Or the sections of pages it names, as a class's features: Cleric › Domain Spells, or Domain Spells alone (RUL-6).
+        const pageSections = page === undefined ? sectionsNamed(root, context, text) : [];
+        const budget = page === undefined && pageSections.length === 0 ? answerWords : answerWordsBesidePage;
         const found = findRules([...house, ...book], text);
         const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
         const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
@@ -74,6 +85,7 @@ export const rules = defineCommand({
             found: systemAnswer,
             precedents: precedents.filter((precedent) => hasAllWords(precedent, text) || isAboutAny(precedent, text, shownTitles)),
             page,
+            pageSections,
         };
     },
 
@@ -88,6 +100,7 @@ export const rules = defineCommand({
         const lines = [
             missingSystemLine(result.missingSystem),
             pageLine(result.page),
+            sectionsLine(result.pageSections),
             ...sections,
             others.length === 0 ? "" : `Also: ${others.slice(0, namedSections).join("; ")}. Read one by its heading.`,
             sections.length === 0 ? notFound(result) : "",
@@ -129,6 +142,45 @@ function pageNamed(root: string, context: Context, system: { name: string; folde
     } catch {
         return undefined;
     }
+}
+
+/** The sections of pages, the campaign's or else the game system's, that a text names: Page › Section, or a section's title alone (RUL-6). */
+function sectionsNamed(root: string, context: Context, text: string): PageSection[]
+{
+    const titles = text.split(/\s*[›>/]\s*/).map((title) => title.trim().replace(/[.:]$/, "")).filter((title) => title !== "");
+    let pages: Page[];
+
+    // A world that cannot be read, or two pages with the first title's name, leave the rules to answer alone.
+    try {
+        const world = campaignWorld(root, context);
+        const named = titles.length > 1 ? findPage(world, titles[0]) : undefined;
+        pages = titles.length === 1 ? [...world.pages, ...(world.system?.pages ?? [])] : named === undefined ? [] : [named];
+    } catch {
+        return [];
+    }
+
+    return pages.flatMap((page) => {
+        const section = sectionTitles(page.body).find((title) => comparableText(title) === comparableText(titles.at(-1) ?? ""));
+        return section === undefined ? [] : [{ page: page.name, section, type: page.type, system: page.system }];
+    });
+}
+
+/** "Domain Spells is a section of Cleric, a page of the system 5e (topic): show Cleric#Domain Spells reads it.": first, as for a page (RUL-6). */
+function sectionsLine(sections: PageSection[] | undefined): string
+{
+    const [first] = sections ?? [];
+
+    if (first === undefined || sections === undefined) {
+        return "";
+    }
+
+    if (sections.length === 1) {
+        return `${first.section} is a section of ${first.page}, a page of ${first.system === undefined ? "the campaign" : `the system ${first.system}`} (${first.type ?? "page"}): `
+            + `show ${first.page}#${first.section} reads it. What the rules say of it:`;
+    }
+
+    const more = sections.length > namedSections ? `, and ${sections.length - namedSections} more` : "";
+    return `${first.section} is a section of several pages: ${sections.slice(0, namedSections).map(({ page, section }) => `show ${page}#${section}`).join("; ")}${more}. What the rules say of it:`;
 }
 
 /** "Fireball is a page of the system 5e (topic): show Fireball reads it.": first, since the page holds the answer, and the rules after it add to it. */

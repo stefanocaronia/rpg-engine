@@ -177,7 +177,9 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         expect(await ok("scene", "close", "--summary", "Ennio scende nel pozzo.")).not.toContain(ticked);
         await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio");
         await ok("scene", "open", "--title", "Il ritorno", "--type", "travel");
-        expect(await ok("scene", "close", "--summary", "Ennio torna col secchio pieno.")).toContain(`Advance any time it took that you have not advanced yet.\n${ticked}`);
+        expect(await ok("scene", "close", "--summary", "Ennio torna col secchio pieno.")).toContain(
+            `Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.\n${ticked}`,
+        );
         await ok("write", "Il pozzo", "--set", "status=done");
         await ok("scene", "open", "--title", "La festa", "--type", "social");
         expect(await ok("scene", "close", "--summary", "Il paese beve.")).not.toContain(ticked);
