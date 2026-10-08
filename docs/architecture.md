@@ -190,9 +190,9 @@ Files: [pages/containers.ts](../src/pages/containers.ts), [commands/game-moves.t
 
 ### Links and backlinks
 
-Files: [pages/markdown.ts](../src/pages/markdown.ts), [pages/world.ts](../src/pages/world.ts), [pages/check.ts](../src/pages/check.ts).
+Files: [pages/markdown.ts](../src/pages/markdown.ts), [pages/world.ts](../src/pages/world.ts), [pages/check.ts](../src/pages/check.ts). Codes: `LNK-1`–`LNK-5`.
 
-`linksIn` reads links from any field value; `links` reads them from text, remembered per text with [core/memo.ts](../src/core/memo.ts). `backlinks` lists the pages that link to one, by field or text, which `show` prints. `checkWorld` reports links to pages, sections or secrets that do not exist.
+`linksIn` reads links from any field value; `links` reads them from text, remembered per text with [core/memo.ts](../src/core/memo.ts). Code, inline or fenced, and `%%` comments, also across lines, hold no links, titles, secrets or goals (`lineViews`, `LNK-2`). `backlinks` lists the pages that link to one, by field or text, which `show` prints. `checkWorld` reports links to pages, sections or secrets that do not exist.
 
 ### Secrets and what characters know
 

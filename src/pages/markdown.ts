@@ -3,7 +3,9 @@ import { comparableText, linkTargetName } from "../core/text.ts";
 
 const headingPattern = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/;
 const secretPattern = /^>[ \t]*\[!secret\][+-]?[ \t]*(.*?)[ \t]*$/i;
-const fencePattern = /^[ \t]*(```|~~~)/;
+const fencePattern = /^[ \t]*(`{3,}|~{3,})(.*)$/;
+// Inline code, as `x` or ``x``: a run of backticks closed by a run just as long.
+const inlineCodePattern = /(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)/g;
 const linkPattern = /\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
 // A goal as a quest lists it, a checkbox: - [ ] to do, - [x] done; in a quote or a secret too.
 const goalPattern = /^[ \t>]*[-*+][ \t]+\[([ xX])\]/;
@@ -20,6 +22,14 @@ interface Heading
     line: number;
     level: number;
     title: string;
+}
+
+/** A line as links and titles read it: code, begun inside a comment, and what is left of it outside code and comments. */
+interface LineView
+{
+    code: boolean;
+    commented: boolean;
+    prose: string;
 }
 
 /** A block of lines: from `start` up to, not including, `end`. */
@@ -168,12 +178,9 @@ export function links(text: string): Link[]
 }
 
 const rememberedLinks = rememberedByText((text: string): Link[] => {
-    const lines = text.split("\n");
-    const code = codeLines(lines);
-    const prose = (line: string): string => line.replace(/`[^`]*`/g, "").replace(/%%.*?%%/g, "");
     // A file of another kind, as ![[map.png]], is an attachment, not a page.
     const page = (target: string): boolean => !/\.(?!md$)[a-z0-9]+$/i.test(target.trim());
-    return lines.flatMap((line, index) => (code[index] ? [] : [...prose(line).matchAll(linkPattern)].filter((match) => page(match[1])).map((match) => linkOf(match[1], match[2]))));
+    return lineViews(text.split("\n")).flatMap((view) => [...view.prose.matchAll(linkPattern)].filter((match) => page(match[1])).map((match) => linkOf(match[1], match[2])));
 }, 20_000);
 
 /** Removes the blank lines at the start and the white space at the end. */
@@ -254,11 +261,11 @@ function topHeadingLevel(lines: string[]): number
 
 function headingsOf(lines: string[]): Heading[]
 {
-    const code = codeLines(lines);
+    const views = lineViews(lines);
     const headings: Heading[] = [];
 
     lines.forEach((line, index) => {
-        const match = code[index] ? null : headingPattern.exec(line);
+        const match = isProse(views[index]) ? headingPattern.exec(line) : null;
 
         if (match) {
             headings.push({ line: index, level: match[1].length, title: match[2].trim() });
@@ -270,11 +277,11 @@ function headingsOf(lines: string[]): Heading[]
 /** The secret blocks: a `> [!secret] Name` line and the quoted lines after it. */
 function secretsOf(lines: string[]): (Range & { title: string; })[]
 {
-    const code = codeLines(lines);
+    const views = lineViews(lines);
     const secrets: (Range & { title: string; })[] = [];
 
     lines.forEach((line, index) => {
-        const match = code[index] ? null : secretPattern.exec(line);
+        const match = isProse(views[index]) ? secretPattern.exec(line) : null;
 
         if (match) {
             let end = index + 1;
@@ -293,23 +300,44 @@ function secretsOf(lines: string[]): (Range & { title: string; })[]
 export function everyGoalTicked(text: string): boolean
 {
     const lines = text.replace(/\r\n/g, "\n").split("\n");
-    const code = codeLines(lines);
-    const marks = lines.flatMap((line, index) => (code[index] ? [] : (goalPattern.exec(line)?.slice(1) ?? [])));
+    const views = lineViews(lines);
+    const marks = lines.flatMap((line, index) => (isProse(views[index]) ? (goalPattern.exec(line)?.slice(1) ?? []) : []));
     return marks.length > 0 && marks.every((mark) => mark !== " ");
 }
 
-/** Which lines belong to fenced code blocks, the fences included. */
-function codeLines(lines: string[]): boolean[]
+/**
+ * Each line as links and titles read it (LNK-2): whether it is code, a fence or a line of a block, which only a fence of the same character, at least as long and
+ * with nothing after it, closes; whether it begins inside a %% comment, which may span lines; and its prose, without inline code and comments.
+ */
+function lineViews(lines: string[]): LineView[]
 {
-    let inFence = false;
+    let fence: string | undefined;
+    let comment = false;
+
     return lines.map((line) => {
-        if (fencePattern.test(line)) {
-            inFence = !inFence;
-            return true;
+        const [, marks, rest] = fencePattern.exec(line) ?? [];
+        const closes = fence !== undefined && marks?.[0] === fence[0] && marks.length >= fence.length && rest.trim() === "";
+
+        if (marks !== undefined && !comment && (fence === undefined || closes)) {
+            fence = fence === undefined ? marks : undefined;
+            return { code: true, commented: false, prose: "" };
         }
 
-        return inFence;
+        if (fence !== undefined) {
+            return { code: true, commented: false, prose: "" };
+        }
+
+        const commented = comment;
+        const parts = line.replace(inlineCodePattern, "").split("%%");
+        comment = parts.length % 2 === 0 ? !comment : comment;
+        return { code: false, commented, prose: parts.filter((_, index) => (index % 2 === 0) === !commented).join("") };
     });
+}
+
+/** Whether a line can hold a title, a secret or a goal: neither code nor begun inside a comment. */
+function isProse(view: LineView): boolean
+{
+    return !view.code && !view.commented;
 }
 
 /** The page and section a link points to: [[folder/Page.md]], and [[Page\|label]] as written in tables, point to Page. */
