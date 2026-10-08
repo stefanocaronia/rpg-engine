@@ -73,22 +73,35 @@ function playSession()
     console.log(`Session ${options.session} ended (${progress.stop}) after ${progress.count} player messages; master $${progress.masterCost.toFixed(2)}, player $${progress.playerRunCost.toFixed(2)} since the run began. Output: ${folder}`);
 }
 
-/** After the last session the player answers the questionnaire in its own chat, which the master never sees. */
+/** After the last session played the player answers the questionnaire in its own chat, which the master never sees; the answers go in that session's folder. */
 function askQuestionnaire()
 {
     checkFolders();
-    const answersFile = join(out, "questionnaire-answers.md");
 
     if (!existsSync(playerChatFile)) {
         throw new Error(`${out} holds no player's chat: play the sessions first, with the same --out.`);
     }
 
+    const answersFile = join(out, lastSessionFolder(), "questionnaire-answers.md");
+
     if (existsSync(answersFile)) {
-        throw new Error(`${answersFile} already exists: the questionnaire is asked once per run.`);
+        throw new Error(`${answersFile} already exists: the questionnaire is asked once after a session.`);
     }
 
     const answers = playerTurn(readFileSync(options.questionnaire, "utf8"), false);
     writeFileSync(answersFile, answers.message + "\n");
+}
+
+/** The folder of the last session played in this run, such as session-2. */
+function lastSessionFolder()
+{
+    const numbers = readdirSync(out).filter((name) => existsSync(join(out, name, "end.json"))).map((name) => Number(name.match(/^session-(\d+)$/)?.[1])).filter((number) => number > 0);
+
+    if (numbers.length === 0) {
+        throw new Error(`${out} holds no session that ended: play the sessions first, with the same --out.`);
+    }
+
+    return `session-${Math.max(...numbers)}`;
 }
 
 /** Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. */
@@ -202,7 +215,9 @@ function playerTurn(prompt, inPlay)
     const isolation = ["--tools", "", "--setting-sources", "project,local", "--strict-mcp-config"];
     const answerFormat = inPlay ? ["--output-format", "json", "--json-schema", playerSchema] : ["--output-format", "json"];
     const chat = resume ? ["--resume", id] : ["--session-id", id];
-    const args = ["-p", "--model", options["player-model"], "--system-prompt-file", resolve(options.profile), ...isolation, ...answerFormat, ...chat];
+    // Claude Code would keep the profile a chat began with; with no snapshot, a profile changed between sessions reaches the player.
+    const profile = ["--system-prompt-file", resolve(options.profile), "--system-prompt-snapshot", "off"];
+    const args = ["-p", "--model", options["player-model"], ...profile, ...isolation, ...answerFormat, ...chat];
     const run = claude(args, playerFolder, prompt);
     writeFileSync(playerChatFile, id);
     appendFileSync(join(out, "player-turns.jsonl"), run.stdout.trim() + "\n");

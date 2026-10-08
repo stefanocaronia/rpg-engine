@@ -34,7 +34,7 @@ Then count the numbers, for B12 and the report: `node playtests/count-playtest.m
 
 Each session is a new master chat; the player keeps one chat for the whole run. The organizer's notes reach only the player and are kept in `dialogue.md`: the opening of each evening and, once, at `--max` player messages, that it is getting late. A session stops when the player ends it, at `--hard` messages (default `--max` + 10), on an error, or when the master's session passes `--budget` dollars (default 15).
 
-A run only goes forward: each session is played once, in the same output folder, and session 2 continues the player's chat of session 1. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
+A run only goes forward: each session is played once, in the same output folder, and each later session continues the player's chat of the one before, even after a questionnaire. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
 
 Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a subscription. Writing the pages, the trial run and reading the results for the checklist cost extra. `end.json` records the master's cost for the session and the player's for the run so far.
 
@@ -46,7 +46,7 @@ Before the first turn the run stops unless:
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
 - the campaign's `AGENTS.md` is this commit's `instructions/start.md`, its `CLAUDE.md` holds only `@AGENTS.md`, and it has no `.claude/` or `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`;
-- session 2 continues the player's chat and the campaign of session 1, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
+- a later session continues the player's chat and the campaign of the session before, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
 - `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and no custom agents.
 
 At every turn it checks that `rpg` is connected, with the planned model and `dontAsk`; otherwise it stops, and the run is void.
@@ -63,7 +63,7 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 
 Claude Code runs without the `CLAUDE*` variables of the shell, so a Claude Code session the run is started from cannot leak into it.
 
-The player is Claude Code (`claude-sonnet-5-5`) with its profile as the whole system prompt, no tools, and a JSON answer: its message and whether it ends the evening.
+The player is Claude Code (`claude-sonnet-5-5`) with its profile as the whole system prompt, read again at every turn (a profile changed between sessions reaches the player), no tools, and a JSON answer: its message and whether it ends the evening.
 
 ## Output
 
@@ -73,5 +73,6 @@ Per session, in `session-N/`:
 - `turns/M*.jsonl`: each master turn as Claude Code streamed it, subagents included: tool calls, whole results, `permission_denials`, cost. Every count comes from here.
 - `context.md`, `meta.json` (commit, the `rpg` build, versions, models, the master's chat, options), `end.json` (why it stopped: player, hard cap, budget, error or isolation; messages; costs).
 - `campaign-after/`: the campaign after the session, `log.jsonl` included.
+- `questionnaire-answers.md`, when the questionnaire followed the session.
 
-Per run: `player-session.txt`, `player-turns.jsonl`, `questionnaire-answers.md`.
+Per run: `player-session.txt`, `player-turns.jsonl`.
