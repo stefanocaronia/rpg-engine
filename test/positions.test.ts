@@ -163,6 +163,15 @@ describe("travel off the roads (TRV-12, TRV-13)", () => {
     });
 });
 
+describe("what playtest 03 found (TRV-12)", () => {
+    it("TRV-12: stopped in the open inside a region, across goes on to a place in that region, which they are not at yet", async () => {
+        await placeTheMap();
+        await ok("write", "Tempesta", "--type", "event", "--set", "date=day 3, 11:00");
+        expect(await ok("travel", "Torre", "--across")).toContain("Stopped in Brughiera, 2.9 km south-west of Torre");
+        expect(await ok("travel", "Torre", "--across")).toContain("Arrived at day 3, 12:18: now in Torre.");
+    });
+});
+
 describe("a place where the party is (TRV-14)", () => {
     it("TRV-14: stopped on a road, the new place becomes a stop splitting the stretch; the party goes into it and the journey goes on from it", async () => {
         await ok("write", "Agguato", "--type", "event", "--set", "date=day 3, 10:00");

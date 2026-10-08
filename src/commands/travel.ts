@@ -403,9 +403,9 @@ function openPlan(setting: Setting, input: { to?: string; across?: boolean; towa
     const pace = paceOf(system, input.pace ?? journey?.pace, undefined) as NonNullable<Going["pace"]>;
     const hours = setting.hours ?? system?.travel?.hours ?? 8;
     const destination = input.to === undefined ? undefined : placeNamed(world, input.to);
-    const place = movers[0] === undefined ? undefined : [movers[0], ...locate(world, movers[0]).chain].find((holder) => holder.type === "place");
 
-    if (destination !== undefined && place !== undefined && sameSpot(world, place, destination) !== undefined) {
+    // Already there only inside the destination: a region holds places kilometres apart, so being in the region is not being at them.
+    if (destination !== undefined && movers[0] !== undefined && [movers[0], ...locate(world, movers[0]).chain].includes(destination)) {
         throw new Error(`${movers[0].name} is already in ${destination.name}: no journey, use move for a place inside it. Nothing changed.`);
     }
 
