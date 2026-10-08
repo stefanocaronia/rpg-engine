@@ -261,6 +261,12 @@ Files: [saves/saves.ts](../src/saves/saves.ts), [commands/game-saves.ts](../src/
 
 A save is a zip, made with `fflate`, of the game's files: everything in the campaign but `.saves/`, what has a name starting with a dot at its top (`.git`, `.obsidian`, `.claude`, `.mcp.json`) and the host's files (`hostFileNames` in [campaign/host-files.ts](../src/campaign/host-files.ts), in any case), read from the disk, never from what a session kept (`SAV-2`). `scene close` makes one unless every player character is dead, writing its `saved` line only once the zip is written, and a save that fails never stops the close (`SAV-3`); `save make` too, with `saves: free`. `save load` first zips what it will replace into `before load NNN.zip`, leaves a mark (`loading.txt`) until it is done, gives the files back through the store, so that a session reads them at the next call, removes those made since and the later saves, and logs `save-loaded`; a load that stopped halfway is finished by the next `save load`, and `status` says so. The campaign's `saves` setting decides what may be loaded (`SAV-5`). The store reads and writes bytes for it: `entries`, `bytes`, `writeBytes`.
 
+### The player's view
+
+Files: [commands/view.ts](../src/commands/view.ts), [commands/game-knowledge.ts](../src/commands/game-knowledge.ts). Codes: `VIEW-1`–`VIEW-5`.
+
+`view` gives what the player may see, for the master to answer without spoilers and, later, for the dashboard. `knowledgeOf` works out what the player character knows: its `knows`, itself, the companions, what it carries, the places around it, the characters and places of the scenes it was in and where it was moved, as the log keeps them; the system's pages but its creatures (`VIEW-2`). `knownText` gives a page as it knows it: the introduction, the public sections, its own and its bases', and the secrets discovered by the page that writes them (`VIEW-3`). The overview reads the public lines of the log as a diary of facts, without the master's `why` (`VIEW-4`).
+
 ### Game time
 
 Files: [time/game-date.ts](../src/time/game-date.ts), [commands/advance.ts](../src/commands/advance.ts), [commands/game-time.ts](../src/commands/game-time.ts). Codes: `TIM-1`–`TIM-7`, `DAT-7`, `EVT-1`, `EVT-8`.

@@ -17,7 +17,8 @@ import { scene } from "./scene.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
 import { validate } from "./validate.ts";
+import { view } from "./view.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, move, reveal, show, find, rules, roll, ask, change, effect, advance, scene, save];
+export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, move, reveal, show, view, find, rules, roll, ask, change, effect, advance, scene, save];

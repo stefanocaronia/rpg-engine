@@ -105,6 +105,15 @@ Read-only: yes. Positional parameters: `page`.
 
 - `page` (`string`, required): name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, or a group of a character's sheet
 
+### view
+
+What the player may see, without spoilers: use it, not show, when the player asks what their character knows, remembers or carries. Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary of what happened, without your reasons. With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, and the whole sheet of the character and the companions. A page they do not know reads as one that does not exist. Example: page Varro; or diary all.
+
+Read-only: yes. Positional parameters: `page`.
+
+- `page` (`string`, optional): a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view
+- `diary` (`string`, optional): how many lines of the diary, from the last, or all; 10 if left out
+
 ### find
 
 Find pages of the world. It looks for a text in their names, fields and text, ignoring case, or lists the pages of a type; the game system's pages are found by their names and fields. Use it when you do not know a page's exact name, and before creating a page, to check that it does not exist under another name. Example: text "lanterna"; or type place.

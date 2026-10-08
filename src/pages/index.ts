@@ -70,6 +70,7 @@ export {
     type SystemInfo,
     systemPageNamed,
     type SystemPages,
+    textsIn,
     validHoldersOf,
     withPage,
     type World,

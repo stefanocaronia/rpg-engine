@@ -94,6 +94,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | parte (delle istruzioni), istruzioni di situazione | part (of the instructions) | `instructions/<part>.md` of the core and of a system, given when its situation opens, such as `combat` |
 | modalità: setup, sessione zero, gioco | mode: setup, session zero, play | `mode` in `state.yaml`, the `mode` command |
 | salvataggio; permadeath, checkpoint, libero | save; permadeath, checkpoint, free | a zip in `.saves/`, the `save` command, the `saves` setting |
+| vista del giocatore, diario | player's view, diary | the `view` command; the public lines of the log as facts |
 | checklist (del setup, della sessione zero) | checklist | what a mode needs before the campaign leaves it: `unansweredSettings`, `blockingMode` |
 | righe d'avvio | start lines | `instructions/start.md`: the MCP server's instructions and the start of the campaign's `AGENTS.md` |
 | partita di prova | playtest | `playtests/` |
