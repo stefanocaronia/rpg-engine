@@ -13,6 +13,8 @@ export const instructions = defineCommand({
 
     run(_input, context)
     {
+        // A chat that starts, or follows a summary, gets every part of the instructions again when its situation opens (D-97).
+        context.told?.clear();
         // Where the host shows the player forms, the buttons take the place of the stop in words (D-148).
         return { text: context.player === undefined ? masterInstructions() : `${masterInstructions()}\n\n${buttonsInstructions()}` };
     },

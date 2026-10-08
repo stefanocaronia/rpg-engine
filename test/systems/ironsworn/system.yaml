@@ -1,9 +1,9 @@
-# A test system based on Ironsworn, to keep the core generic (D-20, D-168): the names of its mechanics, a foe of our own and a chapter of rules we wrote about its moves.
+# A test system based on Ironsworn, to keep the core generic (D-20, D-168): the names of its mechanics, a foe of our own, a chapter of rules we wrote about its moves, and how a fight goes in our words, in place of the core's (D-121).
 title: a test system based on Ironsworn
 language: en
 attribution: >-
   This work is based on Ironsworn (https://www.ironswornrpg.com), created by Shawn Tomkin, and licensed for our use under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
-  Changes: the names of its mechanics are used, with a foe and a short chapter on its moves written for these tests, and some of its rules as formulas.
+  Changes: the names of its mechanics are used, with a foe, a short chapter on its moves and a note on how a fight goes written for these tests, and some of its rules as formulas.
 fields:
   edge: number
   heart: number

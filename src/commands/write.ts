@@ -79,6 +79,7 @@ import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
+import { partText, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
 import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
@@ -265,14 +266,15 @@ export const write = defineCommand({
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
         const sheet = joined ? joiningNotes(system, now, page) : [];
-        const gained = changed && existing !== undefined ? progressionNotes(world, now, existing, page, Object.keys(fields.set ?? {})) : [];
+        const gained = changed && existing !== undefined ? progressionNotes(context, system, world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
         // Points that reach a level the classes have not, or fall short of the level's (PRO-6); a field the settings leave out (DAT-10).
         const [before, after] = [existing === undefined ? undefined : experienceOf(world, effectiveFields(world, existing)), experienceOf(now, effectiveFields(now, page))];
         const companion = page.fields.role === "companion";
-        const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, system?.progression?.levelUp), ...leastNotes(page.name, before, after)] : [];
+        const levelUp = (): string => situationPart("level-up", context, system);
+        const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, levelUp), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
-        const quest = changed ? [...questEndNotes(system, existing, page), ...tickedQuestNotes(existing, page)] : [];
+        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page)] : [];
         const twice = changed && page.type === "character" ? givenListNotes(now, page, changedFieldNames(fields)) : [];
         const shadows = changed && section !== undefined ? featureSectionNotes(now, page, section) : [];
         const links = changed ? linkNotes(now, fields) : [];
@@ -1088,11 +1090,17 @@ function listsWithoutComputed(world: World, target: Page | undefined, lists: Rec
     };
 }
 
-/** What the system says when a quest is done or failed, such as the experience the story gives (D-233). */
-function questEndNotes(system: GameSystem | undefined, existing: Page | undefined, page: Page): string[]
+/** The part quest-ends when a quest is done or failed, such as the experience the story gives (D-233), once in a chat (D-97). */
+function questEndNotes(context: Context, system: GameSystem | undefined, existing: Page | undefined, page: Page): string[]
 {
     const ended = (candidate: Page | undefined): boolean => ["done", "failed"].includes(String(candidate?.fields.status));
-    return page.type !== "quest" || system?.questEnds === undefined || !ended(page) || ended(existing) ? [] : [`${page.name} is ${String(page.fields.status)}. ${system.questEnds}`];
+
+    if (page.type !== "quest" || !ended(page) || ended(existing)) {
+        return [];
+    }
+
+    const part = situationPart("quest-ends", context, system);
+    return part === "" ? [] : [`${page.name} is ${String(page.fields.status)}. ${part}`];
 }
 
 /** Items written in a list where the parts of the classes already put them, as a domain's spell in prepared: always there, they do not count with the rest (PRO-7). */
@@ -1123,7 +1131,7 @@ function featureSectionNotes(world: World, page: Page, section: string): string[
  * the rows and of the formulas of the classes' pages that change, and, when a class rises, the system's note for a new level (D-226), unless the same write sets
  * a field it names, as hp-base. Nothing when the classes give the same.
  */
-function progressionNotes(before: World, after: World, existing: Page, page: Page, set: string[]): string[]
+function progressionNotes(context: Context, system: GameSystem | undefined, before: World, after: World, existing: Page, page: Page, set: string[]): string[]
 {
     const was = progressionOf(before, effectiveFields(before, existing));
     const is = progressionOf(after, effectiveFields(after, page));
@@ -1158,16 +1166,17 @@ function progressionNotes(before: World, after: World, existing: Page, page: Pag
         [...values, ...formulaValues].join(", "),
     ].filter((part) => part !== "");
     const hint = shown === undefined ? "" : ` show ${page.name}#${featureParts(shown).name} gives a feature's text.`;
-    const levelUp = after.system?.progression?.levelUp;
+    const levelUp = partText("level-up", system);
     // A new level is one more in all: a class changed for another of a lower level is none.
     const levels = (progression: typeof was): number => (progression?.from ?? []).reduce((total, item) => total + (item.level ?? 0), 0);
     // Not said when the same write sets a field the note names, as hp-base: it is already done.
     const named = new Set((levelUp?.match(/[\p{L}\p{N}-]+/gu) ?? []).map(comparableText));
     const done = set.some((field) => named.has(comparableText(field)));
-    const risen = levelUp !== undefined && levels(is) > levels(was) && !done;
+    // The part level-up, once in a chat (D-97).
+    const risen = levelUp !== undefined && levels(is) > levels(was) && !done ? situationPart("level-up", context, system) : "";
     // A value that ends in a period, such as +10 ft., ends the line.
     const said = parts.length === 0 ? [] : [`What ${page.name}'s ${is?.lists[0] ?? was?.lists[0] ?? "classes"} give: ${parts.join("; ").replace(/\.$/, "")}.${hint}`];
-    return [...said, ...(risen ? [levelUp] : [])];
+    return [...said, ...(risen === "" ? [] : [risen])];
 }
 
 /**

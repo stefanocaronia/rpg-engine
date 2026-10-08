@@ -9,9 +9,10 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
-import { campaignWorld } from "./game-world.ts";
+import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { shortList } from "./notes.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { situationPart } from "./parts.ts";
 
 /** What advance did, as its output tells it. */
 interface Advance
@@ -36,9 +37,10 @@ interface Advance
     ended: string[];
     /** What holds around the player character after an hour or more (ENV-5): "Ettore: light: dark (Cripta)". */
     around?: string;
-    /** How many midnights this advance passed, and the clocks to move then (EVT-8). */
+    /** How many midnights this advance passed, and the clocks to move then (EVT-8), with how to move them the first time in a chat (D-97). */
     newDays: number;
     clocks: string[];
+    newDayPart: string;
 }
 
 // An hour or more passing usually ends a scene: then advance reminds that one is still open.
@@ -76,7 +78,7 @@ export const advance = defineCommand({
             const start = formatGameDate(request.to);
             changeState(root, { date: start });
             appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { to: start, why }));
-            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next: nextAfter(dated, request.to), ended: [], newDays: 0, clocks: [], ...notes };
+            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next: nextAfter(dated, request.to), ended: [], newDays: 0, clocks: [], newDayPart: "", ...notes };
         }
 
         const end = "by" in request ? addDuration(now, request.by) : request.to;
@@ -116,7 +118,9 @@ export const advance = defineCommand({
         const ended = passed > 0 ? endEffects(root, context, world, readOpenScene(root).scene, (effect) => endedByDate(effect, reached), "time passed") : [];
         // Read again only when effects ended, which may have been on the places around.
         const around = passed >= sceneReminderMinutes ? aroundLead(ended.length === 0 ? world : campaignWorld(root, context)) : undefined;
-        return { ...result, ended, around };
+        // A new day with clocks to move is the world's turn: its part of the instructions says how (EVT-8, D-134).
+        const newDayPart = result.clocks.length === 0 ? "" : situationPart("new-day", context, campaignSystem(root, context));
+        return { ...result, ended, around, newDayPart };
     },
 
     format(result)
@@ -131,6 +135,7 @@ export const advance = defineCommand({
             result.openScene === undefined ? "" : `A scene is still open: ${result.openScene}. Close it if this time ends it.`,
             result.around === undefined ? "" : `Around ${result.around}.`,
             clocksLine(result.newDays, result.to, result.clocks),
+            result.newDayPart,
             result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
             skippedPagesNote(result.skipped),
         ].filter((line) => line !== "").join("\n");
@@ -198,7 +203,7 @@ function nextAfter(events: DatedEvent[], date: GameDate): string | undefined
     return next === undefined ? undefined : events.filter((event) => minutesBetween(next.date, event.date) === 0).map((event) => plannedText(event, date)).join(" · ");
 }
 
-/** A new day is the world's turn (EVT-8): the clocks to move as the time moved them, which they never do by themselves, and how (D-134). */
+/** A new day is the world's turn (EVT-8): the clocks to move as the time moved them, which they never do by themselves; how, the part new-day says (D-134). */
 function clocksLine(newDays: number, to: string, clocks: string[]): string
 {
     if (clocks.length === 0) {
@@ -206,7 +211,7 @@ function clocksLine(newDays: number, to: string, clocks: string[]): string
     }
 
     const days = newDays === 1 ? `A new day (${to.replace(/,.*$/, "")})` : `${newDays} new days (to ${to.replace(/,.*$/, "")})`;
-    return `${days}: move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan: ${shortList(clocks, " · ")}.`;
+    return `${days}, with clocks to move: ${shortList(clocks, " · ")}.`;
 }
 
 /** The events already due before this advance; with new ones due too, the advice above covers them. */

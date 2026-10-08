@@ -40,6 +40,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
 {
     const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });
     const askingTools: RegisteredTool[] = [];
+    // A server lives as long as its chat: it gives each part of the instructions once (D-97).
+    context.told ??= new Set();
 
     for (const command of commands) {
         const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra));

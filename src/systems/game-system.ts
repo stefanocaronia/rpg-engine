@@ -1,10 +1,12 @@
 import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { parse } from "yaml";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
+import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -44,7 +46,6 @@ const systemSchema = z.object({
         features: z.string().min(1),
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1), lists: z.array(z.string().min(1)).optional() }).strict().optional(),
-        "level-up": z.string().min(1).optional(),
         experience: z.object({ field: z.string().min(1), table: z.string().min(1), rules: z.string().min(1).optional() }).strict().optional(),
     }).strict().optional(),
     settings: z.record(
@@ -55,10 +56,8 @@ const systemSchema = z.object({
         ),
     ).optional(),
     rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
-    "quest-ends": z.string().min(1).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     "always-in": z.record(z.string().min(1), z.array(z.string().min(1)).min(1), { error: "write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]" }).optional(),
-    creation: z.string().min(1).optional(),
     computed: z.record(z.string(), z.union([z.number(), z.string().min(1), z.array(z.union([z.number(), z.string().min(1)]))])).optional(),
     counters: z.record(
         z.string(),
@@ -161,8 +160,6 @@ export interface GameSystem
     itemFormulas: Record<string, string[]>;
     /** By list, the pages every character who keeps the sheet has in it without writing them, as the unarmed strike in equipped (DAT-13, D-235). */
     alwaysIn: Record<string, string[]>;
-    /** How a player character is made, which status says until there is one (DAT-12, D-235). */
-    creation?: string;
     /** The counters that come back with a rest, by name or by a name ending in *: a character has them full until it spends them (DAT-9). */
     uses: string[];
     /** The settings it adds to the setup (DAT-10). */
@@ -171,8 +168,18 @@ export interface GameSystem
     leftOut: string[];
     /** What the creatures overcome in a scene give the party (DAT-11). */
     rewards: Reward[];
-    /** What write says when a quest is done or failed, such as the experience the story gives (D-233). */
-    questEnds?: string;
+    /**
+     * Its parts of the master's instructions, by name, from instructions/<part>.md: each adds to the core's part of that name, such as creation or fight, or takes
+     * its place when its frontmatter says replace: true (D-121).
+     */
+    parts: Record<string, InstructionPart>;
+}
+
+/** A part of the master's instructions as a layer gives it: its text, and whether it takes the place of the layers below instead of adding to them (D-121). */
+export interface InstructionPart
+{
+    text: string;
+    replace: boolean;
 }
 
 /**
@@ -351,8 +358,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             const [counter, value] = reward.overcome.split(" ");
             return { field, from: reward.from, counter, value: Number(value) };
         }),
-        ...(data["quest-ends"] === undefined ? {} : { questEnds: data["quest-ends"] }),
-        ...(data.creation === undefined ? {} : { creation: data.creation }),
+        parts: readParts(folder, name),
     });
 }
 
@@ -401,11 +407,45 @@ function strayOccasion(data: z.infer<typeof systemSchema>, formulas: SystemFormu
     return undefined;
 }
 
-/** The progression as the system declares it (PRO-1–PRO-4, PRO-6, D-226). */
+/** The progression as the system declares it (PRO-1–PRO-4, PRO-6). */
 function progressionRule(data: NonNullable<z.infer<typeof systemSchema>["progression"]>): ProgressionRule
 {
-    const { "level-up": levelUp, skip, ...rule } = data;
-    return { ...rule, skip: skip ?? [], ...(levelUp === undefined ? {} : { levelUp }) };
+    const { skip, ...rule } = data;
+    return { ...rule, skip: skip ?? [] };
+}
+
+/** The system's parts of the master's instructions, from the files of its instructions folder: a part is named after its file (D-121). */
+function readParts(folder: string, name: string): Record<string, InstructionPart>
+{
+    const parts: Record<string, InstructionPart> = {};
+
+    for (const path of files().files(join(folder, "instructions"), (file) => file.endsWith(".md"))) {
+        parts[basename(path, ".md")] = partOf(files().text(path) ?? "", name, path);
+    }
+
+    return parts;
+}
+
+/** A part from its file: the text after its frontmatter, which says only whether it takes the place of the core's part, replace: true (D-121). */
+function partOf(file: string, system: string, path: string): InstructionPart
+{
+    const text = file.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+    const frontmatter = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+    let settings: unknown;
+
+    try {
+        settings = frontmatter === null ? {} : (parse(frontmatter[1]) ?? {});
+    } catch {
+        settings = undefined;
+    }
+
+    const parsed = z.object({ replace: z.boolean().optional() }).strict().safeParse(settings);
+
+    if (!parsed.success) {
+        throw new Error(`The game system ${system} cannot be read, because ${path} is not valid: a part's frontmatter says only replace: true, for a part that takes the place of the core's.`);
+    }
+
+    return { text: (frontmatter === null ? text : text.slice(frontmatter[0].length)).trim(), replace: parsed.data.replace === true };
 }
 
 /** The progression without its experience, when a setting leaves its field out (DAT-10). */

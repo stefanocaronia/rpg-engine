@@ -41,6 +41,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { keptRolls } from "./page-counters.ts";
+import { situationPart } from "./parts.ts";
 import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -234,7 +235,7 @@ function applyStep(
     const party = holder.kind === "page" && isPartyMember(holder.page);
     // Points that reach a new level are said with the rule to read (PRO-6).
     const companion = holder.page.fields.role === "companion";
-    const levelUp = world.system?.progression?.levelUp;
+    const levelUp = (): string => situationPart("level-up", context, system);
     const levels = changed && party && after !== undefined
         ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after)), companion, levelUp)
         : [];

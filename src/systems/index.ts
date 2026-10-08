@@ -6,6 +6,7 @@ export {
     findSystem,
     type GameSystem,
     installedSystems,
+    type InstructionPart,
     type Recipe,
     type Reward,
     type SheetEntry,

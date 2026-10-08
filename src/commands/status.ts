@@ -1,10 +1,12 @@
 import { join } from "node:path";
 import { z } from "zod";
 import { houseRulesFolderName, missingSettings, readSettings, requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
@@ -18,6 +20,7 @@ import { problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
+import { situationPart } from "./parts.ts";
 import { campaignProblems } from "./problems.ts";
 import { missingSheetFields, type SheetSummary, sheetSummary } from "./sheet.ts";
 
@@ -109,8 +112,8 @@ export const status = defineCommand({
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length,
             sheet: system === undefined ? undefined : sheetSummary(system),
-            // How the player character is made (DAT-12, D-235).
-            creation: creating && system?.creation !== undefined ? { system: system.name, note: system.creation } : undefined,
+            // How the player character is made, the part creation (DAT-12, D-235): once in a chat (D-97).
+            creation: creating ? creationNote(context, system) : undefined,
             // A dead character's sheet is no longer kept (D-190).
             incompleteSheets: characters.filter(isInParty).flatMap((page) => {
                 const missing = missingSheetFields(system, world, page);
@@ -265,6 +268,13 @@ function sceneCounts(scenes: ClosedScene[]): string
 
     const rank = (type: string): number => (sceneTypes as readonly string[]).indexOf(type);
     return [...counts].sort((first, second) => second[1] - first[1] || rank(first[0]) - rank(second[0])).map(([type, count]) => `${count} ${type}`).join(", ");
+}
+
+/** How the system makes the player character, its part creation (DAT-12): undefined when it has none, or this chat was already told. */
+function creationNote(context: Context, system: GameSystem | undefined): { system: string; note: string; } | undefined
+{
+    const note = situationPart("creation", context, system);
+    return note === "" || system === undefined ? undefined : { system: system.name, note };
 }
 
 /** The open quests, those whose goals are all ticked first, with what to do about them (D-239). */

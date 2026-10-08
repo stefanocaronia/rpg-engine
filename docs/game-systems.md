@@ -17,12 +17,14 @@ systems/5e/
     items/*.md         armor, weapons, gear, magic items
     topics/*.md        classes, subclasses, backgrounds, feats, spells
   rules/*.md           the chapters of its rules, as markdown
+  instructions/*.md    its parts of the master's instructions (section 6.6)
   build/               the scripts that wrote some of its pages and rules from its source (not shipped)
   test/                the system's own tests (not shipped)
 ```
 
 - `world/<folder>/` holds its pages, one markdown file per page, in the same folders a campaign uses (section 6).
 - `rules/` holds its rules as text, searched by the `rules` command and read by title (section 6.5).
+- `instructions/` holds what it adds to the master's instructions, part by part (section 6.6).
 - `LICENSE.md` is not read by the engine: it ships beside the system and says what the content is under and where it comes from.
 
 ## 2. How a system is found and installed
@@ -126,19 +128,8 @@ sheet-notes:
 - `field (beside)`: a field shown in parentheses beside it: `str 14 (+2)`.
 - The player character (`role: pc`) keeps the sheet, and so does a companion with a `level` or with no `creature` (a wolf with its stat block does not).
 - `show` gives a sheet one line per group, effects and formulas included: `Abilities: str 14 (+2) · dex 12 (+1) · proficiency +2`. `show Page#Group` gives one group with how each number is made (a section or secret of that name comes first).
-- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, then how to make one (`creation`); afterwards it reminds what each character still lacks.
+- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, then how to make one (its part `creation`, section 6.6); afterwards it reminds what each character still lacks.
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
-
-### creation
-
-How a player character is made in the game, which `status` says until there is one, then while a player character's sheet still lacks fields before the first scene, after the sheet's reminders (`DAT-12`):
-
-```yaml
-creation: >-
-  agree first, and set with config in table: how the ability scores are made, multiclassing, feats, … Then, in order, with write: race and class at 1st level, …
-```
-
-The 5e's gives what the table agrees first and writes in `table`, that every choice is the player's, the steps in order (race and class with the choices of their features, ability scores by the way agreed and the race's increases, background, proficiencies and languages, `hp-base`, the starting equipment as items, spells, alignment and personality, then the sheet read with the player), and what a character who starts above 1st level has. The engine knows nothing of what it says.
 
 ### values
 
@@ -182,14 +173,6 @@ rewards:
 ```
 
 `scene close` adds up `from` on the copies and on the characters outside the party who were in the scene, those that left it too, and are at the `overcome` value or below, or dead, and shares it, rounded down, among the living party members who were there and keep the sheet. It says the share with the calls of `change` (`write` for one who has no such field yet), and gives nothing by itself: it names the characters among the overcome, who may have fought on the party's side, those that left alive, who may have fled, and those whose page gives no `from`; who was overcome another way, and what the story rewards, are the master's to judge.
-
-### quest-ends
-
-What `write` says when a quest becomes done or failed, such as the experience the story gives:
-
-```yaml
-quest-ends: "What the story rewards: with xp, give it with change, as you judge, to one character or to all; with milestones, if this was one, tell the player in brackets what they achieved and that the characters rise, then level them up with the player, now or at the next rest, as they prefer."
-```
 
 ### thresholds
 
@@ -282,7 +265,6 @@ progression:
   features: Features
   skip: [Proficiency Bonus, 1st, 2nd, 3rd, 4th, 5th, 6th, 7th, 8th, 9th]
   parts: {list: subclasses, field: class, lists: [prepared]}
-  level-up: "A new level gives hit points: roll the hit die of the class that rose, … and add it to hp-base with write."
   experience: {field: xp, table: xp-by-level, rules: Beyond 1st Level}
 ```
 
@@ -291,8 +273,8 @@ progression:
 - `features`: the column of the features. The rows up to the level give them, each once: one written again with a value in parentheses takes the place of the earlier (`Bardic Inspiration (d8)`). Only names that are titles of the page's sections count, also when the column has the singular (`Signature Spell` for `Signature Spells`): "Path feature" or "Wild Shape improvement" do not.
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class. `lists` names the character's lists a part adds to the same way, such as a cleric domain's spells, always prepared and not counted: `prepared: [Bless 1, Cure Wounds 1]` on its page; the sheet shows them apart, and `write` says when one is written by hand (PRO-7).
 - The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
-- `level-up`: what `write` says when the character's levels rise in all, such as how hit points are added; the engine knows nothing of what it says.
-- `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, the highest level they reach beyond the classes', `xp 950 (level 3 due)`, or the least their level needs when they are below it, `xp 0 (at least 6500 at level 5)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule and the `level-up` note, a companion's choices left to the master; `status` says it at every session until the classes rise. `write` says when the points fall short of the level, and `validate` reports points below it, written with a maximum, or as text. Only the classes change the level.
+- When the character's levels rise in all, `write` gives the system's part `level-up` (section 6.6), unless the same write sets a field the part names, as `hp-base`.
+- `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, the highest level they reach beyond the classes', `xp 950 (level 3 due)`, or the least their level needs when they are below it, `xp 0 (at least 6500 at level 5)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule and the part `level-up`, a companion's choices left to the master; `status` says it at every session until the classes rise. `write` says when the points fall short of the level, and `validate` reports points below it, written with a maximum, or as text. Only the classes change the level.
 - `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
 
 ### item-formulas
@@ -438,6 +420,29 @@ A system's page holds no secrets: `reveal` refuses it, since anyone may know wha
 `rules/*.md` (subfolders too) holds the rules as markdown, each file a chapter that opens with a heading. A section is a heading; a bold title that opens a paragraph (`***Escaping a Grapple.*** A grappled creature…`), one level below its heading; or a bold caption over a table. Text before the first heading is a section named after the file; frontmatter, code blocks and `%%` comments hold no titles.
 
 `rules` searches the campaign's house rules (its own `rules/` folder) first, then the system's. Thresholds, recipes and conditions name a rule by its title, or by titles joined with `›`; a house rule with the same title comes first. Titles therefore hold no `›`, `>` or `/`.
+
+### 6.6 Parts of the master's instructions
+
+`instructions/<part>.md` holds what the system adds to a part of the master's instructions, as text the master reads (D-121): the part is named after the file. The engine gives a part when its situation opens, the core's text first ([instructions/](../instructions/)) and the system's after it; a part with `replace: true` in its frontmatter takes the place of the core's instead, the rare case of a game that does a thing its own way:
+
+```markdown
+---
+replace: true
+---
+A fight has no turns: whoever has initiative acts, with Strike, and a miss gives it to the foe, …
+```
+
+The parts the engine gives today, and when:
+
+| Part | Given by | When |
+|---|---|---|
+| `creation` | `status` | until there is a player character, then while a player character's sheet still lacks fields before the first scene (`DAT-12`) |
+| `combat`, and any scene type | `scene open` | a scene of that type opens; the core has `combat`, how a fight is told (D-139) |
+| `new-day` | `advance` | the time reaches a new day with clocks to move; the core says how to move them (D-134) |
+| `quest-ends` | `write` | a quest becomes done or failed, such as the experience the story gives |
+| `level-up` | `write`, `change` | the character's levels rise, or the points reach a new level (`PRO-6`) |
+
+In a chat with the MCP server a part comes once, the first time its situation opens, and again after `instructions`, which a chat calls at its start and after a summary (D-97); on the command line it comes every time. The 5e's parts are `creation` (what the table agrees first, that every choice is the player's, the steps in order and what a character who starts above 1st level has), `quest-ends` and `level-up`. The engine knows nothing of what a part says, and the frontmatter takes nothing but `replace`.
 
 ## 7. A campaign's own options
 

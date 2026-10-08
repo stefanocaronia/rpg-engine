@@ -87,11 +87,20 @@ export function levelDueNote(name: string, experience: Experience | undefined, c
     return `${name} has the ${experience.field} for level ${experience.due}: ${how}${rules}.`;
 }
 
-/** The note of a change that brings the points to a new level, with the system's note on what a level gives (PRO-6): none when that level was already due. */
-export function newLevelNotes(name: string, before: Experience | undefined, after: Experience | undefined, companion: boolean, levelUp: string | undefined): string[]
+/**
+ * The note of a change that brings the points to a new level, with what `levelUp` gives of the part on what a level gives, empty once told (PRO-6, D-97): none when
+ * that level was already due, and then the part is not asked for.
+ */
+export function newLevelNotes(name: string, before: Experience | undefined, after: Experience | undefined, companion: boolean, levelUp: () => string): string[]
 {
     const note = levelDueNote(name, after, companion);
-    return note === undefined || (before?.due !== undefined && before.due >= (after?.due ?? 0)) ? [] : [levelUp === undefined ? note : `${note} ${levelUp}`];
+
+    if (note === undefined || (before?.due !== undefined && before.due >= (after?.due ?? 0))) {
+        return [];
+    }
+
+    const part = levelUp();
+    return [part === "" ? note : `${note} ${part}`];
 }
 
 /** "Ennio is level 5: a character of that level has at least 6500 xp": said when a write leaves the points below what the level needs (PRO-6). */

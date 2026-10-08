@@ -69,12 +69,27 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(found?.values).toEqual({ Doti: ["agile", "forte"] });
     });
 
-    it("reads the pages every character with a sheet has in a list, and how a player character is made (D-235)", () => {
-        system(near, "prova", `${declared}always-in: { equipped: [Pugno] }\ncreation: "con il giocatore, un passo alla volta"\n`);
-        expect(findSystem([near], "prova")).toMatchObject({ alwaysIn: { equipped: ["Pugno"] }, creation: "con il giocatore, un passo alla volta" });
+    it("reads the pages every character with a sheet has in a list", () => {
+        system(near, "prova", `${declared}always-in: { equipped: [Pugno] }\n`);
+        expect(findSystem([near], "prova")).toMatchObject({ alwaysIn: { equipped: ["Pugno"] } });
         system(far, "altro", declared);
         expect(findSystem([far], "altro")).toMatchObject({ alwaysIn: {} });
-        expect(findSystem([far], "altro")?.creation).toBeUndefined();
+    });
+
+    it("reads its parts of the master's instructions, each adding to the core's or, when it says so, taking its place (D-121)", () => {
+        system(near, "prova", declared);
+        mkdirSync(join(near, "prova", "instructions"));
+        writeFileSync(join(near, "prova", "instructions", "creation.md"), "Con il giocatore, un passo alla volta.\r\n");
+        writeFileSync(join(near, "prova", "instructions", "combat.md"), "---\nreplace: true\n---\nNessun turno: si gioca la finzione.\n");
+        expect(findSystem([near], "prova")?.parts).toEqual({
+            creation: { text: "Con il giocatore, un passo alla volta.", replace: false },
+            combat: { text: "Nessun turno: si gioca la finzione.", replace: true },
+        });
+        system(far, "altro", declared);
+        expect(findSystem([far], "altro")?.parts).toEqual({});
+
+        writeFileSync(join(near, "prova", "instructions", "combat.md"), "---\nreplaces: true\n---\nNessun turno.\n");
+        expect(() => findSystem([near], "prova")).toThrow("combat.md is not valid: a part's frontmatter says only replace: true, for a part that takes the place of the core's.");
     });
 
     it.each([
@@ -87,8 +102,8 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         ["marks: [motto]", "motto is not declared as a list in fields, as marks and progression need."],
         ["always-in: [Pugno]", "always-in: write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]."],
         ["always-in: { equipped: [] }", "always-in.equipped"],
-        ['creation: ""', "creation"],
-        // A misspelled key is no key the system has (SYS-1).
+        // A note that is now a part of the instructions (D-121), and a misspelled key, are no key the system has (SYS-1).
+        ['creation: "con il giocatore"', 'unknown key "creation"'],
         ["sheet-note: { Corpo: del giocatore }", 'unknown key "sheet-note"'],
     ])("refuses %j, saying where and how to write it", (yaml, message) => {
         system(near, "prova", `${declared}${yaml}\n`);

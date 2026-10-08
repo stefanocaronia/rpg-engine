@@ -24,6 +24,8 @@ export interface Context
     systemFolders: string[];
     /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
     files?: FileStore;
+    /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
+    told?: Set<string>;
 }
 
 /**

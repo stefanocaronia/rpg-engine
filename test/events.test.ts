@@ -17,7 +17,8 @@ const many =
     "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
 const judge = "If an event no longer goes as planned, write it: its status, date or by.";
 const questJudge = "If the story of a quest has ended, set its status.";
-const turn = "move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan";
+// The part new-day, which the command line gives every time (D-97, D-134).
+const turn = "Move each clock as its event says, or a step for each day its owner worked unhindered; show each step as a sign, never the plan.";
 
 beforeEach(async () => {
     folder = makeTempFolder();
@@ -91,11 +92,11 @@ describe("clocks (EVT-2)", () => {
         await ok("write", "Il crollo", "--type", "event", "--set", "clock=3/3", "--set", "by=[[Varro]]");
         expect(await ok("advance", "--by", "4h")).toBe(`day 1, 18:00 → day 1, 22:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 7d 2h).`);
         expect(await ok("advance", "--by", "4h")).toBe(
-            `day 1, 22:00 → day 2, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 6d 22h).\nA new day (day 2): ${turn}: La marcia 1/4.`,
+            `day 1, 22:00 → day 2, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 6d 22h).\nA new day (day 2), with clocks to move: La marcia 1/4.\n${turn}`,
         );
         await ok("write", "La marcia", "--set", "by=[[Varro]]");
         expect(await ok("advance", "--by", "3d")).toBe(
-            `day 2, 02:00 → day 5, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 3d 22h).\n3 new days (to day 5): ${turn}: La marcia 1/4 (Varro).`,
+            `day 2, 02:00 → day 5, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 3d 22h).\n3 new days (to day 5), with clocks to move: La marcia 1/4 (Varro).\n${turn}`,
         );
     });
 });

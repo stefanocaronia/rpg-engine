@@ -46,7 +46,7 @@ export function readLogFile(folder: string): LogEntry[]
     return readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as LogEntry);
 }
 
-/** What scene open says about telling a fight (D-139). */
+/** What scene open says about telling a fight: the core's part combat (D-139, D-121). */
 export const fightGuidance = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
     + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
     + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.";

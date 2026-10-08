@@ -20,6 +20,7 @@ import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, 
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
+import { situationPart } from "./parts.ts";
 import { hasSheet } from "./worked-out.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "close"] as const;
@@ -30,11 +31,6 @@ const actionParameters: Record<Action, string[]> = { open: ["title", "type", "pl
 
 // The most copies of one creature a scene takes.
 const mostCopies = 50;
-
-// How a fight is told, given when one opens (D-139).
-const fightText = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
-    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
-    + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.";
 
 // A list, or one text, as an MCP client may send it; run turns one text into a list of one.
 const textList = z.union([z.string(), z.array(z.string())]);
@@ -81,7 +77,7 @@ interface Brought
 }
 
 type SceneResult =
-    | ({ action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; around: string; } & Brought)
+    | ({ action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; around: string; part: string; } & Brought)
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
@@ -152,8 +148,8 @@ export const scene = defineCommand({
                 const where = result.place === undefined ? "" : ` at ${result.place}`;
                 const members = result.members.length === 0 ? "No one in it yet: add who is there with scene add." : `In it: ${membersText(result.members)}.`;
                 const around = result.around === "" ? undefined : `Here: ${result.around}.`;
-                const fight = result.type === "combat" ? `\n${fightText}` : "";
-                return `Scene opened${when}: ${result.title} (${result.type})${where}. ${members}${broughtText(result, result.place)}${lineOf(around)}${fight}`;
+                const part = result.part === "" ? undefined : result.part;
+                return `Scene opened${when}: ${result.title} (${result.type})${where}. ${members}${broughtText(result, result.place)}${lineOf(around)}${lineOf(part)}`;
             }
 
             case "add": {
@@ -238,7 +234,9 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     const system = campaignSystem(root, context);
     const members = [...characters.map((page) => characterMember(after, page, system)), ...copyMembers(after, copies)];
     const around = surroundingsText(surroundings(after, place === undefined ? undefined : pageWithPath(after, place.path)));
-    return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members, around, moved: brought.moved, notes: brought.notes };
+    // The part of the instructions that the scene's type opens, such as how a fight is told (D-111, D-139).
+    const part = situationPart(created.type, context, system);
+    return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members, around, part, moved: brought.moved, notes: brought.notes };
 }
 
 function addTo(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult

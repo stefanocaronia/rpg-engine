@@ -75,7 +75,7 @@ A command is a `Command` object made with `defineCommand` in [core/registry.ts](
 
 ### The context
 
-[core/context.ts](../src/core/context.ts) holds everything that comes from outside: `folder` (where to look for the campaign, upwards), `random(sides)`, `now()`, `newId()` (log ids), `newSalt()` (hidden rolls), `actor` (always `master` today; `ask` stamps the player's roll and answer as `player`), `platform`, `systemFolders` (where game systems are installed, nearest first), `player` (asks the player with buttons, MCP only) and `files` (the session store, MCP only). `defaultContext()` builds the real one; tests use `testContext()` from [test/support.ts](../test/support.ts). No command checks a role beyond stamping `actor` on its log lines.
+[core/context.ts](../src/core/context.ts) holds everything that comes from outside: `folder` (where to look for the campaign, upwards), `random(sides)`, `now()`, `newId()` (log ids), `newSalt()` (hidden rolls), `actor` (always `master` today; `ask` stamps the player's roll and answer as `player`), `platform`, `systemFolders` (where game systems are installed, nearest first), `player` (asks the player with buttons, MCP only), `files` (the session store, MCP only) and `told` (the parts of the instructions already given in the chat, MCP only). `defaultContext()` builds the real one; tests use `testContext()` from [test/support.ts](../test/support.ts). No command checks a role beyond stamping `actor` on its log lines.
 
 ### From the two surfaces
 
@@ -289,9 +289,11 @@ A `Problem` is `{ path?, message, fix? }`. `campaignProblems` gathers those of t
 
 ### The instructions delivered to the AI
 
-Files: [instructions/](../instructions/), [instructions/index.ts](../src/instructions/index.ts), [commands/instructions.ts](../src/commands/instructions.ts).
+Files: [instructions/](../instructions/), [instructions/index.ts](../src/instructions/index.ts), [commands/instructions.ts](../src/commands/instructions.ts), [commands/parts.ts](../src/commands/parts.ts).
 
 Three layers, in English. The start lines, [start.md](../instructions/start.md), send the AI to `instructions` and then `status` at the start of every chat: they are the MCP server's instructions and the start of the campaign's `AGENTS.md`. The `instructions` command returns [core.md](../instructions/core.md), plus [buttons.md](../instructions/buttons.md) when the host shows forms. Each command's description and each output carry the guidance for that moment. The files are read from the installed package, wherever it is.
+
+A situation that opens gives its part of the instructions (D-97, D-121): `scene open` the part named after the scene's type, such as [combat.md](../instructions/combat.md); `advance` the part `new-day` with the clocks to move; `status` the part `creation` while the player character is being made; `write` the parts `quest-ends` and `level-up`, and `change` `level-up`. `situationPart` in [commands/parts.ts](../src/commands/parts.ts) layers the core's file (`corePart`) and the system's `instructions/<part>.md` (`GameSystem.parts`) with `layeredPart`: each adds its text, or takes the place of those below with `replace: true` in its frontmatter. The MCP server keeps in `context.told` the parts it gave, so each comes once in a chat; `instructions` empties it, as a chat starts or follows a summary. On the command line every call gives them.
 
 ## 6. Tests
 
