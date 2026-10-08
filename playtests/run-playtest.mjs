@@ -396,7 +396,7 @@ function earlierEvenings()
 {
     const save = resolve(options.from);
     const last = Number(options.session) - 1;
-    const files = Array.from({ length: last }, (_, index) => join(dirname(save), `session-${index + 1}`, "dialogue.md"));
+    const files = Array.from({ length: last }, (_, index) => eveningFile(save, index + 1));
     const missing = files.filter((file) => !existsSync(file));
 
     if (missing.length > 0) {
@@ -405,6 +405,15 @@ function earlierEvenings()
 
     const evenings = files.map((file, index) => `## Evening ${index + 1}\n\n${readFileSync(file, "utf8").trim()}`);
     return [`(Organizer: you have already played ${last} ${last > 1 ? "evenings" : "evening"} with this master. Here is what was written in them, as you remember it: P are your messages, M the master's.)`, ...evenings].join("\n\n");
+}
+
+/** The dialogue of evening `number` before `save`: in the save's run, or, when that run itself started from a save, in the run it came from. */
+function eveningFile(save, number)
+{
+    const file = join(dirname(save), `session-${number}`, "dialogue.md");
+    const meta = join(save, "meta.json");
+    const from = existsSync(file) || !existsSync(meta) ? undefined : parseJson(readFileSync(meta, "utf8"))?.options?.from;
+    return from && number <= Number(basename(from).match(/^session-(\d+)$/)?.[1]) ? eveningFile(from, number) : file;
 }
 
 /** The page files of a campaign's world, where the engine reads pages from. */

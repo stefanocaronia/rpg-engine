@@ -38,7 +38,7 @@ Each session is a new master chat; the player keeps one chat for the whole run. 
 
 A run only goes forward: each session is played once, in the same output folder, and each later session continues the player's chat of the one before, even after a questionnaire. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
 
-To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with the host files that this commit's `rpg init` writes, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn; the counts start from the saved campaign.
+To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with the host files that this commit's `rpg init` writes, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn, from the runs the save came through when it was itself a run from a save; the counts start from the saved campaign.
 
 ```
 node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\results\session-2 --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
