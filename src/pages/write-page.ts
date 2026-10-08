@@ -209,7 +209,26 @@ function checkChange(existing: Page | undefined, type: PageType | undefined, cha
         throw new Error("Give the text to add. To remove a section or secret, write empty text without append.");
     }
 
+    checkSecretOverIntroduction(existing, change);
     checkFieldChange(existing?.type ?? type, change);
+}
+
+/**
+ * An introduction with text of its own is never replaced by a text that is only a secret: the master meant to add the secret, and the text would be lost (D-245).
+ * A new page, or one without such text, may hold a secret alone.
+ */
+function checkSecretOverIntroduction(existing: Page | undefined, change: PageChange): void
+{
+    const text = change.text?.replace(/\r\n/g, "\n") ?? "";
+
+    if (existing === undefined || change.section !== undefined || change.append || !/\[!secret\]/i.test(text) || introductionText(text) !== "" || introductionText(existing.body) === "") {
+        return;
+    }
+
+    const name = text.match(/\[!secret\][ \t]*([^\n]*)/i)?.[1].trim() || "Name";
+    throw new Error(
+        `The introduction of ${existing.name} would hold only a secret, and its text would be lost: write the secret as ${existing.name}#${name} with secret, or give append to add it. Nothing changed.`,
+    );
 }
 
 /** Only a field the page writes can be removed: one it only inherits is held by its base, which the message names. `written` are the names as the page writes them. */

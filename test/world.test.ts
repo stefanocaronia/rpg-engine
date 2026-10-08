@@ -49,6 +49,20 @@ describe("rpg write", () => {
         expect((await rpg("show", "Varro#Il nome")).output).toBe(`Varro has no section or secret "Il nome". Its sections are: Il motivo, I piani.`);
     });
 
+    it("never replaces an introduction that has text with a secret alone, which a new page may hold (D-245)", async () => {
+        await rpg("write", "Contrabbandieri", "--type", "faction", "--text", "Una banda dei moli.");
+        const refused = await rpg("write", "Contrabbandieri", "--text", "> [!secret] La ragazza dei moli\n> Marta lavora per loro.");
+        expect(refused.exitCode).toBe(1);
+        expect(refused.output).toBe(
+            "The introduction of Contrabbandieri would hold only a secret, and its text would be lost: write the secret as Contrabbandieri#La ragazza dei moli with secret, or give append to add it. Nothing changed.",
+        );
+        expect(pageFile("world/factions/Contrabbandieri.md")).toBe("Una banda dei moli.\n");
+
+        await rpg("write", "Contrabbandieri", "--append", "--text", "> [!secret] La ragazza dei moli\n> Marta lavora per loro.");
+        expect(pageFile("world/factions/Contrabbandieri.md")).toContain("Una banda dei moli.\n\n> [!secret] La ragazza dei moli\n");
+        expect((await rpg("write", "Stanza nascosta", "--type", "place", "--text", "> [!secret] La porta\n> Dietro l'arazzo.")).exitCode).toBe(0);
+    });
+
     it("keeps what was written by hand when it changes a field", async () => {
         writeFileSync(join(folder, "world", "places", "Il mulino.md"), "---\n# aperta o chiusa, da sinistra\nchiuse: [chiusa, chiusa, chiusa]\nstato: abbandonato\n---\nUn mulino sul fiume.\n\n```\n# non è un titolo\n```\n");
         await rpg("write", "Il mulino", "--set", "stato=in rovina");
