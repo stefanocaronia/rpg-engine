@@ -37,7 +37,7 @@ describe("rpg init", () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
-        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, ironsworn), language, ${asked}; ${onward}`);
+        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`);
         // A new campaign starts in setup (MOD-1).
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("\nmode: setup\n");
 
@@ -143,7 +143,7 @@ describe("rpg config", () => {
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\npremise: (missing)\npreparation: (missing)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "rigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\n"
-                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language, ${asked}; ${onward}`,
+                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
     });
 

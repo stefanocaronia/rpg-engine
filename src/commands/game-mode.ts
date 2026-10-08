@@ -25,6 +25,7 @@ export interface Blocked
 
 // The settings the setup asks, with the values they take, so that the master offers them as they are (MOD-3).
 const settingLabels: Partial<Record<SettingName, string>> = {
+    language: "language (a code, such as it)",
     premise: "premise (the genre, the tone and a few elements of the world, in the player's words)",
     preparation: `preparation (${preparations.join(", ")})`,
     difficulty: `difficulty (${difficulties.join(", ")})`,

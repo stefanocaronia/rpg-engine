@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
@@ -150,6 +151,12 @@ describe("the sheet in show (DAT-2, D-207)", () => {
 });
 
 describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
+    it("refuses a map where the system wants a list, as an MCP client may send classes, and says how to write it (D-246)", async () => {
+        await ok("write", "Mira", "--type", "character", "--set", "role=pc");
+        const input = write.input.parse({ page: "Mira", set: { classes: { "[[Fighter]]": 1 } } });
+        expect(() => write.run(input, context)).toThrow("classes is a list in the system 5e: give it as one, such as classes=[[[Fighter]] 1]. Nothing changed.");
+    });
+
     it("says once, when a character joins the party, what the sheet lacks and the system's notes; what is written only when it applies is never reminded", async () => {
         const joined = await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "level=1");
         expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.");

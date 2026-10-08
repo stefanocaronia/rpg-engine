@@ -195,6 +195,12 @@ export function sheetFieldNames(world: World, system: GameSystem | undefined, pa
 export function checkListValues(system: GameSystem | undefined, lists: Record<string, unknown>): void
 {
     for (const [field, value] of Object.entries(lists)) {
+        // A map where a list goes, as {"[[Fighter]]": 1}, would read as nothing: the sheet would come out at level 0 (D-246).
+        if (system !== undefined && isListField(system, field) && value !== null && typeof value === "object" && !Array.isArray(value)) {
+            const example = Object.entries(value).map(([key, number]) => `${key} ${String(number)}`).join(", ");
+            throw new Error(`${field} is a list in the system ${system.name}: give it as one, such as ${field}=[${example}]. Nothing changed.`);
+        }
+
         if (system !== undefined && isOpenList(system, field) && isCommaText(value)) {
             throw new Error(`${field} is a list in the system ${system.name}: write its names apart, as ${field}=[${String(value)}]. Nothing changed.`);
         }
@@ -216,6 +222,12 @@ export function checkListValues(system: GameSystem | undefined, lists: Record<st
 function isCommaText(value: unknown): boolean
 {
     return typeof value === "string" && value.replace(/\[\[[^\]]*\]\]/g, "").replace(/\([^)]*\)/g, "").includes(",");
+}
+
+/** A field the system declares as a list, such as classes. */
+function isListField(system: GameSystem, field: string): boolean
+{
+    return Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
 }
 
 /** A list the system declares without the names it takes, which are checked by name, as weapon-proficiencies (SYS-8). */

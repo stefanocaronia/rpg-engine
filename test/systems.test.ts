@@ -56,7 +56,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
             const result = await runCommandLine(["init", "--system", "Quinta edizione"], testContext(other));
             expect(result.output).toBe(`"Quinta edizione" is not an installed system. ${installed} Give one of them, such as system 5e. Nothing changed.`);
             expect(existsSync(join(other, "campaign.yaml"))).toBe(false);
-            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain("Still to agree with the player: language, premise (");
+            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain("Still to agree with the player: language (a code, such as it), premise (");
             expect(readFileSync(join(other, "campaign.yaml"), "utf8")).toContain("system: ironsworn");
         } finally {
             removeFolder(other);

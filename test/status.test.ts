@@ -29,7 +29,7 @@ async function state(): Promise<string>
 describe("rpg status", () => {
     it("says the mode and what the setup still needs before the game starts, and leaves the instructions to their own command (MOD-7)", async () => {
         const status = await state();
-        expect(status).toMatch(/^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, ironsworn\), language, premise \(/);
+        expect(status).toMatch(/^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, ironsworn\), language \(a code, such as it\), premise \(/);
         expect(status).toMatch(/veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nNo player character yet\.$/);
         const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
         expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}`);

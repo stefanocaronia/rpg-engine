@@ -328,6 +328,10 @@ describe("rpg scene leave, and the reminder in advance", () => {
         expect(stateFile()).toContain('with:\n    - "[[Ennio]]"\n');
         expect(readFileSync(join(folder, "world", "places", "Ossario.md"), "utf8")).toContain("[[Lena]]");
         expect(await ok("scene", "leave", "--who", "Ennio")).toBe("Ennio left the scene.\nNo one takes turns now.");
+        // The copies that left end with the scene, with their wounds said, so that one that may come back gets a page (D-246).
+        expect(await ok("scene", "close", "--summary", "Fuggiti.")).toContain(
+            "\nLeft during the scene: Annegato 1: hp 4/22 · uses 1/1; Annegato 2: hp 22/22 · uses 1/1. A copy ends with its scene: if one may come back, give it a page now, with its wounds.",
+        );
     });
 
     it("says who is not in the scene", async () => {

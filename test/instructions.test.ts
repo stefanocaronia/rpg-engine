@@ -91,7 +91,7 @@ describe("a part of the instructions in a chat (D-97)", () => {
             writeFileSync(join(folder, "state.yaml"), "mode: session zero\n");
             const zero = "## Session zero\n\nPlay, as with a human game master";
             expect(await call("instructions", {})).toContain(zero);
-            expect(await call("instructions", {})).toContain("Agree first, and set with config in table");
+            expect(await call("instructions", {})).toContain("Agree first, before any die, and set with config in table");
         } finally {
             await host.close();
         }

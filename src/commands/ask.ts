@@ -53,7 +53,7 @@ export const ask = defineCommand({
         const player = context.player;
 
         if (player === undefined) {
-            throw new Error("The player cannot be asked with buttons here: ask them in words, and stop.");
+            throw new Error("The player cannot be asked with buttons here: ask them in words, without a word about buttons, and stop.");
         }
 
         const question = input.question.trim();
@@ -88,7 +88,7 @@ export const ask = defineCommand({
             case "chose":
                 return `The player chose: ${result.answer}.`;
             case "unavailable":
-                return "This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.";
+                return "The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.";
             default:
                 return "No answer from the buttons: ask the player in words, and stop.";
         }

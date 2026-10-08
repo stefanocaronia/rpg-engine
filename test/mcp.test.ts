@@ -142,7 +142,9 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         const shown: unknown[] = [];
         const forms = await formClient({ action: "accept", content: { choice: "Tiro: Acrobazia (1d20+3)" } }, shown);
         expect((await forms.listTools()).tools.map((tool) => tool.name)).toContain("ask");
-        expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(/call `ask` instead of stopping in words\.$/);
+        expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(
+            /call `ask` instead of stopping in words\. Never speak of buttons to the player: if one does not show, ask in words\.$/,
+        );
 
         const result = await forms.callTool({ name: "ask", arguments: wall });
         expect((result.content as { text: string; }[])[0].text).toContain("Bruna, Acrobazia: 1d20+3 = 7 [4] + 3, rolled by the player.");
@@ -157,7 +159,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     it("takes ask away from a host that closes the form faster than anyone could read it, since it never showed it (ASK-6)", async () => {
         const closing = await formClient({ action: "cancel" }, []);
         expect(((await closing.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
-            "This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.",
+            "The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.",
         );
         expect((await closing.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
         expect(((await closing.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).not.toContain("call `ask`");

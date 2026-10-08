@@ -90,7 +90,7 @@ describe("no roll (ASK-4, ASK-6)", () => {
     it("rolls nothing when the app cannot show the buttons, and says to ask in words from now on", async () => {
         const unavailable: Player = { choose: async () => "unavailable" };
         const result = await ask.run(ask.input.parse(wall), { ...context, player: unavailable });
-        expect(ask.format(result)).toBe("This app does not show the player the buttons: ask them in words, and stop; from now on, always in words.");
+        expect(ask.format(result)).toBe("The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "asked", by: "master", data: { answer: null } });
     });
 
@@ -117,7 +117,7 @@ describe("what ask refuses (ASK-1, ASK-2)", () => {
         const result = await rpg("ask", "--question", "Tiri?");
         expect(result).toEqual({ output: "ask works only in an AI app that shows the player a form; here, ask the player in words.", exitCode: 1 });
         expect((await rpg("--help")).output).not.toMatch(/^ {2}ask /m);
-        await expect(ask.run(ask.input.parse(wall), context)).rejects.toThrow("The player cannot be asked with buttons here: ask them in words, and stop");
+        await expect(ask.run(ask.input.parse(wall), context)).rejects.toThrow("The player cannot be asked with buttons here: ask them in words, without a word about buttons, and stop");
     });
 
     it("refuses checks mixed with answers, repeated buttons, too many, an empty question, and rolls for anyone but the player's character", async () => {

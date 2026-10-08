@@ -82,7 +82,7 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
-    | { action: "close"; title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; };
+    | { action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; };
 
 export const scene = defineCommand({
     name: "scene",
@@ -447,7 +447,9 @@ function close(root: string, world: World, summary: string, context: Context): S
     const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
     const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests };
+    // The copies that left during the scene, fled or fallen, end with it too: one that may come back needs a page now, with its wounds (D-246).
+    const gone = copyMembers(world, current.gone ?? {});
+    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), gone, ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests };
 }
 
 /**
@@ -512,7 +514,7 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; }): string
+function closedText(result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; }): string
 {
     const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
@@ -525,8 +527,11 @@ function closedText(result: { title?: string; rounds?: number; copies: Member[];
 
     const rounds = result.rounds === undefined ? "" : ` after ${result.rounds} ${result.rounds === 1 ? "round" : "rounds"}`;
     const gone = result.copies.length === 0 ? "" : ` Copies gone: ${membersText(result.copies)}.`;
+    const left = (result.gone ?? []).length === 0
+        ? ""
+        : `\nLeft during the scene: ${membersText(result.gone ?? [])}. A copy ends with its scene: if one may come back, give it a page now, with its wounds.`;
     const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${rewards}${quests}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${rewards}${quests}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */
