@@ -146,6 +146,25 @@ describe("the player's view", () => {
         expect((await rpg("view", "Varro", "--diary", "2")).output).toBe("Give page or diary, not both: diary goes with the whole view.");
     });
 
+    it("VIEW-2: knows the quests the player took, and a known page by its aliases, never an unknown one", async () => {
+        for (const [name, status] of [["Presa", "open"], ["Finita", "done"], ["Persa", "failed"], ["Futura", "planned"]]) {
+            await ok("write", name, "--type", "quest", "--set", `status=${status}`, "--text", `La missione ${name}.`);
+        }
+
+        await ok("write", "Presa#Mandante", "--secret", "--text", "La manda il conte.");
+        expect(await ok("view", "Presa")).toBe("Presa (quest)\n\nLa missione Presa.");
+        expect(await ok("view", "Finita")).toContain("La missione Finita.");
+        expect(await ok("view", "Persa")).toContain("La missione Persa.");
+        expect(await ok("view", "Futura")).toBe("Kira does not know Futura.");
+
+        await ok("write", "Varro", "--add", "aliases=il Grasso");
+        await ok("write", "Strega", "--add", "aliases=la Vecchia");
+        expect(await ok("view", "il Grasso")).toBe("Kira does not know il Grasso.");
+        await ok("reveal", "Varro", "--to", "Kira");
+        expect(await ok("view", "il Grasso")).toMatch(/^Varro \(character\)\n\nIl mugnaio\./);
+        expect(await ok("view", "la Vecchia")).toBe("Kira does not know la Vecchia.");
+    });
+
     it("VIEW-1: says there is no view before there is a player character, and shows the whole sheet of the party", async () => {
         writeFileSync(join(folder, "world", "characters", "Kira.md"), "---\nrole: npc\n---\n");
         expect(await ok("view")).toBe("There is no player character yet: the player's view starts with one.");

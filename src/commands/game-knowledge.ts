@@ -34,6 +34,8 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         pc,
         ...known.flatMap((link) => named(link.page)),
         ...world.pages.filter((page) => page.type === "character" && page.fields.role === "companion"),
+        // The quests the player took (D-250).
+        ...world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))),
         ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),
         ...locate(world, pc).chain,
         ...livedOf(root, pc).flatMap(named).filter((page) => page.type === "character" || page.type === "place"),

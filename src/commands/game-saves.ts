@@ -126,6 +126,34 @@ export function saveText(save: Save): string
     return `${save.number} - ${save.label}`;
 }
 
+/**
+ * What the death of the last living player character allows (D-55, SAV-7): the save it may go back to, as the mode says, so that the master offers only what
+ * exists; none when campaign.yaml cannot be read, which other outputs say.
+ */
+export function deathNotes(root: string, name: string): string[]
+{
+    let mode: SaveMode;
+
+    try {
+        mode = saveMode(root);
+    } catch {
+        return [];
+    }
+
+    const last = campaignSaves(root).at(-1);
+
+    if (mode === "permadeath") {
+        return [`${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.`];
+    }
+
+    if (last === undefined) {
+        return [`${name} is dead, and there is no save to go back to yet: offer the player a new character, if they want to go on.`];
+    }
+
+    const which = mode === "checkpoint" ? `the last save, ${saveText(last)}` : `a save, the last being ${saveText(last)} (save list gives every one)`;
+    return [`${name} is dead. With saves ${mode}, offer the player to go back to ${which}, or a new character; save load only once they choose it.`];
+}
+
 /** The files a save holds, by their path inside it; refused, with what to do, when the zip cannot be read. */
 function readSave(root: string, save: Save): Record<string, Uint8Array>
 {

@@ -74,6 +74,7 @@ import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, held
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { tickedQuestNotes } from "./game-quests.ts";
+import { deathNotes, isPlayerDead } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
@@ -124,6 +125,7 @@ export const write = defineCommand({
         + "The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. "
         + "Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. "
         + "Add secret to create a missing one as a secret; empty text removes the section or secret. "
+        + "The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. "
         + 'A list field changes one item at a time with add and remove; a place\'s environment, one line at a time, such as add environment="light: dark". '
         + "It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
@@ -281,11 +283,13 @@ export const write = defineCommand({
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
         const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
+        // The death of the last living player character: what the saves allow, said at once (SAV-7).
+        const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : [];
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...sheet, ...death, ...moneyNotes],
             problems: world.problems,
         };
     },

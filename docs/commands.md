@@ -64,7 +64,7 @@ No parameters.
 
 ### write
 
-Create or change a page of the world. The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. Add secret to create a missing one as a secret; empty text removes the section or secret. A list field changes one item at a time with add and remove; a place's environment, one line at a time, such as add environment="light: dark". It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."
+Create or change a page of the world. The world's pages are written only with this command: use it as soon as something becomes true in the story, such as a new character, place or item, or a change. Without a section it writes the introduction, the text before the first heading; with Page#Name it writes one section, or one secret written > [!secret] Name. Add secret to create a missing one as a secret; empty text removes the section or secret. The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. A list field changes one item at a time with add and remove; a place's environment, one line at a time, such as add environment="light: dark". It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."
 
 Read-only: no. Positional parameters: `page`.
 
@@ -107,12 +107,12 @@ Read-only: yes. Positional parameters: `page`.
 
 ### view
 
-What the player may see, without spoilers: use it, not show, when the player asks what their character knows, remembers or carries. Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary of what happened, without your reasons. With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, and the whole sheet of the character and the companions. A page they do not know reads as one that does not exist. Example: page Varro; or diary all.
+What the player may see, without spoilers: use it, not show, when the player asks what their character knows, remembers or carries. Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary of what happened, without your reasons. With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, and the whole sheet of the character and the companions. A page they do not know reads as one that does not exist. Example: page Varro; or diary 30.
 
 Read-only: yes. Positional parameters: `page`.
 
 - `page` (`string`, optional): a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view
-- `diary` (`string`, optional): how many lines of the diary, from the last, or all; 10 if left out
+- `diary` (`string`, optional): how many lines of the diary, from the last; 10 if left out; all only when the player asks for the whole story
 
 ### find
 

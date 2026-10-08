@@ -2,11 +2,12 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { comparableText } from "../core/text.ts";
 import { readEffect } from "../effects/index.ts";
 import { findPage, locate, type Page, parsePageReference, textsIn, type World } from "../pages/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
-import { knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
+import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -28,13 +29,13 @@ export const view = defineCommand({
         + "Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary of what happened, "
         + "without your reasons. With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, "
         + "and the whole sheet of the character and the companions. A page they do not know reads as one that does not exist. "
-        + "Example: page Varro; or diary all.",
+        + "Example: page Varro; or diary 30.",
     group: "game",
     readOnly: true,
     positionals: ["page"],
     input: z.object({
         page: z.string().optional().describe("a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view"),
-        diary: z.string().optional().describe(`how many lines of the diary, from the last, or all; ${diaryLines} if left out`),
+        diary: z.string().optional().describe(`how many lines of the diary, from the last; ${diaryLines} if left out; all only when the player asks for the whole story`),
     }),
 
     run(input, context): ViewResult
@@ -55,7 +56,7 @@ export const view = defineCommand({
             }
 
             const reference = parsePageReference(input.page);
-            const page = findPage(world, reference.name);
+            const page = findPage(world, reference.name) ?? knownByAlias(world, knowledge, reference.name);
             const unknown = { kind: "unknown" as const, text: `${pc.name} does not know ${reference.name}.` };
 
             if (page === undefined || !knowsPage(knowledge, page)) {
@@ -116,6 +117,13 @@ export const view = defineCommand({
         }
     },
 });
+
+/** The page the player character knows by this other name, in its aliases; only one it knows, so that an alias never tells that a page exists (VIEW-2). */
+function knownByAlias(world: World, knowledge: Knowledge, name: string): Page | undefined
+{
+    const named = world.pages.filter((page) => knowsPage(knowledge, page) && textsIn(page.fields.aliases).some((alias) => comparableText(alias.trim()) === comparableText(name.trim())));
+    return named.length === 1 ? named[0] : undefined;
+}
 
 /** How many lines of the diary are asked: a whole number from 1. */
 function diaryCount(asked: string | undefined): number

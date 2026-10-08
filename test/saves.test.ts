@@ -165,6 +165,30 @@ describe("the table of cases of the saves", () => {
     });
 });
 
+describe("the death of the player character (SAV-7)", () => {
+    it("names the save the mode allows going back to, once the last living player character dies", async () => {
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc");
+
+        const dies = async (mode: string): Promise<string> => {
+            await ok("config", "saves", mode);
+            await ok("write", "Kira", "--set", "status=alive");
+            await ok("write", "Lia", "--set", "status=dead");
+            return ok("write", "Kira", "--set", "status=dead");
+        };
+
+        expect(await dies("checkpoint")).toContain("Kira is dead, and there is no save to go back to yet: offer the player a new character, if they want to go on.");
+        await ok("write", "Kira", "--set", "status=alive");
+        await scene("Al guado");
+        expect(await dies("checkpoint")).toContain("Kira is dead. With saves checkpoint, offer the player to go back to the last save, 1 - Al guado, or a new character; save load only once they choose it.");
+        expect(await dies("free")).toContain("offer the player to go back to a save, the last being 1 - Al guado (save list gives every one), or a new character;");
+        expect(await dies("permadeath")).toContain("Kira is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.");
+        // While another player character lives, nothing is said.
+        await ok("write", "Lia", "--set", "status=alive");
+        await ok("write", "Kira", "--set", "status=alive");
+        expect(await ok("write", "Kira", "--set", "status=dead")).not.toContain("is dead");
+    });
+});
+
 describe("the saves, after Matteo's round", () => {
     it("SAV-5: a load that stops halfway leaves its mark, status says so, and save load finishes it in any mode", async () => {
         await scene("Uno");
