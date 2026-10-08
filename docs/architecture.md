@@ -152,7 +152,7 @@ systems/<name>/test/         the system's own tests (not published to npm)
 systems/<name>/build/        scripts that wrote some of its pages and rules from its source, such as 5e's spells (not published)
 ```
 
-[systems/game-system.ts](../src/systems/game-system.ts) finds systems in `context.systemFolders` (a folder with a `system.yaml`), validates the file with zod and returns a frozen `GameSystem`; formulas that do not read make the whole system unreadable (`FOR-9`). `campaign.yaml`'s `system` names the one a campaign uses; `campaignWorld` loads its pages beside the campaign's, each marked with `page.system`.
+[systems/game-system.ts](../src/systems/game-system.ts) finds systems in `context.systemFolders` (a folder with a `system.yaml`), validates the file with zod and returns a frozen `GameSystem`; formulas that do not read make the whole system unreadable (`FOR-9`). `campaign.yaml`'s `system` names the one a campaign uses; `campaignWorld` loads its pages beside the campaign's, each marked with `page.system`. A system's pages are read once in a process (`packagePages`): they ship read-only, and a running server keeps the systems it started with.
 
 ## 5. Key mechanisms
 

@@ -120,7 +120,7 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
         return frozen({ root, ...campaign, language, missingSystem, noSystem });
     }
 
-    const systemPages = readPages(system.folder, system.name);
+    const systemPages = packagePages(system.folder, system.name);
     const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
@@ -494,6 +494,20 @@ export function pageFileNamed(root: string, name: string): { name: string; type?
 }
 
 /** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
+/**
+ * The pages of a game system, read once in a process: they ship with the package and are read-only, so a running server keeps those it started with, as a
+ * change to a system asks for a reconnection (D-194).
+ */
+function packagePages(folder: string, system: string): { pages: Page[]; problems: string[]; }
+{
+    const key = `${folder}|${system}`;
+    const known = packages.get(key) ?? readPages(folder, system);
+    packages.set(key, known);
+    return known;
+}
+
+const packages = new Map<string, { pages: Page[]; problems: string[]; }>();
+
 function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
 {
     const pages: Page[] = [];
