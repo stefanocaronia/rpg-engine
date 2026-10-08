@@ -6,7 +6,7 @@
 
 ### init
 
-Create a new campaign. It makes the settings, the present, the log, the sessions, the folders of the world, and the .mcp.json through which an AI host such as Claude Code finds these tools. Use it once, when the player starts a new campaign; then ask the player for the settings that are still missing and set them with config. Example: name "The Salt Isles", language en, system 5e.
+Create a new campaign. It makes the settings, the present, the log, the sessions, the folders of the world, the .mcp.json through which an AI host such as Claude Code finds these tools, and the AGENTS.md and CLAUDE.md that send it to them. Use it once, when the player starts a new campaign; then ask the player for the settings that are still missing and set them with config. Example: name "The Salt Isles", language en, system 5e.
 
 Read-only: no. Positional parameters: `folder`.
 

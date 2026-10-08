@@ -1,7 +1,7 @@
 // The game master's instructions, read from this package wherever it is installed (D-97). Depends on nothing else in rpg-engine.
 import { readFileSync } from "node:fs";
 
-/** The few lines that send a host to `instructions` and `status`: the MCP server's instructions and, later, the campaign's AGENTS.md. */
+/** The few lines that send a host to `instructions` and `status`: the MCP server's instructions, and the start of the campaign's AGENTS.md. */
 export function startInstructions(): string
 {
     return readInstructions("start.md");

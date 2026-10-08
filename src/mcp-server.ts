@@ -2,7 +2,7 @@ import { McpServer, type RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
-import { findCampaign } from "./campaign/index.ts";
+import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
 import { type Context, defaultContext, type Player } from "./core/context.ts";
@@ -83,7 +83,10 @@ export async function startMcpServer(): Promise<void>
     await createMcpServer({ ...context, files: new SessionStore({ systemFolders: context.systemFolders }) }).connect(new StdioServerTransport());
 }
 
-/** Reads the campaign of the server's folder, if there is one, before the first call needs it; a campaign that does not read waits for that call to say why. */
+/**
+ * Reads the campaign of the server's folder, if there is one, before the first call needs it; a campaign that does not read waits for that call to say why.
+ * Its start lines in AGENTS.md follow the engine, as after an update (D-97).
+ */
 async function preload(context: Context, session: SessionStore): Promise<void>
 {
     try {
@@ -93,6 +96,7 @@ async function preload(context: Context, session: SessionStore): Promise<void>
 
             if (root !== undefined) {
                 session.track(root);
+                refreshHostFiles(root, startInstructions());
                 campaignWorld(root, context);
             }
         });

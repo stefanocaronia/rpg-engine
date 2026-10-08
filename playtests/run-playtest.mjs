@@ -2,8 +2,8 @@
 // How to prepare and run it: README.md in this folder.
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -20,6 +20,8 @@ const out = resolve(options.out);
 const playerFolder = join(out, "player");
 const playerChatFile = join(out, "player-session.txt");
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
+// What an AI host reads in a campaign, as rpg init writes it: the master must find exactly these.
+const hostFileNames = ["AGENTS.md", "CLAUDE.md", join(".claude", "settings.json")];
 const playerSchema = JSON.stringify({
     type: "object",
     required: ["message", "endSession"],
@@ -47,14 +49,15 @@ function playSession()
     const folder = join(out, `session-${Number(options.session)}`);
     checkFolders(campaign);
     const memory = options.from ? earlierEvenings() : "";
+    const rpg = checkBuild();
+    const hostFiles = initHostFiles(rpg);
 
     if (options.from) {
-        copySave(campaign);
+        copySave(campaign, hostFiles);
     }
 
-    checkCampaign(campaign);
+    checkCampaign(campaign, hostFiles);
     checkRestart(folder, campaign);
-    const rpg = checkBuild();
     mkdirSync(join(folder, "turns"), { recursive: true });
     mkdirSync(playerFolder, { recursive: true });
     const masterSession = { id: randomUUID(), started: false };
@@ -170,11 +173,11 @@ function stopReason(master, playerEnded, atHardCap)
     return atHardCap ? "hard cap" : "";
 }
 
-/** Claude Code as a new user would have it, with only the campaign: no personal settings, instructions, plugins, connectors or auto memory. */
+/** Claude Code as a new user would have it, with only the campaign: no personal settings, instructions, plugins or connectors; the campaign's own settings turn auto memory off. */
 function masterArgs()
 {
     const isolation = "--setting-sources project,local --strict-mcp-config --mcp-config .mcp.json --permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch";
-    return ["--model", options["master-model"], "--settings", '{"autoMemoryEnabled":false}', ...isolation.split(" ")];
+    return ["--model", options["master-model"], ...isolation.split(" ")];
 }
 
 /** One master turn; returns the text the player sees, the session's cost so far, and what went wrong, if anything. */
@@ -349,8 +352,8 @@ function checkPreviousSession(campaign)
     }
 }
 
-/** A run from a save (--from) starts with a new player and a new campaign folder, from a session of an earlier run that stopped in play: its campaign-after, with this commit's start lines. */
-function copySave(campaign)
+/** A run from a save (--from) starts with a new player and a new campaign folder, from a session of an earlier run that stopped in play: its campaign-after, with this commit's host files. */
+function copySave(campaign, hostFiles)
 {
     const save = resolve(options.from);
     const stop = existsSync(join(save, "end.json")) ? parseJson(readFileSync(join(save, "end.json"), "utf8"))?.stop : undefined;
@@ -368,7 +371,11 @@ function copySave(campaign)
     }
 
     cpSync(join(save, "campaign-after"), campaign, { recursive: true });
-    cpSync(join(repo, "instructions", "start.md"), join(campaign, "AGENTS.md"));
+
+    for (const [name, text] of Object.entries(hostFiles)) {
+        mkdirSync(dirname(join(campaign, name)), { recursive: true });
+        writeFileSync(join(campaign, name), text);
+    }
 }
 
 /** What the new player of a run from a save remembers: the evenings of the earlier run up to the save, as they were written. */
@@ -401,24 +408,44 @@ function frontmatter(text)
     return text.replace(/\r\n/g, "\n").match(/^\uFEFF?---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/)?.[1] ?? "";
 }
 
-/** The campaign's instructions are this commit's start lines and nothing else: AGENTS.md sends the master to the instructions and status tools, CLAUDE.md only imports it, and no Claude Code settings or local instructions sit beside them. */
-function checkCampaign(campaign)
+/** The files an AI host reads in a campaign, as this commit's rpg init writes them: AGENTS.md with the start lines, CLAUDE.md, Claude Code's settings. */
+function initHostFiles(rpg)
 {
-    const text = (name) => existsSync(join(campaign, name)) ? readFileSync(join(campaign, name), "utf8").replace(/\r\n/g, "\n") : undefined;
+    const folder = mkdtempSync(join(tmpdir(), "rpg-host-files-"));
+
+    try {
+        const init = spawnSync(process.execPath, [rpg, "init", join(folder, "campaign")], { encoding: "utf8", env: environment });
+
+        if (init.status !== 0) {
+            throw new Error(`rpg init failed in ${folder}: ${init.stdout}${init.stderr}`);
+        }
+
+        return Object.fromEntries(hostFileNames.map((name) => [name, readFileSync(join(folder, "campaign", name), "utf8")]));
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
+}
+
+/** The campaign's instructions are this commit's start lines and nothing else: the host files are as rpg init writes them, and no other Claude Code settings or local instructions sit beside them. */
+function checkCampaign(campaign, hostFiles)
+{
+    const text = (name) => existsSync(join(campaign, name)) ? readFileSync(join(campaign, name), "utf8") : undefined;
 
     if (text("campaign.yaml") === undefined) {
         throw new Error(`${campaign} is not a campaign: make it as the scenario's start.md says.`);
     }
 
-    if (text("AGENTS.md") !== readFileSync(join(repo, "instructions", "start.md"), "utf8").replace(/\r\n/g, "\n")) {
-        throw new Error(`${join(campaign, "AGENTS.md")} is not this commit's instructions/start.md: copy it again.`);
+    for (const [name, wanted] of Object.entries(hostFiles)) {
+        if (text(name) !== wanted) {
+            throw new Error(`${join(campaign, name)} is not what this commit's rpg init writes: copy it from a campaign made now with rpg init, or start a new run.`);
+        }
     }
 
-    if (text("CLAUDE.md") !== "@AGENTS.md\n") {
-        throw new Error(`${join(campaign, "CLAUDE.md")} must hold only the line @AGENTS.md: write it again.`);
-    }
-
-    const extras = [".claude", "CLAUDE.local.md"].filter((name) => existsSync(join(campaign, name)));
+    const claudeFolder = join(campaign, ".claude");
+    const extras = [
+        ...readdirSync(claudeFolder).filter((name) => !hostFileNames.includes(join(".claude", name))).map((name) => join(claudeFolder, name)),
+        ...(existsSync(join(campaign, "CLAUDE.local.md")) ? [join(campaign, "CLAUDE.local.md")] : []),
+    ];
 
     if (extras.length > 0) {
         throw new Error(`The campaign holds ${extras.join(" and ")}, which Claude Code would load: remove it.`);

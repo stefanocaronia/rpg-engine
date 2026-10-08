@@ -102,7 +102,7 @@ Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Pag
 - Before each tool call, `ready()` reads again the files the watchers named and forgets what was kept outside watched campaigns and system folders. At `instructions`, after a watcher fails or cannot start, or after more than 10,000 changes, it first compares every kept file with the disk.
 - `fresh()` throws when a file was changed by hand without the watchers noticing, before anything is written over it, and the next call checks everything (D-196).
 - Game systems are read once per session; the server does not see changes to them until it restarts.
-- 250 ms after the host initializes, the server preloads the world of the campaign in its folder.
+- 250 ms after the host initializes, the server preloads the world of the campaign in its folder, and brings its host files up to date (`refreshHostFiles`): the start lines in `AGENTS.md`, `CLAUDE.md`, Claude Code's settings.
 
 ### Logging and output
 
@@ -119,12 +119,15 @@ campaign.yaml      settings: name, language, system, difficulty, lethality, line
 state.yaml         the present: date ("day 1, 18:00") and the open scene under scene
 log.jsonl          one JSON line per change
 .mcp.json          registers `rpg mcp` for AI hosts (through cmd /c on Windows)
+AGENTS.md          opens with the start lines between rpg's marks, kept up to date; the player's own text may follow
+CLAUDE.md          imports AGENTS.md (@AGENTS.md)
+.claude/           settings.json: Claude Code's auto memory off (D-242)
 sessions/          created by init
 world/             characters/ places/ factions/ quests/ items/ events/ topics/ creatures/
 rules/             house rules, one markdown file each (optional)
 ```
 
-`init` ([commands/init.ts](../src/commands/init.ts), [campaign/create-campaign.ts](../src/campaign/create-campaign.ts)) creates all but `rules/`. A campaign is the nearest folder upwards with a `campaign.yaml` (`findCampaign`); one cannot hold another. Settings are validated by `settingsSchema` in [campaign/settings.ts](../src/campaign/settings.ts); YAML files are rewritten keeping their comments ([core/yaml-file.ts](../src/core/yaml-file.ts)).
+`init` ([commands/init.ts](../src/commands/init.ts), [campaign/create-campaign.ts](../src/campaign/create-campaign.ts)) creates all but `rules/`; the host files come from [campaign/host-files.ts](../src/campaign/host-files.ts), which keeps what a folder already had: its own text after the start lines, other settings, a memory choice already written. A campaign is the nearest folder upwards with a `campaign.yaml` (`findCampaign`); one cannot hold another. Settings are validated by `settingsSchema` in [campaign/settings.ts](../src/campaign/settings.ts); YAML files are rewritten keeping their comments ([core/yaml-file.ts](../src/core/yaml-file.ts)).
 
 ### Pages
 
@@ -137,7 +140,7 @@ Each file under `world/` is a `Page` ([pages/world.ts](../src/pages/world.ts)): 
 
 [pages/page-file.ts](../src/pages/page-file.ts) splits and joins the frontmatter and body and applies a `FieldChange` (`set`, `unset`, `add`, `remove`) to the YAML document, keeping comments.
 
-Few places write files, all through the store: `writePage` in [pages/write-page.ts](../src/pages/write-page.ts) (a page's fields and text, creating or retyping it), `applyMove` in [pages/containers.ts](../src/pages/containers.ts) (containers' lists during a move), `writeYamlFile` in [core/yaml-file.ts](../src/core/yaml-file.ts) (`campaign.yaml`, `state.yaml`), `appendLogEntry` in [core/log.ts](../src/core/log.ts), and `createCampaign`.
+Few places write files, all through the store: `writePage` in [pages/write-page.ts](../src/pages/write-page.ts) (a page's fields and text, creating or retyping it), `applyMove` in [pages/containers.ts](../src/pages/containers.ts) (containers' lists during a move), `writeYamlFile` in [core/yaml-file.ts](../src/core/yaml-file.ts) (`campaign.yaml`, `state.yaml`), `appendLogEntry` in [core/log.ts](../src/core/log.ts), `createCampaign`, and `refreshHostFiles` as the MCP server starts.
 
 ### A game system package
 
@@ -288,7 +291,7 @@ A `Problem` is `{ path?, message, fix? }`. `campaignProblems` gathers those of t
 
 Files: [instructions/](../instructions/), [instructions/index.ts](../src/instructions/index.ts), [commands/instructions.ts](../src/commands/instructions.ts).
 
-Three layers, in English. The MCP server's instructions, [start.md](../instructions/start.md), send the AI to `instructions` and then `status` at the start of every chat. The `instructions` command returns [core.md](../instructions/core.md), plus [buttons.md](../instructions/buttons.md) when the host shows forms. Each command's description and each output carry the guidance for that moment. The files are read from the installed package, wherever it is.
+Three layers, in English. The start lines, [start.md](../instructions/start.md), send the AI to `instructions` and then `status` at the start of every chat: they are the MCP server's instructions and the start of the campaign's `AGENTS.md`. The `instructions` command returns [core.md](../instructions/core.md), plus [buttons.md](../instructions/buttons.md) when the host shows forms. Each command's description and each output carry the guidance for that moment. The files are read from the installed package, wherever it is.
 
 ## 6. Tests
 

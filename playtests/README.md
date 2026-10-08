@@ -36,7 +36,7 @@ Each session is a new master chat; the player keeps one chat for the whole run. 
 
 A run only goes forward: each session is played once, in the same output folder, and each later session continues the player's chat of the one before, even after a questionnaire. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
 
-To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with this commit's `start.md` as `AGENTS.md`, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn; the counts start from the saved campaign.
+To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with the host files that this commit's `rpg init` writes, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn; the counts start from the saved campaign.
 
 ```
 node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\results\session-2 --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
@@ -50,7 +50,7 @@ Before the first turn the run stops unless:
 
 - the repo has no uncommitted changes, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
-- the campaign's `AGENTS.md` is this commit's `instructions/start.md`, its `CLAUDE.md` holds only `@AGENTS.md`, and it has no `.claude/` or `CLAUDE.local.md`;
+- the campaign's `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are what this commit's `rpg init` writes (the start lines, the import, auto memory off), and it has nothing else in `.claude/` and no `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`;
 - a later session continues the player's chat and the campaign of the session before, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
 - a run from a save has a new output folder and a new campaign folder, and starts after a session that stopped in play;
@@ -62,9 +62,8 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 
 | Flag | Why |
 |---|---|
-| `--setting-sources project,local` | none of the developer's settings, `~/.claude/CLAUDE.md`, agents or plugins |
+| `--setting-sources project,local` | none of the developer's settings, `~/.claude/CLAUDE.md`, agents or plugins; the campaign's own settings turn auto memory off, so session 2 starts from the files alone (D-242) |
 | `--strict-mcp-config --mcp-config .mcp.json` | only the `rpg` server, approved without a person |
-| `--settings {"autoMemoryEnabled":false}` | no notes outside the campaign: session 2 starts from the files alone |
 | `--permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: any other write or command is denied, and the denial recorded |
 | `--model claude-opus-5-5`, `--session-id`, then `--resume` | the same master at every phase; one chat per session |
 

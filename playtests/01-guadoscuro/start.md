@@ -12,14 +12,12 @@ Before session 1, in a new folder chosen as `README.md` says, from the repo at t
 $campaign = "F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro"
 rpg init $campaign --name "La nebbia di Guadoscuro" --system 5e
 Copy-Item -Recurse -Force playtests\01-guadoscuro\world\* $campaign\world
-Copy-Item instructions\start.md $campaign\AGENTS.md
-Set-Content -NoNewline -Path $campaign\CLAUDE.md -Value "@AGENTS.md`n"
 Push-Location $campaign; rpg find; Pop-Location
 ```
 
 - The name and the system: the adventure's creatures and people derive from pages of 5e, as with an adventure installed for it. Language, difficulty and lethality stay missing, so setup really happens.
 - `world/`: the whole adventure, no player character; `rpg find` lists its 40 pages and `rpg validate` finds no problems.
-- `AGENTS.md` is the commit's `instructions/start.md`, unchanged: the lines that send the master to `instructions` and `status`, as a campaign will have them; `CLAUDE.md` is exactly `@AGENTS.md` and a newline. Nothing else: no `.claude/`, no `CLAUDE.local.md`, no word about the test.
+- `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are as `rpg init` writes them: the lines that send the master to `instructions` and `status`, the import of `AGENTS.md`, and Claude Code's auto memory off. Nothing else: no other settings, no `CLAUDE.local.md`, no word about the test.
 
 ## The sessions
 

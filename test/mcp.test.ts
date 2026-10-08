@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { type ChildProcessByStdio, spawn } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
 import { SessionStore } from "../src/core/session-store.ts";
+import { startInstructions } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
@@ -252,6 +253,30 @@ describe("MCP server, starting a session (D-194)", () => {
             order.push("tools");
             await vi.waitFor(() => expect(order).toContain("read the campaign"));
             expect(order).toEqual(["tools", "read the campaign"]);
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+
+    it("brings the start lines of the campaign's AGENTS.md and the files beside it up to date, keeping the player's own text (D-97, D-242)", async () => {
+        await runCommandLine(["init", "--name", "Rocca"], testContext(folder));
+        const agents = join(folder, "AGENTS.md");
+        const current = readFileSync(agents, "utf8");
+        writeFileSync(agents, `${current.replace(startInstructions(), "Old start lines.")}\nParla come un bardo.\n`);
+        rmSync(join(folder, "CLAUDE.md"));
+        rmSync(join(folder, ".claude"), { recursive: true });
+
+        const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+
+        try {
+            await vi.waitFor(() => expect(readFileSync(agents, "utf8")).toBe(`${current}\nParla come un bardo.\n`));
+            expect(readFileSync(join(folder, "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
+            expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toEqual({ autoMemoryEnabled: false });
         } finally {
             await host.close();
             session.close();

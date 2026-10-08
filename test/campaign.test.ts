@@ -3,7 +3,12 @@ import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { startInstructions } from "../src/instructions/index.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+
+// The marks around the start lines in a campaign's AGENTS.md.
+const startMark = "<!-- rpg: rpg keeps the lines up to the end mark up to date; the player's own instructions go after it. -->";
+const endMark = "<!-- rpg: end -->";
 
 let folder: string;
 let context: Context;
@@ -73,6 +78,37 @@ describe("rpg init", () => {
         writeFileSync(join(folder, "rotto", ".mcp.json"), "{ non è json");
         expect((await runCommandLine(["init", "rotto"], context)).output).toContain(".mcp.json is not valid JSON");
         expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
+    });
+
+    it("writes the files that send an AI host to the start lines, with Claude Code's auto memory off (D-97, D-242)", async () => {
+        await runCommandLine(["init", "nuova"], context);
+        expect(readFileSync(join(folder, "nuova", "AGENTS.md"), "utf8")).toBe(`${startMark}\n${startInstructions()}\n${endMark}\n`);
+        expect(readFileSync(join(folder, "nuova", "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
+        expect(readFileSync(join(folder, "nuova", ".claude", "settings.json"), "utf8")).toBe('{\n  "autoMemoryEnabled": false\n}\n');
+    });
+
+    it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and a memory choice", async () => {
+        mkdirSync(join(folder, "mia", ".claude"), { recursive: true });
+        writeFileSync(join(folder, "mia", "AGENTS.md"), "Parla come un bardo.\r\n");
+        writeFileSync(join(folder, "mia", "CLAUDE.md"), "Niente spoiler.\n");
+        writeFileSync(join(folder, "mia", ".claude", "settings.json"), '\uFEFF{ "model": "opus" }');
+        await runCommandLine(["init", "mia"], context);
+        expect(readFileSync(join(folder, "mia", "AGENTS.md"), "utf8")).toBe(`${startMark}\n${startInstructions()}\n${endMark}\n\nParla come un bardo.\n`.replace(/\n/g, "\r\n"));
+        expect(readFileSync(join(folder, "mia", "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\nNiente spoiler.\n");
+        expect(JSON.parse(readFileSync(join(folder, "mia", ".claude", "settings.json"), "utf8"))).toEqual({ model: "opus", autoMemoryEnabled: false });
+
+        mkdirSync(join(folder, "scelta", ".claude"), { recursive: true });
+        writeFileSync(join(folder, "scelta", ".claude", "settings.json"), '{ "autoMemoryEnabled": true }');
+        await runCommandLine(["init", "scelta"], context);
+        expect(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8")).toBe('{ "autoMemoryEnabled": true }');
+    });
+
+    it("refuses a broken Claude Code settings file before creating anything", async () => {
+        mkdirSync(join(folder, "rotto", ".claude"), { recursive: true });
+        writeFileSync(join(folder, "rotto", ".claude", "settings.json"), "{ non è json");
+        expect((await runCommandLine(["init", "rotto"], context)).output).toContain("settings.json is not valid JSON, so Claude Code's auto memory cannot be turned off in it");
+        expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
+        expect(existsSync(join(folder, "rotto", "AGENTS.md"))).toBe(false);
     });
 
     it("checks the settings before creating anything", async () => {

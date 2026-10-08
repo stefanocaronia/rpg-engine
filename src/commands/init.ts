@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createCampaign, difficulties, lethalities, missingSettings } from "../campaign/index.ts";
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { startInstructions } from "../instructions/index.ts";
 import { createWorld } from "../pages/index.ts";
 import { installedSystemName, missingWithSystems } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
@@ -10,7 +11,8 @@ import { missingSettingsNote } from "./notes.ts";
 export const init = defineCommand({
     name: "init",
     description: "Create a new campaign. "
-        + "It makes the settings, the present, the log, the sessions, the folders of the world, and the .mcp.json through which an AI host such as Claude Code finds these tools. "
+        + "It makes the settings, the present, the log, the sessions, the folders of the world, the .mcp.json through which an AI host such as Claude Code finds these tools, "
+        + "and the AGENTS.md and CLAUDE.md that send it to them. "
         + "Use it once, when the player starts a new campaign; then ask the player for the settings that are still missing and set them with config. "
         + 'Example: name "The Salt Isles", language en, system 5e.',
     group: "campaign",
@@ -30,7 +32,7 @@ export const init = defineCommand({
         // Only an installed system (D-167), as it is installed.
         const system = input.system === undefined ? undefined : installedSystemName(input.system, context, "init");
         const settings = { name: input.name ?? basename(folder), language: input.language, system, difficulty: input.difficulty, lethality: input.lethality };
-        const root = createCampaign(folder, settings, context.platform);
+        const root = createCampaign(folder, settings, context.platform, startInstructions());
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
         return { root, name: settings.name, missing: missingWithSystems(root, missingSettings(settings), context) };
