@@ -256,9 +256,9 @@ The open scene lives in `state.yaml` under `scene`: title, type, place, who is i
 
 ### Game time
 
-Files: [time/game-date.ts](../src/time/game-date.ts), [commands/advance.ts](../src/commands/advance.ts), [commands/game-time.ts](../src/commands/game-time.ts). Codes: `DAT-7`, `EVT-1`, `EVT-8`.
+Files: [time/game-date.ts](../src/time/game-date.ts), [commands/advance.ts](../src/commands/advance.ts), [commands/game-time.ts](../src/commands/game-time.ts). Codes: `TIM-1`–`TIM-7`, `DAT-7`, `EVT-1`, `EVT-8`.
 
-The present is `state.yaml`'s `date`, a `GameDate` of day and minute. `advance` moves it forward by a duration or to a date, never back; it stops at the first planned event that comes due, ends the effects whose time has come, and on a new day lists the event clocks to move. A system's `round` length turns short durations into rounds in a scene with turns (`DAT-7`).
+The present is `state.yaml`'s `date`, a `GameDate` of day and minute (`TIM-1`, `TIM-4`); a day without a time counts from its midnight. `advance` moves it forward by a duration or to a date, never back (`TIM-5`); it stops at the first planned event that comes due (`TIM-6`), ends the effects whose time has come, and on a new day lists the event clocks to move. A system's `round` length turns short durations into rounds in a scene with turns (`DAT-7`).
 
 ### Planned events and triggers
 
