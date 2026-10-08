@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -26,6 +26,63 @@ function brunaFile(): string
 {
     return readFileSync(join(folder, "world", "characters", "Bruna.md"), "utf8");
 }
+
+// The table of cases of change (CNT-2–CNT-9): each kind of counter crossed with each way of changing it, on a character of the test system based on Ironsworn,
+// whose momentum goes from -6 to a maximum the system works out, 10. What the change gives, with its note; "same" when nothing changed; "refused" when nothing could.
+const kinds = { frecce: "5", ferite: "5/12", "ferite a 0": "0/12", "ferite al massimo": "12/12", "ferite sotto": "-3/10", "ferite sopra": "15/12", momentum: "-6/10" };
+const asks = ["--by=-7", "--by=7", "--by=0", "--spend=5", "--spend=6", "--to=3", "--to=max", "--to=4/8"];
+const outcomes: Record<keyof typeof kinds, string[]> = {
+    frecce: ["0: at 0, 2 beyond", "12", "same 5", "0: at 0", "refused", "3", "refused", "4/8"],
+    ferite: ["0/12: at 0, 2 beyond", "12/12: at max", "same 5/12", "0/12: at 0", "refused", "3/12", "12/12: at max", "4/8"],
+    "ferite a 0": ["same 0/12: at 0, 7 beyond", "7/12", "same 0/12: at 0", "refused", "refused", "3/12", "12/12: at max", "4/8"],
+    "ferite al massimo": ["5/12", "same 12/12: at max, 7 beyond", "same 12/12: at max", "7/12", "6/12", "3/12", "same 12/12: at max", "4/8"],
+    "ferite sotto": ["same -3/10: outside 0–10, 7 beyond", "4/10", "same -3/10: outside 0–10", "refused", "refused", "3/10", "10/10: at max", "4/8"],
+    "ferite sopra": ["8/12", "same 15/12: outside 0–12, 7 beyond", "same 15/12: outside 0–12", "10/12", "9/12", "3/12", "12/12: at max", "4/8"],
+    momentum: ["same -6/10: at min, 7 beyond", "1/10", "same -6/10: at min", "refused", "refused", "3/10", "10/10: at max", "refused"],
+};
+
+describe("the table of cases of change", () => {
+    it("CNT-2–CNT-9: gives each kind of counter what each change asks, says where it stands, and refuses what it cannot do without writing anything", async () => {
+        const root = makeTempFolder();
+        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+        mkdirSync(join(root, "world", "characters"), { recursive: true });
+        const file = join(root, "world", "characters", "Bran.md");
+
+        try {
+            for (const [kind, start] of Object.entries(kinds)) {
+                const field = kind.split(" ")[0];
+
+                for (const [index, ask] of asks.entries()) {
+                    writeFileSync(file, `---\nrole: npc\n${field}: ${start}\n---\n`);
+                    const result = await runCommandLine(["change", "Bran", field, ask], testContext(root));
+                    const expected = outcomes[kind as keyof typeof kinds][index];
+                    const [after, note] = expected.replace(/^same /, "").split(": ");
+                    const label = `${kind} ${ask}`;
+
+                    if (expected === "refused") {
+                        expect(result.exitCode, `${label}: ${result.output}`).toBe(1);
+                        expect(readFileSync(file, "utf8"), label).toBe(`---\nrole: npc\n${field}: ${start}\n---\n`);
+                    } else if (expected.startsWith("same ")) {
+                        expect(result.output, label).toBe(`Nothing changed: ${field} on Bran is ${after}${note === undefined ? "" : `: ${note}`}.`);
+                    } else {
+                        expect(result.output, label).toBe(`Bran: ${field} ${start} → ${after}${note === undefined ? "" : `: ${note}`}.`);
+                        expect(readFileSync(file, "utf8"), label).toBe(`---\nrole: npc\n${field}: ${after}\n---\n`);
+                    }
+                }
+            }
+        } finally {
+            removeFolder(root);
+        }
+    });
+
+    it("CNT-4: spends nothing below a minimum above 0, which a campaign may give", async () => {
+        await rpg("config", "counters", "pazienza: {min: 2, max: 9}");
+        await rpg("write", "Bruna", "--set", "pazienza=5/9");
+        expect((await rpg("change", "Bruna", "pazienza", "--spend", "4")).output).toBe("Bruna has pazienza 5/9, which goes no lower than 2: cannot spend 4. Nothing changed.");
+        expect((await rpg("change", "Bruna", "pazienza", "--spend", "3")).output).toBe("Bruna: pazienza 5/9 → 2/9: at min.");
+        expect((await rpg("change", "Bruna", "pazienza", "--by=-3")).output).toBe("Nothing changed: pazienza on Bruna is 2/9: at min, 3 beyond.");
+    });
+});
 
 describe("rpg change", () => {
     it("changes a counter on its page and logs it, public for the player's character", async () => {

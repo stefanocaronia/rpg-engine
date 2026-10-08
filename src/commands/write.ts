@@ -16,6 +16,7 @@ import {
     changedEnvironment,
     changedFields,
     checkFieldChange,
+    concernsPlayer,
     declaredKind,
     derivedPages,
     environmentAt,
@@ -50,7 +51,6 @@ import {
     type PageType,
     pageTypeNames,
     parsePageReference,
-    playerConcerns,
     readEnvironment,
     readFieldValue,
     readOnlyMessage,
@@ -702,9 +702,7 @@ function changedParts(before: string, after: string): string[]
  */
 function logCounterChanges(root: string, context: Context, world: World, now: World, pages: [Page, Page][], coins: Coin[] | undefined): void
 {
-    const concerns = playerConcerns(now);
-
-    for (const [before, after] of pages.filter(([, page]) => concerns(page))) {
+    for (const [before, after] of pages.filter(([, page]) => concernsPlayer(now, page))) {
         const old = inheritedFields(world, before);
 
         for (const [field, value] of Object.entries(inheritedFields(now, after)).filter(([name]) => !isStandardField(after.type, name) && !isDeclaredUncounted(now, name))) {

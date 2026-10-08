@@ -22,7 +22,6 @@ import {
     keepersOf,
     ownField,
     type Page,
-    playerConcerns,
     systemPageNamed,
     withPage,
     type World,
@@ -612,9 +611,7 @@ function pageHolder(world: World, page: Page): CounterHolder
 /** One public line for each page that changed with a base and concerns the player, with its own name only and no why: the base and the other pages may be secret (INH-10, D-93). */
 function logFollowers(root: string, world: World, context: Context, followers: Page[], change: { field: string; before: number | string; after: number | string; }): void
 {
-    const concerns = playerConcerns(world);
-
-    for (const follower of followers.filter(concerns)) {
+    for (const follower of followers.filter((page) => concernsPlayer(world, page))) {
         appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: follower.name, ...change }));
     }
 }
@@ -781,7 +778,8 @@ function readChange(input: { by?: number | string; spend?: number | string; to?:
 
     if (input.spend !== undefined) {
         if (!canSpend(counter, input.spend)) {
-            throw new Error(input.spend > 0 ? `${page} has ${field} ${formatCounter(counter)}: cannot spend ${input.spend}. Nothing changed.` : "Give spend a number above 0.");
+            const floor = (counter.min ?? 0) > 0 ? `, which goes no lower than ${counter.min}` : "";
+            throw new Error(input.spend > 0 ? `${page} has ${field} ${formatCounter(counter)}${floor}: cannot spend ${input.spend}. Nothing changed.` : "Give spend a number above 0.");
         }
 
         return { spend: input.spend };

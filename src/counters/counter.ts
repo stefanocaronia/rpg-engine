@@ -38,10 +38,10 @@ export function formatCounter(counter: Counter): number | string
     return counter.max === undefined ? counter.value : `${counter.value}/${counter.max}`;
 }
 
-/** Whether there is enough to spend: what is spent cannot be what is not there. */
+/** Whether there is enough to spend: what is spent cannot be what is not there, below 0 or below a minimum above it. */
 export function canSpend(counter: Counter, amount: number): boolean
 {
-    return amount > 0 && counter.value >= amount;
+    return amount > 0 && counter.value - amount >= Math.max(0, counter.min ?? 0);
 }
 
 /**

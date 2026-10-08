@@ -355,26 +355,6 @@ export function concernsPlayer(world: World, page: Page): boolean
     return isPartyMember(page) || (page.type === "quest" && page.fields.status === "open") || locate(world, page).chain.some(isPartyMember);
 }
 
-/** Whether the player may see what happens to a page, worked out once for many pages: the same answer as concernsPlayer (D-93). */
-export function playerConcerns(world: World): (page: Page) => boolean
-{
-    const held = new Set<Page>(world.pages.filter(isPartyMember));
-    const queue = [...held];
-
-    for (let holder = queue.shift(); holder !== undefined; holder = queue.shift()) {
-        for (const name of heldNames(holder)) {
-            const page = pagesWithName(world, name)[0];
-
-            if (page !== undefined && !held.has(page) && canHold(holder.type, page.type)) {
-                held.add(page);
-                queue.push(page);
-            }
-        }
-    }
-
-    return (page) => held.has(page) || (page.type === "quest" && page.fields.status === "open");
-}
-
 /** The pages whose container field, by their type, lists the page named `name`, in the order of the world's pages (CON-1). */
 export function holdersOf(world: World, name: string): Page[]
 {

@@ -106,7 +106,7 @@ Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Pag
 
 ### Logging and output
 
-A command that changes the game appends one or more lines to `log.jsonl` with `appendLogEntry(root, newDatedLogEntry(root, context, type, visibility, data))` ([core/log.ts](../src/core/log.ts), [commands/game-time.ts](../src/commands/game-time.ts)). Each `LogEntry` has `id`, `at` (real time), `date` (game date, when there is one), `type`, `by`, `visibility` (`public` for what the player may see, `hidden` for the master) and `data`. Types in use: `campaign-created`, `config-changed`, `page-created`, `page-updated`, `moved`, `learned`, `counter-changed`, `effect-added`, `effect-ended`, `event-due`, `roll`, `roll-revealed`, `asked`, `time-advanced`, `scene-opened`, `scene-changed`, `scene-closed`. `write`'s page lines are hidden; lines about moves, counters and effects are public when they concern the player, as `concernsPlayer` / `playerConcerns` in [pages/world.ts](../src/pages/world.ts) say: the party, what it carries, open quests.
+A command that changes the game appends one or more lines to `log.jsonl` with `appendLogEntry(root, newDatedLogEntry(root, context, type, visibility, data))` ([core/log.ts](../src/core/log.ts), [commands/game-time.ts](../src/commands/game-time.ts)). Each `LogEntry` has `id`, `at` (real time), `date` (game date, when there is one), `type`, `by`, `visibility` (`public` for what the player may see, `hidden` for the master) and `data`. Types in use: `campaign-created`, `config-changed`, `page-created`, `page-updated`, `moved`, `learned`, `counter-changed`, `effect-added`, `effect-ended`, `event-due`, `roll`, `roll-revealed`, `asked`, `time-advanced`, `scene-opened`, `scene-changed`, `scene-closed`. `write`'s page lines are hidden; lines about moves, counters and effects are public when they concern the player, as `concernsPlayer` in [pages/world.ts](../src/pages/world.ts) says: the party, what is inside it climbing the containers, open quests (`CNT-10`).
 
 Error messages and outputs are read by an AI: they say what went wrong and what to call next, and writes that are refused say "Nothing changed". Commands check what they can before the first write.
 
@@ -202,11 +202,11 @@ Only characters know things, in their `knows` list of links to pages and to secr
 
 ### Counters and money
 
-Files: [counters/counter.ts](../src/counters/counter.ts), [money/money.ts](../src/money/money.ts), [commands/change.ts](../src/commands/change.ts), [commands/game-money.ts](../src/commands/game-money.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-thresholds.ts](../src/commands/game-thresholds.ts). Codes: `MON-1`–`MON-8`, `DAT-1`, `DAT-3`–`DAT-5`.
+Files: [counters/counter.ts](../src/counters/counter.ts), [money/money.ts](../src/money/money.ts), [commands/change.ts](../src/commands/change.ts), [commands/game-money.ts](../src/commands/game-money.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-thresholds.ts](../src/commands/game-thresholds.ts). Codes: `CNT-1`–`CNT-10`, `MON-1`–`MON-8`, `DAT-1`, `DAT-3`–`DAT-5`.
 
-- A counter is a whole number or `current/max`. `changeCounter` applies `by` (stops at a limit and says how far beyond), `spend` (refused when there is not enough) or `to`.
+- A counter is a whole number or `current/max` (`CNT-1`), from 0 or a minimum the system works out up to its maximum (`CNT-2`). `changeCounter` applies `by` (stops at a limit and says how far beyond; a value outside never goes further out), `spend` (refused below 0, or below a minimum above it) or `to` (`CNT-3`–`CNT-5`).
 - Money is a field written in the campaign's coins, such as `money: 34 gp 4 sp`. The coins come from `campaign.yaml`, else from the system (`MON-1`, `DAT-1`); `payCoins` pays with change, never in rare coins (`MON-5`).
-- `write` refuses to overwrite a counter or money (`MON-6`); `change` changes them and logs `counter-changed`. It also applies a system's recipes, such as `long rest` (`DAT-4`, `DAT-5`), and adds the rule notes of the thresholds a party counter touches (`DAT-3`).
+- `write` refuses to overwrite a `current/max` counter or money, but writes a plain number, which may be a statistic (`CNT-7`, `MON-6`); `change` changes them and logs `counter-changed`. It also applies a system's recipes, such as `long rest` (`DAT-4`, `DAT-5`), and adds the rule notes of the thresholds a party counter touches (`DAT-3`).
 
 ### Effects and their layer
 
