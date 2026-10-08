@@ -113,7 +113,7 @@ describe("rpg status", () => {
         await rpg("write", "Il pozzo", "--type", "quest", "--set", "status=open", "--text", "Trovare l'acqua.\n\n- [x] Scendere\n- [X] Riempire il secchio");
         await rpg("write", "Senza compiti", "--type", "quest", "--set", "status=open");
         await rpg("write", "Non presa", "--type", "quest", "--text=- [x] Fatto");
-        expect(await state()).toContain("Open quests: Il pozzo (every goal ticked: if it is over, set status done; if not, add the goal that is left) · Altra · Senza compiti");
+        expect(await state()).toContain("Open quests: Il pozzo (every goal ticked: if the story has ended it, write status done) · Altra · Senza compiti");
     });
 
     it("marks the dead, shows the companions before a character exists, and says with whom only when they share a place", async () => {

@@ -161,7 +161,7 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
     });
 
     it("of a quest wait until it ends: write asks once whether it is over, when its last goal is ticked (D-239)", async () => {
-        const ticked = "Every goal of Il pozzo is ticked and it is still open: if it is over, set status done; if not, add the goal that is left.";
+        const ticked = "Every goal of Il pozzo is ticked and it is still open: if the story has ended it, write status done.";
         await ok("write", "Il pozzo", "--type", "quest", "--set", "status=open", "--text=- [x] Scendere\n- [ ] Riempire il secchio");
         expect(await ok("write", "Il pozzo", "--text=- [x] Scendere\n- [x] Riempire il secchio")).toContain(ticked);
         expect(await ok("write", "Il pozzo#Note", "--text", "L'acqua è dolce.")).not.toContain(ticked);

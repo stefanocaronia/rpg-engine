@@ -3,7 +3,7 @@
 import { everyGoalTicked, type Page } from "../pages/index.ts";
 
 // What the master does with such a quest.
-const advice = "if it is over, set status done; if not, add the goal that is left";
+const advice = "if the story has ended it, write status done";
 
 /** What status says beside an open quest whose goals are all ticked, such as "Ritrovare gli scomparsi (every goal ticked: …)". */
 export function openQuestText(page: Page): string
