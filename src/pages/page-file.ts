@@ -6,7 +6,6 @@ import { isEmptyField } from "./standard-fields.ts";
 const singleLink = /^\[\[[^\]]+\]\]$/;
 // Links separated by commas, each with a number after it or none: [[A]], [[B]] or, for classes with their levels, [[Fighter]] 3, [[Wizard]] 2.
 const linkList = /^\[\[[^\]]+\]\](?:\s+[+-]?\d+)?(?:\s*,\s*\[\[[^\]]+\]\](?:\s+[+-]?\d+)?)+$/;
-const anyLink = /\[\[[^\]]+\]\]/g;
 // A link, with the number after it if any: an item of such a list.
 const linkItem = /\[\[[^\]]+\]\](?:\s+[+-]?\d+)?/g;
 // Lists in brackets stay as [a, b], the way people write them, and long values stay on one line.
