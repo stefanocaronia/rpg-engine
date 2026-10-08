@@ -13,7 +13,7 @@ if (results === undefined || scenarioWorld === undefined || !existsSync(results)
 
 const sessions = readdirSync(results).filter((name) => /^session-\d+$/.test(name) && existsSync(join(results, name, "end.json"))).sort((a, b) => sessionNumber(a) - sessionNumber(b));
 const details = {};
-let before = { pages: pageCount(scenarioWorld), log: {}, playerCost: 0 };
+let before = startingPoint(sessions[0]);
 
 for (const name of sessions) {
     details[name] = countSession(join(results, name), before);
@@ -145,12 +145,7 @@ function countSession(folder, before)
 
     const dueNames = new Set(counts.due.map((item) => item.event));
     counts.eventsByHand = counts.eventsByHand.filter((item) => !dueNames.has(item.event));
-    counts.logWhole = {};
-
-    for (const entry of readLines(join(campaignAfter, "log.jsonl"))) {
-        counts.logWhole[entry.type] = (counts.logWhole[entry.type] ?? 0) + 1;
-    }
-
+    counts.logWhole = logCounts(join(campaignAfter, "log.jsonl"));
     counts.log = Object.fromEntries(Object.entries(counts.logWhole).map(([type, count]) => [type, count - (before.log[type] ?? 0)]).filter(([, count]) => count > 0));
     counts.masterCost = round(end.masterCost);
     counts.playerCost = round(end.playerRunCost - before.playerCost);
@@ -357,6 +352,26 @@ function resultText(block)
     }
 
     return (block.content ?? []).filter((part) => part.type === "text").map((part) => part.text).join("\n");
+}
+
+/** Where the run's first session started: the scenario's pages, or the saved campaign a run from a save copied (--from). */
+function startingPoint(name)
+{
+    const from = name === undefined ? undefined : readJson(join(results, name, "meta.json")).options?.from;
+    const campaign = from === undefined ? undefined : join(from, "campaign-after");
+    return { pages: pageCount(campaign === undefined ? scenarioWorld : join(campaign, "world")), log: campaign === undefined ? {} : logCounts(join(campaign, "log.jsonl")), playerCost: 0 };
+}
+
+/** How many entries of each type a campaign's log holds. */
+function logCounts(file)
+{
+    const counts = {};
+
+    for (const entry of readLines(file)) {
+        counts[entry.type] = (counts[entry.type] ?? 0) + 1;
+    }
+
+    return counts;
 }
 
 function markdownFiles(folder)

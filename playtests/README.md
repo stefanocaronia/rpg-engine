@@ -36,6 +36,12 @@ Each session is a new master chat; the player keeps one chat for the whole run. 
 
 A run only goes forward: each session is played once, in the same output folder, and each later session continues the player's chat of the one before, even after a questionnaire. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
 
+To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with this commit's `start.md` as `AGENTS.md`, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn; the counts start from the saved campaign.
+
+```
+node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\results\session-2 --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
+```
+
 Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a subscription. Writing the pages, the trial run and reading the results for the checklist cost extra. `end.json` records the master's cost for the session and the player's for the run so far.
 
 ## Checks
@@ -47,6 +53,7 @@ Before the first turn the run stops unless:
 - the campaign's `AGENTS.md` is this commit's `instructions/start.md`, its `CLAUDE.md` holds only `@AGENTS.md`, and it has no `.claude/` or `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`;
 - a later session continues the player's chat and the campaign of the session before, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
+- a run from a save has a new output folder and a new campaign folder, and starts after a session that stopped in play;
 - `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and no custom agents.
 
 At every turn it checks that `rpg` is connected, with the planned model and `dontAsk`; otherwise it stops, and the run is void.

@@ -4,13 +4,14 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 const usage = [
     "Usage, from the repo (see playtests/README.md):",
     '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--max 50] [--hard 60] [--budget 15]',
+    '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
 ].join("\n");
 const options = readOptions();
@@ -45,6 +46,12 @@ function playSession()
     const campaign = resolve(options.campaign);
     const folder = join(out, `session-${Number(options.session)}`);
     checkFolders(campaign);
+    const memory = options.from ? earlierEvenings() : "";
+
+    if (options.from) {
+        copySave(campaign);
+    }
+
     checkCampaign(campaign);
     checkRestart(folder, campaign);
     const rpg = checkBuild();
@@ -57,7 +64,7 @@ function playSession()
     const progress = { stop: "error", count: 0, masterCost: 0, playerRunCost: 0 };
 
     try {
-        playTurns(campaign, folder, masterSession, progress);
+        playTurns(campaign, folder, masterSession, progress, memory);
 
         if (progress.stop === "isolation" || progress.stop === "error") {
             throw new Error(`Master turn M${progress.count}: ${progress.detail}. ${progress.stop === "isolation" ? "The run is void: fix the setup and start a new run." : "See the turn in turns/."}`);
@@ -104,8 +111,8 @@ function lastSessionFolder()
     return `session-${Math.max(...numbers)}`;
 }
 
-/** Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. */
-function playTurns(campaign, folder, masterSession, progress)
+/** Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. A new player of a run from a save gets `memory` with its first turn. */
+function playTurns(campaign, folder, masterSession, progress, memory)
 {
     const max = Number(options.max);
     const hard = Number(options.hard ?? max + 10);
@@ -135,7 +142,7 @@ function playTurns(campaign, folder, masterSession, progress)
             record(folder, "Organizer", note);
         }
 
-        player = playerTurn([note, master.text].filter(Boolean).join("\n\n"), true);
+        player = playerTurn([count === 1 ? memory : "", note, master.text].filter(Boolean).join("\n\n"), true);
         progress.playerRunCost = player.cost;
         note = "";
     }
@@ -289,6 +296,10 @@ function checkRestart(folder, campaign)
         throw new Error(`${folder} already exists: a session is played once. To play it again, start a new run, with a new campaign and a new --out.`);
     }
 
+    if (options.from) {
+        return;
+    }
+
     if (Number(options.session) === 1) {
         checkUnplayed(campaign);
     } else {
@@ -336,6 +347,44 @@ function checkPreviousSession(campaign)
     if (!playedCampaign || !isSame(playedCampaign, campaign)) {
         throw new Error(`Session ${options.session} must continue the campaign of session ${previous}, ${playedCampaign ?? `unreadable in ${metaFile}`}, not ${campaign}.`);
     }
+}
+
+/** A run from a save (--from) starts with a new player and a new campaign folder, from a session of an earlier run that stopped in play: its campaign-after, with this commit's start lines. */
+function copySave(campaign)
+{
+    const save = resolve(options.from);
+    const stop = existsSync(join(save, "end.json")) ? parseJson(readFileSync(join(save, "end.json"), "utf8"))?.stop : undefined;
+
+    if (!["player", "hard cap", "budget"].includes(stop) || !existsSync(join(save, "campaign-after"))) {
+        throw new Error(`${save} is not a session that stopped in play, with its campaign-after: give the session-N folder of an earlier run.`);
+    }
+
+    if (existsSync(playerChatFile)) {
+        throw new Error(`${playerChatFile} is the player's chat of an earlier run: a run from a save starts with a new --out.`);
+    }
+
+    if (existsSync(campaign)) {
+        throw new Error(`${campaign} already exists: a run from a save copies the saved campaign into a new folder.`);
+    }
+
+    cpSync(join(save, "campaign-after"), campaign, { recursive: true });
+    cpSync(join(repo, "instructions", "start.md"), join(campaign, "AGENTS.md"));
+}
+
+/** What the new player of a run from a save remembers: the evenings of the earlier run up to the save, as they were written. */
+function earlierEvenings()
+{
+    const save = resolve(options.from);
+    const last = Number(options.session) - 1;
+    const files = Array.from({ length: last }, (_, index) => join(dirname(save), `session-${index + 1}`, "dialogue.md"));
+    const missing = files.filter((file) => !existsSync(file));
+
+    if (missing.length > 0) {
+        throw new Error(`The player of a run from a save remembers the earlier evenings, but ${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} missing.`);
+    }
+
+    const evenings = files.map((file, index) => `## Evening ${index + 1}\n\n${readFileSync(file, "utf8").trim()}`);
+    return [`(Organizer: you have already played ${last} ${last > 1 ? "evenings" : "evening"} with this master. Here is what was written in them, as you remember it: P are your messages, M the master's.)`, ...evenings].join("\n\n");
 }
 
 /** The page files of a campaign's world, where the engine reads pages from. */
@@ -431,7 +480,8 @@ function readOptions()
                 campaign: { type: "string" },
                 profile: { type: "string" },
                 out: { type: "string" },
-                session: { type: "string", default: "1" },
+                session: { type: "string" },
+                from: { type: "string" },
                 first: { type: "string" },
                 max: { type: "string", default: "50" },
                 hard: { type: "string" },
@@ -458,10 +508,28 @@ function readOptions()
             throw new Error(notFiles.map((name) => `--${name} ${values[name]}: no such file.`).join(" "));
         }
 
+        values.session = values.from === undefined ? values.session ?? "1" : String(savedSession(values) + 1);
+        values.from &&= resolve(values.from);
         return values;
     } catch (error) {
         fail(`${error.message}\n\n${usage}`);
     }
+}
+
+/** The number of the session a run from a save starts after, from its folder's name, such as 2 for session-2. */
+function savedSession(values)
+{
+    const saved = Number(basename(resolve(values.from)).match(/^session-(\d+)$/)?.[1]);
+
+    if (!(saved > 0) || !existsSync(values.from)) {
+        throw new Error(`--from ${values.from}: give the session-N folder of an earlier run.`);
+    }
+
+    if (values.session !== undefined && Number(values.session) !== saved + 1) {
+        throw new Error(`--from ${values.from} plays session ${saved + 1}: leave out --session.`);
+    }
+
+    return saved;
 }
 
 function record(folder, label, text)
