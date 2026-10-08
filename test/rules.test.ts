@@ -313,7 +313,8 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
 
     it("reads a precedent or an agreement written by hand without quotes as text, and keeps reading when another setting breaks campaign.yaml", async () => {
         const settings = readFileSync(join(folder, "campaign.yaml"), "utf8");
-        writeFileSync(join(folder, "campaign.yaml"), `${settings}precedents:\n  - Poisoned: la benda bagnata dà vantaggio contro il gas.\ntable: [Prima dei tiri: dico la posta]\n`);
+        // An empty item written by hand is left out, never a reason to stop: the master could not fix it.
+        writeFileSync(join(folder, "campaign.yaml"), `${settings}precedents:\n  - Poisoned: la benda bagnata dà vantaggio contro il gas.\n  - ""\ntable: [Prima dei tiri: dico la posta]\n`);
         expect(await ok("rules", "poisoned")).toContain("Precedents: Poisoned: la benda bagnata dà vantaggio contro il gas.");
         expect(await ok("status")).toContain("Table: Prima dei tiri: dico la posta");
         await ok("config", "precedents", "--add", "Flanking: due alleati ai lati.");

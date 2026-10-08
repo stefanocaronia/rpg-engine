@@ -110,15 +110,16 @@ export const effect = defineCommand({
 
         const name = input.name.trim();
 
+        // An end first: "until day 1, 18:10" in parentheses is no value.
+        if (/\buntil\b/i.test(name)) {
+            throw new Error(`The name ${name} has "until" in it: give the end with for or until, not in the name.`);
+        }
+
         const inName = /\(([^()]*:[^()]*)\)/.exec(name);
 
         if (inName !== null) {
             const values = inName[1].split(",").map((value) => value.trim().replace(/\s*:\s*/, "="));
             throw new Error(`Give the values with set, not in the name, such as name ${name.replace(/\s*\(.*$/, "")}, set ${values.join(", set ")}.`);
-        }
-
-        if (/\buntil\b/i.test(name)) {
-            throw new Error(`The name ${name} has "until" in it: give the end with for or until, not in the name.`);
         }
 
         const values = readValues(world, holder.page, input.set);

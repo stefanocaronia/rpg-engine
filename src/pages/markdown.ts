@@ -148,13 +148,13 @@ export function writeText(text: string, newText: string, options: { section?: st
     return joinBlocks(text, block);
 }
 
-/** The pages a text links to, as in [[Page]], [[Page#Section]], [[Page|label]] or [[folder/Page.md]]. Links in code blocks do not count. */
+/** The pages a text links to, as in [[Page]], [[Page#Section]], [[Page|label]] or [[folder/Page.md]]. Links in code and in %% comments %% do not count. */
 export function linkedPages(text: string): string[]
 {
     return links(text).map((link) => link.page);
 }
 
-/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code blocks do not count. Read once for each text. */
+/** The links of a text, with the section or secret they point to, as in [[Page#Section]]. Links in code and in %% comments %% do not count. Read once for each text. */
 export function links(text: string): Link[]
 {
     return rememberedLinks(text);
@@ -163,7 +163,8 @@ export function links(text: string): Link[]
 const rememberedLinks = rememberedByText((text: string): Link[] => {
     const lines = text.split("\n");
     const code = codeLines(lines);
-    return lines.flatMap((line, index) => (code[index] ? [] : [...line.matchAll(linkPattern)].map((match) => linkOf(match[1], match[2]))));
+    const prose = (line: string): string => line.replace(/`[^`]*`/g, "").replace(/%%.*?%%/g, "");
+    return lines.flatMap((line, index) => (code[index] ? [] : [...prose(line).matchAll(linkPattern)].map((match) => linkOf(match[1], match[2]))));
 }, 20_000);
 
 /** Removes the blank lines at the start and the white space at the end. */

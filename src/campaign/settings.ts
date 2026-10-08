@@ -18,6 +18,9 @@ export const lethalities = ["narrative", "epic", "dice"] as const;
 /** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
 const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
 
+/** A list setting; an empty item written by hand, as - "", holds nothing and is left out, so that it never stops the game. */
+const listSetting = z.preprocess((items) => (Array.isArray(items) ? items.filter((item) => item !== null && String(item).trim() !== "") : items), z.array(listItem)).nullish();
+
 /** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
 export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
@@ -25,10 +28,10 @@ export const settingsSchema = z.object({
     system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
-    lines: z.array(listItem).nullish().describe("what never appears in the game"),
-    veils: z.array(listItem).nullish().describe("what happens only off screen, without details"),
-    table: z.array(listItem).nullish().describe("the table's agreements: what the master promised about how the game is played"),
-    precedents: z.array(listItem).nullish().describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
+    lines: listSetting.describe("what never appears in the game"),
+    veils: listSetting.describe("what happens only off screen, without details"),
+    table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
+    precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
     // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the

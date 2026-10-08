@@ -67,6 +67,8 @@ describe("effect add and end (EFF-1, EFF-4, EFF-5)", () => {
     it("refuses values on fixed fields, lists, lines that would not read back, and time without a game date", async () => {
         expect((await rpg("effect", "add", "Ennio", "Morte apparente", "--set", "status=dead")).output).toBe("An effect gives values to counters and free fields, such as speed=20, not to status.");
         expect((await rpg("effect", "add", "Ennio", "Attesa until dawn")).output).toBe('The name Attesa until dawn has "until" in it: give the end with for or until, not in the name.');
+        // An end in parentheses is said as an end, never as values.
+        expect((await rpg("effect", "add", "Ennio", "Benedetta (until day 1, 18:10)")).output).toContain('has "until" in it: give the end with for or until, not in the name.');
         expect((await rpg("effect", "add", "Ennio", "Armatura (ac: 15)")).output).toBe("Give the values with set, not in the name, such as name Armatura, set ac=15.");
         expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=+2")).output).toBe('ac on Ennio is a number, 13: give the value it reads while the effect lasts, such as ac=15, not "+2". Nothing changed.');
         expect((await rpg("effect", "add", "Ennio", "Scudo", "--set", "ac=15", "--set", "AC=17")).output).toBe("AC is given twice: give each value once.");
