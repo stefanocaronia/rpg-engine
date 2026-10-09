@@ -1254,9 +1254,14 @@ button.row,
     color: var(--on-gold);
     box-shadow: var(--overlay), 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
     cursor: pointer;
+    /* The icon in its middle: a picture in a line would leave the room of the descenders below it. */
+    display: grid;
+    place-items: center;
+    padding: 0;
 }
 
 .dice-button svg {
+    display: block;
     width: 30px;
     height: 30px;
     fill: none;

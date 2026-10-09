@@ -35,6 +35,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run format`: format the code (ESLint fixes, then dprint).
 - `npm run lint`: check the formatting, and the types of the tests too, as CI does.
 - `npm run docs`: write `docs/commands.md` from the commands' definitions.
+- `npm run demo`: build, then serve the dashboard of the demo campaign at `http://127.0.0.1:4760`, asking checks in turn: what the browser pane's play button starts (`.claude/launch.json`).
 - `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code, `/mcp refresh` in Gemini CLI) or open a new chat.
 
 ## Development vs game
@@ -83,7 +84,7 @@ Clean, compact, ordered code that is easy to understand.
 
 - **CodeGraph** (`@colbymchenry/codegraph`, optional, set up per person): when `.codegraph/` exists, use it before Grep/Read chains for structure questions (who calls X, what Y reaches, what breaks if Z changes), then confirm in the file. After editing, run `codegraph sync .` before asking it about the changed files. Agents never run `init`, `index` or `uninit` for the maintainer.
 - **Jev** (`mcp__jev__*`, optional, set up per person): before a commit, `jev_gate` with the diff, the claims of the commit message and the real test output; before reporting results, `jev_verify` the claims against the evidence. Fix or drop unsupported claims. Without Jev, say so and go on.
-- **Looking at the dashboard**: a change to the page is judged on the page, not in the code. `test/demo/look.ts` opens it in Chrome with Playwright (the Chrome installed) on the demo campaign of `tmp/dashboard-demo`: a screenshot, what the console said and the accessibility tree, at the width and in the theme asked; `test/demo/dashboard.ts` serves the same campaign for the browser pane. Both need `npm run build` first.
+- **Looking at the dashboard**: a change to the page is judged on the page, not in the code. `test/demo/look.ts` opens it in Chrome with Playwright (the Chrome installed) on the demo campaign of `tmp/dashboard-demo`: a screenshot, what the console said and the accessibility tree, at the width and in the theme asked; `test/demo/dashboard.ts` serves the same campaign for the browser pane, as `npm run demo` does. Both need `npm run build` first, which `npm run demo` runs.
 - **Core mechanics** (inheritance, then counters, time, scenes, containers, links and secrets) follow numbered rules in `private/project/MECCANICHE.md`. Their tests cite the rule codes: a table of cases, property tests with fast-check on worlds generated at random, and once per mechanic a mutation-testing run. A change to a mechanic changes its rule first, with the maintainer.
 - **Regression check after every addition or change**: build and run all tests; check the callers and impact of every changed symbol with CodeGraph; review the diff for regressions, unhandled `undefined`, nondeterminism, simplicity and these guidelines, and fix what you find; bring the docs in `docs/` up to date with the change (`npm run docs` for the commands). When it matters, give the maintainer a short checklist to verify the behaviour.
 
