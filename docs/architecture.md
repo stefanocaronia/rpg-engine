@@ -16,7 +16,7 @@ Code comments cite two kinds of codes. Rule codes such as `INH-4`, `CON-1`, `FOR
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary and the command-line surface |
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server, started by `rpg mcp` |
 | [src/dashboard-server.ts](../src/dashboard-server.ts) | The server of the player's dashboard, which the MCP server starts |
-| [src/dashboard/](../src/dashboard/) | The dashboard's page: TSX with Preact, built by its own `tsconfig.json` into `dist/dashboard/`, with its style sheet and pictures (`assets/`) |
+| [src/dashboard/](../src/dashboard/) | The dashboard's page: TSX with Preact, built by its own `tsconfig.json` into `dist/dashboard/`, with its style sheet and pictures (`assets/`); `assets/branding/` holds the drafts of the robot master, the logo and the master's avatar (D-274), which the build leaves out |
 | [src/index.ts](../src/index.ts) | The package entry: only `getVersion` today |
 | [systems/](../systems/) | Built-in game systems; today only [5e](../systems/5e/) (SRD 5.1) |
 | [instructions/](../instructions/) | The game master's instructions, served to the AI |

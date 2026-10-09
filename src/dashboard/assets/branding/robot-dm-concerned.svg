@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+    <title id="title">Robot game master — concerned</title>
+    <g id="head" transform="rotate(0 256 275)">
+        <g id="antenna" fill="var(--robot-accent, #DCAA32)">
+            <rect x="409" y="47" width="14" height="117" rx="7"/>
+            <circle cx="416" cy="45" r="19"/>
+        </g>
+        <g id="ears" fill="var(--robot-accent, #DCAA32)">
+            <rect x="74" y="154" width="64" height="91" rx="20"/>
+            <rect x="374" y="154" width="64" height="91" rx="20"/>
+        </g>
+        <path id="housing" fill="var(--robot-body, #F4C84C)" d="M158 66 H354 Q396 66 396 108 V254 Q396 292 354 292 H158 Q116 292 116 254 V108 Q116 66 158 66Z"/>
+        <rect id="display" x="143" y="126" width="226" height="135" rx="29" fill="var(--robot-display, #192D4D)"/>
+        <g id="expression" fill="var(--robot-face, #FFF4D5)"><circle cx="224" cy="208" r="13"/><circle cx="288" cy="208" r="13"/><path d="M211 184 L234 176 M278 176 L301 184" fill="none" stroke="var(--robot-face, #FFF4D5)" stroke-width="9" stroke-linecap="round"/><rect x="246" y="233" width="20" height="8" rx="4"/></g>
+    </g>
+    <g id="screen">
+        <path fill="var(--screen-side, #29477F)" d="M50 252 Q38 248 38 262 V415 Q38 424 48 430 L132 478 H380 L464 430 Q474 424 474 415 V262 Q474 248 462 252 L380 280 H132Z"/>
+        <path fill="var(--screen-front, #4268B2)" d="M132 280 H380 V478 H132Z"/>
+        <path id="die" fill="var(--screen-side, #29477F)" d="M256 313 L313 346 V412 L256 445 L199 412 V346Z"/>
+    </g>
+</svg>

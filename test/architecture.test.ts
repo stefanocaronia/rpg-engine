@@ -16,8 +16,10 @@ describe("architecture", () => {
     it("keeps every module independent: it imports only its own files, the core utilities, Node and packages", () => {
         for (const module of modules) {
             const folder = new URL(`${module}/`, sourceFolder);
+            // Its code, not the pictures and style sheets a module such as the dashboard holds.
+            const sources = readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name));
 
-            for (const fileName of readdirSync(folder)) {
+            for (const { name: fileName } of sources) {
                 const source = readFileSync(new URL(fileName, folder), "utf8");
 
                 // from "x", import "x" and import("x")
