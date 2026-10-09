@@ -10,7 +10,7 @@ import { cardIcons, DieIcon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
-import { Token } from "./party.tsx";
+import { MemberToken } from "./party.tsx";
 import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The card of the page's text, after the system's groups.
@@ -30,7 +30,7 @@ export function MemberSheet(
         <section class="sheet" aria-label={member.name}>
             <header class="band">
                 <div class="identity">
-                    <Token member={member} large />
+                    <MemberToken member={member} large />
                     <div class="who">
                         <h2>{member.name}</h2>
                         {headline && <p class="headline">{headline}</p>}

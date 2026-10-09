@@ -1,7 +1,9 @@
-// The party's strip (D-276): a link to each one's sheet, with their token, their name, the first counter of their line and their effects; the dead go last.
+// The party's strip (D-276): a link to each one's sheet, with their token and its mood's badge (D-305), their name, the first counter of their line and their
+// effects; the dead go last.
 import type { Member } from "./data.ts";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
+import { MoodBadge } from "./mood.tsx";
 import { Bar, Effects } from "./widgets.tsx";
 
 /** The address of someone's sheet, which the AI can give the player too (D-276). */
@@ -18,7 +20,7 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
             {ordered.map((member) => {
                 const counter = stripCounter(member);
                 // One name for a screen reader, which the drawing inside would say twice.
-                const said = [member.name, counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, member.dead ? "dead" : "", ...member.effects.map((effect) => effect.name)];
+                const said = [member.name, member.mood ?? "", counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, member.dead ? "dead" : "", ...member.effects.map((effect) => effect.name)];
                 return (
                     <a
                         key={member.name}
@@ -27,7 +29,7 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
                         aria-current={member.name === chosen ? "page" : undefined}
                         aria-label={said.filter((part) => part !== "").join(", ")}
                     >
-                        <Token member={member} />
+                        <MemberToken member={member} />
                         <span class="name">{member.name}</span>
                         {member.dead ? <span class="dead-mark">dead</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
@@ -35,6 +37,17 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
                 );
             })}
         </nav>
+    );
+}
+
+/** A party member's token with the badge of their mood (D-305), in the strip and the sheet's band; never in the rolls. */
+export function MemberToken({ member, large }: { member: Member; large?: boolean; })
+{
+    return (
+        <span class="token-holder">
+            <Token member={member} large={large} />
+            <MoodBadge mood={member.mood} large={large} />
+        </span>
     );
 }
 

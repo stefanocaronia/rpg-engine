@@ -4,11 +4,12 @@ import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
-import type { Asked, Member, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
+import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { PartyStrip } from "./party.tsx";
+import { rollReaction } from "./reactions.ts";
 import { RollLog } from "./rolls.tsx";
 import { MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
@@ -36,6 +37,8 @@ interface Shown
     rolls: ShownRoll[];
     /** How many public rolls the log has, past those read. */
     rollsTotal: number;
+    /** The master's mood, on the robot (D-305). */
+    masterMood?: Mood;
     asked?: Asked;
     /** How many times it was read: what was explained is told again after each. */
     version: number;
@@ -57,6 +60,9 @@ function App()
     const [fresh, setFresh] = useState<Set<string>>(new Set());
     // How many of the last rolls the page reads: more when the player asks for older ones (D-302).
     const rollsAsked = useRef(firstRolls);
+    // The robot's face for a moment (D-305): the master's last moment once it is new, or a new roll's reaction, whichever came last.
+    const [moment, setMoment] = useState<Moment>();
+    const toldMoment = useRef<string>();
     // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
 
@@ -80,6 +86,19 @@ function App()
                 // A roll stays new through the readings that come while its dice roll, until it shows (D-303); the list draws it new once.
                 const addedIds = new Set(added.map((roll) => roll.id));
                 setFresh((before) => new Set(rolls.map((roll) => roll.id).filter((id) => before.has(id) || addedIds.has(id))));
+                // The robot reacts to a new roll as it comes in, to a check of the player's as its dice go; the master's own moment comes after it (D-305).
+                const coming = added.filter((roll) => roll.id !== asking?.id).at(-1);
+
+                if (coming !== undefined) {
+                    react(coming, party);
+                }
+
+                const told = overview.kind === "overview" ? overview.master?.moment : undefined;
+
+                if (told !== undefined && told.id !== toldMoment.current) {
+                    toldMoment.current = told.id;
+                    setMoment(told);
+                }
 
                 if (asking !== undefined) {
                     setThrown(asking);
@@ -98,6 +117,7 @@ function App()
                     text: page?.kind === "page" ? page.text : "",
                     rolls,
                     rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
+                    masterMood: overview.kind === "overview" ? overview.master?.mood : undefined,
                     asked,
                     version: before.version + 1,
                     readAt: new Date(),
@@ -108,6 +128,15 @@ function App()
             if (number === reading.current) {
                 setShown((before) => ({ ...before, problem: error instanceof Error ? error.message : String(error) }));
             }
+        }
+    };
+
+    // A new roll's face on the robot, for a moment, when the roll is remarkable (D-305, 7).
+    const react = (roll: ShownRoll, party: Member[]): void => {
+        const reaction = rollReaction(roll, party.map((member) => member.name));
+
+        if (reaction !== undefined) {
+            setMoment(reaction);
         }
     };
 
@@ -149,7 +178,17 @@ function App()
     ];
     return (
         <div class={live ? "page" : "page stale"}>
-            <Top campaign={shown.campaign} product={productName} system={shown.system?.name} now={shown.now} place={place === "" ? undefined : place} live={live} />
+            <Top
+                campaign={shown.campaign}
+                product={productName}
+                system={shown.system?.name}
+                now={shown.now}
+                place={place === "" ? undefined : place}
+                live={live}
+                mood={shown.masterMood}
+                moment={moment}
+                asleep={!live && shown.readAt !== undefined}
+            />
             <Notices notices={notices} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
             <PartyStrip party={shown.party} chosen={shown.chosen} />
@@ -195,7 +234,18 @@ function App()
                     )}
                 </footer>
             )}
-            <DiceTray requested={thrown} sheetThrow={sheetThrow} party={shown.party} onShown={(id) => setHeld((now) => (now === id ? undefined : now))} />
+            <DiceTray
+                requested={thrown}
+                sheetThrow={sheetThrow}
+                party={shown.party}
+                onShown={(id) => {
+                    setHeld((now) => (now === id ? undefined : now));
+
+                    if (thrown?.id === id) {
+                        react(thrown, shown.party);
+                    }
+                }}
+            />
         </div>
     );
 }

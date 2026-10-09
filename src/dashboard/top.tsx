@@ -1,12 +1,14 @@
 // The page's top (D-276, D-293): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time, its place
 // and whether the game is live. Past it, a bar that stays on top with the same things, the master whole and moving, a little smaller, for its moods to be seen
-// (D-295); what the master asks and the rolls stay in sight under it.
+// (D-295); what the master asks and the rolls stay in sight under it. In both the robot shows the master's mood, a moment's face, and sleeps while the chat is
+// away (D-305).
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { Moment, Mood } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
 import { pickTheme, shownTheme } from "./theme.ts";
 
-/** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live. */
+/** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
 interface TopOf
 {
     campaign?: string;
@@ -15,6 +17,10 @@ interface TopOf
     now?: string;
     place?: string;
     live: boolean;
+    mood?: Mood;
+    moment?: Moment;
+    /** The chat is away: the robot sleeps. */
+    asleep?: boolean;
 }
 
 export function Top(top: TopOf)
@@ -45,7 +51,7 @@ export function Top(top: TopOf)
     return (
         <>
             <header ref={header} class="top">
-                <Master />
+                <Master mood={top.mood} moment={top.moment} asleep={top.asleep} />
                 <div class="titles">
                     <h1>{title}</h1>
                     {top.campaign !== undefined && (
@@ -59,7 +65,7 @@ export function Top(top: TopOf)
                 <ThemeSwitch />
             </header>
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
-                <Master />
+                <Master mood={top.mood} moment={top.moment} asleep={top.asleep} />
                 <span class="top-bar-title">{title}</span>
                 <StatusChips {...top} />
             </div>

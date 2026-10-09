@@ -449,6 +449,9 @@ a {
 
 .member .token {
     --size: 52px;
+}
+
+.member .token-holder {
     grid-row: 1 / span 3;
 }
 
@@ -501,6 +504,19 @@ a {
 .token.dead {
     filter: grayscale(1);
     opacity: 0.6;
+}
+
+/* A party member's token with their mood's badge on its lower right (D-305): the token clips what it holds, so the badge stands beside it. */
+.token-holder {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.token-holder > .mood-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
 }
 
 .token img {
@@ -2451,7 +2467,7 @@ svg.icon {
         padding: 8px;
     }
 
-    .member .token {
+    .member .token-holder {
         grid-row: auto;
     }
 
