@@ -1,4 +1,5 @@
 import { readLength } from "../core/length.ts";
+import { moods } from "../core/mood.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import type { PageType } from "./page-types.ts";
 import { positionHelp, readPosition } from "./positions.ts";
@@ -19,7 +20,7 @@ type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "co
 const commonRules: Record<string, Rule> = { tags: "list", aliases: "list", image: "link" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
-    character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"] },
+    character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"], mood: moods },
     place: { contains: "list", environment: "lines", stops: "stops", position: "position", radius: "length" },
     item: { contains: "list" },
     creature: { creature: "link" },

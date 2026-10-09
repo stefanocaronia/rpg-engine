@@ -10,8 +10,9 @@ import { linksIn, type Page, pagesWithName, systemPageNamed, type World } from "
 // for an item, the item (INH-1, D-164). On other types a field with that name means something else, such as the wolf of a trophy, and passes nothing on.
 const baseFields: Partial<Record<PageType, "creature" | "item">> = { character: "creature", creature: "creature", item: "item" };
 
-// INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, and what holds it for a while. Fields a system declares are inherited.
-const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "equipped", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects"]);
+// INH-8: never inherited, a closed list of the core: who a page is, what it holds or knows, what holds it for a while, and how it feels (MOOD-3). Fields a system
+// declares are inherited.
+const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "equipped", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects", "mood"]);
 
 /** A field and its value as a page writes it. */
 export interface FieldValue

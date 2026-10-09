@@ -79,6 +79,8 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | PNG | non-player character | `role: npc` |
 | gruppo | party | the living player character and companions (`isInParty`) |
 | effetto | effect | the `effects` field; the `effect` command |
+| stato d'animo, emozione | mood | one of the closed list `moods`: the master's in `state.yaml` (`master-mood`), a character's in its `mood` field; the `mood` command |
+| momento | moment | `mood master … --moment`: a reaction the dashboard's robot shows for a few seconds, logged as `mood-moment` |
 | strato | layer | how a page is read: bases, page, effects, formulas |
 | scena | scene | the open scene; the `scene` command |
 | copia | copy | a numbered copy of a creature in the scene, such as `Wolf 2` |

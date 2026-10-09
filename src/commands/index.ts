@@ -9,6 +9,7 @@ import { image } from "./image.ts";
 import { init } from "./init.ts";
 import { instructions } from "./instructions.ts";
 import { mode } from "./mode.ts";
+import { mood } from "./mood.ts";
 import { move } from "./move.ts";
 import { reveal } from "./reveal.ts";
 import { roll } from "./roll.ts";
@@ -24,4 +25,4 @@ import { view } from "./view.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, move, reveal, image, show, view, find, rules, roll, ask, change, effect, advance, travel, route, scene, save];
+export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, move, reveal, image, show, view, find, rules, roll, ask, change, effect, mood, advance, travel, route, scene, save];

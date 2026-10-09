@@ -198,6 +198,16 @@ Read-only: no. Positional parameters: `action`, `page`, `name`.
 - `set` (`string[] | object`, optional): add: the values it reads while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. What must outlive it, such as hit points it adds, change on the page instead
 - `why` (`string`, optional): what caused it, or ended it
 
+### mood
+
+Set a mood: yours as the master, which the dashboard's robot shows, or a character's, which it shows on the party's tokens and you keep for the others. Set yours when the story's tone turns, and let your voice follow it; moment is a reaction of a few seconds, to a roll or a choice, then the robot goes back to your mood. Mirror the player character's mood from how the player plays them, never decide it for them. neutral takes a mood away. Example: master surprised, moment; or Lena worried.
+
+Read-only: no. Positional parameters: `who`, `mood`.
+
+- `who` (`string`, required): master for yours, or a character's page: the player character, a companion, anyone
+- `mood` (`"neutral" | "happy" | "delighted" | "curious" | "focused" | "determined" | "worried" | "surprised" | "afraid" | "sad" | "angry" | "disgusted" | "mischievous"`, required): the mood: neutral, happy, delighted, curious, focused, determined, worried, surprised, afraid, sad, angry, disgusted, mischievous
+- `moment` (`boolean`, optional): yours only: show it for a few seconds, then go back to your mood, which stays as it is
+
 ### advance
 
 Let time pass in the story, whenever it does, before you narrate it: by a duration, such as 10m, 4h or 1d 6h, or to a later game date, such as day 3, 06:00. At the first scene, set the date the game starts on with to, at the scene's hour. Time never goes back. It stops at the first planned event that comes due, names it and says how to play it; on a new day, it lists the events' clocks to move. Example: by 8h, why "a night at the inn".

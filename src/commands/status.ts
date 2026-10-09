@@ -15,6 +15,7 @@ import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
+import { livingMood, masterMood } from "./game-moods.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
@@ -40,6 +41,8 @@ interface Member
     counters: string[];
     /** Its effects, with their end: "Spaventato (until round 3, Lena)". */
     effects: string[];
+    /** Its mood, when it has one (MOOD-6). */
+    mood?: string;
 }
 
 export const status = defineCommand({
@@ -66,13 +69,19 @@ export const status = defineCommand({
         const { coins } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const openScene = readOpenScene(root);
-        const member = (page: Page): Member => ({
-            name: characterName(page),
-            where: locate(world, page).chain.map((holder) => holder.name),
-            withLead: withLead(page),
-            counters: Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
-            effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
-        });
+
+        const member = (page: Page): Member => {
+            const mood = livingMood(page);
+            return {
+                name: characterName(page),
+                where: locate(world, page).chain.map((holder) => holder.name),
+                withLead: withLead(page),
+                counters: Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
+                effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
+                ...(mood === "neutral" ? {} : { mood }),
+            };
+        };
+
         const present = readPresent(root);
         const now = present.date;
         const events = plannedEvents(world);
@@ -112,6 +121,7 @@ export const status = defineCommand({
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             dashboard: context.dashboard,
+            mood: masterMood(root),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
             around: players.length === 0 ? "" : surroundingsText(surroundings(world, players[0])),
@@ -158,6 +168,7 @@ export const status = defineCommand({
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.`,
+            result.mood === "neutral" ? "" : `Your mood: ${result.mood}, which the dashboard's robot shows; mood master changes it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),
@@ -220,7 +231,7 @@ function whereabouts(member: Member): string
 
 function memberCounters(member: Member): string
 {
-    const shown = [...member.counters, ...member.effects];
+    const shown = [...member.counters, ...member.effects, ...(member.mood === undefined ? [] : [`mood ${member.mood}`])];
     return shown.length === 0 ? "" : `: ${shown.join(" · ")}`;
 }
 
@@ -266,7 +277,7 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
     return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${away === "" ? "" : `; ${away}`}${told}`;
 }
 
-/** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */
+/** "Varro (hp 23/30 · Prono · mood angry)": a character in the scene who is not of the party, with counters, effects (EFF-10) and mood (MOOD-6). */
 function sceneMemberText(world: World, name: string): string
 {
     const page = pagesWithName(world, name)[0];
@@ -275,7 +286,8 @@ function sceneMemberText(world: World, name: string): string
         return name;
     }
 
-    const shown = [countersText(pageCounters(world, page)), ...effectsOf(page).map((effect) => effectShown(world, effect))].filter((part) => part !== "");
+    const mood = livingMood(page);
+    const shown = [countersText(pageCounters(world, page)), ...effectsOf(page).map((effect) => effectShown(world, effect)), mood === "neutral" ? "" : `mood ${mood}`].filter((part) => part !== "");
     return shown.length === 0 ? name : `${name} (${shown.join(" · ")})`;
 }
 

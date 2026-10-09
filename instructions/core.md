@@ -22,6 +22,7 @@ For every campaign and game, in every mode; the part of the mode and the game sy
 - `reveal`: as soon as a character learns a secret, or of a page they did not know.
 - `roll`: every roll, with its reason and whose it is.
 - `change`: every change to a counter (damage, healing, what is spent or used up), to money (paid, received) and to an event's clock.
+- `mood`: yours when the story's tone turns, and your voice follows it; for a moment, as a reaction to a roll or a choice. A character's when it changes: the player character's mirrors how the player plays them.
 
 ## 3. The world's pages
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
+import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { notationWords, type ThrownDie } from "../dice/index.ts";
@@ -13,6 +14,7 @@ import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
+import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -66,6 +68,8 @@ export interface PartyMember
     counters: SheetValue[];
     /** Their effects, each with its end when it has one, and as the line writes it. */
     effects: { name: string; end?: string; text: string; }[];
+    /** Their mood (MOOD-6); none when neutral, or dead. */
+    mood?: Mood;
 }
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
@@ -77,6 +81,8 @@ export type ViewResult =
         /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
+        /** The master's mood, which the robot shows, and their last moment, which the dashboard shows for a few seconds when it is new (MOOD-4, MOOD-6). */
+        master: { mood: Mood; moment?: MoodMoment; };
         party: PartyMember[];
         quests: string[];
         scene?: string;
@@ -180,6 +186,7 @@ export const view = defineCommand({
             // In no place at all while a journey stopped in the open (TRV-13).
             const place = where.length > 0 ? `in ${where.join(" › ")}` : chain.length > 0 ? "elsewhere" : open ? "in the open" : undefined;
             const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
+            const mood = livingMood(page);
             return {
                 name: page.name,
                 role: page === pc ? "pc" : "companion",
@@ -188,6 +195,7 @@ export const view = defineCommand({
                 ...(place === undefined ? {} : { place }),
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)),
                 effects: effectsOf(page).map((effect) => ({ name: effect.name, ...(effect.end === undefined ? {} : { end: formatEnd(effect.end) }), text: effectShown(world, effect) })),
+                ...(mood === "neutral" ? {} : { mood }),
             };
         };
 
@@ -202,6 +210,7 @@ export const view = defineCommand({
         };
 
         const shownLines = readLog(root).filter((entry) => entry.visibility === "public");
+        const moment = lastMoment(shownLines);
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         const shownRolls = shownLines.filter((entry) => entry.type === "roll");
@@ -210,6 +219,7 @@ export const view = defineCommand({
             campaign: readSettings(root).name,
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
+            master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },
             party: [pc, ...companions].map(member),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
             scene: sceneLine(root, named),
@@ -271,10 +281,12 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
     };
 }
 
-/** "Lena (companion), in Locanda: hp 9/15 · Poisoned until day 2, 14:20": someone of the party as the chat reads them. */
+/** "Lena (companion, worried), in Locanda: hp 9/15 · Poisoned until day 2, 14:20": someone of the party as the chat reads them. */
 function memberLine(member: PartyMember): string
 {
-    const role = member.role === "pc" ? "" : member.dead ? " (companion, dead)" : " (companion)";
+    // A dead companion's line says so; the player character's never did.
+    const told = [member.role === "pc" ? "" : "companion", member.dead && member.role === "companion" ? "dead" : member.mood ?? ""].filter((part) => part !== "");
+    const role = told.length === 0 ? "" : ` (${told.join(", ")})`;
     const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.beside === undefined ? value.text : `${value.text} (${value.beside})`])));
     const shown = [counters, ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");
     return `${member.name}${role}${member.place === undefined ? "" : `, ${member.place}`}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
