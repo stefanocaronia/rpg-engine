@@ -1,6 +1,7 @@
 // Where the dice are shown (D-278): a three.js scene over the page, with a light, the dice's shadows on an invisible floor, and the dice of make-dice.py in the
 // theme's colours (D-279): yellow with navy numbers on the dark page, navy with yellow numbers on the light one.
 import * as THREE from "three";
+import { celebrate, type Effect, type Glow, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
 import type { Tray } from "./throw.ts";
 
@@ -14,20 +15,17 @@ export interface Pose
     quaternion: Turn;
 }
 
-/** The dice on the page: put them, show them in their poses, dim one that does not count, ring one that shows a rare face; a tray the size of the window. */
+/** The dice on the page: put them, show them in their poses, dim one that does not count, celebrate one that shows a rare face; a tray the size of the window. */
 export interface Stage
 {
     tray: Tray;
     place(kinds: string[]): void;
     show(poses: (Pose | undefined)[]): void;
     dim(die: number): void;
-    ring(die: number, rare: RareFace, instant: boolean): void;
+    celebrate(die: number, rare: RareFace, showing: Showing): void;
     hide(): void;
     resize(): void;
 }
-
-// How long a ring takes to grow around a die, in milliseconds.
-const ringGrowth = 300;
 
 /** Makes the stage on a canvas, for dice that look as given by their kinds; throws when the browser has no WebGL. */
 export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Object3D>): Stage
@@ -57,7 +55,20 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     scene.add(floor);
 
     let dice: { object: THREE.Object3D; materials: THREE.MeshStandardMaterial[]; }[] = [];
-    let rings: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>[] = [];
+    // The celebrations shown, drawn frame by frame while one of them moves.
+    let effects: Effect[] = [];
+    let pictures: Pictures | undefined;
+    let moving = false;
+
+    const draw = (now: number): void => {
+        moving = effects.map((effect) => effect.update(now)).some((still) => still);
+        renderer.render(scene, camera);
+
+        if (moving) {
+            requestAnimationFrame(draw);
+        }
+    };
+
     const tray: Tray = { width: 7, depth: 4.5 };
 
     const resize = (): void => {
@@ -77,13 +88,11 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
             scene.remove(die.object);
             die.materials.forEach((material) => material.dispose());
         });
-        rings.forEach((ring) => {
-            scene.remove(ring);
-            ring.geometry.dispose();
-            ring.material.dispose();
-        });
+        effects.forEach((effect) => effect.dispose());
+        Object.values(pictures ?? {}).forEach((texture: THREE.Texture) => texture.dispose());
+        pictures = undefined;
         dice = [];
-        rings = [];
+        effects = [];
     };
 
     resize();
@@ -132,37 +141,19 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
             });
             renderer.render(scene, camera);
         },
-        ring(die, rare, instant)
+        celebrate(die, rare, showing)
         {
             const object = dice[die]?.object;
 
-            if (object === undefined) {
-                return;
-            }
+            if (object !== undefined) {
+                pictures ??= makePictures();
+                effects.push(celebrate(scene, object.position.clone(), rare, diceColours().glow, pictures, showing));
 
-            // A ring on the floor around the die, gold for the highest face, red for the lowest, growing into place.
-            const colours = diceColours();
-            const ring = new THREE.Mesh(
-                new THREE.RingGeometry(1.45, 1.75, 64),
-                new THREE.MeshBasicMaterial({ color: rare === "highest" ? colours.highest : colours.lowest, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }),
-            );
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.set(object.position.x, 0.02, object.position.z);
-            scene.add(ring);
-            rings.push(ring);
-            const started = performance.now();
-
-            const grow = (now: number): void => {
-                const share = instant ? 1 : Math.min(1, Math.max(0, (now - started) / ringGrowth));
-                ring.scale.setScalar(0.6 + 0.4 * (1 - (1 - share) ** 3));
-                renderer.render(scene, camera);
-
-                if (share < 1 && rings.includes(ring)) {
-                    requestAnimationFrame(grow);
+                if (!moving) {
+                    moving = true;
+                    requestAnimationFrame(draw);
                 }
-            };
-
-            requestAnimationFrame(grow);
+            }
         },
         hide()
         {
@@ -173,10 +164,20 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     };
 }
 
-/** The dice's colours by the theme (D-279), the colour of the page's panels beneath them, and the rings of the rare faces. */
-function diceColours(): { body: string; ink: string; page: string; highest: string; lowest: string; }
+/** The dice's colours by the theme (D-279, D-282), the colour of the page's panels beneath them, and the glow of the rare faces. */
+function diceColours(): { body: string; ink: string; page: string; glow: Glow; }
 {
     return matchMedia("(prefers-color-scheme: dark)").matches
-        ? { body: "#f4c84c", ink: "#192d4d", page: "#162037", highest: "#f4c84c", lowest: "#ff8a73" }
-        : { body: "#192d4d", ink: "#f4c84c", page: "#fffdf8", highest: "#dcaa32", lowest: "#a33a2b" };
+        ? {
+            body: "#f5c63e",
+            ink: "#182c4c",
+            page: "#131f38",
+            glow: { lights: true, highest: { halo: "#f5c63e", resting: 0.6, sparks: ["#f5c63e", "#ffefcf"] }, lowest: { halo: "#ff9381", smoke: ["#ff9381", "#7f848f"] } },
+        }
+        : {
+            body: "#182c4c",
+            ink: "#f5c63e",
+            page: "#fef9f2",
+            glow: { lights: false, highest: { halo: "#d1a61b", resting: 0.85, sparks: ["#c29803", "#254b83"] }, lowest: { halo: "#a73929", smoke: ["#a73929", "#8c919c"] } },
+        };
 }

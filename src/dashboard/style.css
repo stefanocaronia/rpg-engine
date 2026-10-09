@@ -1,19 +1,41 @@
-/* The player's dashboard (D-273, D-275, D-276): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game. */
+/* The player's dashboard (D-273, D-275, D-276): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game. From Material
+   Design its ideas alone (D-282): colours from a seed, one state layer, ample targets, motion with a name, depth by tone on the dark page. */
 :root {
     color-scheme: light dark;
-    --ink: light-dark(#192d4d, #edf0f6);
-    --muted: light-dark(#56627a, #9aa6bf);
-    --paper: light-dark(#f3eee3, #0e1524);
-    --panel: light-dark(#fffdf8, #162037);
-    --panel-2: light-dark(#f8f3e8, #1b2742);
-    --rule: light-dark(#ddd4c2, #283656);
-    --accent: light-dark(#29477f, #f4c84c);
-    --gold: #f4c84c;
-    --ally: light-dark(#2f6f4f, #6cc49a);
-    --low: light-dark(#a33a2b, #ff8a73);
-    --disc: #192d4d;
-    --lift: light-dark(0 1px 2px rgb(25 45 77 / 0.08), 0 1px 0 rgb(255 255 255 / 0.04) inset);
-    --raise: light-dark(0 6px 18px -10px rgb(25 45 77 / 0.35), 0 10px 24px -14px rgb(0 0 0 / 0.8));
+    /* Two seeds from the robot, navy #192d4d and gold #f4c84c, as HCT tones by role. */
+    --ink: light-dark(#182c4c, #eff0fa);
+    --muted: light-dark(#586174, #a8b1c6);
+    --paper: light-dark(#f3ede2, #06132b);
+    --panel: light-dark(#fef9f2, #131f38);
+    --panel-2: light-dark(#f9f3e8, #1e2a43);
+    --float: light-dark(#ffffff, #29344e);
+    --rule: light-dark(#dfd3bd, #36425c);
+    --accent: light-dark(#254b83, #f5c63e);
+    --gold: #f5c63e;
+    --on-gold: #182c4c;
+    --ally: light-dark(#1b6b45, #7cc99a);
+    --low: light-dark(#a73929, #ff9381);
+    --disc: #182c4c;
+    /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
+    --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), transparent), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+    --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), transparent);
+    --overlay: 0 14px 32px -12px light-dark(rgb(24 44 76 / 0.45), rgb(0 0 0 / 0.75));
+    /* One state layer for whatever is clicked, and the least a finger hits. */
+    --state-hover: 0.08;
+    --state-focus: 0.1;
+    --state-press: 0.14;
+    --target: 44px;
+    /* Motion with a name. */
+    --quick: 100ms;
+    --short: 250ms;
+    --medium: 350ms;
+    --flight: 450ms;
+    --long: 600ms;
+    --linger: 900ms;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --ease-out: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --ease-in: cubic-bezier(0.3, 0, 0.8, 0.15);
+    --ease-bounce: cubic-bezier(0.3, 1.4, 0.5, 1);
     --radius: 10px;
     --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 }
@@ -40,23 +62,27 @@ body {
 .page.stale .sheet,
 .page.stale .party {
     opacity: 0.6;
-    transition: opacity 0.3s;
+    transition: opacity var(--short) var(--ease);
 }
 
 h1,
-h2,
-h3 {
+h2 {
     font-family: var(--serif);
     font-weight: 600;
     margin: 0;
 }
 
-h3 {
-    font-size: 0.95rem;
-    font-variant: small-caps;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
-    color: var(--accent);
+/* The cards' titles, in the text's own face (D-282). */
+h3,
+.rolls-title,
+.markdown h4 {
+    margin: 0;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    color: var(--ink);
 }
 
 .num {
@@ -71,6 +97,47 @@ button {
 a {
     color: inherit;
     text-decoration: none;
+}
+
+/* One state layer for whatever is clicked (D-282): the content's colour, a little, over it. */
+:where(button, summary, a[href]) {
+    position: relative;
+}
+
+:where(button, summary, a[href])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--quick) linear;
+}
+
+/* Only a pointer that hovers: after a tap the layer does not stay lit. */
+@media (hover: hover) {
+    :where(button, summary, a[href]):not(:disabled):hover::after {
+        opacity: var(--state-hover);
+    }
+}
+
+:where(button, summary, a[href]):focus-visible::after,
+:where(.explains)[aria-expanded="true"]::after {
+    opacity: var(--state-focus);
+}
+
+:where(button, summary, a[href]):not(:disabled):active::after {
+    opacity: var(--state-press);
+    transition-duration: 0s;
+}
+
+:is(.asked-buttons button, .dice-actions .dice-roll, .dice-button) {
+    transition: scale var(--quick) var(--ease);
+}
+
+:is(.asked-buttons button, .dice-actions .dice-roll, .dice-button):not(:disabled):active {
+    scale: 0.96;
 }
 
 :focus-visible {
@@ -163,7 +230,7 @@ a {
 
 .master .robot-head {
     transform-origin: 256px 275px;
-    transition: rotate 0.24s cubic-bezier(0.3, 1.4, 0.5, 1);
+    transition: rotate var(--short) var(--ease-bounce);
 }
 
 .master .robot-eyes {
@@ -398,7 +465,9 @@ a {
     display: flex;
     align-items: baseline;
     gap: 10px;
-    padding: 10px 0;
+    margin: 0 -12px;
+    padding: 10px 12px;
+    border-radius: calc(var(--radius) - 1px);
     cursor: pointer;
     list-style: none;
 }
@@ -409,12 +478,18 @@ a {
 
 .group summary::before {
     content: "▸" / "";
-    color: var(--muted);
+    color: var(--accent);
     font-size: 0.8rem;
 }
 
 .group[open] summary::before {
     content: "▾" / "";
+}
+
+.group[open] > summary {
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+    border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
 }
 
 .group summary h3 {
@@ -537,11 +612,6 @@ button.row,
     cursor: pointer;
 }
 
-button.row:hover,
-.tile:hover {
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
 .row-list,
 .row-text {
     grid-template-columns: 1.2em minmax(0, 1fr);
@@ -619,7 +689,7 @@ button.row:hover,
     inset: 0 auto 0 0;
     width: calc(var(--fill) * 100%);
     background: var(--ally);
-    transition: width 0.3s ease-out;
+    transition: width var(--short) var(--ease);
 }
 
 .bar.low .fill {
@@ -633,7 +703,7 @@ button.row:hover,
     left: calc(var(--from) * 100%);
     width: calc((var(--to) - var(--from)) * 100%);
     background: var(--accent);
-    transition: left 0.3s ease-out, width 0.3s ease-out;
+    transition: left var(--short) var(--ease), width var(--short) var(--ease);
 }
 
 .track .zero {
@@ -717,6 +787,11 @@ button.row:hover,
     font-weight: 600;
 }
 
+/* The table of the attacks draws no second line under its card's title. */
+.items tr:first-child > :is(th, td) {
+    border-top: 0;
+}
+
 /* A page's text, as a companion's traits and actions. */
 .lore {
     padding: 4px 14px 12px;
@@ -724,12 +799,6 @@ button.row:hover,
 
 .markdown h4 {
     margin: 12px 0 4px;
-    font-family: var(--serif);
-    font-size: 0.95rem;
-    font-variant: small-caps;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
-    color: var(--accent);
 }
 
 .markdown h5 {
@@ -789,7 +858,7 @@ button.row:hover,
 }
 
 .changed {
-    animation: changed 0.9s ease-out;
+    animation: changed var(--linger) var(--ease-out);
 }
 
 @keyframes changed {
@@ -828,13 +897,13 @@ button.row:hover,
     padding: 14px 16px;
     border: 1px solid var(--accent);
     border-radius: var(--radius);
-    background: var(--panel);
-    box-shadow: inset 0 0 0 1px var(--accent), var(--raise);
+    background: var(--float);
+    box-shadow: inset 0 0 0 1px var(--accent), var(--overlay);
 }
 
 @media (prefers-reduced-motion: no-preference) {
     .asked {
-        animation: asked-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+        animation: asked-in var(--medium) var(--ease-bounce);
     }
 }
 
@@ -848,7 +917,7 @@ button.row:hover,
 /* Clicked: the banner folds away while the engine rolls. */
 .asked.leaving {
     overflow: hidden;
-    animation: asked-out 0.25s ease-in forwards;
+    animation: asked-out var(--short) var(--ease-in) forwards;
 }
 
 @keyframes asked-out {
@@ -866,10 +935,6 @@ button.row:hover,
     }
 }
 
-.asked-buttons button:active {
-    transform: scale(0.97);
-}
-
 .asked-robot {
     flex: 0 0 auto;
     width: 40px;
@@ -884,9 +949,8 @@ button.row:hover,
 .asked-title {
     font: inherit;
     font-size: 0.8rem;
-    font-variant: small-caps;
-    letter-spacing: 0.1em;
-    text-transform: lowercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: var(--accent);
 }
 
@@ -915,7 +979,7 @@ button.row:hover,
 .asked-buttons .asked-check {
     border-color: transparent;
     background: var(--gold);
-    color: #192d4d;
+    color: var(--on-gold);
     font-weight: 600;
     box-shadow: var(--raise);
 }
@@ -981,12 +1045,9 @@ button.row:hover,
 }
 
 .rolls-title {
-    margin-bottom: 6px;
-    font-size: 0.95rem;
-    font-variant: small-caps;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
-    color: var(--accent);
+    margin: -12px -12px 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule);
 }
 
 .rolls-none {
@@ -1080,7 +1141,7 @@ button.row:hover,
     height: 100%;
     pointer-events: none;
     z-index: 20;
-    transition: opacity 0.6s;
+    transition: opacity var(--long) linear;
 }
 
 .dice-stage.fading {
@@ -1102,11 +1163,11 @@ button.row:hover,
     padding: 8px 22px;
     border: 1px solid var(--rule);
     border-radius: 999px;
-    background: var(--panel);
-    box-shadow: var(--raise);
+    background: var(--float);
+    box-shadow: var(--overlay);
     opacity: 0;
     transform: translate(-50%, 12px);
-    transition: opacity 0.25s, transform 0.25s;
+    transition: opacity var(--short) var(--ease-out), transform var(--short) var(--ease-out);
     pointer-events: none;
 }
 
@@ -1127,7 +1188,7 @@ button.row:hover,
 
 .dice-result.rare.highest {
     border-color: var(--gold);
-    box-shadow: var(--raise), 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent);
+    box-shadow: var(--overlay), 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent);
 }
 
 .dice-result.rare.highest .dice-rare {
@@ -1140,7 +1201,7 @@ button.row:hover,
 
 /* The line of the rolls a plate flew into lights up as it lands. */
 .roll.arrived {
-    animation: changed 0.9s ease-out;
+    animation: changed var(--linger) var(--ease-out);
 }
 
 /* A free throw counts for nothing: its plate is only drawn in dashes (D-279). */
@@ -1188,11 +1249,8 @@ button.row:hover,
     border: 0;
     border-radius: 50%;
     background: var(--gold);
-    color: #192d4d;
-    font-family: var(--serif);
-    font-size: 1.1rem;
-    font-weight: 700;
-    box-shadow: var(--raise), 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
+    color: var(--on-gold);
+    box-shadow: var(--overlay), 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
     cursor: pointer;
 }
 
@@ -1206,7 +1264,7 @@ button.row:hover,
 }
 
 .dice-button[aria-expanded="true"] {
-    box-shadow: var(--raise), 0 0 0 3px var(--accent);
+    box-shadow: var(--overlay), 0 0 0 3px var(--accent);
 }
 
 /* The tray of the dice for fun: the seven dice to choose, a modifier, the throw; it counts for nothing (D-279). */
@@ -1221,8 +1279,8 @@ button.row:hover,
     padding: 14px;
     border: 1px dashed var(--accent);
     border-radius: var(--radius);
-    background: var(--panel);
-    box-shadow: var(--raise);
+    background: var(--float);
+    box-shadow: var(--overlay);
 }
 
 .dice-pick {
@@ -1305,7 +1363,7 @@ button.row:hover,
     flex: 1 1 100%;
     border-color: transparent;
     background: var(--gold);
-    color: #192d4d;
+    color: var(--on-gold);
     font-weight: 700;
 }
 
@@ -1400,5 +1458,29 @@ button.row:hover,
         min-height: 40px;
         padding: 6px 12px;
         font-size: 0.9rem;
+    }
+
+    /* The dice's button covers the right edge: the free roll of a number stays on the left. */
+    .how-roll {
+        margin-left: 0;
+    }
+}
+
+/* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+@media (pointer: coarse) {
+    .dice-modifier button {
+        width: var(--target);
+        height: var(--target);
+    }
+
+    .dice-pick-die,
+    .dice-actions button,
+    .asked-buttons button,
+    .how-roll {
+        min-height: var(--target);
+    }
+
+    button.row {
+        min-height: 36px;
     }
 }

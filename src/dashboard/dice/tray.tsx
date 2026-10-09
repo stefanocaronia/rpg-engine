@@ -9,6 +9,7 @@ import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
 const lingers = { free: 3200, asked: 4200 };
+// As --long and --flight in the style sheet.
 const fadeLength = 600;
 const flight = 450;
 
@@ -268,7 +269,7 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     const to = row.getBoundingClientRect();
     const across = to.left + to.width / 2 - (from.left + from.width / 2);
     const down = to.top + to.height / 2 - (from.top + from.height / 2);
-    plate.style.transition = `transform ${flight}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${flight}ms ease-in`;
+    plate.style.transition = "transform var(--flight) var(--ease), opacity var(--flight) var(--ease-in)";
     plate.style.transform = `translate(calc(-50% + ${across}px), ${down}px) scale(${Math.min(1, to.height / from.height)})`;
     plate.style.opacity = "0.25";
     window.setTimeout(() => {

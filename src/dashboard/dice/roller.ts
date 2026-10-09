@@ -78,7 +78,11 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
             }
 
             dice.forEach((die, index) => die.dropped && stage.dim(index));
-            dice.forEach((die, index) => die.rare !== undefined && stage.ring(index, die.rare, showing.instant));
+            // A rare face is celebrated, still when the throw was shown at once or cut short; at most 80 sparks or puffs in all, fewer on a phone.
+            const rares = dice.filter((die) => die.rare !== undefined).length;
+            const particles = Math.min(matchMedia("(max-width: 600px)").matches ? 24 : 40, Math.floor(80 / Math.max(1, rares)));
+            const instant = showing.instant || showing.skipping();
+            dice.forEach((die, index) => die.rare !== undefined && stage.celebrate(index, die.rare, { instant, particles }));
             return true;
         },
         hide: () => stage.hide(),
