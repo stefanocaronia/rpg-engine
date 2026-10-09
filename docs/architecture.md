@@ -16,13 +16,14 @@ Code comments cite two kinds of codes. Rule codes such as `INH-4`, `CON-1`, `FOR
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary and the command-line surface |
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server, started by `rpg mcp` |
 | [src/dashboard-server.ts](../src/dashboard-server.ts) | The server of the player's dashboard, which the MCP server starts |
+| [src/dashboard/](../src/dashboard/) | The dashboard's page: TSX with Preact, built by its own `tsconfig.json` into `dist/dashboard/`, with its style sheet and pictures (`assets/`) |
 | [src/index.ts](../src/index.ts) | The package entry: only `getVersion` today |
 | [systems/](../systems/) | Built-in game systems; today only [5e](../systems/5e/) (SRD 5.1) |
 | [instructions/](../instructions/) | The game master's instructions, served to the AI |
 | [test/](../test/) | Tests, test helpers, the Ironsworn-based test system and a performance bench |
 | [playtests/](../playtests/) | Playtest scenarios (not code) |
 
-The dashboard has its server, which gives `view` in JSON, but not its page yet; there is no `extensions/` folder in the code today.
+There is no `extensions/` folder in the code today.
 
 | Module | Job | Entry |
 |---|---|---|
@@ -284,7 +285,7 @@ Files: [commands/view.ts](../src/commands/view.ts), [commands/game-knowledge.ts]
 
 ### The dashboard
 
-Files: [dashboard-server.ts](../src/dashboard-server.ts). Decisions: D-270, D-272.
+Files: [dashboard-server.ts](../src/dashboard-server.ts), [dashboard/](../src/dashboard/). Decisions: D-270, D-272, D-273.
 
 `startMcpServer` starts it once the server's folder holds a campaign: at once, or when a call first finds one (`onTrack`). `startDashboard` listens on 127.0.0.1 only, at the first free port from 4747 to 4756, never keeps the process alive, and puts its link in `context.dashboard`, which `status` gives the master for the player. It answers only requests whose `Host` and `Origin`, when there is one, are its own (`localhost` or `127.0.0.1` at its port), and only `GET`:
 
@@ -292,7 +293,12 @@ Files: [dashboard-server.ts](../src/dashboard-server.ts). Decisions: D-270, D-27
 - `/events`: server-sent events; `changed` when the session's watchers name a change or lose track (`onChange`), at most once every 100 ms. The notice carries no data: the page reads `view` again, so nothing the player may not see goes through it.
 - `/images/<name>`: a picture by the name of its file, looked for with `findImage` in the campaign's and the system's `images/` folders, never by a path; with an ETag of its bytes, `no-cache`, and a policy that runs nothing, even an SVG opened by itself.
 
-Every answer carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'self'`.
+- `/`: the page, written by the server with an import map that names Preact's modules; its policy runs only the page's own scripts and that map, known by its hash.
+- `/vendor/<module>`: the modules of Preact the map names, from its package; `/<file>`: a script, a style sheet or a picture of the built page, never outside its folder.
+
+Every answer carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'self'`; a picture, one that runs nothing.
+
+The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) reads `view` for the party and `view <member>` for the sheet of whom the player chooses, again at every `changed` and whenever it connects, and keeps showing the last sheet, dimmed, while the chat is closed. It is generic: [dashboard/layout.ts](../src/dashboard/layout.ts) draws each value by its kind, never by a field's name (pips for a counter up to 10, a bar beyond, a track when it goes below zero, chips for a list, tiles for a group of a few short numbers), and [dashboard/labels.ts](../src/dashboard/labels.ts) makes the labels from the fields' names (D-273). A click on a number reads `view <member>#<group>` and shows how it is made (FOR-8). [dashboard/data.ts](../src/dashboard/data.ts) holds the types of what the page reads, and a test checks that `view`'s result fits them. `npm run build` compiles the page with its own `tsconfig.json`, for the browser, and copies its style sheet and `assets/`; `npm run lint` checks its types. [test/demo/dashboard.ts](../test/demo/dashboard.ts) makes a campaign in `tmp/` and serves its dashboard, to look at it.
 
 ### Game time
 

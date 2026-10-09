@@ -1,13 +1,19 @@
 // The player's dashboard (D-270, D-272): view gives the party and the sheet as data, with the chat's text unchanged; the server gives only what view gives, only
 // to its own page, tells the page when a file changes, and serves the pictures.
-import { cpSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import type { ViewResult } from "../src/commands/view.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { explanations } from "../src/dashboard/api.ts";
+import type { SheetValue, View } from "../src/dashboard/data.ts";
+import { fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
+import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
@@ -131,6 +137,8 @@ describe("the dashboard's server (D-270, D-272)", () => {
     let session: SessionStore;
     let dashboard: Dashboard;
     let port: number;
+    // A built page of the tests: a script and a style sheet.
+    let page: string;
 
     const fakeWatcher: WatchFolder = (_folder, changed, failed) => {
         watchers.push({ changed, failed });
@@ -139,8 +147,15 @@ describe("the dashboard's server (D-270, D-272)", () => {
 
     beforeEach(async () => {
         watchers = [];
+        page = join(folder, "page");
+        mkdirSync(page);
+        writeFileSync(join(page, "app.js"), "export {};\n");
+        writeFileSync(join(page, "style.css"), "body {}\n");
+        mkdirSync(join(page, "assets"));
+        writeFileSync(join(page, "assets", "logo.svg"), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+        writeFileSync(join(folder, "secret.js"), "export {};\n");
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: fakeWatcher });
-        const started = await startDashboard({ ...context, files: session }, session, [0]);
+        const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page });
 
         if (started === undefined) {
             throw new Error("The dashboard did not start.");
@@ -180,6 +195,26 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(shown.body).not.toContain("fratello");
         expect(JSON.parse(shown.body).error).toBe("The dashboard has no command show: it has view.");
         expect((await get("/api/view?pagina=Varro")).status).toBe(400);
+    });
+
+    it("serves the page, which runs only its own scripts and the import map written in it, and Preact from its package", async () => {
+        const html = await get("/");
+        expect(html.status).toBe(200);
+        expect(html.headers["content-type"]).toBe("text/html; charset=utf-8");
+        const importMap = /<script type="importmap">(.*)<\/script>/.exec(html.body)?.[1] ?? "";
+        expect(JSON.parse(importMap).imports).toEqual({ "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js" });
+        expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
+        expect(await get("/app.js")).toMatchObject({ status: 200, body: "export {};\n", headers: { "content-type": "text/javascript; charset=utf-8" } });
+        expect((await get("/style.css")).headers["content-type"]).toBe("text/css; charset=utf-8");
+        expect((await get("/assets/logo.svg")).headers).toMatchObject({ "content-type": "image/svg+xml", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" });
+        // Nothing outside the page's folder, nor what is not a script or a style sheet.
+        expect((await get("/%2e%2e/secret.js")).status).toBe(404);
+        expect((await get("/..%5Csecret.js")).status).toBe(404);
+        expect((await get("/page.json")).status).toBe(404);
+        const preact = await get("/vendor/hooks.js");
+        expect(preact.status).toBe(200);
+        expect(preact.body).toContain('from"preact"');
+        expect((await get("/vendor/compat.js")).status).toBe(404);
     });
 
     it("answers only its own page: another site, or a name that leads elsewhere, gets nothing", async () => {
@@ -226,7 +261,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         const taken = createServer();
         await new Promise<void>((done) => taken.listen(0, "127.0.0.1", done));
         const busy = (taken.address() as { port: number; }).port;
-        const next = await startDashboard({ ...context, files: session }, session, [busy, 0]);
+        const next = await startDashboard({ ...context, files: session }, session, { ports: [busy, 0] });
 
         try {
             expect(next?.url).toMatch(/^http:\/\/localhost:\d+$/);
@@ -259,5 +294,46 @@ describe("the session's notices (D-193, D-272)", () => {
         watched[1].changed("Ettore.md");
         expect(changes).toBe(2);
         session.close();
+    });
+});
+
+describe("the page's reading of a sheet (D-273)", () => {
+    it("reads what view gives with types of its own, which view's result fits", () => {
+        const fits = (result: ViewResult): View => result;
+        expect(fits({ kind: "none" })).toEqual({ kind: "none" });
+    });
+
+    it("labels a field by its words, in capitals the short ones that name a field, and leaves out a last word a group shares", () => {
+        const fields = new Set(["str", "dex", "hp", "max-prepared"]);
+        expect(fieldLabel("hit-dice-d8", fields)).toBe("hit dice d8");
+        expect(fieldLabel("str-save", fields)).toBe("STR save");
+        expect(fieldLabel("spell-save-dc", fields)).toBe("spell save DC");
+        expect(fieldLabel("max-prepared", fields)).toBe("max prepared");
+        expect(fieldLabel("momentum", fields)).toBe("momentum");
+        expect(fieldLabel("sleight-of-hand", fields)).toBe("sleight of hand");
+        expect(groupLabels(["str-save", "dex-save"], fields)).toEqual(new Map([["str-save", "STR"], ["dex-save", "DEX"]]));
+        expect(groupLabels(["slots-1", "slots-2"], fields)).toEqual(new Map([["slots-1", "slots 1"], ["slots-2", "slots 2"]]));
+        expect(shownText("-1 (+2) · hit-dice 3")).toBe("−1 (+2) · hit-dice 3");
+        expect(initials("Ettore di Valle")).toBe("ED");
+    });
+
+    it("draws a value by its kind, never by its name: pips, bars, a track below zero, chips, text", () => {
+        const value = (counter: { value: number; max?: number; min?: number; } | undefined, text = "1"): SheetValue => ({ field: "any", text, marks: 0, ...(counter === undefined ? {} : { counter }) });
+        expect(widgetOf(value({ value: 3, max: 3 }))).toBe("pips");
+        expect(widgetOf(value({ value: 20, max: 24 }))).toBe("bar");
+        expect(widgetOf(value({ value: 2, max: 9, min: -6 }))).toBe("track");
+        expect(widgetOf(value({ value: 900 }))).toBe("number");
+        expect(widgetOf({ ...value(undefined), items: ["Common"] })).toBe("list");
+        expect(widgetOf(value(undefined, "Cito le scritture, sempre, e a ogni pasto ne trovo una nuova."))).toBe("text");
+        expect(trackPlaces({ value: 2, min: -6, max: 10 })).toEqual({ zero: 0.375, value: 0.5 });
+        expect(groupLayout({ name: "Stats", values: [value(undefined), value(undefined)] })).toBe("tiles");
+        expect(groupLayout({ name: "Combat", values: [value(undefined), value({ value: 20, max: 24 })] })).toBe("rows");
+        expect(orderedValues([{ ...value(undefined), items: [] }, value({ value: 1, max: 2 }), value(undefined)]).map(widgetOf)).toEqual(["number", "pips", "list"]);
+    });
+
+    it("reads how each number of a group is made from what view gives for Page#Group (FOR-8)", () => {
+        expect(explanations(["insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies", "speed 25 ft."])).toEqual(
+            new Map([["insight", ["wis-mod +3", "proficiency +2", "Insight in skill-proficiencies"]]]),
+        );
     });
 });

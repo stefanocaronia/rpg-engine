@@ -24,11 +24,11 @@
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.]tsx?$|tsconfig[.]json$/.test(path) })\"",
     "dev": "tsc --watch",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
-    "lint": "eslint . && dprint check && tsc -p tsconfig.test.json",
+    "lint": "eslint . && dprint check && tsc -p tsconfig.test.json && tsc -p src/dashboard --noEmit",
     "docs": "node --experimental-strip-types --input-type=module -e \"import { writeFileSync } from 'node:fs'; import { commands } from './src/commands/index.ts'; import { commandReference } from './src/core/command-reference.ts'; writeFileSync('docs/commands.md', commandReference(commands));\""
   },
   "engines": {
@@ -62,6 +62,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",
     "fflate": "^0.8.2",
+    "preact": "^10.29.8",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   }

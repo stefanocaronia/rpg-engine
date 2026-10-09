@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
+import { readSettings, requireCampaign } from "../campaign/index.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
@@ -38,7 +38,7 @@ export interface PartyMember
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
     | { kind: "none"; }
-    | { kind: "overview"; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; }
+    | { kind: "overview"; campaign: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; }
     | { kind: "page"; title: string; sheet: SheetGroupData[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
@@ -129,6 +129,7 @@ export const view = defineCommand({
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         return {
             kind: "overview",
+            campaign: readSettings(root).name,
             party: [pc, ...companions].map(member),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
             scene: sceneLine(root, named),

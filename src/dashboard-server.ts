@@ -2,7 +2,9 @@
 // and tells it when a file of the campaign changes, by whoever, so that it reads again: nothing else goes through the notice, so no secret can.
 import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { extname } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
@@ -10,7 +12,7 @@ import { view } from "./commands/view.ts";
 import type { Context } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
-import { files, withFiles } from "./core/store.ts";
+import { files, isInside, withFiles } from "./core/store.ts";
 import { findImage } from "./images/index.ts";
 
 /** The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). */
@@ -23,6 +25,15 @@ export interface Dashboard
     close(): Promise<void>;
 }
 
+/** Where the dashboard listens, and the page it serves. */
+export interface DashboardOptions
+{
+    /** The ports to try, in turn (D-272). */
+    ports?: number[];
+    /** The folder of the built page: dist/dashboard. */
+    page?: string;
+}
+
 // The commands the page may run: what the player may see, never the master's (VIEW-1). Roles will say more (phase 2).
 const playerCommands: Command<z.ZodObject, unknown>[] = [view];
 
@@ -30,16 +41,44 @@ const playerCommands: Command<z.ZodObject, unknown>[] = [view];
 const noticeDelay = 100;
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
+const pageTypes: Record<string, string> = { ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png" };
 
-/** Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of `ports` that is free; undefined when none is. */
-export async function startDashboard(context: Context, session: SessionStore, ports: number[] = dashboardPorts): Promise<Dashboard | undefined>
+// A picture runs nothing, even an SVG opened by itself.
+const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+
+// From src/ and from dist/ alike, the built page is in dist/dashboard, one level up.
+const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
+
+// The modules of Preact the page imports, by the names the import map gives them, as files of its package.
+const preactModules: Record<string, string> = { "preact.js": "dist/preact.module.js", "hooks.js": "hooks/dist/hooks.module.js", "jsx-runtime.js": "jsx-runtime/dist/jsxRuntime.module.js" };
+const importMap = JSON.stringify({ imports: { "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js" } });
+
+// The page runs only its own files and the import map written in it, known by its hash.
+const pagePolicy = `default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`;
+
+const pageHtml = [
+    "<!doctype html>",
+    '<html lang="en">',
+    '<meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<meta name="color-scheme" content="light dark">',
+    "<title>rpg-engine</title>",
+    '<link rel="stylesheet" href="/style.css">',
+    `<script type="importmap">${importMap}</script>`,
+    '<script type="module" src="/app.js"></script>',
+    '<main id="app"></main>',
+    "",
+].join("\n");
+
+/** Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free; undefined when none is. */
+export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
-    for (const port of ports) {
+    for (const port of options.ports ?? dashboardPorts) {
         const server = createServer();
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            return serve(server, listening, context, session);
+            return serve(server, { port: listening, context, session, page: options.page ?? builtPage, pages: new Set() });
         }
     }
 
@@ -58,43 +97,44 @@ function listen(server: Server, port: number): Promise<number | undefined>
     });
 }
 
-function serve(server: Server, port: number, context: Context, session: SessionStore): Dashboard
+interface Served
 {
-    const pages = new Set<ServerResponse>();
+    port: number;
+    context: Context;
+    session: SessionStore;
+    /** The folder of the built page. */
+    page: string;
+    /** The pages open, which wait for notices. */
+    pages: Set<ServerResponse>;
+}
+
+function serve(server: Server, served: Served): Dashboard
+{
     let notice: NodeJS.Timeout | undefined;
-    const stopListening = session.onChange(() => {
+    const stopListening = served.session.onChange(() => {
         notice ??= setTimeout(() => {
             notice = undefined;
-            pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
+            served.pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
         }, noticeDelay).unref();
     });
 
     server.on("request", (request: IncomingMessage, response: ServerResponse) => {
-        answer(request, response, { port, context, session, pages }).catch((error: unknown) => {
+        answer(request, response, served).catch((error: unknown) => {
             send(response, 500, "text/plain; charset=utf-8", error instanceof Error ? error.message : String(error));
         });
     });
     // The server never keeps the process alive: it ends with the chat (D-270).
     server.unref();
     return {
-        url: `http://localhost:${port}`,
+        url: `http://localhost:${served.port}`,
         close: () =>
             new Promise((done) => {
                 stopListening();
                 clearTimeout(notice);
-                pages.forEach((page) => page.end());
+                served.pages.forEach((page) => page.end());
                 server.close(() => done());
             }),
     };
-}
-
-interface Served
-{
-    port: number;
-    context: Context;
-    session: SessionStore;
-    /** The pages that wait for notices. */
-    pages: Set<ServerResponse>;
 }
 
 async function answer(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
@@ -116,15 +156,53 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     const url = new URL(request.url ?? "/", own[0]);
     const path = url.pathname;
 
-    if (path === "/events") {
+    if (path === "/") {
+        send(response, 200, "text/html; charset=utf-8", pageHtml, pagePolicy);
+    } else if (path === "/events") {
         listenForChanges(request, response, served.pages);
     } else if (path.startsWith("/api/")) {
         await runCommand(path.slice("/api/".length), url.searchParams, response, served);
     } else if (path.startsWith("/images/")) {
         sendImage(path.slice("/images/".length), request, response, served);
+    } else if (path.startsWith("/vendor/")) {
+        sendFile(preactModule(path.slice("/vendor/".length)), path, response, served);
     } else {
-        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${path}.`);
+        sendFile(pageFile(served.page, path), path, response, served);
     }
+}
+
+/** A file of the built page, by its path in the address: only a script, a style sheet or a picture inside its folder, such as its logo. */
+function pageFile(folder: string, path: string): string | undefined
+{
+    const relative = decoded(path);
+    const file = relative === undefined ? undefined : resolve(folder, `.${relative}`);
+    return file !== undefined && isInside(folder, file) && pageTypes[extname(file)] !== undefined ? file : undefined;
+}
+
+/** A module of Preact the page imports, as a file of its package; undefined for another name, or when the package is missing. */
+function preactModule(name: string): string | undefined
+{
+    try {
+        const module = preactModules[name];
+        return module === undefined ? undefined : join(dirname(createRequire(import.meta.url).resolve("preact/package.json")), module);
+    } catch {
+        return undefined;
+    }
+}
+
+/** A script, a style sheet or a picture of the page, as it is on the disk. */
+function sendFile(file: string | undefined, path: string, response: ServerResponse, served: Served): void
+{
+    const type = file === undefined ? undefined : pageTypes[extname(file)];
+    const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));
+
+    if (bytes === undefined || type === undefined) {
+        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${path}.`);
+        return;
+    }
+
+    const policy = type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"];
+    response.writeHead(200, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-cache" }).end(bytes);
 }
 
 /** Keeps the page's request open, to tell it "changed" whenever a file of the campaign changes; the page reads again, and comes back by itself after a pause. */
@@ -182,7 +260,7 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
 
     // A picture given again keeps its name: the page asks each time, and the same picture comes back as not modified.
     const tag = `"${createHash("sha1").update(bytes).digest("base64url")}"`;
-    const headers = { "Content-Type": type, "Cache-Control": "no-cache", ETag: tag, "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" };
+    const headers = { "Content-Type": type, "Cache-Control": "no-cache", ETag: tag, "Content-Security-Policy": picturePolicy };
 
     if (request.headers["if-none-match"] === tag) {
         response.writeHead(304, { ...securityHeaders, ...headers }).end();
@@ -209,12 +287,12 @@ function sendJson(response: ServerResponse, status: number, body: unknown): void
     send(response, status, "application/json; charset=utf-8", JSON.stringify(body));
 }
 
-function send(response: ServerResponse, status: number, type: string, body: string): void
+function send(response: ServerResponse, status: number, type: string, body: string, policy = securityHeaders["Content-Security-Policy"]): void
 {
     if (response.headersSent) {
         response.end();
         return;
     }
 
-    response.writeHead(status, { ...securityHeaders, "Content-Type": type, "Cache-Control": "no-store" }).end(body);
+    response.writeHead(status, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-store" }).end(body);
 }
