@@ -1,7 +1,7 @@
 // A card of the page (D-273, D-284): its header has its icon and title on the left, what it holds while it is closed, and the chevron on the right; it is open
 // or closed as the player left it, in this browser.
 import type { ComponentChildren } from "preact";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 // Up to this width the cards start closed.
 const narrow = "(max-width: 600px)";
@@ -23,19 +23,39 @@ export function useOpen(name: string): [boolean, (event: MouseEvent) => void]
     return [open, toggle];
 }
 
-/** A card's header, all of it the toggle: its icon, its title, what it holds while closed, for the eye alone, and the chevron. */
-export function CardHeader({ icon, title, preview, open, onToggle }: { icon: string; title: ComponentChildren; preview?: string; open: boolean; onToggle: (event: MouseEvent) => void; })
+/** Whether the window matches a media query, as it changes. */
+export function useMedia(query: string): boolean
+{
+    const [matches, setMatches] = useState(() => matchMedia(query).matches);
+
+    useEffect(() => {
+        const list = matchMedia(query);
+        const follow = (): void => setMatches(list.matches);
+        list.addEventListener("change", follow);
+        return () => list.removeEventListener("change", follow);
+    }, [query]);
+
+    return matches;
+}
+
+/**
+ * A card's header, all of it the toggle: its icon, its title, what it holds while closed, for the eye alone, and the chevron; a card that stays open has no
+ * chevron and does not close.
+ */
+export function CardHeader({ icon, title, preview, open, onToggle, fixed }: { icon: string; title: ComponentChildren; preview?: string; open: boolean; onToggle: (event: MouseEvent) => void; fixed?: boolean; })
 {
     return (
-        <summary onClick={onToggle}>
+        <summary class={fixed ? "fixed" : undefined} onClick={fixed ? (event) => event.preventDefault() : onToggle}>
             <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d={icon} />
             </svg>
             {title}
             {!open && preview !== undefined && <span class="preview" aria-hidden="true">{preview}</span>}
-            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d={chevronPath} />
-            </svg>
+            {!fixed && (
+                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={chevronPath} />
+                </svg>
+            )}
         </summary>
     );
 }

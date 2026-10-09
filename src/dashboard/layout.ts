@@ -53,12 +53,6 @@ export function orderedValues(values: SheetValue[]): SheetValue[]
     return [...values].sort((first, second) => widgetRank(first) - widgetRank(second));
 }
 
-/** Whether a value is a number the page explains when clicked (FOR-8): a number, with its progress or without. */
-export function isExplained(value: SheetValue): boolean
-{
-    return ["number", "progress"].includes(widgetOf(value));
-}
-
 /** The counter the party's strip shows for someone: the first of their line with a maximum, such as hit points or health. */
 export function stripCounter(member: Member): SheetValue | undefined
 {

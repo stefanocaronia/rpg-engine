@@ -172,7 +172,7 @@ export function DiceTray({ requested, sheetThrow, party }: { requested?: ShownRo
             const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
 
             // On a wide screen the plate of a roll the master asked flies into its line of the rolls (D-281); elsewhere it fades.
-            if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 1100px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
+            if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
                 flyInto(shownPlate.current, row, done);
             } else {
                 window.setTimeout(done, fadeLength);
@@ -210,9 +210,11 @@ export function DiceTray({ requested, sheetThrow, party }: { requested?: ShownRo
     }, [sheetThrow?.number]);
 
     const throwPool = (): void => {
-        // A free throw: the page decides it, as fairly as the browser can. The tray closes, so as to leave the dice in sight; it keeps them for the next.
+        // A free throw: the page decides it, as fairly as the browser can. The tray closes, so as to leave the dice in sight, and starts empty again.
         const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
         setOpen(false);
+        setPool([]);
+        setModifier(0);
         const total = dice.reduce((sum, die) => sum + die.value, modifier);
         void throwAndShow({ free: true, title: notation(pool, modifier), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };

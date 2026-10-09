@@ -133,8 +133,7 @@ a {
     }
 }
 
-:where(button, summary, a[href]):focus-visible::after,
-:where(.explains)[aria-expanded="true"]::after {
+:where(button, summary, a[href]):focus-visible::after {
     opacity: var(--state-focus);
 }
 
@@ -605,6 +604,7 @@ summary :is(h3, .rolls-title) {
 }
 
 .tile {
+    position: relative;
     display: grid;
     grid-template-rows: auto 1fr auto;
     justify-items: center;
@@ -680,6 +680,7 @@ summary :is(h3, .rolls-title) {
 }
 
 .row {
+    position: relative;
     display: grid;
     align-items: center;
     padding: 0;
@@ -750,37 +751,27 @@ button.row,
     grid-column: 2 / -1;
 }
 
-.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how) + *) {
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) + *) {
     border-top-width: 1px;
     border-top-left-radius: var(--radius-l);
     border-top-right-radius: var(--radius-l);
 }
 
-.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how) + *) > .label {
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) + *) > .label {
     border-top-left-radius: calc(var(--radius-l) - 1px);
 }
 
-.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how))) {
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress))) {
     border-bottom-left-radius: var(--radius-l);
     border-bottom-right-radius: var(--radius-l);
 }
 
-.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how))) > .label {
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress))) > .label {
     border-bottom-left-radius: calc(var(--radius-l) - 1px);
 }
 
 .row:focus-visible {
     outline-offset: -2px;
-}
-
-/* How a number is made: a band of the block under its line, in the accent's tone. */
-.rows > .how {
-    margin: 0;
-    padding: 10px 12px;
-    border: 1px solid var(--rule);
-    border-top-width: 0;
-    border-radius: 0;
-    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
 }
 
 /* A number's progress, as the experience: the label's cell two lines tall, the bar under the value. */
@@ -1083,52 +1074,44 @@ button.row,
     line-height: 1.5;
 }
 
-/* How a number is made. */
-.how {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
-    margin: 4px 0 6px;
-    padding: 10px 12px;
-    border-radius: var(--radius-m);
-    background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-    font-size: 0.85rem;
+/* The die inside a number the system rolls (D-280): quiet until the number is pointed at, as a click throws it. */
+.roll-mark {
+    display: inline-grid;
+    place-items: center;
+    margin-right: 8px;
+    color: var(--muted);
+    opacity: 0.7;
+    transition: opacity var(--quick) linear, color var(--quick) linear;
 }
 
-.how-field {
-    font-weight: 600;
+.roll-mark svg.die {
+    width: 18px;
+    height: 18px;
 }
 
-.how-roll {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 36px;
-    margin-left: auto;
-    padding: 4px 12px 4px 8px;
-    border: 1.5px dashed var(--accent);
-    border-radius: var(--radius-m);
-    background: transparent;
+.tile .roll-mark {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    margin: 0;
+}
+
+.tile .roll-mark svg.die {
+    width: 16px;
+    height: 16px;
+}
+
+:is(button.row, button.tile):is(:hover, :focus-visible) .roll-mark {
     color: var(--accent);
-    font-weight: 600;
-    cursor: pointer;
+    opacity: 1;
 }
 
-.how-roll svg.die {
-    width: 20px;
-    height: 20px;
-}
-
-.how-free {
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 400;
-}
-
-.part:not(:last-of-type)::after {
-    content: " ·";
-    color: var(--muted);
+/* How a number is made, in its tooltip (FOR-8): lines that wrap, its free roll on the last. */
+[data-tip].tip-wide::before {
+    width: max-content;
+    max-width: 260px;
+    text-align: start;
+    white-space: pre-line;
 }
 
 /* A value that just changed: a short colour on the number. */
@@ -1312,13 +1295,13 @@ button.row,
     gap: 16px;
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 900px) {
     .page {
         max-width: 1520px;
     }
 
     .body {
-        grid-template-columns: minmax(0, 1fr) 300px;
+        grid-template-columns: minmax(0, 1fr) 280px;
         align-items: start;
     }
 
@@ -1340,6 +1323,11 @@ button.row,
 
 .rolls-card[open] {
     padding-bottom: 0;
+}
+
+/* Beside the sheet the rolls are always open: their header is no toggle. */
+summary.fixed {
+    cursor: default;
 }
 
 .rolls-none {
@@ -2095,11 +2083,6 @@ svg.icon {
         font-size: 0.9rem;
     }
 
-    /* The dice's button covers the right edge: the free roll of a number stays on the left. */
-    .how-roll {
-        margin-left: 0;
-    }
-
     .asked-title {
         font-size: 1.125rem;
     }
@@ -2169,8 +2152,7 @@ svg.icon {
         height: var(--target);
     }
 
-    .asked-buttons button,
-    .how-roll {
+    .asked-buttons button {
         min-height: var(--target);
     }
 

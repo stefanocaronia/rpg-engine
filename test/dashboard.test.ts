@@ -14,7 +14,7 @@ import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { groupLayout, isExplained, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { groupLayout, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -424,13 +424,12 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(orderedValues([{ ...value(undefined), items: [] }, value({ value: 1, max: 2 }), value(undefined)]).map(widgetOf)).toEqual(["number", "pips", "list"]);
     });
 
-    it("draws a number on its way to the next mark with a bar, among the numbers, explained as one (D-284)", () => {
+    it("draws a number on its way to the next mark with a bar, among the numbers (D-284)", () => {
         const level: SheetValue = { field: "level", text: "3", marks: 0 };
         const xp: SheetValue = { field: "xp", text: "1500", marks: 0, beside: "1200 to level 4", progress: { value: 1500, from: 900, to: 2700 } };
         const hp: SheetValue = { field: "hp", text: "14/27", marks: 0, counter: { value: 14, max: 27 } };
         expect(widgetOf(xp)).toBe("progress");
         expect(orderedValues([hp, xp, level]).map((value) => value.field)).toEqual(["xp", "level", "hp"]);
-        expect([isExplained(xp), isExplained(level), isExplained(hp)]).toEqual([true, true, false]);
         expect(groupLayout({ name: "Character", values: [level, xp] })).toBe("rows");
         expect(progressShare({ value: 1500, from: 900, to: 2700 })).toBeCloseTo(1 / 3);
         expect(progressShare({ value: 900, from: 900, to: 2700 })).toBe(0);

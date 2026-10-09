@@ -1,14 +1,14 @@
 // Someone's sheet (D-273, D-276, D-284): a band with their line and effects, then the system's groups as cards, those of a few short numbers in a rail beside
-// the others, and the page's text as a card of its own; a click on a number says how it is made (FOR-8), and offers a free roll of it when the system rolls
-// it (D-280). A companion who keeps no sheet shows the stat block of its creature (D-275).
+// the others, and the page's text as a card of its own; a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
+// (FOR-8). A companion who keeps no sheet shows the stat block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import type { Member, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
-import { cardIcons, NotationIcons } from "./icons.tsx";
+import { cardIcons, DieIcon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownText } from "./labels.ts";
-import { groupLayout, isExplained, orderedValues, widgetOf } from "./layout.ts";
+import { groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
 import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
@@ -63,71 +63,69 @@ export function MemberSheet({ member, headline, sheet, text, version, onRoll }: 
 
 function Group({ member, group, fields, version, onRoll }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; onRoll: FreeRoll; })
 {
-    const [explained, setExplained] = useState<{ field: string; parts: string[]; }>();
+    const [explanations, setExplanations] = useState<Map<string, string[]>>();
     const [current, setCurrent] = useState(0);
-    // The question asked last: an answer to an older one, or one from before a change, is left out.
+    // The reading asked last, and whether one is on its way: one from before a change is left out.
     const asked = useRef(0);
+    const reading = useRef(false);
     const layout = groupLayout(group);
     const labels = groupLabels(group.values.map((value) => value.field), fields);
     const label = (field: string): string => labels.get(field) ?? fieldLabel(field, fields);
     const values = layout === "rows" ? orderedValues(group.values) : group.values;
 
-    // What was explained is told again from the new numbers, after a change.
+    // How the numbers are made is read again after a change.
     useEffect(() => {
         asked.current++;
-        setExplained(undefined);
+        reading.current = false;
+        setExplanations(undefined);
     }, [version, member]);
 
-    const explain = async (field: string): Promise<void> => {
-        const question = ++asked.current;
-
-        if (explained?.field === field) {
-            setExplained(undefined);
+    // How each number is made (FOR-8), read when the pointer or the keyboard first comes into the card: the numbers' tooltips.
+    const explain = (): void => {
+        if (reading.current) {
             return;
         }
 
-        // A number the sheet takes as written says so, rather than nothing.
-        const parts = await readExplanations(member, group.name).then((all) => all.get(field) ?? ["as written on the sheet"], () => ["cannot be read now: try again"]);
+        reading.current = true;
+        const question = ++asked.current;
+        void readExplanations(member, group.name).then((all) => question === asked.current && setExplanations(all), () => (reading.current = false));
+    };
 
-        if (question === asked.current) {
-            setExplained({ field, parts: parts.map((part) => readableIds(part, fields)) });
-        }
+    // A number's tooltip: how it is made, without its own name, and its free roll when the system rolls it (D-280).
+    const tip = (value: SheetValue): string | undefined => {
+        const parts = explanations?.get(value.field)?.map((part) => shownText(readableIds(part, fields)));
+        const lines = [parts?.join(" · "), value.roll === undefined ? undefined : `Free roll ${shownText(value.roll.notation)} · not logged`].filter((line) => line !== undefined);
+        return lines.length === 0 ? undefined : lines.join("\n");
     };
 
     // One stop of the Tab key for a group's numbers; the arrows move among them.
     const onKeyDown = (event: KeyboardEvent): void => {
         const step = ["ArrowDown", "ArrowRight"].includes(event.key) ? 1 : ["ArrowUp", "ArrowLeft"].includes(event.key) ? -1 : 0;
-        const buttons = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("button.explains")];
-        const at = buttons.indexOf(document.activeElement as HTMLElement);
+        const stops = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("[data-stop]")];
+        const at = stops.indexOf(document.activeElement as HTMLElement);
 
         if (step !== 0 && at >= 0) {
             event.preventDefault();
-            const next = Math.min(buttons.length - 1, Math.max(0, at + step));
+            const next = Math.min(stops.length - 1, Math.max(0, at + step));
             setCurrent(next);
-            buttons[next].focus();
+            stops[next].focus();
         }
     };
 
-    const explainable = values.filter((value) => layout === "tiles" || isExplained(value)).map((value) => value.field);
-    const stop = (field: string): number => (explainable.indexOf(field) === Math.min(current, explainable.length - 1) ? 0 : -1);
-    const how = (field: string) => explained?.field === field && <How label={label(field)} parts={explained.parts} roll={values.find((value) => value.field === field)?.roll} onRoll={onRoll} />;
+    const reachable = values.filter((value) => value.roll !== undefined || tip(value) !== undefined).map((value) => value.field);
+    const stop = (field: string): number | undefined => (!reachable.includes(field) ? undefined : reachable.indexOf(field) === Math.min(current, reachable.length - 1) ? 0 : -1);
+    const line = (value: SheetValue): Line => ({ value, label: label(value.field), tip: tip(value), tabIndex: stop(value.field), onRoll });
     return (
-        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)}>
+        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain}>
             {layout === "table" && <ItemsTable group={group} fields={fields} />}
             {layout === "tiles" && (
                 <div class="tiles" onKeyDown={onKeyDown}>
-                    {values.map((value) => <Tile key={value.field} value={value} label={label(value.field)} expanded={explained?.field === value.field} tabIndex={stop(value.field)} onExplain={explain} />)}
+                    {values.map((value) => <Tile key={value.field} {...line(value)} />)}
                 </div>
             )}
-            {layout === "tiles" && explained && how(explained.field)}
             {layout === "rows" && (
                 <div class="rows" onKeyDown={onKeyDown}>
-                    {values.map((value) => (
-                        <Fragment key={value.field}>
-                            <Row value={value} label={label(value.field)} expanded={explained?.field === value.field} tabIndex={stop(value.field)} onExplain={explain} />
-                            {how(value.field)}
-                        </Fragment>
-                    ))}
+                    {values.map((value) => <Row key={value.field} {...line(value)} />)}
                 </div>
             )}
         </Card>
@@ -135,80 +133,104 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 }
 
 /** A card of the sheet the player opens and closes (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
-function Card({ name, icon, layout, preview, children }: { name: string; icon: string; layout: string; preview?: string; children: ComponentChildren; })
+function Card({ name, icon, layout, preview, onReach, children }: { name: string; icon: string; layout: string; preview?: string; onReach?: () => void; children: ComponentChildren; })
 {
     const [open, toggle] = useOpen(name);
     return (
-        <details class={`group group-${layout}`} open={open}>
+        <details class={`group group-${layout}`} open={open} onPointerEnter={onReach} onFocusIn={onReach}>
             <CardHeader icon={icon} title={<h3>{name}</h3>} preview={preview} open={open} onToggle={toggle} />
             {children}
         </details>
     );
 }
 
-/** How a number is made, what it came from one after the other (FOR-8); and its free roll, which counts for nothing, when the system rolls it (D-280). */
-function How({ label, parts, roll, onRoll }: { label: string; parts: string[]; roll?: SheetRoll; onRoll: FreeRoll; })
-{
-    return (
-        <p class="how" role="status">
-            <span class="how-field">{label}</span>
-            {parts.map((part) => <span key={part} class="part">{shownText(part)}</span>)}
-            {roll && (
-                <button type="button" class="how-roll" data-tip="Free roll · not logged" onClick={() => onRoll(roll, label)}>
-                    <NotationIcons notation={roll.notation} />
-                    Roll {shownText(roll.notation)} <span class="how-free">free roll</span>
-                </button>
-            )}
-        </p>
-    );
-}
-
-interface Explaining
+/** A number of a card: its value, label, tooltip, its stop of the Tab key, and what throws it. */
+interface Line
 {
     value: SheetValue;
     label: string;
-    expanded: boolean;
-    tabIndex: number;
-    onExplain: (field: string) => void;
+    tip?: string;
+    tabIndex?: number;
+    onRoll: FreeRoll;
 }
 
 /** A short number in a box: what is beside it large, such as a modifier, and the value in a little tab below, as on a paper sheet. */
-function Tile({ value, label, expanded, tabIndex, onExplain }: Explaining)
+function Tile(props: Line)
 {
+    const { value, label } = props;
     return (
-        <button type="button" class="tile explains" tabIndex={tabIndex} aria-expanded={expanded} onClick={() => onExplain(value.field)}>
+        <NumberBox {...props} kind="tile" said={`${label} ${shownText(value.beside ?? value.text)}`}>
             <span class="label">{label}</span>
             <Changing text={value.beside ?? value.text}>
                 <span class="big num">{shownText(value.beside ?? value.text)}</span>
             </Changing>
             <span class="small num">{value.beside === undefined ? "" : shownText(value.text)}</span>
-        </button>
+            {value.roll && <RollMark roll={value.roll} />}
+        </NumberBox>
     );
 }
 
-/** A value on a line: its marks, its label as a phrase, its drawing, what is beside it, and under a number's progress its bar; a number tells how it is made when clicked. */
-function Row({ value, label, expanded, tabIndex, onExplain }: Explaining)
+/** A value on a line: its marks, its label as a phrase, its drawing, what is beside it, and under a number's progress its bar. */
+function Row(props: Line)
 {
+    const { value, label } = props;
     const widget = widgetOf(value);
     const shownLabel = phraseLabel(label);
     const marks = value.marks === 0 ? null : <span class="marks" aria-label={`${value.marks} ${value.marks === 1 ? "mark" : "marks"}`}>{"●".repeat(value.marks)}</span>;
-    const content = (
-        <>
+    return (
+        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text), value.beside === undefined ? "" : shownText(value.beside)].filter((part) => part !== "").join(" ")}>
             <span class="label">
                 {marks}
                 {shownLabel}
             </span>
             <Changing text={value.text}>
+                {value.roll && <RollMark roll={value.roll} />}
                 {widget === "progress" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} />}
             </Changing>
             {value.beside !== undefined && <span class="beside num">{shownText(value.beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
-        </>
+        </NumberBox>
     );
+}
 
-    return isExplained(value)
-        ? <button type="button" class={`row row-${widget} explains`} tabIndex={tabIndex} aria-expanded={expanded} onClick={() => onExplain(value.field)}>{content}</button>
-        : <div class={`row row-${widget}`}>{content}</div>;
+/**
+ * What a number is drawn in: a button that throws it for fun when the system rolls it (D-280); else, when it has a tooltip, a box the keyboard reaches. Its
+ * tooltip says how it is made (FOR-8), shown when pointed at or reached, and read to a screen reader as its description.
+ */
+function NumberBox({ value, label, tip, tabIndex, onRoll, kind, said, children }: Line & { kind: string; said: string; children: ComponentChildren; })
+{
+    const described = useId();
+    const shared = {
+        class: tip === undefined ? kind : `${kind} tip-wide`,
+        "data-tip": tip,
+        "data-stop": tabIndex === undefined ? undefined : "",
+        tabIndex,
+        "aria-describedby": tip === undefined ? undefined : described,
+    };
+    const description = tip !== undefined && <span id={described} class="visually-hidden">{tip}</span>;
+    return value.roll === undefined
+        ? (
+            <div {...shared} aria-label={tip === undefined ? undefined : said} role={tip === undefined ? undefined : "group"}>
+                {children}
+                {description}
+            </div>
+        )
+        : (
+            <button type="button" {...shared} aria-label={said} onClick={() => value.roll && onRoll(value.roll, label)}>
+                {children}
+                {description}
+            </button>
+        );
+}
+
+/** The die inside a number the system rolls: a click throws it. */
+function RollMark({ roll }: { roll: SheetRoll; })
+{
+    return (
+        <span class="roll-mark" aria-hidden="true">
+            <DieIcon sides={roll.dice[0] ?? 20} />
+        </span>
+    );
 }
 
 /** A group the items of a list give, as the attacks: a head with the labels of their values, then an item a line, with its values. */
