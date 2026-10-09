@@ -12,9 +12,10 @@ import { campaignWorld } from "./game-world.ts";
 
 // What a character's new mood asks of the master, by their role.
 const moodAdvice = {
-    pc: "the dashboard shows it on their token. It mirrors how the player plays them: when the player says they feel otherwise, follow the player.",
+    pc: "the dashboard shows it on their token. It mirrors what the player writes and plays, never what you narrate or what a spell or condition does to them: "
+        + "when the player says they feel otherwise, follow the player.",
     companion: "the dashboard shows it on their token. Let it colour how they speak and act.",
-    npc: "only you know it. Show it in how they speak and act: the player reads it from that, or with a check your game has for reading someone.",
+    npc: "only you know it. Show it in how they speak and act, and the player reads it from that; a check your game has for reading someone only when they hide it.",
 };
 
 interface MoodResult
@@ -33,10 +34,12 @@ interface MoodResult
 
 export const mood = defineCommand({
     name: "mood",
-    description: "Set a mood: yours as the master, which the dashboard's robot shows, or a character's, which it shows on the party's tokens and you keep for the others. "
-        + "Set yours when the story's tone turns, and let your voice follow it; moment is a reaction of a few seconds, to a roll or a choice, then the robot goes back to your mood. "
+    description: "Set a mood: yours as the master, which the dashboard's robot shows, or a character's when it changes for a while: the party's show on their tokens, "
+        + "anyone else's only you see, in status. Set yours when the story's tone turns as the player lives it, and let your voice follow it. "
+        + "moment is a reaction of a few seconds to what the player has just seen happen, what a roll decides or a bold choice, a few times a session; "
+        + "the dashboard already reacts to the dice's highs and lows by itself. Your face never shows what the player does not know yet: no grin before the trap is sprung. "
         + "Mirror the player character's mood from how the player plays them, never decide it for them. neutral takes a mood away. "
-        + "Example: master surprised, moment; or Lena worried.",
+        + "Example: master worried; master surprised, moment; Lena afraid.",
     group: "game",
     positionals: ["who", "mood"],
     input: z.object({

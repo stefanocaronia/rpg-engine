@@ -168,7 +168,7 @@ export const status = defineCommand({
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.`,
-            result.mood === "neutral" ? "" : `Your mood: ${result.mood}, which the dashboard's robot shows; mood master changes it.`,
+            result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),

@@ -88,7 +88,8 @@ describe("the moods", () => {
 
     it("MOOD-3, MOOD-5, MOOD-6: the party's moods on their pages, public, in the view and its line; an NPC's hidden, never in the view", async () => {
         expect(await ok("mood", "Kira", "angry")).toBe(
-            "Kira's mood is now angry: the dashboard shows it on their token. It mirrors how the player plays them: when the player says they feel otherwise, follow the player.",
+            "Kira's mood is now angry: the dashboard shows it on their token. It mirrors what the player writes and plays, never what you narrate or what a spell or condition "
+                + "does to them: when the player says they feel otherwise, follow the player.",
         );
         expect(await ok("mood", "Bran", "afraid")).toBe("Bran's mood is now afraid: the dashboard shows it on their token. Let it colour how they speak and act.");
         expect(await ok("mood", "Varro", "disgusted")).toContain("Varro's mood is now disgusted: only you know it.");
@@ -116,7 +117,7 @@ describe("the moods", () => {
         await ok("mood", "Varro", "angry");
         await ok("scene", "open", "--title", "Al guado", "--type", "social", "--with", "Varro");
         const status = await ok("status");
-        expect(status).toContain("Your mood: mischievous, which the dashboard's robot shows; mood master changes it.");
+        expect(status).toContain("Your mood is mischievous: let your voice follow it.");
         expect(status).toMatch(/Companions: Bran, with Kira.*mood determined/);
         expect(status).toContain("Varro (mood angry)");
     });
