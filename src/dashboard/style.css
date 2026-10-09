@@ -1,5 +1,6 @@
 /* The player's dashboard (D-273, D-275, D-276): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game. From Material
-   Design its ideas alone (D-282): colours from a seed, one state layer, ample targets, motion with a name, depth by tone on the dark page. */
+   Design its ideas alone (D-282): colours from a seed, one state layer, ample targets, motion with a name, depth by tone on the dark page; moderate corners,
+   pictures for the dice and the controls (D-284). */
 :root {
     color-scheme: light dark;
     /* Two seeds from the robot, navy #192d4d and gold #f4c84c, as HCT tones by role. */
@@ -10,6 +11,8 @@
     --panel-2: light-dark(#f9f3e8, #1e2a43);
     --float: light-dark(#ffffff, #29344e);
     --rule: light-dark(#dfd3bd, #36425c);
+    /* The tone of the label's cell of a line of a card (D-284). */
+    --cell: light-dark(color-mix(in srgb, var(--ink) 6%, var(--panel)), var(--panel-2));
     --accent: light-dark(#254b83, #f5c63e);
     --gold: #f5c63e;
     --on-gold: #182c4c;
@@ -36,7 +39,12 @@
     --ease-out: cubic-bezier(0.05, 0.7, 0.1, 1);
     --ease-in: cubic-bezier(0.3, 0, 0.8, 0.15);
     --ease-bounce: cubic-bezier(0.3, 1.4, 0.5, 1);
-    --radius: 10px;
+    /* Corners on a scale, from a tooltip to the banner: never a pill; round only the tokens and the dots. */
+    --radius-xs: 4px;
+    --radius-s: 6px;
+    --radius-m: 8px;
+    --radius-l: 12px;
+    --radius-xl: 16px;
     --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 }
 
@@ -77,16 +85,14 @@ h2 {
     font-weight: 700;
 }
 
-/* The cards' titles, in the text's own face (D-282). */
+/* The cards' titles, in the text's own face (D-282), a step larger than the text (D-284). */
 h3,
-.rolls-title,
-.markdown h4 {
+.rolls-title {
     margin: 0;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: 0.01em;
+    line-height: 1.3;
     color: var(--ink);
 }
 
@@ -137,11 +143,11 @@ a {
     transition-duration: 0s;
 }
 
-:is(.asked-buttons button, .dice-actions .dice-roll, .dice-button) {
+:is(.asked-buttons button, .dice-button) {
     transition: scale var(--quick) var(--ease);
 }
 
-:is(.asked-buttons button, .dice-actions .dice-roll, .dice-button):not(:disabled):active {
+:is(.asked-buttons button, .dice-button):not(:disabled):active {
     scale: 0.96;
 }
 
@@ -172,6 +178,28 @@ a {
     font-variant: small-caps;
     letter-spacing: 0.12em;
     text-transform: lowercase;
+}
+
+/* The game system the campaign plays, beside the product's name; what it is and its source's credit at the foot of the page (D-284). */
+.product .system {
+    margin-left: 0.4em;
+    text-transform: none;
+    font-variant: normal;
+    letter-spacing: 0.04em;
+}
+
+.credits {
+    margin: 24px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.credits p {
+    margin: 0 0 4px;
+    max-width: 120ch;
 }
 
 .when {
@@ -267,7 +295,7 @@ a {
     margin: 0 0 10px;
     padding: 8px 12px;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-l);
     background: var(--panel);
     color: var(--muted);
 }
@@ -296,7 +324,7 @@ a {
     min-width: 170px;
     padding: 10px 14px 10px 10px;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-l);
     background: var(--panel);
     box-shadow: var(--lift), var(--raise);
 }
@@ -383,7 +411,7 @@ a {
     padding: 16px 18px;
     margin-bottom: 14px;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-l);
     background: linear-gradient(180deg, var(--panel-2), var(--panel));
     box-shadow: var(--lift), var(--raise);
 }
@@ -415,28 +443,34 @@ a {
     display: inline-grid;
     grid-template-rows: auto auto;
     gap: 2px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border: 1px solid var(--rule);
-    border-radius: 8px;
+    border-radius: var(--radius-m);
     background: color-mix(in srgb, var(--paper) 50%, transparent);
 }
 
 .line-value > .label {
     color: var(--muted);
-    font-size: 0.7rem;
-    font-variant: small-caps;
+    font-size: 0.68rem;
+    font-weight: 650;
     letter-spacing: 0.08em;
-    text-transform: lowercase;
+    text-transform: uppercase;
 }
 
 .line-value .num {
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1.15rem;
+    font-weight: 700;
 }
 
 .line-value:has(.bar) .bar {
     width: 160px;
     height: 10px;
+}
+
+.line-value .bar.progress {
+    width: 150px;
+    height: 6px;
+    border-radius: 3px;
 }
 
 /* The sheet: a rail of tiles beside columns of boxes, with no holes. */
@@ -459,49 +493,53 @@ a {
 .group {
     break-inside: avoid;
     margin-bottom: 14px;
-    padding: 0 12px;
+    padding: 0 16px;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-l);
     background: var(--panel);
     box-shadow: var(--lift), var(--raise);
 }
 
-.group summary {
+/* A card's header, all of it the toggle (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
+:is(.group, .rolls-card) > summary {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin: 0 -12px;
-    padding: 10px 12px;
-    border-radius: calc(var(--radius) - 1px);
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    margin: 0 -16px;
+    padding: 8px 12px 8px 16px;
+    border-radius: calc(var(--radius-l) - 1px);
     cursor: pointer;
     list-style: none;
 }
 
-.group summary::-webkit-details-marker {
+:is(.group, .rolls-card) > summary::-webkit-details-marker {
     display: none;
 }
 
-.group summary::before {
-    content: "▸" / "";
-    color: var(--accent);
-    font-size: 0.8rem;
-}
-
-.group[open] summary::before {
-    content: "▾" / "";
-}
-
-.group[open] > summary {
-    margin-bottom: 8px;
+:is(.group, .rolls-card)[open] > summary {
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--rule);
-    border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+    border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
 }
 
-.group summary h3 {
+summary :is(h3, .rolls-title) {
     white-space: nowrap;
 }
 
+.card-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
 .preview {
+    flex: 1 1 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -510,8 +548,30 @@ a {
     min-width: 0;
 }
 
+/* Down while the card is closed, turned up once it is open. */
+.chevron {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.75;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    transition: rotate var(--short) var(--ease);
+}
+
+[open] > summary > .chevron {
+    rotate: 180deg;
+}
+
+.preview + .chevron {
+    margin-left: 0;
+}
+
 .group[open] {
-    padding-bottom: 10px;
+    padding-bottom: 14px;
 }
 
 /* Tiles, as the boxes of a paper sheet: the modifier big, the score in a little tab below. */
@@ -531,12 +591,11 @@ a {
     justify-items: center;
     align-items: center;
     gap: 2px;
-    min-height: 84px;
+    min-height: 88px;
     padding: 8px 4px;
     border: 1px solid var(--rule);
-    border-radius: 8px;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
-    box-shadow: var(--lift);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
 }
 
 .tile .label {
@@ -544,13 +603,14 @@ a {
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--muted);
-    font-size: 0.75rem;
-    font-variant: small-caps;
-    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .tile .big {
-    font-size: 1.6rem;
+    font-size: 1.75rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
@@ -560,10 +620,11 @@ a {
     min-width: 2.2em;
     min-height: 1.3em;
     padding: 0 6px;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    color: var(--muted);
+    border-radius: var(--radius-xs);
+    background: var(--panel);
+    color: var(--ink);
     font-size: 0.8rem;
+    font-weight: 600;
     text-align: center;
 }
 
@@ -571,45 +632,56 @@ a {
     visibility: hidden;
 }
 
-/* Rows with dotted leaders, as on a printed sheet: marks, label, value, what is beside it. */
+/* The odd tile at the end of the rail takes the whole line, lying down: its label on the left, its number on the right. */
+.rail .tiles .tile:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto;
+    min-height: 52px;
+    padding: 8px 14px;
+}
+
+.rail .tiles .tile:last-child:nth-child(odd) .label {
+    justify-self: start;
+}
+
+.rail .tiles .tile:last-child:nth-child(odd) .small {
+    display: none;
+}
+
+/* The lines of a card (D-284): a run of them is one block, each label in a tonal cell as wide as the longest, its value on the card; the block's outer
+   corners at its two ends. A list or a long text comes after, under its own small heading. */
 .rows {
     display: grid;
-    gap: 2px;
+    grid-template-columns: fit-content(62%) minmax(0, 1fr) auto;
+}
+
+.rows > * {
+    grid-column: 1 / -1;
 }
 
 .row {
     display: grid;
-    grid-template-columns: 1.2em minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 8px;
-    padding: 3px 4px;
+    padding: 0;
     border: 0;
-    border-radius: 6px;
+    border-radius: 0;
     background: transparent;
     text-align: left;
 }
 
 .row > .label {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
     min-width: 0;
-    color: var(--muted);
-}
-
-.row-number > .label::after,
-.row-pips > .label::after,
-.row-bar > .label::after,
-.row-track > .label::after {
-    content: "";
-    flex: 1;
-    border-bottom: 1px dotted var(--rule);
-    transform: translateY(-0.25em);
 }
 
 .row .num,
 .row .changing {
-    font-weight: 600;
+    font-weight: 650;
+}
+
+.row .num {
+    min-width: 2.6ch;
+    text-align: right;
 }
 
 button.row,
@@ -617,14 +689,127 @@ button.row,
     cursor: pointer;
 }
 
-.row-list,
-.row-text {
-    grid-template-columns: 1.2em minmax(0, 1fr);
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) {
+    grid-template-columns: subgrid;
+    grid-template-areas: "label value beside";
+    min-height: 38px;
+    border: 1px solid var(--rule);
+    border-top-width: 0;
 }
 
-.row-list > .changing,
-.row-text > .changing {
-    grid-column: 2;
+/* The label's cell, its marks in the margin before it, so that the labels line up. */
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .label {
+    grid-area: label;
+    align-self: stretch;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 6px 14px 6px 18px;
+    border-right: 1px solid var(--rule);
+    background: var(--cell);
+    color: var(--ink);
+}
+
+.row > .label .marks {
+    position: absolute;
+    left: 6px;
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .changing {
+    grid-area: value;
+    justify-self: end;
+    padding: 0 12px;
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .beside {
+    grid-area: beside;
+    padding-right: 12px;
+}
+
+/* A value with nothing beside it takes the whole of the value's side. */
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track):not(:has(> .beside)) > .changing {
+    grid-column: 2 / -1;
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how) + *) {
+    border-top-width: 1px;
+    border-top-left-radius: var(--radius-l);
+    border-top-right-radius: var(--radius-l);
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how) + *) > .label {
+    border-top-left-radius: calc(var(--radius-l) - 1px);
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how))) {
+    border-bottom-left-radius: var(--radius-l);
+    border-bottom-right-radius: var(--radius-l);
+}
+
+.rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress, .how))) > .label {
+    border-bottom-left-radius: calc(var(--radius-l) - 1px);
+}
+
+.row:focus-visible {
+    outline-offset: -2px;
+}
+
+/* How a number is made: a band of the block under its line, in the accent's tone. */
+.rows > .how {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-top-width: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+/* A number's progress, as the experience: the label's cell two lines tall, the bar under the value. */
+.rows > .row-progress {
+    grid-template-areas: "label value beside" "label bar bar";
+}
+
+.rows > .row-progress > .changing {
+    padding-top: 8px;
+}
+
+.row-progress .bar.progress {
+    grid-area: bar;
+    width: auto;
+    height: 6px;
+    margin: 0 12px 10px;
+    border-radius: 3px;
+}
+
+.row-bar .bar {
+    width: 90px;
+}
+
+.row-list,
+.row-text {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+    margin-top: 12px;
+    padding: 0 2px;
+}
+
+.rows > :is(.row-list, .row-text):first-child {
+    margin-top: 0;
+}
+
+:is(.row-list, .row-text) > .label,
+.always-from {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.row-text .text {
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.45;
 }
 
 .row-bar > .changing,
@@ -634,12 +819,14 @@ button.row,
 
 .marks {
     color: var(--accent);
-    letter-spacing: -0.1em;
+    font-size: 0.55rem;
 }
 
 .beside {
+    min-width: 2.6ch;
     color: var(--muted);
     font-size: 0.85rem;
+    text-align: right;
 }
 
 .text {
@@ -701,6 +888,26 @@ button.row,
     background: repeating-linear-gradient(135deg, var(--low) 0 4px, color-mix(in srgb, var(--low) 60%, transparent) 4px 7px);
 }
 
+.bar.progress .fill {
+    background: var(--accent);
+}
+
+.progress-line {
+    display: grid;
+    gap: 5px;
+}
+
+.progress-first {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.progress-next {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
 .track .fill {
     position: absolute;
     top: 0;
@@ -734,25 +941,44 @@ button.row,
 .chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 6px;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.chips li,
-.effect {
-    padding: 1px 8px;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
+.chips li {
+    padding: 3px 9px;
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--accent) 11%, var(--panel));
     font-size: 0.85rem;
+    font-weight: 550;
 }
 
+/* What the character's parts always give: outlined, not chosen. */
 .always {
     display: grid;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.always .chips li {
+    padding: 2px 8px;
+    border: 1px solid var(--rule);
+    background: transparent;
+}
+
+/* A list of sentences, not of names: lines, not chips. */
+.notes {
+    display: grid;
     gap: 4px;
-    color: var(--muted);
-    font-size: 0.8rem;
+    margin: 0;
+    padding: 0 0 0 1.1em;
+    font-size: 0.92rem;
+}
+
+.notes li::marker {
+    color: var(--accent);
 }
 
 .effects {
@@ -766,8 +992,12 @@ button.row,
 }
 
 .effect {
-    border-color: var(--accent);
+    padding: 2px 8px;
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
     color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 550;
 }
 
 .effect .end {
@@ -783,48 +1013,67 @@ button.row,
 
 .items th,
 .items td {
-    padding: 4px 6px;
+    padding: 8px;
     border-top: 1px solid var(--rule);
     text-align: left;
 }
 
-.items th {
+.items tbody th {
     font-weight: 600;
 }
 
-/* The table of the attacks draws no second line under its card's title. */
-.items tr:first-child > :is(th, td) {
+.items td.num {
+    font-weight: 700;
+}
+
+.items thead th {
+    padding: 0 8px 6px;
     border-top: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
 }
 
-/* A page's text, as a companion's traits and actions. */
-.lore {
-    padding: 4px 14px 12px;
-}
-
+/* A page's text, as a companion's traits and actions, in a card of its own: its sections as small headings. */
 .markdown h4 {
-    margin: 12px 0 4px;
+    margin: 18px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.markdown > :first-child {
+    margin-top: 0;
 }
 
 .markdown h5 {
-    margin: 10px 0 2px;
+    margin: 12px 0 2px;
     font-size: 0.95rem;
+    font-weight: 700;
 }
 
 .markdown p,
 .markdown ul {
-    margin: 0 0 6px;
+    margin: 0 0 8px;
+    line-height: 1.5;
 }
 
 /* How a number is made. */
 .how {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 4px 8px;
-    margin: 4px 0;
-    padding: 8px 10px;
-    border-left: 3px solid var(--accent);
-    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    margin: 4px 0 6px;
+    padding: 10px 12px;
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--accent) 9%, var(--panel));
     font-size: 0.85rem;
 }
 
@@ -833,14 +1082,23 @@ button.row,
 }
 
 .how-roll {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
     margin-left: auto;
-    padding: 4px 12px;
-    border: 1px dashed var(--accent);
-    border-radius: 999px;
+    padding: 4px 12px 4px 8px;
+    border: 1.5px dashed var(--accent);
+    border-radius: var(--radius-m);
     background: transparent;
     color: var(--accent);
     font-weight: 600;
     cursor: pointer;
+}
+
+.how-roll svg.die {
+    width: 20px;
+    height: 20px;
 }
 
 .how-free {
@@ -859,7 +1117,7 @@ button.row,
     display: inline-flex;
     align-items: center;
     min-width: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
 }
 
 .changed {
@@ -877,6 +1135,7 @@ button.row,
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .chevron,
     .bar .fill,
     .track .fill,
     .master .robot-head,
@@ -899,9 +1158,9 @@ button.row,
     align-items: flex-start;
     gap: 14px;
     margin: 0 0 14px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border: 1px solid var(--accent);
-    border-radius: var(--radius);
+    border-radius: var(--radius-xl);
     background: var(--float);
     box-shadow: inset 0 0 0 1px var(--accent), var(--overlay);
 }
@@ -953,14 +1212,15 @@ button.row,
 
 .asked-title {
     font: inherit;
-    font-size: 0.8rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--accent);
+    line-height: 1.2;
+    color: var(--ink);
 }
 
 .asked-question {
-    margin: 2px 0 10px;
+    margin: 4px 0 14px;
+    color: color-mix(in srgb, var(--ink) 88%, transparent);
     font-family: var(--serif);
     font-size: 1.15rem;
     line-height: 1.3;
@@ -973,20 +1233,30 @@ button.row,
 }
 
 .asked-buttons button {
-    min-height: 44px;
-    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 18px;
     border: 1px solid var(--rule);
-    border-radius: 999px;
+    border-radius: var(--radius-m);
     background: var(--panel-2);
     cursor: pointer;
 }
 
 .asked-buttons .asked-check {
+    /* The die in front hides the lines of the one behind it with the button's gold. */
+    --die-ground: var(--gold);
+    padding-left: 12px;
     border-color: transparent;
     background: var(--gold);
     color: var(--on-gold);
     font-weight: 600;
     box-shadow: var(--raise);
+}
+
+.asked-check-name {
+    font-weight: 700;
 }
 
 .asked-dice {
@@ -1042,17 +1312,15 @@ button.row,
 }
 
 .rolls {
-    padding: 12px 12px 4px;
+    padding: 0 16px 6px;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: var(--radius-l);
     background: var(--panel);
     box-shadow: var(--lift), var(--raise);
 }
 
-.rolls-title {
-    margin: -12px -12px 6px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--rule);
+.rolls-card[open] {
+    padding-bottom: 0;
 }
 
 .rolls-none {
@@ -1074,7 +1342,7 @@ button.row,
     align-items: center;
     padding: 8px 6px;
     border-top: 1px solid var(--rule);
-    border-radius: 6px;
+    border-radius: var(--radius-s);
 }
 
 .roll:first-child {
@@ -1153,21 +1421,22 @@ button.row,
     opacity: 0;
 }
 
+/* The plate (D-284): whose roll and which, the dice one by one, the total large on the right; a rare face's words in a band below. */
 .dice-result {
     position: fixed;
     left: 50%;
-    bottom: 32px;
+    bottom: 28px;
     z-index: 21;
     display: grid;
-    grid-template-columns: auto auto;
-    justify-content: center;
-    align-items: baseline;
-    column-gap: 10px;
-    max-width: calc(100vw - 120px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "head total" "dice total" "rare rare";
+    align-items: center;
+    gap: 10px 20px;
+    width: min(460px, calc(100vw - 24px));
     margin: 0;
-    padding: 8px 22px;
+    padding: 16px 20px;
     border: 1px solid var(--rule);
-    border-radius: 999px;
+    border-radius: var(--radius-xl);
     background: var(--float);
     box-shadow: var(--overlay);
     opacity: 0;
@@ -1181,25 +1450,186 @@ button.row,
     transform: translate(-50%, 0);
 }
 
-/* A rare face (D-281): its words under the total, gold for the highest, red for the lowest. */
-.dice-rare {
-    grid-column: 1 / -1;
-    font-size: 0.95rem;
+.plate-head {
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.plate-head .token {
+    --size: 32px;
+}
+
+.plate-head .token.pc {
+    box-shadow: 0 0 0 2px var(--ally);
+}
+
+.plate-what {
+    display: grid;
+    min-width: 0;
+}
+
+.plate-title {
+    overflow: hidden;
+    font-size: 1.05rem;
     font-weight: 700;
-    text-align: center;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.dice-result.rare.highest {
-    border-color: var(--gold);
-    box-shadow: var(--overlay), 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent);
+.plate-under {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
 }
 
-.dice-result.rare.highest .dice-rare {
+.plate-notation {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.plate-tag {
+    padding: 1px 6px;
+    border: 1px dashed var(--muted);
+    border-radius: var(--radius-xs);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.plate-dice {
+    grid-area: dice;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* A die: its picture and its face, as a chip; dropped, an empty one, without striking a single figure out, which would read as a cross. */
+.plate-die {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 10px 0 7px;
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    font-size: 1.3rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.plate-die svg.die {
+    width: 22px;
+    height: 22px;
     color: var(--accent);
 }
 
-.dice-result.rare.lowest .dice-rare {
+.plate-die.dropped {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--rule);
+    color: var(--muted);
+}
+
+.plate-die.dropped svg.die {
+    color: var(--muted);
+}
+
+.plate-die s {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.plate-die.rare-highest {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.plate-die.rare-lowest {
+    background: var(--low);
+    color: var(--float);
+}
+
+.plate-die:is(.rare-highest, .rare-lowest) svg.die {
+    color: inherit;
+}
+
+.plate-modifier {
+    color: var(--muted);
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.plate-total {
+    grid-area: total;
+    align-self: stretch;
+    display: grid;
+    place-items: center;
+    min-width: 2.2ch;
+    padding-left: 20px;
+    border-left: 1px solid var(--rule);
+    color: var(--accent);
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.plate-rare {
+    grid-area: rare;
+    margin: 2px -20px -16px;
+    padding: 8px 20px;
+    border-radius: 0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* A rare face (D-281): gold for the highest, red for the lowest, and its words, so that the colour is not all that says it. */
+.dice-result.highest {
+    border-color: var(--gold);
+    box-shadow: var(--overlay), 0 0 0 1px var(--gold), 0 0 32px -6px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+
+.dice-result.highest .plate-rare {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.dice-result.lowest {
+    border-color: var(--low);
+    box-shadow: var(--overlay), 0 0 0 1px var(--low);
+}
+
+.dice-result.lowest .plate-rare {
+    background: var(--low);
+    color: var(--float);
+}
+
+.dice-result.lowest .plate-total {
     color: var(--low);
+}
+
+/* A free throw counts for nothing: its plate is only drawn in dashes, its total in ink, gold marking what counts (D-279). */
+.dice-result.free {
+    border: 1.5px dashed var(--accent);
+}
+
+.dice-result.free .plate-total {
+    color: var(--ink);
 }
 
 /* The line of the rolls a plate flew into lights up as it lands. */
@@ -1207,175 +1637,356 @@ button.row,
     animation: changed var(--linger) var(--ease-out);
 }
 
-/* A free throw counts for nothing: its plate is only drawn in dashes (D-279). */
-.dice-result.free {
-    border-style: dashed;
-}
-
-/* Gold marks what counts: the total of a free throw is in ink. */
-.dice-result.free .dice-number {
-    color: var(--ink);
-}
-
-.dice-text {
-    grid-column: 1 / -1;
-    color: var(--muted);
-    font-size: 0.85rem;
-    text-align: center;
-}
-
-.dice-kind {
-    color: var(--muted);
-    font-size: 0.9rem;
-    font-variant: small-caps;
-}
-
-.dice-kind.notation {
-    font-variant: normal;
-}
-
-.dice-number {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-}
-
-.dice-button {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 22;
-    width: 60px;
-    height: 60px;
-    border: 0;
-    border-radius: 50%;
-    background: var(--gold);
-    color: var(--on-gold);
-    box-shadow: var(--overlay), 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
-    cursor: pointer;
-    /* The icon in its middle: a picture in a line would leave the room of the descenders below it. */
-    display: grid;
-    place-items: center;
-    padding: 0;
-}
-
-.dice-button svg {
-    display: block;
-    width: 30px;
-    height: 30px;
+/* The pictures of the dice and the controls: lines in the colour of the text around them. */
+svg.die,
+svg.icon {
+    flex: none;
+    width: 24px;
+    height: 24px;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.6;
+    stroke-width: 1.5;
     stroke-linejoin: round;
+    stroke-linecap: round;
 }
 
-.dice-button[aria-expanded="true"] {
-    box-shadow: var(--overlay), 0 0 0 3px var(--accent);
+svg.icon {
+    stroke-width: 1.75;
 }
 
-/* The tray of the dice for fun: the seven dice to choose, a modifier, the throw; it counts for nothing (D-279). */
-.dice-tray {
-    position: fixed;
-    right: 20px;
-    bottom: 92px;
-    z-index: 22;
-    display: grid;
-    gap: 12px;
-    width: min(340px, calc(100vw - 40px));
-    padding: 14px;
-    border: 1px dashed var(--accent);
-    border-radius: var(--radius);
-    background: var(--float);
-    box-shadow: var(--overlay);
-}
-
-.dice-pick {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.dice-pick-die {
-    position: relative;
-    min-height: 40px;
-    padding: 0;
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    background: var(--panel-2);
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.dice-pick-die:hover {
-    border-color: var(--accent);
-}
-
-.dice-count {
-    position: absolute;
-    top: -7px;
-    right: -7px;
-    display: grid;
-    place-items: center;
-    min-width: 19px;
-    height: 19px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: var(--paper);
-    font: 700 0.72rem/1 system-ui, sans-serif;
-}
-
-.dice-modifier {
-    display: flex;
+.die-icons {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    color: var(--muted);
 }
 
-.dice-modifier button {
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--rule);
-    border-radius: 50%;
-    background: var(--panel-2);
-    cursor: pointer;
+/* Two dice of a roll, one in front of the other: the front one hides the lines of the one behind it. */
+.die-icons svg.die + svg.die {
+    margin-left: -12px;
 }
 
-.dice-modifier .num {
-    min-width: 3ch;
-    color: var(--ink);
-    font-weight: 600;
-    text-align: center;
+.die-icons svg.die path {
+    fill: var(--die-ground, transparent);
 }
 
-.dice-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+.die-more {
+    margin-left: 2px;
+    font-size: 0.75rem;
+    font-weight: 700;
 }
 
-.dice-actions button {
-    min-height: 40px;
-    padding: 6px 12px;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
+/* A control without words says its name when hovered, after a moment, or reached by the keyboard; never at a touch, where it would stay lit. */
+[data-tip]::before {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    z-index: 40;
+    padding: 5px 8px;
+    border-radius: var(--radius-xs);
+    background: var(--ink);
+    color: var(--paper);
+    font: 500 0.75rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    opacity: 0;
+    translate: -50% 4px;
+    pointer-events: none;
+    transition: opacity var(--quick) linear, translate var(--quick) var(--ease);
+}
+
+[data-tip].tip-left::before {
+    left: auto;
+    right: calc(100% + 8px);
+    bottom: 50%;
+    translate: 4px 50%;
+}
+
+@media (hover: hover) {
+    [data-tip]:hover::before {
+        opacity: 1;
+        translate: -50% 0;
+        transition-delay: 500ms;
+    }
+
+    [data-tip].tip-left:hover::before {
+        translate: 0 50%;
+    }
+}
+
+[data-tip]:focus-visible::before {
+    opacity: 1;
+    translate: -50% 0;
+}
+
+[data-tip].tip-left:focus-visible::before {
+    translate: 0 50%;
+}
+
+.icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-m);
     background: transparent;
     color: var(--muted);
     cursor: pointer;
 }
 
-.dice-actions .dice-roll {
-    flex: 1 1 100%;
-    border-color: transparent;
-    background: var(--gold);
-    color: var(--on-gold);
-    font-weight: 700;
+.icon-button.tonal {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    color: var(--ink);
+    box-shadow: var(--overlay);
 }
 
-.dice-actions button:disabled {
+/* The dice's button (D-284): a square with soft corners, always at hand; open, a cross, or with dice chosen the throw itself, its right edge still. */
+.dice-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 22;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dice-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 56px;
+    height: 56px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: var(--gold);
+    color: var(--on-gold);
+    box-shadow: var(--overlay);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dice-button :is(svg.die, svg.icon) {
+    width: 28px;
+    height: 28px;
+}
+
+.dice-button.extended {
+    --die-ground: var(--gold);
+    padding: 0 22px 0 16px;
+}
+
+.dice-button .notation {
+    font-variant-numeric: tabular-nums;
+}
+
+/* The free tray: a column of dice over the button, as on a virtual tabletop, the d20 nearest to the thumb; it counts for nothing (D-279, D-284). */
+.dice-tray {
+    position: fixed;
+    right: 20px;
+    bottom: 88px;
+    z-index: 22;
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+}
+
+.tray-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 2px 4px 2px 10px;
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.tray-note .icon-button {
+    width: 36px;
+    height: 36px;
+    color: var(--ink);
+}
+
+.tray-note svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.tray-dice {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tray-dice li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tray-die {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 10px;
+    width: 120px;
+    height: 44px;
+    padding: 0 10px 0 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    color: var(--ink);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tray-die svg.die {
+    width: 26px;
+    height: 26px;
+    color: var(--accent);
+}
+
+.tray-die:disabled {
     opacity: 0.55;
     cursor: default;
+}
+
+.tray-dice .chosen .tray-die {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--float));
+    box-shadow: var(--overlay), inset 0 0 0 1px var(--accent);
+}
+
+.tray-count {
+    margin-right: 6px;
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    background: var(--accent);
+    color: var(--paper);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tray-less {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.tray-less svg.icon,
+.tray-modifier svg.icon {
+    width: 18px;
+    height: 18px;
+}
+
+.tray-modifier {
+    display: grid;
+    grid-template-columns: 36px 1fr 36px;
+    align-items: center;
+    width: 120px;
+    height: 44px;
+    padding: 0 3px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    text-align: center;
+}
+
+.tray-modifier button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: transparent;
+    cursor: pointer;
+}
+
+.tray-modifier output {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.tray-modifier-label {
+    display: block;
+    color: var(--muted);
+    font-size: 0.62rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+/* The column rises from the button, a chip after the other. */
+@media (prefers-reduced-motion: no-preference) {
+    .dice-tray > *,
+    .tray-dice li {
+        animation: tray-in var(--short) var(--ease-out) backwards;
+    }
+
+    .tray-dice li:nth-last-child(2) {
+        animation-delay: 20ms;
+    }
+
+    .tray-dice li:nth-last-child(3) {
+        animation-delay: 40ms;
+    }
+
+    .tray-dice li:nth-last-child(4) {
+        animation-delay: 60ms;
+    }
+
+    .tray-dice li:nth-last-child(5) {
+        animation-delay: 80ms;
+    }
+
+    .tray-dice li:nth-last-child(6) {
+        animation-delay: 100ms;
+    }
+
+    .tray-dice li:nth-last-child(7) {
+        animation-delay: 120ms;
+    }
+}
+
+@keyframes tray-in {
+    from {
+        opacity: 0;
+        translate: 0 8px;
+    }
+}
+
+/* On a phone the open tray veils the page behind it: a touch there closes it. */
+.tray-scrim {
+    display: none;
 }
 
 /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
@@ -1385,7 +1996,6 @@ button.row,
         height: 44px;
     }
 
-    .product,
     .when {
         display: none;
     }
@@ -1470,17 +2080,76 @@ button.row,
     .how-roll {
         margin-left: 0;
     }
+
+    .asked-title {
+        font-size: 1.125rem;
+    }
+
+    .asked-buttons .asked-check {
+        flex: 1 1 140px;
+        justify-content: center;
+    }
+
+    /* The plate over the button, the whole width; the title in two lines rather than cut. */
+    .dice-result {
+        left: 12px;
+        right: 12px;
+        bottom: 88px;
+        width: auto;
+        column-gap: 14px;
+        padding: 14px 16px;
+        transform: translateY(12px);
+    }
+
+    .dice-result.shown {
+        transform: none;
+    }
+
+    .plate-title {
+        display: -webkit-box;
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .plate-rare {
+        margin: 2px -16px -14px;
+    }
+
+    .plate-total {
+        padding-left: 14px;
+        font-size: 3rem;
+    }
+
+    .plate-die {
+        height: 36px;
+        font-size: 1.15rem;
+    }
+
+    .tray-scrim {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 21;
+        background: color-mix(in srgb, var(--paper) 60%, transparent);
+        backdrop-filter: blur(2px);
+    }
+}
+
+/* A low screen, as a phone on its side: the dice in two columns. */
+@media (max-height: 560px) {
+    .tray-dice {
+        grid-template-columns: repeat(2, auto);
+    }
 }
 
 /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
 @media (pointer: coarse) {
-    .dice-modifier button {
+    .tray-less {
         width: var(--target);
         height: var(--target);
     }
 
-    .dice-pick-die,
-    .dice-actions button,
     .asked-buttons button,
     .how-roll {
         min-height: var(--target);

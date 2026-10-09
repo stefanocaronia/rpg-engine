@@ -1,8 +1,11 @@
-// The dice tray (D-278, D-279): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check and its total. The player
-// can also always throw dice for fun, as many as they like and a modifier: the throw counts for nothing, the engine does not hear of it, and the dice fade
-// away. The dice and their physics load at the first throw.
+// The dice tray (D-278, D-279, D-284): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check, each die and the
+// total. The player can also always throw dice for fun from the column of dice over the button, as many as they like and a modifier: the throw counts for
+// nothing, the engine does not hear of it, and the dice fade away. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
+import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
+import { DieIcon, Icon } from "../icons.tsx";
+import { shownText } from "../labels.ts";
+import { Token } from "../party.tsx";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import type { Roller } from "./roller.ts";
 import { wakeSound } from "./sounds.ts";
@@ -13,8 +16,9 @@ const lingers = { free: 3200, asked: 4200 };
 const fadeLength = 600;
 const flight = 450;
 
-// The dice of the free tray, by their sides: 100 is the d%, thrown as its tens and its units; at most so many at once, which the page throws in a moment.
-const freeDice = [4, 6, 8, 10, 12, 20, 100];
+// The dice of the free tray, by their sides, from the top of the column: 100 is the d%, thrown as its tens and its units; the d20, the most thrown, is the
+// nearest to the button. At most so many at once, which the page throws in a moment.
+const freeDice = [100, 4, 6, 8, 10, 12, 20];
 const mostDice = 20;
 
 // Where the page remembers whether the dice make a sound, in this browser alone.
@@ -28,25 +32,32 @@ export interface SheetThrow
     label: string;
 }
 
-/** What the plate under the dice says: the check, or the dice of a free throw, its total, and its dice as the chat writes them. */
+/** What the plate under the dice says: the check or the dice of a free throw, the notation, the dice one by one, the total, and its dice as the chat writes them. */
 interface Plate
 {
     free: boolean;
     title: string;
+    /** The notation under the title, when the title is not already the notation. */
+    notation?: string;
+    dice: ThrownDie[];
+    modifier: number;
     total: number;
     text: string;
     shown: boolean;
+    /** Whose roll the master asked: their token beside the title. */
+    member?: Member;
     /** The roll of the log it shows, whose line of the rolls it flies into. */
     roll?: string;
     /** The rare face of a die that counts, and its words, as natural 20 (D-281). */
     rare?: { face: RareFace; words: string; };
 }
 
-export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; sheetThrow?: SheetThrow; })
+export function DiceTray({ requested, sheetThrow, party }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
-    const shownPlate = useRef<HTMLParagraphElement>(null);
+    const shownPlate = useRef<HTMLDivElement>(null);
     const button = useRef<HTMLButtonElement>(null);
+    const controls = useRef<HTMLDivElement>(null);
     const tray = useRef<HTMLDivElement>(null);
     const roller = useRef<Promise<Roller | undefined>>();
     // The number of the throw shown now: a newer throw ends an older one's animation and timers.
@@ -71,7 +82,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
                 skipping.current = true;
                 setOpen(false);
 
-                if (tray.current?.contains(document.activeElement) === true) {
+                if (controls.current?.contains(document.activeElement) === true) {
                     button.current?.focus();
                 }
             }
@@ -88,6 +99,24 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         };
     }, []);
 
+    // The open tray takes the focus to the d20, and closes at a click elsewhere on the page, keeping the dice chosen.
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        tray.current?.querySelector<HTMLElement>(`[data-sides="20"]`)?.focus();
+
+        const onPointer = (event: PointerEvent): void => {
+            if (!(event.target instanceof Node && controls.current?.contains(event.target) === true)) {
+                setOpen(false);
+            }
+        };
+
+        window.addEventListener("pointerdown", onPointer);
+        return () => window.removeEventListener("pointerdown", onPointer);
+    }, [open]);
+
     /** The dice and their stage, loaded once; undefined when the browser cannot draw them, and then the plate comes alone. */
     const loadRoller = (): Promise<Roller | undefined> => {
         const surface = canvas.current;
@@ -96,8 +125,8 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
     };
 
     /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while; the plate alone when the dice cannot be thrown. */
-    const throwAndShow = async (dice: ThrownDie[], given: Omit<Plate, "shown" | "rare">, linger: number): Promise<void> => {
-        const shown = { ...given, ...rareOf(dice) };
+    const throwAndShow = async (given: Omit<Plate, "shown" | "rare">, linger: number): Promise<void> => {
+        const shown = { ...given, ...rareOf(given.dice) };
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
         skipping.current = false;
@@ -107,7 +136,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         const loaded = await loadRoller();
 
         try {
-            const toThrow = loaded === undefined ? [] : diceToThrow(dice, loaded.kinds);
+            const toThrow = loaded === undefined ? [] : diceToThrow(given.dice, loaded.kinds);
 
             if (toThrow.length === 0) {
                 loaded?.hide();
@@ -154,7 +183,19 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
     // A roll the master asked, as the engine rolled it: its dice land on its numbers.
     useEffect(() => {
         if (requested !== undefined) {
-            void throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text, roll: requested.id }, lingers.asked);
+            const title = requested.check ?? requested.notation;
+            const member = party.find((candidate) => candidate.name === requested.who) ?? party.find((candidate) => candidate.role === "pc");
+            void throwAndShow({
+                free: false,
+                title,
+                ...(title === requested.notation ? {} : { notation: requested.notation }),
+                dice: requested.dice,
+                modifier: notationModifier(requested.notation),
+                total: requested.total,
+                text: requested.text,
+                ...(member === undefined ? {} : { member }),
+                roll: requested.id,
+            }, lingers.asked);
         }
     }, [requested?.id]);
 
@@ -164,7 +205,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
             const { roll, label } = sheetThrow;
             const dice = roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
             const total = dice.reduce((sum, die) => sum + die.value, roll.modifier);
-            void throwAndShow(dice, { free: true, title: `${label} ${roll.notation}`, total, text: diceText(dice, roll.modifier) }, lingers.free);
+            void throwAndShow({ free: true, title: label, notation: roll.notation, dice, modifier: roll.modifier, total, text: diceText(dice, roll.modifier) }, lingers.free);
         }
     }, [sheetThrow?.number]);
 
@@ -173,7 +214,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
         setOpen(false);
         const total = dice.reduce((sum, die) => sum + die.value, modifier);
-        void throwAndShow(dice, { free: true, title: notation(pool, modifier), total, text: diceText(dice, modifier) }, lingers.free);
+        void throwAndShow({ free: true, title: notation(pool, modifier), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };
 
     const toggleSound = (): void => {
@@ -181,67 +222,171 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         writeSound(!sound);
     };
 
+    // One die of a kind less; when none is left, the focus goes to the die itself, as its minus goes away.
+    const less = (sides: number): void => {
+        const at = pool.lastIndexOf(sides);
+        setPool(pool.filter((_, index) => index !== at));
+
+        if (pool.filter((chosen) => chosen === sides).length === 1) {
+            tray.current?.querySelector<HTMLElement>(`[data-sides="${sides}"]`)?.focus();
+        }
+    };
+
     const clear = (): void => {
         setPool([]);
         setModifier(0);
+        button.current?.focus();
     };
 
-    const counts = freeDice.map((sides) => pool.filter((chosen) => chosen === sides).length);
+    // The button opens the tray; open, it closes it while no die is chosen, and throws the dice chosen.
+    const press = (): void => {
+        if (!open) {
+            setOpen(true);
+        } else if (pool.length === 0) {
+            setOpen(false);
+        } else if (!rolling) {
+            throwPool();
+        }
+    };
+
+    const chosen = open && pool.length > 0;
     return (
         <>
             <canvas ref={canvas} class={fading ? "dice-stage fading" : "dice-stage"} aria-hidden="true" />
-            <p
+            <div
                 ref={shownPlate}
-                class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : "", plate?.rare === undefined ? "" : `rare ${plate.rare.face}`].filter((name) => name !== "").join(" ")}
+                class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : "", plate?.rare === undefined ? "" : plate.rare.face].filter((name) => name !== "").join(" ")}
                 role="status"
                 aria-live="polite"
             >
-                {plate?.shown && (
+                {plate?.shown && <PlateContent plate={plate} />}
+            </div>
+            {open && <div class="tray-scrim" aria-hidden="true" />}
+            <div ref={controls} class="dice-controls">
+                {open && (
+                    <div ref={tray} class="dice-tray" role="group" aria-label="Free roll: it counts for nothing">
+                        <p class="tray-note">
+                            Free roll · not logged
+                            <button type="button" class="icon-button" aria-label="Dice sound" aria-pressed={sound} data-tip={sound ? "Sound: on" : "Sound: off"} onClick={toggleSound}>
+                                <Icon name={sound ? "soundOn" : "soundOff"} />
+                            </button>
+                        </p>
+                        <ul class="tray-dice">
+                            {freeDice.map((sides) => {
+                                const count = pool.filter((one) => one === sides).length;
+                                return (
+                                    <li key={sides} class={count > 0 ? "chosen" : undefined}>
+                                        {count > 0 && (
+                                            <button key="less" type="button" class="tray-less" aria-label={`One ${dieName(sides)} less`} data-tip="One less" onClick={() => less(sides)}>
+                                                <Icon name="minus" />
+                                            </button>
+                                        )}
+                                        <button
+                                            key="die"
+                                            type="button"
+                                            class="tray-die"
+                                            data-sides={sides}
+                                            disabled={pool.length >= mostDice}
+                                            aria-label={`Add a ${dieName(sides)}${count > 0 ? `: ${count} chosen` : ""}`}
+                                            onClick={() => setPool([...pool, sides])}
+                                        >
+                                            <span class="tray-die-name">
+                                                {count > 0 && <span class="tray-count">{count}</span>}
+                                                {dieName(sides)}
+                                            </span>
+                                            <DieIcon sides={sides} />
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        <div class="tray-modifier">
+                            <button type="button" aria-label="Modifier: one less" data-tip="−1" onClick={() => setModifier(modifier - 1)}>
+                                <Icon name="minus" />
+                            </button>
+                            <span class="tray-modifier-value">
+                                <span class="tray-modifier-label">Mod</span>
+                                <output aria-live="polite">{signed(modifier)}</output>
+                            </span>
+                            <button type="button" aria-label="Modifier: one more" data-tip="+1" onClick={() => setModifier(modifier + 1)}>
+                                <Icon name="plus" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+                <div class="dice-fab">
+                    {open && (pool.length > 0 || modifier !== 0) && (
+                        <button type="button" class="icon-button tonal" aria-label="Clear the dice" data-tip="Clear" onClick={clear}>
+                            <Icon name="clear" />
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        ref={button}
+                        class={chosen ? "dice-button extended" : "dice-button tip-left"}
+                        aria-expanded={open}
+                        aria-disabled={chosen && rolling}
+                        {...(chosen ? {} : { "aria-label": open ? "Close the free roll" : "Free roll", "data-tip": open ? "Close" : "Free roll" })}
+                        onClick={press}
+                    >
+                        {open && !chosen ? <Icon name="close" /> : <DieIcon sides={20} />}
+                        {chosen && (
+                            <span>
+                                Roll <span class="notation">{notation(pool, modifier)}</span>
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+}
+
+/** What the plate says: whose roll and which, the dice one by one with the modifier, the total large, a rare face's words, and for a screen reader the chat's text. */
+function PlateContent({ plate }: { plate: Plate; })
+{
+    return (
+        <>
+            <div class="plate-head">
+                {plate.member && <Token member={plate.member} />}
+                <span class="plate-what">
+                    <span class="plate-title">{plate.title}</span>
+                    {(plate.notation !== undefined || plate.free) && (
+                        <span class="plate-under">
+                            {plate.notation !== undefined && <span class="plate-notation">{shownText(plate.notation)}</span>}
+                            {plate.free && <span class="plate-tag">Free roll · not logged</span>}
+                        </span>
+                    )}
+                </span>
+            </div>
+            <ol class="plate-dice" aria-hidden="true">
+                {plate.dice.map((die, index) => <PlateDie key={index} die={die} />)}
+                {plate.modifier !== 0 && <li class="plate-modifier">{signed(plate.modifier)}</li>}
+            </ol>
+            <span class="plate-total num">{shownText(String(plate.total))}</span>
+            {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
+            <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
+        </>
+    );
+}
+
+/** A die of the plate: its picture and its face, empty when dropped; a reroll's first face struck out, an explosion's faces added, a dF as −, 0 or +. */
+function PlateDie({ die }: { die: ThrownDie; })
+{
+    const rare = rareFace(die);
+    const faces = die.faces !== undefined && die.faces.length > 1 ? die.faces.map((value) => faceText(die.sides, value)).join("+") : faceText(die.sides, die.value);
+    return (
+        <li class={["plate-die", die.dropped === true ? "dropped" : "", rare === undefined ? "" : `rare-${rare}`].filter((name) => name !== "").join(" ")}>
+            <DieIcon sides={die.sides} />
+            <span>
+                {die.rerolledFrom !== undefined && (
                     <>
-                        <span class={plate.free ? "dice-kind notation" : "dice-kind"}>{plate.title}</span> <span class="dice-number">{plate.total}</span>
-                        {plate.rare && <span class="dice-rare">{plate.rare.words}</span>}
-                        <span class="dice-text">{plate.free ? `${plate.text} · free roll, not logged` : plate.text}</span>
+                        <s>{faceText(die.sides, die.rerolledFrom)}</s>→
                     </>
                 )}
-            </p>
-            <button type="button" ref={button} class="dice-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Dice for fun">
-                <svg viewBox="0 0 32 32" aria-hidden="true">
-                    <path d="M16 2 28 9v14l-12 7-12-7V9Z M16 2 9.5 13h13Z M4 9l5.5 4L16 30l6.5-17L28 9 M9.5 13 4 23 M22.5 13 28 23 M4 23h24" />
-                </svg>
-            </button>
-            {open && (
-                <div ref={tray} class="dice-tray" role="group" aria-label="Dice for fun: they count for nothing">
-                    <div class="dice-pick">
-                        {freeDice.map((sides, index) => (
-                            <button
-                                key={sides}
-                                type="button"
-                                class="dice-pick-die"
-                                disabled={pool.length >= mostDice}
-                                onClick={() => setPool([...pool, sides])}
-                                aria-label={`Add a ${dieName(sides)}${counts[index] > 0 ? `: ${counts[index]} chosen` : ""}`}
-                            >
-                                {dieName(sides)}
-                                {counts[index] > 0 && <span class="dice-count" aria-hidden="true">{counts[index]}</span>}
-                            </button>
-                        ))}
-                    </div>
-                    <div class="dice-modifier">
-                        <span>Modifier</span>
-                        <button type="button" onClick={() => setModifier(modifier - 1)} aria-label="One less">−</button>
-                        <span class="num" aria-live="polite">{signed(modifier)}</span>
-                        <button type="button" onClick={() => setModifier(modifier + 1)} aria-label="One more">+</button>
-                    </div>
-                    <div class="dice-actions">
-                        <button type="button" class="dice-roll" disabled={pool.length === 0 || rolling} onClick={throwPool}>
-                            {pool.length === 0 ? "Choose the dice" : `Roll ${notation(pool, modifier)}`}
-                        </button>
-                        <button type="button" class="dice-clear" disabled={pool.length === 0 && modifier === 0} onClick={clear}>Clear</button>
-                        <button type="button" class="dice-sound" aria-pressed={sound} onClick={toggleSound}>{sound ? "Sound on" : "Sound off"}</button>
-                    </div>
-                </div>
-            )}
-        </>
+                {faces}
+            </span>
+        </li>
     );
 }
 
@@ -255,11 +400,11 @@ function rareOf(dice: ThrownDie[]): Pick<Plate, "rare">
     return rare === undefined ? {} : { rare };
 }
 
-/** Whether an element is in sight in the window. */
+/** Whether an element is in sight in the window: drawn, as it is not in a closed card, and all of it within the window. */
 function inSight(element: Element): boolean
 {
     const box = element.getBoundingClientRect();
-    return box.top >= 0 && box.bottom <= window.innerHeight;
+    return box.height > 0 && box.top >= 0 && box.bottom <= window.innerHeight;
 }
 
 /** Flies the plate into a line of the rolls, small, and lights the line as it lands; then what comes after. */
@@ -285,6 +430,19 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
             plate.style.visibility = "";
         });
     }, flight);
+}
+
+/** The number added at the end of a notation, as the 5 of 2d20kh1+5; none, 0. */
+function notationModifier(notation: string): number
+{
+    const match = /([+-]\d+)$/.exec(notation.replace(/\s+/g, ""));
+    return match === null ? 0 : Number(match[1]);
+}
+
+/** A face as the plate shows it: a number, or a dF's −, 0 and +. */
+function faceText(sides: number | "F", value: number): string
+{
+    return sides === "F" ? (value < 0 ? "−" : value > 0 ? "+" : "0") : String(value);
 }
 
 /** A die's name, as the tray shows it: d20, and d% for the percentile. */

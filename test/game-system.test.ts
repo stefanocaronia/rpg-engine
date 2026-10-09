@@ -60,10 +60,10 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
     const declared = "title: one of our own\nlanguage: it\nfields: { vigore: counter, forza: number, forza-mod: modifier, doti: list, motto: text }\n";
 
     it("reads the groups in order, each entry with what is beside it and whether it is written only when it applies, the notes of the groups and the names of lists", () => {
-        system(near, "prova", `${declared}sheet:\n  Corpo: [forza (forza-mod), vigore]\n  Animo: [motto?, doti?]\nsheet-notes: { animo: "del giocatore" }\nvalues: { Doti: [agile, forte] }\n`);
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza (forza-mod), vigore]\n  Animo: [motto?, doti?]\nsheet-notes: { animo: "del giocatore" }\nsheet-icons: { corpo: "M4 12h16 M12 4v16" }\nvalues: { Doti: [agile, forte] }\n`);
         const found = findSystem([near], "prova");
         expect(found?.sheet).toEqual([
-            { name: "Corpo", entries: [{ field: "forza", optional: false, beside: "forza-mod" }, { field: "vigore", optional: false }] },
+            { name: "Corpo", entries: [{ field: "forza", optional: false, beside: "forza-mod" }, { field: "vigore", optional: false }], icon: "M4 12h16 M12 4v16" },
             { name: "Animo", entries: [{ field: "motto", optional: true }, { field: "doti", optional: true }], note: "del giocatore" },
         ]);
         expect(found?.values).toEqual({ Doti: ["agile", "forte"] });
@@ -110,6 +110,8 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         ["sheet:\n  Corpo: [forza(forza-mod)]", 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies'],
         ["sheet:\n  Corpo: []", "sheet.Corpo"],
         ["sheet:\n  Corpo: [forza]\nsheet-notes: { Animo: del giocatore }", "sheet-notes.Animo: the sheet has no group Animo; its groups are Corpo."],
+        ['sheet:\n  Corpo: [forza]\nsheet-icons: { Animo: "M4 12h16" }', "sheet-icons.Animo: the sheet has no group Animo; its groups are Corpo."],
+        ['sheet:\n  Corpo: [forza]\nsheet-icons: { Corpo: "<script>" }', "sheet-icons.Corpo: write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16"],
         ["values: { motto: [breve] }", "values.motto: declare motto as a list in fields, or give no values to it."],
         ["values: { talenti: [breve] }", "values.talenti: declare talenti as a list in fields"],
         ["marks: [motto]", "motto is not declared as a list in fields, as marks and progression need."],

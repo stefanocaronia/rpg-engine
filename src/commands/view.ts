@@ -16,7 +16,7 @@ import { campaignCoins } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { countersText, partyCounters } from "./page-counters.ts";
+import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue, statBlock } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
@@ -63,7 +63,19 @@ export interface PartyMember
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; now?: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; rolls: ShownRoll[]; }
+    | {
+        kind: "overview";
+        campaign: string;
+        /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
+        system?: { name: string; title: string; attribution?: string; };
+        now?: string;
+        party: PartyMember[];
+        quests: string[];
+        scene?: string;
+        diary: string[];
+        total: number;
+        rolls: ShownRoll[];
+    }
     | { kind: "page"; title: string; sheet: SheetGroupData[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
@@ -145,7 +157,7 @@ export const view = defineCommand({
                 dead: page.fields.status === "dead",
                 ...(image === undefined ? {} : { image }),
                 ...(place === undefined ? {} : { place }),
-                counters: lineValues(world, page, partyCounters(world, page, coins, system)),
+                counters: lineValues(world, page, lineCounters(world, page, coins, system)),
                 effects: effectsOf(page).map((effect) => ({ name: effect.name, ...(effect.end === undefined ? {} : { end: formatEnd(effect.end) }), text: effectShown(world, effect) })),
             };
         };
@@ -159,6 +171,7 @@ export const view = defineCommand({
         return {
             kind: "overview",
             campaign: readSettings(root).name,
+            ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             party: [pc, ...companions].map(member),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
@@ -217,20 +230,30 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
 function memberLine(member: PartyMember): string
 {
     const role = member.role === "pc" ? "" : member.dead ? " (companion, dead)" : " (companion)";
-    const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.text])));
+    const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.beside === undefined ? value.text : `${value.text} (${value.beside})`])));
     const shown = [counters, ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");
     return `${member.name}${role}${member.place === undefined ? "" : `, ${member.place}`}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
 }
 
-/** The values of someone's line as data (DAT-2): as the line writes them, with a counter's limits. */
+/** The values of someone's line as data (DAT-2): as the line writes them, with a counter's limits, and beside the experience what the next level needs (PRO-6). */
 function lineValues(world: World, page: Page, counters: Record<string, unknown>): SheetValue[]
 {
     const fields = effectiveFields(world, page);
+    const experience = lineExperience(world, page, counters);
     return Object.entries(counters).map(([field, value]) => {
         const kind = declaredKind(world, field);
         const counter = counterOf(world, fields, field, value);
         const progress = experienceProgress(world, fields, field);
-        return { field, ...(kind === undefined ? {} : { kind }), text: String(value).trim(), ...(counter === undefined ? {} : { counter }), marks: 0, ...(progress === undefined ? {} : { progress }) };
+        const beside = field === experience?.field ? experience.text : undefined;
+        return {
+            field,
+            ...(kind === undefined ? {} : { kind }),
+            text: String(value).trim(),
+            ...(counter === undefined ? {} : { counter }),
+            marks: 0,
+            ...(beside === undefined ? {} : { beside }),
+            ...(progress === undefined ? {} : { progress }),
+        };
     });
 }
 

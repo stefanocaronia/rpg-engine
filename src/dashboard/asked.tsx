@@ -3,6 +3,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked } from "./data.ts";
+import { NotationIcons } from "./icons.tsx";
 import { checkOf } from "./labels.ts";
 
 export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered(): void; })
@@ -48,6 +49,7 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
                             <button key={label} type="button" class={sent === index ? `${kind} sent` : kind} disabled={sent !== undefined} onClick={() => void click(index)}>
                                 {check === undefined ? label : (
                                     <>
+                                        <NotationIcons notation={check.dice} />
                                         <span class="asked-check-name">{check.check}</span> <span class="asked-dice">{check.dice}</span>
                                     </>
                                 )}

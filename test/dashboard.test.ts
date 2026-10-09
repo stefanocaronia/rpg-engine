@@ -13,8 +13,8 @@ import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
-import { checkOf, diceIn, fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
-import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, phraseLabel, shownText } from "../src/dashboard/labels.ts";
+import { groupLayout, isExplained, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -85,6 +85,8 @@ describe("view as data (VIEW-1, D-272)", () => {
             effects: [{ name: "Benedizione", end: "day 1, 19:00", text: "Benedizione until day 1, 19:00" }],
         });
         expect(data.party[0].counters).toContainEqual({ field: "hp", kind: "counter", text: "20/24", counter: { value: 20, max: 24 }, marks: 0 });
+        // The game system the campaign plays, which the page names, with the credit its source asks for (D-284).
+        expect(data.system).toEqual({ name: "5e", title: expect.stringContaining("SRD 5.1"), attribution: expect.stringContaining("Creative Commons Attribution 4.0") });
         // A companion shows the picture of the creature she derives from (D-267).
         expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: { file: "wolf-head.svg", version: expect.any(Number) } });
         expect(await ok("view")).toContain([
@@ -101,8 +103,10 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
         expect(group("Combat").values).toContainEqual({ field: "hit-dice-d8", kind: "counter", text: "3/3", counter: { value: 3, max: 3 }, marks: 0 });
         expect(group("Proficiencies").values).toContainEqual({ field: "languages", kind: "list", text: "Common, Dwarvish", items: ["Common", "Dwarvish"], marks: 0 });
+        // Each group with its icon, when the system gives one (D-284).
         expect(group("Attacks")).toEqual({
             name: "Attacks",
+            icon: expect.stringMatching(/^M[\d. ]/),
             values: [],
             items: [{ item: "Unarmed Strike", values: [expect.objectContaining({ field: "attack", text: "+4" }), expect.objectContaining({ field: "damage-roll", text: "3 bludgeoning" })] }],
         });
@@ -369,6 +373,8 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(groupLabels(["slots-1", "slots-2"], fields)).toEqual(new Map([["slots-1", "slots 1"], ["slots-2", "slots 2"]]));
         expect(shownText("-1 (+2) · hit-dice 3")).toBe("−1 (+2) · hit-dice 3");
         expect(initials("Ettore di Valle")).toBe("ED");
+        expect(phraseLabel("sleight of hand")).toBe("Sleight of hand");
+        expect(phraseLabel("STR save")).toBe("STR save");
     });
 
     it("reads the dice of a notation, by their sides, with how many of each", () => {
@@ -380,6 +386,18 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(diceIn("4dF")).toEqual([{ sides: "F", count: 4 }]);
         expect(diceIn("1d8+1d8")).toEqual([{ sides: 8, count: 2 }]);
         expect(diceIn("5")).toEqual([]);
+    });
+
+    it("draws the dice of a notation (D-284): one kind once or twice, or once with how many; of more kinds the first two; a d3 or a dF as the d6 they are thrown with", () => {
+        expect(drawnDiceOf("1d20+2")).toEqual({ sides: [20] });
+        expect(drawnDiceOf("2d20kh1+5")).toEqual({ sides: [20, 20] });
+        expect(drawnDiceOf("8d6")).toEqual({ sides: [6], count: 8 });
+        expect(drawnDiceOf("2d20+1d12+2")).toEqual({ sides: [20, 12] });
+        expect(drawnDiceOf("1d20+1d6+1d4")).toEqual({ sides: [20, 6] });
+        expect(drawnDiceOf("4dF")).toEqual({ sides: [6], count: 4 });
+        expect(drawnDiceOf("d%")).toEqual({ sides: [100] });
+        expect(drawnDiceOf("1d30+2")).toEqual({ sides: [] });
+        expect([drawnDie(3), drawnDie("F"), drawnDie(2), drawnDie(1000)]).toEqual([6, 6, 2, undefined]);
     });
 
     it("reads a button of what the master asks as a check with its dice, and any other button as an answer (ASK-3)", () => {
@@ -402,6 +420,19 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(groupLayout({ name: "Stats", values: [value(undefined), value(undefined)] })).toBe("tiles");
         expect(groupLayout({ name: "Combat", values: [value(undefined), value({ value: 20, max: 24 })] })).toBe("rows");
         expect(orderedValues([{ ...value(undefined), items: [] }, value({ value: 1, max: 2 }), value(undefined)]).map(widgetOf)).toEqual(["number", "pips", "list"]);
+    });
+
+    it("draws a number on its way to the next mark with a bar, among the numbers, explained as one (D-284)", () => {
+        const level: SheetValue = { field: "level", text: "3", marks: 0 };
+        const xp: SheetValue = { field: "xp", text: "1500", marks: 0, beside: "1200 to level 4", progress: { value: 1500, from: 900, to: 2700 } };
+        const hp: SheetValue = { field: "hp", text: "14/27", marks: 0, counter: { value: 14, max: 27 } };
+        expect(widgetOf(xp)).toBe("progress");
+        expect(orderedValues([hp, xp, level]).map((value) => value.field)).toEqual(["xp", "level", "hp"]);
+        expect([isExplained(xp), isExplained(level), isExplained(hp)]).toEqual([true, true, false]);
+        expect(groupLayout({ name: "Character", values: [level, xp] })).toBe("rows");
+        expect(progressShare({ value: 1500, from: 900, to: 2700 })).toBeCloseTo(1 / 3);
+        expect(progressShare({ value: 900, from: 900, to: 2700 })).toBe(0);
+        expect(progressShare({ value: 5, from: 5, to: 5 })).toBe(1);
     });
 
     it("reads how each number of a group is made from what view gives for Page#Group (FOR-8)", () => {

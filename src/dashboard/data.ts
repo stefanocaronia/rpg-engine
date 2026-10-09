@@ -33,10 +33,11 @@ export interface SheetRoll
     modifier: number;
 }
 
-/** A group of a sheet: its values, or each item of a list with its values, as the attacks. */
+/** A group of a sheet: its icon, the d of an SVG path, its values, or each item of a list with its values, as the attacks. */
 export interface SheetGroup
 {
     name: string;
+    icon?: string;
     values: SheetValue[];
     items?: { item: string; values: SheetValue[]; }[];
 }
@@ -94,7 +95,19 @@ export interface Asked
 /** What view gives: the party, a page with its sheet, one section, or nothing. */
 export type View =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; now?: string; party: Member[]; quests: string[]; scene?: string; diary: string[]; total: number; rolls: ShownRoll[]; }
+    | {
+        kind: "overview";
+        campaign: string;
+        /** The game system: its name, what it is, and what its source asks to say. */
+        system?: { name: string; title: string; attribution?: string; };
+        now?: string;
+        party: Member[];
+        quests: string[];
+        scene?: string;
+        diary: string[];
+        total: number;
+        rolls: ShownRoll[];
+    }
     | { kind: "page"; title: string; sheet: SheetGroup[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };

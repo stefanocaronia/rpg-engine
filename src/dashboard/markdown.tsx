@@ -7,6 +7,13 @@ export function Markdown({ text }: { text: string; })
     return <div class="markdown">{blocks(text).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
+/** The first line of a page's text that is not a heading, as plain words: what a closed card shows of it. */
+export function plainLine(text: string): string | undefined
+{
+    const line = text.split("\n").find((candidate) => candidate.trim() !== "" && !/^\s*#/.test(candidate));
+    return line === undefined ? undefined : linkNames(line).replace(/^\s*(?:>\s?|[-*]\s+)/, "").replace(/\[!secret\]/i, "Secret:").replace(/[*_]/g, "").trim();
+}
+
 function blocks(text: string): ComponentChildren[]
 {
     const shown: ComponentChildren[] = [];
@@ -59,7 +66,7 @@ function blocks(text: string): ComponentChildren[]
 /** Bold and italics, and links as the names of their pages. */
 function inline(text: string): ComponentChildren[]
 {
-    const named = text.replace(/\[\[(?:[^\]|]*\|)?([^\]|]+)\]\]/g, "$1");
+    const named = linkNames(text);
     return named.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/).filter((piece) => piece !== "").map((piece, index) => {
         if (/^\*\*\*.+\*\*\*$/.test(piece)) {
             return (
@@ -75,4 +82,10 @@ function inline(text: string): ComponentChildren[]
 
         return /^([*_]).+\1$/.test(piece) ? <em key={index}>{piece.slice(1, -1)}</em> : piece;
     });
+}
+
+/** Links as the names of their pages: [[Page|name]] reads name, [[Page]] reads Page. */
+function linkNames(text: string): string
+{
+    return text.replace(/\[\[(?:[^\]|]*\|)?([^\]|]+)\]\]/g, "$1");
 }

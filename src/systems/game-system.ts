@@ -18,6 +18,8 @@ export const systemFileName = "system.yaml";
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
 // The dice a number of the sheet is rolled with: dice alone, as 1d20 or 2d6+1d4 (D-280).
 const sheetDicePattern = /^\d*d\d+(?:\+\d*d\d+)*$/;
+// A group's icon on the dashboard: the d of an SVG path, its letters and numbers alone (D-284).
+const iconPattern = /^[Mm][MmLlHhVvCcSsQqTtAaZz\d.,\s+-]*$/;
 
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
@@ -66,6 +68,7 @@ const systemSchema = z.object({
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
+    "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
     }).optional(),
@@ -142,6 +145,8 @@ export interface SheetGroup
     name: string;
     entries: SheetEntry[];
     note?: string;
+    /** Its icon on the dashboard: the d of an SVG path on a grid of 24, drawn as a line (D-284). */
+    icon?: string;
 }
 
 /** A field of the sheet; one written only when it applies is never reminded (D-206); beside, a field shown next to it, such as str-mod by str. */
@@ -580,19 +585,25 @@ function withoutExperience(progression: ProgressionRule, kept: (field: string) =
     return rest;
 }
 
-/** The groups of a system's sheet, each with its note; a note for a group the sheet does not have is refused. */
+/** The groups of a system's sheet, each with its note and its icon; a note or an icon for a group the sheet does not have is refused. */
 function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string): SheetGroup[]
 {
     const groups = Object.entries(data.sheet ?? {});
     const notes = Object.entries(data["sheet-notes"] ?? {});
-    const stray = notes.find(([group]) => !groups.some(([other]) => comparableText(other) === comparableText(group)));
+    const icons = Object.entries(data["sheet-icons"] ?? {});
+    const byGroup = (pairs: [string, string][], group: string): string | undefined => pairs.find(([other]) => comparableText(other) === comparableText(group))?.[1];
 
-    if (stray !== undefined) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-notes.${stray[0]}: the sheet has no group ${stray[0]}; its groups are ${groups.map(([group]) => group).join(", ")}.`);
+    for (const [key, pairs] of [["sheet-notes", notes], ["sheet-icons", icons]] as const) {
+        const stray = pairs.find(([group]) => !groups.some(([other]) => comparableText(other) === comparableText(group)));
+
+        if (stray !== undefined) {
+            throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${key}.${stray[0]}: the sheet has no group ${stray[0]}; its groups are ${groups.map(([group]) => group).join(", ")}.`);
+        }
     }
 
     return groups.map(([group, entries]) => {
-        const note = notes.find(([other]) => comparableText(other) === comparableText(group))?.[1];
+        const note = byGroup(notes, group);
+        const icon = byGroup(icons, group);
         return {
             name: group,
             entries: entries.map((entry) => {
@@ -600,6 +611,7 @@ function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string)
                 return { field, optional: optional === "?", ...(beside === undefined ? {} : { beside }) };
             }),
             ...(note === undefined ? {} : { note }),
+            ...(icon === undefined ? {} : { icon }),
         };
     });
 }

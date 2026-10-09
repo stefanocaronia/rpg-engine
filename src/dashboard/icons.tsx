@@ -1,0 +1,66 @@
+// The page's pictures (D-284): each die that is thrown, and the controls that have no words; lines on a grid of 24, in the colour of the text around them.
+import { drawnDiceOf, drawnDie } from "./labels.ts";
+
+// The dice by their sides: the d% as two d10, one behind the other; the coin as 2.
+const diePaths: Record<number, string> = {
+    2: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10Z",
+    4: "M12 2.5 21.8 19.5H2.2Z M12 2.5 14.2 19.5",
+    6: "M12 2 20.7 7v10L12 22l-8.7-5V7Z M3.3 7 12 12l8.7-5 M12 12v10",
+    8: "M12 2 21 12 12 22 3 12Z M12 2 7.5 15.5h9Z M3 12l4.5 3.5 M21 12l-4.5 3.5 M7.5 15.5 12 22l4.5-6.5",
+    10: "M12 2 21.5 10.5v3L12 22l-9.5-8.5v-3Z M12 2 6.8 12.6 12 15.4l5.2-2.8Z M2.5 13.5l4.3-.9 M21.5 13.5l-4.3-.9 M12 15.4V22",
+    12: "M12 2 17.9 3.9 21.5 8.9v6.2L17.9 20.1 12 22 6.1 20.1 2.5 15.1V8.9L6.1 3.9Z M12 7 16.8 10.5 14.9 16.1H9.1L7.2 10.5Z M12 7V2 M16.8 10.5 21.5 8.9 M14.9 16.1 17.9 20.1 M9.1 16.1 6.1 20.1 M7.2 10.5 2.5 8.9",
+    20: "M12 2 20.7 7v10L12 22l-8.7-5V7Z M12 6.7 16.6 14.7H7.4Z M12 2v4.7 M3.3 7l8.7-.3 8.7.3 M3.3 7 7.4 14.7 3.3 17 M20.7 7l-4.1 7.7 4.1 2.3 M7.4 14.7 12 22l4.6-7.3",
+    100: "M8.5 6 14.5 12.4v2.2L8.5 21l-6-6.4v-2.2Z M8.5 6 5.2 13.95 8.5 16.05 11.8 13.95Z M8.5 16.05V21 M10.36 7.98 15.5 2.5l6 6.4v2.2l-6 6.4-1.86-1.98",
+};
+
+const iconPaths = {
+    clear: "M4 7h16 M10 4h4 M6.5 7l.9 12.2a1 1 0 0 0 1 .8h7.2a1 1 0 0 0 1-.8L17.5 7 M10 11v5.5 M14 11v5.5",
+    soundOn: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11",
+    soundOff: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M16 9.5l5 5 M21 9.5l-5 5",
+    minus: "M6 12h12",
+    plus: "M12 6v12 M6 12h12",
+    close: "M6 6l12 12 M18 6 6 18",
+};
+
+/** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */
+export const cardIcons = {
+    description: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",
+    rolls: diePaths[20],
+    plain: "M5 5.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 11a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 16.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M9 6.5h10.5 M9 12h10.5 M9 17.5h10.5",
+};
+
+/** The name of a control's picture. */
+export type IconName = keyof typeof iconPaths;
+
+/** A die's picture, by its sides; nothing for a die the page does not draw. */
+export function DieIcon({ sides }: { sides: number | "F"; })
+{
+    const drawn = drawnDie(sides);
+    return drawn === undefined ? null : (
+        <svg class="die" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={diePaths[drawn]} />
+        </svg>
+    );
+}
+
+/** The dice of a notation as pictures, two at most, one in front of the other, with how many past two of one kind. */
+export function NotationIcons({ notation }: { notation: string; })
+{
+    const drawn = drawnDiceOf(notation);
+    return drawn.sides.length === 0 ? null : (
+        <span class="die-icons" aria-hidden="true">
+            {drawn.sides.map((sides, index) => <DieIcon key={index} sides={sides} />)}
+            {drawn.count !== undefined && <span class="die-more">×{drawn.count}</span>}
+        </span>
+    );
+}
+
+/** A control's picture, such as the bin that clears the dice. */
+export function Icon({ name }: { name: IconName; })
+{
+    return (
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={iconPaths[name]} />
+        </svg>
+    );
+}

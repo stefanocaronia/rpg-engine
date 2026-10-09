@@ -1,18 +1,20 @@
-// Someone's sheet (D-273, D-276): a band with their line and effects, then the system's groups as boxes, those of a few short numbers in a rail beside the
-// others; a click on a number says how it is made (FOR-8), and offers a free roll of it when the system rolls it (D-280). A companion who keeps no sheet shows
-// the stat block of its creature (D-275).
+// Someone's sheet (D-273, D-276, D-284): a band with their line and effects, then the system's groups as cards, those of a few short numbers in a rail beside
+// the others, and the page's text as a card of its own; a click on a number says how it is made (FOR-8), and offers a free roll of it when the system rolls
+// it (D-280). A companion who keeps no sheet shows the stat block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
+import { CardHeader, useOpen } from "./card.tsx";
 import type { Member, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
-import { fieldLabel, groupLabels, readableIds, shownText } from "./labels.ts";
-import { groupLayout, orderedValues, widgetOf } from "./layout.ts";
-import { Markdown } from "./markdown.tsx";
+import { cardIcons, NotationIcons } from "./icons.tsx";
+import { fieldLabel, groupLabels, phraseLabel, readableIds, shownText } from "./labels.ts";
+import { groupLayout, isExplained, orderedValues, widgetOf } from "./layout.ts";
+import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
-import { Effects, ValueDrawing } from "./widgets.tsx";
+import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
-// Up to this width the groups start closed, and the band says the most.
-const narrow = "(max-width: 600px)";
+// The card of the page's text, after the system's groups.
+const descriptionCard = "Description";
 
 /** What rolls a number of the sheet for fun: its roll, and the number's label. */
 export type FreeRoll = (roll: SheetRoll, label: string) => void;
@@ -46,9 +48,9 @@ export function MemberSheet({ member, sheet, text, version, onRoll }: { member: 
                 <div class="groups">
                     {sheet.filter((shown) => groupLayout(shown) !== "tiles").map(group)}
                     {text.trim() !== "" && (
-                        <section class="group lore">
+                        <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(text)}>
                             <Markdown text={text} />
-                        </section>
+                        </Card>
                     )}
                 </div>
             </div>
@@ -58,7 +60,6 @@ export function MemberSheet({ member, sheet, text, version, onRoll }: { member: 
 
 function Group({ member, group, fields, version, onRoll }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; onRoll: FreeRoll; })
 {
-    const [open, setOpen] = useState(() => storedOpen(group.name));
     const [explained, setExplained] = useState<{ field: string; parts: string[]; }>();
     const [current, setCurrent] = useState(0);
     // The question asked last: an answer to an older one, or one from before a change, is left out.
@@ -90,13 +91,6 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
         }
     };
 
-    // Only the player's click opens or closes a group, and is remembered: the page setting it is not.
-    const toggle = (event: MouseEvent): void => {
-        event.preventDefault();
-        setOpen(!open);
-        storeOpen(group.name, !open);
-    };
-
     // One stop of the Tab key for a group's numbers; the arrows move among them.
     const onKeyDown = (event: KeyboardEvent): void => {
         const step = ["ArrowDown", "ArrowRight"].includes(event.key) ? 1 : ["ArrowUp", "ArrowLeft"].includes(event.key) ? -1 : 0;
@@ -111,16 +105,12 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
         }
     };
 
-    const explainable = values.filter((value) => layout === "tiles" || widgetOf(value) === "number").map((value) => value.field);
+    const explainable = values.filter((value) => layout === "tiles" || isExplained(value)).map((value) => value.field);
     const stop = (field: string): number => (explainable.indexOf(field) === Math.min(current, explainable.length - 1) ? 0 : -1);
     const how = (field: string) => explained?.field === field && <How label={label(field)} parts={explained.parts} roll={values.find((value) => value.field === field)?.roll} onRoll={onRoll} />;
     return (
-        <details class={`group group-${layout}`} open={open}>
-            <summary onClick={toggle}>
-                <h3>{group.name}</h3>
-                {!open && <span class="preview">{preview(group, label)}</span>}
-            </summary>
-            {layout === "table" && <ItemsTable group={group} />}
+        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)}>
+            {layout === "table" && <ItemsTable group={group} fields={fields} />}
             {layout === "tiles" && (
                 <div class="tiles" onKeyDown={onKeyDown}>
                     {values.map((value) => <Tile key={value.field} value={value} label={label(value.field)} expanded={explained?.field === value.field} tabIndex={stop(value.field)} onExplain={explain} />)}
@@ -137,6 +127,18 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
                     ))}
                 </div>
             )}
+        </Card>
+    );
+}
+
+/** A card of the sheet the player opens and closes (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
+function Card({ name, icon, layout, preview, children }: { name: string; icon: string; layout: string; preview?: string; children: ComponentChildren; })
+{
+    const [open, toggle] = useOpen(name);
+    return (
+        <details class={`group group-${layout}`} open={open}>
+            <CardHeader icon={icon} title={<h3>{name}</h3>} preview={preview} open={open} onToggle={toggle} />
+            {children}
         </details>
     );
 }
@@ -149,7 +151,8 @@ function How({ label, parts, roll, onRoll }: { label: string; parts: string[]; r
             <span class="how-field">{label}</span>
             {parts.map((part) => <span key={part} class="part">{shownText(part)}</span>)}
             {roll && (
-                <button type="button" class="how-roll" onClick={() => onRoll(roll, label)}>
+                <button type="button" class="how-roll" data-tip="Free roll · not logged" onClick={() => onRoll(roll, label)}>
+                    <NotationIcons notation={roll.notation} />
                     Roll {shownText(roll.notation)} <span class="how-free">free roll</span>
                 </button>
             )}
@@ -180,37 +183,52 @@ function Tile({ value, label, expanded, tabIndex, onExplain }: Explaining)
     );
 }
 
-/** A value on a line: its marks, its label, its drawing; a number tells how it is made when clicked. */
+/** A value on a line: its marks, its label as a phrase, its drawing, what is beside it, and under a number's progress its bar; a number tells how it is made when clicked. */
 function Row({ value, label, expanded, tabIndex, onExplain }: Explaining)
 {
     const widget = widgetOf(value);
+    const shownLabel = phraseLabel(label);
     const marks = value.marks === 0 ? null : <span class="marks" aria-label={`${value.marks} ${value.marks === 1 ? "mark" : "marks"}`}>{"●".repeat(value.marks)}</span>;
     const content = (
         <>
-            <span class="marks-place">{marks}</span>
-            <span class="label">{label}</span>
+            <span class="label">
+                {marks}
+                {shownLabel}
+            </span>
             <Changing text={value.text}>
-                <ValueDrawing value={value} label={label} />
+                {widget === "progress" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} />}
             </Changing>
             {value.beside !== undefined && <span class="beside num">{shownText(value.beside)}</span>}
+            {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
         </>
     );
 
-    return widget === "number"
+    return isExplained(value)
         ? <button type="button" class={`row row-${widget} explains`} tabIndex={tabIndex} aria-expanded={expanded} onClick={() => onExplain(value.field)}>{content}</button>
         : <div class={`row row-${widget}`}>{content}</div>;
 }
 
-/** A group the items of a list give, as the attacks: an item a line, with its values. */
-function ItemsTable({ group }: { group: SheetGroup; })
+/** A group the items of a list give, as the attacks: a head with the labels of their values, then an item a line, with its values. */
+function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<string>; })
 {
+    const items = group.items ?? [];
+    const columns = items[0]?.values.map((value) => value.field) ?? [];
+    const labels = groupLabels(columns, fields);
     return (
         <table class="items">
+            <thead>
+                <tr>
+                    <th scope="col">
+                        <span class="visually-hidden">Name</span>
+                    </th>
+                    {columns.map((field) => <th key={field} scope="col">{phraseLabel(labels.get(field) ?? fieldLabel(field, fields))}</th>)}
+                </tr>
+            </thead>
             <tbody>
-                {(group.items ?? []).map((item) => (
+                {items.map((item) => (
                     <tr key={item.item}>
                         <th scope="row">{item.item}</th>
-                        {item.values.map((value) => <td key={value.field} class="num">{shownText(value.text)}</td>)}
+                        {item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
                     </tr>
                 ))}
             </tbody>
@@ -242,29 +260,4 @@ function preview(group: SheetGroup, label: (field: string) => string): string
     }
 
     return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(value.beside ?? value.text)}`).join(" · ");
-}
-
-// Whether a group is open is kept in the browser, by its name; a narrow screen starts with them closed.
-function storedOpen(name: string): boolean
-{
-    try {
-        const stored = localStorage.getItem(`rpg-group:${name}`);
-
-        if (stored !== null) {
-            return stored === "open";
-        }
-    } catch {
-        // No storage, as in a private window: the default.
-    }
-
-    return !matchMedia(narrow).matches;
-}
-
-function storeOpen(name: string, open: boolean): void
-{
-    try {
-        localStorage.setItem(`rpg-group:${name}`, open ? "open" : "closed");
-    } catch {
-        // No storage: it is only remembered while the page is open.
-    }
 }

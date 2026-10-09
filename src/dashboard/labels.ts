@@ -1,5 +1,8 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
 
+// The dice the page has a picture of: the d% as 100, the coin as 2.
+const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
+
 /** A field's name as a label: its words apart, in capitals the short ones that name a field, such as str or ac, and those of two letters without a vowel, such as hp. */
 export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set()): string
 {
@@ -27,6 +30,38 @@ export function diceIn(notation: string): { sides: number | "F"; count: number; 
     }
 
     return dice;
+}
+
+/** The die the page draws for a die of these sides (D-284): the seven of the tray and the coin, a d3 and a dF as the d6 they are thrown with; none for a d30. */
+export function drawnDie(sides: number | "F"): number | undefined
+{
+    const drawn = sides === "F" || sides === 3 ? 6 : sides;
+    return drawnDice.includes(drawn) ? drawn : undefined;
+}
+
+/**
+ * The dice of a notation as the page draws them (D-284): of one kind, its die once or twice, or once with how many past two, as 8d6; of more kinds, the first die
+ * of the first two, the notation beside saying the rest. Dice the page does not draw are left out.
+ */
+export function drawnDiceOf(notation: string): { sides: number[]; count?: number; }
+{
+    const kinds = diceIn(notation).flatMap((kind) => {
+        const sides = drawnDie(kind.sides);
+        return sides === undefined ? [] : [{ sides, count: kind.count }];
+    });
+
+    if (kinds.length !== 1) {
+        return { sides: kinds.slice(0, 2).map((kind) => kind.sides) };
+    }
+
+    const [{ sides, count }] = kinds;
+    return count <= 2 ? { sides: Array.from({ length: count }, () => sides) } : { sides: [sides], count };
+}
+
+/** A label of a sheet's line as a phrase, its first letter a capital: "sleight of hand" reads "Sleight of hand"; "STR save" stays as it is. */
+export function phraseLabel(label: string): string
+{
+    return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 /** A button's label as a check: "Tiro: Atletica (1d20+5)" is the check Atletica with its dice (ASK-3); any other label is an answer, or the change of mind. */

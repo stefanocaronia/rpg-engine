@@ -6,6 +6,7 @@ import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import type { Asked, Member, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
+import { phraseLabel } from "./labels.ts";
 import { Master } from "./master.tsx";
 import { PartyStrip } from "./party.tsx";
 import { RollLog } from "./rolls.tsx";
@@ -14,10 +15,11 @@ import { MemberSheet } from "./sheet.tsx";
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";
 
-/** What the page shows: the campaign and its time, the party, whom the address names and their sheet, the rolls and what the master asks, as of when it was read. */
+/** What the page shows: the campaign, its system and its time, the party, whom the address names and their sheet, the rolls and what the master asks, as of when it was read. */
 interface Shown
 {
     campaign?: string;
+    system?: { name: string; title: string; attribution?: string; };
     now?: string;
     party: Member[];
     chosen?: string;
@@ -67,6 +69,7 @@ function App()
 
                 setShown((before) => ({
                     campaign: overview.kind === "overview" ? overview.campaign : undefined,
+                    system: overview.kind === "overview" ? overview.system : undefined,
                     now: overview.kind === "overview" ? overview.now : undefined,
                     party,
                     chosen: member?.name,
@@ -120,7 +123,7 @@ function App()
                 <Master />
                 <div class="titles">
                     <h1>{shown.campaign ?? productName}</h1>
-                    {shown.campaign !== undefined && <p class="product">{productName}</p>}
+                    {shown.campaign !== undefined && <p class="product">{productName}{shown.system && <span class="system">· {shown.system.name}</span>}</p>}
                 </div>
                 {when !== "" && <p class="when">{when}</p>}
                 <span class={live ? "live on" : "live"}>{live ? "live" : "waiting for the game"}</span>
@@ -145,7 +148,13 @@ function App()
                 </main>
                 <RollLog rolls={shown.rolls} party={shown.party} fresh={fresh} />
             </div>
-            <DiceTray requested={thrown} sheetThrow={sheetThrow} />
+            {shown.system && (
+                <footer class="credits">
+                    <p>Game system: {phraseLabel(shown.system.title)}.</p>
+                    {shown.system.attribution && <p>{shown.system.attribution}</p>}
+                </footer>
+            )}
+            <DiceTray requested={thrown} sheetThrow={sheetThrow} party={shown.party} />
         </div>
     );
 }

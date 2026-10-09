@@ -33,6 +33,19 @@ export function pageCounters(world: World, page: Page, coins?: Coin[]): Record<s
  */
 export function partyCounters(world: World, page: Page, coins: Coin[] | undefined, system: GameSystem | undefined): Record<string, unknown>
 {
+    const shown = lineCounters(world, page, coins, system);
+    const experience = lineExperience(world, page, shown);
+
+    if (experience !== undefined) {
+        shown[experience.field] = `${String(shown[experience.field])} (${experience.text})`;
+    }
+
+    return shown;
+}
+
+/** The counters of someone's line as partyCounters gives them, but for the experience's next level, which view gives the dashboard beside its points. */
+export function lineCounters(world: World, page: Page, coins: Coin[] | undefined, system: GameSystem | undefined): Record<string, unknown>
+{
     const counters = pageCounters(world, page, coins);
     const fields = effectiveFields(world, page);
     const shown: Record<string, unknown> = {};
@@ -66,21 +79,21 @@ export function partyCounters(world: World, page: Page, coins: Coin[] | undefine
         }
     }
 
-    // The points with how many the next level needs, or the level they reach (PRO-6).
-    const experience = experienceOf(world, fields);
-    const text = experience === undefined ? undefined : experienceText(experience);
-    const key = experience === undefined ? undefined : sameName(Object.keys(shown), experience.field);
-
-    if (key !== undefined && text !== undefined) {
-        shown[key] = `${String(shown[key])} (${text})`;
-    }
-
     // Rolls kept for later, such as a diviner's Portent, when there are any (KEP-1).
     for (const [field, value] of keptRolls(world, page)) {
         shown[field] = value.join(", ");
     }
 
     return shown;
+}
+
+/** The experience among someone's counters, with how many points the next level needs or the level they reach (PRO-6); undefined when it says neither. */
+export function lineExperience(world: World, page: Page, counters: Record<string, unknown>): { field: string; text: string; } | undefined
+{
+    const experience = experienceOf(world, effectiveFields(world, page));
+    const text = experience === undefined ? undefined : experienceText(experience);
+    const field = experience === undefined ? undefined : sameName(Object.keys(counters), experience.field);
+    return field === undefined || text === undefined ? undefined : { field, text };
 }
 
 /** The fields of kept rolls a page holds that are not empty, each with its numbers (KEP-1). */

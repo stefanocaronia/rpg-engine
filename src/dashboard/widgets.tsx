@@ -1,10 +1,14 @@
-// The widgets of a value (D-273): pips, a bar, a track centred on zero, chips; each says its value in words for a screen reader.
+// The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
+// for a screen reader.
 import type { Member, SheetValue } from "./data.ts";
 import { shownText } from "./labels.ts";
-import { trackPlaces, widgetOf } from "./layout.ts";
+import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 
 // Below this share of its maximum a bar is low: hatched, not only red.
 const low = 0.25;
+
+// A list with an item of so many words is of sentences, as "advantage on saving throws against poison": lines, not chips.
+const sentenceWords = 5;
 
 /** A value drawn by its kind, with its text beside it when the drawing alone does not say it. */
 export function ValueDrawing({ value, label }: { value: SheetValue; label: string; })
@@ -16,6 +20,8 @@ export function ValueDrawing({ value, label }: { value: SheetValue; label: strin
             return <Bar value={value} label={label} />;
         case "track":
             return <Track value={value} label={label} />;
+        case "progress":
+            return <Progress value={value} label={label} />;
         case "list":
             return <Chips value={value} />;
         default:
@@ -47,6 +53,32 @@ export function Bar({ value, label }: { value: SheetValue; label: string; })
     );
 }
 
+/** A number on its way to the next mark, as the experience toward the next level: the number, what the next mark needs, a bar under them (D-284). */
+export function Progress({ value, label }: { value: SheetValue; label: string; })
+{
+    return (
+        <span class="progress-line">
+            <span class="progress-first">
+                <span class="num">{shownText(value.text)}</span>
+                {value.beside !== undefined && <span class="progress-next">{shownText(value.beside)}</span>}
+            </span>
+            <ProgressBar value={value} label={label} />
+        </span>
+    );
+}
+
+/** The bar of a number's progress, in the accent, never low: it is no resource that runs out. */
+export function ProgressBar({ value, label }: { value: SheetValue; label: string; })
+{
+    const progress = value.progress ?? { value: 0, from: 0, to: 0 };
+    const said = [value.text, value.beside].filter((part) => part !== undefined).join(", ");
+    return (
+        <span class="bar progress" role="progressbar" aria-label={label} aria-valuemin={progress.from} aria-valuemax={progress.to} aria-valuenow={progress.value} aria-valuetext={said}>
+            <span class="fill" style={{ "--fill": String(progressShare(progress)) }} />
+        </span>
+    );
+}
+
 /** A counter that goes below zero, such as momentum: a track from its minimum to its maximum, filled from zero to its value. */
 export function Track({ value, label }: { value: SheetValue; label: string; })
 {
@@ -65,20 +97,26 @@ export function Track({ value, label }: { value: SheetValue; label: string; })
     );
 }
 
-/** A list as chips; what the character's parts add to it apart, with where it comes from (PRO-7). */
+/** A list as chips, or as lines when it is of sentences; what the character's parts add to it apart, with where it comes from (PRO-7). */
 export function Chips({ value }: { value: SheetValue; })
 {
     return (
         <span class="chips-block">
-            <ul class="chips">{(value.items ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
+            <Items items={value.items ?? []} />
             {value.always && (
                 <span class="always">
-                    always, from {value.always.from.join(" and ")}:
-                    <ul class="chips">{value.always.items.map((item) => <li key={item}>{item}</li>)}</ul>
+                    <span class="always-from">Always, from {value.always.from.join(" and ")}</span>
+                    <Items items={value.always.items} />
                 </span>
             )}
         </span>
     );
+}
+
+function Items({ items }: { items: string[]; })
+{
+    const sentences = items.some((item) => item.trim().split(/\s+/).length >= sentenceWords);
+    return <ul class={sentences ? "notes" : "chips"}>{items.map((item) => <li key={item}>{item}</li>)}</ul>;
 }
 
 /** Someone's effects as tags, each with its end; past `most`, how many more. */

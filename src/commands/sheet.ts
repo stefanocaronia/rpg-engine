@@ -122,6 +122,8 @@ export interface SheetRoll
 export interface SheetGroupData
 {
     name: string;
+    /** Its icon on the dashboard, when the system gives one (D-284). */
+    icon?: string;
     values: SheetValue[];
     items?: { item: string; values: SheetValue[]; }[];
 }
@@ -147,7 +149,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 item: item.item,
                 values: item.values.map((value) => sheetValue(world, fields, value.field, value.value)),
             }));
-            return items.length === 0 ? [] : [{ name: group.name, values: [], items }];
+            return items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values: [], items }];
         }
 
         const progression = progressionOf(world, fields);
@@ -170,8 +172,14 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 ...(progress === undefined ? {} : { progress }),
             }];
         });
-        return values.length === 0 ? [] : [{ name: group.name, values }];
+        return values.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values }];
     });
+}
+
+/** A group's icon, as the data of the sheet carries it: none when the system gives none. */
+function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
+{
+    return group.icon === undefined ? {} : { icon: group.icon };
 }
 
 /**

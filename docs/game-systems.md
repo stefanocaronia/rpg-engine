@@ -146,7 +146,7 @@ settings:
 - Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing, and `status` shows its value on the campaign's line at every session; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
 - `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, the experience and rewards of that field say nothing, and `write` says so when one is written. Without a value, nothing is left out.
 
-### sheet and sheet-notes
+### sheet, sheet-notes and sheet-icons
 
 The character sheet, in groups, each with its fields in order:
 
@@ -157,6 +157,8 @@ sheet:
   Personality: [ideal?, bond?, flaw?]
 sheet-notes:
   Personality: "a player character's ideal, bond and flaw are the player's, in their words..."
+sheet-icons:
+  Abilities: "M4.5 13.5h3v6h-3Z M10.5 5.5h3v14h-3Z M16.5 9.5h3v10h-3Z"
 ```
 
 - `field`: a field the character writes; `status` reminds it until it is written, unless the system works it out (`computed`).
@@ -166,6 +168,7 @@ sheet-notes:
 - `show` gives a sheet one line per group, effects and formulas included: `Abilities: str 14 (+2) · dex 12 (+1) · proficiency +2`. `show Page#Group` gives one group with how each number is made (a section or secret of that name comes first).
 - Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, and the system's part `session-zero` says how to make one (section 6.6). In session zero its checklist says what each sheet still lacks; in play `status` reminds it.
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
+- `sheet-icons`: a group's icon on the dashboard (D-284), the `d` of an SVG path on a grid of 24, drawn as a line 1.5 wide in the page's accent; a group without one gets a plain one. An icon for a group the sheet does not have, or with more than a path's letters and numbers, is refused when the system loads.
 
 ### values
 

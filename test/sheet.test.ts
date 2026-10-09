@@ -85,7 +85,9 @@ describe("the experience between two levels (PRO-6)", () => {
         const page = JSON.parse(await ok("view", "Ettore", "--json")) as { sheet: { values: { field: string; progress?: unknown; }[]; }[]; };
         expect(page.sheet.flatMap((group) => group.values).find((value) => value.field === "xp")?.progress).toEqual(progress);
         const overview = JSON.parse(await ok("view", "--json")) as { party: { name: string; counters: { field: string; progress?: unknown; }[]; }[]; };
-        expect(overview.party.find((member) => member.name === "Ettore")?.counters.find((value) => value.field === "xp")?.progress).toEqual(progress);
+        // On the line too, the points apart from what the next level needs, as on the sheet; the chat reads them together.
+        expect(overview.party.find((member) => member.name === "Ettore")?.counters.find((value) => value.field === "xp")).toMatchObject({ text: "900", beside: "1800 to level 4", progress });
+        expect(await ok("view")).toContain("xp 900 (1800 to level 4)");
         expect(page.sheet.flatMap((group) => group.values).find((value) => value.field === "level")?.progress).toBeUndefined();
     });
 });
