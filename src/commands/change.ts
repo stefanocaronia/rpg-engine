@@ -107,7 +107,7 @@ export const change = defineCommand({
         }
 
         const holder = holderNamed(root, world, input.page);
-        const fields = withDeclaredStart(world, effectiveFields(world, holder.page), input.field);
+        const fields = withDeclaredStart(world, holder, effectiveFields(world, holder.page), input.field);
         const { coins, problem } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
@@ -267,14 +267,21 @@ function applyStep(
 }
 
 /**
- * The fields, with a counter the game system declares and gives no maximum at 0 when the page does not hold it yet, as temporary hit points: change starts it,
- * since write never changes it once written (CNT-7, CNT-8, D-266).
+ * The fields, with a counter the game system declares and gives no maximum at 0 when a character, a quest or a copy that no page derives from does not hold it
+ * yet, as temporary hit points: change starts it, since write never changes it once written (CNT-7, CNT-8, D-266).
  */
-function withDeclaredStart(world: World, fields: Record<string, unknown>, name: string): Record<string, unknown>
+function withDeclaredStart(world: World, holder: CounterHolder, fields: Record<string, unknown>, name: string): Record<string, unknown>
 {
     const declared = startingAtZero(world, name);
     const held = Object.keys(fields).some((field) => comparableText(field) === comparableText(name.trim()));
-    return declared === undefined || held || computedField(world, declared, fields) !== undefined ? fields : { ...fields, [declared]: 0 };
+
+    if (declared === undefined || held || computedField(world, declared, fields) !== undefined) {
+        return fields;
+    }
+
+    // Never on a place, an item or a kind: on a page others derive from, it would reach all of them, as on Ghoul instead of Ghoul 1.
+    const owner = holder.kind === "copy" || ((holder.page.type === "character" || holder.page.type === "quest") && followersOf(world, holder.page, declared).length === 0);
+    return owner ? { ...fields, [declared]: 0 } : fields;
 }
 
 /** How much a step took away: the whole of a negative by, even past a limit, as damage is taken; otherwise what the value went down. */

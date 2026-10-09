@@ -369,7 +369,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
 
     const data = parsed.data;
     // What a counter shields is no limit of it: a counter with only that has none (DAT-14).
-    const limited = Object.entries(data.counters ?? {}).map(([counter, { shields: _shields, ...limits }]) => [counter, limits] as const).filter(([, limits]) => Object.keys(limits).length > 0);
+    const limited = Object.entries(data.counters ?? {}).flatMap(([counter, { min, max, refill }]) => min === undefined && max === undefined && refill === undefined ? [] : [[counter, { min, max, refill }] as const]);
     const formulas = systemFormulas({ ...data, counters: Object.fromEntries(limited) }, name, path);
     const stray = strayOccasion(data, formulas);
 
@@ -391,6 +391,12 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
+
+    const unknownCondition = data.keeping?.conditions?.find((condition) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(condition)));
+
+    if (unknownCondition !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: keeping.conditions: ${unknownCondition} is not one of its conditions.`);
+    }
 
     if (counted !== undefined) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${counted.where}: ${counted.field} is not declared as a counter in fields.`);

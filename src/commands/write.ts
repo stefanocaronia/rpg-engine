@@ -86,7 +86,7 @@ import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { partText, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes } from "./sheet.ts";
-import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, workedMaximum, workedParts } from "./worked-out.ts";
+import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -433,7 +433,7 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
 
     for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
         const name = sameName(Object.keys(fields), field);
-        const declared = name !== undefined && declaredKind(world, name) === "counter";
+        const declared = name !== undefined && startingAtZero(world, name) !== undefined;
         const current = name === undefined || (isStandardField(page.type, name) && !isCounterField(page.type, name)) || isDeclaredUncounted(world, name) ? undefined : guarded(fields[name], coins, declared);
         const next = current === undefined ? undefined : sameKind(current.kind, value, coins);
         const base = baseValue(world, page, field);
@@ -477,7 +477,7 @@ function checkUses(world: World, system: GameSystem | undefined, page: Page, set
 }
 
 /**
- * A value that changes only with change, as it is compared: a current/max counter (D-92), a number the game system declares a counter (CNT-7, D-266), or money
+ * A value that changes only with change, as it is compared: a current/max counter (D-92), a number the game system declares a counter with no maximum (CNT-7, D-266), or money
  * (MON-6); undefined for any other.
  */
 function guarded(value: unknown, coins: Coin[] | undefined, declared: boolean): { kind: "counter" | "money"; text: string; } | undefined

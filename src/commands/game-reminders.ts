@@ -7,14 +7,17 @@ import type { Page, World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { effectsOn, keptEffects } from "./game-effects.ts";
+import { effectsOn, keptEffectHolders, keptEffects } from "./game-effects.ts";
 
 /** "Viola keeps Eroismo (Corrado): lost 7 hp. Read rules Concentration.": what someone keeps alive, when the counter the game system names goes down by `lost` (EFF-14). */
 export function keepingLossNote(world: World, scene: Scene | undefined, system: GameSystem | undefined, name: string, field: string, lost: number): string
 {
     const keeping = system?.keeping;
 
-    if (keeping === undefined || comparableText(field) !== comparableText(keeping.counter) || !(lost > 0)) {
+    // Damage a shield takes first, as temporary hit points, is damage still.
+    const shielded = Object.entries(system?.shields ?? {}).find(([shield]) => comparableText(shield) === comparableText(field))?.[1] ?? field;
+
+    if (keeping === undefined || comparableText(shielded) !== comparableText(keeping.counter) || !(lost > 0)) {
         return "";
     }
 
@@ -47,8 +50,8 @@ export function secondKeptNote(world: World, scene: Scene | undefined, system: G
         return "";
     }
 
-    const others = keptEffects(world, scene, keeper).filter((kept) => comparableText(kept.slice(0, kept.lastIndexOf(" ("))) !== comparableText(effect.name));
-    return others.length === 0 ? "" : `${keeper} already keeps ${others.join(" · ")}. Read rules ${system.keeping.rules}.`;
+    const others = keptEffectHolders(world, scene, keeper).filter((kept) => comparableText(kept.effect) !== comparableText(effect.name));
+    return others.length === 0 ? "" : `${keeper} already keeps ${others.map((kept) => `${kept.effect} (${kept.holders.join(", ")})`).join(" · ")}. Read rules ${system.keeping.rules}.`;
 }
 
 /** "End of Malco's turn: Paralyzed (by Corrado). Start of Ghoul 1's turn: In fiamme.": the effects on who ends a turn and on who starts the next, as the turn passes (EFF-15). */

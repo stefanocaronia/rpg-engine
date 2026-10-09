@@ -209,20 +209,23 @@ export function updateScene(root: string, changes: [string[], unknown][]): void
 export function openSceneLog(root: string, scene: Scene): string
 {
     const entries = readLog(root);
-    const opened = entries.findLastIndex((entry) => entry.type === "scene-opened" && entry.data.title === scene.title);
+    // The last scene opened with its title, or the last opened when state.yaml was written by hand.
+    const titled = entries.findLastIndex((entry) => entry.type === "scene-opened" && entry.data.title === scene.title);
+    const opened = titled >= 0 ? titled : entries.findLastIndex((entry) => entry.type === "scene-opened");
     const lines: string[] = [];
     let round: unknown;
 
     for (const entry of opened < 0 ? [] : entries.slice(opened + 1)) {
-        if (entry.type === "scene-changed" && entry.data.round !== undefined && entry.data.round !== round) {
-            round = entry.data.round;
-            lines.push(`Round ${String(round)}:`);
-        }
-
+        // A line first, as who left at the end of a round, then the round its turn moved to.
         const line = sceneLogLine(entry.type, entry.data);
 
         if (line !== "") {
             lines.push(`- ${line}`);
+        }
+
+        if (entry.type === "scene-changed" && entry.data.round !== undefined && entry.data.round !== round) {
+            round = entry.data.round;
+            lines.push(`Round ${String(round)}:`);
         }
 
         // The first order of turns starts round 1 with its first, who acts before any turn passes (SCN-6).
@@ -286,10 +289,25 @@ export function sceneProblems(root: string, world: World): Problem[]
     return [...missing, ...clashes];
 }
 
-/** One line of the log as the open scene's log gives it, or nothing for a line it leaves out, such as a turn passing or a save. */
+/** One line of the log as the open scene's log gives it, or nothing for a line it leaves out, such as a turn passing, a save, or one written by hand without what it needs. */
 function sceneLogLine(type: string, data: Record<string, unknown>): string
 {
     const why = typeof data.why === "string" && data.why !== "" ? ` (${data.why})` : "";
+    const needs: Record<string, string[]> = {
+        roll: ["total"],
+        "counter-changed": ["page", "field", "before", "after"],
+        "effect-added": ["page", "effect"],
+        "effect-ended": ["page", "effect"],
+        moved: ["pages", "to"],
+        asked: ["question"],
+        "time-advanced": ["to"],
+        "page-created": ["page"],
+        "page-updated": ["page"],
+    };
+
+    if ((needs[type] ?? []).some((field) => data[field] === undefined || data[field] === null)) {
+        return "";
+    }
 
     switch (type) {
         case "roll":
@@ -322,7 +340,8 @@ function sceneChangeLine(data: Record<string, unknown>): string
     const copies = data.copies !== null && typeof data.copies === "object" ? (data.copies as Record<string, Record<string, unknown>>) : {};
 
     const withNumbers = (name: string): string => {
-        const numbers = Object.entries(copies[name] ?? {}).filter(([field]) => field !== "creature").map(([field, value]) => `${field} ${String(value)}`);
+        const copy = copies[name];
+        const numbers = copy === null || typeof copy !== "object" ? [] : Object.entries(copy).filter(([field]) => field !== "creature").map(([field, value]) => `${field} ${String(value)}`);
         return numbers.length === 0 ? name : `${name} (${numbers.join(", ")})`;
     };
 

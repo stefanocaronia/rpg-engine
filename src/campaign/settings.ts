@@ -22,14 +22,14 @@ export const saveModes = ["permadeath", "checkpoint", "free"] as const;
 /** How closely the rules are followed, apart from difficulty (D-42): the master glosses over them, as they are written, or beyond them. */
 export const rigors = ["smooth", "rules", "simulation"] as const;
 
-/** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263). */
+/** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263); fights in the words of a budget of low, moderate and high (D-266). */
 export const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
-    story: "fights easy; foes naive, at their weakest, quick to flee; clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow; you may soften your own rolls",
-    easy: "fights easy to medium; foes with simple tactics, below average toughness; three clues or more; resources generous; random encounters rare; threat clocks slow",
-    normal: "fights medium to hard; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
+    story: "fights low; foes naive, at their weakest, quick to flee; clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow; you may soften your own rolls",
+    easy: "fights low to moderate; foes with simple tactics, below average toughness; three clues or more; resources generous; random encounters rare; threat clocks slow",
+    normal: "fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
         + "random encounters normal; threat clocks at their pace",
-    hard: "fights hard to deadly; foes smart (focus, control), above average toughness, tenacious; three subtle clues; resources scarce; random encounters frequent; threat clocks fast",
-    brutal: "fights deadly and beyond; foes optimized (retreats, ambushes, finishing the fallen), at their toughest, fanatical; three subtle clues; resources very scarce; "
+    hard: "fights high and beyond; foes smart (focus, control), above average toughness, tenacious; three subtle clues; resources scarce; random encounters frequent; threat clocks fast",
+    brutal: "fights far beyond high; foes optimized (retreats, ambushes, finishing the fallen), at their toughest, fanatical; three subtle clues; resources very scarce; "
         + "random encounters frequent; threat clocks fast; rests at their harshest",
 };
 

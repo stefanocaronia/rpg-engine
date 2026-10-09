@@ -52,9 +52,9 @@ const writeCases: Case[] = [
     { rule: "INH-11", own: "5/13", ask: ["write", "--unset", "hp"] },
     { rule: "INH-11", own: "5/13", base: "20", ask: ["write", "--unset", "hp"] },
     { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--unset", "hp"] },
-    // hp is a counter the system declares: even as a number alone, only change changes it (CNT-7, D-266).
-    { rule: "CNT-7", own: "5", base: "13/13", ask: ["write", "--set", "hp=7"], refused: 'hp is a counter: use change, page "Zanna", field hp, to 7' },
-    { rule: "CNT-7", base: "20", ask: ["write", "--set", "hp=7"], refused: 'hp is a counter that Zanna reads from Lupo: use change, page "Zanna", field hp, to 7' },
+    // hp has a maximum in the system: as a number alone it is a statistic of a stat block, which write changes (CNT-7).
+    { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--set", "hp=7"], holds: "7" },
+    { rule: "INH-11", base: "20", ask: ["write", "--set", "hp=7"], holds: "7" },
     { rule: "INH-11", own: "morto", base: "13/13", ask: ["write", "--set", "hp=7/13"], holds: "7/13" },
     { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--set", "hp=5/13"], refused: "hp is a counter that Zanna reads from Lupo: use change" },
     { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--unset", "hp"] },

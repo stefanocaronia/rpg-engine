@@ -1,5 +1,7 @@
 // What a fight asks the master to keep by hand, said when it happens (D-266): what breaks what someone keeps alive (EFF-14), the effects at a turn and at a rest
 // (EFF-15), the counter that shields another (DAT-14), the open scene's log (SCN-10), the part of the open scene (MOD-5), the counters only change changes (CNT-7, CNT-8).
+import { appendFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
@@ -114,6 +116,21 @@ describe("what shields a counter (DAT-14), and the counters only change changes 
         expect(await ok("change", "Corrado", "hp", "--by=-1")).toBe("Corrado: hp 17/24 → 16/24.");
     });
 
+    it("says what breaks a kept effect when the damage goes to the shield first", async () => {
+        await ok("effect", "add", "Viola", "Eroismo", "--for", "1m", "--by", "[[Corrado]]");
+        await ok("change", "Corrado", "temp-hp", "--to", "3");
+        expect(await ok("change", "Corrado", "temp-hp", "--by=-3")).toContain("Corrado keeps Eroismo (Viola): lost 3 temp-hp. Read rules Concentration.");
+    });
+
+    it("starts a counter at 0 only on a character, a quest or a copy that no page derives from, and lets write change a stat block's hit points", async () => {
+        expect((await rpg("change", "Sala", "xp", "--by", "100")).output).toContain('Sala has no field "xp"');
+        await ok("write", "Ghoul nero", "--type", "creature", "--set", "creature=[[Ghoul]]");
+        expect((await rpg("change", "Ghoul", "temp-hp", "--to", "5")).exitCode).toBe(1);
+        expect((await rpg("change", "Ghoul nero", "temp-hp", "--to", "5")).exitCode).toBe(1);
+        await ok("write", "Fuoco", "--type", "creature", "--set", "hp=30", "--set", "ac=13");
+        expect(await ok("write", "Fuoco", "--set", "hp=35")).toContain("hp");
+    });
+
     it("never starts at 0 a counter the system gives a maximum, as a copy's hit points", async () => {
         await ok("write", "Fuoco", "--type", "creature", "--set", "ac=19");
         await ok("scene", "open", "--title", "Palude", "--type", "combat", "--creatures", "Fuoco=1");
@@ -135,6 +152,19 @@ describe("the open scene's log (SCN-10) and its part (MOD-5)", () => {
         expect(log).toContain("- Ghoul 1: hp 22/22 → 16/22 (mazza di Corrado)\n- Corrado: Paralyzed until round 11, Ghoul 1 (artigli del ghoul)\n- left: Ghoul 1 (hp 16/22)");
         expect(log).toMatch(/Where each one stands is not kept: leave it out of a recap, and ask the player only when it matters to their next move\.$/);
         expect(await ok("status")).toContain(". show Il rito for what happened so far");
+    });
+
+    it("puts what follows a leave in the round the turn moved to, and leaves out lines written by hand without what they need", async () => {
+        await ok("scene", "open", "--title", "Rito", "--type", "combat", "--with", "Corrado", "--with", "Viola", "--creatures", "Ghoul=1");
+        await ok("scene", "order", "--order", "Corrado", "--order", "Viola", "--order", "Ghoul 1");
+        await ok("scene", "next");
+        await ok("scene", "next");
+        await ok("scene", "leave", "--who", "Ghoul 1");
+        await ok("roll", "1d20+5", "--who", "Corrado", "--why", "attacco nel round 2");
+        appendFileSync(join(folder, "log.jsonl"), '{"id":"x","at":"2026-10-09T00:00:00Z","type":"roll","by":"master","visibility":"hidden","data":{}}\n');
+        const log = await ok("show", "Rito");
+        expect(log).toContain("- left: Ghoul 1\nRound 2:\n- Corrado: attacco nel round 2: ");
+        expect(log).not.toContain("undefined");
     });
 
     it("gives with the instructions the part of the open scene's type, which a chat that starts in a fight would not get", async () => {

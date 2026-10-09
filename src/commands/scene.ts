@@ -343,7 +343,9 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     changes.push(...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["gone", name], Object.fromEntries(Object.entries(copy).filter(([field]) => field !== "effects"))]));
 
     updateScene(root, changes);
-    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies }));
+    // The turn it moves to, as next logs it, so that the open scene's log reads the round (SCN-10).
+    const moved = turns === undefined || (turns.turn === current.turn && turns.round === (current.round ?? 1)) ? {} : { round: turns.round, turn: turns.turn };
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies, ...moved }));
     const left = leaving.map((name) => (name in copies ? { name, counters: copyCounters(world, copies[name]) } : { name, counters: {} }));
     // The copies that left are gone with their effects, and with those they kept alive (D-145); the turn may have passed, and with it the end of some effects.
     const remaining = { ...current, copies: Object.fromEntries(Object.entries(current.copies).filter(([name]) => !leaving.includes(name))) };
@@ -578,7 +580,6 @@ function logCopies(root: string, context: Context, title: string, copies: Record
     }
 }
 
-/** "Round 2 · now Lena (then Annegato 2).", and on the player's character's turn, to stop there (D-139). */
 /**
  * The result of a change of turn, with the effects on who ends the turn and on who starts the next (EFF-15), read after the effects that the turn ends have
  * ended; nothing when the turn stays where it was.
@@ -604,6 +605,7 @@ function actingText(acting: string | undefined): string
     return acting === undefined ? "" : `\n${acting}`;
 }
 
+/** "Round 2 · now Lena (then Annegato 2).", and on the player's character's turn, to stop there (D-139). */
 function turnText(result: Turns): string
 {
     const then = result.order.length > 1 ? nextTurn(result.order, result.turn, 1).turn : undefined;

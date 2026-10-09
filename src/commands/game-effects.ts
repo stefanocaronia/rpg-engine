@@ -156,6 +156,12 @@ export function effectShown(world: World, effect: Effect): string
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */
 export function keptEffects(world: World, scene: Scene | undefined, name: string): string[]
 {
+    return keptEffectHolders(world, scene, name).map((kept) => `${kept.effect} (${kept.holders.join(", ")})`);
+}
+
+/** What someone keeps alive, each effect with the pages and copies that have it (D-138). */
+export function keptEffectHolders(world: World, scene: Scene | undefined, name: string): { effect: string; holders: string[]; }[]
+{
     const kept = new Map<string, string[]>();
 
     for (const holder of effectHolders(world, scene)) {
@@ -164,7 +170,7 @@ export function keptEffects(world: World, scene: Scene | undefined, name: string
         }
     }
 
-    return [...kept].map(([effect, holders]) => `${effect} (${holders.join(", ")})`);
+    return [...kept].map(([effect, holders]) => ({ effect, holders }));
 }
 
 /** The effects on whoever has this name, a page or a copy in the open scene, the copy first as change finds it (INH-14). */
