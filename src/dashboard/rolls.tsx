@@ -1,6 +1,6 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those
-// of the last half hour, older ones at a click; Clear starts the list again, the log untouched (D-302).
+// of the last half hour, older ones at a click at the end of the list; Clear starts the list again, the log untouched, and Restore brings it back (D-302, D-304).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
@@ -20,6 +20,10 @@ const moreRolls = 10;
 // How long a new roll keeps its mark, which the style sheet fades at the end (D-303).
 const markLength = 9000;
 
+// Beside the sheet, the gap between the rolls' card and the window's foot, and the least room their list keeps (D-304).
+const windowMargin = 12;
+const leastRoom = 160;
+
 export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rolls: ShownRoll[]; unread: boolean; campaign?: string; party: Member[]; fresh: Set<string>; onMore: () => void; })
 {
     const lead = party.find((member) => member.role === "pc");
@@ -30,15 +34,26 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
     const [older, setOlder] = useState(0);
     // The rolls already drawn: a new one comes in only the first time, not again when the column comes back.
     const greeted = useRef(new Set<string>());
+    const [track, setTrack] = useState<HTMLElement | null>(null);
+    const [scroller, setScroller] = useState<HTMLElement | null>(null);
     const open = beside || chosen;
     const listed = rollWindow(rolls, { now: Date.now(), cleared, older, unread });
     const newest = listed.shown.at(-1);
+    const below = useMoreBelow(scroller);
+    useListRoom(track, beside);
 
     const clear = (): void => {
         const now = Date.now();
         setCleared(now);
         setOlder(0);
         writeCleared(campaign, now);
+    };
+
+    // The whole log again, from the last half hour, older rolls at Load more as before the clearing.
+    const restore = (): void => {
+        setCleared(0);
+        setOlder(0);
+        writeCleared(campaign, 0);
     };
 
     // Older rolls: those read already, then more of the log once the page has shown all it read.
@@ -67,7 +82,7 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
     }
 
     return (
-        <aside class="rolls" aria-labelledby="rolls-title">
+        <aside class="rolls" aria-labelledby="rolls-title" ref={setTrack}>
             <details class="rolls-card" open={open}>
                 <CardHeader
                     icon={cardIcons.rolls}
@@ -89,14 +104,21 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
                         </button>
                     )}
                 </div>
-                {listed.shown.length === 0
-                    ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
-                    : (
-                        <ol class="roll-list">
-                            {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
-                        </ol>
-                    )}
-                {listed.more && <button type="button" class="rolls-more" onClick={loadMore}>Load more</button>}
+                <div class="roll-frame">
+                    <div class="roll-scroll" ref={setScroller}>
+                        {listed.shown.length === 0
+                            ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
+                            : (
+                                <ol class="roll-list">
+                                    {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
+                                </ol>
+                            )}
+                        {listed.more
+                            ? <button type="button" class="rolls-more" onClick={loadMore}>Load more</button>
+                            : cleared > 0 && <button type="button" class="rolls-more" onClick={restore}>Restore the cleared rolls</button>}
+                    </div>
+                    {below && <div class="rolls-below" aria-hidden="true" />}
+                </div>
             </details>
         </aside>
     );
@@ -209,10 +231,105 @@ function readCleared(campaign: string | undefined): number
 function writeCleared(campaign: string | undefined, at: number): void
 {
     try {
-        localStorage.setItem(`${clearedKey}:${campaign ?? ""}`, String(at));
+        if (at === 0) {
+            localStorage.removeItem(`${clearedKey}:${campaign ?? ""}`);
+        } else {
+            localStorage.setItem(`${clearedKey}:${campaign ?? ""}`, String(at));
+        }
     } catch {
         // The page forgets it at the next reload.
     }
+}
+
+/** Whether a list that scrolls has more under what it shows (D-304): as it scrolls, and as it, its rolls or its end change. */
+function useMoreBelow(scroller: HTMLElement | null): boolean
+{
+    const [below, setBelow] = useState(false);
+
+    useEffect(() => {
+        if (scroller === null) {
+            return;
+        }
+
+        const update = (): void => setBelow(scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2);
+        const sizes = new ResizeObserver(update);
+
+        const watch = (): void => {
+            sizes.disconnect();
+            sizes.observe(scroller);
+
+            for (const child of scroller.children) {
+                sizes.observe(child);
+            }
+
+            update();
+        };
+
+        const children = new MutationObserver(watch);
+        children.observe(scroller, { childList: true });
+        scroller.addEventListener("scroll", update, { passive: true });
+        watch();
+
+        return () => {
+            sizes.disconnect();
+            children.disconnect();
+            scroller.removeEventListener("scroll", update);
+        };
+    }, [scroller]);
+
+    return below;
+}
+
+/**
+ * Beside the sheet, how tall the rolls' list may be (D-304): from where their card stands, under the page's top, to the window's foot or the sheet's end,
+ * whichever comes first, so that the card never leaves the window, slides under the page's top or makes the page taller.
+ */
+function useListRoom(track: HTMLElement | null, beside: boolean): void
+{
+    useEffect(() => {
+        if (track === null || !beside) {
+            return;
+        }
+
+        let asked = 0;
+
+        const measure = (): void => {
+            asked = 0;
+            const card = track.querySelector<HTMLElement>(".rolls-card");
+            const list = track.querySelector<HTMLElement>(".roll-scroll");
+
+            if (card === null || list === null) {
+                return;
+            }
+
+            const box = track.getBoundingClientRect();
+            const top = Math.max(Number.parseFloat(getComputedStyle(card).top) || 0, box.top);
+            const bottom = Math.min(window.innerHeight - windowMargin, box.bottom);
+            const around = card.offsetHeight - list.offsetHeight;
+            track.style.setProperty("--list-room", `${Math.max(leastRoom, Math.floor(bottom - top - around))}px`);
+        };
+
+        const update = (): void => {
+            asked ||= requestAnimationFrame(measure);
+        };
+
+        const sizes = new ResizeObserver(update);
+        sizes.observe(track);
+        window.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+        // The card's place changes as the page's top or what the master asks come and go.
+        track.addEventListener("transitionend", update);
+        update();
+
+        return () => {
+            cancelAnimationFrame(asked);
+            sizes.disconnect();
+            window.removeEventListener("scroll", update);
+            window.removeEventListener("resize", update);
+            track.removeEventListener("transitionend", update);
+            track.style.removeProperty("--list-room");
+        };
+    }, [track, beside]);
 }
 
 /** When a roll was made: the game's day and hour, and the real time, as "day 1, 18:00 in the game · rolled at 18:15". */

@@ -1275,7 +1275,7 @@ button.row,
 
 @media (prefers-reduced-motion: reduce) {
     .top-bar,
-    .rolls,
+    .rolls-card,
     .chevron,
     .bar .fill,
     .track .fill,
@@ -1473,38 +1473,9 @@ button.row,
     gap: 16px;
 }
 
-@media (min-width: 900px) {
-    .body {
-        grid-template-columns: minmax(0, 1fr) 340px;
-        align-items: start;
-    }
-
-    /* The column stays in sight as the page scrolls, under what the master asks while it is there (D-291); its title stays put, its list scrolls under it
-       without a bar, fading at its foot. */
-    .rolls {
-        position: sticky;
-        top: calc(12px + var(--top-space, 0px) + var(--asked-space, 0px));
-        transition: top var(--short) var(--ease);
-    }
-
-    .roll-list {
-        max-height: calc(100vh - 100px - var(--top-space, 0px) - var(--asked-space, 0px));
-        overflow-y: auto;
-        scrollbar-width: none;
-        mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-    }
-
-    .roll-list::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Room under the list for Load more, which stays in sight. */
-    .rolls-card:has(.rolls-more) .roll-list {
-        max-height: calc(100vh - 148px - var(--top-space, 0px) - var(--asked-space, 0px));
-    }
-}
-
-.rolls {
+/* The rolls' card, a panel like the sheet's; its tools in its title stand on it. */
+.rolls-card {
+    position: relative;
     padding: 0 16px 6px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
@@ -1512,8 +1483,35 @@ button.row,
     box-shadow: var(--lift), var(--raise);
 }
 
-.rolls-card[open] {
-    padding-bottom: 0;
+@media (min-width: 900px) {
+    .body {
+        grid-template-columns: minmax(0, 1fr) 340px;
+        align-items: start;
+    }
+
+    /* The column runs the sheet's height without making the page taller (D-304); its card stays in sight in it as the page scrolls, under what the master
+       asks while it is there (D-291), its title still, its list scrolling under it without a bar, as tall as the window leaves it (useListRoom). */
+    .rolls:not(.away) {
+        align-self: stretch;
+        min-height: 22rem;
+        contain: size;
+    }
+
+    .rolls-card {
+        position: sticky;
+        top: calc(12px + var(--top-space, 0px) + var(--asked-space, 0px));
+        transition: top var(--short) var(--ease);
+    }
+
+    .roll-scroll {
+        max-height: var(--list-room, calc(100vh - 180px));
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+
+    .roll-scroll::-webkit-scrollbar {
+        display: none;
+    }
 }
 
 /* Beside the sheet the rolls are always open: their header is no toggle. */
@@ -1521,28 +1519,68 @@ summary.fixed {
     cursor: default;
 }
 
-/* Beside the sheet, the rolls can be put away into a tab on the window's edge (D-293). */
-.rolls-card {
+/* More rolls under those in sight (D-304): the list fades into the card's foot, where a bar of the accent breathes, until its end, where Load more waits. */
+.roll-frame {
     position: relative;
+}
+
+.rolls-below {
+    position: absolute;
+    right: -16px;
+    bottom: -6px;
+    left: -16px;
+    height: 64px;
+    border-radius: 0 0 calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px);
+    background: linear-gradient(to bottom, transparent, var(--panel) 70%);
+    pointer-events: none;
+}
+
+.rolls-below::after {
+    content: "";
+    position: absolute;
+    right: 32%;
+    bottom: 12px;
+    left: 32%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 55%, transparent);
+    opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .rolls-below::after {
+        animation: rolls-below 1.4s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes rolls-below {
+    from {
+        opacity: 0.25;
+    }
+
+    to {
+        opacity: 0.9;
+    }
 }
 
 /* The rolls' tools in their title (D-302): Clear, and beside the sheet Hide; on a narrow screen left of the chevron. */
 .rolls-tools {
     position: absolute;
     top: 6px;
-    right: -10px;
+    right: 6px;
     display: flex;
 }
 
 .rolls-tools.folding {
-    right: 28px;
+    right: 44px;
 }
 
-/* Older rolls: a text button under the list, in its middle, clear of the dice's button. */
+/* Older rolls, or those cleared: a text button at the end of the list, in its middle, clear of the dice's button. */
 .rolls-more {
     display: block;
     height: 40px;
-    margin: 0 auto 8px;
+    margin: 0 auto 10px;
     padding: 0 16px;
     border: 0;
     border-radius: var(--radius-m);
@@ -1553,6 +1591,7 @@ summary.fixed {
     cursor: pointer;
 }
 
+/* Beside the sheet, the rolls can be put away into a tab on the window's edge (D-293). */
 .body:has(.rolls.away) {
     grid-template-columns: minmax(0, 1fr);
 }
@@ -1562,10 +1601,6 @@ summary.fixed {
     top: 50%;
     right: 0;
     z-index: 17;
-    padding: 0;
-    border: 0;
-    background: none;
-    box-shadow: none;
     translate: 0 -50%;
 }
 
