@@ -201,12 +201,12 @@ function App()
             />
             <Notices notices={notices} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
-            <PartyStrip party={shown.party} chosen={address.section === "character" ? shown.chosen : undefined} />
+            <PartyStrip party={shown.party} chosen={address.section === "party" ? shown.chosen : undefined} />
             <div class="body">
                 <main>
                     {address.section === "about" && <About product={productName} system={shown.system} />}
-                    {address.section !== "character" && address.section !== "about" && <Upcoming section={address.section} />}
-                    {address.section === "character" && member && (
+                    {address.section !== "party" && address.section !== "about" && <Upcoming section={address.section} />}
+                    {address.section === "party" && member && (
                         <MemberSheet
                             key={member.name}
                             member={member}

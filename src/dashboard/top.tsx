@@ -66,9 +66,9 @@ export function Top(top: TopOf)
                 </div>
                 <Sections current={top.section} />
                 <StatusChips {...top} />
-                <ThemeSwitch />
                 <Menu current={top.section} />
             </header>
+            <ThemeCorner />
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
                 <Master mood={top.mood} moment={top.moment} asleep={top.asleep} />
                 <span class="top-bar-title">
@@ -164,12 +164,12 @@ function Menu({ current }: { current: Section; })
     );
 }
 
-/** The switch between the light and the dark theme (D-300): it shows the theme it goes to. */
-function ThemeSwitch()
+/** The switch between the light and the dark theme (D-300, D-310): the window's corner, with the theme it goes to. */
+function ThemeCorner()
 {
     const [theme, flip] = useTheme();
     return (
-        <button type="button" class="icon-button tonal theme-switch tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
+        <button type="button" class="theme-corner tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
             <Icon name={theme.next === "dark" ? "moon" : "sun"} />
         </button>
     );

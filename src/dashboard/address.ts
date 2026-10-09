@@ -1,8 +1,8 @@
-// Where the page is (D-276, D-309): a section by its address, as #/scene, and for the sheet whom it shows, as #/character/Ettore; the sheet when the address
-// says nothing. The page never changes section by itself.
+// Where the page is (D-276, D-309): a section by its address, as #/scene, and for the sheet whom it shows, as #/party/Ettore; the sheet when the address says
+// nothing. #/character/Ettore, the sheet's first address, still leads there (D-310). The page never changes section by itself.
 
 /** The sections, in the order the page shows them. */
-export const sections = ["character", "scene", "journal", "world", "rules"] as const;
+export const sections = ["party", "scene", "journal", "world", "rules"] as const;
 
 /** The pages of the menu. */
 export const menuPages = ["saves", "settings", "about"] as const;
@@ -16,12 +16,12 @@ export interface Address
     name?: string;
 }
 
-/** The address a hash says, as #/character/Ettore; the sheet for none or one the page does not know. */
+/** The address a hash says, as #/party/Ettore; the sheet for none or one the page does not know. */
 export function readAddress(hash: string): Address
 {
     const [, first = "", ...rest] = hash.replace(/^#/, "").split("/");
-    const section = [...sections, ...menuPages].find((candidate) => candidate === first) ?? "character";
-    const name = first === "character" ? decoded(rest.join("/")) : "";
+    const section = [...sections, ...menuPages].find((candidate) => candidate === first) ?? "party";
+    const name = first === "party" || first === "character" ? decoded(rest.join("/")) : "";
     return name === "" ? { section } : { section, name };
 }
 

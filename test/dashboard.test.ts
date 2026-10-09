@@ -439,12 +439,14 @@ describe("the page's reading of a sheet (D-273)", () => {
     });
 
     it("reads the section and whose sheet from the address, the sheet when it says nothing it knows (D-276, D-309)", () => {
-        expect(readAddress("")).toEqual({ section: "character" });
-        expect(readAddress("#/character/Ettore%20Lanza")).toEqual({ section: "character", name: "Ettore Lanza" });
+        expect(readAddress("")).toEqual({ section: "party" });
+        expect(readAddress("#/party/Ettore%20Lanza")).toEqual({ section: "party", name: "Ettore Lanza" });
+        // The sheet's first address still leads to it (D-310).
+        expect(readAddress("#/character/Ettore")).toEqual({ section: "party", name: "Ettore" });
         expect(readAddress("#/scene")).toEqual({ section: "scene" });
         expect(readAddress("#/about")).toEqual({ section: "about" });
-        expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "character" });
-        expect(readAddress("#/character/%E0%A4%A")).toEqual({ section: "character" });
+        expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
+        expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
     });
 
     it("shows the rolls of the last half hour since the list was cleared, and older ones as asked, read or still in the log (D-302)", () => {

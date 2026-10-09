@@ -30,9 +30,9 @@
     --warn: light-dark(#8a5a00, #f5c63e);
     --disc: #182c4c;
     /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
-    --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), transparent), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
-    --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), transparent);
-    --overlay: 0 14px 32px -12px light-dark(rgb(24 44 76 / 0.45), rgb(0 0 0 / 0.75));
+    --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), rgb(0 0 0 / 0.3)), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+    --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+    --overlay: 0 14px 32px -12px light-dark(rgb(24 44 76 / 0.45), rgb(0 0 0 / 0.75)), 0 3px 8px -3px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5));
     /* One state layer for whatever is clicked, and the least a finger hits. */
     --state-hover: 0.08;
     --state-focus: 0.1;
@@ -168,8 +168,8 @@ a {
    live as chips; under the name the sections, beside the theme the menu (D-309). */
 .top {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-    grid-template-areas: "robot titles chips theme menu" "robot sections sections sections sections";
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "robot titles chips menu" "robot sections sections sections";
     align-items: center;
     column-gap: 20px;
     row-gap: 4px;
@@ -188,13 +188,9 @@ a {
     grid-area: chips;
 }
 
-.top > .theme-switch {
-    grid-area: theme;
-}
-
 .top > .menu {
     grid-area: menu;
-    margin-left: -12px;
+    margin-right: 30px;
 }
 
 .top > .sections {
@@ -388,17 +384,33 @@ a.status-chip {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--ally) 25%, transparent);
 }
 
-/* The switch of the theme, as tall as the chips beside it (D-300). */
-.icon-button.tonal.theme-switch {
-    width: 34px;
-    height: 34px;
-    border-radius: var(--radius-m);
-    box-shadow: var(--lift);
+/* The switch of the theme (D-300, D-310): the window's top right corner, folded like a page's, with the theme it goes to; on a phone, in the menu. */
+.theme-corner {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 19;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: 0;
+    background: linear-gradient(to bottom left, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
+    color: var(--accent);
+    filter: drop-shadow(-1px 1px 1px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5)));
+    cursor: pointer;
 }
 
-.theme-switch svg.icon {
+.theme-corner::after {
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.theme-corner svg.icon {
+    position: absolute;
+    top: 6px;
+    right: 6px;
     width: 18px;
     height: 18px;
+    color: var(--ink);
 }
 
 /* Past the top, a bar that stays on top: the robot, the campaign's name, the chips, small. */
@@ -1696,7 +1708,8 @@ button.row,
        asks while it is there (D-291), its title still, its list scrolling under it without a bar, as tall as the window leaves it (useListRoom). */
     .rolls:not(.away) {
         align-self: stretch;
-        min-height: 22rem;
+        /* Room for six or seven rolls, when the window has it (D-310). */
+        min-height: 45rem;
         contain: size;
     }
 
@@ -2649,10 +2662,10 @@ svg.icon {
     }
 
     .top > .menu {
-        margin-left: 0;
+        margin-right: 0;
     }
 
-    .top > .theme-switch,
+    .theme-corner,
     .top-bar > .sections {
         display: none;
     }

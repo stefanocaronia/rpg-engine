@@ -9,7 +9,7 @@ import { Bar, Effects } from "./widgets.tsx";
 /** The address of someone's sheet, which the AI can give the player too (D-276). */
 export function sheetAddress(name: string): string
 {
-    return `#/character/${encodeURIComponent(name)}`;
+    return `#/party/${encodeURIComponent(name)}`;
 }
 
 export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string; })
