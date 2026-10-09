@@ -1145,6 +1145,7 @@ button.row,
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .rolls,
     .chevron,
     .bar .fill,
     .track .fill,
@@ -1309,14 +1310,16 @@ button.row,
         align-items: start;
     }
 
-    /* The column stays in sight as the page scrolls; its title stays put, its list scrolls under it without a bar, fading at its foot. */
+    /* The column stays in sight as the page scrolls, under what the master asks while it is there (D-291); its title stays put, its list scrolls under it
+       without a bar, fading at its foot. */
     .rolls {
         position: sticky;
-        top: 12px;
+        top: calc(12px + var(--asked-space, 0px));
+        transition: top var(--short) var(--ease);
     }
 
     .roll-list {
-        max-height: calc(100vh - 100px);
+        max-height: calc(100vh - 100px - var(--asked-space, 0px));
         overflow-y: auto;
         scrollbar-width: none;
         mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);

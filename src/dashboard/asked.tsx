@@ -1,17 +1,39 @@
 // What the master asks the player (D-279): the question, and a button for each check or answer; the click goes to the engine, which rolls the check and gives
 // the master its result. A banner over the page, which never changes section by itself (D-276).
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked } from "./data.ts";
 import { NotationIcons } from "./icons.tsx";
 import { checkOf } from "./labels.ts";
 
+// How far from the window's top the banner stays, as in the style sheet.
+const bannerTop = 8;
+
 export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered(): void; })
 {
     const [sent, setSent] = useState<number>();
     const [problem, setProblem] = useState<string>();
+    const banner = useRef<HTMLElement>(null);
     const checks = asked.labels.map((label) => checkOf(label, asked.title));
     const roll = checks.some((check) => check !== undefined);
+
+    // While the banner is there, the rolls beside the sheet stay in sight under it, as tall as it is, even as it folds away (D-291).
+    useEffect(() => {
+        const element = banner.current;
+
+        if (element === null) {
+            return;
+        }
+
+        const root = document.documentElement;
+        const observer = new ResizeObserver(() => root.style.setProperty("--asked-space", `${element.offsetHeight + bannerTop}px`));
+        observer.observe(element);
+
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty("--asked-space");
+        };
+    }, []);
 
     // A question asked again takes the place of the one before: its buttons start unclicked.
     useEffect(() => {
@@ -36,7 +58,7 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
 
     return (
         // Once clicked, the banner folds away while the engine rolls, so that the page does not jump when it goes.
-        <section class={["asked", roll ? "asked-roll" : "", sent !== undefined ? "leaving" : ""].filter((name) => name !== "").join(" ")} aria-labelledby={`asked-${asked.id}`}>
+        <section ref={banner} class={["asked", roll ? "asked-roll" : "", sent !== undefined ? "leaving" : ""].filter((name) => name !== "").join(" ")} aria-labelledby={`asked-${asked.id}`}>
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
                 <h2 class="asked-title">{asked.title}</h2>
