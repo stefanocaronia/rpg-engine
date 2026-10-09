@@ -14,6 +14,7 @@ import type { Context, Player, Said } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
+import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
 
 /** The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). */
@@ -258,7 +259,9 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/asked") {
         const asked = served.asked;
-        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels } });
+        // Each button's dice in words, for its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
+        const words = asked?.labels.map((label) => notationWords(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
+        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words } });
         return;
     }
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked } from "./data.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
-import { checkOf } from "./labels.ts";
+import { checkOf, notationModifier, signed } from "./labels.ts";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 8;
@@ -80,13 +80,15 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
                         const check = checks[index];
                         const kind = check !== undefined ? "asked-check" : roll ? "asked-other" : "asked-answer";
                         return (
-                            <button key={label} type="button" class={sent === index ? `${kind} sent` : kind} disabled={sent !== undefined} onClick={() => void reply(index)}>
-                                {check === undefined ? label : (
-                                    <>
-                                        <NotationIcons notation={check.dice} />
-                                        <span class="asked-check-name">{check.check}</span> <span class="asked-dice">{check.dice}</span>
-                                    </>
-                                )}
+                            <button
+                                key={label}
+                                type="button"
+                                class={sent === index ? `${kind} sent` : kind}
+                                disabled={sent !== undefined}
+                                title={check === undefined ? undefined : [asked.words?.[index], check.dice].filter((part) => part !== undefined && part !== null).join(" · ")}
+                                onClick={() => void reply(index)}
+                            >
+                                {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} />}
                             </button>
                         );
                     })}
@@ -108,5 +110,19 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
                 {problem && <p class="asked-problem" role="alert">{problem}</p>}
             </div>
         </section>
+    );
+}
+
+/** A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name and the number added; the notation is in the tooltip. */
+function CheckLabel({ check, dice }: { check: string; dice: string; })
+{
+    const modifier = notationModifier(dice);
+    return (
+        <>
+            <NotationIcons notation={dice} />
+            <span class="asked-check-name">{check}</span>
+            {modifier !== 0 && <span class="asked-dice">{signed(modifier)}</span>}
+            <span class="visually-hidden">{dice}</span>
+        </>
     );
 }

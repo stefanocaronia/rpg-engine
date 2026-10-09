@@ -125,8 +125,8 @@ function App()
     return (
         <div class={live ? "page" : "page stale"}>
             <Top campaign={shown.campaign} product={productName} system={shown.system?.name} now={shown.now} place={place === "" ? undefined : place} live={live} />
-            <PartyStrip party={shown.party} chosen={shown.chosen} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
+            <PartyStrip party={shown.party} chosen={shown.chosen} />
             <div class="body">
                 <main>
                     {!live && shown.readAt !== undefined && <p class="notice" role="status">Not connected: the sheet as of {shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.</p>}

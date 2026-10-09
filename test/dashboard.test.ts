@@ -394,7 +394,8 @@ describe("the page's reading of a sheet (D-273)", () => {
 
     it("draws the dice of a notation (D-284): one kind once or twice, or once with how many; of more kinds the first two; a d3 or a dF as the d6 they are thrown with", () => {
         expect(drawnDiceOf("1d20+2")).toEqual({ sides: [20] });
-        expect(drawnDiceOf("2d20kh1+5")).toEqual({ sides: [20, 20] });
+        expect(drawnDiceOf("2d20kh1+5")).toEqual({ sides: [20, 20], faded: true });
+        expect(drawnDiceOf("2d6+1")).toEqual({ sides: [6, 6] });
         expect(drawnDiceOf("8d6")).toEqual({ sides: [6], count: 8 });
         expect(drawnDiceOf("2d20+1d12+2")).toEqual({ sides: [20, 12] });
         expect(drawnDiceOf("1d20+1d6+1d4")).toEqual({ sides: [20, 6] });
@@ -512,7 +513,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         return (JSON.parse((await send("GET", "/api/asked")).body) as { asked: { id: string; question: string; title: string; labels: string[]; } | null; }).asked;
     }
 
-    async function waitAsked(): Promise<{ id: string; question: string; title: string; labels: string[]; }>
+    async function waitAsked(): Promise<{ id: string; question: string; title: string; labels: string[]; words?: (string | null)[]; }>
     {
         for (let tries = 0; tries < 100; tries++) {
             const asked = await askedNow();
@@ -531,7 +532,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const page = await openPage();
         const asking = ask.run(ask.input.parse(wall), served);
         const asked = await waitAsked();
-        expect(asked).toMatchObject({ question: wall.question, title: "Tiro", labels: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20-1)", "Cambio idea"] });
+        expect(asked).toMatchObject({ question: wall.question, title: "Tiro", labels: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20-1)", "Cambio idea"], words: [null, null, null] });
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 9 })).status).toBe(409);
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
         expect(await asking).toMatchObject({ kind: "roll", who: "Ettore", check: "Atletica", total: 9 });
@@ -539,6 +540,16 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", by: "player", data: { check: "Atletica", who: "Ettore", dice: [{ sides: 20, value: 4 }] } });
         // A click on a question no longer asked counts for nothing.
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(409);
+        page.close();
+    });
+
+    it("gives each check's dice in words for its button's tooltip, when they say more than their dice (D-297)", async () => {
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse({ question: "Lo spettro ti stringe la gola", options: ["Tiro salvezza Saggezza 2d20kh1+5"] }), served);
+        const asked = await waitAsked();
+        expect(asked.words).toEqual(["2d20, keep the highest, +5", null]);
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 1 })).status).toBe(202);
+        await asking;
         page.close();
     });
 

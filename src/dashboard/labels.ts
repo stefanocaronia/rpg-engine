@@ -43,7 +43,7 @@ export function drawnDie(sides: number | "F"): number | undefined
  * The dice of a notation as the page draws them (D-284): of one kind, its die once or twice, or once with how many past two, as 8d6; of more kinds, the first die
  * of the first two, the notation beside saying the rest. Dice the page does not draw are left out.
  */
-export function drawnDiceOf(notation: string): { sides: number[]; count?: number; }
+export function drawnDiceOf(notation: string): { sides: number[]; count?: number; faded?: true; }
 {
     const kinds = diceIn(notation).flatMap((kind) => {
         const sides = drawnDie(kind.sides);
@@ -55,7 +55,9 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
     }
 
     const [{ sides, count }] = kinds;
-    return count <= 2 ? { sides: Array.from({ length: count }, () => sides) } : { sides: [sides], count };
+    // Of two dice, one kept or one dropped: the other is drawn faded, as on the plate (D-297).
+    const oneOfTwo = count === 2 && /\d*d(?:\d+|%|F)(?:k[hl]1|d[hl]1)(?![\d])/i.test(notation);
+    return count <= 2 ? { sides: Array.from({ length: count }, () => sides), ...(oneOfTwo ? { faded: true as const } : {}) } : { sides: [sides], count };
 }
 
 /** An item of a list as the page shows it: the short name of a field in capitals, as WIS; any other with its first letter a capital, as Light hammer. */

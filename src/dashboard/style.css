@@ -1905,6 +1905,11 @@ svg.icon {
     fill: var(--die-ground, transparent);
 }
 
+/* Of two dice one counts: the other faded (D-297). */
+.die-icons svg.die.faded {
+    opacity: 0.45;
+}
+
 .die-more {
     margin-left: 2px;
     font-size: 0.75rem;

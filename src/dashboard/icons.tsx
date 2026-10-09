@@ -37,11 +37,11 @@ export const cardIcons = {
 export type IconName = keyof typeof iconPaths;
 
 /** A die's picture, by its sides; nothing for a die the page does not draw. */
-export function DieIcon({ sides }: { sides: number | "F"; })
+export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean; })
 {
     const drawn = drawnDie(sides);
     return drawn === undefined ? null : (
-        <svg class="die" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class={faded ? "die faded" : "die"} viewBox="0 0 24 24" aria-hidden="true">
             <path d={diePaths[drawn]} />
         </svg>
     );
@@ -53,7 +53,7 @@ export function NotationIcons({ notation }: { notation: string; })
     const drawn = drawnDiceOf(notation);
     return drawn.sides.length === 0 ? null : (
         <span class="die-icons" aria-hidden="true">
-            {drawn.sides.map((sides, index) => <DieIcon key={index} sides={sides} />)}
+            {drawn.sides.map((sides, index) => <DieIcon key={index} sides={sides} faded={drawn.faded === true && index === 1} />)}
             {drawn.count !== undefined && <span class="die-more">×{drawn.count}</span>}
         </span>
     );

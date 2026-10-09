@@ -103,6 +103,8 @@ export interface Asked
     /** The word for a roll, or for a choice, in the campaign's language. */
     title: string;
     labels: string[];
+    /** By button, its dice in words when they say more than their dice, as "2d20, keep the highest, +5". */
+    words?: (string | null)[];
 }
 
 /** What view gives: the party, a page with its sheet, one section, or nothing. */
