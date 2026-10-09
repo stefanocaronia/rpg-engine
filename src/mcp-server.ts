@@ -44,8 +44,19 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
 
+    // The dashboard's page asks the player too, while one is open: then the asking tools are there, forms or not (ASK-1, D-279).
+    const call = async (command: AnyCommand, input: unknown, extra: ToolExtra): Promise<CallToolResult> => {
+        await beforeCall?.();
+
+        if (context.page !== undefined) {
+            askingTools.filter((tool) => !tool.enabled).forEach((tool) => tool.enable());
+        }
+
+        return runTool(command, input, context, extra);
+    };
+
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, beforeCall));
+        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => call(command, input, extra));
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -59,7 +70,10 @@ export function createMcpServer(context: Context = defaultContext(), environment
         if (context.player === undefined && !hidesForms && showsForms(server.server.getClientCapabilities())) {
             context.player = formPlayer(server, () => {
                 context.player = undefined;
-                askingTools.forEach((tool) => tool.disable());
+
+                if (context.page === undefined) {
+                    askingTools.forEach((tool) => tool.disable());
+                }
             });
             askingTools.forEach((tool) => tool.enable());
         }
@@ -98,7 +112,9 @@ export function dashboardOpener(context: Context, session: SessionStore, ports?:
     return {
         open: async () => {
             opening ??= withFiles(session, () => findCampaign(context.folder)) === undefined ? undefined : startDashboard(context, session, { ports }).catch(() => undefined);
-            context.dashboard = (await opening)?.url;
+            const dashboard = await opening;
+            context.dashboard = dashboard?.url;
+            context.page = dashboard?.player;
         },
         close: async () => {
             await (await opening)?.close();
@@ -135,7 +151,7 @@ function toolConfig(command: AnyCommand)
     return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
-async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, beforeCall?: () => Promise<void>): Promise<CallToolResult>
+async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra) : undefined;
 
@@ -145,9 +161,8 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
             await context.files.ready(command.name === "instructions");
         }
 
-        await beforeCall?.();
-
-        return { content: [{ type: "text", text: command.format(await command.run(input, context)) }] };
+        // The call's own context, with its cancel, as the user stopping it (ASK-9).
+        return { content: [{ type: "text", text: command.format(await command.run(input, { ...context, signal: extra.signal })) }] };
     } catch (error) {
         return { content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }], isError: true };
     } finally {

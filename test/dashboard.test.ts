@@ -6,6 +6,7 @@ import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
@@ -15,7 +16,7 @@ import type { SheetValue, View } from "../src/dashboard/data.ts";
 import { fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
 import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
 
@@ -376,5 +377,139 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(explanations(["insight +5: wis-mod +3, proficiency +2, Insight in skill-proficiencies", "speed 25 ft."])).toEqual(
             new Map([["insight", ["wis-mod +3", "proficiency +2", "Insight in skill-proficiencies"]]]),
         );
+    });
+});
+
+describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)", () => {
+    let session: SessionStore;
+    let dashboard: Dashboard;
+    let served: Context;
+    let port: number;
+
+    const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+5", "Acrobazia 1d20-1"], who: "Ettore" };
+
+    beforeEach(async () => {
+        session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        served = { ...context, files: session };
+        const started = await startDashboard(served, session, { ports: [0], page: folder });
+
+        if (started === undefined) {
+            throw new Error("The dashboard did not start.");
+        }
+
+        dashboard = started;
+        port = Number(new URL(dashboard.url).port);
+        served.page = dashboard.player;
+    });
+
+    afterEach(async () => {
+        await dashboard.close();
+        session.close();
+    });
+
+    function send(method: string, path: string, body?: unknown): Promise<{ status: number; body: string; }>
+    {
+        const headers = body === undefined ? {} : { "origin": `http://127.0.0.1:${port}`, "content-type": "application/json" };
+        return new Promise((done, fail) => {
+            const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+            });
+            sent.on("error", fail).end(body === undefined ? undefined : JSON.stringify(body));
+        });
+    }
+
+    /** A page open on the dashboard, waiting for notices. */
+    function openPage(): Promise<{ close(): void; }>
+    {
+        return new Promise((done) => {
+            const events = request({ host: "127.0.0.1", port, path: "/events" }, (response) => {
+                response.once("data", () => done({ close: () => events.destroy() }));
+            });
+            events.end();
+        });
+    }
+
+    async function askedNow(): Promise<{ id: string; question: string; title: string; labels: string[]; } | null>
+    {
+        return (JSON.parse((await send("GET", "/api/asked")).body) as { asked: { id: string; question: string; title: string; labels: string[]; } | null; }).asked;
+    }
+
+    async function waitAsked(): Promise<{ id: string; question: string; title: string; labels: string[]; }>
+    {
+        for (let tries = 0; tries < 100; tries++) {
+            const asked = await askedNow();
+
+            if (asked !== null) {
+                return asked;
+            }
+
+            await new Promise((done) => setTimeout(done, 10));
+        }
+
+        throw new Error("Nothing was asked on the page.");
+    }
+
+    it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        expect(asked).toMatchObject({ question: wall.question, title: "Tiro", labels: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20-1)", "Cambio idea"] });
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 9 })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
+        expect(await asking).toMatchObject({ kind: "roll", who: "Ettore", check: "Atletica", total: 9 });
+        expect(await askedNow()).toBeNull();
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", by: "player", data: { check: "Atletica", who: "Ettore", dice: [{ sides: 20, value: 4 }] } });
+        // A click on a question no longer asked counts for nothing.
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(409);
+        page.close();
+    });
+
+    it("turns to the form, or to words this time, when no page is open, and keeps the buttons for later", async () => {
+        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe("The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.");
+        const form = { choose: async () => 1 };
+        expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Acrobazia" });
+    });
+
+    it("takes the question away when the call is stopped, and logs nothing", async () => {
+        const page = await openPage();
+        const stop = new AbortController();
+        const lines = readLogFile(folder).length;
+        const asking = ask.run(ask.input.parse(wall), { ...served, signal: stop.signal });
+        const asked = await waitAsked();
+        stop.abort();
+        expect(await asking).toEqual({ kind: "unanswered" });
+        expect(await askedNow()).toBeNull();
+        expect(readLogFile(folder)).toHaveLength(lines);
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(409);
+        page.close();
+    });
+
+    it("asks a roll in words when the player rolls their own dice (ASK-8)", async () => {
+        const settings = join(folder, "campaign.yaml");
+        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^dice: .*$/m, "dice: physical"));
+        const page = await openPage();
+        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe("The player rolls their own dice: ask the roll in words, with what is at stake, and stop; they will tell the values.");
+        expect(await askedNow()).toBeNull();
+        page.close();
+    });
+
+    it("gives in view the rolls the player may see: theirs and those the master showed, never a hidden one", async () => {
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        await send("POST", "/api/answer", { asked: asked.id, choice: 1 });
+        await asking;
+        page.close();
+        await ok("roll", "1d20+4", "--who", "Varro", "--why", "il mugnaio mente");
+        await ok("roll", "1d20", "--hidden", "--why", "la ronda sente");
+        const rolls = JSON.parse(await ok("view", "--json")).rolls;
+        expect(rolls).toEqual([
+            expect.objectContaining({ by: "player", who: "Ettore", check: "Acrobazia", notation: "1d20-1", total: 3, dice: [{ sides: 20, value: 4 }] }),
+            expect.objectContaining({ by: "master", who: "Varro", notation: "1d20+4", total: 8, dice: [{ sides: 20, value: 4 }] }),
+        ]);
+        expect(JSON.stringify(rolls)).not.toContain("mugnaio");
     });
 });

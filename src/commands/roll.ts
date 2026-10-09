@@ -92,7 +92,7 @@ export const roll = defineCommand({
         const sheet = taken.length === 0 ? {} : { sheet: named.taken };
         const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
-        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, physical, ...keeping, ...using };
+        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, physical, ...keeping, ...using, dice: diceRoll.dice };
         const entry = newDatedLogEntry(root, context, "roll", input.hidden ? "hidden" : "public", data);
         let shownFingerprint: string | undefined;
 

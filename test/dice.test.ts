@@ -70,3 +70,13 @@ describe("digital dice", () => {
         }
     });
 });
+
+describe("each die as it was thrown (D-279)", () => {
+    it("gives each die's sides and face, what was dropped, rerolled, added by explosions or a success, for a page that shows the throw", () => {
+        expect(rollDice("2d20kh1+5", { values: [14, 7] }).dice).toEqual([{ sides: 20, value: 14 }, { sides: 20, value: 7, dropped: true }]);
+        expect(rollDice("2d6ro<=2", { values: [1, 6, 3] }).dice).toEqual([{ sides: 6, value: 6, rerolledFrom: 1 }, { sides: 6, value: 3 }]);
+        expect(rollDice("1d6!!", { values: [6, 3] }).dice).toEqual([{ sides: 6, value: 9, faces: [6, 3] }]);
+        expect(rollDice("2d10>=8", { values: [8, 3] }).dice).toEqual([{ sides: 10, value: 8, success: true }, { sides: 10, value: 3, success: false }]);
+        expect(rollDice("d% + 2", { values: [57] }).dice).toEqual([{ sides: 100, value: 57 }]);
+    });
+});

@@ -34,7 +34,7 @@ describe("rpg roll", () => {
                 type: "roll",
                 by: "master",
                 visibility: "public",
-                data: { notation: "2d6+1", total: 9, result: "2d6+1 = 9 [4, 4] + 1", why: "damage", who: "Lena", physical: false },
+                data: { notation: "2d6+1", total: 9, result: "2d6+1 = 9 [4, 4] + 1", why: "damage", who: "Lena", physical: false, dice: [{ sides: 6, value: 4 }, { sides: 6, value: 4 }] },
             },
         ]);
     });

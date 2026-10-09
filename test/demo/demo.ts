@@ -26,7 +26,7 @@ export async function serveDemo(ports?: number[]): Promise<Dashboard>
     }
 
     return {
-        url: dashboard.url,
+        ...dashboard,
         close: async () => {
             await dashboard.close();
             session.close();

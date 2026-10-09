@@ -20,6 +20,10 @@ export interface Context
     platform: string;
     /** The player, where the surface can ask them directly, as an AI host that shows forms does (D-148); missing elsewhere. */
     player?: Player;
+    /** The player through the dashboard's page, when the MCP server serves one (D-279): it comes before the form, while a page is open. */
+    page?: Player;
+    /** The call's cancel, as the host sends it when the user stops the call (ASK-9); MCP only. */
+    signal?: AbortSignal;
     /** The folders that hold the installed game systems, nearest first (SYS-1). */
     systemFolders: string[];
     /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
@@ -32,11 +36,11 @@ export interface Context
 
 /**
  * Asks the player one question with buttons: the index of the label they chose; undefined when no one answered; "unavailable" when the surface turned out
- * unable to show the buttons, so that from then on the master asks in words.
+ * unable to show the buttons, so that from then on the master asks in words; "absent" when no one is there to see them now, as a dashboard with no page open.
  */
 export interface Player
 {
-    choose(question: string, title: string, labels: string[]): Promise<number | undefined | "unavailable">;
+    choose(question: string, title: string, labels: string[], signal?: AbortSignal): Promise<number | undefined | "unavailable" | "absent">;
 }
 
 export function defaultContext(folder = process.cwd()): Context

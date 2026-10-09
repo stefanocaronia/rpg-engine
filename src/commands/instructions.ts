@@ -21,8 +21,9 @@ export const instructions = defineCommand({
     {
         // A chat that starts, or follows a summary, gets every part of the instructions again when its situation opens (D-97).
         context.told?.clear();
-        // Where the host shows the player forms, the buttons take the place of the stop in words (D-148).
-        const parts = [masterInstructions(), modeText(context.folder, context), sceneText(context.folder, context), context.player === undefined ? "" : buttonsInstructions()];
+        // Where the host shows the player forms, or the dashboard shows its buttons, they take the place of the stop in words (D-148, D-279).
+        const buttons = context.player !== undefined || context.page !== undefined;
+        const parts = [masterInstructions(), modeText(context.folder, context), sceneText(context.folder, context), buttons ? buttonsInstructions() : ""];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },
 

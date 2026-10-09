@@ -3,6 +3,7 @@ import { readSettings, requireCampaign } from "../campaign/index.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
+import type { ThrownDie } from "../dice/index.ts";
 import { formatEnd, readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -21,6 +22,27 @@ import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
 const diaryLines = 10;
+
+// How many rolls the view gives, the last ones.
+const rollsShown = 20;
+
+/** A roll the player may see (D-279): theirs, or one the master showed; never a hidden one. */
+export interface ShownRoll
+{
+    id: string;
+    /** The game date, when there is one. */
+    date?: string;
+    /** Who rolled it: the player, or the master. */
+    by: "player" | "master";
+    /** For whom, as the player character knows them: Ettore, Lupa, a creature. */
+    who?: string;
+    /** The check the master asked of the player, such as Atletica. */
+    check?: string;
+    notation: string;
+    total: number;
+    text: string;
+    dice: ThrownDie[];
+}
 
 /** Someone of the party as the player sees them (VIEW-1): the dashboard draws them (D-272), the chat reads them as a line. */
 export interface PartyMember
@@ -41,7 +63,7 @@ export interface PartyMember
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; now?: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; }
+    | { kind: "overview"; campaign: string; now?: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; rolls: ShownRoll[]; }
     | { kind: "page"; title: string; sheet: SheetGroupData[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
@@ -131,7 +153,8 @@ export const view = defineCommand({
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
         const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
-        const diary = readLog(root).filter((entry) => entry.visibility === "public").flatMap((entry) => diaryLine(world, entry, named));
+        const shownLines = readLog(root).filter((entry) => entry.visibility === "public");
+        const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         return {
             kind: "overview",
@@ -142,6 +165,7 @@ export const view = defineCommand({
             scene: sceneLine(root, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
+            rolls: shownLines.filter((entry) => entry.type === "roll").slice(-rollsShown).map((entry) => shownRoll(world, entry, named)),
         };
     },
 
@@ -169,6 +193,24 @@ export const view = defineCommand({
         }
     },
 });
+
+/** A public roll of the log as the player sees it: who rolled, for whom as the character knows them, the check, the dice; never the master's why (VIEW-4). */
+function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): ShownRoll
+{
+    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; };
+    const who = data.who === undefined ? undefined : named(data.who) ?? (isCopyName(world, data.who) ? "a creature" : "someone");
+    return {
+        id: entry.id,
+        ...(entry.date === undefined ? {} : { date: entry.date }),
+        by: entry.by === "player" ? "player" : "master",
+        ...(who === undefined ? {} : { who }),
+        ...(typeof data.check === "string" ? { check: data.check } : {}),
+        notation: String(data.notation ?? ""),
+        total: Number(data.total ?? 0),
+        text: String(data.result ?? ""),
+        dice: Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],
+    };
+}
 
 /** "Lena (companion), in Locanda: hp 9/15 · Poisoned until day 2, 14:20": someone of the party as the chat reads them. */
 function memberLine(member: PartyMember): string

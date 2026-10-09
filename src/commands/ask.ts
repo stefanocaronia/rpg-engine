@@ -28,7 +28,9 @@ type AskResult =
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "unanswered"; }
-    | { kind: "unavailable"; };
+    | { kind: "unavailable"; }
+    | { kind: "absent"; }
+    | { kind: "physical"; };
 
 export const ask = defineCommand({
     name: "ask",
@@ -50,9 +52,8 @@ export const ask = defineCommand({
     async run(input, context): Promise<AskResult>
     {
         const root = requireCampaign(context.folder);
-        const player = context.player;
 
-        if (player === undefined) {
+        if (context.player === undefined && context.page === undefined) {
             throw new Error("The player cannot be asked with buttons here: ask them in words, without a word about buttons, and stop.");
         }
 
@@ -72,7 +73,7 @@ export const ask = defineCommand({
         }
 
         if (checks.length === 0) {
-            return answer(root, context, player, question, options, words);
+            return answer(root, context, question, options, words);
         }
 
         if (checks.length < options.length) {
@@ -81,8 +82,13 @@ export const ask = defineCommand({
             );
         }
 
+        // The player rolls their own dice: a roll is asked in words, and they tell the values (ASK-8).
+        if (readSettings(root).dice === "physical") {
+            return { kind: "physical" };
+        }
+
         const who = playerCharacter(loadWorld(root), input.who);
-        return rollChosen(root, context, player, question, checks, who, words);
+        return rollChosen(root, context, question, checks, who, words);
     },
 
     format(result)
@@ -96,6 +102,10 @@ export const ask = defineCommand({
                 return `The player chose: ${result.answer}.`;
             case "unavailable":
                 return "The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.";
+            case "absent":
+                return "The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.";
+            case "physical":
+                return "The player rolls their own dice: ask the roll in words, with what is at stake, and stop; they will tell the values.";
             default:
                 return "No answer from the buttons: ask the player in words, and stop.";
         }
@@ -103,10 +113,15 @@ export const ask = defineCommand({
 });
 
 /** The buttons of a roll: the checks and a change of mind (ASK-3, ASK-4). The chosen check is rolled with the engine's dice and logged as the player's roll. */
-async function rollChosen(root: string, context: Context, player: NonNullable<Context["player"]>, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
+async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
-    const chosen = await player.choose(question, words.roll, labels);
+    const chosen = await choose(context, question, words.roll, labels);
+
+    // A call the user stopped logs nothing (ASK-9).
+    if (chosen === "absent" || context.signal?.aborted === true) {
+        return chosen === "absent" ? { kind: "absent" } : { kind: "unanswered" };
+    }
 
     if (chosen === "unavailable") {
         logAnswer(root, context, question, labels, undefined);
@@ -121,17 +136,22 @@ async function rollChosen(root: string, context: Context, player: NonNullable<Co
     }
 
     const diceRoll = rollDice(check.notation, { random: context.random });
-    const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: `${check.label}: ${question}`, who, physical: false };
+    const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: `${check.label}: ${question}`, check: check.label, who, physical: false, dice: diceRoll.dice };
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
     return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total };
 }
 
 /** The buttons of a forced choice: the answers as given (ASK-5). */
-async function answer(root: string, context: Context, player: NonNullable<Context["player"]>, question: string, options: Option[], words: typeof buttonWords.en): Promise<AskResult>
+async function answer(root: string, context: Context, question: string, options: Option[], words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = options.map((option) => option.label);
-    const chosen = await player.choose(question, words.choice, labels);
+    const chosen = await choose(context, question, words.choice, labels);
+
+    if (chosen === "absent" || context.signal?.aborted === true) {
+        return chosen === "absent" ? { kind: "absent" } : { kind: "unanswered" };
+    }
+
     const answered = chosen === undefined || chosen === "unavailable" ? undefined : labels[chosen];
     logAnswer(root, context, question, labels, answered);
 
@@ -140,6 +160,13 @@ async function answer(root: string, context: Context, player: NonNullable<Contex
     }
 
     return answered === undefined ? { kind: "unanswered" } : { kind: "chose", answer: answered };
+}
+
+/** The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). */
+async function choose(context: Context, question: string, title: string, labels: string[]): Promise<number | undefined | "unavailable" | "absent">
+{
+    const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal);
+    return onPage === "absent" && context.player !== undefined ? context.player.choose(question, title, labels, context.signal) : onPage;
 }
 
 /** A public line for what the player answered, or that no one did (ASK-6); a roll has its own line instead. */

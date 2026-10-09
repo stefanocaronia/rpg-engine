@@ -239,6 +239,7 @@ describe("rolls from the sheet (DAT-8)", () => {
             why: "scalare il muro",
             who: "Ettore",
             physical: false,
+            dice: [{ sides: 20, value: 4 }],
         });
         await ok("effect", "add", "Ettore", "Gauntlets of Ogre Power", "--set", "str=19");
         expect(await ok("roll", "1d20+athletics", "--who", "ettore")).toContain("1d20+athletics = 8 [4] + 4 (athletics +4)");

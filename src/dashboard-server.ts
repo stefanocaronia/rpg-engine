@@ -1,6 +1,6 @@
 // The player's dashboard (D-270, D-272): the MCP server of the chat serves it on localhost. It gives the page what the player may see through the same commands,
 // and tells it when a file of the campaign changes, by whoever, so that it reads again: nothing else goes through the notice, so no secret can.
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { connect } from "node:net";
@@ -10,7 +10,7 @@ import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
-import type { Context } from "./core/context.ts";
+import type { Context, Player } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -23,6 +23,8 @@ export const dashboardPorts = Array.from({ length: 10 }, (_, index) => 4747 + in
 export interface Dashboard
 {
     url: string;
+    /** The player through the page: ask's buttons, while a page is open (D-279). */
+    player: Player;
     close(): Promise<void>;
 }
 
@@ -97,7 +99,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            return serve(server, { port: listening, context, session, page: options.page ?? builtPage, pages: new Set() });
+            return serve(server, { port: listening, context, session, page: options.page ?? builtPage, pages: new Set(), notify: () => undefined });
         }
     }
 
@@ -144,17 +146,37 @@ interface Served
     page: string;
     /** The pages open, which wait for notices. */
     pages: Set<ServerResponse>;
+    /** What the master asks the player now, waiting for a click on the page (D-279). */
+    asked?: Asked;
+    /** Tells the pages that something changed, once for changes that come together. */
+    notify(): void;
 }
+
+/** A question of ask on the page: its buttons, and what a click, a stop or a timeout settles it with. */
+interface Asked
+{
+    id: string;
+    question: string;
+    title: string;
+    labels: string[];
+    settle(choice: number | undefined): void;
+}
+
+// How long the page waits for the player's click: as long as a host waits for a call that keeps reporting progress, as ask does with a form.
+const playerWait = 30 * 60 * 1000;
 
 function serve(server: Server, served: Served): Dashboard
 {
     let notice: NodeJS.Timeout | undefined;
-    const stopListening = served.session.onChange(() => {
+
+    served.notify = () => {
         notice ??= setTimeout(() => {
             notice = undefined;
             served.pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
         }, noticeDelay).unref();
-    });
+    };
+
+    const stopListening = served.session.onChange(() => served.notify());
 
     server.on("request", (request: IncomingMessage, response: ServerResponse) => {
         answer(request, response, served).catch((error: unknown) => {
@@ -166,6 +188,7 @@ function serve(server: Server, served: Served): Dashboard
     server.on("connection", (socket) => socket.unref());
     return {
         url: `http://127.0.0.1:${served.port}`,
+        player: pagePlayer(served),
         close: () =>
             new Promise((done) => {
                 stopListening();
@@ -187,13 +210,25 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
-    if (request.method !== "GET" && request.method !== "HEAD") {
-        send(response, 405, "text/plain; charset=utf-8", "The dashboard only gives what the player may see: it takes GET.");
+    const url = new URL(request.url ?? "/", own[0]);
+    const path = url.pathname;
+
+    // The page answers the master's question with a click: the one thing it sends, and only from itself (D-279).
+    if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
+        await answerAsked(request, response, served);
         return;
     }
 
-    const url = new URL(request.url ?? "/", own[0]);
-    const path = url.pathname;
+    if (request.method !== "GET" && request.method !== "HEAD") {
+        send(response, 405, "text/plain; charset=utf-8", "The dashboard only gives what the player may see, and takes a click on what the master asks.");
+        return;
+    }
+
+    if (path === "/api/asked") {
+        const asked = served.asked;
+        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels } });
+        return;
+    }
 
     if (path === "/") {
         send(response, 200, "text/html; charset=utf-8", pageHtml, pagePolicy);
@@ -249,6 +284,83 @@ function sendFile(file: string | undefined, path: string, response: ServerRespon
 
     const policy = type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"];
     response.writeHead(200, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-cache" }).end(bytes);
+}
+
+/**
+ * The player through the page (D-279): the question shows on every page open, and the first click settles it; with no page open, "absent", so that ask turns to
+ * the form or to words. A stop of the call takes the question away and nothing is logged (ASK-9).
+ */
+function pagePlayer(served: Served): Player
+{
+    return {
+        choose(question, title, labels, signal)
+        {
+            if (served.pages.size === 0) {
+                return Promise.resolve("absent");
+            }
+
+            // A question asked again, as after a summary, takes the place of the one before.
+            served.asked?.settle(undefined);
+            return new Promise((done) => {
+                const timer = setTimeout(() => settle(undefined), playerWait).unref();
+
+                const settle = (choice: number | undefined): void => {
+                    clearTimeout(timer);
+                    signal?.removeEventListener("abort", stop);
+
+                    if (served.asked?.id === asked.id) {
+                        served.asked = undefined;
+                        served.notify();
+                    }
+
+                    done(choice);
+                };
+
+                const stop = (): void => settle(undefined);
+                const asked: Asked = { id: randomUUID(), question, title, labels, settle };
+                served.asked = asked;
+                signal?.addEventListener("abort", stop);
+                served.notify();
+            });
+        },
+    };
+}
+
+/** The page's click on what the master asks: which button, by its place; refused for a question no longer asked, so that a late click counts for nothing. */
+async function answerAsked(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const body = await readBody(request);
+    const parsed = z.object({ asked: z.string(), choice: z.number().int().min(0) }).strict().safeParse(body);
+    const asked = served.asked;
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send which button was clicked: { asked, choice }." });
+    } else if (asked === undefined || asked.id !== parsed.data.asked || parsed.data.choice >= asked.labels.length) {
+        sendJson(response, 409, { error: "The master no longer asks this." });
+    } else {
+        asked.settle(parsed.data.choice);
+        sendJson(response, 202, {});
+    }
+}
+
+/** A request's body as JSON, up to a few kilobytes; undefined when it is more, or no JSON. */
+async function readBody(request: IncomingMessage): Promise<unknown>
+{
+    let text = "";
+
+    for await (const chunk of request) {
+        text += String(chunk);
+
+        if (text.length > 4096) {
+            return undefined;
+        }
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return undefined;
+    }
 }
 
 /** Keeps the page's request open, to tell it "changed" whenever a file of the campaign changes; the page reads again, and comes back by itself after a pause. */
