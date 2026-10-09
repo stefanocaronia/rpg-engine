@@ -77,7 +77,10 @@ export interface ThrownDie
 export interface ShownRoll
 {
     id: string;
+    /** The game date, as day 1, 18:00. */
     date?: string;
+    /** When it was rolled, in real time. */
+    at: string;
     by: "player" | "master";
     /** For whom, as the player's character knows them. */
     who?: string;

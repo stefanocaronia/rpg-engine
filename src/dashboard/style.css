@@ -508,10 +508,10 @@ a {
 
 /* The band: the hero of the sheet; the token and the name at the top left, with the system's headline (D-288), then the line in boxes of one height. */
 .band {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: start;
-    gap: 10px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 18px 24px;
     padding: 16px 18px;
     margin-bottom: 14px;
     border: 1px solid var(--rule);
@@ -538,8 +538,14 @@ a {
     font-weight: 600;
 }
 
+/* The boxes beside the name while there is room for them; under it, the band's whole width, when the band is narrow (D-299). */
+.band .line {
+    flex: 1 1 460px;
+    min-width: 0;
+}
+
 .band .effects {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
 }
 
 .place {
@@ -1605,6 +1611,32 @@ summary.fixed {
     font-weight: 700;
 }
 
+/* A roll new at the last reading says so for a few seconds, then fades (D-299). */
+.roll-new {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    background: var(--accent);
+    color: var(--paper);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    vertical-align: 2px;
+    animation: roll-new 9s linear forwards;
+}
+
+@keyframes roll-new {
+    88% {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
 .roll-check {
     font-size: 0.9rem;
 }
@@ -2292,9 +2324,6 @@ svg.icon {
         display: block;
     }
 
-    .band {
-        grid-template-columns: minmax(0, 1fr);
-    }
 
     .line-value {
         min-width: 0;

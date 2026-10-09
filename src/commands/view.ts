@@ -32,6 +32,8 @@ export interface ShownRoll
     id: string;
     /** The game date, when there is one. */
     date?: string;
+    /** When it was rolled, in real time: ISO 8601 (D-299). */
+    at: string;
     /** Who rolled it: the player, or the master. */
     by: "player" | "master";
     /** For whom, as the player character knows them: Ettore, Lupa, a creature. */
@@ -249,6 +251,7 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
+        at: entry.at,
         // Physical dice are the player's, though the master writes their values.
         by: entry.by === "player" || data.physical === true ? "player" : "master",
         ...(who === undefined ? {} : { who }),

@@ -72,14 +72,15 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
 function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; })
 {
     const player = roll.by === "player";
-    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words.
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words].filter((line) => line !== undefined && line !== "").join("\n");
+    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll)].filter((line) => line !== undefined && line !== "").join("\n");
     return (
         <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-who">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
                 {name}
+                {fresh && <span class="roll-new">New</span>}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
             <span class="roll-total num">{roll.total}</span>
@@ -132,4 +133,12 @@ function writeAway(away: boolean): void
     } catch {
         // The page forgets it at the next reload.
     }
+}
+
+/** When a roll was made: the game's day and hour, and the real time, as "day 1, 18:00 in the game · rolled at 18:15". */
+function rolledWhen(roll: ShownRoll): string
+{
+    const real = new Date(roll.at);
+    const time = Number.isNaN(real.getTime()) ? undefined : `rolled at ${real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    return [roll.date === undefined ? undefined : `${roll.date} in the game`, time].filter((part) => part !== undefined).join(" · ");
 }
