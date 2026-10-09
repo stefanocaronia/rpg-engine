@@ -105,6 +105,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
                 <span class={`scene-type ${scene.type}`}>{scene.type}</span>
                 {scene.since && <span class="scene-since">{`since ${scene.since}`}</span>}
             </header>
+            {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />
             {turn && <p class="scene-turn">{turn}</p>}
         </section>

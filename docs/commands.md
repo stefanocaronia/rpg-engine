@@ -245,11 +245,11 @@ Read-only: yes. Positional parameters: `to`.
 
 ### scene
 
-Open, run and close a scene of the story. open starts one: title, type (combat, social, exploration, travel, rest, challenge, other), place (the character's if left out), with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. Change a copy's counters with change, as for a page. Example: action open, title "Scontro all'ossario", type combat, creatures {"Annegato": 2}.
+Open, run and close a scene of the story. open starts one: title, type (combat, social, exploration, travel, rest, challenge, other), place (the character's if left out), with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. Change a copy's counters with change, as for a page. Example: action open, title "Scontro all'ossario", type combat, creatures {"Annegato": 2}.
 
 Read-only: no. Positional parameters: `action`.
 
-- `action` (`"open" | "add" | "leave" | "order" | "next" | "close"`, required): open, add, leave, order, next or close
+- `action` (`"open" | "add" | "leave" | "order" | "next" | "now" | "close"`, required): open, add, leave, order, next, now or close
 - `title` (`string`, optional): open: the scene's title
 - `type` (`"combat" | "social" | "exploration" | "travel" | "rest" | "challenge" | "other"`, optional): open: combat, social, exploration, travel, rest, challenge, other
 - `place` (`string`, optional): open: the place, such as [[Ossario]]; the character's if left out
@@ -257,6 +257,7 @@ Read-only: no. Positional parameters: `action`.
 - `creatures` (`string | string[] | { [key]: integer }`, optional): open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}
 - `who` (`string | string[]`, optional): leave: who leaves the scene, characters or copies, such as Annegato 2
 - `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none
+- `now` (`string`, optional): open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see
 - `summary` (`string`, optional): close: what happened, in one or two sentences, as the player saw it
 
 ### save

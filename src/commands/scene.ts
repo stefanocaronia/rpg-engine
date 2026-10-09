@@ -26,11 +26,19 @@ import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
 import { hasSheet, startingAtZero } from "./worked-out.ts";
 
-const actions = ["open", "add", "leave", "order", "next", "close"] as const;
+const actions = ["open", "add", "leave", "order", "next", "now", "close"] as const;
 type Action = (typeof actions)[number];
 
 // The parameters each action takes; any other is refused, so that nothing given is silently ignored.
-const actionParameters: Record<Action, string[]> = { open: ["title", "type", "place", "with", "creatures"], add: ["with", "creatures"], leave: ["who"], order: ["order"], next: [], close: ["summary"] };
+const actionParameters: Record<Action, string[]> = {
+    open: ["title", "type", "place", "with", "creatures", "now"],
+    add: ["with", "creatures"],
+    leave: ["who"],
+    order: ["order"],
+    next: [],
+    now: ["now"],
+    close: ["summary"],
+};
 
 // The most copies of one creature a scene takes.
 const mostCopies = 50;
@@ -48,6 +56,7 @@ interface SceneInput
     creatures?: string[] | Record<string, number>;
     who?: string[];
     order?: string[];
+    now?: string;
     summary?: string;
 }
 
@@ -84,6 +93,7 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
+    | { action: "now"; title: string; now: string; }
     | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
 
 /** The save the end of a scene made, or why it made none (SAV-3). */
@@ -100,13 +110,14 @@ export const scene = defineCommand({
         + "with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
         + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; "
+        + "now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. "
         + "close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. "
         + "Change a copy's counters with change, as for a page. "
         + 'Example: action open, title "Scontro all\'ossario", type combat, creatures {"Annegato": 2}.',
     group: "game",
     positionals: ["action"],
     input: z.object({
-        action: z.enum(actions).describe("open, add, leave, order, next or close"),
+        action: z.enum(actions).describe("open, add, leave, order, next, now or close"),
         title: z.string().optional().describe("open: the scene's title"),
         type: z.enum(sceneTypes).optional().describe(`open: ${sceneTypes.join(", ")}`),
         place: z.string().optional().describe("open: the place, such as [[Ossario]]; the character's if left out"),
@@ -114,6 +125,7 @@ export const scene = defineCommand({
         creatures: z.union([textList, z.record(z.string(), z.number().int())]).optional().describe('open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}'),
         who: textList.optional().describe("leave: who leaves the scene, characters or copies, such as Annegato 2"),
         order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none"),
+        now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
     }),
 
@@ -139,6 +151,8 @@ export const scene = defineCommand({
         }
 
         switch (input.action) {
+            case "now":
+                return tellNow(root, input.now ?? "", context, current);
             case "add":
                 return addTo(root, world, input, context, current);
             case "leave":
@@ -177,6 +191,8 @@ export const scene = defineCommand({
                 return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             case "next":
                 return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
+            case "now":
+                return `${result.title}: the player's dashboard now shows "${result.now}".`;
             default:
                 return closedText(result);
         }
@@ -195,6 +211,18 @@ function asLists(given: GivenInput): SceneInput
     };
 
     return { ...given, with: list(given.with), creatures: list(given.creatures), who: list(given.who), order: list(given.order) };
+}
+
+/** The line of what is happening now, which the player's dashboard shows (SCN-11): a public line of the log, out of the diary. */
+function tellNow(root: string, now: string, context: Context, current: Scene): SceneResult
+{
+    if (now.trim() === "") {
+        throw new Error('Give now: what is happening, in one line as the player sees it, such as "The bandits overturn the tables".');
+    }
+
+    updateScene(root, [[["now"], now.trim()]]);
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-now", "public", { title: current.title, now: now.trim() }));
+    return { action: "now", title: current.title, now: now.trim() };
 }
 
 function checkParameters(input: SceneInput): void
@@ -235,6 +263,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
         type: input.type,
         place: place === undefined ? undefined : `[[${place.name}]]`,
         opened: opened === undefined ? undefined : formatGameDate(opened),
+        now: input.now?.trim() || undefined,
         with: characters.map((page) => `[[${page.name}]]`),
         copies,
     };

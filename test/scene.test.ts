@@ -184,7 +184,7 @@ describe("rpg scene", () => {
             [["scene", "close", "--summary", "x"], "No scene is open: there is nothing to close."],
             [["scene", "open", "--title", "X"], "Give the scene a title and a type: combat, social, exploration, travel, rest, challenge, other."],
             [["scene", "open", "--title", "X", "--type", "fight"], 'Invalid input for "scene"'],
-            [["scene", "open", "--title", "X", "--type", "combat", "--summary", "y"], "scene open does not take summary: it takes title, type, place, with, creatures."],
+            [["scene", "open", "--title", "X", "--type", "combat", "--summary", "y"], "scene open does not take summary: it takes title, type, place, with, creatures, now."],
             [
                 ["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegati=2"],
                 `There is no creature named Annegati. The campaign's creatures are: Annegato, Fuoco fatuo, Lupo. The system 5e has ${systemPageCount("5e", "creatures")} creatures, named in English`,
@@ -257,6 +257,24 @@ describe("rpg scene", () => {
         expect(status).not.toContain("Last scenes");
         expect(status).toContain("1 problem in the campaign");
         expect(await ok("validate")).toContain("- log.jsonl: line 11 is not an entry: it needs id, at, type and data.");
+    });
+});
+
+describe("rpg scene now (SCN-11, D-310)", () => {
+    it("keeps the line of what is happening now, given at open or with now, for the player's view, logged in public and out of the diary", async () => {
+        await ok("scene", "open", "--title", "Nell'ossario", "--type", "combat", "--now", "Gli annegati escono dall'acqua", "--creatures", "Annegato=1");
+        expect(JSON.parse(await ok("view", "--json")).openScene.now).toBe("Gli annegati escono dall'acqua");
+        expect(await ok("scene", "now", "--now", "  Lena è a terra  ")).toContain("Lena è a terra");
+        expect(JSON.parse(await ok("view", "--json")).openScene.now).toBe("Lena è a terra");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "scene-now", visibility: "public", data: { title: "Nell'ossario", now: "Lena è a terra" } });
+        expect(JSON.parse(await ok("view", "--json")).diary.join(" ")).not.toContain("Lena è a terra");
+        expect(await ok("show", "Nell'ossario")).toContain("now: Lena è a terra");
+    });
+
+    it("refuses now without its line, and on the other actions", async () => {
+        await ok("scene", "open", "--title", "Nell'ossario", "--type", "social");
+        expect((await rpg("scene", "now")).output).toContain("Give now");
+        expect((await rpg("scene", "next", "--now", "x")).output).toContain("does not take now");
     });
 });
 

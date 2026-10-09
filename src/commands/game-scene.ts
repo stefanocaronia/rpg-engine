@@ -329,6 +329,8 @@ function sceneLogLine(type: string, data: Record<string, unknown>): string
             return `wrote ${String(data.page)}`;
         case "scene-changed":
             return sceneChangeLine(data);
+        case "scene-now":
+            return `now: ${String(data.now)}`;
         default:
             return "";
     }

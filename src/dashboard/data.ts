@@ -90,6 +90,8 @@ export interface ShownScene
     title: string;
     type: string;
     since?: string;
+    /** What is happening now (SCN-11). */
+    now?: string;
     place?: string;
     who: ShownPerson[];
     order?: string[];

@@ -16,6 +16,8 @@ export interface Scene
     place?: string;
     /** The game date the scene opened. */
     opened?: string;
+    /** What is happening now, in one line as the player sees it, for their dashboard (SCN-11). */
+    now?: string;
     /** Links to the characters in the scene. */
     with: string[];
     copies: Record<string, SceneCopy>;
@@ -34,6 +36,7 @@ const sceneSchema = z.looseObject({
     type: z.enum(sceneTypes),
     place: z.string().optional(),
     opened: z.string().optional(),
+    now: z.string().optional(),
     with: z.array(z.string()).default([]),
     copies: z.record(z.string(), z.looseObject({ creature: z.string() })).default({}),
     order: z.array(z.string()).min(1).optional(),

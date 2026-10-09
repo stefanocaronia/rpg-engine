@@ -3050,6 +3050,15 @@ svg.icon {
     color: var(--low);
 }
 
+/* What is happening now, as the master wrote it (SCN-11): the story's voice. */
+.scene-line {
+    margin: 10px 0 0;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-style: italic;
+    line-height: 1.4;
+}
+
 .scene-since {
     margin-left: auto;
     color: var(--muted);

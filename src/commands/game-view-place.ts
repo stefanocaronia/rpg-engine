@@ -42,6 +42,8 @@ export interface ShownScene
     type: string;
     /** The game date it opened. */
     since?: string;
+    /** What is happening now, as the master wrote it for the player (SCN-11). */
+    now?: string;
     place?: string;
     who: ShownPerson[];
     order?: string[];
@@ -115,6 +117,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         title: scene.title,
         type: scene.type,
         ...(scene.opened === undefined ? {} : { since: scene.opened }),
+        ...(scene.now === undefined ? {} : { now: scene.now }),
         ...(place === undefined ? {} : { place: place.name }),
         who: [...characters, ...creatures],
         ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
