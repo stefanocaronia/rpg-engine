@@ -1,9 +1,11 @@
-// The checks every installed game system passes (SYS-2, SYS-5, SYS-8, D-172): pages that read like a campaign's, each name once, no bases, every field declared, and where it comes from.
-import { readFileSync } from "node:fs";
+// The checks every installed game system passes (SYS-2, SYS-5, SYS-8, D-172, D-267): pages that read like a campaign's, each name once, no bases, every field declared, the pictures they link, and where it comes from.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseRollFormula } from "../src/core/formula.ts";
+import { FileStore, withFiles } from "../src/core/store.ts";
 import { comparableText } from "../src/core/text.ts";
+import { findImage, imageFileName, imagesFolderName } from "../src/images/index.ts";
 import { coinsProblem, readCoins } from "../src/money/index.ts";
 import { checkWorld, isStandardField, listFieldNames, loadWorld } from "../src/pages/index.ts";
 import { isTitled, readRuleBook } from "../src/rules/index.ts";
@@ -104,6 +106,15 @@ describe("the installed game systems", () => {
                 const declared = new Set(Object.keys(system.fields).map(comparableText));
                 const undeclared = world.pages.flatMap((page) => Object.keys(page.fields).filter((field) => !isStandardField(page.type, field) && !declared.has(comparableText(field))).map((field) => `${page.name}: ${field}`));
                 expect(undeclared).toEqual([]);
+            });
+
+            it("has in its images folder every picture its pages link, and only those (D-267)", () => {
+                const linked = new Set(world.pages.map((page) => imageFileName(page.fields.image)).filter((name) => name !== undefined));
+                const missing = [...linked].filter((name) => withFiles(new FileStore(), () => findImage([system.folder], name)) === undefined);
+                expect(missing).toEqual([]);
+                const folder = join(system.folder, imagesFolderName);
+                const files = existsSync(folder) ? readdirSync(folder, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name) : [];
+                expect(files.filter((name) => !linked.has(name))).toEqual([]);
             });
 
             it("says where it comes from", () => {

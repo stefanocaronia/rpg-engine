@@ -15,7 +15,8 @@ const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
  */
 type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | "stops" | "position" | "length" | readonly string[];
 
-const commonRules: Record<string, Rule> = { tags: "list", aliases: "list" };
+// A page's picture is a link to a file in an images folder (D-267).
+const commonRules: Record<string, Rule> = { tags: "list", aliases: "list", image: "link" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"] },

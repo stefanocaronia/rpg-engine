@@ -56,7 +56,7 @@ Read-only: no. Positional parameters: `to`.
 
 ### validate
 
-Check the whole campaign and say how to fix each problem. It looks for files that cannot be read, standard fields, links to pages, sections or secrets that do not exist, things in two places, repeated names, the settings and the log. Use it when status reports problems, or after pages were changed by hand. Read-only, no parameters.
+Check the whole campaign and say how to fix each problem. It looks for files that cannot be read, standard fields, links to pages, sections or secrets that do not exist, pictures that are missing, things in two places, repeated names, the settings and the log. Use it when status reports problems, or after pages were changed by hand. Read-only, no parameters.
 
 Read-only: yes.
 
@@ -97,6 +97,15 @@ Read-only: no. Positional parameters: `page`.
 
 - `page` (`string | string[]`, required): what they learn: Page#Secret, or a whole Page; one or a list
 - `to` (`string | string[]`, optional): who learns it: one or more characters, companions too when they learn it; the player's character alone if left out
+
+### image
+
+Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a goblin's icon. Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. Example: page Ettore, file C:\Users\me\Pictures\ettore.png.
+
+Read-only: no. Positional parameters: `page`, `file`.
+
+- `page` (`string`, required): the page that gets the picture
+- `file` (`string`, optional): the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture
 
 ### show
 

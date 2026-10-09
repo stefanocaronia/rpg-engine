@@ -20,6 +20,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | sezione, introduzione | section, introduction | a heading and its text; the text before the first heading |
 | segreto | secret | a `> [!secret] Name` block |
 | alias | alias | `aliases` |
+| immagine, ritratto, token | picture, image | the `image` field, a link to a file in `images/`; the dashboard will show it as a round token |
 | base | base | the page a page derives from, through `creature` or `item` |
 | derivare, ereditare | derive, inherit | `baseChain`, `inheritedFields` |
 | contenitore | container | a page whose `contains` or `inventory` lists others |

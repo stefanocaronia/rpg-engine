@@ -38,6 +38,7 @@ There is no dashboard and no `extensions/` folder in the code today: the registr
 | `triggers` | Event conditions such as `party in [[Ossario]]`, judged through `TriggerFacts` | [triggers/index.ts](../src/triggers/index.ts) |
 | `instructions` | Reads the files in `instructions/` from the installed package | [instructions/index.ts](../src/instructions/index.ts) |
 | `progression` | Tables whose first column counts levels: the row at a level, the features up to it, those a part lists with their level | [progression/index.ts](../src/progression/index.ts) |
+| `images` | Pictures of pages: the formats a picture can have (PNG, JPEG, WebP, SVG, known by their bytes), the largest one, finding a linked file in the `images/` folders | [images/index.ts](../src/images/index.ts) |
 | `map` | The world map: roads as stretches between stops, the quickest way across them; points, the 16 directions of the compass, distances, crossings | [map/index.ts](../src/map/index.ts) |
 
 None of the modules names a game's concepts: hit points, ability modifiers or conditions exist only as data in a system's `system.yaml` and pages.
@@ -126,6 +127,7 @@ CLAUDE.md          imports AGENTS.md (@AGENTS.md)
 sessions/          created by init
 world/             characters/ places/ factions/ quests/ items/ events/ topics/ creatures/
 rules/             house rules, one markdown file each (optional)
+images/            the pictures of its pages, which `image` copies there (optional)
 .saves/            the saves, one zip each, made at the end of each scene (SAV-2–SAV-4)
 ```
 
@@ -137,7 +139,7 @@ Each file under `world/` is a `Page` ([pages/world.ts](../src/pages/world.ts)): 
 
 - Links are `[[Page]]`, `[[Page#Section]]`, `[[Page|label]]` or `[[folder/Page.md]]`; in YAML they are quoted, `creature: "[[Wolf]]"`. Links inside code fences do not count ([pages/markdown.ts](../src/pages/markdown.ts)).
 - The text before the first heading is the introduction; headings make sections; `> [!secret] Name` followed by quoted lines is a secret block.
-- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `equipped`, `contains`, `knows`, `factions`, `environment`, a place's `stops`, `position` and `radius`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases` everywhere. Any other field is free, or declared by the game system.
+- Standard fields have fixed meanings per type ([pages/standard-fields.ts](../src/pages/standard-fields.ts)): `role` (pc, companion, npc), `status`, `creature`, `item`, `inventory`, `equipped`, `contains`, `knows`, `factions`, `environment`, a place's `stops`, `position` and `radius`, an event's `date`, `place`, `clock`, `when`, `by`, and `tags`, `aliases`, `image` everywhere. Any other field is free, or declared by the game system.
 - A field written empty counts as missing; a free field's name is the same in any case, the last written winning.
 
 [pages/page-file.ts](../src/pages/page-file.ts) splits and joins the frontmatter and body and applies a `FieldChange` (`set`, `unset`, `add`, `remove`) to the YAML document, keeping comments.
@@ -152,6 +154,7 @@ systems/<name>/system.yaml   title, language, attribution, fields, coins, round,
                              progression, item-formulas, always-in, rewards, quest-ends
 systems/<name>/world/        pages, as in a campaign (creatures/, items/, topics/ in 5e)
 systems/<name>/rules/        chapters of rules text, one markdown file each
+systems/<name>/images/       the pictures its pages link in `image` (optional)
 systems/<name>/LICENSE.md    the license and attribution
 systems/<name>/test/         the system's own tests (not published to npm)
 systems/<name>/build/        scripts that wrote some of its pages and rules from its source, such as 5e's spells (not published)
@@ -264,6 +267,12 @@ The open scene lives in `state.yaml` under `scene`: title, type, place, who is i
 Files: [saves/saves.ts](../src/saves/saves.ts), [commands/game-saves.ts](../src/commands/game-saves.ts), [commands/save.ts](../src/commands/save.ts). Codes: `SAV-1`–`SAV-6`.
 
 A save is a zip, made with `fflate`, of the game's files: everything in the campaign but `.saves/`, what has a name starting with a dot at its top (`.git`, `.obsidian`, `.claude`, `.mcp.json`) and the host's files (`hostFileNames` in [campaign/host-files.ts](../src/campaign/host-files.ts), in any case), read from the disk, never from what a session kept (`SAV-2`). `scene close` makes one unless every player character is dead, writing its `saved` line only once the zip is written, and a save that fails never stops the close (`SAV-3`); `save make` too, with `saves: free`. `save load` first zips what it will replace into `before load NNN.zip`, leaves a mark (`loading.txt`) until it is done, gives the files back through the store, so that a session reads them at the next call, removes those made since and the later saves, and logs `save-loaded`; a load that stopped halfway is finished by the next `save load`, and `status` says so. The campaign's `saves` setting decides what may be loaded (`SAV-5`). The store reads and writes bytes for it: `entries`, `bytes`, `writeBytes`.
+
+### Pictures
+
+Files: [images/images.ts](../src/images/images.ts), [commands/game-images.ts](../src/commands/game-images.ts), [commands/image.ts](../src/commands/image.ts). Decision: D-267.
+
+A page's picture is its standard field `image`, a link to a file such as `[[Ettore.webp]]`, inherited like any other field: a character derived from the system's Goblin shows the Goblin's. `findImage` looks for the file by name in the campaign's `images/` folder, then in its system's, so a campaign can give a picture of its own in place of the system's. `image` reads the file through the store, knows its format by its bytes, refuses anything else or anything over 5 MB, copies it to `images/<page name>.<extension>`, links it and logs `image-set`; without a file it removes the page's own picture (`image-removed`). The old file goes when no other campaign page links it. `validate` reports a link to a file that no `images/` folder has (`imageProblems`). The 5e system gives every creature an icon of game-icons.net (CC BY 3.0), which [systems/5e/build/icons.mjs](../systems/5e/build/icons.mjs) copies and links from `creature-icons.json`. The engine neither resizes nor generates pictures: the AI makes or downloads them with its host's tools, and the dashboard will crop them into round tokens.
 
 ### The player's view
 
