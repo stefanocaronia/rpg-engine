@@ -165,12 +165,164 @@ a {
 }
 
 /* The top (D-276, D-293): the master large, the campaign's name with the product's and the system's below, and the time, the place and whether the game is
-   live as chips. */
+   live as chips; under the name the sections, beside the theme the menu (D-309). */
 .top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    grid-template-areas: "robot titles chips theme menu" "robot sections sections sections sections";
+    align-items: center;
+    column-gap: 20px;
+    row-gap: 4px;
+    margin-bottom: 18px;
+}
+
+.top > .master {
+    grid-area: robot;
+}
+
+.top > .titles {
+    grid-area: titles;
+}
+
+.top > .status-chips {
+    grid-area: chips;
+}
+
+.top > .theme-switch {
+    grid-area: theme;
+}
+
+.top > .menu {
+    grid-area: menu;
+    margin-left: -12px;
+}
+
+.top > .sections {
+    grid-area: sections;
+    margin-left: -14px;
+}
+
+/* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer. */
+.sections {
+    display: flex;
+    gap: 2px;
+}
+
+.sections a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: var(--radius-m) var(--radius-m) 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.sections a[aria-current="page"] {
+    background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / calc(100% - 20px) 3px;
+    color: var(--accent);
+}
+
+.sections svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.section-mark {
+    display: inline-grid;
+    place-items: center;
+}
+
+/* The place's chip leads to the scene (D-309). */
+a.status-chip {
+    text-decoration: none;
+}
+
+/* The menu (D-309): the saves, the settings, About; the theme only on a phone, which has no switch of its own. */
+.menu {
+    position: relative;
+}
+
+.icon-button.tonal.menu-button {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-m);
+    box-shadow: var(--lift);
+}
+
+.menu-button svg.icon,
+.menu-pop svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.menu-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    min-width: 200px;
+    padding: 6px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+}
+
+.menu-pop :is(a, button) {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 18px;
+    gap: 12px;
+    height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.menu-pop a[aria-current="page"] {
+    color: var(--accent);
+}
+
+.menu-pop svg.icon {
+    color: var(--muted);
+}
+
+.menu-pop .menu-theme {
+    display: none;
+}
+
+/* A section still to come: what it will hold. */
+.upcoming {
+    padding: 20px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.upcoming h2 {
+    margin: 0 0 8px;
+    font-size: 1.3rem;
+}
+
+.upcoming p {
+    margin: 0 0 6px;
+}
+
+.upcoming-note {
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 .titles h1 {
@@ -254,9 +406,11 @@ a {
     position: fixed;
     inset: 0 0 auto;
     z-index: 18;
-    display: flex;
-    align-items: center;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-rows: auto auto;
+    align-content: center;
+    column-gap: 14px;
     height: 88px;
     padding: 0 16px;
     border-bottom: 1px solid var(--rule);
@@ -273,10 +427,33 @@ a {
     transform: none;
 }
 
-/* The master whole, a little smaller, still moving: its moods are seen there too. */
+/* The master whole, a little smaller, still moving: its moods are seen there too; the name over the sections, the chips at the right. */
 .top-bar .master {
+    grid-row: 1 / span 2;
     width: 72px;
     height: 72px;
+}
+
+.top-bar > .top-bar-title {
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 1.1;
+}
+
+.top-bar > .sections {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+    margin-left: -14px;
+}
+
+.top-bar > .sections a {
+    height: 36px;
+    font-size: 0.9rem;
+}
+
+.top-bar > .status-chips {
+    grid-column: 4;
+    grid-row: 1 / span 2;
 }
 
 .top-bar-title {
@@ -293,11 +470,29 @@ a {
 }
 
 /* The game system the campaign plays, beside the product's name; what it is and its source's credit at the foot of the page (D-284). */
-.product .system {
-    margin-left: 0.4em;
-    text-transform: none;
+.system-chip {
+    display: inline-block;
+    margin-left: 0.6em;
+    padding: 1px 6px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
     font-variant: normal;
     letter-spacing: 0.04em;
+    line-height: 1.3;
+    text-transform: none;
+    vertical-align: 1px;
+}
+
+/* In the bar that stays the product and the system sit beside the campaign's name. */
+.top-bar-title .product {
+    margin: 0 0 0 0.8em;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-weight: 400;
+    vertical-align: 0.35em;
 }
 
 .credits {
@@ -2435,9 +2630,88 @@ svg.icon {
         font-size: 1.2rem;
     }
 
-    /* A phone keeps only whether the game is live. */
+    /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. */
     .status-chip:not(.live) {
         display: none;
+    }
+
+    .top .status-chip.live {
+        justify-content: center;
+        width: 34px;
+        padding: 0;
+        gap: 0;
+        font-size: 0;
+    }
+
+    .top {
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        grid-template-areas: "robot titles chips menu";
+    }
+
+    .top > .menu {
+        margin-left: 0;
+    }
+
+    .top > .theme-switch,
+    .top-bar > .sections {
+        display: none;
+    }
+
+    .menu-pop .menu-theme {
+        display: flex;
+    }
+
+    /* The sections in a bar at the bottom (D-309), each its picture over its name; the dice's button and its tray above it. */
+    .top > .sections {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 21;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        height: 68px;
+        margin: 0;
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--rule);
+        background: var(--panel);
+        box-shadow: 0 -6px 18px -12px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+    }
+
+    .top > .sections a {
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        height: auto;
+        padding: 0;
+        border-radius: 0;
+        font-size: 0.72rem;
+    }
+
+    .top > .sections a[aria-current="page"] {
+        background: none;
+        color: var(--ink);
+    }
+
+    .top > .sections .section-mark {
+        width: 52px;
+        height: 30px;
+        border-radius: var(--radius-m);
+    }
+
+    .top > .sections a[aria-current="page"] .section-mark {
+        background: color-mix(in srgb, var(--accent) 22%, transparent);
+        color: var(--accent);
+    }
+
+    .page {
+        padding-bottom: 160px;
+    }
+
+    .dice-fab {
+        bottom: 84px;
+    }
+
+    .dice-tray {
+        bottom: 152px;
     }
 
     .sheet-body {
@@ -2521,7 +2795,7 @@ svg.icon {
     .dice-result {
         left: 12px;
         right: 12px;
-        bottom: 88px;
+        bottom: 152px;
         width: auto;
         column-gap: 14px;
         padding: 14px 16px;

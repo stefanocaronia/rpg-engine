@@ -11,6 +11,7 @@ import type { ViewResult } from "../src/commands/view.ts";
 import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { readAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
@@ -435,6 +436,15 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect([names(laid.rail), names(laid.others)]).toEqual([["Saves", "Abilities"], ["Skills", "Character", "Combat"]]);
         const plain = arrangedGroups(sheet);
         expect([names(plain.rail), names(plain.others)]).toEqual([["Abilities", "Saves", "Skills", "Combat"], ["Character"]]);
+    });
+
+    it("reads the section and whose sheet from the address, the sheet when it says nothing it knows (D-276, D-309)", () => {
+        expect(readAddress("")).toEqual({ section: "character" });
+        expect(readAddress("#/character/Ettore%20Lanza")).toEqual({ section: "character", name: "Ettore Lanza" });
+        expect(readAddress("#/scene")).toEqual({ section: "scene" });
+        expect(readAddress("#/about")).toEqual({ section: "about" });
+        expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "character" });
+        expect(readAddress("#/character/%E0%A4%A")).toEqual({ section: "character" });
     });
 
     it("shows the rolls of the last half hour since the list was cleared, and older ones as asked, read or still in the log (D-302)", () => {

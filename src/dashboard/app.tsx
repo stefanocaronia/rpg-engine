@@ -2,12 +2,14 @@
 // names and the rolls beside it (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { type Address, readAddress } from "./address.ts";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
+import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { RollLog } from "./rolls.tsx";
@@ -51,6 +53,8 @@ function App()
 {
     const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], rollsTotal: 0, version: 0 });
     const [live, setLive] = useState(false);
+    // The section the address names, and whose sheet (D-276, D-309).
+    const [address, setAddress] = useState<Address>(() => readAddress(window.location.hash));
     const reading = useRef(0);
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new since come into the list as new.
     const seen = useRef<Set<string>>();
@@ -74,7 +78,7 @@ function App()
             const [overview, asked] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined)]);
             const party = overview.kind === "overview" ? overview.party : [];
             const rolls = overview.kind === "overview" ? overview.rolls : [];
-            const member = party.find((candidate) => candidate.name === addressedName()) ?? party[0];
+            const member = party.find((candidate) => candidate.name === readAddress(window.location.hash).name) ?? party[0];
             const page = member === undefined ? undefined : await readView(member.name);
 
             if (number === reading.current) {
@@ -150,7 +154,12 @@ function App()
 
         events.addEventListener("changed", () => void read());
         events.onerror = () => setLive(false);
-        const followAddress = (): void => void read();
+
+        const followAddress = (): void => {
+            setAddress(readAddress(window.location.hash));
+            void read();
+        };
+
         window.addEventListener("hashchange", followAddress);
 
         return () => {
@@ -188,13 +197,16 @@ function App()
                 mood={shown.masterMood}
                 moment={moment}
                 asleep={!live && shown.readAt !== undefined}
+                section={address.section}
             />
             <Notices notices={notices} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
-            <PartyStrip party={shown.party} chosen={shown.chosen} />
+            <PartyStrip party={shown.party} chosen={address.section === "character" ? shown.chosen : undefined} />
             <div class="body">
                 <main>
-                    {member && (
+                    {address.section === "about" && <About product={productName} system={shown.system} />}
+                    {address.section !== "character" && address.section !== "about" && <Upcoming section={address.section} />}
+                    {address.section === "character" && member && (
                         <MemberSheet
                             key={member.name}
                             member={member}
@@ -248,18 +260,6 @@ function App()
             />
         </div>
     );
-}
-
-/** Whom the address names, as in #/character/Ettore (D-276); undefined for any other address. */
-function addressedName(): string | undefined
-{
-    const match = /^#\/character\/(.+)$/.exec(window.location.hash);
-
-    try {
-        return match === null ? undefined : decodeURIComponent(match[1]);
-    } catch {
-        return undefined;
-    }
 }
 
 // The theme the player picked before, from the start (D-300).
