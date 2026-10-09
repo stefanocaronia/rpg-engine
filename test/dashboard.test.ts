@@ -96,8 +96,9 @@ describe("view as data (VIEW-1, D-272)", () => {
     it("gives the sheet by the system's groups, each value with its text, marks, what is beside it, a counter's limits and the items of a list", async () => {
         const data = JSON.parse(await ok("view", "Ettore", "--json"));
         const group = (name: string) => data.sheet.find((candidate: { name: string; }) => candidate.name === name);
-        expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "number", text: "14", marks: 0, beside: "+2" });
-        expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1 });
+        // A score rolls the modifier beside it, for fun (D-280).
+        expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "number", text: "14", marks: 0, beside: "+2", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
+        expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
         expect(group("Combat").values).toContainEqual({ field: "hit-dice-d8", kind: "counter", text: "3/3", counter: { value: 3, max: 3 }, marks: 0 });
         expect(group("Proficiencies").values).toContainEqual({ field: "languages", kind: "list", text: "Common, Dwarvish", items: ["Common", "Dwarvish"], marks: 0 });
         expect(group("Attacks")).toEqual({

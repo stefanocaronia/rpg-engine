@@ -16,6 +16,8 @@ export const systemFileName = "system.yaml";
 
 // An entry of the sheet: a field, ? when it is written only when it applies, and a field shown beside it in parentheses.
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
+// The dice a number of the sheet is rolled with: dice alone, as 1d20 or 2d6+1d4 (D-280).
+const sheetDicePattern = /^\d*d\d+(?:\+\d*d\d+)*$/;
 
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
@@ -64,6 +66,9 @@ const systemSchema = z.object({
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
+    "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
+        error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
+    }).optional(),
     values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     marks: z.array(z.string().min(1)).optional(),
     "status-line": z.array(z.string().min(1)).optional(),
@@ -215,6 +220,8 @@ export interface GameSystem
     travel?: Travel;
     /** The groups of a character sheet, in order (D-183, D-207, DAT-2). */
     sheet: SheetGroup[];
+    /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
+    sheetDice: Record<string, string>;
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
@@ -408,6 +415,19 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${notMarking} is not declared as a list in fields, as marks and progression need.`);
     }
 
+    // Each number rolled with dice is a declared field, and has one set of dice (D-280).
+    const rolled = Object.entries(data["sheet-dice"] ?? {}).flatMap(([dice, fields]) => fields.map((field): [string, string] => [field, dice]));
+    const undeclared = rolled.find(([field]) => kindOf(field) === undefined);
+    const twice = rolled.find(([field], index) => rolled.findIndex(([other]) => comparableText(other) === comparableText(field)) !== index);
+
+    if (undeclared !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice.${undeclared[1]}: ${undeclared[0]} is not declared in fields.`);
+    }
+
+    if (twice !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice: ${twice[0]} is listed twice; give each field one set of dice.`);
+    }
+
     const experience = data.progression?.experience?.table;
 
     if (experience !== undefined && !Object.keys(formulas.tables).some((table) => comparableText(table) === comparableText(experience))) {
@@ -426,6 +446,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
         sheet,
+        sheetDice: Object.fromEntries(rolled),
         values,
         marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),

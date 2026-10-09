@@ -189,6 +189,17 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 
 A computed number has a ● for each of these lists that it reads with its item, where the item changes it: `athletics +5 ●`, and `stealth +7 ●●` with expertise. The fields must be declared `list`.
 
+### sheet-dice
+
+The dice each number of the sheet is rolled with, for the dashboard's free roll (D-280): the dice alone, and the fields rolled with them.
+
+```yaml
+sheet-dice:
+  1d20: [str-mod, dex-mod, str-save, athletics, stealth, initiative, attack]
+```
+
+The number is added to the dice: the explanation of insight +5 on the dashboard offers to roll 1d20+5, for fun. A score with a field beside it, as `str (str-mod)`, rolls the field beside it. The page shows the dice and the total, never whether the roll succeeds, and a free roll is never logged. A number not listed has no free roll, and a system without the key has none. Each field must be declared and listed once; a campaign does not change it, as it does not change the sheet.
+
 ### status-line
 
 The fields of the line that shows the player character and the companions in `status` and in scenes, in order:
@@ -536,7 +547,7 @@ The nearest layer wins: an entry of `fields`, `tables`, `computed` or `counters`
 - each page name is used once, with a straight apostrophe;
 - a value YAML would read as a signed number is in quotes;
 - a page derives only from another of the system that exists;
-- its coins read; the fields of its sheet, status line, values and recipes are declared; each threshold is on a declared counter; every rule a threshold, recipe or condition names is found in its chapters; a round lasts more than 0 seconds;
+- its coins read; the fields of its sheet, sheet-dice, status line, values and recipes are declared; each threshold is on a declared counter; every rule a threshold, recipe or condition names is found in its chapters; a round lasts more than 0 seconds;
 - each chapter opens with a heading, and every section can be read by its path;
 - every field its pages hold is declared, and every value fits its kind, without a final period;
 - it gives an `attribution`.

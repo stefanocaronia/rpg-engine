@@ -79,6 +79,20 @@ function lastLogged(): Record<string, unknown>
     return readLogFile(folder).at(-1)?.data ?? {};
 }
 
+describe("the free roll of the sheet (D-280)", () => {
+    it("gives each number the system rolls its dice and the number, or the number beside it, for the dashboard; none to the others", async () => {
+        const page = JSON.parse(await ok("view", "Ettore", "--json")) as { sheet: { values: { field: string; roll?: unknown; }[]; }[]; };
+        const rollOf = (field: string): unknown => page.sheet.flatMap((group) => group.values).find((value) => value.field === field)?.roll;
+        expect(rollOf("insight")).toEqual({ notation: "1d20+5", dice: [20], modifier: 5 });
+        expect(rollOf("dex-save")).toEqual({ notation: "1d20-1", dice: [20], modifier: -1 });
+        // A score rolls the modifier beside it; a modifier of 0 adds nothing.
+        expect(rollOf("str")).toEqual({ notation: "1d20+2", dice: [20], modifier: 2 });
+        expect(rollOf("int")).toEqual({ notation: "1d20", dice: [20], modifier: 0 });
+        expect(rollOf("proficiency")).toBeUndefined();
+        expect(rollOf("hp")).toBeUndefined();
+    });
+});
+
 describe("the sheet in show (DAT-2, D-207)", () => {
     it("gives a player character's sheet in the system's groups, a modifier beside its score, and the fields as written without what the sheet shows", async () => {
         const shown = await ok("show", "Ettore");

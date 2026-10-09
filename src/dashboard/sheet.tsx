@@ -1,9 +1,10 @@
 // Someone's sheet (D-273, D-276): a band with their line and effects, then the system's groups as boxes, those of a few short numbers in a rail beside the
-// others; a click on a number says how it is made (FOR-8). A companion who keeps no sheet shows the stat block of its creature (D-275).
+// others; a click on a number says how it is made (FOR-8), and offers a free roll of it when the system rolls it (D-280). A companion who keeps no sheet shows
+// the stat block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
-import type { Member, SheetGroup, SheetValue } from "./data.ts";
+import type { Member, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
 import { fieldLabel, groupLabels, readableIds, shownText } from "./labels.ts";
 import { groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown } from "./markdown.tsx";
@@ -13,10 +14,13 @@ import { Effects, ValueDrawing } from "./widgets.tsx";
 // Up to this width the groups start closed, and the band says the most.
 const narrow = "(max-width: 600px)";
 
-export function MemberSheet({ member, sheet, text, version }: { member: Member; sheet: SheetGroup[]; text: string; version: number; })
+/** What rolls a number of the sheet for fun: its roll, and the number's label. */
+export type FreeRoll = (roll: SheetRoll, label: string) => void;
+
+export function MemberSheet({ member, sheet, text, version, onRoll }: { member: Member; sheet: SheetGroup[]; text: string; version: number; onRoll: FreeRoll; })
 {
     const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
-    const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} />;
+    const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     return (
         <section class="sheet" aria-label={member.name}>
             <header class="band">
@@ -52,7 +56,7 @@ export function MemberSheet({ member, sheet, text, version }: { member: Member; 
     );
 }
 
-function Group({ member, group, fields, version }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; })
+function Group({ member, group, fields, version, onRoll }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; onRoll: FreeRoll; })
 {
     const [open, setOpen] = useState(() => storedOpen(group.name));
     const [explained, setExplained] = useState<{ field: string; parts: string[]; }>();
@@ -109,7 +113,7 @@ function Group({ member, group, fields, version }: { member: string; group: Shee
 
     const explainable = values.filter((value) => layout === "tiles" || widgetOf(value) === "number").map((value) => value.field);
     const stop = (field: string): number => (explainable.indexOf(field) === Math.min(current, explainable.length - 1) ? 0 : -1);
-    const how = (field: string) => explained?.field === field && <How label={label(field)} parts={explained.parts} />;
+    const how = (field: string) => explained?.field === field && <How label={label(field)} parts={explained.parts} roll={values.find((value) => value.field === field)?.roll} onRoll={onRoll} />;
     return (
         <details class={`group group-${layout}`} open={open}>
             <summary onClick={toggle}>
@@ -137,13 +141,18 @@ function Group({ member, group, fields, version }: { member: string; group: Shee
     );
 }
 
-/** How a number is made, what it came from one after the other (FOR-8). */
-function How({ label, parts }: { label: string; parts: string[]; })
+/** How a number is made, what it came from one after the other (FOR-8); and its free roll, which counts for nothing, when the system rolls it (D-280). */
+function How({ label, parts, roll, onRoll }: { label: string; parts: string[]; roll?: SheetRoll; onRoll: FreeRoll; })
 {
     return (
         <p class="how" role="status">
             <span class="how-field">{label}</span>
             {parts.map((part) => <span key={part} class="part">{shownText(part)}</span>)}
+            {roll && (
+                <button type="button" class="how-roll" onClick={() => onRoll(roll, label)}>
+                    Roll {shownText(roll.notation)} <span class="how-free">free roll</span>
+                </button>
+            )}
         </p>
     );
 }

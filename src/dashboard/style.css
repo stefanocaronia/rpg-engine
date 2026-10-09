@@ -757,7 +757,24 @@ button.row:hover,
     font-weight: 600;
 }
 
-.part:not(:last-child)::after {
+.how-roll {
+    margin-left: auto;
+    padding: 4px 12px;
+    border: 1px dashed var(--accent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.how-free {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+}
+
+.part:not(:last-of-type)::after {
     content: " ·";
     color: var(--muted);
 }

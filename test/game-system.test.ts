@@ -69,6 +69,19 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(found?.values).toEqual({ Doti: ["agile", "forte"] });
     });
 
+    it("reads the dice each number of the sheet is rolled with, and refuses a field it does not declare, one listed twice, and more than dice (D-280)", () => {
+        system(near, "prova", `${declared}sheet-dice:\n  1d20: [forza-mod]\n  2d6+1d4: [vigore]\n`);
+        expect(findSystem([near], "prova")?.sheetDice).toEqual({ "forza-mod": "1d20", "vigore": "2d6+1d4" });
+        system(near, "prova", `${declared}sheet-dice: { 1d20: [agilita] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-dice.1d20: agilita is not declared in fields.");
+        system(near, "prova", `${declared}sheet-dice: { 1d20: [forza], 1d6: [Forza] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-dice: Forza is listed twice; give each field one set of dice.");
+        system(near, "prova", `${declared}sheet-dice: { 1d20+5: [forza] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-dice.1d20+5: write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them");
+        system(far, "altro", declared);
+        expect(findSystem([far], "altro")?.sheetDice).toEqual({});
+    });
+
     it("reads the pages every character with a sheet has in a list", () => {
         system(near, "prova", `${declared}always-in: { equipped: [Pugno] }\n`);
         expect(findSystem([near], "prova")).toMatchObject({ alwaysIn: { equipped: ["Pugno"] } });

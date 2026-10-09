@@ -2,7 +2,7 @@
 // can also always throw dice for fun, as many as they like and a modifier: the throw counts for nothing, the engine does not hear of it, and the dice fade
 // away. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { ShownRoll, ThrownDie } from "../data.ts";
+import type { SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
 import { diceToThrow } from "./models.ts";
 import type { Roller } from "./roller.ts";
 import { wakeSound } from "./sounds.ts";
@@ -17,6 +17,14 @@ const freeDice = [4, 6, 8, 10, 12, 20, 100];
 // Where the page remembers whether the dice make a sound, in this browser alone.
 const soundKey = "rpg-engine.dice-sound";
 
+/** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, and which throw it is. */
+export interface SheetThrow
+{
+    number: number;
+    roll: SheetRoll;
+    label: string;
+}
+
 /** What the plate under the dice says: the check, or the dice of a free throw, its total, and its dice as the chat writes them. */
 interface Plate
 {
@@ -27,7 +35,7 @@ interface Plate
     shown: boolean;
 }
 
-export function DiceTray({ requested }: { requested?: ShownRoll; })
+export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; sheetThrow?: SheetThrow; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
     const roller = useRef<Promise<Roller | undefined>>();
@@ -110,6 +118,16 @@ export function DiceTray({ requested }: { requested?: ShownRoll; })
             void throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text }, lingers.asked);
         }
     }, [requested?.id]);
+
+    // A number of the sheet, rolled for fun: its dice and its number, which counts for nothing (D-280).
+    useEffect(() => {
+        if (sheetThrow !== undefined) {
+            const { roll, label } = sheetThrow;
+            const dice = roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
+            const total = dice.reduce((sum, die) => sum + die.value, roll.modifier);
+            void throwAndShow(dice, { free: true, title: `${label} ${roll.notation}`, total, text: diceText(dice, roll.modifier) }, lingers.free);
+        }
+    }, [sheetThrow?.number]);
 
     const throwPool = (): void => {
         // A free throw: the page decides it, as fairly as the browser can. The tray closes, so as to leave the dice in sight; it keeps them for the next.

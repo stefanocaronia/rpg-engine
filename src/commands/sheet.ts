@@ -1,5 +1,5 @@
 // The character sheet of the game system (D-204, D-207, DAT-2): its groups as show gives them, the fields a character still lacks, and the names a list takes (SYS-8).
-import { listItemNames } from "../core/formula.ts";
+import { listItemNames, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
@@ -96,6 +96,16 @@ export interface SheetValue
     marks: number;
     /** What the sheet shows beside it, such as +2 by str, or how many points the next level needs (PRO-6). */
     beside?: string;
+    /** The free roll the dashboard offers in its explanation, when the system rolls it, or what is beside it, with dice (D-280). */
+    roll?: SheetRoll;
+}
+
+/** A free roll of a number of the sheet (D-280): the dice, by their sides, the number added to them, and both as a notation, such as 1d20+5. */
+export interface SheetRoll
+{
+    notation: string;
+    dice: number[];
+    modifier: number;
 }
 
 /** A group of a character's sheet as data: its values, or for a group that the items of one list give, each item with its values, as the attacks (PRO-5). */
@@ -140,7 +150,13 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
             }
 
             const beside = besideValue(world, fields, entry);
-            return isEmptyField(value) ? [] : [{ ...sheetValue(world, fields, entry.field, value), marks: marks.get(comparableText(entry.field)) ?? 0, ...(beside === undefined ? {} : { beside }) }];
+            const roll = sheetRoll(system, fields, entry);
+            return isEmptyField(value) ? [] : [{
+                ...sheetValue(world, fields, entry.field, value),
+                marks: marks.get(comparableText(entry.field)) ?? 0,
+                ...(beside === undefined ? {} : { beside }),
+                ...(roll === undefined ? {} : { roll }),
+            }];
         });
         return values.length === 0 ? [] : [{ name: group.name, values }];
     });
@@ -435,6 +451,25 @@ function sheetValue(world: World, fields: Record<string, unknown>, field: string
     const counter = counterOf(world, fields, field, value);
     const items = Array.isArray(value) ? value.map((item) => linkText(String(item).trim())) : undefined;
     return { field, ...(kind === undefined ? {} : { kind }), text: valueText(world, field, value), ...(counter === undefined ? {} : { counter }), ...(items === undefined ? {} : { items }), marks: 0 };
+}
+
+/** The free roll of an entry of the sheet (D-280): the dice the system rolls its number with, or the number beside it, as str-mod by str; none for a text. */
+function sheetRoll(system: GameSystem, fields: Record<string, unknown>, entry: SheetEntry): SheetRoll | undefined
+{
+    for (const field of [entry.field, entry.beside].filter((candidate) => candidate !== undefined)) {
+        const dice = Object.entries(system.sheetDice).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+        const number = dice === undefined ? undefined : numberOf(valueNamed(fields, field));
+
+        if (dice !== undefined && number !== undefined) {
+            const sides = dice.split("+").flatMap((term) => {
+                const [count, faces] = term.split("d");
+                return Array.from({ length: count === "" ? 1 : Number(count) }, () => Number(faces));
+            });
+            return { notation: number === 0 ? dice : `${dice}${number > 0 ? "+" : "-"}${Math.abs(number)}`, dice: sides, modifier: number };
+        }
+    }
+
+    return undefined;
 }
 
 /** A list with what the parts of the character add to it (PRO-7): the names written, then those given, apart and not counted with it. */

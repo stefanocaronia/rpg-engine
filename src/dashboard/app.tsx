@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import type { Asked, Member, SheetGroup, ShownRoll } from "./data.ts";
-import { DiceTray } from "./dice/tray.tsx";
+import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { Master } from "./master.tsx";
 import { PartyStrip } from "./party.tsx";
 import { RollLog } from "./rolls.tsx";
@@ -41,6 +41,8 @@ function App()
     const seen = useRef<Set<string>>();
     const [thrown, setThrown] = useState<ShownRoll>();
     const [fresh, setFresh] = useState<Set<string>>(new Set());
+    // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
+    const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
 
     // Reads view again for whom the address names, or the player character, and what the master asks; an answer that comes after a newer one is left out.
     const read = async (): Promise<void> => {
@@ -130,11 +132,20 @@ function App()
                     {!live && shown.readAt !== undefined && <p class="notice" role="status">Not connected: the sheet as of {shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.</p>}
                     {shown.problem && <p class="notice problem" role="alert">{shown.problem}</p>}
                     {shown.noCharacter && <p class="notice">There is no player character yet: the sheet comes when the master writes one.</p>}
-                    {member && <MemberSheet key={member.name} member={member} sheet={shown.sheet} text={shown.text} version={shown.version} />}
+                    {member && (
+                        <MemberSheet
+                            key={member.name}
+                            member={member}
+                            sheet={shown.sheet}
+                            text={shown.text}
+                            version={shown.version}
+                            onRoll={(roll, label) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label }))}
+                        />
+                    )}
                 </main>
                 <RollLog rolls={shown.rolls} party={shown.party} fresh={fresh} />
             </div>
-            <DiceTray requested={thrown} />
+            <DiceTray requested={thrown} sheetThrow={sheetThrow} />
         </div>
     );
 }

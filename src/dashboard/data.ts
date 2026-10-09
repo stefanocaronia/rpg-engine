@@ -19,6 +19,16 @@ export interface SheetValue
     always?: { from: string[]; items: string[]; };
     marks: number;
     beside?: string;
+    /** The free roll its explanation offers (D-280). */
+    roll?: SheetRoll;
+}
+
+/** A free roll of a number of the sheet: the dice, by their sides, the number added, and both as a notation, such as 1d20+5. */
+export interface SheetRoll
+{
+    notation: string;
+    dice: number[];
+    modifier: number;
 }
 
 /** A group of a sheet: its values, or each item of a list with its values, as the attacks. */
