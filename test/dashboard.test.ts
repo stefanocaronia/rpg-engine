@@ -14,6 +14,7 @@ import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
 import { fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
 import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
@@ -78,13 +79,13 @@ describe("view as data (VIEW-1, D-272)", () => {
             name: "Ettore",
             role: "pc",
             dead: false,
-            image: "Ettore.png",
+            image: { file: "Ettore.png", version: expect.any(Number) },
             place: "in Locanda",
             effects: [{ name: "Benedizione", end: "day 1, 19:00", text: "Benedizione until day 1, 19:00" }],
         });
         expect(data.party[0].counters).toContainEqual({ field: "hp", kind: "counter", text: "20/24", counter: { value: 20, max: 24 }, marks: 0 });
         // A companion shows the picture of the creature she derives from (D-267).
-        expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: "wolf-head.svg" });
+        expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: { file: "wolf-head.svg", version: expect.any(Number) } });
         expect(await ok("view")).toContain([
             "Ettore, in Locanda: level 3 · xp 900 (1800 to level 4) · hp 20/24 · ac 9 · passive-perception 13 · hit-dice-d8 3/3 · slots-1 4/4 · slots-2 2/2 · channel-divinity 1/1 · Benedizione until day 1, 19:00",
             "Lupa (companion), in Locanda: hp 11/11 · ac 13 · passive-perception 13",
@@ -104,6 +105,20 @@ describe("view as data (VIEW-1, D-272)", () => {
             items: [{ item: "Unarmed Strike", values: [expect.objectContaining({ field: "attack", text: "+4" }), expect.objectContaining({ field: "damage-roll", text: "3 bludgeoning" })] }],
         });
         expect(await ok("view", "Ettore")).toContain("Attacks: Unarmed Strike +4, 3 bludgeoning");
+    });
+
+    it("gives a companion who keeps no sheet the stat block of her creature, and the player character the traits and picture of its race (D-275, D-277)", async () => {
+        const lupa = JSON.parse(await ok("view", "Lupa", "--json"));
+        expect(lupa.sheet).toEqual([{ name: "Wolf", values: expect.arrayContaining([{ field: "str", kind: "number", text: "12", marks: 0, beside: "+1" }]) }]);
+        expect(lupa.text).toContain("### Bite");
+        // A challenge rating of 1/4 is text, not a counter of 1 out of 4.
+        expect(lupa.sheet[0].values).toContainEqual({ field: "cr", kind: "text", text: "1/4", marks: 0 });
+        await ok("write", "Brina", "--type", "character", "--set", "role=companion", "--set", "creature=[[Hill Dwarf]]", "--set", "classes=[[Fighter]] 1");
+        await ok("write", "Ettore", "--set", "creature=[[Hill Dwarf]]");
+        expect(await ok("view", "Ettore")).toContain("### Dwarven Toughness");
+        const party = JSON.parse(await ok("view", "--json")).party;
+        // Ettore keeps his own picture; Brina, with none, shows her race's.
+        expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "dwarf-face.svg", "wolf-head.svg"]);
     });
 
     it("works the same for another game: momentum from -6, with the maximum the debilities leave", async () => {
@@ -257,18 +272,20 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect((await get("/images/%E0%A4%A")).status).toBe(404);
     });
 
-    it("takes the next port when one is taken, and status gives the link", async () => {
-        const taken = createServer();
-        await new Promise<void>((done) => taken.listen(0, "127.0.0.1", done));
-        const busy = (taken.address() as { port: number; }).port;
-        const next = await startDashboard({ ...context, files: session }, session, { ports: [busy, 0] });
+    it("takes the next port when another program answers at one, even on ::1 only, and gives its link on 127.0.0.1 (D-277)", async () => {
+        for (const host of ["127.0.0.1", "::1"]) {
+            const taken = createServer();
+            await new Promise<void>((done) => taken.listen(0, host, done));
+            const busy = (taken.address() as { port: number; }).port;
+            const next = await startDashboard({ ...context, files: session }, session, { ports: [busy, 0] });
 
-        try {
-            expect(next?.url).toMatch(/^http:\/\/localhost:\d+$/);
-            expect(next?.url).not.toBe(`http://localhost:${busy}`);
-        } finally {
-            await next?.close();
-            taken.close();
+            try {
+                expect(next?.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+                expect(next?.url).not.toBe(`http://127.0.0.1:${busy}`);
+            } finally {
+                await next?.close();
+                taken.close();
+            }
         }
 
         const status = await runCommandLine(["status"], { ...context, dashboard: "http://localhost:4747" });
@@ -277,16 +294,12 @@ describe("the dashboard's server (D-270, D-272)", () => {
 });
 
 describe("the session's notices (D-193, D-272)", () => {
-    it("calls who listens when a watcher names a change or loses track, and who waits for a campaign once, when a call first finds it", () => {
+    it("calls who listens when a watcher names a change or loses track, until told to stop", () => {
         const watched: { changed: (name: string | undefined) => void; failed: () => void; }[] = [];
         const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: (_folder, changed, failed) => (watched.push({ changed, failed }), { close: () => undefined }) });
         let changes = 0;
-        let tracked = 0;
         const stop = session.onChange(() => changes++);
-        session.onTrack(() => tracked++);
         session.track(folder);
-        session.track(resolve(folder));
-        expect(tracked).toBe(1);
         watched[0].changed("log.jsonl");
         watched[0].failed();
         expect(changes).toBe(2);
@@ -295,9 +308,30 @@ describe("the session's notices (D-193, D-272)", () => {
         expect(changes).toBe(2);
         session.close();
     });
+
+    it("opens the dashboard before the first call that finds a campaign, as after init, never in a folder without one (D-277)", async () => {
+        const empty = makeTempFolder();
+        const session = new SessionStore({ systemFolders: context.systemFolders });
+        const served: Context = { ...testContext(empty), files: session };
+        const opener = dashboardOpener(served, session, [0]);
+
+        try {
+            await opener.open();
+            expect(served.dashboard).toBeUndefined();
+            await runCommandLine(["init", "--name", "Nuova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], served);
+            await opener.open();
+            expect(served.dashboard).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+            expect((await runCommandLine(["status"], served)).output).toContain(`Dashboard: ${served.dashboard}`);
+        } finally {
+            await opener.close();
+            session.close();
+            removeFolder(empty);
+        }
+    });
 });
 
 describe("the page's reading of a sheet (D-273)", () => {
+    // The types are checked by npm run lint, which compiles the tests: what runs here only uses them.
     it("reads what view gives with types of its own, which view's result fits", () => {
         const fits = (result: ViewResult): View => result;
         expect(fits({ kind: "none" })).toEqual({ kind: "none" });

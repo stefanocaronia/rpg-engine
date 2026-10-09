@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
+import { files } from "../core/store.ts";
 import { findImage, imageFileName } from "../images/index.ts";
 import { baseChain, ownField, type Page, type World } from "../pages/index.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -19,12 +20,15 @@ export function imageFile(root: string, context: Context, value: unknown): strin
     return name === undefined ? undefined : findImage(imageFolders(root, context), name);
 }
 
-/** The picture a page shows, as the name of its file: its own, or that of the first page it derives from that has one (D-267); undefined when no images folder has it. */
-export function shownImage(root: string, context: Context, world: World, page: Page): string | undefined
+/**
+ * The picture a page shows, as the name of its file and when it last changed: its own, or that of the first page it derives from that has one (D-267), among
+ * the bases `known` takes (D-277); undefined when no images folder has it.
+ */
+export function shownImage(root: string, context: Context, world: World, page: Page, known: (base: Page) => boolean = () => true): { file: string; version: number; } | undefined
 {
-    const holder = [page, ...baseChain(world, page)].find((source) => imageFileName(ownImage(source)) !== undefined);
+    const holder = [page, ...baseChain(world, page).filter(known)].find((source) => imageFileName(ownImage(source)) !== undefined);
     const file = holder === undefined ? undefined : imageFile(root, context, ownImage(holder));
-    return file === undefined ? undefined : basename(file);
+    return file === undefined ? undefined : { file: basename(file), version: Math.trunc(files().modified(file) ?? 0) };
 }
 
 /** The page's own image field, as written; undefined when it has none. */

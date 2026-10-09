@@ -10,7 +10,7 @@ import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
-import { startDashboard } from "./dashboard-server.ts";
+import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { startInstructions } from "./instructions/index.ts";
 
 type AnyCommand = Command<any, any>;
@@ -37,7 +37,7 @@ const preloadAfter = 250;
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
  * the host to instructions, then status. The commands that ask the player appear only for a host that shows forms, through which they ask (D-148).
  */
-export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env): McpServer
+export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env, beforeCall?: () => Promise<void>): McpServer
 {
     const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });
     const askingTools: RegisteredTool[] = [];
@@ -45,7 +45,7 @@ export function createMcpServer(context: Context = defaultContext(), environment
     context.told ??= new Set();
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra));
+        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, beforeCall));
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -85,23 +85,25 @@ export async function startMcpServer(): Promise<void>
     const context = defaultContext();
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
-    // The player's dashboard, once the server's folder holds a campaign: at once, or when a call finds one, as after init (D-270). The game goes on without it.
-    let opened = false;
+    await createMcpServer(served, process.env, dashboardOpener(served, session).open).connect(new StdioServerTransport());
+}
 
-    const openDashboard = (): void => {
-        if (!opened) {
-            opened = true;
-            void startDashboard(served, session).then((dashboard) => (served.dashboard = dashboard?.url), () => undefined);
-        }
+/**
+ * Opens the player's dashboard before the first call that finds a campaign in the server's folder, as after init, and lets that call wait for it, so that its
+ * status gives the link (D-270, D-277); never in a folder without a campaign. The game goes on without it.
+ */
+export function dashboardOpener(context: Context, session: SessionStore, ports?: number[]): { open(): Promise<void>; close(): Promise<void>; }
+{
+    let opening: Promise<Dashboard | undefined> | undefined;
+    return {
+        open: async () => {
+            opening ??= withFiles(session, () => findCampaign(context.folder)) === undefined ? undefined : startDashboard(context, session, { ports }).catch(() => undefined);
+            context.dashboard = (await opening)?.url;
+        },
+        close: async () => {
+            await (await opening)?.close();
+        },
     };
-
-    session.onTrack(openDashboard);
-
-    if (withFiles(session, () => findCampaign(context.folder)) !== undefined) {
-        openDashboard();
-    }
-
-    await createMcpServer(served).connect(new StdioServerTransport());
 }
 
 /**
@@ -133,7 +135,7 @@ function toolConfig(command: AnyCommand)
     return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
-async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra): Promise<CallToolResult>
+async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, beforeCall?: () => Promise<void>): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra) : undefined;
 
@@ -142,6 +144,8 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         if (context.files instanceof SessionStore) {
             await context.files.ready(command.name === "instructions");
         }
+
+        await beforeCall?.();
 
         return { content: [{ type: "text", text: command.format(await command.run(input, context)) }] };
     } catch (error) {

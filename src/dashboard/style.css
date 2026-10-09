@@ -1,16 +1,19 @@
-/* The player's dashboard (D-273): sober and generic, for any game; the tabletop feel comes from small capitals, round tokens and pips. */
+/* The player's dashboard (D-273, D-275, D-276): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game. */
 :root {
     color-scheme: light dark;
-    --ink: light-dark(#1f1b16, #e9e5dc);
-    --muted: light-dark(#6b6358, #a19b90);
-    --paper: light-dark(#f7f4ee, #15171c);
-    --panel: light-dark(#fffdf8, #1e2128);
-    --rule: light-dark(#d9d2c3, #343944);
-    --accent: light-dark(#7a4b1c, #e0b178);
+    --ink: light-dark(#192d4d, #edf0f6);
+    --muted: light-dark(#56627a, #9aa6bf);
+    --paper: light-dark(#f3eee3, #0e1524);
+    --panel: light-dark(#fffdf8, #162037);
+    --panel-2: light-dark(#f8f3e8, #1b2742);
+    --rule: light-dark(#ddd4c2, #283656);
+    --accent: light-dark(#29477f, #f4c84c);
+    --gold: #f4c84c;
     --ally: light-dark(#2f6f4f, #6cc49a);
-    --foe: light-dark(#a33a2b, #f0846f);
-    --low: light-dark(#a33a2b, #f0846f);
-    --disc: #23262d;
+    --low: light-dark(#a33a2b, #ff8a73);
+    --disc: #192d4d;
+    --lift: light-dark(0 1px 2px rgb(25 45 77 / 0.08), 0 1px 0 rgb(255 255 255 / 0.04) inset);
+    --raise: light-dark(0 6px 18px -10px rgb(25 45 77 / 0.35), 0 10px 24px -14px rgb(0 0 0 / 0.8));
     --radius: 10px;
     --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 }
@@ -21,7 +24,8 @@
 
 body {
     margin: 0;
-    background: var(--paper);
+    min-height: 100vh;
+    background: radial-gradient(1200px 400px at 50% -200px, light-dark(rgb(66 104 178 / 0.10), rgb(66 104 178 / 0.22)), transparent), var(--paper);
     color: var(--ink);
     font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -30,12 +34,12 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 12px 16px 32px;
-    transition: opacity 0.3s;
 }
 
 .page.stale .sheet,
 .page.stale .party {
     opacity: 0.6;
+    transition: opacity 0.3s;
 }
 
 h1,
@@ -46,17 +50,8 @@ h3 {
     margin: 0;
 }
 
-h1 {
-    font-size: 1.15rem;
-    letter-spacing: 0.02em;
-}
-
-h2 {
-    font-size: 1.3rem;
-}
-
 h3 {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-variant: small-caps;
     letter-spacing: 0.08em;
     text-transform: lowercase;
@@ -72,24 +67,58 @@ button {
     color: inherit;
 }
 
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
 :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
-/* The top: the campaign, and whether the page is live. */
+/* The top: the master, the campaign with the product's name below, the game's time and place, live. */
 .top {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
+}
+
+.titles h1 {
+    font-size: 1.5rem;
+    line-height: 1.1;
+    letter-spacing: 0.04em;
+    font-variant: small-caps;
+}
+
+.product {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-variant: small-caps;
+    letter-spacing: 0.12em;
+    text-transform: lowercase;
+}
+
+.when {
+    margin: 0 0 0 auto;
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 .live {
     font-size: 0.8rem;
     color: var(--muted);
     white-space: nowrap;
+}
+
+.when + .live {
+    margin-left: 12px;
+}
+
+.titles + .live {
+    margin-left: auto;
 }
 
 .live::before {
@@ -102,6 +131,63 @@ button {
 
 .live.on::before {
     content: "● ";
+}
+
+/* The master: the robot, which blinks and breathes; one mood at a time (D-274). */
+.master {
+    display: block;
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+}
+
+.master svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.master .robot-mood {
+    display: none;
+}
+
+.master .robot-mood.shown {
+    display: inline;
+}
+
+.master :is(.robot-head, .robot-eyes) {
+    transform-box: view-box;
+}
+
+.master .robot-head {
+    transform-origin: 256px 275px;
+    transition: rotate 0.24s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.master .robot-eyes {
+    transform-origin: 256px 208px;
+    transition: scale 70ms;
+}
+
+.master.blink .robot-can-blink {
+    scale: 1 0.1;
+}
+
+.master[data-mood="curious"] .robot-head {
+    rotate: -7deg;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .master .robot-head {
+        animation: breathe 4.8s ease-in-out infinite;
+    }
+}
+
+@keyframes breathe {
+    50% {
+        translate: 0 6px;
+    }
 }
 
 .notice {
@@ -117,7 +203,7 @@ button {
     color: var(--low);
 }
 
-/* The party's strip: a tab for each. */
+/* The party's strip: a card for each, a link to their sheet. */
 .party {
     display: flex;
     gap: 8px;
@@ -135,20 +221,20 @@ button {
     row-gap: 2px;
     align-items: center;
     min-width: 170px;
-    padding: 8px 12px 8px 8px;
+    padding: 10px 14px 10px 10px;
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     background: var(--panel);
-    text-align: left;
-    cursor: pointer;
+    box-shadow: var(--lift), var(--raise);
 }
 
-.member[aria-selected="true"] {
+.member[aria-current="page"] {
     border-color: var(--accent);
-    box-shadow: inset 0 0 0 1px var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent), var(--raise);
 }
 
 .member .token {
+    --size: 52px;
     grid-row: 1 / span 3;
 }
 
@@ -190,7 +276,7 @@ button {
 }
 
 .token.large {
-    --size: 64px;
+    --size: 84px;
 }
 
 .token.dead {
@@ -216,17 +302,23 @@ button {
     font-size: calc(var(--size) * 0.38);
 }
 
-/* The sheet: a band with the line, then the groups. */
+/* The band: the hero of the sheet, with the line as pills. */
 .band {
     display: grid;
     grid-template-columns: auto auto 1fr;
     align-items: center;
-    gap: 6px 16px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    gap: 6px 20px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
     border: 1px solid var(--rule);
     border-radius: var(--radius);
-    background: var(--panel);
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    box-shadow: var(--lift), var(--raise);
+}
+
+.band h2 {
+    font-size: 1.9rem;
+    line-height: 1.1;
 }
 
 .band .effects {
@@ -242,34 +334,63 @@ button {
 .line {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 18px;
-    align-items: center;
+    gap: 10px;
+    align-items: stretch;
 }
 
 .line-value {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: inline-grid;
+    grid-template-rows: auto auto;
+    gap: 2px;
+    padding: 6px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--paper) 50%, transparent);
 }
 
-.line-value .label,
-.row .label,
-.tile .label {
+.line-value > .label {
     color: var(--muted);
+    font-size: 0.7rem;
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
 }
 
-.groups {
+.line-value .num {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.line-value:has(.bar) .bar {
+    width: 160px;
+    height: 10px;
+}
+
+/* The sheet: a rail of tiles beside columns of boxes, with no holes. */
+.sheet-body {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-    gap: 12px;
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 14px;
     align-items: start;
 }
 
+.sheet-body:not(:has(.rail)) {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.groups {
+    columns: 300px;
+    column-gap: 14px;
+}
+
 .group {
+    break-inside: avoid;
+    margin-bottom: 14px;
+    padding: 0 12px;
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     background: var(--panel);
-    padding: 0 12px;
+    box-shadow: var(--lift), var(--raise);
 }
 
 .group summary {
@@ -286,13 +407,13 @@ button {
 }
 
 .group summary::before {
-    content: "▸";
+    content: "▸" / "";
     color: var(--muted);
     font-size: 0.8rem;
 }
 
 .group[open] summary::before {
-    content: "▾";
+    content: "▾" / "";
 }
 
 .group summary h3 {
@@ -312,41 +433,64 @@ button {
     padding-bottom: 10px;
 }
 
-/* Tiles: a few short numbers, the large one first. */
+/* Tiles, as the boxes of a paper sheet: the modifier big, the score in a little tab below. */
 .tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
     gap: 8px;
 }
 
+.rail .tiles {
+    grid-template-columns: repeat(2, 1fr);
+}
+
 .tile {
     display: grid;
+    grid-template-rows: auto 1fr auto;
     justify-items: center;
+    align-items: center;
     gap: 2px;
+    min-height: 84px;
     padding: 8px 4px;
     border: 1px solid var(--rule);
     border-radius: 8px;
-    background: transparent;
-    cursor: pointer;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    box-shadow: var(--lift);
 }
 
 .tile .label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
     font-size: 0.75rem;
     font-variant: small-caps;
     letter-spacing: 0.05em;
 }
 
 .tile .big {
-    font-size: 1.35rem;
+    font-family: var(--serif);
+    font-size: 1.6rem;
     font-weight: 600;
+    line-height: 1;
 }
 
 .tile .small {
-    font-size: 0.8rem;
+    min-width: 2.2em;
+    min-height: 1.3em;
+    padding: 0 6px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
     color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
 }
 
-/* Rows: marks, label, value, what is beside it. */
+.tile .small:empty {
+    visibility: hidden;
+}
+
+/* Rows with dotted leaders, as on a printed sheet: marks, label, value, what is beside it. */
 .rows {
     display: grid;
     gap: 2px;
@@ -364,7 +508,31 @@ button {
     text-align: left;
 }
 
-button.row {
+.row > .label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    color: var(--muted);
+}
+
+.row-number > .label::after,
+.row-pips > .label::after,
+.row-bar > .label::after,
+.row-track > .label::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px dotted var(--rule);
+    transform: translateY(-0.25em);
+}
+
+.row .num,
+.row .changing {
+    font-weight: 600;
+}
+
+button.row,
+.tile {
     cursor: pointer;
 }
 
@@ -410,8 +578,8 @@ button.row:hover,
 }
 
 .pip {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
     border: 1.5px solid var(--accent);
 }
@@ -420,7 +588,7 @@ button.row:hover,
     background: var(--accent);
 }
 
-/* Bars and tracks. */
+/* Bars and tracks: the track's edge stands out of the page enough to see (WCAG 1.4.11). */
 .bar-line {
     display: inline-flex;
     align-items: center;
@@ -435,7 +603,8 @@ button.row:hover,
     width: 120px;
     height: 8px;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent);
     overflow: hidden;
 }
 
@@ -480,7 +649,7 @@ button.row:hover,
     font-size: 0.8rem;
 }
 
-/* Lists as chips. */
+/* Lists as chips; what the parts add, apart. */
 .chips-block {
     display: grid;
     gap: 4px;
@@ -526,6 +695,7 @@ button.row:hover,
 }
 
 .effect .end {
+    margin-left: 0.35em;
     color: var(--muted);
 }
 
@@ -544,6 +714,31 @@ button.row:hover,
 
 .items th {
     font-weight: 600;
+}
+
+/* A page's text, as a companion's traits and actions. */
+.lore {
+    padding: 4px 14px 12px;
+}
+
+.markdown h4 {
+    margin: 12px 0 4px;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+    color: var(--accent);
+}
+
+.markdown h5 {
+    margin: 10px 0 2px;
+    font-size: 0.95rem;
+}
+
+.markdown p,
+.markdown ul {
+    margin: 0 0 6px;
 }
 
 /* How a number is made. */
@@ -567,7 +762,7 @@ button.row:hover,
     color: var(--muted);
 }
 
-/* A value that just changed flashes once. */
+/* A value that just changed: a short colour on the number. */
 .changing {
     display: inline-flex;
     align-items: center;
@@ -581,7 +776,7 @@ button.row:hover,
 
 @keyframes changed {
     from {
-        background: color-mix(in srgb, var(--accent) 35%, transparent);
+        background: color-mix(in srgb, var(--gold) 45%, transparent);
     }
 
     to {
@@ -592,7 +787,8 @@ button.row:hover,
 @media (prefers-reduced-motion: reduce) {
     .bar .fill,
     .track .fill,
-    .page {
+    .master .robot-head,
+    .master .robot-eyes {
         transition: none;
     }
 
@@ -601,14 +797,43 @@ button.row:hover,
     }
 }
 
-/* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked. */
+/* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
 @media (max-width: 600px) {
+    .master {
+        width: 44px;
+        height: 44px;
+    }
+
+    .product,
+    .when {
+        display: none;
+    }
+
+    .titles + .live,
+    .when + .live {
+        margin-left: auto;
+    }
+
+    .sheet-body {
+        display: block;
+    }
+
     .band {
         grid-template-columns: auto 1fr;
     }
 
     .band .line {
         grid-column: 1 / -1;
+    }
+
+    .line-value {
+        padding: 2px 0;
+        border: 0;
+        background: none;
+    }
+
+    .token.large {
+        --size: 64px;
     }
 
     .member {

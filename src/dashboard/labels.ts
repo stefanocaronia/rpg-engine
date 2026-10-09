@@ -14,6 +14,12 @@ export function groupLabels(groupFields: string[], fields: ReadonlySet<string> =
     return new Map(groupFields.map((field) => [field, fieldLabel(shared ? words(field).slice(0, -1).join("-") : field, fields)]));
 }
 
+/** "wis-mod +3, Insight in skill-proficiencies" as "WIS mod +3, Insight in skill proficiencies": the names of fields in a text, as labels. */
+export function readableIds(text: string, fields: ReadonlySet<string> = new Set()): string
+{
+    return text.replace(/\b[a-z][a-z0-9]*(?:-[a-z0-9]+)+\b/g, (field) => fieldLabel(field, fields));
+}
+
 /** A number as it reads: −1 with a minus sign rather than a hyphen. */
 export function shownText(text: string): string
 {

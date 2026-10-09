@@ -3,7 +3,7 @@ import { listItemNames } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
-import { declaredKind, isEmptyField, type Page, type World } from "../pages/index.ts";
+import { baseChain, declaredKind, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
@@ -144,6 +144,38 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
         });
         return values.length === 0 ? [] : [{ name: group.name, values }];
     });
+}
+
+/**
+ * The stat block of a companion who keeps no sheet, as the creature it derives from writes it (D-275): one group named after the creature, with the fields the
+ * game system declares, in the order the creature writes them, as the companion reads them, and beside a field what the sheet shows beside it, such as str-mod
+ * by str. None for a page that derives from no creature.
+ */
+export function statBlock(world: World, system: GameSystem | undefined, page: Page): SheetGroupData[]
+{
+    const creature = baseChain(world, page).find((base) => base.type === "creature");
+
+    if (system === undefined || creature === undefined) {
+        return [];
+    }
+
+    const fields = effectiveFields(world, page);
+    const besides = new Map(system.sheet.flatMap((group) => group.entries).flatMap((entry): [string, string][] => (entry.beside === undefined ? [] : [[comparableText(entry.field), entry.beside]])));
+    // From the creature at the root of the chain to the companion: the order of the stat block, then what the companion adds.
+    const names = [...new Set([...baseChain(world, page)].reverse().concat(page).flatMap((holder) => Object.keys(holder.fields)))];
+    const values = names.flatMap((field): SheetValue[] => {
+        const value = valueNamed(fields, field);
+
+        if (declaredKind(world, field) === undefined || isStandardField(page.type, field) || isEmptyField(value)) {
+            return [];
+        }
+
+        const besideField = besides.get(comparableText(field));
+        const besideValue = besideField === undefined ? undefined : valueNamed(fields, besideField);
+        const beside = besideField === undefined || isEmptyField(besideValue) ? undefined : valueText(world, besideField, besideValue);
+        return [{ ...sheetValue(world, fields, field, value), ...(beside === undefined ? {} : { beside }) }];
+    });
+    return values.length === 0 ? [] : [{ name: creature.name, values }];
 }
 
 /** "Abilities: str 14 (+2) · dex 12 (+1)…": the sheet as the chat gives it, a line for each group. */
@@ -388,9 +420,11 @@ function entryFields(entries: SheetEntry[]): string[]
  */
 export function counterOf(world: World, fields: Record<string, unknown>, field: string, value: unknown): Counter | undefined
 {
+    const kind = declaredKind(world, field);
     const read = readCounter(value);
     const limits = counterLimits(world, fields, field);
-    const counted = declaredKind(world, field) === "counter" || read?.max !== undefined || limits.min !== undefined || limits.max !== undefined;
+    // A field the system declares as anything else is never one, as a challenge rating of 1/4.
+    const counted = kind === "counter" || (kind === undefined && (read?.max !== undefined || limits.min !== undefined || limits.max !== undefined));
     return read === undefined || !counted ? undefined : { ...limits, ...read };
 }
 

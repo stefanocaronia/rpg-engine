@@ -35,7 +35,8 @@ export interface Member
     name: string;
     role: "pc" | "companion";
     dead: boolean;
-    image?: string;
+    /** Their picture's file, and when it last changed. */
+    image?: { file: string; version: number; };
     place?: string;
     counters: SheetValue[];
     effects: { name: string; end?: string; text: string; }[];
@@ -44,7 +45,7 @@ export interface Member
 /** What view gives: the party, a page with its sheet, one section, or nothing. */
 export type View =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; party: Member[]; quests: string[]; scene?: string; diary: string[]; total: number; }
+    | { kind: "overview"; campaign: string; now?: string; party: Member[]; quests: string[]; scene?: string; diary: string[]; total: number; }
     | { kind: "page"; title: string; sheet: SheetGroup[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };

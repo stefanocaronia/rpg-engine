@@ -172,6 +172,12 @@ export class FileStore
         mkdirSync(path, { recursive: true });
     }
 
+    /** When a file last changed, in milliseconds, as the disk says now; undefined when there is none. */
+    modified(path: string): number | undefined
+    {
+        return existsSync(path) ? statSync(path).mtimeMs : undefined;
+    }
+
     /** Removes a file. */
     remove(path: string): void
     {

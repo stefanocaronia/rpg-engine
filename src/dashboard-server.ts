@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
+import { connect } from "node:net";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
@@ -62,11 +63,14 @@ const pageHtml = [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     '<meta name="color-scheme" content="light dark">',
-    "<title>rpg-engine</title>",
+    "<title>RPG Engine</title>",
+    '<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">',
+    '<link rel="icon" href="/assets/icon-32.png" sizes="32x32">',
+    '<link rel="apple-touch-icon" href="/assets/icon-180.png">',
     '<link rel="stylesheet" href="/style.css">',
     `<script type="importmap">${importMap}</script>`,
     '<script type="module" src="/app.js"></script>',
-    '<main id="app"></main>',
+    '<div id="app"></div>',
     "",
 ].join("\n");
 
@@ -74,6 +78,11 @@ const pageHtml = [
 export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
     for (const port of options.ports ?? dashboardPorts) {
+        // A port another program answers at, even on ::1 or on every address, is its: a browser asking localhost could reach it instead (D-277).
+        if (port !== 0 && await answers(port)) {
+            continue;
+        }
+
         const server = createServer();
         const listening = await listen(server, port);
 
@@ -83,6 +92,25 @@ export async function startDashboard(context: Context, session: SessionStore, op
     }
 
     return undefined;
+}
+
+/** Whether a program answers at a port of this machine, on 127.0.0.1 or on ::1. */
+async function answers(port: number): Promise<boolean>
+{
+    const answersAt = (host: string): Promise<boolean> =>
+        new Promise((done) => {
+            const socket = connect({ host, port });
+
+            const end = (answered: boolean): void => {
+                socket.destroy();
+                done(answered);
+            };
+
+            socket.setTimeout(300, () => end(false));
+            socket.once("connect", () => end(true));
+            socket.once("error", () => end(false));
+        });
+    return (await Promise.all(["127.0.0.1", "::1"].map(answersAt))).some((answer) => answer);
 }
 
 /** The port the server listens on, or undefined when it cannot have this one, as when another program has it. */
@@ -123,10 +151,11 @@ function serve(server: Server, served: Served): Dashboard
             send(response, 500, "text/plain; charset=utf-8", error instanceof Error ? error.message : String(error));
         });
     });
-    // The server never keeps the process alive: it ends with the chat (D-270).
+    // The server never keeps the process alive, nor does a page that stays open: it ends with the chat (D-270).
     server.unref();
+    server.on("connection", (socket) => socket.unref());
     return {
-        url: `http://localhost:${served.port}`,
+        url: `http://127.0.0.1:${served.port}`,
         close: () =>
             new Promise((done) => {
                 stopListening();
@@ -261,7 +290,7 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
         return;
     }
 
-    // A picture given again keeps its name: the page asks each time, and the same picture comes back as not modified.
+    // The page asks for a picture by its name and when it last changed (D-277): a new address when it changes, and the same one comes back as not modified on a reload.
     const tag = `"${createHash("sha1").update(bytes).digest("base64url")}"`;
     const headers = { "Content-Type": type, "Cache-Control": "no-cache", ETag: tag, "Content-Security-Policy": picturePolicy };
 

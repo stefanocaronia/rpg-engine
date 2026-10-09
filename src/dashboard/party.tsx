@@ -1,46 +1,37 @@
-// The party's strip (D-273): a tab for each, with their token, their name, the first counter of their line and their effects; the dead go last.
+// The party's strip (D-276): a link to each one's sheet, with their token, their name, the first counter of their line and their effects; the dead go last.
 import type { Member } from "./data.ts";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
-export function PartyStrip({ party, chosen, version, onChoose }: { party: Member[]; chosen?: string; version: number; onChoose: (name: string) => void; })
+/** The address of someone's sheet, which the AI can give the player too (D-276). */
+export function sheetAddress(name: string): string
+{
+    return `#/character/${encodeURIComponent(name)}`;
+}
+
+export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string; })
 {
     const ordered = [...party.filter((member) => !member.dead), ...party.filter((member) => member.dead)];
-
-    // The arrows move along the tabs, as in any tab list.
-    const onKeyDown = (event: KeyboardEvent): void => {
-        const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-        const index = ordered.findIndex((member) => member.name === chosen);
-
-        if (step !== 0 && index >= 0) {
-            const next = ordered[(index + step + ordered.length) % ordered.length];
-            onChoose(next.name);
-            (event.currentTarget as HTMLElement).querySelector<HTMLElement>(`[data-name="${CSS.escape(next.name)}"]`)?.focus();
-        }
-    };
-
     return (
-        <nav class="party" role="tablist" aria-label="Party" onKeyDown={onKeyDown}>
+        <nav class="party" aria-label="Party">
             {ordered.map((member) => {
                 const counter = stripCounter(member);
-                const selected = member.name === chosen;
+                // One name for a screen reader, which the drawing inside would say twice.
+                const said = [member.name, counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, member.dead ? "dead" : "", ...member.effects.map((effect) => effect.name)];
                 return (
-                    <button
+                    <a
                         key={member.name}
-                        type="button"
-                        role="tab"
+                        href={sheetAddress(member.name)}
                         class={`member${member.dead ? " dead" : ""}`}
-                        data-name={member.name}
-                        aria-selected={selected}
-                        tabIndex={selected ? 0 : -1}
-                        onClick={() => onChoose(member.name)}
+                        aria-current={member.name === chosen ? "page" : undefined}
+                        aria-label={said.filter((part) => part !== "").join(", ")}
                     >
-                        <Token member={member} version={version} />
+                        <Token member={member} />
                         <span class="name">{member.name}</span>
                         {member.dead ? <span class="dead-mark">dead</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
-                    </button>
+                    </a>
                 );
             })}
         </nav>
@@ -48,15 +39,15 @@ export function PartyStrip({ party, chosen, version, onChoose }: { party: Member
 }
 
 /** Someone's round token: their picture, or their initials on a colour of their own; the ring tells the role by its shape too (D-267, D-273). */
-export function Token({ member, version, large }: { member: Member; version: number; large?: boolean; })
+export function Token({ member, large }: { member: Member; large?: boolean; })
 {
     const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : ""].filter((name) => name !== "").join(" ");
     return (
         <span class={classes} aria-hidden="true">
             {member.image === undefined
                 ? <span class="initials" style={{ "--hue": String(nameHue(member.name)) }}>{initials(member.name)}</span>
-                // A picture given again keeps its name: the version asks for it again after every change, and the server answers "not modified" when it is the same.
-                : <img src={`/images/${encodeURIComponent(member.image)}?v=${version}`} alt="" />}
+                // A new address when the picture changes; the same one comes back as not modified on a reload (D-277).
+                : <img src={`/images/${encodeURIComponent(member.image.file)}?v=${member.image.version}`} alt="" />}
         </span>
     );
 }

@@ -1,0 +1,51 @@
+<svg class="robot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img">
+  <title>Robot game master</title>
+  <g class="robot-head">
+    <g class="robot-antenna" fill="#DCAA32"><rect x="409" y="47" width="14" height="117" rx="7"/><circle cx="416" cy="45" r="19"/></g>
+    <g class="robot-ears" fill="#DCAA32"><rect x="74" y="154" width="64" height="91" rx="20"/><rect x="374" y="154" width="64" height="91" rx="20"/></g>
+    <path class="robot-housing" fill="#F4C84C" d="M158 66H354Q396 66 396 108V254Q396 292 354 292H158Q116 292 116 254V108Q116 66 158 66Z"/>
+    <rect class="robot-display" x="143" y="126" width="226" height="135" rx="29" fill="#192D4D"/>
+    <g class="robot-mood robot-mood-neutral">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><rect x="242" y="232" width="28" height="12" rx="6"/></g>
+    </g>
+    <g class="robot-mood robot-mood-smile" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 232Q256 251 272 232"/></g>
+    </g>
+    <g class="robot-mood robot-mood-surprised" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><ellipse cx="256" cy="239" rx="11" ry="13"/></g>
+    </g>
+    <g class="robot-mood robot-mood-curious" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><rect x="244" y="232" width="24" height="12" rx="6"/></g>
+    </g>
+    <g class="robot-mood robot-mood-focused" display="none">
+      <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M211 208H237M275 208H301"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><rect x="242" y="232" width="28" height="12" rx="6"/></g>
+    </g>
+    <g class="robot-mood robot-mood-concerned" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><rect x="244" y="233" width="24" height="12" rx="6"/></g>
+      <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M211 182L234 174M278 174L301 182"/></g>
+    </g>
+    <g class="robot-mood robot-mood-sad" display="none">
+      <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M208 215Q224 187 240 215M272 215Q288 187 304 215"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M242 245Q256 227 270 245"/></g>
+    </g>
+    <g class="robot-mood robot-mood-mischievous" display="none">
+      <g class="robot-eyes" fill="#FFF4D5" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><circle cx="224" cy="208" r="16" stroke="none"/><path d="M276 208H300" fill="none"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 234Q257 250 274 230"/></g>
+    </g>
+    <g class="robot-mood robot-mood-delighted" display="none">
+      <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M208 215Q224 187 240 215M272 215Q288 187 304 215"/></g>
+      <g class="robot-mouth" fill="#FFF4D5"><path d="M240 232H272Q272 254 256 254Q240 254 240 232Z"/></g>
+    </g>
+  </g>
+  <g class="robot-screen">
+    <path class="robot-screen-side" fill="#29477F" d="M50 252Q38 248 38 262V415Q38 424 48 430L132 478H380L464 430Q474 424 474 415V262Q474 248 462 252L380 280H132Z"/>
+    <path class="robot-screen-front" fill="#4268B2" d="M132 280H380V478H132Z"/>
+    <path class="robot-die" fill="#29477F" d="M256 313L313 346V412L256 445L199 412V346Z"/>
+  </g>
+</svg>

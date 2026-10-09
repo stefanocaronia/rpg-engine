@@ -21,7 +21,8 @@ export function playerCharacter(world: World): Page | undefined
 }
 
 /**
- * What the player character knows (D-250): what its knows lists, pages and the pages of its secrets; itself, the companions, what it carries, the places around
+ * What the player character knows (D-250): what its knows lists, pages and the pages of its secrets; itself, the companions, and the creatures both derive
+ * from (D-275, D-277), what it carries, the places around
  * it, the characters and places of the scenes it was in, and the places it was moved from and to; the pages of the game system but its creatures, which anyone may read (SYS-2). Never a creature
  * of the campaign it was not told of.
  */
@@ -35,7 +36,11 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         pc,
         // A secret discovered makes its page known, but a creature's: the secret is known, the creature's numbers stay the master's (D-254).
         ...known.flatMap((link) => named(link.page).filter((page) => link.section === undefined || page.type !== "creature")),
-        ...world.pages.filter((page) => page.type === "character" && page.fields.role === "companion"),
+        // The party, and the creatures its members derive from: the player knows a companion's stat block and the race of the character (D-275, D-277).
+        ...[pc, ...world.pages.filter((page) => page.type === "character" && page.fields.role === "companion")].flatMap((page) => [
+            page,
+            ...baseChain(world, page).filter((base) => base.type === "creature"),
+        ]),
         // The quests the player took (D-250).
         ...world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))),
         ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),

@@ -10,8 +10,9 @@ import { FileStore, isInside, readText } from "./store.ts";
 /** Tells which names change in one folder, not in the folders inside it, and when it can no longer tell: Node's fs.watch, or a fake one in the tests. */
 export type WatchFolder = (folder: string, changed: (name: string | undefined) => void, failed: () => void) => { close(): void; };
 
-// The folders of a campaign below its own that hold what is kept: its pages and its house rules. The campaign's folder holds its settings, state and log.
-const watchedTrees = ["world", "rules"];
+// The folders of a campaign below its own that hold what is kept: its pages, its house rules and its pictures. The campaign's folder holds its settings, state
+// and log.
+const watchedTrees = ["world", "rules", "images"];
 
 // More changes than this between two calls, and a watcher on Linux may have lost some without a word: inotify keeps 16384 by default, then drops the rest.
 const tooManyChanges = 10_000;
@@ -24,7 +25,6 @@ export class SessionStore extends FileStore
     private readonly reported = new Set<string>();
     private readonly passing = new Set<string>();
     private readonly changeListeners = new Set<() => void>();
-    private readonly trackListeners = new Set<() => void>();
     private readonly systemFolders: string[];
     private readonly watchFolder: WatchFolder;
     private checking: Promise<void> | undefined;
@@ -53,7 +53,6 @@ export class SessionStore extends FileStore
         this.roots.add(key);
         this.watchFolders(key);
         this.forgetUnder(key);
-        this.trackListeners.forEach((listener) => listener());
     }
 
     /** Calls `listener` whenever a watcher sees a file of a campaign change, or loses track of one (D-272), until the function it returns is called. */
@@ -61,12 +60,6 @@ export class SessionStore extends FileStore
     {
         this.changeListeners.add(listener);
         return () => this.changeListeners.delete(listener);
-    }
-
-    /** Calls `listener` whenever a call finds a campaign the session does not watch yet, as after init (D-270). */
-    onTrack(listener: () => void): void
-    {
-        this.trackListeners.add(listener);
     }
 
     /**

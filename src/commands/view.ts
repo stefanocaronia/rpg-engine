@@ -5,6 +5,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { formatEnd, readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
@@ -12,9 +13,11 @@ import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
+import { readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { partyCounters } from "./page-counters.ts";
-import { counterOf, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue } from "./sheet.ts";
+import { countersText, partyCounters } from "./page-counters.ts";
+import { counterOf, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue, statBlock } from "./sheet.ts";
+import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
 const diaryLines = 10;
@@ -25,8 +28,8 @@ export interface PartyMember
     name: string;
     role: "pc" | "companion";
     dead: boolean;
-    /** The file of their picture, their own or inherited (D-267). */
-    image?: string;
+    /** Their picture, their own or from a base the player character knows (D-267, D-277): its file, and when it last changed. */
+    image?: { file: string; version: number; };
     /** Where they are, as far as the player character knows the places: "in Ossario › Cripta", "elsewhere" or "in the open" (D-254, TRV-13). */
     place?: string;
     /** The numbers of their line, in its order (DAT-2). */
@@ -38,7 +41,7 @@ export interface PartyMember
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; }
+    | { kind: "overview"; campaign: string; now?: string; party: PartyMember[]; quests: string[]; scene?: string; diary: string[]; total: number; }
     | { kind: "page"; title: string; sheet: SheetGroupData[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
@@ -97,7 +100,9 @@ export const view = defineCommand({
                 return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "" };
             }
 
-            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, sheet: party ? sheetData(world, system, page) : [], text: knownText(world, knowledge, page) };
+            // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
+            const sheet = !party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page);
+            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, sheet, text: knownText(world, knowledge, page) };
         }
 
         const { coins } = campaignCoins(root, context);
@@ -111,7 +116,7 @@ export const view = defineCommand({
             const where = chain.filter((holder) => knowsPage(knowledge, holder)).map((holder) => holder.name);
             // In no place at all while a journey stopped in the open (TRV-13).
             const place = where.length > 0 ? `in ${where.join(" › ")}` : chain.length > 0 ? "elsewhere" : open ? "in the open" : undefined;
-            const image = shownImage(root, context, world, page);
+            const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
             return {
                 name: page.name,
                 role: page === pc ? "pc" : "companion",
@@ -124,12 +129,14 @@ export const view = defineCommand({
         };
 
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
+        const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
         const diary = readLog(root).filter((entry) => entry.visibility === "public").flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         return {
             kind: "overview",
             campaign: readSettings(root).name,
+            ...(now === undefined ? {} : { now: formatGameDate(now) }),
             party: [pc, ...companions].map(member),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
             scene: sceneLine(root, named),
@@ -167,7 +174,8 @@ export const view = defineCommand({
 function memberLine(member: PartyMember): string
 {
     const role = member.role === "pc" ? "" : member.dead ? " (companion, dead)" : " (companion)";
-    const shown = [member.counters.map((value) => `${value.field} ${value.text}`).join(" · "), ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");
+    const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.text])));
+    const shown = [counters, ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");
     return `${member.name}${role}${member.place === undefined ? "" : `, ${member.place}`}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
 }
 
