@@ -237,7 +237,7 @@ a {
 }
 
 /* The switch of the theme, as tall as the chips beside it (D-300). */
-.icon-button.theme-switch {
+.icon-button.tonal.theme-switch {
     width: 34px;
     height: 34px;
     border-radius: var(--radius-m);
