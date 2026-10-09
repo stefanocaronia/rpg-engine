@@ -4,6 +4,7 @@ import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readView } from "./api.ts";
 import type { Member, SheetGroup } from "./data.ts";
+import { DiceTray } from "./dice/tray.tsx";
 import { Master } from "./master.tsx";
 import { PartyStrip } from "./party.tsx";
 import { MemberSheet } from "./sheet.tsx";
@@ -107,6 +108,7 @@ function App()
                 {shown.noCharacter && <p class="notice">There is no player character yet: the sheet comes when the master writes one.</p>}
                 {member && <MemberSheet key={member.name} member={member} sheet={shown.sheet} text={shown.text} version={shown.version} />}
             </main>
+            <DiceTray />
         </div>
     );
 }

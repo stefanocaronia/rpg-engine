@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { connect } from "node:net";
-import { dirname, extname, join, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
@@ -50,9 +50,19 @@ const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 // From src/ and from dist/ alike, the built page is in dist/dashboard, one level up.
 const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
 
-// The modules of Preact the page imports, by the names the import map gives them, as files of its package.
-const preactModules: Record<string, string> = { "preact.js": "dist/preact.module.js", "hooks.js": "hooks/dist/hooks.module.js", "jsx-runtime.js": "jsx-runtime/dist/jsxRuntime.module.js" };
-const importMap = JSON.stringify({ imports: { "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js" } });
+// The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
+// beside it.
+const vendorModules: Record<string, [string, string]> = {
+    "preact.js": ["preact", "dist/preact.module.js"],
+    "hooks.js": ["preact", "hooks/dist/hooks.module.js"],
+    "jsx-runtime.js": ["preact", "jsx-runtime/dist/jsxRuntime.module.js"],
+    "three.module.js": ["three", "build/three.module.js"],
+    "three.core.js": ["three", "build/three.core.js"],
+    "cannon-es.js": ["cannon-es", "dist/cannon-es.js"],
+};
+const importMap = JSON.stringify({
+    imports: { "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js", "three": "/vendor/three.module.js", "cannon-es": "/vendor/cannon-es.js" },
+});
 
 // The page runs only its own files and the import map written in it, known by its hash.
 const pagePolicy = `default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`;
@@ -197,7 +207,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     } else if (path.startsWith("/images/")) {
         sendImage(path.slice("/images/".length), request, response, served);
     } else if (path.startsWith("/vendor/")) {
-        sendFile(preactModule(path.slice("/vendor/".length)), path, response, served);
+        sendFile(vendorModule(path.slice("/vendor/".length)), path, response, served);
     } else {
         sendFile(pageFile(served.page, path), path, response, served);
     }
@@ -211,12 +221,16 @@ function pageFile(folder: string, path: string): string | undefined
     return file !== undefined && isInside(folder, file) && pageTypes[extname(file)] !== undefined ? file : undefined;
 }
 
-/** A module of Preact the page imports, as a file of its package; undefined for another name, or when the package is missing. */
-function preactModule(name: string): string | undefined
+/** A module the page imports from a package, as a file of the package; undefined for another name, or when the package is missing. */
+function vendorModule(name: string): string | undefined
 {
+    const module = vendorModules[name];
+
     try {
-        const module = preactModules[name];
-        return module === undefined ? undefined : join(dirname(createRequire(import.meta.url).resolve("preact/package.json")), module);
+        // The package's folder, from where its main file is: node_modules/<package>.
+        const main = module === undefined ? undefined : createRequire(import.meta.url).resolve(module[0]);
+        const folder = main === undefined || module === undefined ? undefined : main.slice(0, main.lastIndexOf(join("node_modules", module[0])) + join("node_modules", module[0]).length);
+        return folder === undefined || module === undefined ? undefined : join(folder, module[1]);
     } catch {
         return undefined;
     }
