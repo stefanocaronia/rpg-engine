@@ -13,7 +13,7 @@ import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
-import { checkOf, fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
+import { checkOf, diceIn, fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
 import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -369,6 +369,17 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(groupLabels(["slots-1", "slots-2"], fields)).toEqual(new Map([["slots-1", "slots 1"], ["slots-2", "slots 2"]]));
         expect(shownText("-1 (+2) · hit-dice 3")).toBe("−1 (+2) · hit-dice 3");
         expect(initials("Ettore di Valle")).toBe("ED");
+    });
+
+    it("reads the dice of a notation, by their sides, with how many of each", () => {
+        expect(diceIn("1d20+2")).toEqual([{ sides: 20, count: 1 }]);
+        expect(diceIn("2d20kh1+5")).toEqual([{ sides: 20, count: 2 }]);
+        expect(diceIn("2d6ro<=2+2")).toEqual([{ sides: 6, count: 2 }]);
+        expect(diceIn("1d20+1d4+3")).toEqual([{ sides: 20, count: 1 }, { sides: 4, count: 1 }]);
+        expect(diceIn("d%")).toEqual([{ sides: 100, count: 1 }]);
+        expect(diceIn("4dF")).toEqual([{ sides: "F", count: 4 }]);
+        expect(diceIn("1d8+1d8")).toEqual([{ sides: 8, count: 2 }]);
+        expect(diceIn("5")).toEqual([]);
     });
 
     it("reads a button of what the master asks as a check with its dice, and any other button as an answer (ASK-3)", () => {

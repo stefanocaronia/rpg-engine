@@ -6,6 +6,29 @@ export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set(
     return words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
 }
 
+/**
+ * The dice of a notation, by their sides, with how many of each, in the order they come: 2d20kh1+5 is two d20, 1d20+1d4+3 a d20 and a d4, d% a d% (100), 4dF
+ * four dF; numbers alone are not dice.
+ */
+export function diceIn(notation: string): { sides: number | "F"; count: number; }[]
+{
+    const dice: { sides: number | "F"; count: number; }[] = [];
+
+    for (const [, count, sides] of notation.matchAll(/(\d*)d(\d+|%|F)/gi)) {
+        const kind = sides === "%" ? 100 : sides.toUpperCase() === "F" ? "F" : Number(sides);
+        const known = dice.find((die) => die.sides === kind);
+        const many = count === "" ? 1 : Number(count);
+
+        if (known === undefined) {
+            dice.push({ sides: kind, count: many });
+        } else {
+            known.count += many;
+        }
+    }
+
+    return dice;
+}
+
 /** A button's label as a check: "Tiro: Atletica (1d20+5)" is the check Atletica with its dice (ASK-3); any other label is an answer, or the change of mind. */
 export function checkOf(label: string, title: string): { check: string; dice: string; } | undefined
 {
