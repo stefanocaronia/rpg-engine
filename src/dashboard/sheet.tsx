@@ -24,6 +24,8 @@ export function MemberSheet(
 )
 {
     const { rail, others } = arrangedGroups(sheet, cards);
+    // The system's headline, and the mood in words, which the badge's tooltip never shows on a touch screen (D-306).
+    const title = [headline, member.mood].filter((part) => part !== undefined && part !== "").join(" · ");
     const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     return (
@@ -33,7 +35,7 @@ export function MemberSheet(
                     <MemberToken member={member} large />
                     <div class="who">
                         <h2>{member.name}</h2>
-                        {headline && <p class="headline">{headline}</p>}
+                        {title !== "" && <p class="headline">{title}</p>}
                         {member.place && <p class="place">{member.place}</p>}
                     </div>
                 </div>
