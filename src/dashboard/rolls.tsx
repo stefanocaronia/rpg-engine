@@ -66,8 +66,8 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
 }
 
 /**
- * One roll, in two lines (D-292): whom it is for, by their token and name, and what it is; then its dice as chips and the number added. Its total on the right;
- * the notation, in words when it says more than its dice, in its tooltip; the chat's text for a screen reader.
+ * One roll, in three lines (D-292): whom it is for, by their token and name; what it is; its dice as chips and the number added. Its total on the right; the
+ * notation, in words when it says more than its dice, in its tooltip; the chat's text for a screen reader.
  */
 function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; })
 {
@@ -75,11 +75,11 @@ function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; 
     return (
         <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id}>
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
-            <span class="roll-what">
+            <span class="roll-who">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
-                <strong>{name}</strong>
-                {roll.check && <span class="roll-check">{` · ${roll.check}`}</span>}
+                {name}
             </span>
+            {roll.check && <span class="roll-check">{roll.check}</span>}
             <span class="roll-total num">{roll.total}</span>
             <span class="roll-dice" title={[roll.words, roll.notation].filter((part) => part !== undefined).join(" · ")}>
                 <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} />

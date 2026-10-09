@@ -1510,12 +1510,13 @@ summary.fixed {
     list-style: none;
 }
 
+/* A roll in three lines (D-292): whom, what, the dice; the token and the total at the top, as in a list of three lines. */
 .roll {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    column-gap: 10px;
-    align-items: center;
-    padding: 8px 6px;
+    column-gap: 12px;
+    align-items: start;
+    padding: 10px 6px;
     border-top: 1px solid var(--rule);
     border-radius: var(--radius-s);
 }
@@ -1526,29 +1527,39 @@ summary.fixed {
 
 .roll .token,
 .roll-robot {
-    grid-row: 1 / span 2;
-    width: 32px;
-    height: 32px;
+    grid-row: 1 / span 3;
+    width: 40px;
+    height: 40px;
 }
 
 .roll .token {
-    --size: 32px;
+    --size: 40px;
 }
 
 .roll .token.pc {
     box-shadow: 0 0 0 2px var(--ally);
 }
 
-.roll-what {
+.roll-who,
+.roll-check {
+    grid-column: 2;
     overflow: hidden;
-    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+.roll-who {
+    font-weight: 700;
+}
+
+.roll-check {
+    font-size: 0.9rem;
+}
+
 .roll-total {
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
     grid-column: 3;
+    line-height: 1.1;
     min-width: 2ch;
     font-size: 1.5rem;
     font-weight: 700;
@@ -1563,11 +1574,7 @@ summary.fixed {
 
 .roll-dice {
     grid-column: 2;
-    margin-top: 3px;
-}
-
-.roll-what strong {
-    font-weight: 700;
+    margin-top: 4px;
 }
 
 /* Words for a screen reader alone. */
