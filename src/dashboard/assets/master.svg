@@ -9,7 +9,7 @@
       <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
       <g class="robot-mouth" fill="#FFF4D5"><rect x="242" y="232" width="28" height="12" rx="6"/></g>
     </g>
-    <g class="robot-mood robot-mood-smile" display="none">
+    <g class="robot-mood robot-mood-happy" display="none">
       <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
       <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 232Q256 251 272 232"/></g>
     </g>
@@ -25,7 +25,7 @@
       <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M211 208H237M275 208H301"/></g>
       <g class="robot-mouth" fill="#FFF4D5"><rect x="242" y="232" width="28" height="12" rx="6"/></g>
     </g>
-    <g class="robot-mood robot-mood-concerned" display="none">
+    <g class="robot-mood robot-mood-worried" display="none">
       <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
       <g class="robot-mouth" fill="#FFF4D5"><rect x="244" y="233" width="24" height="12" rx="6"/></g>
       <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M211 182L234 174M278 174L301 182"/></g>
@@ -41,6 +41,26 @@
     <g class="robot-mood robot-mood-delighted" display="none">
       <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M208 215Q224 187 240 215M272 215Q288 187 304 215"/></g>
       <g class="robot-mouth" fill="#FFF4D5"><path d="M240 232H272Q272 254 256 254Q240 254 240 232Z"/></g>
+    </g>
+    <g class="robot-mood robot-mood-determined" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="210" r="15"/><circle cx="288" cy="210" r="15"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 242Q258 240 274 234"/></g>
+      <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M209 180L237 187M275 187L303 180"/></g>
+    </g>
+    <g class="robot-mood robot-mood-afraid" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="210" r="18"/><circle cx="288" cy="210" r="18"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M236 246L246 239L256 246L266 239L276 246"/></g>
+      <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M208 177L234 165M278 165L304 177"/></g>
+    </g>
+    <g class="robot-mood robot-mood-angry" display="none">
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="212" r="14"/><circle cx="288" cy="212" r="14"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M238 247Q256 233 274 247"/></g>
+      <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M207 172L238 189M274 189L305 172"/></g>
+    </g>
+    <g class="robot-mood robot-mood-disgusted" display="none">
+      <g class="robot-eyes" fill="#FFF4D5"><path d="M208 206H240A16 16 0 0 1 208 206ZM272 206H304A16 16 0 0 1 272 206Z"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"><path d="M238 246Q247 236 256 243Q265 249 274 238"/></g>
+      <g class="robot-brows" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M210 186H237M276 178L302 168"/></g>
     </g>
   </g>
   <g class="robot-screen">

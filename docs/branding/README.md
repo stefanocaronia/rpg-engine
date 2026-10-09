@@ -33,7 +33,7 @@ The production SVGs use literal hex fills and classes, with no IDs, embedded sty
 
 ## Production avatar
 
-`master.svg` contains all nine expressions. Only `robot-mood-neutral` is visible by default; the other mood groups have `display="none"`. Each mood separates `robot-eyes` and `robot-mouth`; concern also has `robot-brows`. `robot-can-blink` marks only the open eyes of neutral, smile, surprised, curious and concerned. Eye centers are at y = 208, with larger eyes and mouth strokes for the 44 px avatar.
+`master.svg` contains the 13 moods of the engine (MOOD-1, D-305): Codex's nine drafts, with smile named `happy` and concerned `worried`, and four drawn in the same style: `determined`, `afraid`, `angry` and `disgusted`. Only `robot-mood-neutral` is visible by default; the other mood groups have `display="none"`. Each mood separates `robot-eyes` and `robot-mouth`; worried, determined, afraid, angry and disgusted also have `robot-brows`. `robot-can-blink` marks the open round eyes, which the dashboard also keeps shut while the master is away. Eye centers are at y = 208, with larger eyes and mouth strokes for the 44 px avatar.
 
 The production `robot-head` has no transform. The dashboard applies curiosity's seven-degree tilt around `(256, 275)` through CSS, and manages blinking and reduced motion. Colors and mood changes require inline SVG; an SVG loaded through an `<img>` does not inherit the page's CSS.
 

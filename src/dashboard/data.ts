@@ -49,6 +49,20 @@ export interface SheetCards
     order: string[];
 }
 
+/** A mood of the master or of a character (MOOD-1, D-305): the engine's closed list, which the robot and the badges draw. */
+export const moods = ["neutral", "happy", "delighted", "curious", "focused", "determined", "worried", "surprised", "afraid", "sad", "angry", "disgusted", "mischievous"] as const;
+
+export type Mood = (typeof moods)[number];
+
+/** A face the robot shows for a moment (MOOD-4, D-305): the master's, from the log, or a reaction to a roll; its id tells it from the one before. */
+export interface Moment
+{
+    id: string;
+    mood: Mood;
+    /** When, in real time (ISO 8601): one older than a few seconds is not shown. A roll's reaction has none, being new by itself. */
+    at?: string;
+}
+
 /** Someone of the party. */
 export interface Member
 {
@@ -60,6 +74,8 @@ export interface Member
     place?: string;
     counters: SheetValue[];
     effects: { name: string; end?: string; text: string; }[];
+    /** Their mood, none when neutral or dead (MOOD-6). */
+    mood?: Mood;
 }
 
 /** A die as it was thrown: its sides, the face it shows, the faces that add up on it with explosions, the face before a reroll, dropped or a success. */
@@ -119,6 +135,8 @@ export type View =
         /** The game system: its name, what it is, and what its source asks to say. */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
+        /** The master's mood, and their last moment (MOOD-6). */
+        master?: { mood: Mood; moment?: Moment; };
         party: Member[];
         quests: string[];
         scene?: string;
