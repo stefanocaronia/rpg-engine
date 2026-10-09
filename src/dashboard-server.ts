@@ -53,6 +53,7 @@ const pageTypes: Record<string, string> = {
     ".png": "image/png",
     ".glb": "model/gltf-binary",
     ".json": "application/json; charset=utf-8",
+    ".wav": "audio/wav",
 };
 
 // A picture runs nothing, even an SVG opened by itself.

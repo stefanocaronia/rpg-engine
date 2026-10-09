@@ -1,18 +1,21 @@
-// The knock of a die (D-278): made by the browser, a short noise through a filter with a short tone beneath it, as loud as the die hit; no sound file. Browsers
-// let a page make sounds only after the player's first click or key.
+// The sound of the dice (D-278, D-283): one touch of a resin die on felt, made with ElevenLabs, played at every knock of the physics, so the bounces of each
+// throw make its pattern; as loud as the die hit, duller when softly, a little higher or lower each time. Until it loads, the browser makes a knock of its
+// own. Browsers let a page make sounds only after the player's first click or key.
 let audio: AudioContext | undefined;
 let output: AudioNode | undefined;
+let touch: AudioBuffer | undefined;
 
-/** Lets the page make sounds, from a click or a key of the player's. */
+/** Lets the page make sounds, from a click or a key of the player's; the first time, it loads the touch. */
 export function wakeSound(): void
 {
     try {
         if (audio === undefined) {
             audio = new AudioContext();
-            // Many knocks together never clip: a compressor before the speakers.
+            // Many dice together never clip: a compressor before the speakers.
             const compressor = audio.createDynamicsCompressor();
             compressor.connect(audio.destination);
             output = compressor;
+            void loadTouch(audio);
         }
 
         void audio.resume();
@@ -21,7 +24,7 @@ export function wakeSound(): void
     }
 }
 
-/** A die's knock on the floor or on another die, as hard as given: softer ones are quieter and duller. */
+/** A die's knock on the floor or on another die, as hard as given. */
 export function knock(strength: number): void
 {
     if (audio === undefined || output === undefined || audio.state !== "running") {
@@ -29,6 +32,28 @@ export function knock(strength: number): void
     }
 
     const loudness = Math.min(1, strength / 25);
+
+    if (touch === undefined) {
+        madeKnock(audio, output, loudness);
+        return;
+    }
+
+    const source = audio.createBufferSource();
+    source.buffer = touch;
+    source.playbackRate.value = 0.9 + Math.random() * 0.22;
+    // A soft knock is a duller one.
+    const filter = audio.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 2500 + loudness * 9000;
+    const gain = audio.createGain();
+    gain.gain.value = 0.2 + loudness * 0.8;
+    source.connect(filter).connect(gain).connect(output);
+    source.start();
+}
+
+/** The browser's own knock: a short noise through a filter, with a short tone beneath it. */
+function madeKnock(audio: AudioContext, output: AudioNode, loudness: number): void
+{
     const now = audio.currentTime;
     const samples = Math.floor(audio.sampleRate * 0.06);
     const noise = audio.createBuffer(1, samples, audio.sampleRate);
@@ -49,7 +74,6 @@ export function knock(strength: number): void
     click.connect(filter).connect(clickGain).connect(output);
     click.start(now);
 
-    // The body of the knock: a short tone, lower for a harder hit.
     const tone = audio.createOscillator();
     tone.type = "sine";
     tone.frequency.value = 900 - loudness * 300 + Math.random() * 80;
@@ -59,4 +83,15 @@ export function knock(strength: number): void
     tone.connect(toneGain).connect(output);
     tone.start(now);
     tone.stop(now + 0.1);
+}
+
+/** Loads and decodes the touch; when it cannot, the browser's own knock stays. */
+async function loadTouch(context: AudioContext): Promise<void>
+{
+    try {
+        const response = await fetch("/assets/sounds/dice-touch.wav");
+        touch = await context.decodeAudioData(await response.arrayBuffer());
+    } catch {
+        touch = undefined;
+    }
 }
