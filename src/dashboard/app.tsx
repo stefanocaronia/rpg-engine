@@ -23,6 +23,8 @@ interface Shown
     now?: string;
     party: Member[];
     chosen?: string;
+    /** The line under the chosen one's name, such as Level 3 Cleric. */
+    headline?: string;
     sheet: SheetGroup[];
     text: string;
     rolls: ShownRoll[];
@@ -73,6 +75,7 @@ function App()
                     now: overview.kind === "overview" ? overview.now : undefined,
                     party,
                     chosen: member?.name,
+                    headline: page?.kind === "page" ? page.headline : undefined,
                     sheet: page?.kind === "page" ? page.sheet : [],
                     text: page?.kind === "page" ? page.text : "",
                     rolls,
@@ -139,6 +142,7 @@ function App()
                         <MemberSheet
                             key={member.name}
                             member={member}
+                            headline={shown.headline}
                             sheet={shown.sheet}
                             text={shown.text}
                             version={shown.version}

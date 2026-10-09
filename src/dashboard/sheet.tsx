@@ -19,17 +19,20 @@ const descriptionCard = "Description";
 /** What rolls a number of the sheet for fun: its roll, and the number's label. */
 export type FreeRoll = (roll: SheetRoll, label: string) => void;
 
-export function MemberSheet({ member, sheet, text, version, onRoll }: { member: Member; sheet: SheetGroup[]; text: string; version: number; onRoll: FreeRoll; })
+export function MemberSheet({ member, headline, sheet, text, version, onRoll }: { member: Member; headline?: string; sheet: SheetGroup[]; text: string; version: number; onRoll: FreeRoll; })
 {
     const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     return (
         <section class="sheet" aria-label={member.name}>
             <header class="band">
-                <Token member={member} large />
-                <div class="who">
-                    <h2>{member.name}</h2>
-                    {member.place && <p class="place">{member.place}</p>}
+                <div class="identity">
+                    <Token member={member} large />
+                    <div class="who">
+                        <h2>{member.name}</h2>
+                        {headline && <p class="headline">{headline}</p>}
+                        {member.place && <p class="place">{member.place}</p>}
+                    </div>
                 </div>
                 <div class="line">
                     {member.counters.map((value) => (

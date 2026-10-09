@@ -402,12 +402,12 @@ a {
     font-size: calc(var(--size) * 0.38);
 }
 
-/* The band: the hero of the sheet, with the line as pills. */
+/* The band: the hero of the sheet; the token and the name at the top left, with the system's headline (D-288), then the line in boxes of one height. */
 .band {
     display: grid;
-    grid-template-columns: auto auto 1fr;
-    align-items: center;
-    gap: 6px 20px;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 10px 24px;
     padding: 16px 18px;
     margin-bottom: 14px;
     border: 1px solid var(--rule);
@@ -416,10 +416,22 @@ a {
     box-shadow: var(--lift), var(--raise);
 }
 
+.identity {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
 .band h2 {
     font-size: 1.9rem;
     letter-spacing: -0.01em;
     line-height: 1.1;
+}
+
+.headline {
+    margin: 4px 0 2px;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .band .effects {
@@ -439,14 +451,21 @@ a {
     align-items: stretch;
 }
 
+/* A box of the line: square at the least, all of one height, what it holds in its middle. */
 .line-value {
+    --box: 72px;
     display: inline-grid;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto 1fr;
+    justify-items: center;
+    align-items: center;
     gap: 2px;
+    min-width: var(--box);
+    height: var(--box);
     padding: 8px 12px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: color-mix(in srgb, var(--paper) 50%, transparent);
+    text-align: center;
 }
 
 .line-value > .label {
@@ -2010,17 +2029,17 @@ svg.icon {
     }
 
     .band {
-        grid-template-columns: auto 1fr;
-    }
-
-    .band .line {
-        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .line-value {
+        min-width: 0;
+        height: auto;
         padding: 2px 0;
         border: 0;
         background: none;
+        justify-items: start;
+        text-align: start;
     }
 
     .token.large {

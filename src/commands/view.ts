@@ -17,7 +17,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
-import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue, statBlock } from "./sheet.ts";
+import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
@@ -76,7 +76,7 @@ export type ViewResult =
         total: number;
         rolls: ShownRoll[];
     }
-    | { kind: "page"; title: string; sheet: SheetGroupData[]; text: string; }
+    | { kind: "page"; title: string; /** The line under the character's name on the dashboard (D-288). */ headline?: string; sheet: SheetGroupData[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
 
@@ -136,7 +136,8 @@ export const view = defineCommand({
 
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
             const sheet = !party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page);
-            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, sheet, text: knownText(world, knowledge, page) };
+            const headline = party ? sheetHeadline(world, system, page) : undefined;
+            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, ...(headline === undefined ? {} : { headline }), sheet, text: knownText(world, knowledge, page) };
         }
 
         const { coins } = campaignCoins(root, context);

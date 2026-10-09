@@ -18,6 +18,8 @@ export const systemFileName = "system.yaml";
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
 // The dice a number of the sheet is rolled with: dice alone, as 1d20 or 2d6+1d4 (D-280).
 const sheetDicePattern = /^\d*d\d+(?:\+\d*d\d+)*$/;
+// A field named in the headline under a character's name: {level} (D-288).
+const headlineFieldPattern = /\{([^{}]+)\}/g;
 // A group's icon on the dashboard: the d of an SVG path, its letters and numbers alone (D-284).
 const iconPattern = /^[Mm][MmLlHhVvCcSsQqTtAaZz\d.,\s+-]*$/;
 
@@ -68,6 +70,7 @@ const systemSchema = z.object({
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
+    "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
@@ -227,6 +230,8 @@ export interface GameSystem
     sheet: SheetGroup[];
     /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
     sheetDice: Record<string, string>;
+    /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
+    sheetHeadline?: string;
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
@@ -433,6 +438,13 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice: ${twice[0]} is listed twice; give each field one set of dice.`);
     }
 
+    // Each field the headline names is a declared one (D-288).
+    const unnamed = [...(data["sheet-headline"] ?? "").matchAll(headlineFieldPattern)].map((match) => match[1]).find((field) => kindOf(field) === undefined);
+
+    if (unnamed !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-headline: ${unnamed} is not declared in fields.`);
+    }
+
     const experience = data.progression?.experience?.table;
 
     if (experience !== undefined && !Object.keys(formulas.tables).some((table) => comparableText(table) === comparableText(experience))) {
@@ -452,6 +464,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
+        ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         values,
         marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),

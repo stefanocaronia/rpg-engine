@@ -108,6 +108,6 @@ export type View =
         total: number;
         rolls: ShownRoll[];
     }
-    | { kind: "page"; title: string; sheet: SheetGroup[]; text: string; }
+    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };

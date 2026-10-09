@@ -183,6 +183,29 @@ function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
 }
 
 /**
+ * The line under a character's name on the dashboard (D-288): the system's headline, each field in braces as the sheet shows it and a list as the names of its
+ * items, as Level 3 Cleric; none when the system has none, or when its fields are all empty.
+ */
+export function sheetHeadline(world: World, system: GameSystem | undefined, page: Page): string | undefined
+{
+    const headline = system?.sheetHeadline;
+
+    if (headline === undefined || !hasSheet(world, page)) {
+        return undefined;
+    }
+
+    const fields = effectiveFields(world, page);
+
+    const shown = (field: string): string => {
+        const value = valueNamed(fields, field);
+        return isEmptyField(value) ? "" : declaredKind(world, field) === "list" ? listItemNames(value).join(" / ") : valueText(world, field, value);
+    };
+
+    const named = [...headline.matchAll(/\{([^{}]+)\}/g)].map((match) => shown(match[1]));
+    return named.every((text) => text === "") ? undefined : headline.replace(/\{([^{}]+)\}/g, (_, field: string) => shown(field)).replace(/\s+/g, " ").trim();
+}
+
+/**
  * The stat block of a companion who keeps no sheet, as the creature it derives from writes it (D-275): one group named after the creature, with the fields the
  * game system declares, in the order the creature writes them, as the companion reads them, and beside a field what the sheet shows beside it, such as str-mod
  * by str. None for a page that derives from no creature.

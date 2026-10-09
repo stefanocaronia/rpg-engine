@@ -82,6 +82,15 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(findSystem([far], "altro")?.sheetDice).toEqual({});
     });
 
+    it("reads the headline under a character's name, and refuses one that names a field it does not declare (D-288)", () => {
+        system(near, "prova", `${declared}sheet-headline: "Vigore {vigore} {doti}"\n`);
+        expect(findSystem([near], "prova")?.sheetHeadline).toBe("Vigore {vigore} {doti}");
+        system(near, "prova", `${declared}sheet-headline: "Livello {livello}"\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-headline: livello is not declared in fields.");
+        system(far, "altro", declared);
+        expect(findSystem([far], "altro")?.sheetHeadline).toBeUndefined();
+    });
+
     it("reads the pages every character with a sheet has in a list", () => {
         system(near, "prova", `${declared}always-in: { equipped: [Pugno] }\n`);
         expect(findSystem([near], "prova")).toMatchObject({ alwaysIn: { equipped: ["Pugno"] } });
