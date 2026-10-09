@@ -170,6 +170,8 @@ interface Served
     asked?: Asked;
     /** How long a question waits for a page to come back, after the last one closed. */
     pageReturn: number;
+    /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
+    returning?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
     notify(): void;
 }
@@ -268,9 +270,9 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     } else if (path.startsWith("/images/")) {
         sendImage(path.slice("/images/".length), request, response, served);
     } else if (path.startsWith("/vendor/")) {
-        sendFile(vendorModule(path.slice("/vendor/".length)), path, response, served);
+        sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served);
     } else {
-        sendFile(pageFile(served.page, path), path, response, served);
+        sendFile(pageFile(served.page, path), path, request, response, served);
     }
 }
 
@@ -298,7 +300,7 @@ function vendorModule(name: string): string | undefined
 }
 
 /** A script, a style sheet or a picture of the page, as it is on the disk. */
-function sendFile(file: string | undefined, path: string, response: ServerResponse, served: Served): void
+function sendFile(file: string | undefined, path: string, request: IncomingMessage, response: ServerResponse, served: Served): void
 {
     const type = file === undefined ? undefined : pageTypes[extname(file)];
     const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));
@@ -308,8 +310,21 @@ function sendFile(file: string | undefined, path: string, response: ServerRespon
         return;
     }
 
-    const policy = type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"];
-    response.writeHead(200, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-cache" }).end(bytes);
+    sendTagged(request, response, bytes, { "Content-Type": type, "Content-Security-Policy": type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"] });
+}
+
+/** Bytes with a tag of what they hold, read again at each load: the same bytes come back as not modified, as three.js and the dice after the first load. */
+function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: Uint8Array, headers: Record<string, string>): void
+{
+    const tag = `"${createHash("sha1").update(bytes).digest("base64url")}"`;
+    const all = { ...securityHeaders, ...headers, "Cache-Control": "no-cache", "ETag": tag };
+
+    if (request.headers["if-none-match"] === tag) {
+        response.writeHead(304, all).end();
+        return;
+    }
+
+    response.writeHead(200, all).end(request.method === "HEAD" ? undefined : bytes);
 }
 
 /**
@@ -324,6 +339,11 @@ function pagePlayer(served: Served): Player
         {
             if (served.pages.size === 0) {
                 return Promise.resolve("absent");
+            }
+
+            // A call stopped before its question was put on the page asks nothing (ASK-9).
+            if (signal?.aborted === true) {
+                return Promise.resolve(undefined);
             }
 
             // A question asked again, as after a summary, takes the place of the one before.
@@ -399,12 +419,14 @@ function listenForChanges(request: IncomingMessage, response: ServerResponse, se
     response.writeHead(200, { ...securityHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" });
     response.write("retry: 2000\n\n");
     served.pages.add(response);
+    clearTimeout(served.returning);
     request.on("close", () => {
         served.pages.delete(response);
         const asked = served.asked;
 
         if (served.pages.size === 0 && asked !== undefined) {
-            setTimeout(() => served.pages.size === 0 && served.asked === asked && asked.settle("absent"), served.pageReturn).unref();
+            clearTimeout(served.returning);
+            served.returning = setTimeout(() => served.pages.size === 0 && served.asked === asked && asked.settle("absent"), served.pageReturn).unref();
         }
     });
 }
@@ -454,15 +476,7 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
     }
 
     // The page asks for a picture by its name and when it last changed (D-277): a new address when it changes, and the same one comes back as not modified on a reload.
-    const tag = `"${createHash("sha1").update(bytes).digest("base64url")}"`;
-    const headers = { "Content-Type": type, "Cache-Control": "no-cache", ETag: tag, "Content-Security-Policy": picturePolicy };
-
-    if (request.headers["if-none-match"] === tag) {
-        response.writeHead(304, { ...securityHeaders, ...headers }).end();
-        return;
-    }
-
-    response.writeHead(200, { ...securityHeaders, ...headers }).end(request.method === "HEAD" ? undefined : bytes);
+    sendTagged(request, response, bytes, { "Content-Type": type, "Content-Security-Policy": picturePolicy });
 }
 
 /** A part of an address as written, without its percent signs; undefined when they do not decode. */

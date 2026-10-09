@@ -11,8 +11,9 @@ import { wakeSound } from "./sounds.ts";
 const lingers = { free: 3200, asked: 4200 };
 const fadeLength = 600;
 
-// The dice of the free tray, by their sides: 100 is the d%, thrown as its tens and its units.
+// The dice of the free tray, by their sides: 100 is the d%, thrown as its tens and its units; at most so many at once, which the page throws in a moment.
 const freeDice = [4, 6, 8, 10, 12, 20, 100];
+const mostDice = 20;
 
 // Where the page remembers whether the dice make a sound, in this browser alone.
 const soundKey = "rpg-engine.dice-sound";
@@ -79,7 +80,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         return roller.current;
     };
 
-    /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while. */
+    /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while; the plate alone when the dice cannot be thrown. */
     const throwAndShow = async (dice: ThrownDie[], shown: Omit<Plate, "shown">, linger: number): Promise<void> => {
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
@@ -88,12 +89,18 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
         setRolling(true);
         setPlate({ ...shown, shown: false });
         const loaded = await loadRoller();
-        const toThrow = loaded === undefined ? [] : diceToThrow(dice, loaded.kinds);
 
-        if (toThrow.length === 0) {
+        try {
+            const toThrow = loaded === undefined ? [] : diceToThrow(dice, loaded.kinds);
+
+            if (toThrow.length === 0) {
+                loaded?.hide();
+            } else if (await loaded?.roll(toThrow, { instant: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current }) !== true) {
+                return;
+            }
+        } catch {
+            // Dice written by hand in the log, which the page cannot throw: the plate says the roll all the same.
             loaded?.hide();
-        } else if (await loaded?.roll(toThrow, { still: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current }) !== true) {
-            return;
         }
 
         if (!current()) {
@@ -167,6 +174,7 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
                                 key={sides}
                                 type="button"
                                 class="dice-pick-die"
+                                disabled={pool.length >= mostDice}
                                 onClick={() => setPool([...pool, sides])}
                                 aria-label={`Add a ${dieName(sides)}${counts[index] > 0 ? `: ${counts[index]} chosen` : ""}`}
                             >

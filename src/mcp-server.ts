@@ -35,7 +35,8 @@ const preloadAfter = 250;
 
 /**
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
- * the host to instructions, then status. The commands that ask the player appear only for a host that shows forms, through which they ask (D-148).
+ * the host to instructions, then status. The commands that ask the player appear for a host that shows forms, through which they ask (D-148), and wherever the
+ * dashboard runs, whose page asks first (D-279).
  */
 export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env, beforeCall?: () => Promise<void>): McpServer
 {
@@ -44,19 +45,17 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
 
-    // The dashboard's page asks the player too, while one is open: then the asking tools are there, forms or not (ASK-1, D-279).
-    const call = async (command: AnyCommand, input: unknown, extra: ToolExtra): Promise<CallToolResult> => {
+    // Before each call, once the files are read again: the dashboard opens, and its page asks the player too, so the asking tools are there, forms or not (ASK-1, D-279).
+    const prepare = async (): Promise<void> => {
         await beforeCall?.();
 
         if (context.page !== undefined) {
             askingTools.filter((tool) => !tool.enabled).forEach((tool) => tool.enable());
         }
-
-        return runTool(command, input, context, extra);
     };
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => call(command, input, extra));
+        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare));
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -151,7 +150,7 @@ function toolConfig(command: AnyCommand)
     return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
-async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra): Promise<CallToolResult>
+async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
 
@@ -160,6 +159,8 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         if (context.files instanceof SessionStore) {
             await context.files.ready(command.name === "instructions");
         }
+
+        await prepare();
 
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
         return { content: [{ type: "text", text: command.format(await command.run(input, { ...context, signal: extra.signal })) }] };
@@ -184,7 +185,7 @@ function showsForms(capabilities: ClientCapabilities | undefined): boolean
 function formPlayer(server: McpServer, unavailable: () => void): Player
 {
     return {
-        async choose(question, title, labels)
+        async choose(question, title, labels, signal)
         {
             const started = Date.now();
 
@@ -199,7 +200,8 @@ function formPlayer(server: McpServer, unavailable: () => void): Player
 
             try {
                 const requestedSchema = { type: "object" as const, properties: { choice: { type: "string" as const, title, enum: labels } }, required: ["choice"] };
-                const reply = await server.server.elicitInput({ mode: "form", message: question, requestedSchema }, { timeout: playerWait });
+                // A stop of the call closes the form too (ASK-9).
+                const reply = await server.server.elicitInput({ mode: "form", message: question, requestedSchema }, { timeout: playerWait, signal });
 
                 if (reply.action !== "accept") {
                     return notShown();
@@ -208,7 +210,7 @@ function formPlayer(server: McpServer, unavailable: () => void): Player
                 const index = labels.indexOf(String(reply.content?.choice));
                 return index === -1 ? undefined : index;
             } catch {
-                return notShown();
+                return signal?.aborted === true ? undefined : notShown();
             }
         },
     };

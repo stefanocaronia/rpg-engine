@@ -10,7 +10,7 @@ import { type Frame, type Lying, type Throw, throwDice } from "./throw.ts";
 /** How a throw is shown: at once, with reduced motion; with its sound or not; cut short when the tray says so; and stopped by a newer throw. */
 export interface Showing
 {
-    still: boolean;
+    instant: boolean;
     sound: boolean;
     skipping(): boolean;
     current(): boolean;
@@ -44,11 +44,11 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
 
             for (let round = 0; round < throws; round++) {
                 const rolling = dice.flatMap((die, index) => (die.values.length > round ? [index] : []));
-                const still = dice.flatMap((die, index): Lying[] => {
+                const lyingDice = dice.flatMap((die, index): Lying[] => {
                     const frame = lying[index];
                     return frame === undefined || rolling.includes(index) ? [] : [{ shape: model(die).shape, frame }];
                 });
-                const thrown = throwDice(rolling.map((index) => model(dice[index]).shape), stage.tray, Math.random, still);
+                const thrown = throwDice(rolling.map((index) => model(dice[index]).shape), stage.tray, Math.random, lyingDice);
                 const last = thrown.frames.at(-1) ?? [];
                 const landing = rolling.map((index, at) => landingTurn(model(dice[index]), turns.get(dice[index].kind) ?? [], last[at].quaternion, dice[index].values[round]));
                 const ended = await play(thrown, (frame) => {
@@ -78,7 +78,7 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
 /** Shows a throw's frames, sixty to a second, with its knocks; its last frame alone with reduced motion; its end at once when the tray cuts it short. */
 function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): Promise<boolean>
 {
-    const frames = showing.still ? thrown.frames.slice(-1) : thrown.frames;
+    const frames = showing.instant ? thrown.frames.slice(-1) : thrown.frames;
     const started = performance.now();
     let heard = 0;
 
@@ -95,7 +95,7 @@ function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): 
 
             // The knocks up to this frame: none when the throw is shown at once or cut short.
             while (heard < thrown.knocks.length && thrown.knocks[heard].frame <= at) {
-                if (showing.sound && !showing.still && !showing.skipping()) {
+                if (showing.sound && !showing.instant && !showing.skipping()) {
                     knock(thrown.knocks[heard].strength);
                 }
 

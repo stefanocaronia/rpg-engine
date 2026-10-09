@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
+import type { Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
@@ -134,6 +135,19 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     beforeEach(async () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
+    });
+
+    it("offers ask to a host without forms while the dashboard runs, whose page asks the player, from the first call on (ASK-1, D-279)", async () => {
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        const page: Player = { choose: async () => 0 };
+        await createMcpServer({ ...testContext(folder), page }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        expect((await plain.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
+        await plain.callTool({ name: "status", arguments: {} });
+        expect((await plain.listTools()).tools.map((tool) => tool.name)).toContain("ask");
+        expect(((await plain.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toContain("Bruna, Atletica: 1d20+5");
+        await plain.close();
     });
 
     it("sees ask, with a line in the instructions, and gets the player's click back in the same call", async () => {

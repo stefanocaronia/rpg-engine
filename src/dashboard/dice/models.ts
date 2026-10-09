@@ -1,6 +1,7 @@
 // The dice as the page throws them (D-278): each die's shape for the physics and its values, from dice.json, which make-dice.py writes with the dice; and the
 // turn that makes a die land on the number decided before the throw. A die lands as the physics wants; the page then shows it turned by one of its symmetries,
 // a turn that leaves its shape where it is and brings the wanted face where the landed one is, so that the dice are real dice, with their numbers in place.
+import type { ThrownDie } from "../data.ts";
 
 /** A direction, or a point: x, y, z, with y up. */
 export type Vector = [number, number, number];
@@ -41,24 +42,15 @@ export interface DieThrow
     dropped: boolean;
 }
 
-/** A die as the engine logged it (D-279). */
-export interface LoggedDie
-{
-    sides: number | "F";
-    value: number;
-    faces?: number[];
-    rerolledFrom?: number;
-    dropped?: boolean;
-}
-
 // The direction that is up on the screen, on the floor: away from the camera, which looks from the near side.
 const screenUp: Vector = [0, 0, -1];
 
 /** The dice to throw for the dice of a roll: a d% as its tens and its units, a d10's 10 as its 0; dice with no model, as a d3 or dF, are left out. */
-export function diceToThrow(dice: LoggedDie[], kinds: ReadonlySet<string>): DieThrow[]
+export function diceToThrow(dice: ThrownDie[], kinds: ReadonlySet<string>): DieThrow[]
 {
     return dice.flatMap((die): DieThrow[] => {
-        const values = die.rerolledFrom !== undefined ? [die.rerolledFrom, die.value] : die.faces ?? [die.value];
+        // The face before a reroll, then the faces it showed after, more than one when it exploded.
+        const values = [...(die.rerolledFrom === undefined ? [] : [die.rerolledFrom]), ...(die.faces ?? [die.value])];
         const dropped = die.dropped === true;
 
         if (die.sides === 100) {

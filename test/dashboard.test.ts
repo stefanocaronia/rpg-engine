@@ -411,7 +411,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     beforeEach(async () => {
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
         served = { ...context, files: session };
-        const started = await startDashboard(served, session, { ports: [0], page: folder, pageReturn: 100 });
+        const started = await startDashboard(served, session, { ports: [0], page: folder, pageReturn: 1000 });
 
         if (started === undefined) {
             throw new Error("The dashboard did not start.");
@@ -525,6 +525,50 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await waitAsked();
         third.close();
         expect(await formAsking).toMatchObject({ kind: "roll", check: "Atletica" });
+    });
+
+    it("waits for a page to come back from the last one that closed, not from the first", async () => {
+        const first = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        first.close();
+        await new Promise((done) => setTimeout(done, 100));
+        const second = await openPage();
+        await new Promise((done) => setTimeout(done, 500));
+        second.close();
+        // Past the wait from the first close, within the one from the last.
+        await new Promise((done) => setTimeout(done, 700));
+        expect((await askedNow())?.id).toBe(asked.id);
+        expect(await asking).toMatchObject({ kind: "absent" });
+    });
+
+    it("asks nothing on the page for a call stopped before its question got there, and logs nothing (ASK-9)", async () => {
+        const page = await openPage();
+        const stop = new AbortController();
+        stop.abort();
+        const lines = readLogFile(folder).length;
+        expect(await ask.run(ask.input.parse(wall), { ...served, signal: stop.signal })).toMatchObject({ kind: "unanswered" });
+        expect(await askedNow()).toBeNull();
+        expect(readLogFile(folder)).toHaveLength(lines);
+        page.close();
+    });
+
+    it("names in the rolls only whom the character knows, and gives the last 20 (VIEW-4)", async () => {
+        await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
+        await ok("write", "Ombra", "--type", "character", "--set", "role=npc");
+        await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Locanda", "--with", "Ettore", "--creatures", "Lupo mannaro=1");
+        await ok("roll", "1d20+4", "--who", "Lupo mannaro 1");
+        await ok("roll", "1d20", "--who", "Ombra");
+        expect(JSON.parse(await ok("view", "--json")).rolls.map((roll: { who?: string; }) => roll.who)).toEqual(["a creature", "someone"]);
+
+        for (let count = 0; count < 21; count++) {
+            await ok("roll", "1d4", "--why", `colpo ${count}`);
+        }
+
+        const rolls = JSON.parse(await ok("view", "--json")).rolls;
+        expect(rolls).toHaveLength(20);
+        expect(rolls.at(-1)).toMatchObject({ by: "master", notation: "1d4" });
+        expect(rolls[0].who).toBeUndefined();
     });
 
     it("takes the question away when the call is stopped, and logs nothing", async () => {

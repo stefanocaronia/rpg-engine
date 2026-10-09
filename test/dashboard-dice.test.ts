@@ -115,9 +115,10 @@ describe("the dice of the dashboard (D-278)", () => {
             { kind: "d20", values: [13], dropped: false },
         ]);
         // A die rerolled shows the face it had, then the new one; one that exploded, each of its faces.
-        expect(diceToThrow([{ sides: 6, value: 5, rerolledFrom: 1 }, { sides: 6, value: 9, faces: [6, 3] }], kinds)).toEqual([
+        expect(diceToThrow([{ sides: 6, value: 5, rerolledFrom: 1 }, { sides: 6, value: 9, faces: [6, 3] }, { sides: 6, value: 9, faces: [6, 3], rerolledFrom: 1 }], kinds)).toEqual([
             { kind: "d6", values: [1, 5], dropped: false },
             { kind: "d6", values: [6, 3], dropped: false },
+            { kind: "d6", values: [1, 6, 3], dropped: false },
         ]);
     });
 });

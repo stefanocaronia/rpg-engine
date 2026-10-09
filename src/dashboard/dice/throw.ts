@@ -36,9 +36,9 @@ const step = 1 / 60;
 const longest = 8 / step;
 // A knock softer than this makes no sound, as a die settling.
 const softest = 1.5;
-// Dice that move less than this in a frame, for this many frames, are still: some, as a d12 on a face, tremble forever for the physics.
-const stillMove = 1e-3;
-const stillFrames = 12;
+// Dice that move less than this in a frame, for this many frames, are at rest: some, as a d12 on a face, tremble forever for the physics.
+const restingMove = 1e-3;
+const restingFrames = 12;
 
 /** Throws dice of these shapes into the tray together, from its left side, spinning, with the randomness given, until they all stop; past lying dice, if any. */
 export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Math.random, lying: Lying[] = []): Throw
@@ -68,10 +68,10 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
         world.addBody(wall);
     }
 
-    for (const still of lying) {
-        const body = new Body({ mass: 0, material: dieMaterial, shape: polyhedron(still.shape) });
-        body.position.set(...still.frame.position);
-        body.quaternion.set(...still.frame.quaternion);
+    for (const die of lying) {
+        const body = new Body({ mass: 0, material: dieMaterial, shape: polyhedron(die.shape) });
+        body.position.set(...die.frame.position);
+        body.quaternion.set(...die.frame.quaternion);
         world.addBody(body);
     }
 
@@ -107,13 +107,13 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
         return die;
     });
 
-    let still = 0;
+    let resting = 0;
 
-    while (frames.length < longest && still < stillFrames && dice.some((die) => die.sleepState !== Body.SLEEPING)) {
+    while (frames.length < longest && resting < restingFrames && dice.some((die) => die.sleepState !== Body.SLEEPING)) {
         world.step(step);
         const frame = dice.map((die): Frame => ({ position: [die.position.x, die.position.y, die.position.z], quaternion: [die.quaternion.x, die.quaternion.y, die.quaternion.z, die.quaternion.w] }));
         const before = frames.at(-1);
-        still = before !== undefined && frame.every((die, index) => moved(before[index], die) < stillMove) ? still + 1 : 0;
+        resting = before !== undefined && frame.every((die, index) => moved(before[index], die) < restingMove) ? resting + 1 : 0;
         frames.push(frame);
     }
 
