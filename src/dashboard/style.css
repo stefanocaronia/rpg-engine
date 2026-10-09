@@ -1115,6 +1115,34 @@ button.row:hover,
     transform: translate(-50%, 0);
 }
 
+/* A rare face (D-281): its words under the total, gold for the highest, red for the lowest. */
+.dice-rare {
+    grid-column: 1 / -1;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+    text-align: center;
+}
+
+.dice-result.rare.highest {
+    border-color: var(--gold);
+    box-shadow: var(--raise), 0 0 0 2px color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.dice-result.rare.highest .dice-rare {
+    color: var(--accent);
+}
+
+.dice-result.rare.lowest .dice-rare {
+    color: var(--low);
+}
+
+/* The line of the rolls a plate flew into lights up as it lands. */
+.roll.arrived {
+    animation: changed 0.9s ease-out;
+}
+
 /* A free throw counts for nothing: its plate is only drawn in dashes (D-279). */
 .dice-result.free {
     border-style: dashed;

@@ -2,7 +2,7 @@
 // number decided before the throw brought up by turning the die by one of its symmetries.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { aboutVertical, combine, diceToThrow, type DieModel, landedValue, landingTurn, rotate, symmetries, uprightAngle, type Vector } from "../src/dashboard/dice/models.ts";
+import { aboutVertical, combine, diceToThrow, type DieModel, landedValue, landingTurn, rareFace, rotate, symmetries, uprightAngle, type Vector } from "../src/dashboard/dice/models.ts";
 import { throwDice } from "../src/dashboard/dice/throw.ts";
 
 const models = JSON.parse(readFileSync(new URL("../src/dashboard/assets/dice/dice.json", import.meta.url), "utf8")) as Record<string, DieModel>;
@@ -111,6 +111,17 @@ describe("the dice of the dashboard (D-278)", () => {
         expect(throwDice([d20, d20], tray, random).knocks.length).toBeGreaterThan(0);
     });
 
+    it("marks a rare face, as one throw in ten or rarer, on a die that counts: the highest or the lowest of a d10 or bigger, a d% on its tens (D-281)", () => {
+        expect([{ sides: 20, value: 20 }, { sides: 20, value: 1 }, { sides: 20, value: 19 }].map(rareFace)).toEqual(["highest", "lowest", undefined]);
+        // A d8's 8 is one throw in eight: not rare. A dropped die, or one that exploded, counts for no celebration.
+        expect([{ sides: 8, value: 8 }, { sides: 20, value: 20, dropped: true }, { sides: 10, value: 13, faces: [10, 3] }, { sides: "F" as const, value: 1 }].map(rareFace)).toEqual([undefined, undefined, undefined, undefined]);
+        expect([{ sides: 10, value: 10 }, { sides: 12, value: 1 }].map(rareFace)).toEqual(["highest", "lowest"]);
+        expect(diceToThrow([{ sides: 100, value: 100 }], new Set(Object.keys(models)))).toEqual([
+            { kind: "d100", values: [0], dropped: false, rare: "highest" },
+            { kind: "d10", values: [0], dropped: false },
+        ]);
+    });
+
     it("throws a d% as its tens and its units, a d10's 10 as its 0, a reroll and an explosion in turn, and leaves out dice with no model", () => {
         const kinds = new Set(Object.keys(models));
         expect(diceToThrow([{ sides: 100, value: 47 }, { sides: 100, value: 100, dropped: true }], kinds)).toEqual([
@@ -120,7 +131,7 @@ describe("the dice of the dashboard (D-278)", () => {
             { kind: "d10", values: [0], dropped: true },
         ]);
         expect(diceToThrow([{ sides: 10, value: 10 }, { sides: 20, value: 13 }, { sides: "F", value: -1 }, { sides: 3, value: 2 }], kinds)).toEqual([
-            { kind: "d10", values: [0], dropped: false },
+            { kind: "d10", values: [0], dropped: false, rare: "highest" },
             { kind: "d20", values: [13], dropped: false },
         ]);
         // A die rerolled shows the face it had, then the new one; one that exploded, each of its faces.

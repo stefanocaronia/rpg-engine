@@ -41,7 +41,12 @@ export interface DieThrow
     kind: string;
     values: number[];
     dropped: boolean;
+    /** A rare face it shows, which the page celebrates (D-281). */
+    rare?: RareFace;
 }
+
+/** A face as rare as one throw in ten or rarer: the highest or the lowest of a die that counts, as a natural 20 or a natural 1 (D-281). */
+export type RareFace = "highest" | "lowest";
 
 // The direction that is up on the screen, on the floor: away from the camera, which looks from the near side.
 const screenUp: Vector = [0, 0, -1];
@@ -53,14 +58,27 @@ export function diceToThrow(dice: ThrownDie[], kinds: ReadonlySet<string>): DieT
         // The face before a reroll, then the faces it showed after, more than one when it exploded.
         const values = [...(die.rerolledFrom === undefined ? [] : [die.rerolledFrom]), ...(die.faces ?? [die.value])];
         const dropped = die.dropped === true;
+        // A d% is celebrated on its tens.
+        const rare = rareFace(die);
+        const marked = rare === undefined ? {} : { rare };
 
         if (die.sides === 100) {
-            return [{ kind: "d100", values: values.map((value) => Math.floor((value % 100) / 10) * 10), dropped }, { kind: "d10", values: values.map((value) => value % 10), dropped }];
+            return [{ kind: "d100", values: values.map((value) => Math.floor((value % 100) / 10) * 10), dropped, ...marked }, { kind: "d10", values: values.map((value) => value % 10), dropped }];
         }
 
         const kind = `d${die.sides}`;
-        return kinds.has(kind) ? [{ kind, values: die.sides === 10 ? values.map((value) => value % 10) : values, dropped }] : [];
+        return kinds.has(kind) ? [{ kind, values: die.sides === 10 ? values.map((value) => value % 10) : values, dropped, ...marked }] : [];
     });
+}
+
+/** The rare face a die shows: its highest or its lowest, on a die of ten faces or more that counts; none for a dropped die, or one that exploded. */
+export function rareFace(die: ThrownDie): RareFace | undefined
+{
+    if (typeof die.sides !== "number" || die.sides < 10 || die.dropped === true || (die.faces?.length ?? 1) > 1) {
+        return undefined;
+    }
+
+    return die.value === die.sides ? "highest" : die.value === 1 ? "lowest" : undefined;
 }
 
 /** The turns that leave a shape where it is: its symmetries, the identity among them. */

@@ -78,6 +78,7 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
             }
 
             dice.forEach((die, index) => die.dropped && stage.dim(index));
+            dice.forEach((die, index) => die.rare !== undefined && stage.ring(index, die.rare, showing.instant));
             return true;
         },
         hide: () => stage.hide(),

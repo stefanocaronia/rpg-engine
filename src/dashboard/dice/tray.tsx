@@ -3,13 +3,14 @@
 // away. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
-import { diceToThrow } from "./models.ts";
+import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import type { Roller } from "./roller.ts";
 import { wakeSound } from "./sounds.ts";
 
-// After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read.
+// After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
 const lingers = { free: 3200, asked: 4200 };
 const fadeLength = 600;
+const flight = 450;
 
 // The dice of the free tray, by their sides: 100 is the d%, thrown as its tens and its units; at most so many at once, which the page throws in a moment.
 const freeDice = [4, 6, 8, 10, 12, 20, 100];
@@ -34,11 +35,16 @@ interface Plate
     total: number;
     text: string;
     shown: boolean;
+    /** The roll of the log it shows, whose line of the rolls it flies into. */
+    roll?: string;
+    /** The rare face of a die that counts, and its words, as natural 20 (D-281). */
+    rare?: { face: RareFace; words: string; };
 }
 
 export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; sheetThrow?: SheetThrow; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
+    const shownPlate = useRef<HTMLParagraphElement>(null);
     const button = useRef<HTMLButtonElement>(null);
     const tray = useRef<HTMLDivElement>(null);
     const roller = useRef<Promise<Roller | undefined>>();
@@ -89,7 +95,8 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
     };
 
     /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while; the plate alone when the dice cannot be thrown. */
-    const throwAndShow = async (dice: ThrownDie[], shown: Omit<Plate, "shown">, linger: number): Promise<void> => {
+    const throwAndShow = async (dice: ThrownDie[], given: Omit<Plate, "shown" | "rare">, linger: number): Promise<void> => {
+        const shown = { ...given, ...rareOf(dice) };
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
         skipping.current = false;
@@ -117,20 +124,36 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
 
         setRolling(false);
         setPlate({ ...shown, shown: true });
-        window.setTimeout(() => current() && setFading(true), linger);
-        window.setTimeout(() => {
+
+        const done = (): void => {
             if (current()) {
                 loaded?.hide();
                 setPlate(undefined);
                 setFading(false);
             }
-        }, linger + fadeLength);
+        };
+
+        window.setTimeout(() => {
+            if (!current()) {
+                return;
+            }
+
+            setFading(true);
+            const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
+
+            // On a wide screen the plate of a roll the master asked flies into its line of the rolls (D-281); elsewhere it fades.
+            if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 1100px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
+                flyInto(shownPlate.current, row, done);
+            } else {
+                window.setTimeout(done, fadeLength);
+            }
+        }, linger);
     };
 
     // A roll the master asked, as the engine rolled it: its dice land on its numbers.
     useEffect(() => {
         if (requested !== undefined) {
-            void throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text }, lingers.asked);
+            void throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text, roll: requested.id }, lingers.asked);
         }
     }, [requested?.id]);
 
@@ -166,10 +189,16 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
     return (
         <>
             <canvas ref={canvas} class={fading ? "dice-stage fading" : "dice-stage"} aria-hidden="true" />
-            <p class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : ""].filter((name) => name !== "").join(" ")} role="status" aria-live="polite">
+            <p
+                ref={shownPlate}
+                class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : "", plate?.rare === undefined ? "" : `rare ${plate.rare.face}`].filter((name) => name !== "").join(" ")}
+                role="status"
+                aria-live="polite"
+            >
                 {plate?.shown && (
                     <>
                         <span class={plate.free ? "dice-kind notation" : "dice-kind"}>{plate.title}</span> <span class="dice-number">{plate.total}</span>
+                        {plate.rare && <span class="dice-rare">{plate.rare.words}</span>}
                         <span class="dice-text">{plate.free ? `${plate.text} · free roll, not logged` : plate.text}</span>
                     </>
                 )}
@@ -213,6 +242,48 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
             )}
         </>
     );
+}
+
+/** The rare face of the dice that count, the highest first, with its words: natural 20, natural 1 (D-281). */
+function rareOf(dice: ThrownDie[]): Pick<Plate, "rare">
+{
+    const rare = dice.flatMap((die) => {
+        const face = rareFace(die);
+        return face === undefined ? [] : [{ face, words: `natural ${face === "highest" ? die.value : 1}` }];
+    }).sort((first, second) => (first.face === second.face ? 0 : first.face === "highest" ? -1 : 1))[0];
+    return rare === undefined ? {} : { rare };
+}
+
+/** Whether an element is in sight in the window. */
+function inSight(element: Element): boolean
+{
+    const box = element.getBoundingClientRect();
+    return box.top >= 0 && box.bottom <= window.innerHeight;
+}
+
+/** Flies the plate into a line of the rolls, small, and lights the line as it lands; then what comes after. */
+function flyInto(plate: HTMLElement, row: Element, then: () => void): void
+{
+    const from = plate.getBoundingClientRect();
+    const to = row.getBoundingClientRect();
+    const across = to.left + to.width / 2 - (from.left + from.width / 2);
+    const down = to.top + to.height / 2 - (from.top + from.height / 2);
+    plate.style.transition = `transform ${flight}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${flight}ms ease-in`;
+    plate.style.transform = `translate(calc(-50% + ${across}px), ${down}px) scale(${Math.min(1, to.height / from.height)})`;
+    plate.style.opacity = "0.25";
+    window.setTimeout(() => {
+        plate.style.visibility = "hidden";
+        row.classList.add("arrived");
+        window.setTimeout(() => row.classList.remove("arrived"), 900);
+        then();
+        // Once gone, the plate takes back its own place, unseen.
+        requestAnimationFrame(() => {
+            plate.style.transition = "";
+            plate.style.transform = "";
+            plate.style.opacity = "";
+            plate.style.visibility = "";
+        });
+    }, flight);
 }
 
 /** A die's name, as the tray shows it: d20, and d% for the percentile. */

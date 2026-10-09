@@ -26,7 +26,7 @@ function RollRow({ roll, member, fresh }: { roll: ShownRoll; member?: Member; fr
     const player = roll.by === "player";
     const what = player ? roll.check ?? roll.who ?? "" : roll.who ?? "the master";
     return (
-        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((name) => name !== "").join(" ")}>
+        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((name) => name !== "").join(" ")} data-roll={roll.id}>
             {!player ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : member === undefined ? <span class="token pc" aria-hidden="true" /> : <Token member={member} />}
             <span class="roll-what">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
