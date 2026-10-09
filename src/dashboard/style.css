@@ -18,6 +18,7 @@
     --on-gold: #182c4c;
     --ally: light-dark(#1b6b45, #7cc99a);
     --low: light-dark(#a73929, #ff9381);
+    --warn: light-dark(#8a5a00, #f5c63e);
     --disc: #182c4c;
     /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
     --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), transparent), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
@@ -366,17 +367,40 @@ a {
     }
 }
 
+/* The page's own messages, over it (D-298): a problem in red, the game away in amber, a word to know in the accent, each with its icon. */
+.notices {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+
 .notice {
-    margin: 0 0 10px;
-    padding: 8px 12px;
-    border: 1px solid var(--rule);
+    --tone: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 10px 14px;
+    border: 1px solid color-mix(in srgb, var(--tone) 45%, var(--rule));
     border-radius: var(--radius-l);
-    background: var(--panel);
-    color: var(--muted);
+    background: color-mix(in srgb, var(--tone) 10%, var(--panel));
+    box-shadow: var(--lift);
+    color: var(--ink);
+    font-weight: 550;
+}
+
+.notice svg.icon {
+    width: 20px;
+    height: 20px;
+    color: var(--tone);
 }
 
 .notice.problem {
-    color: var(--low);
+    --tone: var(--low);
+}
+
+.notice.away {
+    --tone: var(--warn);
 }
 
 /* The party's strip: a card for each, a link to their sheet. */

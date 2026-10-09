@@ -7,6 +7,7 @@ import { AskedBanner } from "./asked.tsx";
 import type { Asked, Member, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
+import { type Notice, Notices } from "./notices.tsx";
 import { PartyStrip } from "./party.tsx";
 import { RollLog } from "./rolls.tsx";
 import { MemberSheet } from "./sheet.tsx";
@@ -122,16 +123,22 @@ function App()
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const lead = shown.party.find((candidate) => candidate.role === "pc");
     const place = lead?.place?.replace(/^in /, "");
+    // The page's own messages, over it (D-298): a problem, the game away, a word to know.
+    const notices: Notice[] = [
+        ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
+        ...(!live && shown.readAt !== undefined
+            ? [{ kind: "away" as const, text: `Not connected: the sheet as of ${shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.` }]
+            : []),
+        ...(shown.noCharacter ? [{ kind: "info" as const, text: "There is no player character yet: the sheet comes when the master writes one." }] : []),
+    ];
     return (
         <div class={live ? "page" : "page stale"}>
             <Top campaign={shown.campaign} product={productName} system={shown.system?.name} now={shown.now} place={place === "" ? undefined : place} live={live} />
+            <Notices notices={notices} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
             <PartyStrip party={shown.party} chosen={shown.chosen} />
             <div class="body">
                 <main>
-                    {!live && shown.readAt !== undefined && <p class="notice" role="status">Not connected: the sheet as of {shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.</p>}
-                    {shown.problem && <p class="notice problem" role="alert">{shown.problem}</p>}
-                    {shown.noCharacter && <p class="notice">There is no player character yet: the sheet comes when the master writes one.</p>}
                     {member && (
                         <MemberSheet
                             key={member.name}
