@@ -167,6 +167,14 @@ export function keptEffects(world: World, scene: Scene | undefined, name: string
     return [...kept].map(([effect, holders]) => `${effect} (${holders.join(", ")})`);
 }
 
+/** The effects on whoever has this name, a page or a copy in the open scene, the copy first as change finds it (INH-14). */
+export function effectsOn(world: World, scene: Scene | undefined, name: string): Effect[]
+{
+    const holders = effectHolders(world, scene).filter((holder) => comparableText(holder.page.name) === comparableText(name));
+    const holder = holders.find((candidate) => candidate.copy) ?? holders[0];
+    return holder === undefined ? [] : effectsOf(holder.page);
+}
+
 /**
  * The problems of effects (EFF-12): fields that do not read, ends that are neither game dates nor occasions of the game system (DAT-5), effects ended and still there,
  * effects that end with a scene when none is open. `sceneProblem` says why the open scene cannot be read, if it cannot.

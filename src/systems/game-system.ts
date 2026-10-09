@@ -70,6 +70,9 @@ const systemSchema = z.object({
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
+    keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
+        error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
+    }).strict().optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
         list: z.string().min(1),
@@ -95,6 +98,7 @@ const systemSchema = z.object({
             min: z.union([z.number(), z.string().min(1)]).optional(),
             max: z.union([z.number(), z.string().min(1)]).optional(),
             refill: z.union([z.string().min(1), z.record(z.string().min(1), z.union([z.number(), z.string().min(1)]))]).optional(),
+            shields: z.string().min(1).optional(),
         }).strict(),
     ).optional(),
 }).strict();
@@ -109,6 +113,14 @@ export interface Recipe
     regain: Record<string, Formula>;
     ends: string[];
     rules: string[];
+}
+
+/** What can break what someone keeps alive (D-266, EFF-14): their counter going down, the conditions they may take, and the title of the rule to read. */
+export interface Keeping
+{
+    counter: string;
+    conditions: string[];
+    rules: string;
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -213,6 +225,10 @@ export interface GameSystem
     recipes: Recipe[];
     /** The names of its conditions (D-186, DAT-6). */
     conditions: string[];
+    /** What can break what someone keeps alive, when the game has it (EFF-14). */
+    keeping?: Keeping;
+    /** By counter, the counter it shields, which loses from it first, as temp-hp shields hp (DAT-14). */
+    shields: Record<string, string>;
     /** What it works out from the fields of a page (D-199, FOR-1). */
     formulas: SystemFormulas;
     /** How the classes of a character give the rows of their tables and their features (D-219, PRO-1–PRO-3). */
@@ -352,7 +368,9 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     }
 
     const data = parsed.data;
-    const formulas = systemFormulas(data, name, path);
+    // What a counter shields is no limit of it: a counter with only that has none (DAT-14).
+    const limited = Object.entries(data.counters ?? {}).map(([counter, { shields: _shields, ...limits }]) => [counter, limits] as const).filter(([, limits]) => Object.keys(limits).length > 0);
+    const formulas = systemFormulas({ ...data, counters: Object.fromEntries(limited) }, name, path);
     const stray = strayOccasion(data, formulas);
 
     if (stray !== undefined) {
@@ -366,6 +384,16 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
 
     if (notList !== undefined) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list in fields, or give no values to it.`);
+    }
+
+    // What breaks what someone keeps, and what a counter shields, read counters (EFF-14, DAT-14).
+    const counted = [
+        ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
+        ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
+    ].find((entry) => kindOf(entry.field) !== "counter");
+
+    if (counted !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${counted.where}: ${counted.field} is not declared as a counter in fields.`);
     }
 
     const notMarking = [...(data.marks ?? []), ...[data.progression?.list, data.progression?.parts?.list].filter((field) => field !== undefined)].find((field) => kindOf(field) !== "list");
@@ -407,6 +435,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             rules: value.rules ?? [],
         })),
         conditions: data.conditions ?? [],
+        ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
+        shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
         itemFormulas: data["item-formulas"] ?? {},

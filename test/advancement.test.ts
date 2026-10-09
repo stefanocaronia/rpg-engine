@@ -114,7 +114,8 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
             "Lena has the xp for level 4: level up the companion: the class and what the new level asks are yours to choose, as the story has shaped the companion, or the player's if they made it: "
                 + 'read rules "Beyond 1st Level".',
         );
-        await ok("write", "Lena", "--set", "classes=[[Wizard]] 20", "--set", "xp=355000");
+        await ok("write", "Lena", "--set", "classes=[[Wizard]] 20");
+        await ok("change", "Lena", "xp", "--to", "355000");
         expect(await ok("show", "Lena")).toContain("level 20 · xp 355000\n");
     });
 
@@ -142,13 +143,13 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         await ok("change", "Rasco", "hp", "--to", "0");
         const closed = await ok("scene", "close", "--summary", "I lupi cadono.");
         expect(closed).toContain(
-            "xp of those overcome: Wolf 2 50, Wolf 1 50, Rasco 25, 125 in all; 62 each to Ennio, Lena: change Ennio, field xp, by 62; write Lena, set xp=62. "
+            "xp of those overcome: Wolf 2 50, Wolf 1 50, Rasco 25, 125 in all; 62 each to Ennio, Lena: change Ennio, field xp, by 62; change Lena, field xp, by 62. "
                 + "Rasco is a character: leave out any who fought on your side, and share again. Fled: Goblin 1 50, to count if the party overcame them. "
                 + "Leave out what the party summoned; count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",
         );
         expect(readFileSync(join(folder, "world", "characters", "Ennio.md"), "utf8")).toContain("xp: 0\n");
-        // A companion without points yet is told to write them, never to give them a maximum.
-        expect(await refused("change", "Lena", "xp", "--by", "62")).toContain("such as set xp=0");
+        // A companion without points yet starts from 0, as the system declares them a counter with no maximum (CNT-8).
+        expect(await ok("change", "Lena", "xp", "--by", "62")).toBe("Lena: xp 0 → 62.");
         await ok("config", "advancement", "milestones");
         await ok("scene", "open", "--title", "Altro agguato", "--type", "combat", "--creatures", "Wolf=1");
         await ok("change", "Wolf 1", "hp", "--to", "0");

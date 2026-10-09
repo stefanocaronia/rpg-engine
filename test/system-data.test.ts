@@ -179,7 +179,10 @@ describe("recipes (DAT-4, DAT-5)", () => {
         await ok("effect", "add", "Ennio", "Prosciugato", "--for", "long rest", "--set", "hp=5/8");
         await ok("effect", "add", "Ennio", "Ombra", "--for", "short rest");
         await ok("effect", "add", "Ennio", "Benedetto", "--for", "1h");
-        expect(await ok("change", "--recipe", "long rest", "--why", " ")).toBe([
+        const rested = await ok("change", "--recipe", "long rest", "--why", " ");
+        // A threshold with no value gives its rule's text at every change, here temporary hit points going (DAT-3, D-266).
+        expect(rested).toContain("\n\ntemp-hp changed: Temporary Hit Points, from the rules of 5e:\n### Temporary Hit Points\n");
+        expect(rested.split("\n\ntemp-hp changed")[0]).toBe([
             "Long rest (a recipe of the system 5e):",
             'Ennio: Prosciugato ended; Ombra ended; hp 5/12 → 12/12; temp-hp 4 → 0; slots-1 0/2 → 2/2. Not brought back: hit-dice 0/1, exhaustion 1/6 (rules "Exhaustion").',
             "Lena: hp 2/4 → 4/4 (again as Commoner).",
@@ -205,7 +208,10 @@ describe("recipes (DAT-4, DAT-5)", () => {
         await ok("write", "Bruno", "--type", "character", "--set", "role=companion", "--set", "hp=0/9", "--set", "status=dead");
         await ok("write", "Locanda", "--add", "contains=[[Bruno]]");
         const output = await ok("change", "--recipe", "long rest", "--why", "una notte alla locanda");
-        expect(output).toContain('Ennio: hp 20/34 → 34/34 (in Forma d\'orso).\nLena: hp 0/4 → 4/4 (again as Commoner).\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".\n');
+        expect(output).toContain(
+            "Ennio: hp 20/34 → 34/34 (in Forma d'orso). Still on Ennio, with no end: Forma d'orso. Read in their text whether a rest asks for something.\n"
+                + 'Lena: hp 0/4 → 4/4 (again as Commoner).\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".\n',
+        );
         expect(output).not.toContain("Bruno");
         expect(character("Ennio")).toContain("hp: 5/12\n");
         expect(character("Ennio")).toContain("Forma d'orso (hp: 34/34)");
@@ -296,7 +302,8 @@ describe("conditions and rounds (DAT-6, DAT-7)", () => {
 
     it("refuse an effect named as a counter of the system", async () => {
         expect(await refused("effect", "add", "Ennio", "Exhaustion")).toBe("exhaustion is a counter of the system 5e, kept on the page: change it, such as page Ennio, field exhaustion, by 1. Nothing changed.");
-        expect(await refused("change", "Ennio", "exhaustion", "--by", "1")).toContain("such as set exhaustion=0");
+        // A counter the system declares with no maximum starts at 0 (CNT-8, D-266).
+        expect(await ok("change", "Ennio", "exhaustion", "--by", "1")).toMatch(/^Ennio: exhaustion 0 → 1\.\n/);
         expect(await ok("effect", "add", "Ennio", "Speed", "--for", "1h")).toBe("Ennio: Speed until day 1, 19:00.");
     });
 

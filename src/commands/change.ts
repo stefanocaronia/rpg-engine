@@ -34,6 +34,7 @@ import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { campaignCoins } from "./game-money.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
+import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
@@ -41,7 +42,7 @@ import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.t
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { keptRolls } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
-import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources } from "./worked-out.ts";
+import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources, startingAtZero } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder
@@ -106,7 +107,7 @@ export const change = defineCommand({
         }
 
         const holder = holderNamed(root, world, input.page);
-        const fields = effectiveFields(world, holder.page);
+        const fields = withDeclaredStart(world, effectiveFields(world, holder.page), input.field);
         const { coins, problem } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
@@ -159,6 +160,8 @@ interface StepOutcome
     followers: string[];
     keepers: string[];
     thresholds: string[];
+    /** What the change may break that someone keeps alive, and what shields the counter it lowered (EFF-14, DAT-14). */
+    reminders: string[];
 }
 
 /**
@@ -174,6 +177,8 @@ interface RecipeOutcome
     choices: string[];
     notBroughtBack: string[];
     kept: string[];
+    /** The effects without an end still on the page, which a rest may ask something of (EFF-15). */
+    resting: string;
 }
 
 /**
@@ -239,6 +244,9 @@ function applyStep(
         ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after)), companion, levelUp)
         : [];
     const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...levels];
+    // What the loss may break that someone keeps alive, on anyone, and what shields the counter that went down (EFF-14, DAT-14).
+    const lost = touched ? lostBy(step) : 0;
+    const reminders = [keepingLossNote(world, readOpenScene(root).scene, system, page, field, lost), ...shieldNotes(world, system, holder.page, field, lost)].filter((note) => note !== "");
     const outcome = {
         page,
         field,
@@ -253,15 +261,41 @@ function applyStep(
         followers: followers.map((follower) => follower.name),
         keepers,
         thresholds,
+        reminders,
     };
     return { outcome, world: updated };
+}
+
+/**
+ * The fields, with a counter the game system declares and gives no maximum at 0 when the page does not hold it yet, as temporary hit points: change starts it,
+ * since write never changes it once written (CNT-7, CNT-8, D-266).
+ */
+function withDeclaredStart(world: World, fields: Record<string, unknown>, name: string): Record<string, unknown>
+{
+    const declared = startingAtZero(world, name);
+    const held = Object.keys(fields).some((field) => comparableText(field) === comparableText(name.trim()));
+    return declared === undefined || held || computedField(world, declared, fields) !== undefined ? fields : { ...fields, [declared]: 0 };
+}
+
+/** How much a step took away: the whole of a negative by, even past a limit, as damage is taken; otherwise what the value went down. */
+function lostBy(step: Step): number
+{
+    const by = step.amount.by;
+
+    if (typeof by === "number") {
+        return by < 0 ? -by : 0;
+    }
+
+    const before = readCounter(step.before)?.value;
+    const after = readCounter(step.after)?.value;
+    return before === undefined || after === undefined ? 0 : before - after;
 }
 
 /** What else a step says: the thresholds it touches, the events it sets off, the pages that changed with it, and those that keep their own. */
 function stepNotes(step: StepOutcome): string[]
 {
     const followers = followersNote(step.followers, `since they read ${step.field} from ${step.page}`, "change", `${step.field} ${step.after}`);
-    return [...step.thresholds, nowDueNote(step.due), followers, keepersNote(step.keepers, step.field)].filter((note) => note !== "");
+    return [...step.thresholds, ...step.reminders, nowDueNote(step.due), followers, keepersNote(step.keepers, step.field)].filter((note) => note !== "");
 }
 
 /**
@@ -347,6 +381,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
+        resting: restingEffectsNote(pageCalled(current, name)),
     };
     return { outcome, world: current };
 }
@@ -402,7 +437,8 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
         // Rolls kept for later: if this rest brings them back, they are rolled again (KEP-4).
         const roller = outcome.pc ? "the player rolls" : "roll";
         const kept = outcome.kept.length === 0 ? "" : ` ${outcome.page} keeps ${outcome.kept.join("; ")}: if this rest brings them back, ${roller} them again, with roll and keep.`;
-        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${kept}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
+        const resting = outcome.resting === "" ? "" : ` ${outcome.resting}`;
+        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${kept}${resting}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;

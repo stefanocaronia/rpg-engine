@@ -66,12 +66,19 @@ export const ask = defineCommand({
         const checks = options.filter((option) => option.notation !== undefined);
         const words = buttonWords[(readSettings(root).language ?? "en").split("-")[0]] ?? buttonWords.en;
 
+        // One answer alone is no choice: a roll whose dice are not at the end would become one, and nothing would be rolled (ASK-2, D-266).
+        if (checks.length === 0 && options.length === 1) {
+            throw new Error(`"${options[0].label}" alone is no choice: a roll ends with its dice, such as Danni radianti 1d8; a choice gives two answers or more.`);
+        }
+
         if (checks.length === 0) {
             return answer(root, context, player, question, options, words);
         }
 
         if (checks.length < options.length) {
-            throw new Error("Give every check its dice, such as Atletica 1d20+5; for a choice, give only the answers, such as Sì and No.");
+            throw new Error(
+                `Give every check its dice, such as Atletica 1d20+5; for a choice, give only the answers, such as Sì and No. A roll already has its button to change one's mind (${words.change}): leave out an answer such as No.`,
+            );
         }
 
         const who = playerCharacter(loadWorld(root), input.who);

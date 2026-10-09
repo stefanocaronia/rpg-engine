@@ -259,7 +259,9 @@ function sceneText(world: World, scene: Scene | undefined): string | undefined
         return counters === "" ? name : `${name}: ${counters}`;
     });
     const away = partyAwayText(world, scene);
-    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${away === "" ? "" : `; ${away}`}`;
+    // What happened in it so far is in its log, which show gives (SCN-10).
+    const told = `. show ${scene.title} for what happened so far`;
+    return `${scene.title} (${scene.type})${place}${characters}${turn}${copies.length === 0 ? "" : `; copies: ${copies.join("; ")}`}${away === "" ? "" : `; ${away}`}${told}`;
 }
 
 /** "Varro (hp 23/30 · Prono)": a character in the scene who is not of the party, with counters and effects, as a copy shows them (EFF-10). */

@@ -49,7 +49,7 @@ describe("the parts of the instructions (D-121)", () => {
         inPlay(folder);
         const given = await ok("instructions");
         expect(given).toMatch(/^# Game master: core instructions\n/);
-        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### Fifth edition\n\n- At difficulty normal, fights run from medium to hard/);
+        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### Fifth edition\n\n- At difficulty normal, fights run from moderate to high difficulty \(XP budget per character\)/);
         expect(given).not.toContain("## Setup");
     });
 

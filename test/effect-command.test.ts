@@ -298,7 +298,8 @@ describe("the edges of the command, case by case", () => {
         await ok("effect", "add", "Ennio", "Maledizione");
         expect(await ok("advance", "--by", "1d")).toBe("day 1, 18:00 → day 2, 18:00.");
         await combat();
-        expect(await ok("scene", "next")).toBe("Round 1 · now Annegato 1 (then Lena).");
+        // The effect without an end is named on the turn that ends (EFF-15).
+        expect(await ok("scene", "next")).toBe("Round 1 · now Annegato 1 (then Lena).\nEnd of Ennio's turn: Maledizione. Read in their text what acts now.");
         await ok("effect", "add", "Lena", "Schivata", "--for", "1 round");
         expect((await rpg("validate")).output).toBe("No problems.");
         expect(await ok("scene", "close", "--summary", "Fatto.")).toBe(

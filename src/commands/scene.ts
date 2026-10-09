@@ -17,13 +17,14 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
+import { turnEffectsNote } from "./game-reminders.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
-import { hasSheet } from "./worked-out.ts";
+import { hasSheet, startingAtZero } from "./worked-out.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "close"] as const;
 type Action = (typeof actions)[number];
@@ -81,8 +82,8 @@ interface Brought
 type SceneResult =
     | ({ action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; around: string; part: string; } & Brought)
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
-    | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; }
-    | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; } & Turns)
+    | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
+    | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
     | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
 
 /** The save the end of a scene made, or why it made none (SAV-3). */
@@ -141,11 +142,11 @@ export const scene = defineCommand({
             case "add":
                 return addTo(root, world, input, context, current);
             case "leave":
-                return leave(root, world, input.who ?? [], context, current);
+                return withActing(root, context, current, leave(root, world, input.who ?? [], context, current));
             case "order":
-                return setOrder(root, world, input.order ?? [], context, current);
+                return withActing(root, context, current, setOrder(root, world, input.order ?? [], context, current));
             default:
-                return passTurn(root, world, context, current);
+                return withActing(root, context, current, passTurn(root, world, context, current));
         }
     },
 
@@ -169,13 +170,13 @@ export const scene = defineCommand({
             case "leave": {
                 const turns = result.turns === undefined ? (result.noTurns ? "\nNo one takes turns now." : "") : `\n${turnText(result.turns)}`;
                 const left = result.left.map((member) => (Object.keys(member.counters).length === 0 ? member.name : `${member.name} (${countersText(member.counters)})`));
-                return `${left.join(", ")} left the scene.${turns}${endedText(result.ended)}`;
+                return `${left.join(", ")} left the scene.${turns}${actingText(result.acting)}${endedText(result.ended)}`;
             }
 
             case "order":
-                return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${endedText(result.ended)}`;
+                return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             case "next":
-                return `${turnText(result)}${endedText(result.ended)}`;
+                return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             default:
                 return closedText(result);
         }
@@ -513,8 +514,8 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
 
         const share = Math.floor(total / party.length);
         const to = party.length === 1 ? `${share} to ${party[0].name}` : `${share} each to ${party.map((page) => page.name).join(", ")}`;
-        // Who has no such field yet gets it written: change would refuse it.
-        const held = (page: Page): boolean => read(effectiveFields(world, page), reward.field) !== undefined;
+        // Who has no such field yet gets it written, unless change starts it at 0 (CNT-8).
+        const held = (page: Page): boolean => read(effectiveFields(world, page), reward.field) !== undefined || startingAtZero(world, reward.field) !== undefined;
         const calls = party.map((page) => (held(page) ? `change ${page.name}, field ${reward.field}, by ${share}` : `write ${page.name}, set ${reward.field}=${share}`)).join("; ");
         const kinds = [...new Set(unknown.map((item) => item.kind))];
         const characters = overcome.filter((item) => item.character).map((item) => item.name);
@@ -578,6 +579,31 @@ function logCopies(root: string, context: Context, title: string, copies: Record
 }
 
 /** "Round 2 · now Lena (then Annegato 2).", and on the player's character's turn, to stop there (D-139). */
+/**
+ * The result of a change of turn, with the effects on who ends the turn and on who starts the next (EFF-15), read after the effects that the turn ends have
+ * ended; nothing when the turn stays where it was.
+ */
+function withActing(root: string, context: Context, before: Scene, result: SceneResult): SceneResult
+{
+    if (result.action !== "leave" && result.action !== "order" && result.action !== "next") {
+        return result;
+    }
+
+    const turns = result.action === "leave" ? result.turns : result;
+
+    if (turns === undefined || (turns.turn === before.turn && turns.round === (before.round ?? 1))) {
+        return result;
+    }
+
+    const acting = turnEffectsNote(campaignWorld(root, context), readOpenScene(root).scene, before.turn, turns.turn);
+    return acting === "" ? result : { ...result, acting };
+}
+
+function actingText(acting: string | undefined): string
+{
+    return acting === undefined ? "" : `\n${acting}`;
+}
+
 function turnText(result: Turns): string
 {
     const then = result.order.length > 1 ? nextTurn(result.order, result.turn, 1).turn : undefined;

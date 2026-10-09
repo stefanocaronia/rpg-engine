@@ -202,6 +202,44 @@ export function updateScene(root: string, changes: [string[], unknown][]): void
     changeStateAt(root, changes.map(([path, value]) => [["scene", ...path], value]));
 }
 
+/**
+ * What happened in the open scene since it opened, from the log, round by round, with every why (D-266, SCN-10): what a master who starts a new chat in the
+ * middle of a fight reads before the recap. Where each one stands is never written, and the text says so.
+ */
+export function openSceneLog(root: string, scene: Scene): string
+{
+    const entries = readLog(root);
+    const opened = entries.findLastIndex((entry) => entry.type === "scene-opened" && entry.data.title === scene.title);
+    const lines: string[] = [];
+    let round: unknown;
+
+    for (const entry of opened < 0 ? [] : entries.slice(opened + 1)) {
+        if (entry.type === "scene-changed" && entry.data.round !== undefined && entry.data.round !== round) {
+            round = entry.data.round;
+            lines.push(`Round ${String(round)}:`);
+        }
+
+        const line = sceneLogLine(entry.type, entry.data);
+
+        if (line !== "") {
+            lines.push(`- ${line}`);
+        }
+
+        // The first order of turns starts round 1 with its first, who acts before any turn passes (SCN-6).
+        if (entry.type === "scene-changed" && Array.isArray(entry.data.order) && round === undefined) {
+            round = 1;
+            lines.push("Round 1:");
+        }
+    }
+
+    const place = scene.place === undefined ? "" : ` at ${parsePageReference(scene.place).name}`;
+    return [
+        `${scene.title} (${scene.type}, open)${place}: what happened since it opened, from the log.`,
+        ...(lines.length === 0 ? ["Nothing yet."] : lines),
+        "Where each one stands is not kept: leave it out of a recap, and ask the player only when it matters to their next move.",
+    ].join("\n");
+}
+
 /** The scenes closed so far, newest first, from the log; lines written wrongly by hand are left out. */
 export function closedScenes(root: string): ClosedScene[]
 {
@@ -246,4 +284,64 @@ export function sceneProblems(root: string, world: World): Problem[]
         fix: "close the scene, which removes the copy, or rename the page",
     }));
     return [...missing, ...clashes];
+}
+
+/** One line of the log as the open scene's log gives it, or nothing for a line it leaves out, such as a turn passing or a save. */
+function sceneLogLine(type: string, data: Record<string, unknown>): string
+{
+    const why = typeof data.why === "string" && data.why !== "" ? ` (${data.why})` : "";
+
+    switch (type) {
+        case "roll":
+            return `${typeof data.who === "string" ? data.who : "roll"}: ${String(data.why ?? data.notation)}: ${String(data.total)}`;
+        case "counter-changed":
+            return `${String(data.page)}: ${String(data.field)} ${String(data.before)} → ${String(data.after)}${why}`;
+        case "effect-added":
+            return `${String(data.page)}: ${String(data.effect)}${why}`;
+        case "effect-ended":
+            return `${String(data.page)}: ${String(data.effect)} ended${why}`;
+        case "moved":
+            return `${namesText(data.pages)} to ${String(data.to)}${why}`;
+        case "asked":
+            return `asked the player: ${String(data.question)} → ${data.answer === undefined ? "no answer" : String(data.answer)}`;
+        case "time-advanced":
+            return `time to ${String(data.to)}${why}`;
+        case "page-created":
+        case "page-updated":
+            return `wrote ${String(data.page)}`;
+        case "scene-changed":
+            return sceneChangeLine(data);
+        default:
+            return "";
+    }
+}
+
+/** "left: Cultista 1 (hp 2/9)": who joined or left, the order, or the copies, as the open scene's log gives them; nothing for a turn passing. */
+function sceneChangeLine(data: Record<string, unknown>): string
+{
+    const copies = data.copies !== null && typeof data.copies === "object" ? (data.copies as Record<string, Record<string, unknown>>) : {};
+
+    const withNumbers = (name: string): string => {
+        const numbers = Object.entries(copies[name] ?? {}).filter(([field]) => field !== "creature").map(([field, value]) => `${field} ${String(value)}`);
+        return numbers.length === 0 ? name : `${name} (${numbers.join(", ")})`;
+    };
+
+    if (Array.isArray(data.order)) {
+        return `order: ${data.order.map(String).join(" · ")}`;
+    }
+
+    if (Array.isArray(data.left)) {
+        return `left: ${data.left.map((name) => withNumbers(String(name))).join(", ")}`;
+    }
+
+    if (Array.isArray(data.added)) {
+        return `joined: ${namesText(data.added)}`;
+    }
+
+    return Object.keys(copies).length === 0 ? "" : `copies: ${Object.keys(copies).map(withNumbers).join(", ")}`;
+}
+
+function namesText(value: unknown): string
+{
+    return Array.isArray(value) ? value.map(String).join(", ") : String(value);
 }

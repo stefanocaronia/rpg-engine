@@ -12,6 +12,7 @@ import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
 import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
+import { keepingConditionNote, secondKeptNote } from "./game-reminders.ts";
 import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
@@ -132,7 +133,9 @@ export const effect = defineCommand({
         const replaced = effectNamed(current, name);
         const effects = withEffect(current, added);
         const changed = valuesChanged(world, holder.page, withEffects(holder.page, effects), added);
-        const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system)];
+        // What the condition may break that the holder keeps alive, and what the keeper already keeps, read before the effect is written (EFF-14).
+        const keeping = [keepingConditionNote(world, open.scene, system, holder.page.name, name), secondKeptNote(world, open.scene, system, added)].filter((note) => note !== "");
+        const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system), ...keeping];
         saveEffects(root, context, world, holder, effects);
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
         const instead = replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`];

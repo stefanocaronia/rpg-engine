@@ -433,7 +433,8 @@ function checkCounters(world: World, page: Page, set: Record<string, unknown> | 
 
     for (const [field, value] of Object.entries(set ?? {}).filter(([, candidate]) => !isEmptyField(candidate))) {
         const name = sameName(Object.keys(fields), field);
-        const current = name === undefined || (isStandardField(page.type, name) && !isCounterField(page.type, name)) || isDeclaredUncounted(world, name) ? undefined : guarded(fields[name], coins);
+        const declared = name !== undefined && declaredKind(world, name) === "counter";
+        const current = name === undefined || (isStandardField(page.type, name) && !isCounterField(page.type, name)) || isDeclaredUncounted(world, name) ? undefined : guarded(fields[name], coins, declared);
         const next = current === undefined ? undefined : sameKind(current.kind, value, coins);
         const base = baseValue(world, page, field);
 
@@ -475,12 +476,15 @@ function checkUses(world: World, system: GameSystem | undefined, page: Page, set
     }
 }
 
-/** A value that changes only with change, as it is compared: a current/max counter (D-92) or money (MON-6); undefined for any other. */
-function guarded(value: unknown, coins: Coin[] | undefined): { kind: "counter" | "money"; text: string; } | undefined
+/**
+ * A value that changes only with change, as it is compared: a current/max counter (D-92), a number the game system declares a counter (CNT-7, D-266), or money
+ * (MON-6); undefined for any other.
+ */
+function guarded(value: unknown, coins: Coin[] | undefined, declared: boolean): { kind: "counter" | "money"; text: string; } | undefined
 {
     const counter = readCounter(value);
 
-    if (counter?.max !== undefined) {
+    if (counter !== undefined && (counter.max !== undefined || declared)) {
         return { kind: "counter", text: String(formatCounter(counter)) };
     }
 
@@ -525,9 +529,9 @@ function guardedMessage(page: Page, field: string, kind: "counter" | "money", ne
 function checkClearedCounters(world: World, page: Page, change: FieldChange, coins: Coin[] | undefined): void
 {
     for (const own of (change.unset ?? []).filter((field) => Object.hasOwn(page.fields, field))) {
-        const current = isStandardField(page.type, own) || isDeclaredUncounted(world, own) ? undefined : guarded(page.fields[own], coins);
+        const current = isStandardField(page.type, own) || isDeclaredUncounted(world, own) ? undefined : guarded(page.fields[own], coins, false);
         const base = baseValue(world, page, own);
-        const fromBase = base === undefined ? undefined : guarded(base.value, coins);
+        const fromBase = base === undefined ? undefined : guarded(base.value, coins, false);
         const alsoHeld = Object.keys(page.fields).some((other) => other !== own && comparableText(other) === comparableText(own) && !isEmptyField(page.fields[other]));
 
         if (!alsoHeld && base !== undefined && current !== undefined && fromBase?.kind === current.kind) {
@@ -926,8 +930,8 @@ function ownValuesNote(now: World, before: Page, after: Page, coins: Coin[] | un
 
     // A current/max counter or money goes back to the base's value with change; anything else is removed.
     const back = kept.map(({ field, value, base }) => {
-        const mine = guarded(value, coins);
-        const theirs = guarded(base.value, coins);
+        const mine = guarded(value, coins, false);
+        const theirs = guarded(base.value, coins, false);
         return mine !== undefined && mine.kind === theirs?.kind ? `change ${field} to ${mine.kind === "money" ? `"${theirs.text}"` : theirs.text}` : `unset ${field}`;
     });
     const listed = kept.map(({ field, value, base }) => `${field} ${valueText(value)} (${base.base.name} gives ${valueText(base.value)})`);

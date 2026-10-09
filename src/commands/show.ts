@@ -25,7 +25,7 @@ import {
 import { featureParts } from "../progression/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
-import { closedScenes, copyLink, copyPage, readOpenScene } from "./game-scene.ts";
+import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
 import { featureSource, progressionOf } from "./progression.ts";
@@ -63,11 +63,16 @@ export const show = defineCommand({
         const found = findPage(world, reference.name);
         const page = found ?? (scene !== undefined && copy !== undefined ? copyPage(copy, scene.copies[copy]) : undefined);
 
+        // The open scene's title gives what happened in it so far (SCN-10).
+        if (page === undefined && scene !== undefined && reference.section === undefined && sameName([scene.title], reference.name) !== undefined) {
+            return { sceneLog: openSceneLog(root, scene) };
+        }
+
         if (page === undefined) {
             // A scene's title is no page, as the last scenes status lists.
             const closed = closedScenes(root).find((other) => sameName([other.title], reference.name) !== undefined);
             const named = scene !== undefined && sameName([scene.title], reference.name) !== undefined
-                ? ` ${scene.title} is the open scene, not a page: status gives it.`
+                ? ` ${scene.title} is the open scene, not a page: show it without a section for what happened so far.`
                 : closed === undefined
                 ? ""
                 : ` ${closed.title} is a scene that closed, not a page (${closed.type}): ${closed.summary}`;
@@ -130,6 +135,10 @@ export const show = defineCommand({
 
     format(result)
     {
+        if (result.sceneLog !== undefined) {
+            return result.sceneLog;
+        }
+
         const what = result.copyOf !== undefined
             ? `copy of ${result.copyOf} in the open scene "${result.scene}"`
             : result.system !== undefined

@@ -204,16 +204,17 @@ Only characters know things, in their `knows` list of links to pages and to secr
 
 ### Counters and money
 
-Files: [counters/counter.ts](../src/counters/counter.ts), [money/money.ts](../src/money/money.ts), [commands/change.ts](../src/commands/change.ts), [commands/game-money.ts](../src/commands/game-money.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-thresholds.ts](../src/commands/game-thresholds.ts). Codes: `CNT-1`–`CNT-10`, `MON-1`–`MON-8`, `DAT-1`, `DAT-3`–`DAT-5`.
+Files: [counters/counter.ts](../src/counters/counter.ts), [money/money.ts](../src/money/money.ts), [commands/change.ts](../src/commands/change.ts), [commands/game-money.ts](../src/commands/game-money.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-thresholds.ts](../src/commands/game-thresholds.ts). Codes: `CNT-1`–`CNT-10`, `MON-1`–`MON-8`, `DAT-1`, `DAT-3`–`DAT-5`, `DAT-14`.
 
 - A counter is a whole number or `current/max` (`CNT-1`), from 0 or a minimum the system works out up to its maximum (`CNT-2`). `changeCounter` applies `by` (stops at a limit and says how far beyond; a value outside never goes further out), `spend` (refused below 0, or below a minimum above it) or `to` (`CNT-3`–`CNT-5`).
 - Money is a field written in the campaign's coins, such as `money: 34 gp 4 sp`. The coins come from `campaign.yaml`, else from the system (`MON-1`, `DAT-1`); `payCoins` pays with change, never in rare coins (`MON-5`).
-- `write` refuses to overwrite a `current/max` counter or money, but writes a plain number, which may be a statistic (`CNT-7`, `MON-6`); `change` changes them and logs `counter-changed`. It also applies a system's recipes, such as `long rest` (`DAT-4`, `DAT-5`), and adds the rule notes of the thresholds a party counter touches (`DAT-3`).
+- `write` refuses to overwrite a `current/max` counter or money, but writes a plain number, which may be a statistic, unless the system declares it a counter (`CNT-7`, `MON-6`); `change` changes them and logs `counter-changed`, and starts at 0 a declared counter with no maximum (`CNT-8`). It also applies a system's recipes, such as `long rest` (`DAT-4`, `DAT-5`), and adds the rule notes of the thresholds a party counter touches (`DAT-3`).
 
 ### Effects and their layer
 
-Files: [effects/effect.ts](../src/effects/effect.ts), [commands/effect-layer.ts](../src/commands/effect-layer.ts), [commands/effect.ts](../src/commands/effect.ts), [commands/game-effects.ts](../src/commands/game-effects.ts). Codes: `EFF-1`–`EFF-13`.
+Files: [effects/effect.ts](../src/effects/effect.ts), [commands/effect-layer.ts](../src/commands/effect-layer.ts), [commands/effect.ts](../src/commands/effect.ts), [commands/game-effects.ts](../src/commands/game-effects.ts), [commands/game-reminders.ts](../src/commands/game-reminders.ts). Codes: `EFF-1`–`EFF-15`.
 
+- The reminders of a fight are said, never done (D-266): what breaks what someone keeps alive, from the system's `keeping`, when `change` or `effect` touches the keeper (`EFF-14`); the effects on who ends and who starts a turn, when it passes, and those without an end on who rests (`EFF-15`); the counter that shields one that went down (`DAT-14`).
 - An effect is one line of a page's `effects` field, such as `Name (by: [[Lena]], ac: 15) until day 2, 14:20` (`EFF-1`). It ends at a game date, at someone's turn in a round, with the scene, or at a system occasion such as `long rest` (`EFF-2`, `DAT-5`).
 - A system may add settings to the setup (`DAT-10`): `withSettings` gives the system as the campaign's values have it, without the fields a value leaves out, and `campaignSystem` in `game-world.ts` reads it so; `config`, `status` and `validate` ask, show and check them.
 - `effectiveFields` is what commands read as a page's fields: inherited fields, then effects over them (the newest wins, a `bonus` field adds up), then what the system works out (`EFF-3`, `FOR-5`, `FOR-3`). The layer of effects alone is `withEffectValues` in `worked-out.ts`, which the formulas of an item's page read, as a weapon under Magic Weapon. Both are cached per world and page.
@@ -252,7 +253,9 @@ Files: [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [comm
 
 ### Scenes and turns
 
-Files: [scene/scene.ts](../src/scene/scene.ts), [commands/scene.ts](../src/commands/scene.ts), [commands/game-scene.ts](../src/commands/game-scene.ts). Codes: `SCN-1`–`SCN-9`, `DAT-11`.
+Files: [scene/scene.ts](../src/scene/scene.ts), [commands/scene.ts](../src/commands/scene.ts), [commands/game-scene.ts](../src/commands/game-scene.ts). Codes: `SCN-1`–`SCN-10`, `DAT-11`.
+
+- `show` with the open scene's title gives its log since it opened, round by round, with every why (`openSceneLog`, `SCN-10`): what a chat that starts in the middle of a fight reads before its recap; `instructions` gives with it the part of the open scene's type (`MOD-5`).
 
 The open scene lives in `state.yaml` under `scene`: title, type, place, who is in it, numbered copies of creatures holding only what changed (`Annegato 1`, numbered after the highest number their name already takes, so that no name comes back: `SCN-3`), and when there are turns, `order`, `round` and `turn` (`SCN-6`). The `scene` command opens, adds, leaves, orders, passes the turn and closes; closing removes the scene from `state.yaml` and logs a `scene-closed` line, from which `status` lists the last scenes. Closing also says what the creatures overcome give the party, as the system's `rewards` say (`DAT-11`), with the calls of `change` and without giving it: a copy that leaves is kept under `gone`, without its effects, for it. What the close says is worked out before the scene goes, so that a page it cannot find stops it with the scene still open.
 

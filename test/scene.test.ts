@@ -45,9 +45,14 @@ function stateFile(): string
 }
 
 describe("rpg scene", () => {
-    it("says that the title of a scene, open or closed, is no page when show is given it", async () => {
+    it("says that the title of a closed scene is no page when show is given it, and gives the open one's log (SCN-10)", async () => {
         await ok("scene", "open", "--title", "Al molo", "--type", "exploration");
-        expect((await rpg("show", "Al molo")).output).toContain("Al molo is the open scene, not a page: status gives it.");
+        expect(await ok("show", "Al molo")).toBe([
+            "Al molo (exploration, open) at Ossario: what happened since it opened, from the log.",
+            "Nothing yet.",
+            "Where each one stands is not kept: leave it out of a recap, and ask the player only when it matters to their next move.",
+        ].join("\n"));
+        expect((await rpg("show", "Al molo#Il pontile")).output).toContain("Al molo is the open scene, not a page: show it without a section for what happened so far.");
         await ok("scene", "close", "--summary", "Arrivati al molo.");
         expect((await rpg("show", "al molo")).output).toBe("There is no page named al molo. Al molo is a scene that closed, not a page (exploration): Arrivati al molo.");
         expect((await rpg("show", "Altrove")).output).toBe("There is no page named Altrove. Look for it with the find command.");

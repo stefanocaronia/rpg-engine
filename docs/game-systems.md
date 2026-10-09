@@ -254,6 +254,16 @@ conditions: [Blinded, Charmed, Poisoned, Prone]
 
 An effect with one of these names shows the text of the rule so titled, a house rule first, with the table's precedents on it; a roll notes the conditions of who rolls.
 
+### keeping
+
+What can break what someone keeps alive, an effect given with `by`, such as a spell held by concentration (`EFF-14`):
+
+```yaml
+keeping: {counter: hp, conditions: [Incapacitated, Paralyzed, Petrified, Stunned, Unconscious], rules: Concentration}
+```
+
+When `change` lowers `counter` on whoever keeps an effect, a page or a copy, when `effect` gives them one of `conditions`, or gives them one more effect to keep, the output says what they keep, on whom, what they lost or took, and names the rule: `Viola keeps Eroismo (Corrado): lost 7 hp. Read rules Concentration.` The AI rolls what the rule asks; the engine ends nothing by itself. `counter` must be declared a counter in `fields`. A system without `keeping` says nothing.
+
 ### tables, computed, counters
 
 What the system works out from a page's fields, in the formula language of section 4:
@@ -286,6 +296,8 @@ counters:
 - `refill`: what of a counter comes back with a recipe that ends an occasion: `refill: long rest` brings it all back; by occasion, a formula where `max` is its maximum (`{long rest: max, short rest: "4 * has(features, Sorcerous Restoration)"}`). A counter without `max` takes its maximum from the column of a class's row with its name, such as `rages` (see `progression`).
 - **Uses.** A counter with a `refill`, or that a recipe sets or regains, comes back with a rest: a character who keeps the sheet (the player character, and a companion with a level, written or given by its classes, or that derives from no creature) and whose maximum for it is above zero has it full until it spends it; other pages, places, items and copies in a scene never have it. `write` puts it on the page full, and says so; the line of the player character and the sheet show it. When a use's maximum grows, as at a new level, its current grows by the same amount: what was spent stays spent, and the slot or hit die a level gives is there at once; when it falls, the current stays within it. Any other counter keeps its current. A use that the lists give, such as `rages` from the classes, leaves the page when its maximum falls to 0 or has no value, as after a lower level, unless the sheet asks for it, as `hp`. When a page's effects change, what a current has above its written maximum that the maximum no longer allows goes, as when Aid ends, and `effect` says it; a form that lowers the maximum leaves the page's own current. A use the character does not get is not written by hand.
 - A `refill` names occasions that a recipe `ends`: one that no recipe ends would never bring the use back, and the system does not load.
+- `shields`: the counter this one protects, which loses from it first (`temp-hp: {shields: hp}`, `DAT-14`). When `change` lowers the protected counter of a page whose shield is above 0, the output says the shield goes first and how to put the change right, with the rule of the shield's threshold if it has one; the AI does the count. A counter with only `shields` has no limits.
+- A counter declared in `fields` with no `max` and no `refill`, such as `temp-hp`, `xp` or `exhaustion`, starts at 0 when `change` is given it on a page that does not hold it yet, and once written only `change` changes it (`CNT-7`, `CNT-8`).
 
 When the system loads, every formula must read, name only tables it has, and computed fields must not read each other in a circle; a field given twice in different cases is refused. The error names the place: `computed.insight: "wis-mod +" is not a formula: …`.
 

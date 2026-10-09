@@ -437,6 +437,17 @@ function atLeastZero(max: number): number
  * The game system's computed field with this name, in any case, and the fields it comes from, when its formula has a value with these fields (FOR-7):
  * where it has none, as on a creature without a level, the field is written like any other.
  */
+/**
+ * The name, as the game system declares it, of a counter that starts at 0 where a page does not hold it yet, as temporary hit points or experience points:
+ * declared a counter, with no maximum and not a use that comes back with a rest (CNT-8, D-266). Undefined for any other.
+ */
+export function startingAtZero(world: World, field: string): string | undefined
+{
+    const declared = Object.keys(world.system?.fields ?? {}).find((name) => comparableText(name) === comparableText(field.trim()));
+    const limits = Object.entries(world.system?.formulas?.counters ?? {}).find(([counter]) => comparableText(counter) === comparableText(field.trim()))?.[1];
+    return declared !== undefined && declaredKind(world, declared) === "counter" && limits?.max === undefined && limits?.refill === undefined ? declared : undefined;
+}
+
 export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number | string; from: string[]; } | undefined
 {
     const entry = world.system?.formulas?.computed.find(([name]) => comparableText(name) === comparableText(field.trim()));
