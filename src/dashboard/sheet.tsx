@@ -170,7 +170,7 @@ function Tile(props: Line)
     );
 }
 
-/** A value on a line: its marks, its label as a phrase, its drawing, what is beside it, and under a number's progress its bar. */
+/** A value on a line: its marks, its label as a phrase, its drawing, what is beside it, and under a number's progress its bar; a counter that the band shows as a bar, as hit points, reads here as its number. */
 function Row(props: Line)
 {
     const { value, label } = props;
@@ -185,7 +185,7 @@ function Row(props: Line)
             </span>
             <Changing text={value.text}>
                 {value.roll && <RollMark roll={value.roll} />}
-                {widget === "progress" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} />}
+                {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} />}
             </Changing>
             {value.beside !== undefined && <span class="beside num">{shownText(value.beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}

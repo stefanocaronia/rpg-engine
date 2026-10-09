@@ -60,9 +60,8 @@ body {
     font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* The page takes the whole window: the cards fall into as many columns as fit. */
 .page {
-    max-width: 1200px;
-    margin: 0 auto;
     /* Room at the bottom for the dice's button, which stays over the page. */
     padding: 12px 16px 96px;
 }
@@ -779,8 +778,12 @@ button.row,
     grid-template-areas: "label value beside" "label bar bar";
 }
 
-.rows > .row-progress > .changing {
+.rows > .row-progress > :is(.changing, .beside) {
     padding-top: 8px;
+}
+
+.rows > .row-progress > .changing {
+    justify-self: start;
 }
 
 .row-progress .bar.progress {
@@ -1296,20 +1299,26 @@ button.row,
 }
 
 @media (min-width: 900px) {
-    .page {
-        max-width: 1520px;
-    }
-
     .body {
-        grid-template-columns: minmax(0, 1fr) 280px;
+        grid-template-columns: minmax(0, 1fr) 340px;
         align-items: start;
     }
 
+    /* The column stays in sight as the page scrolls; its title stays put, its list scrolls under it without a bar, fading at its foot. */
     .rolls {
         position: sticky;
         top: 12px;
-        max-height: calc(100vh - 24px);
+    }
+
+    .roll-list {
+        max-height: calc(100vh - 100px);
         overflow-y: auto;
+        scrollbar-width: none;
+        mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+    }
+
+    .roll-list::-webkit-scrollbar {
+        display: none;
     }
 }
 

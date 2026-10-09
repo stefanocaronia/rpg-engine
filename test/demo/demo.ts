@@ -80,7 +80,7 @@ async function makeDemo(context: Context): Promise<void>
         "creature=[[Hill Dwarf]]",
         "classes=[[Cleric]] 3",
         "subclasses=[[Life Domain]]",
-        "xp=900",
+        "xp=1500",
         "str=14",
         "dex=8",
         "con=15",
