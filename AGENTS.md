@@ -88,7 +88,7 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Colleagues
 
-Seven experts review the work and discuss it with the maintainer. Each one is a file, `.claude/agents/<id>.md` (who they are, what they know, how they work), and a folder, `.claude/agent-memory/<id>/`, with `MEMORY.md`, their memory, and `todo.md`, one line per task (`- [ ] description`; done becomes `- [x]`, and ticked lines are removed in the next session). Memory and todo are edited, never rewritten: other sessions write to them too.
+Eight experts review the work and discuss it with the maintainer. Each one is a file, `.claude/agents/<id>.md` (who they are, what they know, how they work), and a folder, `.claude/agent-memory/<id>/`, with `MEMORY.md`, their memory, and `todo.md`, one line per task (`- [ ] description`; done becomes `- [x]`, and ticked lines are removed in the next session). Memory and todo are edited, never rewritten: other sessions write to them too.
 
 | Who | Field | `<id>` |
 |---|---|---|
@@ -99,6 +99,7 @@ Seven experts review the work and discuss it with the maintainer. Each one is a 
 | Elena Galli | AI agents: tools, MCP, instructions, hosts | `elena-agenti` |
 | Matteo Conti | code review | `matteo-codice` |
 | Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-narrativa` |
+| Lucia Marchetti | the dashboard: web code, UX, graphics, accessibility | `lucia-web` |
 
 - **The round.** At milestones (a step of the plan done, a playtest) Claude calls the colleagues the work concerns as subagents, with a narrow scope. They are read-only except their memory and todo, and their findings reach the maintainer as proposals, one at a time. Before calling one, Claude reads their memory and todo: if they already answered or have an idea on the matter, start from there and skip the call, unless the context has changed.
 - **Their todos.** Claude puts in each brief the todo lines that touch the scope, brings the open lines that concern the maintainer along with the findings, and after each decision ticks the lines it closes.
