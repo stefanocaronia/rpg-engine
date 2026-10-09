@@ -1523,25 +1523,35 @@ summary.fixed {
     font-size: 0.9rem;
 }
 
+/* A roll in three lines (D-292): whom, what, the dice; the token and the total at the top, as in a list of three lines. */
+/* Each roll a small card of its own (D-296); the player's in the accent's lightest tone. */
 .roll-list {
+    display: grid;
+    gap: 8px;
     margin: 0;
-    padding: 0;
+    padding: 6px 0 8px;
     list-style: none;
 }
 
-/* A roll in three lines (D-292): whom, what, the dice; the token and the total at the top, as in a list of three lines. */
 .roll {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     column-gap: 12px;
     align-items: start;
-    padding: 10px 6px;
-    border-top: 1px solid var(--rule);
-    border-radius: var(--radius-s);
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
 }
 
-.roll:first-child {
-    border-top: 0;
+.roll.by-player {
+    border-color: color-mix(in srgb, var(--accent) 22%, var(--rule));
+    background: color-mix(in srgb, var(--accent) 7%, var(--panel-2));
+}
+
+/* On a roll's card its dice stand out of it. */
+.roll .die-chip:not(.dropped, .rare-highest, .rare-lowest) {
+    background: var(--float);
 }
 
 .roll .token,
