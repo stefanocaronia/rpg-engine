@@ -42,10 +42,47 @@ export interface Member
     effects: { name: string; end?: string; text: string; }[];
 }
 
+/** A die as it was thrown: its sides, the face it shows, the faces that add up on it with explosions, the face before a reroll, dropped or a success. */
+export interface ThrownDie
+{
+    sides: number | "F";
+    value: number;
+    faces?: number[];
+    rerolledFrom?: number;
+    dropped?: boolean;
+    success?: boolean;
+}
+
+/** A roll the player may see (D-279): theirs, or one the master showed; never a hidden one, never the master's why. */
+export interface ShownRoll
+{
+    id: string;
+    date?: string;
+    by: "player" | "master";
+    /** For whom, as the player's character knows them. */
+    who?: string;
+    /** The check the master asked of the player: a roll of the dashboard's dice. */
+    check?: string;
+    notation: string;
+    total: number;
+    text: string;
+    dice: ThrownDie[];
+}
+
+/** What the master asks the player now, with a button for each check or answer (D-279). */
+export interface Asked
+{
+    id: string;
+    question: string;
+    /** The word for a roll, or for a choice, in the campaign's language. */
+    title: string;
+    labels: string[];
+}
+
 /** What view gives: the party, a page with its sheet, one section, or nothing. */
 export type View =
     | { kind: "none"; }
-    | { kind: "overview"; campaign: string; now?: string; party: Member[]; quests: string[]; scene?: string; diary: string[]; total: number; }
+    | { kind: "overview"; campaign: string; now?: string; party: Member[]; quests: string[]; scene?: string; diary: string[]; total: number; rolls: ShownRoll[]; }
     | { kind: "page"; title: string; sheet: SheetGroup[]; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };

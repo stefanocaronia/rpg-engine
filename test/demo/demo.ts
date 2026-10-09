@@ -2,15 +2,31 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { runCommandLine } from "../../src/command-line.ts";
+import { ask } from "../../src/commands/ask.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
+import { withFiles } from "../../src/core/store.ts";
 import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { inPlay } from "../support.ts";
 
 export const demoFolder = join(import.meta.dirname, "..", "..", "tmp", "dashboard-demo");
 
+/** The checks and the choice the demo asks in turn, of Ettore, a cleric of the third level: one die, two with advantage, an answer. */
+export const demoQuestions: { question: string; options: string[]; }[] = [
+    { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Atletica 1d20+2", "Acrobazia 1d20-1"] },
+    { question: "Lo spettro ti stringe la gola: se cedi, il gelo ti toglie le forze", options: ["Tiro salvezza Saggezza 2d20kh1+5"] },
+    { question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+5"] },
+    { question: "La passerella si spezza sotto di te: da che parte salti?", options: ["Verso la riva", "Verso la barca"] },
+];
+
+/** The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279): what ask says to the master. */
+export interface DemoDashboard extends Dashboard
+{
+    ask(question: string, options: string[]): Promise<string>;
+}
+
 /** Serves the built dashboard of the demo campaign, making the campaign first when it is not there; on the dashboard's ports unless others are given. */
-export async function serveDemo(ports?: number[]): Promise<Dashboard>
+export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 {
     const context = defaultContext(demoFolder);
 
@@ -27,6 +43,10 @@ export async function serveDemo(ports?: number[]): Promise<Dashboard>
 
     return {
         ...dashboard,
+        ask: async (question, options) => {
+            await session.ready();
+            return withFiles(session, async () => ask.format(await ask.run(ask.input.parse({ question, options }), { ...context, files: session, page: dashboard.player })));
+        },
         close: async () => {
             await dashboard.close();
             session.close();

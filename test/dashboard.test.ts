@@ -13,7 +13,7 @@ import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
-import { fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
+import { checkOf, fieldLabel, groupLabels, initials, shownText } from "../src/dashboard/labels.ts";
 import { groupLayout, orderedValues, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -359,6 +359,14 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(initials("Ettore di Valle")).toBe("ED");
     });
 
+    it("reads a button of what the master asks as a check with its dice, and any other button as an answer (ASK-3)", () => {
+        expect(checkOf("Tiro: Atletica (1d20+5)", "Tiro")).toEqual({ check: "Atletica", dice: "1d20+5" });
+        expect(checkOf("Tiro: Tiro salvezza: Saggezza (2d20kh1+5)", "Tiro")).toEqual({ check: "Tiro salvezza: Saggezza", dice: "2d20kh1+5" });
+        expect(checkOf("Roll: Attack (longsword) (1d20+5)", "Roll")).toEqual({ check: "Attack (longsword)", dice: "1d20+5" });
+        expect(checkOf("Cambio idea", "Tiro")).toBeUndefined();
+        expect(checkOf("Sì: verso la riva (subito)", "Scelta")).toBeUndefined();
+    });
+
     it("draws a value by its kind, never by its name: pips, bars, a track below zero, chips, text", () => {
         const value = (counter: { value: number; max?: number; min?: number; } | undefined, text = "1"): SheetValue => ({ field: "any", text, marks: 0, ...(counter === undefined ? {} : { counter }) });
         expect(widgetOf(value({ value: 3, max: 3 }))).toBe("pips");
@@ -391,7 +399,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     beforeEach(async () => {
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
         served = { ...context, files: session };
-        const started = await startDashboard(served, session, { ports: [0], page: folder });
+        const started = await startDashboard(served, session, { ports: [0], page: folder, pageReturn: 100 });
 
         if (started === undefined) {
             throw new Error("The dashboard did not start.");
@@ -473,6 +481,27 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Acrobazia" });
     });
 
+    it("keeps the question through a reload, and gives it to the form, or to words, when the page closes and none comes back (ASK-1)", async () => {
+        const first = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        // A reload: the page goes and comes back at once.
+        first.close();
+        const second = await openPage();
+        await new Promise((done) => setTimeout(done, 200));
+        expect((await askedNow())?.id).toBe(asked.id);
+        second.close();
+        expect(ask.format(await asking)).toBe("The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.");
+        expect(await askedNow()).toBeNull();
+
+        const third = await openPage();
+        const form = { choose: async () => 0 };
+        const formAsking = ask.run(ask.input.parse(wall), { ...served, player: form });
+        await waitAsked();
+        third.close();
+        expect(await formAsking).toMatchObject({ kind: "roll", check: "Atletica" });
+    });
+
     it("takes the question away when the call is stopped, and logs nothing", async () => {
         const page = await openPage();
         const stop = new AbortController();
@@ -496,7 +525,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
-    it("gives in view the rolls the player may see: theirs and those the master showed, never a hidden one", async () => {
+    it("gives in view the rolls the player may see: theirs, with their physical dice, and those the master showed, never a hidden one", async () => {
         const page = await openPage();
         const asking = ask.run(ask.input.parse(wall), served);
         const asked = await waitAsked();
@@ -505,11 +534,15 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
         await ok("roll", "1d20+4", "--who", "Varro", "--why", "il mugnaio mente");
         await ok("roll", "1d20", "--hidden", "--why", "la ronda sente");
+        await ok("roll", "1d20+2", "--who", "Ettore", "--values", "15", "--why", "Atletica: il guado");
         const rolls = JSON.parse(await ok("view", "--json")).rolls;
         expect(rolls).toEqual([
             expect.objectContaining({ by: "player", who: "Ettore", check: "Acrobazia", notation: "1d20-1", total: 3, dice: [{ sides: 20, value: 4 }] }),
             expect.objectContaining({ by: "master", who: "Varro", notation: "1d20+4", total: 8, dice: [{ sides: 20, value: 4 }] }),
+            // Physical dice are the player's, though the master writes their values; they are not thrown again on the page, as they ask no check.
+            expect.objectContaining({ by: "player", who: "Ettore", notation: "1d20+2", total: 17, dice: [{ sides: 20, value: 15 }] }),
         ]);
+        expect(rolls[2].check).toBeUndefined();
         expect(JSON.stringify(rolls)).not.toContain("mugnaio");
     });
 });

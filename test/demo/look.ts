@@ -2,12 +2,13 @@
 // the page as a screen reader reads it. `npm run build`, then, for one:
 //   node --experimental-strip-types test/demo/look.ts --width 360 --theme light --click "text=Combat" --click ".rows >> text=insight" --out tmp/look/combat.png
 // --click takes a Playwright selector, --press a key (Tab, ArrowRight), --wait milliseconds, in the order given; --full takes the whole page, --still reduces
-// motion. Without --url it serves the demo campaign of tmp/dashboard-demo on a free port. It uses the Chrome installed. Not part of the tests.
+// motion; --ask 1 has the demo ask the page the first of its questions (D-279), as with --ask 1 --click ".asked-check" --wait 900 for a die in the air.
+// Without --url it serves the demo campaign of tmp/dashboard-demo on a free port. It uses the Chrome installed. Not part of the tests.
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright-core";
-import { serveDemo } from "./demo.ts";
+import { demoQuestions, serveDemo } from "./demo.ts";
 
 const { values, tokens } = parseArgs({
     options: {
@@ -22,6 +23,7 @@ const { values, tokens } = parseArgs({
         full: { type: "boolean" },
         still: { type: "boolean" },
         aria: { type: "boolean" },
+        ask: { type: "string" },
     },
     tokens: true,
 });
@@ -42,6 +44,14 @@ try {
     await page.goto(values.url ?? demo?.url ?? "");
     // The page has read view when it shows a sheet, or says why not.
     await page.waitForSelector(".band, .notice", { timeout: 10_000 });
+
+    // The demo asks on the page, and the call waits for the click of the steps: what it said comes at the end.
+    const question = values.ask === undefined ? undefined : demoQuestions[(Number(values.ask) - 1) % demoQuestions.length];
+    const asking = question === undefined ? undefined : demo?.ask(question.question, question.options);
+
+    if (asking !== undefined) {
+        await page.waitForSelector(".asked", { timeout: 5_000 });
+    }
 
     for (const step of steps) {
         if (step.name === "click") {
@@ -64,6 +74,11 @@ try {
 
     if (values.aria) {
         console.log(`\n${await page.locator("body").ariaSnapshot()}`);
+    }
+
+    if (asking !== undefined) {
+        await page.close();
+        console.log(`The master heard: ${await asking}`);
     }
 } finally {
     await browser.close();

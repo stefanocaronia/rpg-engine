@@ -1,5 +1,5 @@
-// What the page asks the dashboard's server: view, and how the numbers of a group are made (FOR-8).
-import type { View } from "./data.ts";
+// What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
+import type { Asked, View } from "./data.ts";
 
 export async function readView(page?: string): Promise<View>
 {
@@ -11,6 +11,21 @@ export async function readView(page?: string): Promise<View>
     }
 
     return body;
+}
+
+/** What the master asks the player now; undefined when nothing. */
+export async function readAsked(): Promise<Asked | undefined>
+{
+    const response = await fetch("/api/asked");
+    const body = await response.json() as { asked: Asked | null; };
+    return body.asked ?? undefined;
+}
+
+/** The player's click on what the master asks, by the button's place: true when it counted, false when the master no longer asks it. */
+export async function answer(asked: string, choice: number): Promise<boolean>
+{
+    const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ asked, choice }) });
+    return response.status === 202;
 }
 
 /** How each number of a group of someone's sheet is made, by field: what view gives for Page#Group. */

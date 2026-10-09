@@ -1,18 +1,20 @@
-// The player's dashboard (D-269, D-272, D-276): the master and the campaign on top, the party's strip, and the sheet of whom the address names, read again
-// whenever the server says a file changed.
+// The player's dashboard (D-269, D-272, D-276): the master and the campaign on top, the party's strip, what the master asks, the sheet of whom the address
+// names and the rolls beside it (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { readView } from "./api.ts";
-import type { Member, SheetGroup } from "./data.ts";
+import { readAsked, readView } from "./api.ts";
+import { AskedBanner } from "./asked.tsx";
+import type { Asked, Member, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray } from "./dice/tray.tsx";
 import { Master } from "./master.tsx";
 import { PartyStrip } from "./party.tsx";
+import { RollLog } from "./rolls.tsx";
 import { MemberSheet } from "./sheet.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";
 
-/** What the page shows: the campaign and its time, the party, whom the address names and their sheet, as of when it was read. */
+/** What the page shows: the campaign and its time, the party, whom the address names and their sheet, the rolls and what the master asks, as of when it was read. */
 interface Shown
 {
     campaign?: string;
@@ -21,6 +23,8 @@ interface Shown
     chosen?: string;
     sheet: SheetGroup[];
     text: string;
+    rolls: ShownRoll[];
+    asked?: Asked;
     /** How many times it was read: what was explained is told again after each. */
     version: number;
     readAt?: Date;
@@ -30,21 +34,35 @@ interface Shown
 
 function App()
 {
-    const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", version: 0 });
+    const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], version: 0 });
     const [live, setLive] = useState(false);
     const reading = useRef(0);
+    // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new at a reading flash in the list.
+    const seen = useRef<Set<string>>();
+    const [thrown, setThrown] = useState<ShownRoll>();
+    const [fresh, setFresh] = useState<Set<string>>(new Set());
 
-    // Reads view again for whom the address names, or the player character; an answer that comes after a newer one is left out.
+    // Reads view again for whom the address names, or the player character, and what the master asks; an answer that comes after a newer one is left out.
     const read = async (): Promise<void> => {
         const number = ++reading.current;
 
         try {
-            const overview = await readView();
+            const [overview, asked] = await Promise.all([readView(), readAsked().catch(() => undefined)]);
             const party = overview.kind === "overview" ? overview.party : [];
+            const rolls = overview.kind === "overview" ? overview.rolls : [];
             const member = party.find((candidate) => candidate.name === addressedName()) ?? party[0];
             const page = member === undefined ? undefined : await readView(member.name);
 
             if (number === reading.current) {
+                const added = seen.current === undefined ? [] : rolls.filter((roll) => seen.current?.has(roll.id) !== true);
+                const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined).at(-1);
+                seen.current = new Set(rolls.map((roll) => roll.id));
+                setFresh(new Set(added.map((roll) => roll.id)));
+
+                if (asking !== undefined) {
+                    setThrown(asking);
+                }
+
                 setShown((before) => ({
                     campaign: overview.kind === "overview" ? overview.campaign : undefined,
                     now: overview.kind === "overview" ? overview.now : undefined,
@@ -52,6 +70,8 @@ function App()
                     chosen: member?.name,
                     sheet: page?.kind === "page" ? page.sheet : [],
                     text: page?.kind === "page" ? page.text : "",
+                    rolls,
+                    asked,
                     version: before.version + 1,
                     readAt: new Date(),
                     noCharacter: overview.kind === "none",
@@ -83,9 +103,11 @@ function App()
         };
     }, []);
 
+    // The tab tells that the master asks something, when the page is behind another.
     useEffect(() => {
-        document.title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
-    }, [shown.campaign]);
+        const title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
+        document.title = shown.asked === undefined ? title : `🎲 ${title}`;
+    }, [shown.campaign, shown.asked === undefined]);
 
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const lead = shown.party.find((candidate) => candidate.role === "pc");
@@ -102,13 +124,17 @@ function App()
                 <span class={live ? "live on" : "live"}>{live ? "live" : "waiting for the game"}</span>
             </header>
             <PartyStrip party={shown.party} chosen={shown.chosen} />
-            <main>
-                {!live && shown.readAt !== undefined && <p class="notice" role="status">Not connected: the sheet as of {shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.</p>}
-                {shown.problem && <p class="notice problem" role="alert">{shown.problem}</p>}
-                {shown.noCharacter && <p class="notice">There is no player character yet: the sheet comes when the master writes one.</p>}
-                {member && <MemberSheet key={member.name} member={member} sheet={shown.sheet} text={shown.text} version={shown.version} />}
-            </main>
-            <DiceTray />
+            {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
+            <div class="body">
+                <main>
+                    {!live && shown.readAt !== undefined && <p class="notice" role="status">Not connected: the sheet as of {shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.</p>}
+                    {shown.problem && <p class="notice problem" role="alert">{shown.problem}</p>}
+                    {shown.noCharacter && <p class="notice">There is no player character yet: the sheet comes when the master writes one.</p>}
+                    {member && <MemberSheet key={member.name} member={member} sheet={shown.sheet} text={shown.text} version={shown.version} />}
+                </main>
+                <RollLog rolls={shown.rolls} party={shown.party} fresh={fresh} />
+            </div>
+            <DiceTray requested={thrown} />
         </div>
     );
 }

@@ -35,6 +35,8 @@ export interface DashboardOptions
     ports?: number[];
     /** The folder of the built page: dist/dashboard. */
     page?: string;
+    /** How long a question waits for a page to come back, after the last one closed: a few seconds; less in the tests. */
+    pageReturn?: number;
 }
 
 // The commands the page may run: what the player may see, never the master's (VIEW-1). Roles will say more (phase 2).
@@ -99,7 +101,8 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            return serve(server, { port: listening, context, session, page: options.page ?? builtPage, pages: new Set(), notify: () => undefined });
+            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn };
+            return serve(server, { ...served, notify: () => undefined });
         }
     }
 
@@ -148,22 +151,27 @@ interface Served
     pages: Set<ServerResponse>;
     /** What the master asks the player now, waiting for a click on the page (D-279). */
     asked?: Asked;
+    /** How long a question waits for a page to come back, after the last one closed. */
+    pageReturn: number;
     /** Tells the pages that something changed, once for changes that come together. */
     notify(): void;
 }
 
-/** A question of ask on the page: its buttons, and what a click, a stop or a timeout settles it with. */
+/** A question of ask on the page: its buttons, and what settles it: a click, a stop or a timeout, or the pages gone. */
 interface Asked
 {
     id: string;
     question: string;
     title: string;
     labels: string[];
-    settle(choice: number | undefined): void;
+    settle(choice: number | undefined | "absent"): void;
 }
 
 // How long the page waits for the player's click: as long as a host waits for a call that keeps reporting progress, as ask does with a form.
 const playerWait = 30 * 60 * 1000;
+
+// After the last page closed, how long a question waits for one to come back, as after a reload, before it goes to the form or to words (ASK-1).
+const pageReturn = 5000;
 
 function serve(server: Server, served: Served): Dashboard
 {
@@ -193,6 +201,7 @@ function serve(server: Server, served: Served): Dashboard
             new Promise((done) => {
                 stopListening();
                 clearTimeout(notice);
+                served.asked?.settle("absent");
                 served.pages.forEach((page) => page.end());
                 server.close(() => done());
             }),
@@ -236,7 +245,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         // Browsers ask for it by themselves; the page's icon comes with its logo.
         response.writeHead(204, securityHeaders).end();
     } else if (path === "/events") {
-        listenForChanges(request, response, served.pages);
+        listenForChanges(request, response, served);
     } else if (path.startsWith("/api/")) {
         await runCommand(path.slice("/api/".length), url.searchParams, response, served);
     } else if (path.startsWith("/images/")) {
@@ -304,7 +313,7 @@ function pagePlayer(served: Served): Player
             return new Promise((done) => {
                 const timer = setTimeout(() => settle(undefined), playerWait).unref();
 
-                const settle = (choice: number | undefined): void => {
+                const settle = (choice: number | undefined | "absent"): void => {
                     clearTimeout(timer);
                     signal?.removeEventListener("abort", stop);
 
@@ -363,13 +372,23 @@ async function readBody(request: IncomingMessage): Promise<unknown>
     }
 }
 
-/** Keeps the page's request open, to tell it "changed" whenever a file of the campaign changes; the page reads again, and comes back by itself after a pause. */
-function listenForChanges(request: IncomingMessage, response: ServerResponse, pages: Set<ServerResponse>): void
+/**
+ * Keeps the page's request open, to tell it "changed" whenever a file of the campaign changes; the page reads again, and comes back by itself after a pause.
+ * When the last page closes while the master asks and none comes back soon, the question goes to the form or to words (ASK-1).
+ */
+function listenForChanges(request: IncomingMessage, response: ServerResponse, served: Served): void
 {
     response.writeHead(200, { ...securityHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" });
     response.write("retry: 2000\n\n");
-    pages.add(response);
-    request.on("close", () => pages.delete(response));
+    served.pages.add(response);
+    request.on("close", () => {
+        served.pages.delete(response);
+        const asked = served.asked;
+
+        if (served.pages.size === 0 && asked !== undefined) {
+            setTimeout(() => served.pages.size === 0 && served.asked === asked && asked.settle("absent"), served.pageReturn).unref();
+        }
+    });
 }
 
 /** Runs a command the page may run, with its parameters from the query, as the MCP server runs a tool; its result, or the error, in JSON. */

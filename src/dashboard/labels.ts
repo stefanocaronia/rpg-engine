@@ -6,6 +6,13 @@ export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set(
     return words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
 }
 
+/** A button's label as a check: "Tiro: Atletica (1d20+5)" is the check Atletica with its dice (ASK-3); any other label is an answer, or the change of mind. */
+export function checkOf(label: string, title: string): { check: string; dice: string; } | undefined
+{
+    const match = /^(.+?): (.+) \(([^()]+)\)$/.exec(label);
+    return match === null || match[1] !== title ? undefined : { check: match[2], dice: match[3] };
+}
+
 /** The labels of a group's values by field: a last word they all share, such as save in str-save and dex-save, is left out. */
 export function groupLabels(groupFields: string[], fields: ReadonlySet<string> = new Set()): Map<string, string>
 {

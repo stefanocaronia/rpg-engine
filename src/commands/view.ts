@@ -197,12 +197,13 @@ export const view = defineCommand({
 /** A public roll of the log as the player sees it: who rolled, for whom as the character knows them, the check, the dice; never the master's why (VIEW-4). */
 function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): ShownRoll
 {
-    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; };
+    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
     const who = data.who === undefined ? undefined : named(data.who) ?? (isCopyName(world, data.who) ? "a creature" : "someone");
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
-        by: entry.by === "player" ? "player" : "master",
+        // Physical dice are the player's, though the master writes their values.
+        by: entry.by === "player" || data.physical === true ? "player" : "master",
         ...(who === undefined ? {} : { who }),
         ...(typeof data.check === "string" ? { check: data.check } : {}),
         notation: String(data.notation ?? ""),

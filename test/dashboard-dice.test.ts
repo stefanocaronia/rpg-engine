@@ -1,7 +1,7 @@
 // The dashboard's dice (D-278): a die's shape and numbers, a throw simulated and recorded, and the number decided before the throw on the face it lands on.
 import { describe, expect, it } from "vitest";
 import { faceNormals, faceNumbers, icosahedron, landingOn } from "../src/dashboard/dice/shapes.ts";
-import { throwDie, upFace } from "../src/dashboard/dice/throw.ts";
+import { throwDice, upFace } from "../src/dashboard/dice/throw.ts";
 
 /** A random source that repeats, from a seed: the same throws at every run. */
 function seeded(seed: number): () => number
@@ -38,20 +38,40 @@ describe("the dice of the dashboard (D-278)", () => {
         const counts = Array.from({ length: 20 }, () => 0);
 
         for (let throwNumber = 0; throwNumber < 1000; throwNumber++) {
-            const thrown = throwDie(d20, { width: 7, depth: 4.5 }, random);
-            const last = thrown.frames.at(-1);
+            const thrown = throwDice([d20], { width: 7, depth: 4.5 }, random);
+            const last = thrown.frames.at(-1)?.[0];
             expect(last).toBeDefined();
             expect(thrown.frames.length).toBeLessThan(8 * 60);
             // The die lies on the floor, inside the walls.
             expect(Math.abs(last?.position[0] ?? 99)).toBeLessThan(7);
             expect(Math.abs(last?.position[2] ?? 99)).toBeLessThan(4.5);
-            expect(upFace(d20, last?.quaternion ?? [0, 0, 0, 1])).toBe(thrown.face);
+            expect(upFace(d20, last?.quaternion ?? [0, 0, 0, 1])).toBe(thrown.faces[0]);
             const wanted = 1 + (throwNumber % 20);
-            expect(landingOn(faceNumbers(d20), thrown.face, wanted)[thrown.face]).toBe(wanted);
-            counts[thrown.face]++;
+            expect(landingOn(faceNumbers(d20), thrown.faces[0], wanted)[thrown.faces[0]]).toBe(wanted);
+            counts[thrown.faces[0]]++;
         }
 
         // Every face comes up now and then: the throws are not stuck on a few.
         expect(Math.min(...counts)).toBeGreaterThan(15);
+    });
+
+    it("throws dice together, as two d20 with advantage: each in every frame, each landing apart from the other, inside the walls", () => {
+        const d20 = icosahedron();
+        const random = seeded(11);
+
+        for (let throwNumber = 0; throwNumber < 200; throwNumber++) {
+            const thrown = throwDice([d20, d20], { width: 7, depth: 4.5 }, random);
+            const last = thrown.frames.at(-1) ?? [];
+            expect(thrown.frames.every((frame) => frame.length === 2)).toBe(true);
+            expect(thrown.faces).toHaveLength(2);
+            last.forEach((die, index) => {
+                expect(Math.abs(die.position[0])).toBeLessThan(7);
+                expect(Math.abs(die.position[2])).toBeLessThan(4.5);
+                expect(upFace(d20, die.quaternion)).toBe(thrown.faces[index]);
+            });
+            // Two dice never end inside each other: their centres stay a die apart.
+            const [first, second] = last;
+            expect(Math.hypot(first.position[0] - second.position[0], first.position[1] - second.position[1], first.position[2] - second.position[2])).toBeGreaterThan(1.2);
+        }
     });
 });
