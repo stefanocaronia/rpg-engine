@@ -1,0 +1,1 @@
+Una cappella in rovina sulla collina, a mezz'ora da [[Valdorso]]. Dietro l'altare spaccato, la botola della cripta dove i [[Figli della Fame]] tenevano i loro riti, chiusa ora con un catenaccio nuovo.

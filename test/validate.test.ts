@@ -34,8 +34,8 @@ describe("rpg validate", () => {
         expect((await rpg("validate")).output).toBe("No problems.");
     });
 
-    it("finds nothing wrong in the second playtest scenario, prepared with its characters", async () => {
-        cpSync(new URL("../playtests/02-cripta-del-culto/world", import.meta.url), join(folder, "world"), { recursive: true });
+    it.each(["02-cripta-del-culto", "04-tre-settimane"])("finds nothing wrong in the playtest scenario %s, prepared with its characters", async (scenario) => {
+        cpSync(new URL(`../playtests/${scenario}/world`, import.meta.url), join(folder, "world"), { recursive: true });
         expect((await rpg("validate")).output).toBe("No problems.");
     });
 

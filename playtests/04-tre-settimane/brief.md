@@ -1,0 +1,5 @@
+(Organizer: tonight's game goes on with characters you already know, as if you had played them for a few evenings with this master; you remember what follows, and nothing else of the world.
+
+Your character is Corrado, the soldier and field medic you had in mind: now a cleric of the Mother of Springs, 3rd level, in chain mail with mace and shield. He heals (Cura ferite, Parola guaritrice), blesses, protects. With him travels Viola, a bard he stitched up after an ambush a month ago: she sings, mocks and fights with a rapier. The master keeps both sheets.
+
+Two nights ago, in the crypt under the ruined chapel of San Ruffo, you saved Ada, the daughter of Bertone the miller, from the cult of the Figli della Fame: their leader died there, a ghoul with him, and a couple of hooded ones ran off. Bertone paid you thirty gold. You are both worn out, and you decided to stay three weeks in the village of Valdorso, at the Locanda della Macina, kept by Rosalba, before taking the road again. It is the morning of the third day.)
