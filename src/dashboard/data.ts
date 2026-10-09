@@ -21,6 +21,8 @@ export interface SheetValue
     beside?: string;
     /** The free roll its explanation offers (D-280). */
     roll?: SheetRoll;
+    /** Where it is between two marks, as the experience between its level and the next. */
+    progress?: { value: number; from: number; to: number; };
 }
 
 /** A free roll of a number of the sheet: the dice, by their sides, the number added, and both as a notation, such as 1d20+5. */

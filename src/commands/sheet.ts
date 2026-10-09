@@ -98,6 +98,16 @@ export interface SheetValue
     beside?: string;
     /** The free roll the dashboard offers in its explanation, when the system rolls it, or what is beside it, with dice (D-280). */
     roll?: SheetRoll;
+    /** How far it has come from one mark to the next, as the experience between its level's points and the next level's (PRO-6): a bar on the dashboard. */
+    progress?: Progress;
+}
+
+/** A number between two marks: where it is, where it started from, where it goes. */
+export interface Progress
+{
+    value: number;
+    from: number;
+    to: number;
 }
 
 /** A free roll of a number of the sheet (D-280): the dice, by their sides, the number added to them, and both as a notation, such as 1d20+5. */
@@ -151,11 +161,13 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
 
             const beside = besideValue(world, fields, entry);
             const roll = sheetRoll(system, fields, entry);
+            const progress = experienceProgress(world, fields, entry.field);
             return isEmptyField(value) ? [] : [{
                 ...sheetValue(world, fields, entry.field, value),
                 marks: marks.get(comparableText(entry.field)) ?? 0,
                 ...(beside === undefined ? {} : { beside }),
                 ...(roll === undefined ? {} : { roll }),
+                ...(progress === undefined ? {} : { progress }),
             }];
         });
         return values.length === 0 ? [] : [{ name: group.name, values }];
@@ -451,6 +463,17 @@ function sheetValue(world: World, fields: Record<string, unknown>, field: string
     const counter = counterOf(world, fields, field, value);
     const items = Array.isArray(value) ? value.map((item) => linkText(String(item).trim())) : undefined;
     return { field, ...(kind === undefined ? {} : { kind }), text: valueText(world, field, value), ...(counter === undefined ? {} : { counter }), ...(items === undefined ? {} : { items }), marks: 0 };
+}
+
+/** The experience between the points of the character's level and those of the next, for the field that counts it (PRO-6); none at the last level. */
+export function experienceProgress(world: World, fields: Record<string, unknown>, field: string): Progress | undefined
+{
+    if (comparableText(field) !== comparableText(world.system?.progression?.experience?.field ?? "")) {
+        return undefined;
+    }
+
+    const experience = experienceOf(world, fields);
+    return experience?.next === undefined ? undefined : { value: experience.points, from: experience.least ?? 0, to: experience.next.points };
 }
 
 /** The free roll of an entry of the sheet (D-280): the dice the system rolls its number with, or the number beside it, as str-mod by str; none for a text. */

@@ -79,6 +79,17 @@ function lastLogged(): Record<string, unknown>
     return readLogFile(folder).at(-1)?.data ?? {};
 }
 
+describe("the experience between two levels (PRO-6)", () => {
+    it("gives the experience where it is between the points of the level and those of the next, on the sheet and on the line", async () => {
+        const progress = { value: 900, from: 900, to: 2700 };
+        const page = JSON.parse(await ok("view", "Ettore", "--json")) as { sheet: { values: { field: string; progress?: unknown; }[]; }[]; };
+        expect(page.sheet.flatMap((group) => group.values).find((value) => value.field === "xp")?.progress).toEqual(progress);
+        const overview = JSON.parse(await ok("view", "--json")) as { party: { name: string; counters: { field: string; progress?: unknown; }[]; }[]; };
+        expect(overview.party.find((member) => member.name === "Ettore")?.counters.find((value) => value.field === "xp")?.progress).toEqual(progress);
+        expect(page.sheet.flatMap((group) => group.values).find((value) => value.field === "level")?.progress).toBeUndefined();
+    });
+});
+
 describe("the free roll of the sheet (D-280)", () => {
     it("gives each number the system rolls its dice and the number, or the number beside it, for the dashboard; none to the others", async () => {
         const page = JSON.parse(await ok("view", "Ettore", "--json")) as { sheet: { values: { field: string; roll?: unknown; }[]; }[]; };

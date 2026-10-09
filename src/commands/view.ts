@@ -17,7 +17,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, partyCounters } from "./page-counters.ts";
-import { counterOf, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue, statBlock } from "./sheet.ts";
+import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetText, type SheetValue, statBlock } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
@@ -229,7 +229,8 @@ function lineValues(world: World, page: Page, counters: Record<string, unknown>)
     return Object.entries(counters).map(([field, value]) => {
         const kind = declaredKind(world, field);
         const counter = counterOf(world, fields, field, value);
-        return { field, ...(kind === undefined ? {} : { kind }), text: String(value).trim(), ...(counter === undefined ? {} : { counter }), marks: 0 };
+        const progress = experienceProgress(world, fields, field);
+        return { field, ...(kind === undefined ? {} : { kind }), text: String(value).trim(), ...(counter === undefined ? {} : { counter }), marks: 0, ...(progress === undefined ? {} : { progress }) };
     });
 }
 
