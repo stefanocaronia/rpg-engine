@@ -1633,6 +1633,29 @@ summary.fixed {
     font-weight: 700;
 }
 
+/* A new roll opens its place at the top of the list, and the others slide down to make it room, as it lights up (D-301). */
+@media (prefers-reduced-motion: no-preference) {
+    .roll.changed {
+        overflow: hidden;
+        animation: roll-in var(--long) var(--ease), changed var(--linger) var(--ease-out);
+    }
+}
+
+/* From nothing to the card's own height: the browser grows it to its height, whatever it is. */
+.roll-list {
+    interpolate-size: allow-keywords;
+}
+
+@keyframes roll-in {
+    from {
+        height: 0;
+        margin-bottom: -8px;
+        padding-block: 0;
+        border-width: 0;
+        opacity: 0;
+    }
+}
+
 /* A roll new at the last reading says so for a few seconds, then fades (D-299). */
 .roll-new {
     display: inline-block;
