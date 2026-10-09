@@ -106,7 +106,7 @@ describe("the effects at a turn and at a rest (EFF-15)", () => {
 
 describe("what shields a counter (DAT-14), and the counters only change changes (CNT-7, CNT-8)", () => {
     it("starts temporary hit points at 0 with change, refuses to rewrite them with write, and says they go first when hit points go down", async () => {
-        expect(await ok("change", "Corrado", "temp-hp", "--to", "3")).toMatch(/^Corrado: temp-hp 0 → 3\.\n\ntemp-hp changed: Temporary Hit Points, from the rules of 5e:\n/);
+        expect(await ok("change", "Corrado", "temp-hp", "--to", "3")).toBe('Corrado: temp-hp 0 → 3.\ntemp-hp is no longer at 0: read rules "Temporary Hit Points".');
         expect((await rpg("write", "Corrado", "--set", "temp-hp=5")).output).toContain('temp-hp is a counter: use change, page "Corrado", field temp-hp, to 5');
         expect(await ok("change", "Corrado", "hp", "--by=-7")).toBe(
             "Corrado: hp 24/24 → 17/24.\nCorrado has temp-hp 3, which goes first: if this was damage, give hp back what temp-hp takes and take it from temp-hp, with change. "

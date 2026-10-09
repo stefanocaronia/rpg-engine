@@ -180,9 +180,9 @@ describe("recipes (DAT-4, DAT-5)", () => {
         await ok("effect", "add", "Ennio", "Ombra", "--for", "short rest");
         await ok("effect", "add", "Ennio", "Benedetto", "--for", "1h");
         const rested = await ok("change", "--recipe", "long rest", "--why", " ");
-        // A threshold with no value gives its rule's text at every change, here temporary hit points going (DAT-3, D-266).
-        expect(rested).toContain("\n\ntemp-hp changed: Temporary Hit Points, from the rules of 5e:\n### Temporary Hit Points\n");
-        expect(rested.split("\n\ntemp-hp changed")[0]).toBe([
+        // Temporary hit points that go are named with their rule (DAT-3, D-268).
+        expect(rested).toContain('temp-hp is at 0: read rules "Temporary Hit Points".');
+        expect(rested.replace('\ntemp-hp is at 0: read rules "Temporary Hit Points".', "")).toBe([
             "Long rest (a recipe of the system 5e):",
             'Ennio: Prosciugato ended; Ombra ended; hp 5/12 → 12/12; temp-hp 4 → 0; slots-1 0/2 → 2/2. Not brought back: hit-dice 0/1, exhaustion 1/6 (rules "Exhaustion").',
             "Lena: hp 2/4 → 4/4 (again as Commoner).",
