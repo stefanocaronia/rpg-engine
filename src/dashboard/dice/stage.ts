@@ -1,6 +1,7 @@
 // Where the dice are shown (D-278): a three.js scene over the page, with a light, the dice's shadows on an invisible floor, and the dice of make-dice.py in the
 // theme's colours (D-279): yellow with navy numbers on the dark page, navy with yellow numbers on the light one.
 import * as THREE from "three";
+import { shownTheme } from "../theme.ts";
 import { celebrate, type Effect, type Glow, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
 import type { Tray } from "./throw.ts";
@@ -167,7 +168,7 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
 /** The dice's colours by the theme (D-279, D-282), the colour of the page's panels beneath them, and the glow of the rare faces. */
 function diceColours(): { body: string; ink: string; page: string; glow: Glow; }
 {
-    return matchMedia("(prefers-color-scheme: dark)").matches
+    return shownTheme() === "dark"
         ? {
             body: "#f5c63e",
             ink: "#182c4c",

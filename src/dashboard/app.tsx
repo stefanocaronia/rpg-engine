@@ -11,6 +11,7 @@ import { type Notice, Notices } from "./notices.tsx";
 import { PartyStrip } from "./party.tsx";
 import { RollLog } from "./rolls.tsx";
 import { MemberSheet } from "./sheet.tsx";
+import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
@@ -46,6 +47,8 @@ function App()
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new at a reading flash in the list.
     const seen = useRef<Set<string>>();
     const [thrown, setThrown] = useState<ShownRoll>();
+    // The roll whose dice are in the air: its line comes into the rolls only as they go (D-300).
+    const [held, setHeld] = useState<string>();
     const [fresh, setFresh] = useState<Set<string>>(new Set());
     // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
@@ -69,6 +72,7 @@ function App()
 
                 if (asking !== undefined) {
                     setThrown(asking);
+                    setHeld(asking.id);
                 }
 
                 setShown((before) => ({
@@ -152,7 +156,7 @@ function App()
                         />
                     )}
                 </main>
-                <RollLog rolls={shown.rolls} party={shown.party} fresh={fresh} />
+                <RollLog rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)} party={shown.party} fresh={fresh} />
             </div>
             {shown.system && (
                 <footer class="credits">
@@ -167,7 +171,7 @@ function App()
                     )}
                 </footer>
             )}
-            <DiceTray requested={thrown} sheetThrow={sheetThrow} party={shown.party} />
+            <DiceTray requested={thrown} sheetThrow={sheetThrow} party={shown.party} onShown={(id) => setHeld((now) => (now === id ? undefined : now))} />
         </div>
     );
 }
@@ -183,6 +187,9 @@ function addressedName(): string | undefined
         return undefined;
     }
 }
+
+// The theme the player picked before, from the start (D-300).
+restoreTheme();
 
 const root = document.getElementById("app");
 

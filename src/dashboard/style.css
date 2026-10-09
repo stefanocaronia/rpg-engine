@@ -1,6 +1,15 @@
 /* The player's dashboard (D-273, D-275, D-276): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game. From Material
    Design its ideas alone (D-282): colours from a seed, one state layer, ample targets, motion with a name, depth by tone on the dark page; moderate corners,
    pictures for the dice and the controls (D-284). */
+/* The theme the player picked, else the system's (D-300). */
+:root[data-theme="light"] {
+    color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+
 :root {
     color-scheme: light dark;
     /* Two seeds from the robot, navy #192d4d and gold #f4c84c, as HCT tones by role. */
@@ -225,6 +234,19 @@ a {
 .status-chip.live.on .dot {
     background: var(--ally);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--ally) 25%, transparent);
+}
+
+/* The switch of the theme, as tall as the chips beside it (D-300). */
+.icon-button.theme-switch {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-m);
+    box-shadow: var(--lift);
+}
+
+.theme-switch svg.icon {
+    width: 18px;
+    height: 18px;
 }
 
 /* Past the top, a bar that stays on top: the robot, the campaign's name, the chips, small. */

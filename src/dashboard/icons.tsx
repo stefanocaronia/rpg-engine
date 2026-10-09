@@ -26,6 +26,8 @@ const iconPaths = {
     send: "M5 12h13 M13 6l6 6-6 6",
     alert: "M12 3.5 21.5 20h-19Z M12 9.5v5 M12 17.2v.3",
     info: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 11v6 M12 7.6v.3",
+    sun: "M12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9Z M12 2.5v2 M12 19.5v2 M4.6 4.6 6 6 M18 18l1.4 1.4 M2.5 12h2 M19.5 12h2 M4.6 19.4 6 18 M18 6l1.4-1.4",
+    moon: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z",
 };
 
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */

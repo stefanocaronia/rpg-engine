@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
+import { pickTheme, shownTheme } from "./theme.ts";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live. */
 interface TopOf
@@ -55,6 +56,7 @@ export function Top(top: TopOf)
                     )}
                 </div>
                 <StatusChips {...top} />
+                <ThemeSwitch />
             </header>
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
                 <Master />
@@ -62,6 +64,25 @@ export function Top(top: TopOf)
                 <StatusChips {...top} />
             </div>
         </>
+    );
+}
+
+/** The switch between the light and the dark theme (D-300): it shows the theme it goes to. */
+function ThemeSwitch()
+{
+    const [theme, setTheme] = useState(shownTheme);
+    const next = theme === "dark" ? "light" : "dark";
+    const name = next === "dark" ? "Dark theme" : "Light theme";
+
+    const flip = (): void => {
+        pickTheme(next);
+        setTheme(next);
+    };
+
+    return (
+        <button type="button" class="icon-button tonal theme-switch tip-left" aria-label={name} data-tip={name} onClick={flip}>
+            <Icon name={next === "dark" ? "moon" : "sun"} />
+        </button>
     );
 }
 

@@ -53,7 +53,7 @@ interface Plate
     rare?: { face: RareFace; words: string; };
 }
 
-export function DiceTray({ requested, sheetThrow, party }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; })
+export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; onShown?: (roll: string) => void; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
     const shownPlate = useRef<HTMLDivElement>(null);
@@ -170,14 +170,22 @@ export function DiceTray({ requested, sheetThrow, party }: { requested?: ShownRo
             }
 
             setFading(true);
-            const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
 
-            // On a wide screen the plate of a roll the master asked flies into its line of the rolls (D-281); elsewhere it fades.
-            if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
-                flyInto(shownPlate.current, row, done);
-            } else {
-                window.setTimeout(done, fadeLength);
+            // The roll's line comes into the rolls only now, as its dice go (D-300); the plate flies into it once it is drawn.
+            if (shown.roll !== undefined) {
+                onShown?.(shown.roll);
             }
+
+            requestAnimationFrame(() => {
+                const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
+
+                // On a wide screen the plate of a roll the master asked flies into its line of the rolls (D-281); elsewhere it fades.
+                if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
+                    flyInto(shownPlate.current, row, done);
+                } else {
+                    window.setTimeout(done, fadeLength);
+                }
+            });
         }, linger);
     };
 
