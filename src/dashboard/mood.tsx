@@ -2,12 +2,13 @@
 import type { Mood } from "./data.ts";
 import { moodFaces } from "./mood-faces.ts";
 
-/** A mood's face, in lines on a grid of 24. */
+/** A mood's face, in lines on a grid of 24, cropped to the face. */
 export function MoodFace({ mood }: { mood: Mood; })
 {
     const face = moodFaces[mood];
     return (
-        <svg class="mood-face" viewBox="0 0 24 24" aria-hidden="true">
+        // The face's part of the grid, so that it fills the disc.
+        <svg class="mood-face" viewBox="3.5 3 17 17" aria-hidden="true">
             <path d={face.lines} />
             {face.dots !== undefined && <path class="mood-eyes" d={face.dots} />}
         </svg>

@@ -1,5 +1,5 @@
 // The master's avatar, the robot (D-274): its picture inline, so that the page can move it. It shows the master's mood (D-305), a moment's face for a little while
-// when one comes, its eyes closed while the master is away; it blinks now and then, and breathes unless the player asked for less motion.
+// when one comes, its eyes closed while the master is away; unless the player asked for less motion, it blinks now and then and breathes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Moment, Mood } from "./data.ts";
 
@@ -38,6 +38,11 @@ export function Master({ mood = "neutral", moment, asleep = false }: { mood?: Mo
         if (asleep) {
             holder.current?.classList.add("blink");
             return () => holder.current?.classList.remove("blink");
+        }
+
+        // Blinking is the one motion that never stops: none when the player asked for less.
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            return;
         }
 
         const blink = (): void => {

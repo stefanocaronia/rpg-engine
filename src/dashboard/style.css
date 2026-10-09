@@ -2586,8 +2586,8 @@ svg.icon {
     }
 }
 
-/* Moods (D-305): the robot's faces fade one into the other, a moment's face pops, asleep its eyes stay shut; the party's badges, a disc like the robot's
-   screen with the face in lines. The badge's place on a token is with the token's rules. */
+/* Moods (D-305): the robot's faces fade one into the other, the old one going first; a moment's face pops; asleep, a screen on standby, dimmed, eyes shut
+   and low, the antenna's light off. The party's badges, a disc like the robot's screen with the face in lines; their place on a token is with the token's rules. */
 .master .robot-mood {
     display: inline;
     opacity: 0;
@@ -2600,6 +2600,23 @@ svg.icon {
 
 .master .robot-mood:not(.shown) {
     pointer-events: none;
+    transition-duration: var(--quick);
+}
+
+.master .robot-antenna circle {
+    transition: fill var(--short) var(--ease);
+}
+
+.master.asleep .robot-mood.shown {
+    opacity: 0.55;
+}
+
+.master.asleep .robot-antenna circle {
+    fill: #8a8f9c;
+}
+
+.master.asleep .robot-can-blink {
+    translate: 0 6px;
 }
 
 .master.asleep .robot-head {
@@ -2628,22 +2645,22 @@ svg.icon {
     height: 100%;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.9;
+    stroke-width: 1.5;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 .mood-face .mood-eyes {
-    stroke-width: 3.4;
+    stroke-width: 2.6;
 }
 
 /* Small, the lines thicken to stay readable. */
 .mood-badge:not(.large) .mood-face {
-    stroke-width: 2.2;
+    stroke-width: 1.6;
 }
 
 .mood-badge:not(.large) .mood-face .mood-eyes {
-    stroke-width: 3.8;
+    stroke-width: 2.8;
 }
 
 @media (prefers-reduced-motion: no-preference) {
