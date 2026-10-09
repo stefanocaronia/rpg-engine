@@ -121,6 +121,13 @@ describe("validate", () => {
         );
     });
 
+    it("finds a picture in the game system's images folder, as a page derived from its creature shows it", async () => {
+        await ok("write", "Grak", "--type", "character", "--set", "role=npc", "--set", "creature=[[Goblin]]");
+        expect(await ok("image", "Grak")).toBe("Grak has no picture of its own: it shows the picture of Goblin.");
+        await ok("write", "Rosa", "--type", "character", "--set", "role=npc", "--set", "image=[[goblin-head.svg]]");
+        expect(await ok("validate")).toBe("No problems.");
+    });
+
     it("refuses an image field that is not a link", async () => {
         expect(await refused("write", "Ennio", "--set", "image=ennio.png")).toContain('"image" must be a link');
     });

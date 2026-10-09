@@ -515,7 +515,8 @@ function withAlias(pages: Page[], name: string): Page[]
 
 function fieldExcerpt(page: Page, text: string): string | undefined
 {
-    for (const [name, value] of Object.entries(page.fields)) {
+    // A picture's file name says nothing the page does not: the Worg's direwolf.svg is no wolf to look for.
+    for (const [name, value] of Object.entries(page.fields).filter(([field]) => comparableText(field) !== "image")) {
         const shown = typeof value === "string" ? value : JSON.stringify(value);
 
         if (comparableText(shown).includes(text)) {
