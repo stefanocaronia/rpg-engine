@@ -92,6 +92,19 @@ export function readableIds(text: string, fields: ReadonlySet<string> = new Set(
     return text.replace(/\b[a-z][a-z0-9]*(?:-[a-z0-9]+)+\b/g, (field) => fieldLabel(field, fields));
 }
 
+/** A number with its sign: +2, −1. */
+export function signed(value: number): string
+{
+    return value < 0 ? `−${-value}` : `+${value}`;
+}
+
+/** The number added at the end of a notation, as the 5 of 2d20kh1+5; none, 0. */
+export function notationModifier(notation: string): number
+{
+    const match = /([+-]\d+)$/.exec(notation.replace(/\s+/g, ""));
+    return match === null ? 0 : Number(match[1]);
+}
+
 /** A number as it reads: −1 with a minus sign rather than a hyphen. */
 export function shownText(text: string): string
 {

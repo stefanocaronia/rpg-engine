@@ -654,13 +654,14 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await send("POST", "/api/answer", { asked: asked.id, choice: 1 });
         await asking;
         page.close();
-        await ok("roll", "1d20+4", "--who", "Varro", "--why", "il mugnaio mente");
+        await ok("roll", "1d20+4", "--who", "Varro", "--check", "Inganno", "--why", "il mugnaio mente");
         await ok("roll", "1d20", "--hidden", "--why", "la ronda sente");
         await ok("roll", "1d20+2", "--who", "Ettore", "--values", "15", "--why", "Atletica: il guado");
         const rolls = JSON.parse(await ok("view", "--json")).rolls;
         expect(rolls).toEqual([
             expect.objectContaining({ by: "player", who: "Ettore", check: "Acrobazia", notation: "1d20-1", total: 3, dice: [{ sides: 20, value: 4 }] }),
-            expect.objectContaining({ by: "master", who: "Varro", notation: "1d20+4", total: 8, dice: [{ sides: 20, value: 4 }] }),
+            // What a master's roll is, as the player sees it; never why (D-292).
+            expect.objectContaining({ by: "master", who: "Varro", check: "Inganno", notation: "1d20+4", total: 8, dice: [{ sides: 20, value: 4 }] }),
             // Physical dice are the player's, though the master writes their values; they are not thrown again on the page, as they ask no check.
             expect.objectContaining({ by: "player", who: "Ettore", notation: "1d20+2", total: 17, dice: [{ sides: 20, value: 15 }] }),
         ]);

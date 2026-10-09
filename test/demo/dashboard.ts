@@ -21,7 +21,7 @@ if (process.argv.includes("--ask")) {
 
         // A roll of the master's that the player sees: in the list, with the robot and for whom.
         if (!absent) {
-            console.log(await dashboard.roll("1d20+4", "--who", "Lupa", "--why", "il morso di Lupa"));
+            console.log(await dashboard.roll("1d20+4", "--who", "Lupa", "--check", "Morso", "--why", "il morso di Lupa"));
         }
 
         await new Promise((done) => setTimeout(done, absent ? 1500 : 5000));

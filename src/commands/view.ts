@@ -3,7 +3,7 @@ import { readSettings, requireCampaign } from "../campaign/index.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import type { ThrownDie } from "../dice/index.ts";
+import { notationWords, type ThrownDie } from "../dice/index.ts";
 import { formatEnd, readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -36,12 +36,14 @@ export interface ShownRoll
     by: "player" | "master";
     /** For whom, as the player character knows them: Ettore, Lupa, a creature. */
     who?: string;
-    /** The check the master asked of the player, such as Atletica. */
+    /** What the roll is, as the player sees it: the check the master asked, or what the master names a roll of theirs, such as Bite (D-292). */
     check?: string;
     /** The picture of whom it is for, when the player character knows them and they have one (D-286). */
     image?: { file: string; version: number; };
     /** Whom it is for is someone the player character does not know by name: a creature, someone (D-286). */
     stranger?: true;
+    /** The notation in words, when it says more than its dice, as "2d20, keep the highest, +5" (D-292). */
+    words?: string;
     notation: string;
     total: number;
     text: string;
@@ -226,6 +228,7 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
     const known = data.who === undefined ? undefined : named(data.who);
     const who = data.who === undefined ? undefined : known ?? (isCopyName(world, data.who) ? "a creature" : "someone");
     const image = known === undefined ? undefined : picture(data.who);
+    const words = notationWords(String(data.notation ?? ""));
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
@@ -236,6 +239,7 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
         ...(who !== undefined && known === undefined ? { stranger: true as const } : {}),
         ...(typeof data.check === "string" ? { check: data.check } : {}),
         notation: String(data.notation ?? ""),
+        ...(words === undefined ? {} : { words }),
         total: Number(data.total ?? 0),
         text: String(data.result ?? ""),
         dice: Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],

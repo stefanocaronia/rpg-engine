@@ -27,13 +27,13 @@ const namePattern = /(^|[+-])(\s*)([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)/g;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =
-    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; physical: boolean; hidden: boolean; fingerprint?: string; note?: string; kept?: string; }
+    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; fingerprint?: string; note?: string; kept?: string; }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
 export const roll = defineCommand({
     name: "roll",
     description: "Roll dice and log the roll. "
-        + "Give what the roll is for and, if it belongs to someone, whose it is. "
+        + "Give what the roll is for and, if it belongs to someone, whose it is; for a roll the player sees, check names it for them, such as Bite or Stealth, while why stays yours. "
         + "When the player rolls physical dice, pass the faces they rolled as values. "
         + "When the player must not see the result, make it hidden; give the player its fingerprint only if they ask for it. reveal shows a hidden roll's proof later. "
         + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
@@ -46,6 +46,7 @@ export const roll = defineCommand({
     input: z.object({
         notation: z.string().optional().describe("dice to roll: 1d20+5, 2d20kh1, 4d6dl1, 2d6ro<=2, 1d6!, 6d10>=8, 4dF, d%; with who, 1d20+athletics takes the value from their sheet"),
         why: z.string().optional().describe("what the roll is for"),
+        check: z.string().optional().describe("what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know"),
         who: z.string().optional().describe("character the roll belongs to, or a copy in the open scene; leave it out for a free roll of the master"),
         values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
         hidden: z.boolean().optional().describe("only the master sees the result; its fingerprint goes to the player only if they ask for it"),
@@ -92,7 +93,8 @@ export const roll = defineCommand({
         const sheet = taken.length === 0 ? {} : { sheet: named.taken };
         const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
-        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, physical, ...keeping, ...using, dice: diceRoll.dice };
+        const checked = input.check === undefined ? {} : { check: input.check };
+        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, dice: diceRoll.dice };
         const entry = newDatedLogEntry(root, context, "roll", input.hidden ? "hidden" : "public", data);
         let shownFingerprint: string | undefined;
 
@@ -106,7 +108,7 @@ export const roll = defineCommand({
         const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         appendLogEntry(root, entry);
         const note = roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
-        return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
+        return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
     },
 
     format(output)
@@ -122,7 +124,7 @@ export const roll = defineCommand({
             return `Hidden roll ${output.id}, only for the master: ${output.text}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
         }
 
-        const label = [output.who, output.why].filter(Boolean).join(", ");
+        const label = [output.who, output.check, output.why].filter(Boolean).join(", ");
         return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${note}`;
     },
 });

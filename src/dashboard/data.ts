@@ -74,12 +74,14 @@ export interface ShownRoll
     by: "player" | "master";
     /** For whom, as the player's character knows them. */
     who?: string;
-    /** The check the master asked of the player: a roll of the dashboard's dice. */
+    /** What the roll is: the check the master asked of the player, a roll of the dashboard's dice, or what the master names a roll of theirs. */
     check?: string;
     /** The picture of whom it is for, as the player's character knows them. */
     image?: { file: string; version: number; };
     /** Whom it is for is someone the character does not know by name. */
     stranger?: true;
+    /** The notation in words, when it says more than its dice. */
+    words?: string;
     notation: string;
     total: number;
     text: string;

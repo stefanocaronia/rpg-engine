@@ -3,8 +3,9 @@
 // nothing, the engine does not hear of it, and the dice fade away. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
+import { DiceFaces } from "../faces.tsx";
 import { DieIcon, Icon } from "../icons.tsx";
-import { shownText } from "../labels.ts";
+import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import type { Roller } from "./roller.ts";
@@ -361,34 +362,11 @@ function PlateContent({ plate }: { plate: Plate; })
                     )}
                 </span>
             </div>
-            <ol class="plate-dice" aria-hidden="true">
-                {plate.dice.map((die, index) => <PlateDie key={index} die={die} />)}
-                {plate.modifier !== 0 && <li class="plate-modifier">{signed(plate.modifier)}</li>}
-            </ol>
+            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" />
             <span class="plate-total num">{shownText(String(plate.total))}</span>
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
             <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
         </>
-    );
-}
-
-/** A die of the plate: its picture and its face, empty when dropped; a reroll's first face struck out, an explosion's faces added, a dF as −, 0 or +. */
-function PlateDie({ die }: { die: ThrownDie; })
-{
-    const rare = rareFace(die);
-    const faces = die.faces !== undefined && die.faces.length > 1 ? die.faces.map((value) => faceText(die.sides, value)).join("+") : faceText(die.sides, die.value);
-    return (
-        <li class={["plate-die", die.dropped === true ? "dropped" : "", rare === undefined ? "" : `rare-${rare}`].filter((name) => name !== "").join(" ")}>
-            <DieIcon sides={die.sides} />
-            <span>
-                {die.rerolledFrom !== undefined && (
-                    <>
-                        <s>{faceText(die.sides, die.rerolledFrom)}</s>→
-                    </>
-                )}
-                {faces}
-            </span>
-        </li>
     );
 }
 
@@ -434,19 +412,6 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     }, flight);
 }
 
-/** The number added at the end of a notation, as the 5 of 2d20kh1+5; none, 0. */
-function notationModifier(notation: string): number
-{
-    const match = /([+-]\d+)$/.exec(notation.replace(/\s+/g, ""));
-    return match === null ? 0 : Number(match[1]);
-}
-
-/** A face as the plate shows it: a number, or a dF's −, 0 and +. */
-function faceText(sides: number | "F", value: number): string
-{
-    return sides === "F" ? (value < 0 ? "−" : value > 0 ? "+" : "0") : String(value);
-}
-
 /** A die's name, as the tray shows it: d20, and d% for the percentile. */
 function dieName(sides: number): string
 {
@@ -467,11 +432,6 @@ function diceText(dice: ThrownDie[], modifier: number): string
     const kinds = [...new Set(dice.map((die) => die.sides))].sort((first, second) => Number(second) - Number(first));
     const faces = kinds.map((sides) => `[${dice.filter((die) => die.sides === sides).map((die) => die.value).join(", ")}]`).join(" + ");
     return modifier === 0 ? faces : `${faces} ${modifier > 0 ? "+" : "−"} ${Math.abs(modifier)}`;
-}
-
-function signed(value: number): string
-{
-    return value < 0 ? `−${-value}` : `+${value}`;
 }
 
 /** A die's face, as fairly as the browser can: a random number of the system's, without the bias of a remainder. */

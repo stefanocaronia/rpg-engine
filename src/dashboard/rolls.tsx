@@ -2,7 +2,9 @@
 // rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289).
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
+import { DiceFaces } from "./faces.tsx";
 import { cardIcons } from "./icons.tsx";
+import { notationModifier } from "./labels.ts";
 import { Token, type Tokened } from "./party.tsx";
 
 // From this width the rolls are a column beside the sheet, as in the style sheet.
@@ -21,7 +23,7 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
                 <CardHeader
                     icon={cardIcons.rolls}
                     title={<h2 id="rolls-title" class="rolls-title">Rolls</h2>}
-                    preview={newest === undefined ? undefined : `${rollWhat(newest)} · ${newest.total}`}
+                    preview={newest === undefined ? undefined : `${[nameOf(newest, lead), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
                     open={open}
                     onToggle={toggle}
                     fixed={beside}
@@ -30,7 +32,7 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
                     ? <p class="rolls-none">The checks the master asks of you come here, and the master's rolls you may see.</p>
                     : (
                         <ol class="roll-list">
-                            {[...rolls].reverse().map((roll) => <RollRow key={roll.id} roll={roll} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
+                            {[...rolls].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
                         </ol>
                     )}
             </details>
@@ -38,27 +40,34 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
     );
 }
 
-/** One roll: whom it is for, by their token, for which check, its total, and its dice as the chat writes them. */
-function RollRow({ roll, token, fresh }: { roll: ShownRoll; token?: Tokened; fresh: boolean; })
+/**
+ * One roll, in two lines (D-292): whom it is for, by their token and name, and what it is; then its dice as chips and the number added. Its total on the right;
+ * the notation, in words when it says more than its dice, in its tooltip; the chat's text for a screen reader.
+ */
+function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; })
 {
     const player = roll.by === "player";
     return (
-        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((name) => name !== "").join(" ")} data-roll={roll.id}>
+        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id}>
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-what">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
-                {rollWhat(roll)}
+                <strong>{name}</strong>
+                {roll.check && <span class="roll-check">{` · ${roll.check}`}</span>}
             </span>
             <span class="roll-total num">{roll.total}</span>
-            <span class="roll-text">{roll.text}</span>
+            <span class="roll-dice" title={[roll.words, roll.notation].filter((part) => part !== undefined).join(" · ")}>
+                <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} />
+                <span class="visually-hidden">{roll.text}</span>
+            </span>
         </li>
     );
 }
 
-/** What a roll was: the check the player threw, or for whom; for whom the master threw it. */
-function rollWhat(roll: ShownRoll): string
+/** Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one. */
+function nameOf(roll: ShownRoll, lead: Member | undefined): string
 {
-    return roll.by === "player" ? roll.check ?? roll.who ?? "" : roll.who ?? "the master";
+    return roll.who ?? (roll.by === "player" ? lead?.name ?? "" : "The master");
 }
 
 /**

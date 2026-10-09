@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultContext } from "../src/core/context.ts";
-import { DiceError, rollDice } from "../src/dice/index.ts";
+import { DiceError, notationWords, rollDice } from "../src/dice/index.ts";
 
 describe("dice notation", () => {
     it.each([
@@ -36,6 +36,23 @@ describe("dice notation", () => {
             expect(() => rollDice(notation, { random: () => 1 })).toThrow(DiceError);
         },
     );
+});
+
+describe("a notation in words (D-292)", () => {
+    it.each([
+        ["2d20kh1+5", "2d20, keep the highest, +5"],
+        ["4d6dl1", "4d6, drop the lowest"],
+        ["2d6ro<=2+2", "2d6, reroll once on 2 or less, +2"],
+        ["1d6!", "1d6, roll one more on 6"],
+        ["6d10>=8", "6d10, count the dice on 8 or more"],
+        ["3d6kh2-1", "3d6, keep the 2 highest, −1"],
+    ])("reads %s as %s", (notation, words) => {
+        expect(notationWords(notation)).toBe(words);
+    });
+
+    it("says nothing of a notation that is only its dice and numbers, or that cannot be read", () => {
+        expect([notationWords("1d20+2"), notationWords("d%"), notationWords("4dF"), notationWords("tre dadi")]).toEqual([undefined, undefined, undefined, undefined]);
+    });
 });
 
 describe("physical dice", () => {

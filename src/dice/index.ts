@@ -2,3 +2,4 @@
 export { DiceError, parseNotation } from "./notation.ts";
 export { createProof, fingerprint, sha256 } from "./proof.ts";
 export { type DiceRoll, type FaceSource, rollDice, type ThrownDie } from "./roll-dice.ts";
+export { notationWords } from "./words.ts";
