@@ -10,7 +10,7 @@ import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
-import type { Context, Player } from "./core/context.ts";
+import type { Context, Player, Said } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -184,8 +184,11 @@ interface Asked
     question: string;
     title: string;
     labels: string[];
-    settle(choice: number | undefined | "absent"): void;
+    settle(choice: number | Said | undefined | "absent"): void;
 }
+
+// How many characters the player's own words may have, in place of a button (ASK-10).
+const mostSaid = 500;
 
 // How long the page waits for the player's click: as long as a host waits for a call that keeps reporting progress, as ask does with a form.
 const playerWait = 30 * 60 * 1000;
@@ -352,7 +355,7 @@ function pagePlayer(served: Served): Player
             return new Promise((done) => {
                 const timer = setTimeout(() => settle(undefined), playerWait).unref();
 
-                const settle = (choice: number | undefined | "absent"): void => {
+                const settle = (choice: number | Said | undefined | "absent"): void => {
                     clearTimeout(timer);
                     signal?.removeEventListener("abort", stop);
 
@@ -374,19 +377,25 @@ function pagePlayer(served: Served): Player
     };
 }
 
-/** The page's click on what the master asks: which button, by its place; refused for a question no longer asked, so that a late click counts for nothing. */
+/**
+ * The page's answer to what the master asks: which button, by its place, or the player's own words (ASK-10); refused for a question no longer asked, so that a
+ * late click counts for nothing.
+ */
 async function answerAsked(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
     const body = await readBody(request);
-    const parsed = z.object({ asked: z.string(), choice: z.number().int().min(0) }).strict().safeParse(body);
+    const parsed = z.union([
+        z.object({ asked: z.string(), choice: z.number().int().min(0) }).strict(),
+        z.object({ asked: z.string(), text: z.string().trim().min(1).max(mostSaid) }).strict(),
+    ]).safeParse(body);
     const asked = served.asked;
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: "Send which button was clicked: { asked, choice }." });
-    } else if (asked === undefined || asked.id !== parsed.data.asked || parsed.data.choice >= asked.labels.length) {
+        sendJson(response, 400, { error: `Send which button was clicked, { asked, choice }, or the player's words, { asked, text }, up to ${mostSaid} characters.` });
+    } else if (asked === undefined || asked.id !== parsed.data.asked || ("choice" in parsed.data && parsed.data.choice >= asked.labels.length)) {
         sendJson(response, 409, { error: "The master no longer asks this." });
     } else {
-        asked.settle(parsed.data.choice);
+        asked.settle("choice" in parsed.data ? parsed.data.choice : { said: parsed.data.text });
         sendJson(response, 202, {});
     }
 }

@@ -38,9 +38,15 @@ export interface Context
  * Asks the player one question with buttons: the index of the label they chose; undefined when no one answered; "unavailable" when the surface turned out
  * unable to show the buttons, so that from then on the master asks in words; "absent" when no one is there to see them now, as a dashboard with no page open.
  */
+/** The player's own words in place of a button, as the dashboard's page lets them write (ASK-10). */
+export interface Said
+{
+    said: string;
+}
+
 export interface Player
 {
-    choose(question: string, title: string, labels: string[], signal?: AbortSignal): Promise<number | undefined | "unavailable" | "absent">;
+    choose(question: string, title: string, labels: string[], signal?: AbortSignal): Promise<number | Said | undefined | "unavailable" | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
     asking?(): boolean;
 }

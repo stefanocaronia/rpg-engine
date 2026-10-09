@@ -21,10 +21,11 @@ export async function readAsked(): Promise<Asked | undefined>
     return body.asked ?? undefined;
 }
 
-/** The player's click on what the master asks, by the button's place: true when it counted, false when the master no longer asks it. */
-export async function answer(asked: string, choice: number): Promise<boolean>
+/** The player's answer to what the master asks, a button by its place or their own words (ASK-10): true when it counted, false when the master no longer asks it. */
+export async function answer(asked: string, reply: number | string): Promise<boolean>
 {
-    const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ asked, choice }) });
+    const body = typeof reply === "number" ? { asked, choice: reply } : { asked, text: reply };
+    const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return response.status === 202;
 }
 

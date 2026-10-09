@@ -531,6 +531,23 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
+    it("takes the player's own words in place of a button: nothing rolled, a public line with them, and the master takes them as what the player does (ASK-10)", async () => {
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        expect((await send("POST", "/api/answer", { asked: asked.id, text: "   " })).status).toBe(400);
+        expect((await send("POST", "/api/answer", { asked: asked.id, text: "a".repeat(501) })).status).toBe(400);
+        expect((await send("POST", "/api/answer", { asked: "altro", text: "Giro attorno al muro" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, text: " Giro attorno al muro, lontano dalla ronda " })).status).toBe(202);
+        const result = await asking;
+        expect(result).toEqual({ kind: "said", words: "Giro attorno al muro, lontano dalla ronda" });
+        expect(ask.format(result)).toBe(
+            "The player answered in their own words, without a button: «Giro attorno al muro, lontano dalla ronda». Take it as what they do, as if they had written it in the chat; nothing was rolled.",
+        );
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "asked", by: "player", data: { answer: "Giro attorno al muro, lontano dalla ronda" } });
+        page.close();
+    });
+
     it("turns to the form, or to words this time, when no page is open, and keeps the buttons for later", async () => {
         expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe(
             "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",

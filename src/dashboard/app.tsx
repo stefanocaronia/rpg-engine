@@ -7,10 +7,10 @@ import { AskedBanner } from "./asked.tsx";
 import type { Asked, Member, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
-import { Master } from "./master.tsx";
 import { PartyStrip } from "./party.tsx";
 import { RollLog } from "./rolls.tsx";
 import { MemberSheet } from "./sheet.tsx";
+import { Top } from "./top.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";
@@ -119,18 +119,10 @@ function App()
 
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const lead = shown.party.find((candidate) => candidate.role === "pc");
-    const when = [shown.now, lead?.place?.replace(/^in /, "")].filter((part) => part !== undefined && part !== "").join(" · ");
+    const place = lead?.place?.replace(/^in /, "");
     return (
         <div class={live ? "page" : "page stale"}>
-            <header class="top">
-                <Master />
-                <div class="titles">
-                    <h1>{shown.campaign ?? productName}</h1>
-                    {shown.campaign !== undefined && <p class="product">{productName}{shown.system && <span class="system">· {shown.system.name}</span>}</p>}
-                </div>
-                {when !== "" && <p class="when">{when}</p>}
-                <span class={live ? "live on" : "live"}>{live ? "live" : "waiting for the game"}</span>
-            </header>
+            <Top campaign={shown.campaign} product={productName} system={shown.system?.name} now={shown.now} place={place === "" ? undefined : place} live={live} />
             <PartyStrip party={shown.party} chosen={shown.chosen} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
             <div class="body">

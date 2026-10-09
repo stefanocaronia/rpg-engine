@@ -20,6 +20,10 @@ const iconPaths = {
     minus: "M6 12h12",
     plus: "M12 6v12 M6 12h12",
     close: "M6 6l12 12 M18 6 6 18",
+    clock: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 7.5V12l3 2",
+    place: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z",
+    aside: "M6 6l6 6-6 6 M12 6l6 6-6 6",
+    send: "M5 12h13 M13 6l6 6-6 6",
 };
 
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */

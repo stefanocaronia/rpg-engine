@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
+import type { Context, Said } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
@@ -30,6 +30,7 @@ type AskResult =
     | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
+    | { kind: "said"; words: string; }
     | InWords;
 
 export const ask = defineCommand({
@@ -100,6 +101,8 @@ export const ask = defineCommand({
                 return "The player changed their mind: no roll. Ask what they do instead, and stop.";
             case "chose":
                 return `The player chose: ${result.answer}.`;
+            case "said":
+                return `The player answered in their own words, without a button: «${result.words}». Take it as what they do, as if they had written it in the chat; nothing was rolled.`;
             case "unavailable":
                 return `The player saw no buttons: ask them in words what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop. From now on, always in words.`;
             case "absent":
@@ -123,6 +126,10 @@ async function rollChosen(root: string, context: Context, question: string, chec
     // A call the user stopped logs nothing (ASK-9).
     if (chosen === "absent" || context.signal?.aborted === true) {
         return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
+    }
+
+    if (isSaid(chosen)) {
+        return said(root, context, question, labels, chosen);
     }
 
     if (chosen === "unavailable") {
@@ -155,6 +162,10 @@ async function answer(root: string, context: Context, question: string, options:
         return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
     }
 
+    if (isSaid(chosen)) {
+        return said(root, context, question, labels, chosen);
+    }
+
     const answered = chosen === undefined || chosen === "unavailable" ? undefined : labels[chosen];
     logAnswer(root, context, question, labels, answered);
 
@@ -163,6 +174,18 @@ async function answer(root: string, context: Context, question: string, options:
     }
 
     return answered === undefined ? { kind: "unanswered", asked } : { kind: "chose", answer: answered };
+}
+
+/** The player's own words in place of a button (ASK-10): no roll, a public line with them as the answer, and the master takes them as what the player does. */
+function said(root: string, context: Context, question: string, labels: string[], words: Said): AskResult
+{
+    logAnswer(root, context, question, labels, words.said);
+    return { kind: "said", words: words.said };
+}
+
+function isSaid(chosen: number | Said | undefined | "unavailable"): chosen is Said
+{
+    return typeof chosen === "object";
 }
 
 /** "Scavalcare il muro… (the checks: Atletica 1d20+5, Acrobazia 1d20-1)": the call as the master gave it, to ask in words. */
@@ -175,7 +198,7 @@ function askedText(question: string, what: "checks" | "answers", options: Option
  * The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). A form that does not show, while
  * the dashboard runs, is only absent this time: a page may open.
  */
-async function choose(context: Context, question: string, title: string, labels: string[]): Promise<number | undefined | "unavailable" | "absent">
+async function choose(context: Context, question: string, title: string, labels: string[]): Promise<number | Said | undefined | "unavailable" | "absent">
 {
     const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal);
 

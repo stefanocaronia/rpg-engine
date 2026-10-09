@@ -1,22 +1,42 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289).
+import { useState } from "preact/hooks";
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
-import { cardIcons } from "./icons.tsx";
+import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { notationModifier } from "./labels.ts";
 import { Token, type Tokened } from "./party.tsx";
 
-// From this width the rolls are a column beside the sheet, as in the style sheet.
+// From this width the rolls are a column beside the sheet, as in the style sheet; where the browser remembers that the player put it away.
 const besideSheet = "(min-width: 900px)";
+const awayKey = "rpg-engine.rolls-away";
 
 export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Member[]; fresh: Set<string>; })
 {
     const lead = party.find((member) => member.role === "pc");
     const [chosen, toggle] = useOpen("Rolls");
     const beside = useMedia(besideSheet);
+    const [away, setAway] = useState(readAway);
     const open = beside || chosen;
     const newest = rolls.at(-1);
+
+    const putAway = (now: boolean): void => {
+        setAway(now);
+        writeAway(now);
+    };
+
+    if (beside && away) {
+        return (
+            <aside class="rolls away" aria-label="Rolls">
+                <button type="button" class="rolls-tab" aria-label="Show the rolls" onClick={() => putAway(false)}>
+                    <DieIcon sides={20} />
+                    <span>Rolls</span>
+                </button>
+            </aside>
+        );
+    }
+
     return (
         <aside class="rolls" aria-labelledby="rolls-title">
             <details class="rolls-card" open={open}>
@@ -28,6 +48,11 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
                     onToggle={toggle}
                     fixed={beside}
                 />
+                {beside && (
+                    <button type="button" class="icon-button rolls-hide tip-left" aria-label="Hide the rolls" data-tip="Hide" onClick={() => putAway(true)}>
+                        <Icon name="aside" />
+                    </button>
+                )}
                 {rolls.length === 0
                     ? <p class="rolls-none">The checks the master asks of you come here, and the master's rolls you may see.</p>
                     : (
@@ -87,4 +112,22 @@ function tokenOf(roll: ShownRoll, party: Member[], lead: Member | undefined): To
     }
 
     return { name: roll.stranger ? "?" : roll.who, role: "other", ...(roll.image === undefined ? {} : { image: roll.image }) };
+}
+
+function readAway(): boolean
+{
+    try {
+        return localStorage.getItem(awayKey) === "away";
+    } catch {
+        return false;
+    }
+}
+
+function writeAway(away: boolean): void
+{
+    try {
+        localStorage.setItem(awayKey, away ? "away" : "beside");
+    } catch {
+        // The page forgets it at the next reload.
+    }
 }

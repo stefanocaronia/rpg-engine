@@ -154,28 +154,118 @@ a {
     outline-offset: 2px;
 }
 
-/* The top: the master, the campaign with the product's name below, the game's time and place, live. */
+/* The top (D-276, D-293): the master large, the campaign's name with the product's and the system's below, and the time, the place and whether the game is
+   live as chips. */
 .top {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: 20px;
+    margin-bottom: 18px;
 }
 
 .titles h1 {
-    font-size: 1.5rem;
-    line-height: 1.1;
+    font-size: 2.4rem;
+    line-height: 1.05;
     letter-spacing: 0.04em;
     font-variant: small-caps;
 }
 
 .product {
-    margin: 0;
+    margin: 4px 0 0;
     color: var(--muted);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-variant: small-caps;
     letter-spacing: 0.12em;
     text-transform: lowercase;
+}
+
+.status-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 12px 0 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel);
+    box-shadow: var(--lift);
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight: 550;
+    white-space: nowrap;
+}
+
+.status-chip svg.icon {
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+}
+
+.status-chip .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+}
+
+.status-chip.live.on {
+    border-color: color-mix(in srgb, var(--ally) 45%, var(--rule));
+    color: var(--ally);
+}
+
+.status-chip.live.on .dot {
+    background: var(--ally);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ally) 25%, transparent);
+}
+
+/* Past the top, a bar that stays on top: the robot, the campaign's name, the chips, small. */
+.top-bar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 18;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--rule);
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+    transform: translateY(-100%);
+    transition: transform var(--short) var(--ease);
+}
+
+.top-bar.shown {
+    box-shadow: var(--raise);
+    pointer-events: auto;
+    transform: none;
+}
+
+.top-bar img {
+    width: 36px;
+    height: 36px;
+}
+
+.top-bar-title {
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+}
+
+.top-bar .status-chip {
+    height: 30px;
+    font-size: 0.8rem;
 }
 
 /* The game system the campaign plays, beside the product's name; what it is and its source's credit at the foot of the page (D-284). */
@@ -200,44 +290,12 @@ a {
     max-width: 120ch;
 }
 
-.when {
-    margin: 0 0 0 auto;
-    color: var(--muted);
-    font-size: 0.9rem;
-}
-
-.live {
-    font-size: 0.8rem;
-    color: var(--muted);
-    white-space: nowrap;
-}
-
-.when + .live {
-    margin-left: 12px;
-}
-
-.titles + .live {
-    margin-left: auto;
-}
-
-.live::before {
-    content: "○ ";
-}
-
-.live.on {
-    color: var(--ally);
-}
-
-.live.on::before {
-    content: "● ";
-}
-
 /* The master: the robot, which blinks and breathes; one mood at a time (D-274). */
 .master {
     display: block;
     flex: 0 0 auto;
-    width: 56px;
-    height: 56px;
+    width: 112px;
+    height: 112px;
 }
 
 .master svg {
@@ -1145,6 +1203,7 @@ button.row,
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .top-bar,
     .rolls,
     .chevron,
     .bar .fill,
@@ -1163,7 +1222,7 @@ button.row,
 /* What the master asks (D-279): a banner over the page, in sight while it scrolls, with the question and a button for each check or answer. */
 .asked {
     position: sticky;
-    top: 8px;
+    top: calc(var(--top-space, 0px) + 8px);
     z-index: 15;
     display: flex;
     align-items: flex-start;
@@ -1292,6 +1351,45 @@ button.row,
     outline-offset: 2px;
 }
 
+/* The player's own words, in place of a button (ASK-10). */
+.asked-own {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 560px;
+    margin-top: 10px;
+}
+
+.asked-own input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.asked-own input::placeholder {
+    color: var(--muted);
+}
+
+.asked-own input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.asked-own .icon-button:not(:disabled) {
+    color: var(--accent);
+}
+
+.asked-own .icon-button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 .asked-problem {
     margin: 8px 0 0;
     color: var(--low);
@@ -1314,12 +1412,12 @@ button.row,
        without a bar, fading at its foot. */
     .rolls {
         position: sticky;
-        top: calc(12px + var(--asked-space, 0px));
+        top: calc(12px + var(--top-space, 0px) + var(--asked-space, 0px));
         transition: top var(--short) var(--ease);
     }
 
     .roll-list {
-        max-height: calc(100vh - 100px - var(--asked-space, 0px));
+        max-height: calc(100vh - 100px - var(--top-space, 0px) - var(--asked-space, 0px));
         overflow-y: auto;
         scrollbar-width: none;
         mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
@@ -1345,6 +1443,59 @@ button.row,
 /* Beside the sheet the rolls are always open: their header is no toggle. */
 summary.fixed {
     cursor: default;
+}
+
+/* Beside the sheet, the rolls can be put away into a tab on the window's edge (D-293). */
+.rolls-card {
+    position: relative;
+}
+
+.rolls-hide {
+    position: absolute;
+    top: 6px;
+    right: -10px;
+}
+
+.body:has(.rolls.away) {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.rolls.away {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    z-index: 17;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    translate: 0 -50%;
+}
+
+.rolls-tab {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border: 1px solid var(--rule);
+    border-right: 0;
+    border-radius: var(--radius-l) 0 0 var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    color: var(--ink);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rolls-tab svg.die {
+    width: 20px;
+    height: 20px;
+    color: var(--accent);
+}
+
+.rolls-tab span {
+    writing-mode: vertical-rl;
+    letter-spacing: 0.06em;
 }
 
 .rolls-none {
@@ -2042,17 +2193,21 @@ svg.icon {
 /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
 @media (max-width: 600px) {
     .master {
-        width: 44px;
-        height: 44px;
+        width: 64px;
+        height: 64px;
     }
 
-    .when {
+    .titles h1 {
+        font-size: 1.6rem;
+    }
+
+    .top {
+        gap: 12px;
+    }
+
+    /* A phone keeps only whether the game is live. */
+    .status-chip:not(.live) {
         display: none;
-    }
-
-    .titles + .live,
-    .when + .live {
-        margin-left: auto;
     }
 
     .sheet-body {
