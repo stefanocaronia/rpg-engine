@@ -169,23 +169,28 @@ export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?
                 return;
             }
 
-            setFading(true);
-
-            // The roll's line comes into the rolls only now, as its dice go (D-300); the plate flies into it once it is drawn.
+            // The roll's line comes into the rolls only now, as its dice go (D-300); on a wide screen the plate of a roll the master asked waits for its place
+            // to open, then flies into it (D-281, D-303); elsewhere it fades.
             if (shown.roll !== undefined) {
                 onShown?.(shown.roll);
             }
 
-            requestAnimationFrame(() => {
-                const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
+            const flies = shown.roll !== undefined && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches;
 
-                // On a wide screen the plate of a roll the master asked flies into its line of the rolls (D-281); elsewhere it fades.
-                if (row !== null && shownPlate.current !== null && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches && inSight(row)) {
+            window.setTimeout(() => {
+                if (!current()) {
+                    return;
+                }
+
+                const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
+                setFading(true);
+
+                if (flies && row !== null && shownPlate.current !== null && inSight(row)) {
                     flyInto(shownPlate.current, row, done);
                 } else {
                     window.setTimeout(done, fadeLength);
                 }
-            });
+            }, flies ? flight : 0);
         }, linger);
     };
 
@@ -395,7 +400,7 @@ function inSight(element: Element): boolean
     return box.height > 0 && box.top >= 0 && box.bottom <= window.innerHeight;
 }
 
-/** Flies the plate into a line of the rolls, small, and lights the line as it lands; then what comes after. */
+/** Flies the plate into a line of the rolls, small, as the line appears; then what comes after. */
 function flyInto(plate: HTMLElement, row: Element, then: () => void): void
 {
     const from = plate.getBoundingClientRect();
@@ -407,8 +412,6 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     plate.style.opacity = "0.25";
     window.setTimeout(() => {
         plate.style.visibility = "hidden";
-        row.classList.add("arrived");
-        window.setTimeout(() => row.classList.remove("arrived"), 900);
         then();
         // Once gone, the plate takes back its own place, unseen.
         requestAnimationFrame(() => {

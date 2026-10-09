@@ -1612,6 +1612,7 @@ summary.fixed {
 }
 
 .roll {
+    position: relative;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     column-gap: 12px;
@@ -1659,11 +1660,11 @@ summary.fixed {
     font-weight: 700;
 }
 
-/* A new roll opens its place at the top of the list, and the others slide down to make it room, as it lights up (D-301). */
+/* A new roll first opens its place at the top of the list, empty, the others sliding down like a blind; then it appears in it (D-301, D-303). */
 @media (prefers-reduced-motion: no-preference) {
-    .roll.changed {
+    .roll.entering {
         overflow: hidden;
-        animation: roll-in var(--long) var(--ease), changed var(--linger) var(--ease-out);
+        animation: roll-open var(--flight) var(--ease), roll-show var(--medium) linear var(--flight) backwards;
     }
 }
 
@@ -1672,34 +1673,43 @@ summary.fixed {
     interpolate-size: allow-keywords;
 }
 
-@keyframes roll-in {
+@keyframes roll-open {
     from {
         height: 0;
         margin-bottom: -8px;
         padding-block: 0;
         border-width: 0;
+    }
+}
+
+/* Unseen while its place opens, as its fill backwards holds it before it starts. */
+@keyframes roll-show {
+    from {
         opacity: 0;
     }
 }
 
-/* A roll new at the last reading says so for a few seconds, then fades (D-299). */
-.roll-new {
-    display: inline-block;
-    margin-left: 8px;
-    padding: 1px 6px;
-    border-radius: var(--radius-xs);
-    background: var(--accent);
-    color: var(--paper);
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    vertical-align: 2px;
-    animation: roll-new 9s linear forwards;
+/* A new roll's mark (D-303): a yellow corner with an exclamation mark, in the card's top left, which fades after a while, as long as markLength. */
+.roll-flag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 26px;
+    height: 26px;
+    padding: 3px 0 0 7px;
+    border-top-left-radius: calc(var(--radius-m) - 1px);
+    background: var(--gold);
+    color: var(--on-gold);
+    font-size: 0.75rem;
+    font-weight: 900;
+    line-height: 1;
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+    pointer-events: none;
+    animation: roll-flag 9s linear forwards;
 }
 
-@keyframes roll-new {
-    88% {
+@keyframes roll-flag {
+    90% {
         opacity: 1;
     }
 
@@ -1997,10 +2007,6 @@ summary.fixed {
 }
 
 /* The line of the rolls a plate flew into lights up as it lands. */
-.roll.arrived {
-    animation: changed var(--linger) var(--ease-out);
-}
-
 /* The pictures of the dice and the controls: lines in the colour of the text around them. */
 svg.die,
 svg.icon {

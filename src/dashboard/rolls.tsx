@@ -1,7 +1,7 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those
 // of the last half hour, older ones at a click; Clear starts the list again, the log untouched (D-302).
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
@@ -17,6 +17,9 @@ const awayKey = "rpg-engine.rolls-away";
 const clearedKey = "rpg-engine.rolls-cleared";
 const moreRolls = 10;
 
+// How long a new roll keeps its mark, which the style sheet fades at the end (D-303).
+const markLength = 9000;
+
 export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rolls: ShownRoll[]; unread: boolean; campaign?: string; party: Member[]; fresh: Set<string>; onMore: () => void; })
 {
     const lead = party.find((member) => member.role === "pc");
@@ -25,6 +28,8 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
     const [away, setAway] = useState(readAway);
     const [cleared, setCleared] = useState(() => readCleared(campaign));
     const [older, setOlder] = useState(0);
+    // The rolls already drawn: a new one comes in only the first time, not again when the column comes back.
+    const greeted = useRef(new Set<string>());
     const open = beside || chosen;
     const listed = rollWindow(rolls, { now: Date.now(), cleared, older, unread });
     const newest = listed.shown.at(-1);
@@ -88,7 +93,7 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
                     ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
                     : (
                         <ol class="roll-list">
-                            {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
+                            {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
                         </ol>
                     )}
                 {listed.more && <button type="button" class="rolls-more" onClick={loadMore}>Load more</button>}
@@ -99,20 +104,35 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
 
 /**
  * One roll, in three lines (D-292): whom it is for, by their token and name; what it is; its dice as chips and the number added. Its total on the right; in
- * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader.
+ * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader. A new one first opens its place, then
+ * appears in it, with a yellow corner for a while (D-303): as it first shows, whatever the readings after, and once.
  */
-function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; })
+function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; greeted: Set<string>; })
 {
+    const [entering] = useState(() => fresh && !greeted.has(roll.id));
+    const [marked, setMarked] = useState(entering);
+
+    useEffect(() => {
+        greeted.add(roll.id);
+
+        if (!entering) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => setMarked(false), markLength);
+        return () => window.clearTimeout(timer);
+    }, []);
+
     const player = roll.by === "player";
     // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
     const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll)].filter((line) => line !== undefined && line !== "").join("\n");
     return (
-        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
+        <li class={["roll", player ? "by-player" : "by-master", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
+            {marked && <span class="roll-flag" aria-hidden="true">!</span>}
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-who">
-                <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
+                <span class="visually-hidden">{`${marked ? "New. " : ""}${player ? "Your roll: " : "The master's roll: "}`}</span>
                 {name}
-                {fresh && <span class="roll-new">New</span>}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
             <span class="roll-total num">{roll.total}</span>

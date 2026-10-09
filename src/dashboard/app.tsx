@@ -49,7 +49,7 @@ function App()
     const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], rollsTotal: 0, version: 0 });
     const [live, setLive] = useState(false);
     const reading = useRef(0);
-    // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new at a reading flash in the list.
+    // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new since come into the list as new.
     const seen = useRef<Set<string>>();
     const [thrown, setThrown] = useState<ShownRoll>();
     // The roll whose dice are in the air: its line comes into the rolls only as they go (D-300).
@@ -77,7 +77,9 @@ function App()
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
                 const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined).at(-1);
                 seen.current = new Set(rolls.map((roll) => roll.id));
-                setFresh(new Set(added.map((roll) => roll.id)));
+                // A roll stays new through the readings that come while its dice roll, until it shows (D-303); the list draws it new once.
+                const addedIds = new Set(added.map((roll) => roll.id));
+                setFresh((before) => new Set(rolls.map((roll) => roll.id).filter((id) => before.has(id) || addedIds.has(id))));
 
                 if (asking !== undefined) {
                     setThrown(asking);
