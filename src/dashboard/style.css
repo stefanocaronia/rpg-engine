@@ -2261,10 +2261,10 @@ svg.icon {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
-    column-gap: 10px;
-    width: 120px;
+    column-gap: 6px;
+    width: 100px;
     height: 44px;
-    padding: 0 10px 0 14px;
+    padding: 0 9px 0 12px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: var(--float);
@@ -2276,8 +2276,8 @@ svg.icon {
 }
 
 .tray-die svg.die {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     color: var(--accent);
 }
 
@@ -2293,7 +2293,7 @@ svg.icon {
 }
 
 .tray-count {
-    margin-right: 6px;
+    margin-right: 4px;
     padding: 1px 6px;
     border-radius: var(--radius-xs);
     background: var(--accent);
@@ -2324,9 +2324,9 @@ svg.icon {
 
 .tray-modifier {
     display: grid;
-    grid-template-columns: 36px 1fr 36px;
+    grid-template-columns: 32px 1fr 32px;
     align-items: center;
-    width: 120px;
+    width: 100px;
     height: 44px;
     padding: 0 3px;
     border: 1px solid var(--rule);
@@ -2339,7 +2339,7 @@ svg.icon {
 .tray-modifier button {
     display: grid;
     place-items: center;
-    width: 36px;
+    width: 32px;
     height: 36px;
     padding: 0;
     border: 0;
