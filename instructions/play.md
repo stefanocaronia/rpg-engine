@@ -2,7 +2,7 @@
 
 The story is on. Besides the tools above:
 
-- `move`: whenever someone or something goes somewhere, before you narrate it: the party, a person who leaves, an item given or taken.
+- `move`: whenever someone or something goes somewhere, before you narrate it: the party (a journey: `travel`), a person who leaves, an item given or taken.
 - `advance`: whenever time passes in the story, in a scene too, before you narrate it. When it stops at an event, do as it says, and write the traces where they will be found.
 - `scene`: open one when a scene of any kind starts, not only a fight, and close it when it ends.
 - `effect`: every condition or effect on someone (frightened, a spell, a form), how long it lasts and who keeps it alive; it ends by itself.
