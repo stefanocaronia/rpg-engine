@@ -1,6 +1,6 @@
 // The party's strip (D-273): a tab for each, with their token, their name, the first counter of their line and their effects; the dead go last.
 import type { Member } from "./data.ts";
-import { initials, nameHue } from "./labels.ts";
+import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
@@ -38,7 +38,7 @@ export function PartyStrip({ party, chosen, version, onChoose }: { party: Member
                     >
                         <Token member={member} version={version} />
                         <span class="name">{member.name}</span>
-                        {member.dead ? <span class="dead-mark">dead</span> : counter && <Bar value={counter} label={counter.field} />}
+                        {member.dead ? <span class="dead-mark">dead</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
                     </button>
                 );

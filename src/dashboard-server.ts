@@ -158,6 +158,9 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/") {
         send(response, 200, "text/html; charset=utf-8", pageHtml, pagePolicy);
+    } else if (path === "/favicon.ico") {
+        // Browsers ask for it by themselves; the page's icon comes with its logo.
+        response.writeHead(204, securityHeaders).end();
     } else if (path === "/events") {
         listenForChanges(request, response, served.pages);
     } else if (path.startsWith("/api/")) {

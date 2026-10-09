@@ -13,7 +13,7 @@ const narrow = "(max-width: 600px)";
 
 export function MemberSheet({ member, sheet, version }: { member: Member; sheet: SheetGroup[]; version: number; })
 {
-    const fields = new Set(sheet.flatMap((group) => group.values.map((value) => value.field)));
+    const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
     return (
         <section class="sheet" role="tabpanel" aria-label={member.name}>
             <header class="band">
