@@ -169,6 +169,9 @@ describe("the dashboard's server (D-270, D-272)", () => {
         writeFileSync(join(page, "style.css"), "body {}\n");
         mkdirSync(join(page, "assets"));
         writeFileSync(join(page, "assets", "logo.svg"), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+        writeFileSync(join(page, "assets", "dice.glb"), "glTF");
+        writeFileSync(join(page, "assets", "dice.json"), "{}\n");
+        writeFileSync(join(page, "notes.txt"), "not served\n");
         writeFileSync(join(folder, "secret.js"), "export {};\n");
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: fakeWatcher });
         const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page });
@@ -213,7 +216,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect((await get("/api/view?pagina=Varro")).status).toBe(400);
     });
 
-    it("serves the page, which runs only its own scripts and the import map written in it, and Preact from its package", async () => {
+    it("serves the page, which runs only its own scripts and the import map written in it, its dice, and Preact and three.js from their packages", async () => {
         const html = await get("/");
         expect(html.status).toBe(200);
         expect(html.headers["content-type"]).toBe("text/html; charset=utf-8");
@@ -223,6 +226,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
             "preact/hooks": "/vendor/hooks.js",
             "preact/jsx-runtime": "/vendor/jsx-runtime.js",
             "three": "/vendor/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
             "cannon-es": "/vendor/cannon-es.js",
         });
         expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
@@ -232,11 +236,18 @@ describe("the dashboard's server (D-270, D-272)", () => {
         // Nothing outside the page's folder, nor what is not a script or a style sheet.
         expect((await get("/%2e%2e/secret.js")).status).toBe(404);
         expect((await get("/..%5Csecret.js")).status).toBe(404);
-        expect((await get("/page.json")).status).toBe(404);
+        expect((await get("/notes.txt")).status).toBe(404);
+        expect((await get("/assets/dice.glb")).headers["content-type"]).toBe("model/gltf-binary");
+        expect((await get("/assets/dice.json")).headers["content-type"]).toBe("application/json; charset=utf-8");
         const preact = await get("/vendor/hooks.js");
         expect(preact.status).toBe(200);
         expect(preact.body).toContain('from"preact"');
         expect((await get("/vendor/three.core.js")).status).toBe(200);
+        // three's loader of models, and what it imports beside it.
+        expect((await get("/vendor/three/addons/loaders/GLTFLoader.js")).body).toContain("from '../utils/BufferGeometryUtils.js'");
+        expect((await get("/vendor/three/addons/utils/BufferGeometryUtils.js")).status).toBe(200);
+        expect((await get("/vendor/three/addons/utils/SkeletonUtils.js")).status).toBe(200);
+        expect((await get("/vendor/three/addons/loaders/OBJLoader.js")).status).toBe(404);
         expect((await get("/vendor/compat.js")).status).toBe(404);
     });
 

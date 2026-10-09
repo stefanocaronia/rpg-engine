@@ -1089,6 +1089,10 @@ button.row:hover,
     font-variant: small-caps;
 }
 
+.dice-kind.notation {
+    font-variant: normal;
+}
+
 .dice-number {
     font-family: var(--serif);
     font-size: 2.2rem;
@@ -1115,8 +1119,121 @@ button.row:hover,
     cursor: pointer;
 }
 
-.dice-button:disabled {
-    opacity: 0.6;
+.dice-button svg {
+    width: 30px;
+    height: 30px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+
+.dice-button[aria-expanded="true"] {
+    box-shadow: var(--raise), 0 0 0 3px var(--accent);
+}
+
+/* The tray of the dice for fun: the seven dice to choose, a modifier, the throw; it counts for nothing (D-279). */
+.dice-tray {
+    position: fixed;
+    right: 20px;
+    bottom: 92px;
+    z-index: 22;
+    display: grid;
+    gap: 12px;
+    width: min(340px, calc(100vw - 40px));
+    padding: 14px;
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius);
+    background: var(--panel);
+    box-shadow: var(--raise);
+}
+
+.dice-pick {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.dice-pick-die {
+    position: relative;
+    min-height: 40px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--panel-2);
+    font-family: var(--serif);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dice-pick-die:hover {
+    border-color: var(--accent);
+}
+
+.dice-count {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    display: grid;
+    place-items: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--paper);
+    font: 700 0.72rem/1 system-ui, sans-serif;
+}
+
+.dice-modifier {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
+.dice-modifier button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: var(--panel-2);
+    cursor: pointer;
+}
+
+.dice-modifier .num {
+    min-width: 3ch;
+    color: var(--ink);
+    font-weight: 600;
+    text-align: center;
+}
+
+.dice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dice-actions button {
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.dice-actions .dice-roll {
+    flex: 1 1 100%;
+    border-color: transparent;
+    background: var(--gold);
+    color: #192d4d;
+    font-weight: 700;
+}
+
+.dice-actions button:disabled {
+    opacity: 0.55;
     cursor: default;
 }
 

@@ -1,149 +1,240 @@
 // The dice tray (D-278, D-279): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check and its total. The player
-// can also always throw a d20 for fun: it counts for nothing, the engine does not hear of it, and the die fades away after a while.
+// can also always throw dice for fun, as many as they like and a modifier: the throw counts for nothing, the engine does not hear of it, and the dice fade
+// away. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ShownRoll, ThrownDie } from "../data.ts";
-import { faceNumbers, icosahedron, landingOn, type Shape } from "./shapes.ts";
-import { makeStage, type Stage } from "./stage.ts";
-import { throwDice } from "./throw.ts";
+import { diceToThrow } from "./models.ts";
+import type { Roller } from "./roller.ts";
+import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read.
-const lingers = { free: 2600, asked: 4200 };
+const lingers = { free: 3200, asked: 4200 };
 const fadeLength = 600;
 
-// The dice the page can draw, by their sides: the prototype has the d20; the others show in the plate alone until the dice of the step come.
-const shapes = new Map<ThrownDie["sides"], Shape>([[20, icosahedron()]]);
+// The dice of the free tray, by their sides: 100 is the d%, thrown as its tens and its units.
+const freeDice = [4, 6, 8, 10, 12, 20, 100];
 
-/** What the plate under the dice says: the check and its total, or the number of a free throw. */
+// Where the page remembers whether the dice make a sound, in this browser alone.
+const soundKey = "rpg-engine.dice-sound";
+
+/** What the plate under the dice says: the check, or the dice of a free throw, its total, and its dice as the chat writes them. */
 interface Plate
 {
     free: boolean;
     title: string;
     total: number;
-    text?: string;
+    text: string;
     shown: boolean;
 }
 
 export function DiceTray({ requested }: { requested?: ShownRoll; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
-    const stage = useRef<Stage | null>(null);
-    const noWebGL = useRef(false);
+    const roller = useRef<Promise<Roller | undefined>>();
     // The number of the throw shown now: a newer throw ends an older one's animation and timers.
     const throwing = useRef(0);
     const skipping = useRef(false);
     const [plate, setPlate] = useState<Plate>();
     const [rolling, setRolling] = useState(false);
     const [fading, setFading] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [pool, setPool] = useState<number[]>([]);
+    const [modifier, setModifier] = useState(0);
+    const [sound, setSound] = useState(readSound);
 
     useEffect(() => {
-        const onResize = (): void => stage.current?.resize();
+        const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
 
-        // Escape lets the dice land at once.
+        // Escape lets the dice land at once, and closes the tray.
         const onKey = (event: KeyboardEvent): void => {
             if (event.key === "Escape") {
                 skipping.current = true;
+                setOpen(false);
             }
         };
 
         window.addEventListener("resize", onResize);
         window.addEventListener("keydown", onKey);
+        window.addEventListener("pointerdown", wakeSound);
 
         return () => {
             window.removeEventListener("resize", onResize);
             window.removeEventListener("keydown", onKey);
+            window.removeEventListener("pointerdown", wakeSound);
         };
     }, []);
 
-    /** Throws these dice, each landing on its number, then shows the plate, and fades it all after a while. */
-    const throwAndShow = (dice: ThrownDie[], shown: Omit<Plate, "shown">, linger: number): void => {
+    /** The dice and their stage, loaded once; undefined when the browser cannot draw them, and then the plate comes alone. */
+    const loadRoller = (): Promise<Roller | undefined> => {
+        const surface = canvas.current;
+        roller.current ??= surface === null ? Promise.resolve(undefined) : import("./roller.ts").then((module) => module.makeRoller(surface)).catch(() => undefined);
+        return roller.current;
+    };
+
+    /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while. */
+    const throwAndShow = async (dice: ThrownDie[], shown: Omit<Plate, "shown">, linger: number): Promise<void> => {
         const number = ++throwing.current;
-        const drawn = dice.filter((die) => shapes.has(die.sides));
+        const current = (): boolean => number === throwing.current;
         skipping.current = false;
         setFading(false);
+        setRolling(true);
+        setPlate({ ...shown, shown: false });
+        const loaded = await loadRoller();
+        const toThrow = loaded === undefined ? [] : diceToThrow(dice, loaded.kinds);
 
-        const settle = (): void => {
-            setRolling(false);
-            setPlate({ ...shown, shown: true });
-            window.setTimeout(() => number === throwing.current && setFading(true), linger);
-            window.setTimeout(() => {
-                if (number === throwing.current) {
-                    stage.current?.hide();
-                    setPlate(undefined);
-                    setFading(false);
-                }
-            }, linger + fadeLength);
-        };
-
-        try {
-            stage.current ??= canvas.current === null || drawn.length === 0 || noWebGL.current ? null : makeStage(canvas.current);
-        } catch {
-            // No WebGL: the plate alone, from now on.
-            noWebGL.current = true;
-        }
-
-        if (stage.current === null || drawn.length === 0) {
-            stage.current?.hide();
-            settle();
+        if (toThrow.length === 0) {
+            loaded?.hide();
+        } else if (await loaded?.roll(toThrow, { still: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current }) !== true) {
             return;
         }
 
-        const dieShapes = drawn.map((die) => shapes.get(die.sides) as Shape);
-        const thrown = throwDice(dieShapes, stage.current.tray);
-        // A die that exploded shows its first face: its next throws come with the dice of the step.
-        stage.current.place(drawn.map((die, index) => ({ shape: dieShapes[index], numbers: landingOn(faceNumbers(dieShapes[index]), thrown.faces[index], die.faces?.[0] ?? die.value) })));
-        const frames = matchMedia("(prefers-reduced-motion: reduce)").matches ? thrown.frames.slice(-1) : thrown.frames;
-        setRolling(true);
-        setPlate({ ...shown, shown: false });
-        const started = performance.now();
+        if (!current()) {
+            return;
+        }
 
-        const play = (now: number): void => {
-            if (number !== throwing.current) {
-                return;
+        setRolling(false);
+        setPlate({ ...shown, shown: true });
+        window.setTimeout(() => current() && setFading(true), linger);
+        window.setTimeout(() => {
+            if (current()) {
+                loaded?.hide();
+                setPlate(undefined);
+                setFading(false);
             }
-
-            // The first frame of the animation may begin a moment before the throw did.
-            const at = skipping.current ? frames.length - 1 : Math.min(frames.length - 1, Math.max(0, Math.floor((now - started) / (1000 / 60))));
-            stage.current?.show(frames[at]);
-
-            if (at < frames.length - 1) {
-                requestAnimationFrame(play);
-                return;
-            }
-
-            drawn.forEach((die, index) => die.dropped === true && stage.current?.dim(index));
-            settle();
-        };
-
-        requestAnimationFrame(play);
+        }, linger + fadeLength);
     };
 
     // A roll the master asked, as the engine rolled it: its dice land on its numbers.
     useEffect(() => {
         if (requested !== undefined) {
-            throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text }, lingers.asked);
+            void throwAndShow(requested.dice, { free: false, title: requested.check ?? requested.notation, total: requested.total, text: requested.text }, lingers.asked);
         }
     }, [requested?.id]);
 
-    const throwFree = (): void => {
-        // A free throw: the page decides it, as fairly as the browser can.
-        const value = 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % 20);
-        throwAndShow([{ sides: 20, value }], { free: true, title: "d20", total: value }, lingers.free);
+    const throwPool = (): void => {
+        // A free throw: the page decides it, as fairly as the browser can. The tray closes, so as to leave the dice in sight; it keeps them for the next.
+        const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
+        setOpen(false);
+        const total = dice.reduce((sum, die) => sum + die.value, modifier);
+        void throwAndShow(dice, { free: true, title: notation(pool, modifier), total, text: diceText(dice, modifier) }, lingers.free);
     };
 
+    const toggleSound = (): void => {
+        setSound(!sound);
+        writeSound(!sound);
+    };
+
+    const clear = (): void => {
+        setPool([]);
+        setModifier(0);
+    };
+
+    const counts = freeDice.map((sides) => pool.filter((chosen) => chosen === sides).length);
     return (
         <>
             <canvas ref={canvas} class={fading ? "dice-stage fading" : "dice-stage"} aria-hidden="true" />
             <p class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : ""].filter((name) => name !== "").join(" ")} role="status" aria-live="polite">
                 {plate?.shown && (
                     <>
-                        <span class="dice-kind">{plate.title}</span> <span class="dice-number">{plate.total}</span>
-                        <span class="dice-text">{plate.free ? "free roll · not logged" : plate.text}</span>
+                        <span class={plate.free ? "dice-kind notation" : "dice-kind"}>{plate.title}</span> <span class="dice-number">{plate.total}</span>
+                        <span class="dice-text">{plate.free ? `${plate.text} · free roll, not logged` : plate.text}</span>
                     </>
                 )}
             </p>
-            <button type="button" class="dice-button" onClick={throwFree} disabled={rolling} aria-label="Throw a d20, for fun: it counts for nothing">
-                d20
+            {open && (
+                <div class="dice-tray" role="group" aria-label="Dice for fun: they count for nothing">
+                    <div class="dice-pick">
+                        {freeDice.map((sides, index) => (
+                            <button
+                                key={sides}
+                                type="button"
+                                class="dice-pick-die"
+                                onClick={() => setPool([...pool, sides])}
+                                aria-label={`Add a ${dieName(sides)}${counts[index] > 0 ? `: ${counts[index]} chosen` : ""}`}
+                            >
+                                {dieName(sides)}
+                                {counts[index] > 0 && <span class="dice-count" aria-hidden="true">{counts[index]}</span>}
+                            </button>
+                        ))}
+                    </div>
+                    <div class="dice-modifier">
+                        <span>Modifier</span>
+                        <button type="button" onClick={() => setModifier(modifier - 1)} aria-label="One less">−</button>
+                        <span class="num" aria-live="polite">{signed(modifier)}</span>
+                        <button type="button" onClick={() => setModifier(modifier + 1)} aria-label="One more">+</button>
+                    </div>
+                    <div class="dice-actions">
+                        <button type="button" class="dice-roll" disabled={pool.length === 0 || rolling} onClick={throwPool}>
+                            {pool.length === 0 ? "Choose the dice" : `Roll ${notation(pool, modifier)}`}
+                        </button>
+                        <button type="button" class="dice-clear" disabled={pool.length === 0 && modifier === 0} onClick={clear}>Clear</button>
+                        <button type="button" class="dice-sound" aria-pressed={sound} onClick={toggleSound}>{sound ? "Sound on" : "Sound off"}</button>
+                    </div>
+                </div>
+            )}
+            <button type="button" class="dice-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Dice for fun">
+                <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M16 2 28 9v14l-12 7-12-7V9Z M16 2 9.5 13h13Z M4 9l5.5 4L16 30l6.5-17L28 9 M9.5 13 4 23 M22.5 13 28 23 M4 23h24" />
+                </svg>
             </button>
         </>
     );
+}
+
+/** A die's name, as the tray shows it: d20, and d% for the percentile. */
+function dieName(sides: number): string
+{
+    return sides === 100 ? "d%" : `d${sides}`;
+}
+
+/** The dice chosen as a notation, the biggest first, with the modifier: 2d20+1d6+3. */
+function notation(pool: number[], modifier: number): string
+{
+    const kinds = [...new Set(pool)].sort((first, second) => second - first);
+    const dice = kinds.map((sides) => `${pool.filter((chosen) => chosen === sides).length}${dieName(sides)}`).join("+");
+    return modifier === 0 ? dice : `${dice}${signed(modifier)}`;
+}
+
+/** The dice thrown as the chat writes them: each kind's faces in brackets, the biggest first, then the modifier. */
+function diceText(dice: ThrownDie[], modifier: number): string
+{
+    const kinds = [...new Set(dice.map((die) => die.sides))].sort((first, second) => Number(second) - Number(first));
+    const faces = kinds.map((sides) => `[${dice.filter((die) => die.sides === sides).map((die) => die.value).join(", ")}]`).join(" + ");
+    return modifier === 0 ? faces : `${faces} ${modifier > 0 ? "+" : "−"} ${Math.abs(modifier)}`;
+}
+
+function signed(value: number): string
+{
+    return value < 0 ? `−${-value}` : `+${value}`;
+}
+
+/** A die's face, as fairly as the browser can: a random number of the system's, without the bias of a remainder. */
+function fairDie(sides: number): number
+{
+    const limit = Math.floor(0x1_0000_0000 / sides) * sides;
+    const draw = new Uint32Array(1);
+
+    do {
+        crypto.getRandomValues(draw);
+    } while (draw[0] >= limit);
+
+    return 1 + (draw[0] % sides);
+}
+
+function readSound(): boolean
+{
+    try {
+        return localStorage.getItem(soundKey) !== "off";
+    } catch {
+        return true;
+    }
+}
+
+function writeSound(on: boolean): void
+{
+    try {
+        localStorage.setItem(soundKey, on ? "on" : "off");
+    } catch {
+        // The page forgets it at the next reload.
+    }
 }

@@ -46,7 +46,14 @@ const playerCommands: Command<z.ZodObject, unknown>[] = [view];
 const noticeDelay = 100;
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
-const pageTypes: Record<string, string> = { ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png" };
+const pageTypes: Record<string, string> = {
+    ".js": "text/javascript; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".glb": "model/gltf-binary",
+    ".json": "application/json; charset=utf-8",
+};
 
 // A picture runs nothing, even an SVG opened by itself.
 const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
@@ -55,17 +62,27 @@ const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
 
 // The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
-// beside it.
+// beside it; three's loader of the dice's models imports two of its utilities beside it.
 const vendorModules: Record<string, [string, string]> = {
     "preact.js": ["preact", "dist/preact.module.js"],
     "hooks.js": ["preact", "hooks/dist/hooks.module.js"],
     "jsx-runtime.js": ["preact", "jsx-runtime/dist/jsxRuntime.module.js"],
     "three.module.js": ["three", "build/three.module.js"],
     "three.core.js": ["three", "build/three.core.js"],
+    "three/addons/loaders/GLTFLoader.js": ["three", "examples/jsm/loaders/GLTFLoader.js"],
+    "three/addons/utils/BufferGeometryUtils.js": ["three", "examples/jsm/utils/BufferGeometryUtils.js"],
+    "three/addons/utils/SkeletonUtils.js": ["three", "examples/jsm/utils/SkeletonUtils.js"],
     "cannon-es.js": ["cannon-es", "dist/cannon-es.js"],
 };
 const importMap = JSON.stringify({
-    imports: { "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js", "three": "/vendor/three.module.js", "cannon-es": "/vendor/cannon-es.js" },
+    imports: {
+        "preact": "/vendor/preact.js",
+        "preact/hooks": "/vendor/hooks.js",
+        "preact/jsx-runtime": "/vendor/jsx-runtime.js",
+        "three": "/vendor/three.module.js",
+        "three/addons/": "/vendor/three/addons/",
+        "cannon-es": "/vendor/cannon-es.js",
+    },
 });
 
 // The page runs only its own files and the import map written in it, known by its hash.
