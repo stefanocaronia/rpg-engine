@@ -153,6 +153,15 @@ const startingFields = fc.record({
     ferite: fc.tuple(fc.integer({ min: -2, max: 14 }), fc.integer({ min: 0, max: 12 })).map(([value, max]) => `${value}/${max}`),
     momentum: fc.integer({ min: -8, max: 10 }).map((value) => `${value}/10`),
 });
+// Two runs that give every outcome, on a page that concerns the player and on one that does not: they come before the random ones, so coverage never hangs on chance.
+const everyOutcome: [string, { frecce: string; ferite: string; momentum: string; }, Operation[]][] = ["pc", "npc"].map((holder) => [holder, { frecce: "5", ferite: "3/6", momentum: "2/10" }, [
+    { command: "write", field: "frecce", value: "8" },
+    { command: "change", field: "frecce", by: -2 },
+    { command: "change", field: "ferite", by: 0 },
+    { command: "change", field: "ferite", spend: 0 },
+    { command: "write", field: "ferite", value: "same" },
+    { command: "write", field: "ferite", value: "4/6" },
+]]);
 
 describe("the laws of change and write on counters, on pages made at random", () => {
     it("CNT-3–CNT-10: a run of changes and writes gives what the model gives, refuses what it refuses, and logs each change once, public just when it concerns the player", async () => {
@@ -200,7 +209,8 @@ describe("the laws of change and write on counters, on pages made at random", ()
                     removeFolder(root);
                 }
             }),
-            { numRuns: 60 },
+            // Examples count among the runs: 60 random runs follow them.
+            { numRuns: 60 + everyOutcome.length, examples: everyOutcome },
         );
         expect([...outcomes].sort()).toEqual(["change hidden", "change public", "change refused", "change same", "write hidden", "write public", "write refused", "write same"]);
     }, 120000);
