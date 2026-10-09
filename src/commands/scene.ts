@@ -14,6 +14,7 @@ import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
+import { picturesNote } from "./game-images.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
@@ -276,7 +277,20 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     const around = surroundingsText(surroundings(after, place === undefined ? undefined : pageWithPath(after, place.path)));
     // The part of the instructions that the scene's type opens, such as how a fight is told (D-111, D-139).
     const part = situationPart(created.type, context, system);
-    return { action: "open", title: created.title, type: created.type, opened: created.opened, place: place?.name, members, around, part, moved: brought.moved, notes: brought.notes };
+    // A place without a picture, where the campaign wants one for each new place (D-308).
+    const picture = picturesNote(root, context, after, place === undefined ? undefined : pageWithPath(after, place.path));
+    return {
+        action: "open",
+        title: created.title,
+        type: created.type,
+        opened: created.opened,
+        place: place?.name,
+        members,
+        around,
+        part,
+        moved: brought.moved,
+        notes: [...brought.notes, ...(picture === undefined ? [] : [picture])],
+    };
 }
 
 function addTo(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult

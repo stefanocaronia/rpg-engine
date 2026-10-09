@@ -74,7 +74,14 @@ async function makeDemo(context: Context): Promise<void>
     await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
     inPlay(demoFolder);
     await rpg("advance", "--to", "day 1, 18:00");
-    await rpg("write", "Locanda del Guado", "--type", "place");
+    await rpg(
+        "write",
+        "Locanda del Guado",
+        "--type",
+        "place",
+        "--text",
+        "Una locanda bassa di pietra sul guado, col tetto che gocciola e un camino che non si spegne mai. Bertoldo tiene il vino buono sotto il bancone e le chiavi delle stanze al collo.",
+    );
     const ettore = [
         "role=pc",
         "creature=[[Hill Dwarf]]",

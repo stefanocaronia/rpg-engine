@@ -7,6 +7,7 @@ import { comparableText } from "../core/text.ts";
 import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
+import { picturesNote } from "./game-images.ts";
 import { movePages } from "./game-moves.ts";
 import { roadsOf, sameSpot, stopOf } from "./game-roads.ts";
 import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
@@ -74,6 +75,8 @@ export const move = defineCommand({
         const went = riders.filter((page) => moved.has(page.path) || locate(world, page).chain.some((holder) => moved.has(holder.path)));
         const sceneNote = scene === undefined ? undefined : followParty(root, context, after, scene, went, target);
         // Who else is there matters to characters who arrive (CON-8), not to things.
+        // The party's player character arrives where the campaign wants pictures: the place gets one (D-308).
+        const arrived = went.some((page) => page.fields.role === "pc") ? picturesNote(root, context, after, target) : undefined;
         const there = riders.length === 0 ? [] : after.pages.filter((page) => page.type === "character" && !pages.some((other) => other.path === page.path) && locate(after, page).chain[0] === target);
         return {
             moved: done.moved.map((page) => page.name),
@@ -83,7 +86,12 @@ export const move = defineCommand({
             there: there.map((page) => (page.fields.status === "dead" ? `${page.name} (dead)` : page.name)),
             here: distinctTexts(changes.flatMap((change) => change.here)),
             noLonger: distinctTexts(changes.flatMap((change) => change.noLonger)),
-            notes: [...done.notes, ...(sceneNote === undefined ? [] : [sceneNote]), ...(done.moved.length === 0 || journey === undefined ? [] : [journey])],
+            notes: [
+                ...done.notes,
+                ...(sceneNote === undefined ? [] : [sceneNote]),
+                ...(done.moved.length === 0 || journey === undefined ? [] : [journey]),
+                ...(arrived === undefined ? [] : [arrived]),
+            ],
             problems: world.problems,
         };
     },

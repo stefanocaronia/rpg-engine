@@ -12,6 +12,7 @@ import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
+import { picturesNote } from "./game-images.ts";
 import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
@@ -121,6 +122,8 @@ export const status = defineCommand({
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             dashboard: context.dashboard,
+            // Whether to ask for the places' pictures, or to have this one made (D-308).
+            pictures: picturesNote(root, context, world, players[0] === undefined ? undefined : locate(world, players[0]).chain.find((holder) => holder.type === "place")),
             mood: masterMood(root),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
@@ -168,6 +171,7 @@ export const status = defineCommand({
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.`,
+            result.pictures ?? "",
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,

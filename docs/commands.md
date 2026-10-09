@@ -23,7 +23,7 @@ Show or change the campaign settings. Without a setting it shows them all and sa
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, travel, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, pictures, lines, veils, table, precedents, coins, fields, tables, computed, counters, recipes, status-line, travel, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, status-line), repeatable
@@ -100,12 +100,13 @@ Read-only: no. Positional parameters: `page`.
 
 ### image
 
-Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a goblin's icon. Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. Example: page Ettore, file C:\Users\me\Pictures\ettore.png.
+Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a goblin's icon. Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. For a place, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows (D-308): what the party sees arriving, never what they cannot see. Example: page Ettore, file C:\Users\me\Pictures\ettore.png.
 
 Read-only: no. Positional parameters: `page`, `file`.
 
 - `page` (`string`, required): the page that gets the picture
 - `file` (`string`, optional): the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture
+- `describe` (`string`, optional): instead of file, for a place: what the party sees arriving, in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself
 
 ### show
 

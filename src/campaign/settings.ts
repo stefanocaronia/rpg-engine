@@ -54,6 +54,9 @@ export const diceWays = ["digital", "physical"] as const;
 
 export { unitSystems };
 
+/** Which pictures of places the engine has made, where it can (D-308): none, only those the player asks for, or one for each new place. */
+export const pictureWays = ["none", "on request", "new places"] as const;
+
 /** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
 export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
 
@@ -82,6 +85,9 @@ export const settingsSchema = z.object({
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
+    pictures: z.enum(pictureWays).optional().describe(
+        "the pictures of places the engine has made on this computer, which spend the player's Codex: none, on request (those the player asks for) or new places (one for each new place)",
+    ),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
@@ -118,7 +124,8 @@ export const setupSettingNames: SettingName[] = ["companions", "lines", "veils"]
 export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 
 // Settings that only some games have, or that only the setup asks: never asked for in play when missing.
-const optionalSettingNames: SettingName[] = ["coins", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames];
+// The pictures: status asks for them once, only where they can be made (D-308).
+const optionalSettingNames: SettingName[] = ["coins", "pictures", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {

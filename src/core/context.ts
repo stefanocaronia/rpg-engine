@@ -32,6 +32,25 @@ export interface Context
     told?: Set<string>;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
+    /** What makes pictures from words on this computer (D-308), as Codex with the player's login; missing where none can, as in tests. */
+    pictures?: PictureMaker;
+}
+
+/** Whether pictures can be made here, or why not, in words the master can tell the player. */
+export type PicturesReady = { ready: true; } | { ready: false; why: string; };
+
+/** A picture made: its file, and what to call once it is copied, which clears the maker's own copy. */
+export interface MadePicture
+{
+    file: string;
+    done(): void;
+}
+
+/** What makes a picture from a brief: whether it can, and the picture, or why none came. */
+export interface PictureMaker
+{
+    ready(): PicturesReady;
+    make(brief: string): Promise<MadePicture | { refused: string; }>;
 }
 
 /**

@@ -1,10 +1,32 @@
 import { basename } from "node:path";
+import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
 import { findImage, imageFileName } from "../images/index.ts";
 import { baseChain, ownField, type Page, type World } from "../pages/index.ts";
 import { campaignSystem } from "./game-world.ts";
+
+/**
+ * What the master hears of the places' pictures (D-308, PIC-4): where pictures can be made and the player has not chosen, to ask them once; with new places, that
+ * the place the party is in, still without a picture, should get one. Nothing otherwise.
+ */
+export function picturesNote(root: string, context: Context, world: World, place: Page | undefined): string | undefined
+{
+    const setting = readSettings(root).pictures;
+
+    if (setting === undefined) {
+        return context.pictures?.ready().ready === true
+            ? "Pictures: this computer can make the places' pictures with the player's Codex, which spends their plan: ask them once whether they want one for each new place, only those they ask for, or none; then config pictures (new places, on request or none)."
+            : undefined;
+    }
+
+    if (setting !== "new places" || place === undefined || place.type !== "place" || shownImage(root, context, world, place) !== undefined) {
+        return undefined;
+    }
+
+    return `${place.name} has no picture: once you have told it, have one made with image, page ${place.name}, describe what the party sees arriving, never what they cannot see.`;
+}
 
 /** The folders whose images folder holds the pictures pages link: the campaign's first, then its game system's (D-267). */
 export function imageFolders(root: string, context: Context): string[]
