@@ -3,7 +3,7 @@
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { cardIcons } from "./icons.tsx";
-import { Token } from "./party.tsx";
+import { Token, type Tokened } from "./party.tsx";
 
 // From this width the rolls are a column beside the sheet, as in the style sheet.
 const besideSheet = "(min-width: 900px)";
@@ -30,7 +30,7 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
                     ? <p class="rolls-none">The checks the master asks of you come here, and the master's rolls you may see.</p>
                     : (
                         <ol class="roll-list">
-                            {[...rolls].reverse().map((roll) => <RollRow key={roll.id} roll={roll} member={party.find((member) => member.name === roll.who) ?? lead} fresh={fresh.has(roll.id)} />)}
+                            {[...rolls].reverse().map((roll) => <RollRow key={roll.id} roll={roll} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
                         </ol>
                     )}
             </details>
@@ -38,13 +38,13 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
     );
 }
 
-/** One roll: who threw it, for whom or for which check, its total, and its dice as the chat writes them. */
-function RollRow({ roll, member, fresh }: { roll: ShownRoll; member?: Member; fresh: boolean; })
+/** One roll: whom it is for, by their token, for which check, its total, and its dice as the chat writes them. */
+function RollRow({ roll, token, fresh }: { roll: ShownRoll; token?: Tokened; fresh: boolean; })
 {
     const player = roll.by === "player";
     return (
         <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((name) => name !== "").join(" ")} data-roll={roll.id}>
-            {!player ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : member === undefined ? <span class="token pc" aria-hidden="true" /> : <Token member={member} />}
+            {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-what">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
                 {rollWhat(roll)}
@@ -59,4 +59,23 @@ function RollRow({ roll, member, fresh }: { roll: ShownRoll; member?: Member; fr
 function rollWhat(roll: ShownRoll): string
 {
     return roll.by === "player" ? roll.check ?? roll.who ?? "" : roll.who ?? "the master";
+}
+
+/**
+ * The token of whom a roll is for (D-286): the player's character for the player's own; a member of the party; anyone else with their picture, or a question mark
+ * for someone the character does not know; none, so the robot, for a roll the master makes for no one.
+ */
+function tokenOf(roll: ShownRoll, party: Member[], lead: Member | undefined): Tokened | undefined
+{
+    const member = party.find((candidate) => candidate.name === roll.who);
+
+    if (roll.by === "player") {
+        return member ?? lead ?? { name: "?", role: "pc" };
+    }
+
+    if (member !== undefined || roll.who === undefined) {
+        return member;
+    }
+
+    return { name: roll.stranger ? "?" : roll.who, role: "other", ...(roll.image === undefined ? {} : { image: roll.image }) };
 }

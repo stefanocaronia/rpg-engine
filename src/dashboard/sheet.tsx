@@ -114,7 +114,7 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 
     const reachable = values.filter((value) => value.roll !== undefined || tip(value) !== undefined).map((value) => value.field);
     const stop = (field: string): number | undefined => (!reachable.includes(field) ? undefined : reachable.indexOf(field) === Math.min(current, reachable.length - 1) ? 0 : -1);
-    const line = (value: SheetValue): Line => ({ value, label: label(value.field), tip: tip(value), tabIndex: stop(value.field), onRoll });
+    const line = (value: SheetValue): Line => ({ value, label: label(value.field), fields, tip: tip(value), tabIndex: stop(value.field), onRoll });
     return (
         <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain}>
             {layout === "table" && <ItemsTable group={group} fields={fields} />}
@@ -149,6 +149,7 @@ interface Line
 {
     value: SheetValue;
     label: string;
+    fields: ReadonlySet<string>;
     tip?: string;
     tabIndex?: number;
     onRoll: FreeRoll;
@@ -185,7 +186,7 @@ function Row(props: Line)
             </span>
             <Changing text={value.text}>
                 {value.roll && <RollMark roll={value.roll} />}
-                {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} />}
+                {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
             </Changing>
             {value.beside !== undefined && <span class="beside num">{shownText(value.beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
@@ -197,7 +198,7 @@ function Row(props: Line)
  * What a number is drawn in: a button that throws it for fun when the system rolls it (D-280); else, when it has a tooltip, a box the keyboard reaches. Its
  * tooltip says how it is made (FOR-8), shown when pointed at or reached, and read to a screen reader as its description.
  */
-function NumberBox({ value, label, tip, tabIndex, onRoll, kind, said, children }: Line & { kind: string; said: string; children: ComponentChildren; })
+function NumberBox({ value, label, tip, tabIndex, onRoll, kind, said, children }: Omit<Line, "fields"> & { kind: string; said: string; children: ComponentChildren; })
 {
     const described = useId();
     const shared = {

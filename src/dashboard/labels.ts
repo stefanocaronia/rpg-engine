@@ -58,6 +58,13 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
     return count <= 2 ? { sides: Array.from({ length: count }, () => sides) } : { sides: [sides], count };
 }
 
+/** An item of a list as the page shows it: the short name of a field in capitals, as WIS; any other with its first letter a capital, as Light hammer. */
+export function itemLabel(item: string, fields: ReadonlySet<string> = new Set()): string
+{
+    const word = item.trim();
+    return isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word);
+}
+
 /** A label of a sheet's line as a phrase, its first letter a capital: "sleight of hand" reads "Sleight of hand"; "STR save" stays as it is. */
 export function phraseLabel(label: string): string
 {

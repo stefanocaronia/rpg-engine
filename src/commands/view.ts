@@ -38,6 +38,10 @@ export interface ShownRoll
     who?: string;
     /** The check the master asked of the player, such as Atletica. */
     check?: string;
+    /** The picture of whom it is for, when the player character knows them and they have one (D-286). */
+    image?: { file: string; version: number; };
+    /** Whom it is for is someone the player character does not know by name: a creature, someone (D-286). */
+    stranger?: true;
     notation: string;
     total: number;
     text: string;
@@ -166,6 +170,13 @@ export const view = defineCommand({
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
         const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
+
+        // The picture of someone the log names, as the player character knows them.
+        const picture = (name: unknown): ShownRoll["image"] => {
+            const page = knownNamedPage(world, knowledge, name);
+            return page === undefined ? undefined : shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
+        };
+
         const shownLines = readLog(root).filter((entry) => entry.visibility === "public");
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
@@ -179,7 +190,7 @@ export const view = defineCommand({
             scene: sceneLine(root, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
-            rolls: shownLines.filter((entry) => entry.type === "roll").slice(-rollsShown).map((entry) => shownRoll(world, entry, named)),
+            rolls: shownLines.filter((entry) => entry.type === "roll").slice(-rollsShown).map((entry) => shownRoll(world, entry, named, picture)),
         };
     },
 
@@ -209,16 +220,20 @@ export const view = defineCommand({
 });
 
 /** A public roll of the log as the player sees it: who rolled, for whom as the character knows them, the check, the dice; never the master's why (VIEW-4). */
-function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): ShownRoll
+function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined, picture: (name: unknown) => ShownRoll["image"]): ShownRoll
 {
     const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
-    const who = data.who === undefined ? undefined : named(data.who) ?? (isCopyName(world, data.who) ? "a creature" : "someone");
+    const known = data.who === undefined ? undefined : named(data.who);
+    const who = data.who === undefined ? undefined : known ?? (isCopyName(world, data.who) ? "a creature" : "someone");
+    const image = known === undefined ? undefined : picture(data.who);
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
         // Physical dice are the player's, though the master writes their values.
         by: entry.by === "player" || data.physical === true ? "player" : "master",
         ...(who === undefined ? {} : { who }),
+        ...(image === undefined ? {} : { image }),
+        ...(who !== undefined && known === undefined ? { stranger: true as const } : {}),
         ...(typeof data.check === "string" ? { check: data.check } : {}),
         notation: String(data.notation ?? ""),
         total: Number(data.total ?? 0),
@@ -278,13 +293,19 @@ function knownPage(world: World, knowledge: Knowledge, name: string): Page | und
 /** A name as the view may write it: one of a page the player character knows; undefined for any other, which the view tells another way (D-254). */
 function shownName(world: World, knowledge: Knowledge, name: unknown): string | undefined
 {
+    return knownNamedPage(world, knowledge, name)?.name;
+}
+
+/** The page the player character knows by a name the log writes, of the campaign or of the system. */
+function knownNamedPage(world: World, knowledge: Knowledge, name: unknown): Page | undefined
+{
     if (typeof name !== "string") {
         return undefined;
     }
 
     const reference = parsePageReference(name).name;
     const page = pagesWithName(world, reference)[0] ?? systemPageNamed(world, reference);
-    return page !== undefined && knowsPage(knowledge, page) ? page.name : undefined;
+    return page !== undefined && knowsPage(knowledge, page) ? page : undefined;
 }
 
 /** How many lines of the diary are asked: a whole number from 1. */

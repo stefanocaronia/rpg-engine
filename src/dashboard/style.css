@@ -374,6 +374,11 @@ a {
     box-shadow: 0 0 0 2px var(--ally), 0 0 0 4px var(--panel), 0 0 0 5px var(--ally);
 }
 
+/* Anyone not of the party, as a creature a roll is for (D-286): a plain ring. */
+.token.other {
+    box-shadow: 0 0 0 2px var(--rule);
+}
+
 .token.large {
     --size: 84px;
 }

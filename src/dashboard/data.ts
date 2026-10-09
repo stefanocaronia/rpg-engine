@@ -76,6 +76,10 @@ export interface ShownRoll
     who?: string;
     /** The check the master asked of the player: a roll of the dashboard's dice. */
     check?: string;
+    /** The picture of whom it is for, as the player's character knows them. */
+    image?: { file: string; version: number; };
+    /** Whom it is for is someone the character does not know by name. */
+    stranger?: true;
     notation: string;
     total: number;
     text: string;

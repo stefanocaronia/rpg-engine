@@ -38,8 +38,11 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
     );
 }
 
+/** Whom a token shows: someone of the party, or anyone else a roll is for (D-286). */
+export type Tokened = Pick<Member, "name" | "image"> & { role: Member["role"] | "other"; dead?: boolean; };
+
 /** Someone's round token: their picture, or their initials on a colour of their own; the ring tells the role by its shape too (D-267, D-273). */
-export function Token({ member, large }: { member: Member; large?: boolean; })
+export function Token({ member, large }: { member: Tokened; large?: boolean; })
 {
     const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : ""].filter((name) => name !== "").join(" ");
     return (

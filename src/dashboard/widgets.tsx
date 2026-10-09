@@ -1,7 +1,7 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
 import type { Member, SheetValue } from "./data.ts";
-import { shownText } from "./labels.ts";
+import { itemLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 
 // Below this share of its maximum a bar is low: hatched, not only red.
@@ -11,7 +11,7 @@ const low = 0.25;
 const sentenceWords = 5;
 
 /** A value drawn by its kind, with its text beside it when the drawing alone does not say it. */
-export function ValueDrawing({ value, label }: { value: SheetValue; label: string; })
+export function ValueDrawing({ value, label, fields }: { value: SheetValue; label: string; fields?: ReadonlySet<string>; })
 {
     switch (widgetOf(value)) {
         case "pips":
@@ -23,7 +23,7 @@ export function ValueDrawing({ value, label }: { value: SheetValue; label: strin
         case "progress":
             return <Progress value={value} label={label} />;
         case "list":
-            return <Chips value={value} />;
+            return <Chips value={value} fields={fields} />;
         default:
             return <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text)}</span>;
     }
@@ -98,25 +98,25 @@ export function Track({ value, label }: { value: SheetValue; label: string; })
 }
 
 /** A list as chips, or as lines when it is of sentences; what the character's parts add to it apart, with where it comes from (PRO-7). */
-export function Chips({ value }: { value: SheetValue; })
+export function Chips({ value, fields }: { value: SheetValue; fields?: ReadonlySet<string>; })
 {
     return (
         <span class="chips-block">
-            <Items items={value.items ?? []} />
+            <Items items={value.items ?? []} fields={fields} />
             {value.always && (
                 <span class="always">
                     <span class="always-from">Always, from {value.always.from.join(" and ")}</span>
-                    <Items items={value.always.items} />
+                    <Items items={value.always.items} fields={fields} />
                 </span>
             )}
         </span>
     );
 }
 
-function Items({ items }: { items: string[]; })
+function Items({ items, fields }: { items: string[]; fields?: ReadonlySet<string>; })
 {
     const sentences = items.some((item) => item.trim().split(/\s+/).length >= sentenceWords);
-    return <ul class={sentences ? "notes" : "chips"}>{items.map((item) => <li key={item}>{item}</li>)}</ul>;
+    return <ul class={sentences ? "notes" : "chips"}>{items.map((item) => <li key={item}>{itemLabel(item, fields)}</li>)}</ul>;
 }
 
 /** Someone's effects as tags, each with its end; past `most`, how many more. */

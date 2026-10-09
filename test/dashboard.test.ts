@@ -13,7 +13,7 @@ import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetValue, View } from "../src/dashboard/data.ts";
-import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, phraseLabel, shownText } from "../src/dashboard/labels.ts";
+import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
 import { groupLayout, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -364,7 +364,7 @@ describe("the page's reading of a sheet (D-273)", () => {
     });
 
     it("labels a field by its words, in capitals the short ones that name a field, and leaves out a last word a group shares", () => {
-        const fields = new Set(["str", "dex", "hp", "max-prepared"]);
+        const fields = new Set(["str", "dex", "wis", "hp", "max-prepared"]);
         expect(fieldLabel("hit-dice-d8", fields)).toBe("hit dice d8");
         expect(fieldLabel("str-save", fields)).toBe("STR save");
         expect(fieldLabel("spell-save-dc", fields)).toBe("spell save DC");
@@ -377,6 +377,7 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(initials("Ettore di Valle")).toBe("ED");
         expect(phraseLabel("sleight of hand")).toBe("Sleight of hand");
         expect(phraseLabel("STR save")).toBe("STR save");
+        expect([itemLabel("wis", fields), itemLabel("light hammer", fields), itemLabel("Common", fields)]).toEqual(["WIS", "Light hammer", "Common"]);
     });
 
     it("reads the dice of a notation, by their sides, with how many of each", () => {
@@ -602,7 +603,12 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Locanda", "--with", "Ettore", "--creatures", "Lupo mannaro=1");
         await ok("roll", "1d20+4", "--who", "Lupo mannaro 1");
         await ok("roll", "1d20", "--who", "Ombra");
-        expect(JSON.parse(await ok("view", "--json")).rolls.map((roll: { who?: string; }) => roll.who)).toEqual(["a creature", "someone"]);
+        // A companion's roll carries her picture, for her token; strangers are marked so, for a question mark (D-286).
+        await ok("roll", "1d20+3", "--who", "Lupa");
+        const named = JSON.parse(await ok("view", "--json")).rolls;
+        expect(named.map((roll: { who?: string; }) => roll.who)).toEqual(["a creature", "someone", "Lupa"]);
+        expect(named.map((roll: { stranger?: boolean; }) => roll.stranger)).toEqual([true, true, undefined]);
+        expect(named[2].image).toEqual({ file: "wolf-head.svg", version: expect.any(Number) });
 
         for (let count = 0; count < 21; count++) {
             await ok("roll", "1d4", "--why", `colpo ${count}`);
