@@ -2,14 +2,14 @@
 import { listItemNames } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
-import { readCounter } from "../counters/index.ts";
-import { isEmptyField, type Page, type World } from "../pages/index.ts";
+import { type Counter, readCounter } from "../counters/index.ts";
+import { declaredKind, isEmptyField, type Page, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText } from "./game-experience.ts";
 import { givenItems, progressionOf } from "./progression.ts";
-import { hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { counterLimits, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -78,11 +78,39 @@ export function joiningNotes(system: GameSystem | undefined, world: World, page:
     return [...lacks, ...system.sheet.flatMap((group) => (group.note === undefined ? [] : [`${group.name}: ${group.note}`]))];
 }
 
+/** A value of a character's sheet as data, which the dashboard draws (D-272), with the text the chat gives it. */
+export interface SheetValue
+{
+    field: string;
+    /** As the game system declares the field, such as modifier, counter or list; undefined when it does not. */
+    kind?: string;
+    /** As the sheet shows it: "+3", "18/24", "Cleric 3". */
+    text: string;
+    /** A counter's value, with its limits as the field writes them or the system works them out (FOR-6). */
+    counter?: Counter;
+    /** The names of a list, links read as their names. */
+    items?: string[];
+    /** What the parts of the character add to a list, apart and not counted with it, such as a domain's spells (PRO-7). */
+    always?: { from: string[]; items: string[]; };
+    /** How many marks it earns: one for each list of the system's marks it reads, as a proficiency (D-217). */
+    marks: number;
+    /** What the sheet shows beside it, such as +2 by str, or how many points the next level needs (PRO-6). */
+    beside?: string;
+}
+
+/** A group of a character's sheet as data: its values, or for a group that the items of one list give, each item with its values, as the attacks (PRO-5). */
+export interface SheetGroupData
+{
+    name: string;
+    values: SheetValue[];
+    items?: { item: string; values: SheetValue[]; }[];
+}
+
 /**
- * "Abilities: str 14 (+2) · dex 12 (+1)…": the sheet of a player character or a companion, a line for each group with a value, as the character reads it, effects
- * and formulas included (DAT-2). None for other pages, which show their fields as written, with where each comes from.
+ * The sheet of a player character or a companion as data, a group for each that has a value, as the character reads it, effects and formulas included (DAT-2).
+ * None for other pages, which show their fields as written, with where each comes from.
  */
-export function sheetLines(world: World, system: GameSystem | undefined, page: Page): string[]
+export function sheetData(world: World, system: GameSystem | undefined, page: Page): SheetGroupData[]
 {
     if (system === undefined || !hasSheet(world, page)) {
         return [];
@@ -90,29 +118,49 @@ export function sheetLines(world: World, system: GameSystem | undefined, page: P
 
     const fields = effectiveFields(world, page);
     const marks = markCounts(world, system, fields);
-    return system.sheet.flatMap((group) => {
+    return system.sheet.flatMap((group): SheetGroupData[] => {
         const list = itemGroupList(world, group);
 
         // A group of what the items of one list give is shown item by item, as the attacks of the weapons equipped (PRO-5).
         if (list !== undefined) {
-            const items = itemLines(world, fields, list, entryFields(group.entries));
-            return items.length === 0 ? [] : [`${group.name}: ${items.map((item) => `${item.item} ${item.values.map((value) => valueText(world, value.field, value.value)).join(", ")}`).join(" · ")}`];
+            const items = itemLines(world, fields, list, entryFields(group.entries)).map((item) => ({
+                item: item.item,
+                values: item.values.map((value) => sheetValue(world, fields, value.field, value.value)),
+            }));
+            return items.length === 0 ? [] : [{ name: group.name, values: [], items }];
         }
 
         const progression = progressionOf(world, fields);
-        const shown = groupEntries(world, system, group, fields).flatMap((entry) => {
+        const values = groupEntries(world, system, group, fields).flatMap((entry): SheetValue[] => {
             const value = valueNamed(fields, entry.field);
-            const marked = "●".repeat(marks.get(comparableText(entry.field)) ?? 0);
             const given = givenItems(progression, entry.field);
 
             if (given.length > 0) {
-                return [`${entry.field} ${listWithGiven(world, entry.field, value, given)}`];
+                return [givenValue(world, entry.field, value, given)];
             }
 
-            return isEmptyField(value) ? [] : [`${entry.field} ${valueText(world, entry.field, value)}${marked === "" ? "" : ` ${marked}`}${besideText(world, fields, entry)}`];
+            const beside = besideValue(world, fields, entry);
+            return isEmptyField(value) ? [] : [{ ...sheetValue(world, fields, entry.field, value), marks: marks.get(comparableText(entry.field)) ?? 0, ...(beside === undefined ? {} : { beside }) }];
         });
-        return shown.length === 0 ? [] : [`${group.name}: ${shown.join(" · ")}`];
+        return values.length === 0 ? [] : [{ name: group.name, values }];
     });
+}
+
+/** "Abilities: str 14 (+2) · dex 12 (+1)…": the sheet as the chat gives it, a line for each group. */
+export function sheetText(groups: SheetGroupData[]): string[]
+{
+    return groups.map((group) => {
+        const shown = group.items === undefined
+            ? group.values.map((value) => `${value.field} ${value.text}${value.marks === 0 ? "" : ` ${"●".repeat(value.marks)}`}${value.beside === undefined ? "" : ` (${value.beside})`}`)
+            : group.items.map((item) => `${item.item} ${item.values.map((value) => value.text).join(", ")}`);
+        return `${group.name}: ${shown.join(" · ")}`;
+    });
+}
+
+/** The sheet of a player character or a companion as the chat gives it (DAT-2): sheetData as text. */
+export function sheetLines(world: World, system: GameSystem | undefined, page: Page): string[]
+{
+    return sheetText(sheetData(world, system, page));
 }
 
 /**
@@ -149,7 +197,7 @@ export function sheetGroup(world: World, system: GameSystem | undefined, page: P
         const given = givenItems(progressionOf(world, fields), entry.field);
 
         if (given.length > 0) {
-            return [`${entry.field} ${listWithGiven(world, entry.field, value, given)}`];
+            return [`${entry.field} ${givenValue(world, entry.field, value, given).text}`];
         }
 
         if (isEmptyField(value)) {
@@ -334,30 +382,65 @@ function entryFields(entries: SheetEntry[]): string[]
     return entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside]));
 }
 
+/**
+ * A field's value as a counter, with the limits the field writes or the system works out (FOR-6): 18/24, or momentum 4 from -6; undefined for a number that is
+ * no counter, such as str 14, and for any other value.
+ */
+export function counterOf(world: World, fields: Record<string, unknown>, field: string, value: unknown): Counter | undefined
+{
+    const read = readCounter(value);
+    const limits = counterLimits(world, fields, field);
+    const counted = declaredKind(world, field) === "counter" || read?.max !== undefined || limits.min !== undefined || limits.max !== undefined;
+    return read === undefined || !counted ? undefined : { ...limits, ...read };
+}
+
+/** A value of the sheet as data, without marks or what is beside it: its kind, its text, a counter with its limits and the names of a list. */
+function sheetValue(world: World, fields: Record<string, unknown>, field: string, value: unknown): SheetValue
+{
+    const kind = declaredKind(world, field);
+    const counter = counterOf(world, fields, field, value);
+    const items = Array.isArray(value) ? value.map((item) => linkText(String(item).trim())) : undefined;
+    return { field, ...(kind === undefined ? {} : { kind }), text: valueText(world, field, value), ...(counter === undefined ? {} : { counter }), ...(items === undefined ? {} : { items }), marks: 0 };
+}
+
+/** A list with what the parts of the character add to it (PRO-7): the names written, then those given, apart and not counted with it. */
+function givenValue(world: World, field: string, value: unknown, given: { name: string; page: Page; }[]): SheetValue
+{
+    const kind = declaredKind(world, field);
+    const written = listItemNames(value).filter((name) => !given.some((item) => comparableText(item.name) === comparableText(name)));
+    const always = { from: [...new Set(given.map((item) => item.page.name))], items: given.map((item) => item.name) };
+    return { field, ...(kind === undefined ? {} : { kind }), text: listWithGiven(world, field, written, always), items: written.map(linkText), always, marks: 0 };
+}
+
 /** " (+2)": the field shown beside an entry, such as str-mod by str, when it has a value. */
 function besideText(world: World, fields: Record<string, unknown>, entry: SheetEntry): string
 {
-    // Beside the points, how many the next level needs, or the level they reach (PRO-6).
+    const beside = besideValue(world, fields, entry);
+    return beside === undefined ? "" : ` (${beside})`;
+}
+
+/** "+2": the field shown beside an entry, such as str-mod by str, when it has a value; beside the points, how many the next level needs, or the level they reach (PRO-6). */
+function besideValue(world: World, fields: Record<string, unknown>, entry: SheetEntry): string | undefined
+{
     const experience = comparableText(entry.field) === comparableText(world.system?.progression?.experience?.field ?? "") ? experienceOf(world, fields) : undefined;
     const text = experience === undefined ? undefined : experienceText(experience);
 
     if (text !== undefined) {
-        return ` (${text})`;
+        return text;
     }
 
     const value = entry.beside === undefined ? undefined : valueNamed(fields, entry.beside);
-    return entry.beside === undefined || isEmptyField(value) ? "" : ` (${valueText(world, entry.beside, value)})`;
+    return entry.beside === undefined || isEmptyField(value) ? undefined : valueText(world, entry.beside, value);
+}
+
+/** "Healing Word, Guiding Bolt; always, from Life Domain: Bless, Cure Wounds": a list with what the parts add to it, apart and not counted with it (PRO-7). */
+function listWithGiven(world: World, field: string, written: string[], always: { from: string[]; items: string[]; }): string
+{
+    const given = `always, from ${always.from.join(" and ")}: ${always.items.join(", ")}`;
+    return written.length === 0 ? given : `${valueText(world, field, written)}; ${given}`;
 }
 
 /** A value as the sheet shows it: a modifier with its sign (FOR-8), the items of a list one after the other. */
-/** "Healing Word, Guiding Bolt; always, from Life Domain: Bless, Cure Wounds": a list with what the parts add to it, apart and not counted with it (PRO-7). */
-function listWithGiven(world: World, field: string, value: unknown, given: { name: string; page: Page; }[]): string
-{
-    const written = listItemNames(value).filter((name) => !given.some((item) => comparableText(item.name) === comparableText(name)));
-    const always = `always, from ${[...new Set(given.map((item) => item.page.name))].join(" and ")}: ${given.map((item) => item.name).join(", ")}`;
-    return written.length === 0 ? always : `${valueText(world, field, written)}; ${always}`;
-}
-
 function valueText(world: World, field: string, value: unknown): string
 {
     if (typeof value === "number") {

@@ -23,6 +23,8 @@ export class SessionStore extends FileStore
     private readonly roots = new Set<string>();
     private readonly reported = new Set<string>();
     private readonly passing = new Set<string>();
+    private readonly changeListeners = new Set<() => void>();
+    private readonly trackListeners = new Set<() => void>();
     private readonly systemFolders: string[];
     private readonly watchFolder: WatchFolder;
     private checking: Promise<void> | undefined;
@@ -51,6 +53,20 @@ export class SessionStore extends FileStore
         this.roots.add(key);
         this.watchFolders(key);
         this.forgetUnder(key);
+        this.trackListeners.forEach((listener) => listener());
+    }
+
+    /** Calls `listener` whenever a watcher sees a file of a campaign change, or loses track of one (D-272), until the function it returns is called. */
+    onChange(listener: () => void): () => void
+    {
+        this.changeListeners.add(listener);
+        return () => this.changeListeners.delete(listener);
+    }
+
+    /** Calls `listener` whenever a call finds a campaign the session does not watch yet, as after init (D-270). */
+    onTrack(listener: () => void): void
+    {
+        this.trackListeners.add(listener);
     }
 
     /**
@@ -185,6 +201,7 @@ export class SessionStore extends FileStore
     private report(folder: string, name: string | undefined): void
     {
         this.changes++;
+        this.changeListeners.forEach((listener) => listener());
 
         if (name === undefined || name === "" || isAbsolute(name)) {
             this.lose(folder);
@@ -200,6 +217,8 @@ export class SessionStore extends FileStore
         this.watchers.get(folder)?.close();
         this.watchers.delete(folder);
         this.checkAll = true;
+        // The next call checks everything and watches the folder again: who listens calls again.
+        this.changeListeners.forEach((listener) => listener());
     }
 
     /** What a watcher named: a file kept with another text, a new file or one gone; or a folder that came or went, read again and watched whole. */

@@ -26,6 +26,8 @@ export interface Context
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
     told?: Set<string>;
+    /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
+    dashboard?: string;
 }
 
 /**

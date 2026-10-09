@@ -10,6 +10,7 @@ import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
+import { startDashboard } from "./dashboard-server.ts";
 import { startInstructions } from "./instructions/index.ts";
 
 type AnyCommand = Command<any, any>;
@@ -82,7 +83,25 @@ export async function startMcpServer(): Promise<void>
     process.stdin.on("end", leave);
     process.stdin.on("close", leave);
     const context = defaultContext();
-    await createMcpServer({ ...context, files: new SessionStore({ systemFolders: context.systemFolders }) }).connect(new StdioServerTransport());
+    const session = new SessionStore({ systemFolders: context.systemFolders });
+    const served: Context = { ...context, files: session };
+    // The player's dashboard, once the server's folder holds a campaign: at once, or when a call finds one, as after init (D-270). The game goes on without it.
+    let opened = false;
+
+    const openDashboard = (): void => {
+        if (!opened) {
+            opened = true;
+            void startDashboard(served, session).then((dashboard) => (served.dashboard = dashboard?.url), () => undefined);
+        }
+    };
+
+    session.onTrack(openDashboard);
+
+    if (withFiles(session, () => findCampaign(context.folder)) !== undefined) {
+        openDashboard();
+    }
+
+    await createMcpServer(served).connect(new StdioServerTransport());
 }
 
 /**

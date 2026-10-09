@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
 import { baseChain, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
-import { imageFile } from "./game-images.ts";
+import { imageFile, ownImage } from "./game-images.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
@@ -119,13 +119,6 @@ function removeUnused(root: string, world: World, page: Page, old: string | unde
     if (!linkedElsewhere) {
         files().remove(old);
     }
-}
-
-/** The page's own image field, as written; undefined when it has none. */
-function ownImage(page: Page): unknown
-{
-    const field = ownField(page, "image");
-    return field === undefined ? undefined : page.fields[field];
 }
 
 function shownPath(root: string, path: string): string

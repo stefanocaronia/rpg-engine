@@ -15,13 +15,14 @@ Code comments cite two kinds of codes. Rule codes such as `INH-4`, `CON-1`, `FOR
 | [src/commands/](../src/commands/) | The commands, and the helpers that join modules for several commands (`game-*.ts`, `effect-layer.ts`, `worked-out.ts`, `sheet.ts`, `page-counters.ts`, `problems.ts`, `notes.ts`) |
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary and the command-line surface |
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server, started by `rpg mcp` |
+| [src/dashboard-server.ts](../src/dashboard-server.ts) | The server of the player's dashboard, which the MCP server starts |
 | [src/index.ts](../src/index.ts) | The package entry: only `getVersion` today |
 | [systems/](../systems/) | Built-in game systems; today only [5e](../systems/5e/) (SRD 5.1) |
 | [instructions/](../instructions/) | The game master's instructions, served to the AI |
 | [test/](../test/) | Tests, test helpers, the Ironsworn-based test system and a performance bench |
 | [playtests/](../playtests/) | Playtest scenarios (not code) |
 
-There is no dashboard and no `extensions/` folder in the code today: the registry's comment anticipates a dashboard API, but only the CLI and the MCP server are generated from the commands.
+The dashboard has its server, which gives `view` in JSON, but not its page yet; there is no `extensions/` folder in the code today.
 
 | Module | Job | Entry |
 |---|---|---|
@@ -77,7 +78,7 @@ A command is a `Command` object made with `defineCommand` in [core/registry.ts](
 
 ### The context
 
-[core/context.ts](../src/core/context.ts) holds everything that comes from outside: `folder` (where to look for the campaign, upwards), `random(sides)`, `now()`, `newId()` (log ids), `newSalt()` (hidden rolls), `actor` (always `master` today; `ask` stamps the player's roll and answer as `player`), `platform`, `systemFolders` (where game systems are installed, nearest first), `player` (asks the player with buttons, MCP only), `files` (the session store, MCP only) and `told` (the parts of the instructions already given in the chat, MCP only). `defaultContext()` builds the real one; tests use `testContext()` from [test/support.ts](../test/support.ts). No command checks a role beyond stamping `actor` on its log lines.
+[core/context.ts](../src/core/context.ts) holds everything that comes from outside: `folder` (where to look for the campaign, upwards), `random(sides)`, `now()`, `newId()` (log ids), `newSalt()` (hidden rolls), `actor` (always `master` today; `ask` stamps the player's roll and answer as `player`), `platform`, `systemFolders` (where game systems are installed, nearest first), `player` (asks the player with buttons, MCP only), `files` (the session store, MCP only), `told` (the parts of the instructions already given in the chat, MCP only) and `dashboard` (the link of the player's dashboard, MCP only, which `status` gives). `defaultContext()` builds the real one; tests use `testContext()` from [test/support.ts](../test/support.ts). No command checks a role beyond stamping `actor` on its log lines.
 
 ### From the two surfaces
 
@@ -105,6 +106,7 @@ Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Pag
 - `fresh()` throws when a file was changed by hand without the watchers noticing, before anything is written over it, and the next call checks everything (D-196).
 - Game systems are read once per session; the server does not see changes to them until it restarts.
 - 250 ms after the host initializes, the server preloads the world of the campaign in its folder, and brings its host files up to date (`refreshHostFiles`): the start lines in `AGENTS.md`, `CLAUDE.md`, Claude Code's settings.
+- `onChange(listener)` calls back whenever a watcher names a change or loses track of a folder, for the dashboard's notices; `onTrack(listener)` whenever a call finds a campaign not watched yet, as after `init`, for the dashboard to start.
 
 ### Logging and output
 
@@ -235,7 +237,7 @@ Files: [core/formula.ts](../src/core/formula.ts), [commands/worked-out.ts](../sr
 
 Files: [commands/sheet.ts](../src/commands/sheet.ts), [commands/page-counters.ts](../src/commands/page-counters.ts). Codes: `DAT-2`, `SYS-8`.
 
-A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the sheet of the player character and of companions that keep one (`hasSheet` in [commands/worked-out.ts](../src/commands/worked-out.ts), which also decides who has the system's uses full, `DAT-9`). `show` prints it by group (`sheetLines`), and one group with how each number is made (`show Page#Group`). `status` summarizes the sheet before there is a player character, with the system's `creation` note on how to make one (`DAT-12`), and reminds what a character still lacks (`missingSheetFields`). `write` gives the sheet's notes when a character joins the party (`joiningNotes`) and refuses list items the system does not take (`checkListValues`). The line of counters shown for the party is `partyCounters`.
+A system's `sheet` groups, `sheet-notes`, `values` and `status-line` drive the sheet of the player character and of companions that keep one (`hasSheet` in [commands/worked-out.ts](../src/commands/worked-out.ts), which also decides who has the system's uses full, `DAT-9`). `sheetData` gives it as data, a group for each that has a value, and each value with its kind, its text as the chat shows it, its marks, what is beside it, a counter with its limits, a list's items and what the character's parts add to a list (`always`); a group that the items of one list give, as the attacks, has them item by item. `sheetText` makes the chat's lines from it, so that chat and dashboard never differ: `show` prints it by group (`sheetLines`), and one group with how each number is made (`show Page#Group`). `status` summarizes the sheet before there is a player character, with the system's `creation` note on how to make one (`DAT-12`), and reminds what a character still lacks (`missingSheetFields`). `write` gives the sheet's notes when a character joins the party (`joiningNotes`) and refuses list items the system does not take (`checkListValues`). The line of counters shown for the party is `partyCounters`.
 
 ### Classes, uses and what a campaign adds
 
@@ -278,7 +280,19 @@ A page's picture is its standard field `image`, a link to a file such as `[[Etto
 
 Files: [commands/view.ts](../src/commands/view.ts), [commands/game-knowledge.ts](../src/commands/game-knowledge.ts). Codes: `VIEW-1`–`VIEW-5`.
 
-`view` gives what the player may see, for the master to answer without spoilers and, later, for the dashboard. `knowledgeOf` works out what the player character, the first living one, knows: its `knows`, itself, the companions, the quests taken, what it carries, the places around it, the characters and places of the scenes it was in and where it was moved, as the log keeps them; the system's pages but its creatures (`VIEW-2`). `knownText` and `knownPart` give a page as it knows it: the introduction, the public sections, its own and those of the bases it knows, never a creature's, the secrets discovered by the page that writes them, without comments (`withoutComments`, `VIEW-3`). The overview reads the public lines of the log as a diary of facts, without the master's `why`; every name it writes is one the character knows, the others are someone or elsewhere, and copies are counted (`VIEW-4`, D-254).
+`view` gives what the player may see, for the master to answer without spoilers and for the dashboard. Its result is data, which `format` makes into the chat's text: the party as `PartyMember`s (name, role, whether dead, picture with `shownImage`, place, the numbers of their line with their limits, effects with their end), a page with its sheet as `sheetData`, or one section. `knowledgeOf` works out what the player character, the first living one, knows: its `knows`, itself, the companions, the quests taken, what it carries, the places around it, the characters and places of the scenes it was in and where it was moved, as the log keeps them; the system's pages but its creatures (`VIEW-2`). `knownText` and `knownPart` give a page as it knows it: the introduction, the public sections, its own and those of the bases it knows, never a creature's, the secrets discovered by the page that writes them, without comments (`withoutComments`, `VIEW-3`). The overview reads the public lines of the log as a diary of facts, without the master's `why`; every name it writes is one the character knows, the others are someone or elsewhere, and copies are counted (`VIEW-4`, D-254).
+
+### The dashboard
+
+Files: [dashboard-server.ts](../src/dashboard-server.ts). Decisions: D-270, D-272.
+
+`startMcpServer` starts it once the server's folder holds a campaign: at once, or when a call first finds one (`onTrack`). `startDashboard` listens on 127.0.0.1 only, at the first free port from 4747 to 4756, never keeps the process alive, and puts its link in `context.dashboard`, which `status` gives the master for the player. It answers only requests whose `Host` and `Origin`, when there is one, are its own (`localhost` or `127.0.0.1` at its port), and only `GET`:
+
+- `/api/<command>`: a command the player may run, today only `view`, with its parameters from the query, validated with `input.strict()`, run after `ready()` as the MCP server runs a tool; its result in JSON, or `{ error }`.
+- `/events`: server-sent events; `changed` when the session's watchers name a change or lose track (`onChange`), at most once every 100 ms. The notice carries no data: the page reads `view` again, so nothing the player may not see goes through it.
+- `/images/<name>`: a picture by the name of its file, looked for with `findImage` in the campaign's and the system's `images/` folders, never by a path; with an ETag of its bytes, `no-cache`, and a policy that runs nothing, even an SVG opened by itself.
+
+Every answer carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'self'`.
 
 ### Game time
 
@@ -337,7 +351,7 @@ A situation that opens gives its part of the instructions (D-97, D-121): `scene 
 
 `npm test` runs vitest on `test/**/*.test.ts` and `systems/*/test/**/*.test.ts` ([vitest.config.ts](../vitest.config.ts)); `npx vitest run test/move.test.ts` runs one file. `npm run lint` checks ESLint, dprint and the types of the tests; CI runs lint, build and tests on Linux and Windows.
 
-- **Commands** are tested through `runCommandLine(args, testContext(folder))` in a temporary campaign made with `init`, or by calling `command.run` directly. `mcp.test.ts` connects a client to `createMcpServer` in memory; `session-store.test.ts` drives the session store with a fake watcher.
+- **Commands** are tested through `runCommandLine(args, testContext(folder))` in a temporary campaign made with `init`, or by calling `command.run` directly. `mcp.test.ts` connects a client to `createMcpServer` in memory; `session-store.test.ts` drives the session store with a fake watcher; `dashboard.test.ts` starts the dashboard's server on a free port and asks it over HTTP.
 - **Laws**: `*-laws.test.ts` (inheritance, containers, events, rules, systems) check rules with fast-check on worlds or texts generated at random, some against a model written another way; some build `World` objects in memory, others write campaigns to disk and run the commands. Case tables such as `inheritance-cases.test.ts` cover every combination of one rule. Test titles cite the rule codes.
 - **Test systems**: tests see `systems/` (5e) and [test/systems/](../test/systems/) (`ironsworn`, a small system based on Ironsworn, with its own fields, a table, computed fields and counter limits), so that the core stays generic. [test/system-packages.test.ts](../test/system-packages.test.ts) runs the checks every installed system must pass; [systems/5e/test/package.test.ts](../systems/5e/test/package.test.ts) checks what 5e takes from the SRD and its attribution.
 - **Helpers** in [test/support.ts](../test/support.ts): `testSystemFolders`, `testContext(folder)` (dice always 4, a fixed time, ids `id1`, `id2`..., salt `salt`, platform linux), `makeTempFolder`, `removeFolder`, `readLogFile`, `systemPageCount`, and texts that several outputs share.
