@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
-import type { Context } from "../src/core/context.ts";
+import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
@@ -309,7 +309,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         }
 
         const status = await runCommandLine(["status"], { ...context, dashboard: "http://localhost:4747" });
-        expect(status.output).toContain("Dashboard: http://localhost:4747, the player's sheet, live: give the player the link when the session starts.");
+        expect(status.output).toContain("Dashboard: http://localhost:4747, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.");
     });
 });
 
@@ -488,9 +488,20 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     });
 
     it("turns to the form, or to words this time, when no page is open, and keeps the buttons for later", async () => {
-        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe("The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.");
+        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe(
+            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+        );
         const form = { choose: async () => 1 };
         expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Acrobazia" });
+    });
+
+    it("takes a form that does not show, while the dashboard runs, as absent this time: a page may open later, and nothing is logged", async () => {
+        const lines = readLogFile(folder).length;
+        const hidden: Player = { choose: async () => "unavailable" };
+        expect(ask.format(await ask.run(ask.input.parse(wall), { ...served, player: hidden }))).toBe(
+            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+        );
+        expect(readLogFile(folder)).toHaveLength(lines);
     });
 
     it("keeps the question through a reload, and gives it to the form, or to words, when the page closes and none comes back (ASK-1)", async () => {
@@ -503,7 +514,9 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await new Promise((done) => setTimeout(done, 200));
         expect((await askedNow())?.id).toBe(asked.id);
         second.close();
-        expect(ask.format(await asking)).toBe("The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.");
+        expect(ask.format(await asking)).toBe(
+            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+        );
         expect(await askedNow()).toBeNull();
 
         const third = await openPage();
@@ -521,7 +534,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const asking = ask.run(ask.input.parse(wall), { ...served, signal: stop.signal });
         const asked = await waitAsked();
         stop.abort();
-        expect(await asking).toEqual({ kind: "unanswered" });
+        expect(await asking).toEqual({ kind: "unanswered", asked: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1)" });
         expect(await askedNow()).toBeNull();
         expect(readLogFile(folder)).toHaveLength(lines);
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(409);
@@ -532,7 +545,11 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const settings = join(folder, "campaign.yaml");
         writeFileSync(settings, readFileSync(settings, "utf8").replace(/^dice: .*$/m, "dice: physical"));
         const page = await openPage();
-        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe("The player rolls their own dice: ask the roll in words, with what is at stake, and stop; they will tell the values.");
+        expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe(
+            "The player rolls their own dice: ask the roll in words, with what is at stake and the checks: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Then stop; they will tell the values.",
+        );
+        // The master knows it from the start: the buttons are for choices alone.
+        expect((await runCommandLine(["instructions"], served)).output).toContain("The player rolls their own dice: ask every roll of their character in words");
         expect(await askedNow()).toBeNull();
         page.close();
     });

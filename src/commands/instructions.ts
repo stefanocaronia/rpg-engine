@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { findCampaign } from "../campaign/index.ts";
+import { findCampaign, readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { buttonsInstructions, masterInstructions } from "../instructions/index.ts";
@@ -23,7 +23,7 @@ export const instructions = defineCommand({
         context.told?.clear();
         // Where the host shows the player forms, or the dashboard shows its buttons, they take the place of the stop in words (D-148, D-279).
         const buttons = context.player !== undefined || context.page !== undefined;
-        const parts = [masterInstructions(), modeText(context.folder, context), sceneText(context.folder, context), buttons ? buttonsInstructions() : ""];
+        const parts = [masterInstructions(), modeText(context.folder, context), sceneText(context.folder, context), buttons ? buttonsInstructions(physicalDice(context.folder)) : ""];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },
 
@@ -54,6 +54,18 @@ function sceneText(folder: string, context: Context): string
 }
 
 /** The part of the mode the campaign is in, with its layers (MOD-5); none outside a campaign, or in one that does not read, where status says why. */
+/** Whether the player rolls their own dice (ASK-8): then the buttons are for choices alone. */
+function physicalDice(folder: string): boolean
+{
+    const root = findCampaign(folder);
+
+    try {
+        return root !== undefined && readSettings(root).dice === "physical";
+    } catch {
+        return false;
+    }
+}
+
 function modeText(folder: string, context: Context): string
 {
     const root = findCampaign(folder);

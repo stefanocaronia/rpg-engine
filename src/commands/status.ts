@@ -157,7 +157,7 @@ export const status = defineCommand({
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
-            result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet, live: give the player the link when the session starts.`,
+            result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.`,
             ...result.incompleteSheets,
             ...result.levelsDue,
             namesLine("Also there", result.alsoThere, `show ${result.place}`),

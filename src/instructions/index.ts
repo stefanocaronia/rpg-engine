@@ -14,10 +14,10 @@ export function startInstructions(): string
     return readInstructions("start.md");
 }
 
-/** The line that sends the master to the buttons, where the host shows the player forms (D-148). */
-export function buttonsInstructions(): string
+/** The line that sends the master to the buttons, where the player sees them (D-148, D-279); for choices alone when the player rolls their own dice (ASK-8). */
+export function buttonsInstructions(physicalDice: boolean): string
 {
-    return readInstructions("buttons.md");
+    return readInstructions(physicalDice ? "buttons-physical-dice.md" : "buttons.md");
 }
 
 /** The game master's full instructions, as the `instructions` command gives them. */

@@ -1,0 +1,1 @@
+This app shows the player buttons: for every choice that is truly theirs, call `ask` instead of stopping in words. The player rolls their own dice: ask every roll of their character in words, with what is at stake and the checks, and stop; they tell the values. Never speak of buttons to the player: if one does not show, ask in words.

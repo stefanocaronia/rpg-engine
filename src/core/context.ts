@@ -41,6 +41,8 @@ export interface Context
 export interface Player
 {
     choose(question: string, title: string, labels: string[], signal?: AbortSignal): Promise<number | undefined | "unavailable" | "absent">;
+    /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
+    asking?(): boolean;
 }
 
 export function defaultContext(folder = process.cwd()): Context

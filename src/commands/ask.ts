@@ -23,18 +23,18 @@ interface Option
     notation?: string;
 }
 
+// What the call asked, for the master to ask it again in words: the player has not seen it.
+type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical"; asked: string; };
+
 type AskResult =
     | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
-    | { kind: "unanswered"; }
-    | { kind: "unavailable"; }
-    | { kind: "absent"; }
-    | { kind: "physical"; };
+    | InWords;
 
 export const ask = defineCommand({
     name: "ask",
-    description: "Ask the player with buttons, in apps that show them a form: every roll of the player's character, and every choice that is truly theirs to make. "
+    description: "Ask the player with buttons: every roll of the player's character, and every choice that is truly theirs to make. "
         + "The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. "
         + "For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice; "
         + "the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. "
@@ -84,7 +84,7 @@ export const ask = defineCommand({
 
         // The player rolls their own dice: a roll is asked in words, and they tell the values (ASK-8).
         if (readSettings(root).dice === "physical") {
-            return { kind: "physical" };
+            return { kind: "physical", asked: askedText(question, "checks", options) };
         }
 
         const who = playerCharacter(loadWorld(root), input.who);
@@ -101,13 +101,13 @@ export const ask = defineCommand({
             case "chose":
                 return `The player chose: ${result.answer}.`;
             case "unavailable":
-                return "The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.";
+                return `The player saw no buttons: ask them in words what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop. From now on, always in words.`;
             case "absent":
-                return "The player has no buttons open now: ask them in words this time, without a word about buttons, and stop.";
+                return `The player has no buttons open now: ask them in words this time what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop.`;
             case "physical":
-                return "The player rolls their own dice: ask the roll in words, with what is at stake, and stop; they will tell the values.";
+                return `The player rolls their own dice: ask the roll in words, with what is at stake and the checks: ${result.asked}. Then stop; they will tell the values.`;
             default:
-                return "No answer from the buttons: ask the player in words, and stop.";
+                return `No answer from the buttons: ask the player in words what the call held: ${result.asked}. Then stop.`;
         }
     },
 });
@@ -118,21 +118,23 @@ async function rollChosen(root: string, context: Context, question: string, chec
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
     const chosen = await choose(context, question, words.roll, labels);
 
+    const asked = askedText(question, "checks", checks);
+
     // A call the user stopped logs nothing (ASK-9).
     if (chosen === "absent" || context.signal?.aborted === true) {
-        return chosen === "absent" ? { kind: "absent" } : { kind: "unanswered" };
+        return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
     }
 
     if (chosen === "unavailable") {
         logAnswer(root, context, question, labels, undefined);
-        return { kind: "unavailable" };
+        return { kind: "unavailable", asked };
     }
 
     const check = chosen === undefined ? undefined : checks[chosen];
 
     if (check?.notation === undefined) {
         logAnswer(root, context, question, labels, chosen === checks.length ? words.change : undefined);
-        return chosen === checks.length ? { kind: "changed" } : { kind: "unanswered" };
+        return chosen === checks.length ? { kind: "changed" } : { kind: "unanswered", asked };
     }
 
     const diceRoll = rollDice(check.notation, { random: context.random });
@@ -147,26 +149,42 @@ async function answer(root: string, context: Context, question: string, options:
 {
     const labels = options.map((option) => option.label);
     const chosen = await choose(context, question, words.choice, labels);
+    const asked = askedText(question, "answers", options);
 
     if (chosen === "absent" || context.signal?.aborted === true) {
-        return chosen === "absent" ? { kind: "absent" } : { kind: "unanswered" };
+        return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
     }
 
     const answered = chosen === undefined || chosen === "unavailable" ? undefined : labels[chosen];
     logAnswer(root, context, question, labels, answered);
 
     if (chosen === "unavailable") {
-        return { kind: "unavailable" };
+        return { kind: "unavailable", asked };
     }
 
-    return answered === undefined ? { kind: "unanswered" } : { kind: "chose", answer: answered };
+    return answered === undefined ? { kind: "unanswered", asked } : { kind: "chose", answer: answered };
 }
 
-/** The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). */
+/** "Scavalcare il muro… (the checks: Atletica 1d20+5, Acrobazia 1d20-1)": the call as the master gave it, to ask in words. */
+function askedText(question: string, what: "checks" | "answers", options: Option[]): string
+{
+    return `${question} (the ${what}: ${options.map((option) => (option.notation === undefined ? option.label : `${option.label} ${option.notation}`)).join(", ")})`;
+}
+
+/**
+ * The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). A form that does not show, while
+ * the dashboard runs, is only absent this time: a page may open.
+ */
 async function choose(context: Context, question: string, title: string, labels: string[]): Promise<number | undefined | "unavailable" | "absent">
 {
     const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal);
-    return onPage === "absent" && context.player !== undefined ? context.player.choose(question, title, labels, context.signal) : onPage;
+
+    if (onPage !== "absent" || context.player === undefined) {
+        return onPage;
+    }
+
+    const inForm = await context.player.choose(question, title, labels, context.signal);
+    return inForm === "unavailable" && context.page !== undefined ? "absent" : inForm;
 }
 
 /** A public line for what the player answered, or that no one did (ASK-6); a roll has its own line instead. */

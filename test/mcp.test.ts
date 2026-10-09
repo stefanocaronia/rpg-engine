@@ -160,7 +160,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     it("takes ask away from a host that closes the form faster than anyone could read it, since it never showed it (ASK-6)", async () => {
         const closing = await formClient({ action: "cancel" }, []);
         expect(((await closing.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
-            "The player saw no buttons: ask them in words, without a word about buttons, and stop; from now on, always in words.",
+            "The player saw no buttons: ask them in words what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20+3). No word about buttons; then stop. From now on, always in words.",
         );
         expect((await closing.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
         expect(((await closing.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).not.toContain("call `ask`");
@@ -169,13 +169,17 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
 
     it("says to ask in words when a person declined the form or answered with something that is no button, and refuses a hidden roll", async () => {
         const declined = await formClient({ action: "decline" }, [], { form: {} }, 1600);
-        expect(((await declined.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
+        expect(((await declined.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
+            "No answer from the buttons: ask the player in words what the call held: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20+3). Then stop.",
+        );
         expect((await declined.listTools()).tools.map((tool) => tool.name)).toContain("ask");
         expect((await declined.callTool({ name: "ask", arguments: { ...wall, hidden: true } })).isError).toBe(true);
         await declined.close();
 
         const strange = await formClient({ action: "accept", content: { choice: "Tiro: Furtività (1d20+9)" } }, [], { form: {} }, 1600);
-        expect(((await strange.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe("No answer from the buttons: ask the player in words, and stop.");
+        expect(((await strange.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
+            "No answer from the buttons: ask the player in words what the call held: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20+3). Then stop.",
+        );
         await strange.close();
     });
 

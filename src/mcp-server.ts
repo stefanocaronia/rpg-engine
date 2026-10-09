@@ -153,7 +153,7 @@ function toolConfig(command: AnyCommand)
 
 async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra): Promise<CallToolResult>
 {
-    const keepAlive = command.needsPlayer ? reportProgress(extra) : undefined;
+    const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
 
     try {
         // In a session, the files that changed since the last call are read again; instructions starts a chat, or follows a summary: everything is checked (D-193).
@@ -214,8 +214,8 @@ function formPlayer(server: McpServer, unavailable: () => void): Player
     };
 }
 
-/** Progress notifications while the player decides, when the host asked for them; undefined when it did not. */
-function reportProgress(extra: ToolExtra): ReturnType<typeof setInterval> | undefined
+/** Progress notifications while the player decides, when the host asked for them, saying where when the question is on the dashboard; undefined otherwise. */
+function reportProgress(extra: ToolExtra, onPage: () => boolean): ReturnType<typeof setInterval> | undefined
 {
     const progressToken = extra._meta?.progressToken;
 
@@ -224,5 +224,8 @@ function reportProgress(extra: ToolExtra): ReturnType<typeof setInterval> | unde
     }
 
     let progress = 0;
-    return setInterval(() => void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message: "waiting for the player" } }).catch(() => undefined), progressEvery);
+    return setInterval(() => {
+        const message = onPage() ? "waiting for the player's click on the dashboard" : "waiting for the player";
+        void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message } }).catch(() => undefined);
+    }, progressEvery);
 }

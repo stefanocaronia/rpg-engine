@@ -319,6 +319,7 @@ function sendFile(file: string | undefined, path: string, response: ServerRespon
 function pagePlayer(served: Served): Player
 {
     return {
+        asking: () => served.asked !== undefined,
         choose(question, title, labels, signal)
         {
             if (served.pages.size === 0) {
