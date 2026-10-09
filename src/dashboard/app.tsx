@@ -149,8 +149,15 @@ function App()
             </div>
             {shown.system && (
                 <footer class="credits">
-                    <p>Game system: {phraseLabel(shown.system.title)}.</p>
-                    {shown.system.attribution && <p>{shown.system.attribution}</p>}
+                    <span>
+                        {shown.system.name} · {phraseLabel(shown.system.title)}
+                    </span>
+                    {shown.system.attribution && (
+                        <details>
+                            <summary>Credits</summary>
+                            <p>{shown.system.attribution}</p>
+                        </details>
+                    )}
                 </footer>
             )}
             <DiceTray requested={thrown} sheetThrow={sheetThrow} party={shown.party} />

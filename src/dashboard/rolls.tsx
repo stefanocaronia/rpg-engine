@@ -66,14 +66,16 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
 }
 
 /**
- * One roll, in three lines (D-292): whom it is for, by their token and name; what it is; its dice as chips and the number added. Its total on the right; the
- * notation, in words when it says more than its dice, in its tooltip; the chat's text for a screen reader.
+ * One roll, in three lines (D-292): whom it is for, by their token and name; what it is; its dice as chips and the number added. Its total on the right; in
+ * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader.
  */
 function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; })
 {
     const player = roll.by === "player";
+    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words.
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words].filter((line) => line !== undefined && line !== "").join("\n");
     return (
-        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id}>
+        <li class={["roll", player ? "by-player" : "by-master", fresh ? "changed" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-who">
                 <span class="visually-hidden">{player ? "Your roll: " : "The master's roll: "}</span>
@@ -81,7 +83,7 @@ function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; 
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
             <span class="roll-total num">{roll.total}</span>
-            <span class="roll-dice" title={[roll.words, roll.notation].filter((part) => part !== undefined).join(" · ")}>
+            <span class="roll-dice">
                 <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} />
                 <span class="visually-hidden">{roll.text}</span>
             </span>

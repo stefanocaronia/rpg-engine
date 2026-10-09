@@ -278,17 +278,35 @@ a {
 }
 
 .credits {
-    margin: 24px 0 0;
-    padding-top: 12px;
+    margin: 32px 0 0;
+    padding-top: 14px;
     border-top: 1px solid var(--rule);
     color: var(--muted);
     font-size: 0.75rem;
     line-height: 1.45;
+    text-align: center;
 }
 
-.credits p {
-    margin: 0 0 4px;
-    max-width: 120ch;
+.credits details {
+    display: inline;
+    margin-left: 12px;
+}
+
+.credits summary {
+    display: inline;
+    cursor: pointer;
+    list-style: none;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.credits summary::-webkit-details-marker {
+    display: none;
+}
+
+.credits details p {
+    max-width: 90ch;
+    margin: 8px auto 0;
 }
 
 /* The master: the robot, which blinks and breathes; one mood at a time (D-274). */
