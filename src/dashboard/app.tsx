@@ -4,7 +4,7 @@ import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
-import type { Asked, Member, SheetGroup, ShownRoll } from "./data.ts";
+import type { Asked, Member, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
 import { PartyStrip } from "./party.tsx";
@@ -26,6 +26,7 @@ interface Shown
     /** The line under the chosen one's name, such as Level 3 Cleric. */
     headline?: string;
     sheet: SheetGroup[];
+    cards?: SheetCards;
     text: string;
     rolls: ShownRoll[];
     asked?: Asked;
@@ -77,6 +78,7 @@ function App()
                     chosen: member?.name,
                     headline: page?.kind === "page" ? page.headline : undefined,
                     sheet: page?.kind === "page" ? page.sheet : [],
+                    cards: page?.kind === "page" ? page.cards : undefined,
                     text: page?.kind === "page" ? page.text : "",
                     rolls,
                     asked,
@@ -136,6 +138,7 @@ function App()
                             member={member}
                             headline={shown.headline}
                             sheet={shown.sheet}
+                            cards={shown.cards}
                             text={shown.text}
                             version={shown.version}
                             onRoll={(roll, label) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label }))}

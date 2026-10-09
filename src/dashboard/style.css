@@ -233,8 +233,8 @@ a {
     z-index: 18;
     display: flex;
     align-items: center;
-    gap: 12px;
-    height: 56px;
+    gap: 14px;
+    height: 88px;
     padding: 0 16px;
     border-bottom: 1px solid var(--rule);
     background: color-mix(in srgb, var(--paper) 92%, transparent);
@@ -250,14 +250,15 @@ a {
     transform: none;
 }
 
-.top-bar img {
-    width: 36px;
-    height: 36px;
+/* The master whole, a little smaller, still moving: its moods are seen there too. */
+.top-bar .master {
+    width: 72px;
+    height: 72px;
 }
 
 .top-bar-title {
     font-family: var(--serif);
-    font-size: 1.25rem;
+    font-size: 1.6rem;
     font-weight: 600;
     font-variant: small-caps;
     letter-spacing: 0.04em;
@@ -2210,6 +2211,19 @@ svg.icon {
 
     .top {
         gap: 12px;
+    }
+
+    .top-bar {
+        height: 68px;
+    }
+
+    .top-bar .master {
+        width: 52px;
+        height: 52px;
+    }
+
+    .top-bar-title {
+        font-size: 1.2rem;
     }
 
     /* A phone keeps only whether the game is live. */

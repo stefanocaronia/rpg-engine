@@ -5,10 +5,10 @@ import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
-import type { Member, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
 import { cardIcons, DieIcon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownText } from "./labels.ts";
-import { groupLayout, orderedValues, widgetOf } from "./layout.ts";
+import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
 import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
@@ -19,8 +19,11 @@ const descriptionCard = "Description";
 /** What rolls a number of the sheet for fun: its roll, and the number's label. */
 export type FreeRoll = (roll: SheetRoll, label: string) => void;
 
-export function MemberSheet({ member, headline, sheet, text, version, onRoll }: { member: Member; headline?: string; sheet: SheetGroup[]; text: string; version: number; onRoll: FreeRoll; })
+export function MemberSheet(
+    { member, headline, sheet, cards, text, version, onRoll }: { member: Member; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; version: number; onRoll: FreeRoll; },
+)
 {
+    const { rail, others } = arrangedGroups(sheet, cards);
     const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     return (
@@ -47,9 +50,9 @@ export function MemberSheet({ member, headline, sheet, text, version, onRoll }: 
                 <Effects effects={member.effects} />
             </header>
             <div class="sheet-body">
-                {sheet.some((shown) => groupLayout(shown) === "tiles") && <div class="rail">{sheet.filter((shown) => groupLayout(shown) === "tiles").map(group)}</div>}
+                {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
                 <div class="groups">
-                    {sheet.filter((shown) => groupLayout(shown) !== "tiles").map(group)}
+                    {others.map(group)}
                     {text.trim() !== "" && (
                         <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(text)}>
                             <Markdown text={text} />

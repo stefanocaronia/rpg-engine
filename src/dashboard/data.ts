@@ -42,6 +42,13 @@ export interface SheetGroup
     items?: { item: string; values: SheetValue[]; }[];
 }
 
+/** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295). */
+export interface SheetCards
+{
+    rail: string[];
+    order: string[];
+}
+
 /** Someone of the party. */
 export interface Member
 {
@@ -114,6 +121,6 @@ export type View =
         total: number;
         rolls: ShownRoll[];
     }
-    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; text: string; }
+    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };

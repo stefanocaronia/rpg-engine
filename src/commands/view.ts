@@ -82,7 +82,16 @@ export type ViewResult =
         total: number;
         rolls: ShownRoll[];
     }
-    | { kind: "page"; title: string; /** The line under the character's name on the dashboard (D-288). */ headline?: string; sheet: SheetGroupData[]; text: string; }
+    | {
+        kind: "page";
+        title: string;
+        /** The line under the character's name on the dashboard (D-288). */
+        headline?: string;
+        sheet: SheetGroupData[];
+        /** Where the dashboard puts the groups of the sheet, as the system says (D-295). */
+        cards?: { rail: string[]; order: string[]; };
+        text: string;
+    }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | { kind: "unknown"; text: string; };
 
@@ -143,7 +152,15 @@ export const view = defineCommand({
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
             const sheet = !party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page);
             const headline = party ? sheetHeadline(world, system, page) : undefined;
-            return { kind: "page", title: `${page.name} (${page.type ?? "page"})`, ...(headline === undefined ? {} : { headline }), sheet, text: knownText(world, knowledge, page) };
+            const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
+            return {
+                kind: "page",
+                title: `${page.name} (${page.type ?? "page"})`,
+                ...(headline === undefined ? {} : { headline }),
+                sheet,
+                ...(cards === undefined ? {} : { cards }),
+                text: knownText(world, knowledge, page),
+            };
         }
 
         const { coins } = campaignCoins(root, context);

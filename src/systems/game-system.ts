@@ -70,6 +70,9 @@ const systemSchema = z.object({
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
+    "sheet-cards": z.object({ rail: z.array(z.string().min(1)).optional(), order: z.array(z.string().min(1)).optional() }, {
+        error: "write it as the groups the dashboard puts in its rail and the order of the others, such as {rail: [Abilities], order: [Skills, Combat]}",
+    }).strict().optional(),
     "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
@@ -232,6 +235,8 @@ export interface GameSystem
     sheetDice: Record<string, string>;
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
+    /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, and the order of the others. */
+    sheetCards?: { rail: string[]; order: string[]; };
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
@@ -438,6 +443,15 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice: ${twice[0]} is listed twice; give each field one set of dice.`);
     }
 
+    // The cards the dashboard places are groups of the sheet (D-295).
+    for (const [key, names] of Object.entries(data["sheet-cards"] ?? {})) {
+        const stray = (names ?? []).find((group) => !sheet.some((declared) => comparableText(declared.name) === comparableText(group)));
+
+        if (stray !== undefined) {
+            throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-cards.${key}: the sheet has no group ${stray}; its groups are ${sheet.map((group) => group.name).join(", ")}.`);
+        }
+    }
+
     // Each field the headline names is a declared one (D-288).
     const unnamed = [...(data["sheet-headline"] ?? "").matchAll(headlineFieldPattern)].map((match) => match[1]).find((field) => kindOf(field) === undefined);
 
@@ -465,6 +479,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         sheet,
         sheetDice: Object.fromEntries(rolled),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
+        ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [] } }),
         values,
         marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),

@@ -1,5 +1,6 @@
 // The page's top (D-276, D-293): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time, its place
-// and whether the game is live. Past it, a bar that stays on top with the same things small; what the master asks and the rolls stay in sight under it.
+// and whether the game is live. Past it, a bar that stays on top with the same things, the master whole and moving, a little smaller, for its moods to be seen
+// (D-295); what the master asks and the rolls stay in sight under it.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
@@ -56,7 +57,7 @@ export function Top(top: TopOf)
                 <StatusChips {...top} />
             </header>
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
-                <img src="/assets/favicon.svg" alt="" />
+                <Master />
                 <span class="top-bar-title">{title}</span>
                 <StatusChips {...top} />
             </div>

@@ -12,9 +12,9 @@ import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
-import type { SheetValue, View } from "../src/dashboard/data.ts";
+import type { SheetGroup, SheetValue, View } from "../src/dashboard/data.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { groupLayout, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { arrangedGroups, groupLayout, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -98,8 +98,9 @@ describe("view as data (VIEW-1, D-272)", () => {
     it("gives the sheet by the system's groups, each value with its text, marks, what is beside it, a counter's limits and the items of a list", async () => {
         const data = JSON.parse(await ok("view", "Ettore", "--json"));
         const group = (name: string) => data.sheet.find((candidate: { name: string; }) => candidate.name === name);
-        // Under the name, the system's headline, a list as its items' names (D-288).
+        // Under the name, the system's headline, a list as its items' names (D-288); where the page puts the groups (D-295).
         expect(data.headline).toBe("Level 3 Cleric");
+        expect(data.cards).toEqual({ rail: ["Abilities", "Saving Throws"], order: expect.arrayContaining(["Skills", "Personality"]) });
         // A score rolls the modifier beside it, for fun (D-280).
         expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "number", text: "14", marks: 0, beside: "+2", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
         expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
@@ -423,6 +424,16 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(groupLayout({ name: "Stats", values: [value(undefined), value(undefined)] })).toBe("tiles");
         expect(groupLayout({ name: "Combat", values: [value(undefined), value({ value: 20, max: 24 })] })).toBe("rows");
         expect(orderedValues([{ ...value(undefined), items: [] }, value({ value: 1, max: 2 }), value(undefined)]).map(widgetOf)).toEqual(["number", "pips", "list"]);
+    });
+
+    it("lays the groups out as the system says: its rail in its order, then the others in its order and the rest as they come; else short numbers in the rail (D-295)", () => {
+        const group = (name: string, text = "1"): SheetGroup => ({ name, values: [{ field: name.toLowerCase(), text, marks: 0 }] });
+        const sheet = [group("Character", "Cito le scritture, sempre, e a ogni pasto ne trovo una nuova."), group("Abilities"), group("Saves"), group("Skills"), group("Combat")];
+        const names = (groups: SheetGroup[]): string[] => groups.map((shown) => shown.name);
+        const laid = arrangedGroups(sheet, { rail: ["saves", "Abilities"], order: ["Skills"] });
+        expect([names(laid.rail), names(laid.others)]).toEqual([["Saves", "Abilities"], ["Skills", "Character", "Combat"]]);
+        const plain = arrangedGroups(sheet);
+        expect([names(plain.rail), names(plain.others)]).toEqual([["Abilities", "Saves", "Skills", "Combat"], ["Character"]]);
     });
 
     it("draws a number on its way to the next mark with a bar, among the numbers (D-284)", () => {

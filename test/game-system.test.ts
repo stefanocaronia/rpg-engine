@@ -85,6 +85,10 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
     it("reads the headline under a character's name, and refuses one that names a field it does not declare (D-288)", () => {
         system(near, "prova", `${declared}sheet-headline: "Vigore {vigore} {doti}"\n`);
         expect(findSystem([near], "prova")?.sheetHeadline).toBe("Vigore {vigore} {doti}");
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { rail: [corpo], order: [] }\n`);
+        expect(findSystem([near], "prova")?.sheetCards).toEqual({ rail: ["corpo"], order: [] });
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { rail: [Animo] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-cards.rail: the sheet has no group Animo; its groups are Corpo.");
         system(near, "prova", `${declared}sheet-headline: "Livello {livello}"\n`);
         expect(() => findSystem([near], "prova")).toThrow("sheet-headline: livello is not declared in fields.");
         system(far, "altro", declared);

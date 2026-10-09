@@ -1,5 +1,5 @@
 // How the page draws the values of any game (D-272, D-273): from the kind of each value, never from the names of one game's fields.
-import type { Member, SheetGroup, SheetValue } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetValue } from "./data.ts";
 
 /**
  * How a value is drawn: a number on its way from one mark to the next, as the experience toward the next level, with a bar under it (D-284); a counter as pips up
@@ -45,6 +45,26 @@ export function groupLayout(group: SheetGroup): GroupLayout
     }
 
     return group.values.length <= mostTiles && group.values.every((value) => widgetOf(value) === "number") ? "tiles" : "rows";
+}
+
+/**
+ * The groups of a sheet as the page lays them out (D-295): in the rail, those the system puts there, in its order, or else those of a few short numbers; the
+ * others in the system's order of cards, those it does not name after them as the sheet has them.
+ */
+export function arrangedGroups(groups: SheetGroup[], cards?: SheetCards): { rail: SheetGroup[]; others: SheetGroup[]; }
+{
+    const at = (names: string[], group: SheetGroup): number => names.findIndex((name) => name.toLowerCase() === group.name.toLowerCase());
+    const placed = cards !== undefined && cards.rail.length > 0;
+    const inRail = (group: SheetGroup): boolean => (placed ? at(cards.rail, group) >= 0 : groupLayout(group) === "tiles");
+
+    const rank = (group: SheetGroup): number => {
+        const place = cards === undefined ? -1 : at(cards.order, group);
+        return place < 0 ? Number.MAX_SAFE_INTEGER : place;
+    };
+
+    const rail = groups.filter(inRail).sort((first, second) => (placed ? at(cards.rail, first) - at(cards.rail, second) : 0));
+    const others = groups.filter((group) => !inRail(group)).map((group, index) => ({ group, index }));
+    return { rail, others: others.sort((first, second) => rank(first.group) - rank(second.group) || first.index - second.index).map(({ group }) => group) };
 }
 
 /** A group's values in the order the page shows them: numbers, then counters, then lists, then text, each in the system's order. */

@@ -146,7 +146,7 @@ settings:
 - Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing, and `status` shows its value on the campaign's line at every session; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
 - `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, the experience and rewards of that field say nothing, and `write` says so when one is written. Without a value, nothing is left out.
 
-### sheet, sheet-notes, sheet-icons and sheet-headline
+### sheet, sheet-notes, sheet-icons, sheet-headline and sheet-cards
 
 The character sheet, in groups, each with its fields in order:
 
@@ -160,6 +160,9 @@ sheet-notes:
 sheet-icons:
   Abilities: "M4.5 13.5h3v6h-3Z M10.5 5.5h3v14h-3Z M16.5 9.5h3v10h-3Z"
 sheet-headline: "Level {level} {classes}"
+sheet-cards:
+  rail: [Abilities, Saving Throws]
+  order: [Skills, Combat, Attacks]
 ```
 
 - `field`: a field the character writes; `status` reminds it until it is written, unless the system works it out (`computed`).
@@ -171,6 +174,7 @@ sheet-headline: "Level {level} {classes}"
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
 - `sheet-icons`: a group's icon on the dashboard (D-284), the `d` of an SVG path on a grid of 24, drawn as a line 1.5 wide in the page's accent; a group without one gets a plain one. An icon for a group the sheet does not have, or with more than a path's letters and numbers, is refused when the system loads.
 - `sheet-headline`: the line under a character's name on the dashboard (D-288), words with fields in braces: each field as the sheet shows it, a list as the names of its items, so that `Level {level} {classes}` reads `Level 3 Cleric`. With all its fields empty there is no line. A field it names must be declared.
+- `sheet-cards`: where the dashboard puts the groups (D-295). `rail`, those in the narrow column beside the others, in order; `order`, the order of the others, the groups it does not name coming after them as the sheet has them. Without it, the rail holds the groups of a few short numbers, and the others keep the sheet's order. A name must be a group of the sheet.
 
 ### values
 
