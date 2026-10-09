@@ -2,7 +2,7 @@
 // number decided before the throw brought up by turning the die by one of its symmetries.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { combine, diceToThrow, type DieModel, landedValue, landingTurn, rotate, symmetries, type Vector } from "../src/dashboard/dice/models.ts";
+import { aboutVertical, combine, diceToThrow, type DieModel, landedValue, landingTurn, rotate, symmetries, uprightAngle, type Vector } from "../src/dashboard/dice/models.ts";
 import { throwDice } from "../src/dashboard/dice/throw.ts";
 
 const models = JSON.parse(readFileSync(new URL("../src/dashboard/assets/dice/dice.json", import.meta.url), "utf8")) as Record<string, DieModel>;
@@ -71,10 +71,19 @@ describe("the dice of the dashboard (D-278)", () => {
                 const turn = last?.quaternion ?? [0, 0, 0, 1];
                 landed.add(landedValue(model, turn).value);
                 const wanted = model.values[throwNumber % model.values.length].value;
-                const shown = combine(turn, landingTurn(model, turns, turn, wanted));
+                const landing = combine(turn, landingTurn(model, turns, turn, wanted));
+                // Turned on its face as it stops, the die shows the number upright, still up.
+                const shown = combine(aboutVertical(uprightAngle(model, landing, wanted)), landing);
                 expect(landedValue(model, shown).value, kind).toBe(wanted);
-                // Turned so, the die is where it was: its corners are the same.
-                model.shape.vertices.forEach((corner) => expect(model.shape.vertices.some((other) => near(rotate(shown, corner), rotate(turn, other)))).toBe(true));
+                const top = model.values.find((value) => value.value === wanted)?.top;
+                const [x, , z] = top === undefined ? [0, 0, -1] : rotate(shown, top);
+
+                if (Math.hypot(x, z) >= 0.2) {
+                    expect(Math.atan2(x, -z), kind).toBeCloseTo(0, 6);
+                }
+
+                // Turned by a symmetry, the die is where it was: its corners are the same.
+                model.shape.vertices.forEach((corner) => expect(model.shape.vertices.some((other) => near(rotate(landing, corner), rotate(turn, other)))).toBe(true));
             }
 
             // The throws are not stuck on a few faces.

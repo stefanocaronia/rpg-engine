@@ -33,7 +33,8 @@ body {
 .page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 12px 16px 32px;
+    /* Room at the bottom for the dice's button, which stays over the page. */
+    padding: 12px 16px 96px;
 }
 
 .page.stale .sheet,
@@ -809,7 +810,8 @@ button.row:hover,
         transition: none;
     }
 
-    .changed {
+    .changed,
+    .asked.leaving {
         animation-duration: 0.01s;
     }
 }
@@ -841,6 +843,31 @@ button.row:hover,
         opacity: 0;
         transform: translateY(-10px);
     }
+}
+
+/* Clicked: the banner folds away while the engine rolls. */
+.asked.leaving {
+    overflow: hidden;
+    animation: asked-out 0.25s ease-in forwards;
+}
+
+@keyframes asked-out {
+    from {
+        max-height: 480px;
+    }
+
+    to {
+        max-height: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-width: 0;
+        opacity: 0;
+    }
+}
+
+.asked-buttons button:active {
+    transform: scale(0.97);
 }
 
 .asked-robot {
@@ -1093,6 +1120,11 @@ button.row:hover,
     border-style: dashed;
 }
 
+/* Gold marks what counts: the total of a free throw is in ink. */
+.dice-result.free .dice-number {
+    color: var(--ink);
+}
+
 .dice-text {
     grid-column: 1 / -1;
     color: var(--muted);
@@ -1315,5 +1347,30 @@ button.row:hover,
 
     .member .bar {
         width: 56px;
+    }
+
+    /* What the master asks takes little of a phone's screen: the question in three lines at most, the buttons small. */
+    .asked {
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .asked-robot {
+        display: none;
+    }
+
+    .asked-question {
+        display: -webkit-box;
+        overflow: hidden;
+        margin-bottom: 8px;
+        font-size: 1rem;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+    }
+
+    .asked-buttons button {
+        min-height: 40px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
     }
 }

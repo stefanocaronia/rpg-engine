@@ -39,6 +39,8 @@ interface Plate
 export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; sheetThrow?: SheetThrow; })
 {
     const canvas = useRef<HTMLCanvasElement>(null);
+    const button = useRef<HTMLButtonElement>(null);
+    const tray = useRef<HTMLDivElement>(null);
     const roller = useRef<Promise<Roller | undefined>>();
     // The number of the throw shown now: a newer throw ends an older one's animation and timers.
     const throwing = useRef(0);
@@ -54,11 +56,17 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
 
-        // Escape lets the dice land at once, and closes the tray.
+        // Escape lets the dice land at once, and closes the tray, giving the focus back to its button.
         const onKey = (event: KeyboardEvent): void => {
+            wakeSound();
+
             if (event.key === "Escape") {
                 skipping.current = true;
                 setOpen(false);
+
+                if (tray.current?.contains(document.activeElement) === true) {
+                    button.current?.focus();
+                }
             }
         };
 
@@ -166,8 +174,13 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
                     </>
                 )}
             </p>
+            <button type="button" ref={button} class="dice-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Dice for fun">
+                <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="M16 2 28 9v14l-12 7-12-7V9Z M16 2 9.5 13h13Z M4 9l5.5 4L16 30l6.5-17L28 9 M9.5 13 4 23 M22.5 13 28 23 M4 23h24" />
+                </svg>
+            </button>
             {open && (
-                <div class="dice-tray" role="group" aria-label="Dice for fun: they count for nothing">
+                <div ref={tray} class="dice-tray" role="group" aria-label="Dice for fun: they count for nothing">
                     <div class="dice-pick">
                         {freeDice.map((sides, index) => (
                             <button
@@ -198,11 +211,6 @@ export function DiceTray({ requested, sheetThrow }: { requested?: ShownRoll; she
                     </div>
                 </div>
             )}
-            <button type="button" class="dice-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Dice for fun">
-                <svg viewBox="0 0 32 32" aria-hidden="true">
-                    <path d="M16 2 28 9v14l-12 7-12-7V9Z M16 2 9.5 13h13Z M4 9l5.5 4L16 30l6.5-17L28 9 M9.5 13 4 23 M22.5 13 28 23 M4 23h24" />
-                </svg>
-            </button>
         </>
     );
 }

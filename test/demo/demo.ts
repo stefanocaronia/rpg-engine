@@ -20,10 +20,11 @@ export const demoQuestions: { question: string; options: string[]; }[] = [
     { question: "La mazza cala sullo scheletro: quanto fa male?", options: ["Danni, rilanciando 1 e 2 una volta 2d6ro<=2+2"] },
 ];
 
-/** The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279): what ask says to the master. */
+/** The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279), and roll as the master: what they say to the master. */
 export interface DemoDashboard extends Dashboard
 {
     ask(question: string, options: string[]): Promise<string>;
+    roll(...args: string[]): Promise<string>;
 }
 
 /** Serves the built dashboard of the demo campaign, making the campaign first when it is not there; on the dashboard's ports unless others are given. */
@@ -47,6 +48,10 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
         ask: async (question, options) => {
             await session.ready();
             return withFiles(session, async () => ask.format(await ask.run(ask.input.parse({ question, options }), { ...context, files: session, page: dashboard.player })));
+        },
+        roll: async (...args) => {
+            await session.ready();
+            return (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
         },
         close: async () => {
             await dashboard.close();

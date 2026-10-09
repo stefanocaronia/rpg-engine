@@ -34,10 +34,11 @@ export interface Lying
 const step = 1 / 60;
 // A throw stops by itself well before this; past it, the dice are taken as they lie.
 const longest = 8 / step;
-// A knock softer than this makes no sound, as a die settling.
+// A knock softer than this makes no sound, as a die settling; a die knocks at most once in so many frames, as one that rattles.
 const softest = 1.5;
-// Dice that move less than this in a frame, for this many frames, are at rest: some, as a d12 on a face, tremble forever for the physics.
-const restingMove = 1e-3;
+const knockGap = 3;
+// Dice that went less than this in the last frames are at rest: some, as a d12 on a face or two dice leaning on each other, tremble forever for the physics.
+const restingMove = 0.02;
 const restingFrames = 12;
 
 /** Throws dice of these shapes into the tray together, from its left side, spinning, with the randomness given, until they all stop; past lying dice, if any. */
@@ -49,7 +50,7 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
     const world = new World({ gravity: new Vec3(0, -60, 0), allowSleep: true, solver });
     const dieMaterial = new Material("die");
     const floorMaterial = new Material("floor");
-    world.addContactMaterial(new ContactMaterial(dieMaterial, floorMaterial, { friction: 0.3, restitution: 0.45 }));
+    world.addContactMaterial(new ContactMaterial(dieMaterial, floorMaterial, { friction: 0.7, restitution: 0.3 }));
     world.addContactMaterial(new ContactMaterial(dieMaterial, dieMaterial, { friction: 0.2, restitution: 0.35 }));
 
     // The floor faces up; the four walls face the centre.
@@ -87,34 +88,38 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
             allowSleep: true,
             sleepSpeedLimit: 0.2,
             sleepTimeLimit: 0.2,
-            linearDamping: 0.1,
-            angularDamping: 0.1,
+            linearDamping: 0.5,
+            angularDamping: 0.8,
         });
         const spin = (): number => (random() - 0.5) * 40;
         const across = shapes.length === 1 ? (random() - 0.5) * tray.depth : ((index + 0.5) / shapes.length - 0.5) * tray.depth * 0.8;
         die.position.set(-tray.width * 0.75 - random(), 2.5 + random() + index * 0.3, across);
         die.quaternion.setFromEuler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2);
-        die.velocity.set(14 + random() * 8, 2 + random() * 4, (random() - 0.5) * 10);
+        die.velocity.set(11 + random() * 6, 2 + random() * 4, (random() - 0.5) * 10);
         die.angularVelocity.set(spin(), spin(), spin());
-        die.addEventListener("collide", (event: { contact: { getImpactVelocityAlongNormal(): number; }; }) => {
+        let lastKnock = -knockGap;
+        die.addEventListener("collide", (event: { body: Body; contact: { getImpactVelocityAlongNormal(): number; }; }) => {
             const strength = Math.abs(event.contact.getImpactVelocityAlongNormal());
 
-            if (strength > softest) {
+            // Two dice that hit each other hear it both: the one first made says it.
+            if (strength > softest && frames.length - lastKnock >= knockGap && (event.body.mass === 0 || die.id < event.body.id)) {
                 knocks.push({ frame: frames.length, strength });
+                lastKnock = frames.length;
             }
         });
         world.addBody(die);
         return die;
     });
 
-    let resting = 0;
-
-    while (frames.length < longest && resting < restingFrames && dice.some((die) => die.sleepState !== Body.SLEEPING)) {
+    while (frames.length < longest && dice.some((die) => die.sleepState !== Body.SLEEPING)) {
         world.step(step);
         const frame = dice.map((die): Frame => ({ position: [die.position.x, die.position.y, die.position.z], quaternion: [die.quaternion.x, die.quaternion.y, die.quaternion.z, die.quaternion.w] }));
-        const before = frames.at(-1);
-        resting = before !== undefined && frame.every((die, index) => moved(before[index], die) < restingMove) ? resting + 1 : 0;
+        const before = frames.at(-restingFrames);
         frames.push(frame);
+
+        if (before !== undefined && frame.every((die, index) => moved(before[index], die) < restingMove)) {
+            break;
+        }
     }
 
     return { frames, knocks };

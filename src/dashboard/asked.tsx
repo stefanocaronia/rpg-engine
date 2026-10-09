@@ -34,7 +34,8 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
     };
 
     return (
-        <section class={roll ? "asked asked-roll" : "asked"} aria-labelledby={`asked-${asked.id}`}>
+        // Once clicked, the banner folds away while the engine rolls, so that the page does not jump when it goes.
+        <section class={["asked", roll ? "asked-roll" : "", sent !== undefined ? "leaving" : ""].filter((name) => name !== "").join(" ")} aria-labelledby={`asked-${asked.id}`}>
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
                 <h2 class="asked-title">{asked.title}</h2>

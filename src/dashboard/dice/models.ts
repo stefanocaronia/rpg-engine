@@ -21,7 +21,8 @@ export interface DieValue
 {
     value: number;
     up: Vector;
-    top: Vector;
+    /** None on the d4, whose number is on three faces. */
+    top?: Vector;
 }
 
 /** A die: its shape and its values. */
@@ -116,8 +117,32 @@ export function landingTurn(model: DieModel, turns: Turn[], turn: Turn, wanted: 
     }
 
     const fitting = turns.filter((symmetry) => distance(rotate(symmetry, goal.up), landed.up) < 1e-3 * length(landed.up));
-    const upright = (symmetry: Turn): number => dot(rotate(turn, rotate(symmetry, goal.top)), screenUp);
+    const top = goal.top;
+    const upright = (symmetry: Turn): number => (top === undefined ? 0 : dot(rotate(turn, rotate(symmetry, top)), screenUp));
     return fitting.reduce<Turn | undefined>((best, symmetry) => (best === undefined || upright(symmetry) > upright(best) ? symmetry : best), undefined) ?? [0, 0, 0, 1];
+}
+
+/**
+ * The angle about the vertical that brings the number of a die lying so upright on the screen, its top away from the player: the die turns on its face as it
+ * stops, as real dice do. None for a die whose number has no one top, as the d4.
+ */
+export function uprightAngle(model: DieModel, turn: Turn, value: number): number
+{
+    const top = model.values.find((candidate) => candidate.value === value)?.top;
+
+    if (top === undefined) {
+        return 0;
+    }
+
+    const [x, , z] = rotate(turn, top);
+    // A top that points mostly up or down has no way across the floor to turn.
+    return Math.hypot(x, z) < 0.2 ? 0 : Math.atan2(x, -z);
+}
+
+/** A turn of this angle about the vertical. */
+export function aboutVertical(angle: number): Turn
+{
+    return [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)];
 }
 
 /** A vector turned. */

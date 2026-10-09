@@ -4,8 +4,8 @@ import * as THREE from "three";
 import type { Turn, Vector } from "./models.ts";
 import type { Tray } from "./throw.ts";
 
-// How much of a die that does not count still shows, as the lower of two d20 with advantage.
-const dimmed = 0.35;
+// How far a die that does not count fades toward the page, as the lower of two d20 with advantage: set aside, not made of glass.
+const dimmed = 0.6;
 
 /** Where a die is shown, and how it is turned. */
 export interface Pose
@@ -114,10 +114,10 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
         },
         dim(die)
         {
-            dice[die]?.materials.forEach((material) => {
-                material.transparent = true;
-                material.opacity = dimmed;
-                material.needsUpdate = true;
+            const page = new THREE.Color(diceColours().page);
+            dice[die]?.materials.forEach((material) => material.color.lerp(page, dimmed));
+            dice[die]?.object.traverse((part) => {
+                part.castShadow = false;
             });
             renderer.render(scene, camera);
         },
@@ -130,8 +130,8 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     };
 }
 
-/** The dice's colours by the theme (D-279). */
-function diceColours(): { body: string; ink: string; }
+/** The dice's colours by the theme (D-279), and the colour of the page's panels beneath them. */
+function diceColours(): { body: string; ink: string; page: string; }
 {
-    return matchMedia("(prefers-color-scheme: dark)").matches ? { body: "#f4c84c", ink: "#192d4d" } : { body: "#192d4d", ink: "#f4c84c" };
+    return matchMedia("(prefers-color-scheme: dark)").matches ? { body: "#f4c84c", ink: "#192d4d", page: "#162037" } : { body: "#192d4d", ink: "#f4c84c", page: "#fffdf8" };
 }

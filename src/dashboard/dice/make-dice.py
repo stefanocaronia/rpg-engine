@@ -255,6 +255,9 @@ def make_die(name, corners, faces, labels):
     engrave.solver = "EXACT"
     engrave.object = cutter
     engrave.material_mode = "TRANSFER"
+    # The font's outlines cross themselves, as in a 4: without these, a cap of ink is left above the face.
+    engrave.use_self = True
+    engrave.use_hole_tolerant = True
 
     bpy.context.view_layer.objects.active = die
     die.select_set(True)
@@ -265,7 +268,17 @@ def make_die(name, corners, faces, labels):
     bpy.data.meshes.remove(cutters)
     die.data.shade_smooth()
     die.data.set_sharp_from_angle(angle=math.radians(32))
+    check_inside(die, corners, faces)
     return die
+
+
+def check_inside(die, corners, faces):
+    """Stops the script when a part of the die stands out of its shape, as a cap of ink above a face: the engraving went wrong."""
+    planes = [(face_normal(corners, face), face_normal(corners, face).dot(corners[face[0]])) for face in faces]
+    out = [vertex.co for vertex in die.data.vertices if any(normal.dot(vertex.co) > distance + 1e-4 for normal, distance in planes)]
+
+    if out:
+        raise RuntimeError(f"{die.name}: {len(out)} corners stand out of the die, as {tuple(round(value, 3) for value in out[0])}: the engraving left something above a face.")
 
 
 def gltf(vector):
@@ -338,7 +351,8 @@ def d4():
             labels.append((str(values[corner]), 0.3, centre.lerp(corners[corner], 0.52), normal, top, False))
 
     die = make_die("d4", corners, faces, labels)
-    return die, [{"value": values[corner], "up": gltf(corners[corner].normalized()), "top": gltf(Vector((0, 0, 1)))} for corner in range(4)]
+    # Each corner's number is on three faces, its top toward it: there is no one top to turn upright.
+    return die, [{"value": values[corner], "up": gltf(corners[corner].normalized())} for corner in range(4)]
 
 
 def main():
@@ -356,12 +370,13 @@ def main():
     odd = lambda face, value: (face in upper) == (value % 2 == 1)
     made["d10"] = face_dice("d10", corners, faces, [1, 3, 5, 7, 9], 0.4, toward_pole, underlined=True, fixed=odd, total=9)
     made["d100"] = face_dice("d100", corners, faces, [1, 3, 5, 7, 9], 0.33, toward_pole, shown=lambda value: f"{value}0", worth=lambda value: value * 10, fixed=odd, total=9)
-    corners, faces = dodecahedron(1.1)
-    made["d12"] = face_dice("d12", corners, faces, [1, 2, 3, 4, 5, 6], 0.42, toward_corner, underlined=True, total=13)
-    corners, faces = icosahedron(1.05)
-    made["d20"] = face_dice("d20", corners, faces, list(range(1, 11)), 0.27, toward_corner, underlined=True, total=21)
+    # The d20 the biggest, as in a set of real dice.
+    corners, faces = dodecahedron(1.0)
+    made["d12"] = face_dice("d12", corners, faces, [1, 2, 3, 4, 5, 6], 0.38, toward_corner, underlined=True, total=13)
+    corners, faces = icosahedron(1.15)
+    made["d20"] = face_dice("d20", corners, faces, list(range(1, 11)), 0.3, toward_corner, underlined=True, total=21)
 
-    shapes = {"d4": tetrahedron(1.15), "d6": cube(1.35), "d8": octahedron(1.08), "d10": trapezohedron(1.0, 1.0), "d100": trapezohedron(1.0, 1.0), "d12": dodecahedron(1.1), "d20": icosahedron(1.05)}
+    shapes = {"d4": tetrahedron(1.15), "d6": cube(1.35), "d8": octahedron(1.08), "d10": trapezohedron(1.0, 1.0), "d100": trapezohedron(1.0, 1.0), "d12": dodecahedron(1.0), "d20": icosahedron(1.15)}
     data = {}
 
     for name, (die, values) in made.items():

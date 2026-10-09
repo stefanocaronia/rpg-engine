@@ -2,10 +2,14 @@
 // those that lie still; each shown turned by one of its symmetries so that it lands on its value, with its knocks. The tray loads it, with three.js and
 // cannon-es, at its first throw.
 import { loadDice } from "./load.ts";
-import { combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
+import { aboutVertical, combine, type DieModel, type DieThrow, landingTurn, symmetries, uprightAngle } from "./models.ts";
 import { knock } from "./sounds.ts";
 import { makeStage, type Pose } from "./stage.ts";
 import { type Frame, type Lying, type Throw, throwDice } from "./throw.ts";
+
+// Over how many last frames a die turns its number upright, as it stops; how long the face before a reroll stays in sight, in milliseconds.
+const uprightFrames = 20;
+const beforeReroll = 300;
 
 /** How a throw is shown: at once, with reduced motion; with its sound or not; cut short when the tray says so; and stopped by a newer throw. */
 export interface Showing
@@ -51,9 +55,10 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
                 const thrown = throwDice(rolling.map((index) => model(dice[index]).shape), stage.tray, Math.random, lyingDice);
                 const last = thrown.frames.at(-1) ?? [];
                 const landing = rolling.map((index, at) => landingTurn(model(dice[index]), turns.get(dice[index].kind) ?? [], last[at].quaternion, dice[index].values[round]));
-                const ended = await play(thrown, (frame) => {
+                const spins = rolling.map((index, at) => uprightAngle(model(dice[index]), combine(last[at].quaternion, landing[at]), dice[index].values[round]));
+                const ended = await play(thrown, (frame, share) => {
                     rolling.forEach((index, at) => {
-                        poses[index] = { position: frame[at].position, quaternion: combine(frame[at].quaternion, landing[at]) };
+                        poses[index] = { position: frame[at].position, quaternion: combine(aboutVertical(spins[at] * share), combine(frame[at].quaternion, landing[at])) };
                     });
                     stage.show(poses);
                 }, showing);
@@ -65,6 +70,11 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
                 rolling.forEach((index, at) => {
                     lying[index] = last[at];
                 });
+
+                // The face before a reroll stays in sight a moment.
+                if (round + 1 < throws && !showing.instant && !showing.skipping()) {
+                    await new Promise((done) => setTimeout(done, beforeReroll));
+                }
             }
 
             dice.forEach((die, index) => die.dropped && stage.dim(index));
@@ -75,8 +85,11 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
     };
 }
 
-/** Shows a throw's frames, sixty to a second, with its knocks; its last frame alone with reduced motion; its end at once when the tray cuts it short. */
-function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): Promise<boolean>
+/**
+ * Shows a throw's frames, sixty to a second, with its knocks; its last frame alone with reduced motion; its end at once when the tray cuts it short. With each
+ * frame, how far the dice have turned their numbers upright, from nothing to all over the last frames.
+ */
+function play(thrown: Throw, show: (frame: Frame[], share: number) => void, showing: Showing): Promise<boolean>
 {
     const frames = showing.instant ? thrown.frames.slice(-1) : thrown.frames;
     const started = performance.now();
@@ -91,7 +104,8 @@ function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): 
 
             // The first frame of the animation may begin a moment before the throw did.
             const at = showing.skipping() ? frames.length - 1 : Math.min(frames.length - 1, Math.max(0, Math.floor((now - started) / (1000 / 60))));
-            show(frames[at]);
+            const share = Math.min(1, Math.max(0, 1 - (frames.length - 1 - at) / uprightFrames));
+            show(frames[at], share * share * (3 - 2 * share));
 
             // The knocks up to this frame: none when the throw is shown at once or cut short.
             while (heard < thrown.knocks.length && thrown.knocks[heard].frame <= at) {
