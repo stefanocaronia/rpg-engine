@@ -40,12 +40,16 @@ const iconPaths = {
     settings:
         "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M19.4 13.5l1.6 1.2-1.8 3.1-1.9-.7a7 7 0 0 1-2 1.2L15 20.5h-3.6l-.3-2.2a7 7 0 0 1-2-1.2l-1.9.7-1.8-3.1 1.6-1.2a7 7 0 0 1 0-2.3L5.4 9.8l1.8-3.1 1.9.7a7 7 0 0 1 2-1.2l.3-2.2H15l.3 2.2a7 7 0 0 1 2 1.2l1.9-.7 1.8 3.1-1.6 1.2a7 7 0 0 1 0 2.3Z",
     about: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 11v6 M12 7.6v.3",
+    // A place without a picture, and someone the character does not know (D-309).
+    house: "M3 20.5h18 M5 20.5V10.5l7-6 7 6v10 M10 20.5v-5a2 2 0 0 1 4 0v5",
+    stranger: "M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z M8.8 11.8c.8-1.7 1.9-2.6 3.2-2.6s2.4.9 3.2 2.6c-.7 1.7-1.8 2.6-3.2 2.6s-2.5-.9-3.2-2.6Z",
 };
 
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */
 export const cardIcons = {
     description: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",
     rolls: diePaths[20],
+    here: "M9 4.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M3 19.5c.5-3.3 2.8-5.5 6-5.5s5.5 2.2 6 5.5 M16 4.8a3 3 0 0 1 0 5.4 M17.5 14.3c2 .7 3.2 2.6 3.5 5.2",
     plain: "M5 5.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 11a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 16.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M9 6.5h10.5 M9 12h10.5 M9 17.5h10.5",
 };
 

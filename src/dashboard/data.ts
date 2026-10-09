@@ -63,6 +63,40 @@ export interface Moment
     at?: string;
 }
 
+/** Someone at the place or in the scene as the player sees them (VIEW-6): a name, or someone; their role and picture; for copies of a creature, how many. */
+export interface ShownPerson
+{
+    name: string;
+    role: "pc" | "companion" | "other";
+    image?: { file: string; version: number; };
+    stranger?: true;
+    count?: number;
+}
+
+/** Where the player character is, as it knows it (VIEW-6): the places that hold it, the outermost first; what holds there; its text; who is there. */
+export interface ShownPlace
+{
+    name: string;
+    image?: { file: string; version: number; };
+    within: string[];
+    around: { text: string; place?: string; }[];
+    text: string;
+    here: ShownPerson[];
+}
+
+/** The open scene as the player sees it (VIEW-6). */
+export interface ShownScene
+{
+    title: string;
+    type: string;
+    since?: string;
+    place?: string;
+    who: ShownPerson[];
+    order?: string[];
+    turn?: string;
+    round?: number;
+}
+
 /** Someone of the party. */
 export interface Member
 {
@@ -138,6 +172,8 @@ export type View =
         /** The master's mood, and their last moment (MOOD-6). */
         master?: { mood: Mood; moment?: Moment; };
         party: Member[];
+        place?: ShownPlace;
+        openScene?: ShownScene;
         quests: string[];
         scene?: string;
         diary: string[];

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { type Address, readAddress } from "./address.ts";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
-import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownRoll } from "./data.ts";
+import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
@@ -13,6 +13,7 @@ import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { RollLog } from "./rolls.tsx";
+import { SceneView } from "./scene.tsx";
 import { MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
@@ -41,6 +42,9 @@ interface Shown
     rollsTotal: number;
     /** The master's mood, on the robot (D-305). */
     masterMood?: Mood;
+    /** Where the party is, and the open scene (VIEW-6). */
+    place?: ShownPlace;
+    openScene?: ShownScene;
     asked?: Asked;
     /** How many times it was read: what was explained is told again after each. */
     version: number;
@@ -122,6 +126,8 @@ function App()
                     rolls,
                     rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
                     masterMood: overview.kind === "overview" ? overview.master?.mood : undefined,
+                    place: overview.kind === "overview" ? overview.place : undefined,
+                    openScene: overview.kind === "overview" ? overview.openScene : undefined,
                     asked,
                     version: before.version + 1,
                     readAt: new Date(),
@@ -201,11 +207,13 @@ function App()
             />
             <Notices notices={notices} />
             {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
-            <PartyStrip party={shown.party} chosen={address.section === "party" ? shown.chosen : undefined} />
+            {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
+            {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
             <div class="body">
                 <main>
                     {address.section === "about" && <About product={productName} system={shown.system} />}
-                    {address.section !== "party" && address.section !== "about" && <Upcoming section={address.section} />}
+                    {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
+                    {!["party", "scene", "about"].includes(address.section) && <Upcoming section={address.section} />}
                     {address.section === "party" && member && (
                         <MemberSheet
                             key={member.name}

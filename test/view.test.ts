@@ -1,4 +1,4 @@
-// The player's view (MECCANICHE, VIEW-1–VIEW-5; D-249, D-250): what the player character knows, a page as it knows it, and the diary; a law on pages made at
+// The player's view (MECCANICHE, VIEW-1–VIEW-6; D-249, D-250): what the player character knows, a page as it knows it, and the diary; a law on pages made at
 // random: no secret it did not discover ever shows, and every public part of a page it knows does.
 import fc from "fast-check";
 import { writeFileSync } from "node:fs";
@@ -276,5 +276,32 @@ describe("the laws of the player's view, on pages made at random", () => {
             }),
             { numRuns: 1000 },
         );
+    });
+});
+
+describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
+    it("gives where the character is as it knows it: the places around, what holds there, the party and whom it knows, never a stranger", async () => {
+        await ok("write", "Guado", "--add", "environment=light: dim", "--add", "contains=[[Varro]]", "--add", "contains=[[Strega]]");
+        let place = JSON.parse(await ok("view", "--json")).place;
+        expect(place).toMatchObject({ name: "Guado", within: ["Valle"], around: [{ text: "light: dim", place: "Guado" }], text: "Un villaggio sul fiume." });
+        // Varro and the witch are there, but Kira knows neither: none of them shows, not even as someone.
+        expect(place.here.map((person: { name: string; role: string; }) => `${person.name} ${person.role}`)).toEqual(["Kira pc", "Bran companion"]);
+        await ok("write", "Kira", "--add", "knows=[[Varro]]");
+        place = JSON.parse(await ok("view", "--json")).place;
+        expect(place.here.map((person: { name: string; }) => person.name)).toEqual(["Kira", "Bran", "Varro"]);
+    });
+
+    it("gives the open scene as data: whom it meets there by name (VIEW-2), the copies counted, the turns as the character knows them", async () => {
+        await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Strega", "--creatures", "Lupo nero=2");
+        await ok("scene", "order", "--order", "Kira", "--order", "Lupo nero 1", "--order", "Strega");
+        const scene = JSON.parse(await ok("view", "--json")).openScene;
+        expect(scene).toMatchObject({ title: "Nel bosco", type: "combat", place: "Guado", order: ["Kira", "creature 1", "Strega"], turn: "Kira", round: 1 });
+        // The witch, met in the scene, is known by name (VIEW-2); the copies of a creature Kira was never told of are counted, never named (D-254).
+        expect(scene.who).toEqual([
+            expect.objectContaining({ name: "Kira", role: "pc" }),
+            { name: "Strega", role: "other" },
+            { name: "creature", role: "other", stranger: true, count: 2 },
+        ]);
+        expect(JSON.stringify(scene)).not.toContain("Lupo nero");
     });
 });

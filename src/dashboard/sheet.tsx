@@ -138,7 +138,7 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 }
 
 /** A card of the sheet the player opens and closes (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
-function Card({ name, icon, layout, preview, onReach, children }: { name: string; icon: string; layout: string; preview?: string; onReach?: () => void; children: ComponentChildren; })
+export function Card({ name, icon, layout, preview, onReach, children }: { name: string; icon: string; layout: string; preview?: string; onReach?: () => void; children: ComponentChildren; })
 {
     const [open, toggle] = useOpen(name);
     return (

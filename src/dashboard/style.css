@@ -2873,6 +2873,323 @@ svg.icon {
     }
 }
 
+/* The Scene section (D-309, VIEW-6), as Joseph drew it: the place's band, its picture with its name over it on a veil, or compact without one; the open scene
+   in a card with the accent at its left; who is there as tokens with names under them; the place's text. */
+.place-band {
+    position: relative;
+    margin-bottom: 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    box-shadow: var(--lift), var(--raise);
+    overflow: hidden;
+}
+
+.place-image {
+    width: 100%;
+    max-height: 380px;
+    margin: 0;
+    aspect-ratio: 21 / 9;
+    background: var(--disc);
+}
+
+/* With a scene open, the picture shrinks to a strip. */
+.place-view.with-scene .place-image {
+    height: 220px;
+    aspect-ratio: auto;
+}
+
+.place-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.place-caption {
+    padding: 14px 18px 16px;
+}
+
+/* The name over the picture, on a dark veil whatever the theme. */
+.place-band.over .place-caption {
+    --muted: #c9d0e0;
+    --rule: rgb(255 255 255 / 0.22);
+    position: absolute;
+    inset: auto 0 0;
+    padding: 64px 22px 18px;
+    background: linear-gradient(180deg, transparent, rgb(6 12 26 / 0.55) 40%, rgb(6 12 26 / 0.88));
+    color: #f3f4fa;
+}
+
+.place-path {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 0 4px;
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    list-style: none;
+}
+
+.place-path li + li::before {
+    content: "›" / "";
+    padding: 0 6px 0 4px;
+}
+
+.place-band h2 {
+    font-size: 1.9rem;
+    line-height: 1.1;
+}
+
+.place-env {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.place-env li {
+    padding: 4px 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--paper) 40%, transparent);
+    font-size: 0.85rem;
+    font-weight: 550;
+}
+
+.place-band.over .place-env li {
+    background: rgb(255 255 255 / 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.place-env .k {
+    margin-right: 6px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.place-env .from {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+/* Without a picture, a compact band: the place's drawing on a disc where a token would be. */
+.place-band.compact {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+}
+
+.place-band.compact .place-caption {
+    padding: 0;
+}
+
+.place-disc {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 84px;
+    height: 84px;
+    border-radius: var(--radius-l);
+    background: color-mix(in srgb, var(--accent) 14%, var(--panel-2));
+    color: var(--accent);
+}
+
+.place-disc svg.icon {
+    width: 44px;
+    height: 44px;
+}
+
+.scene-now {
+    margin-bottom: 14px;
+    padding: 14px 18px 16px;
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.scene-now header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.scene-now h3 {
+    font-size: 1.25rem;
+}
+
+.scene-now .eyebrow {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.scene-type {
+    padding: 2px 8px;
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    font-size: 0.8rem;
+    font-weight: 650;
+}
+
+.scene-type.combat {
+    background: color-mix(in srgb, var(--low) 16%, transparent);
+    color: var(--low);
+}
+
+.scene-since {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.scene-turn {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.present {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 10px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.present li {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    width: 76px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.present .token {
+    --size: 52px;
+}
+
+/* The others after the party, past a line. */
+.present li.after-party {
+    margin-left: 12px;
+}
+
+.present li.after-party::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: -12px;
+    width: 1px;
+    background: var(--rule);
+}
+
+.present .count {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.token.stranger {
+    background: var(--panel-2);
+    box-shadow: 0 0 0 2px var(--rule);
+    color: var(--muted);
+}
+
+.token.stranger svg.icon {
+    width: 60%;
+    height: 60%;
+}
+
+.place-view > .groups {
+    columns: auto;
+}
+
+/* On a phone the picture 16:9 with the name under it; the open scene first. */
+@media (max-width: 600px) {
+    .place-image {
+        aspect-ratio: 16 / 9;
+    }
+
+    .place-view.with-scene .place-image {
+        height: 120px;
+    }
+
+    .place-band.over .place-caption {
+        --muted: light-dark(#586174, #a8b1c6);
+        --rule: light-dark(#dfd3bd, #36425c);
+        position: static;
+        padding: 12px 14px 14px;
+        background: none;
+        color: var(--ink);
+    }
+
+    .place-band.over .place-env li {
+        background: color-mix(in srgb, var(--paper) 40%, transparent);
+    }
+
+    .place-band h2 {
+        font-size: 1.5rem;
+    }
+
+    .present li {
+        width: 64px;
+    }
+
+    .present li.after-party {
+        margin-left: 0;
+    }
+
+    .present li.after-party::before {
+        display: none;
+    }
+
+    .scene-since {
+        margin-left: 0;
+    }
+
+    .place-view {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .place-view .scene-now {
+        order: -1;
+    }
+
+    .place-band.compact {
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .place-disc {
+        width: 52px;
+        height: 52px;
+    }
+
+    .place-disc svg.icon {
+        width: 30px;
+        height: 30px;
+    }
+}
+
 /* Moods (D-305): the robot's faces fade one into the other, the old one going first; a moment's face pops; asleep, a screen on standby, dimmed, eyes shut
    and low, the antenna's light off. The party's badges, a disc like the robot's screen with the face in lines; their place on a token is with the token's rules. */
 .master .robot-mood {

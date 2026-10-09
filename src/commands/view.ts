@@ -17,6 +17,7 @@ import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
+import { type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
@@ -84,6 +85,9 @@ export type ViewResult =
         /** The master's mood, which the robot shows, and their last moment, which the dashboard shows for a few seconds when it is new (MOOD-4, MOOD-6). */
         master: { mood: Mood; moment?: MoodMoment; };
         party: PartyMember[];
+        /** Where the player character is, and the open scene, as data for the dashboard (VIEW-6). */
+        place?: ShownPlace;
+        openScene?: ShownScene;
         quests: string[];
         scene?: string;
         diary: string[];
@@ -214,6 +218,9 @@ export const view = defineCommand({
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         const shownRolls = shownLines.filter((entry) => entry.type === "roll");
+        const sight = { root, context, world, knowledge, party: [pc, ...companions] };
+        const place = shownPlace(sight);
+        const openScene = shownScene(sight);
         return {
             kind: "overview",
             campaign: readSettings(root).name,
@@ -221,6 +228,8 @@ export const view = defineCommand({
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },
             party: [pc, ...companions].map(member),
+            ...(place === undefined ? {} : { place }),
+            ...(openScene === undefined ? {} : { openScene }),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
             scene: sceneLine(root, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
