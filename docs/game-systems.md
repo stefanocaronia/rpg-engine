@@ -17,6 +17,7 @@ systems/5e/
     items/*.md         armor, weapons, gear, magic items
     topics/*.md        classes, subclasses, backgrounds, feats, spells
   rules/*.md           the chapters of its rules, as markdown
+  images/              the pictures its pages link in image
   instructions/*.md    its parts of the master's instructions (section 6.6)
   build/               the scripts that wrote some of its pages and rules from its source (not shipped)
   test/                the system's own tests (not shipped)
@@ -24,6 +25,7 @@ systems/5e/
 
 - `world/<folder>/` holds its pages, one markdown file per page, in the same folders a campaign uses (section 6).
 - `rules/` holds its rules as text, searched by the `rules` command and read by title (section 6.5).
+- `images/` holds the pictures its pages link in their `image` field, such as `image: "[[goblin.svg]]"`; a campaign page derived from one shows it, and a campaign's own `images/` file with the same name takes its place.
 - `instructions/` holds what it adds to the master's instructions, part by part (section 6.6).
 - `LICENSE.md` is not read by the engine: it ships beside the system and says what the content is under and where it comes from.
 

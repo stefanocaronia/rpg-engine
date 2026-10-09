@@ -6,6 +6,7 @@ import { checkWorld, type World } from "../pages/index.ts";
 import { effectProblems } from "./game-effects.ts";
 import { eventProblems } from "./game-events.ts";
 import { experienceProblems } from "./game-experience.ts";
+import { imageProblems } from "./game-images.ts";
 import { modeProblems } from "./game-mode.ts";
 import { moneyProblems } from "./game-money.ts";
 import { shortRoadProblems } from "./game-positions.ts";
@@ -16,7 +17,7 @@ import { campaignSystem, systemOccasions, systemProblems, systemSettingProblems 
 import { listValueProblems } from "./sheet.ts";
 import { workedOutProblems } from "./worked-out.ts";
 
-/** Every problem in a campaign: its settings, its game system and coins, its log, its world, its roads, its game time, its planned events, its effects and its open scene. */
+/** Every problem in a campaign: its settings, its game system and coins, its log, its world, its pictures, its roads, its game time, its planned events, its effects and its open scene. */
 export function campaignProblems(root: string, world: World, context: Context): Problem[]
 {
     const system = systemProblems(root, context);
@@ -31,6 +32,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...(system.length === 0 ? workedOutProblems(world) : []),
         ...listValueProblems(world, campaignSystem(root, context)),
         ...experienceProblems(world),
+        ...imageProblems(root, context, world),
         ...roadProblems(world, campaignSystem(root, context)),
         ...shortRoadProblems(world),
         ...timeProblems(root),
