@@ -217,7 +217,13 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(html.status).toBe(200);
         expect(html.headers["content-type"]).toBe("text/html; charset=utf-8");
         const importMap = /<script type="importmap">(.*)<\/script>/.exec(html.body)?.[1] ?? "";
-        expect(JSON.parse(importMap).imports).toEqual({ "preact": "/vendor/preact.js", "preact/hooks": "/vendor/hooks.js", "preact/jsx-runtime": "/vendor/jsx-runtime.js" });
+        expect(JSON.parse(importMap).imports).toEqual({
+            "preact": "/vendor/preact.js",
+            "preact/hooks": "/vendor/hooks.js",
+            "preact/jsx-runtime": "/vendor/jsx-runtime.js",
+            "three": "/vendor/three.module.js",
+            "cannon-es": "/vendor/cannon-es.js",
+        });
         expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
         expect(await get("/app.js")).toMatchObject({ status: 200, body: "export {};\n", headers: { "content-type": "text/javascript; charset=utf-8" } });
         expect((await get("/style.css")).headers["content-type"]).toBe("text/css; charset=utf-8");
@@ -229,6 +235,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         const preact = await get("/vendor/hooks.js");
         expect(preact.status).toBe(200);
         expect(preact.body).toContain('from"preact"');
+        expect((await get("/vendor/three.core.js")).status).toBe(200);
         expect((await get("/vendor/compat.js")).status).toBe(404);
     });
 
