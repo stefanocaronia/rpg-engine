@@ -65,11 +65,16 @@ body {
     transition: opacity var(--short) var(--ease);
 }
 
-h1,
-h2 {
+/* The serif is the story's voice alone: the campaign's name, and the master's question (D-282). */
+h1 {
     font-family: var(--serif);
     font-weight: 600;
     margin: 0;
+}
+
+h2 {
+    margin: 0;
+    font-weight: 700;
 }
 
 /* The cards' titles, in the text's own face (D-282). */
@@ -365,7 +370,6 @@ a {
     height: 100%;
     background: hsl(var(--hue) 35% 38%);
     color: #fff;
-    font-family: var(--serif);
     font-weight: 600;
     font-size: calc(var(--size) * 0.38);
 }
@@ -386,6 +390,7 @@ a {
 
 .band h2 {
     font-size: 1.9rem;
+    letter-spacing: -0.01em;
     line-height: 1.1;
 }
 
@@ -545,9 +550,9 @@ a {
 }
 
 .tile .big {
-    font-family: var(--serif);
     font-size: 1.6rem;
-    font-weight: 600;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1;
 }
 
@@ -1102,9 +1107,9 @@ button.row,
     grid-row: 1 / span 2;
     grid-column: 3;
     min-width: 2ch;
-    font-family: var(--serif);
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     text-align: right;
     color: var(--accent);
 }
@@ -1179,10 +1184,8 @@ button.row,
 /* A rare face (D-281): its words under the total, gold for the highest, red for the lowest. */
 .dice-rare {
     grid-column: 1 / -1;
-    font-family: var(--serif);
     font-size: 0.95rem;
-    font-variant: small-caps;
-    letter-spacing: 0.06em;
+    font-weight: 700;
     text-align: center;
 }
 
@@ -1232,9 +1235,8 @@ button.row,
 }
 
 .dice-number {
-    font-family: var(--serif);
     font-size: 2.2rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--accent);
     font-variant-numeric: tabular-nums;
 }
@@ -1296,7 +1298,6 @@ button.row,
     border: 1px solid var(--rule);
     border-radius: 8px;
     background: var(--panel-2);
-    font-family: var(--serif);
     font-weight: 700;
     cursor: pointer;
 }
