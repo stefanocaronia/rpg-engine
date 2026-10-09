@@ -1497,6 +1497,11 @@ button.row,
     .roll-list::-webkit-scrollbar {
         display: none;
     }
+
+    /* Room under the list for Load more, which stays in sight. */
+    .rolls-card:has(.rolls-more) .roll-list {
+        max-height: calc(100vh - 148px - var(--top-space, 0px) - var(--asked-space, 0px));
+    }
 }
 
 .rolls {
@@ -1521,10 +1526,31 @@ summary.fixed {
     position: relative;
 }
 
-.rolls-hide {
+/* The rolls' tools in their title (D-302): Clear, and beside the sheet Hide; on a narrow screen left of the chevron. */
+.rolls-tools {
     position: absolute;
     top: 6px;
     right: -10px;
+    display: flex;
+}
+
+.rolls-tools.folding {
+    right: 28px;
+}
+
+/* Older rolls: a text button under the list, in its middle, clear of the dice's button. */
+.rolls-more {
+    display: block;
+    height: 40px;
+    margin: 0 auto 8px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .body:has(.rolls.away) {

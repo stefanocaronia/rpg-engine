@@ -83,6 +83,8 @@ export type ViewResult =
         diary: string[];
         total: number;
         rolls: ShownRoll[];
+        /** How many public rolls the log has, for the dashboard to offer more (D-302). */
+        rollsTotal: number;
     }
     | {
         kind: "page";
@@ -110,6 +112,7 @@ export const view = defineCommand({
     input: z.object({
         page: z.string().optional().describe("a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view"),
         diary: z.string().optional().describe(`how many lines of the diary, from the last; ${diaryLines} if left out; all only when the player asks for the whole story`),
+        rolls: z.string().optional().describe(`for the dashboard: how many of the last public rolls; ${rollsShown} if left out`),
     }),
 
     run(input, context): ViewResult
@@ -201,6 +204,7 @@ export const view = defineCommand({
         const shownLines = readLog(root).filter((entry) => entry.visibility === "public");
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
+        const shownRolls = shownLines.filter((entry) => entry.type === "roll");
         return {
             kind: "overview",
             campaign: readSettings(root).name,
@@ -211,7 +215,8 @@ export const view = defineCommand({
             scene: sceneLine(root, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
-            rolls: shownLines.filter((entry) => entry.type === "roll").slice(-rollsShown).map((entry) => shownRoll(world, entry, named, picture)),
+            rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture)),
+            rollsTotal: shownRolls.length,
         };
     },
 
@@ -330,6 +335,18 @@ function knownNamedPage(world: World, knowledge: Knowledge, name: unknown): Page
     const reference = parsePageReference(name).name;
     const page = pagesWithName(world, reference)[0] ?? systemPageNamed(world, reference);
     return page !== undefined && knowsPage(knowledge, page) ? page : undefined;
+}
+
+/** How many rolls the dashboard asks for: a whole number from 1. */
+function rollCount(asked: string | undefined): number
+{
+    const count = asked === undefined ? rollsShown : Number(asked.trim());
+
+    if (!Number.isInteger(count) || count < 1) {
+        throw new Error(`"${asked}" is not how many rolls: give a whole number from 1.`);
+    }
+
+    return count;
 }
 
 /** How many lines of the diary are asked: a whole number from 1. */

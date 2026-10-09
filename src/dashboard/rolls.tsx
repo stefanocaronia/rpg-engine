@@ -1,25 +1,49 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
-// rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289).
+// rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those
+// of the last half hour, older ones at a click; Clear starts the list again, the log untouched (D-302).
 import { useState } from "preact/hooks";
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { notationModifier } from "./labels.ts";
+import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
 
-// From this width the rolls are a column beside the sheet, as in the style sheet; where the browser remembers that the player put it away.
+// From this width the rolls are a column beside the sheet, as in the style sheet; where the browser remembers that the player put it away, and when they last
+// cleared the list of a campaign; how many older rolls each Load more shows.
 const besideSheet = "(min-width: 900px)";
 const awayKey = "rpg-engine.rolls-away";
+const clearedKey = "rpg-engine.rolls-cleared";
+const moreRolls = 10;
 
-export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Member[]; fresh: Set<string>; })
+export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rolls: ShownRoll[]; unread: boolean; campaign?: string; party: Member[]; fresh: Set<string>; onMore: () => void; })
 {
     const lead = party.find((member) => member.role === "pc");
     const [chosen, toggle] = useOpen("Rolls");
     const beside = useMedia(besideSheet);
     const [away, setAway] = useState(readAway);
+    const [cleared, setCleared] = useState(() => readCleared(campaign));
+    const [older, setOlder] = useState(0);
     const open = beside || chosen;
-    const newest = rolls.at(-1);
+    const listed = rollWindow(rolls, { now: Date.now(), cleared, older, unread });
+    const newest = listed.shown.at(-1);
+
+    const clear = (): void => {
+        const now = Date.now();
+        setCleared(now);
+        setOlder(0);
+        writeCleared(campaign, now);
+    };
+
+    // Older rolls: those read already, then more of the log once the page has shown all it read.
+    const loadMore = (): void => {
+        setOlder(older + moreRolls);
+
+        if (listed.before < older + moreRolls && unread) {
+            onMore();
+        }
+    };
 
     const putAway = (now: boolean): void => {
         setAway(now);
@@ -48,18 +72,26 @@ export function RollLog({ rolls, party, fresh }: { rolls: ShownRoll[]; party: Me
                     onToggle={toggle}
                     fixed={beside}
                 />
-                {beside && (
-                    <button type="button" class="icon-button rolls-hide tip-left" aria-label="Hide the rolls" data-tip="Hide" onClick={() => putAway(true)}>
-                        <Icon name="aside" />
-                    </button>
-                )}
-                {rolls.length === 0
-                    ? <p class="rolls-none">The checks the master asks of you come here, and the master's rolls you may see.</p>
+                <div class={beside ? "rolls-tools" : "rolls-tools folding"}>
+                    {(listed.shown.length > 0 || listed.more) && (
+                        <button type="button" class="icon-button tip-left" aria-label="Clear the rolls" data-tip="Clear the list" onClick={clear}>
+                            <Icon name="clearAll" />
+                        </button>
+                    )}
+                    {beside && (
+                        <button type="button" class="icon-button tip-left" aria-label="Hide the rolls" data-tip="Hide" onClick={() => putAway(true)}>
+                            <Icon name="aside" />
+                        </button>
+                    )}
+                </div>
+                {listed.shown.length === 0
+                    ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
                     : (
                         <ol class="roll-list">
-                            {[...rolls].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
+                            {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} />)}
                         </ol>
                     )}
+                {listed.more && <button type="button" class="rolls-more" onClick={loadMore}>Load more</button>}
             </details>
         </aside>
     );
@@ -90,6 +122,16 @@ function RollRow({ roll, name, token, fresh }: { roll: ShownRoll; name: string; 
             </span>
         </li>
     );
+}
+
+/** What the list says with no roll in it: what comes there, that the last half hour had none, or that the player cleared it. */
+function emptyText(read: number, older: number): string
+{
+    if (read === 0) {
+        return "The checks the master asks of you come here, and the master's rolls you may see.";
+    }
+
+    return older > 0 ? "No rolls in the last half hour." : "Cleared: the new rolls come here.";
 }
 
 /** Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one. */
@@ -130,6 +172,24 @@ function writeAway(away: boolean): void
 {
     try {
         localStorage.setItem(awayKey, away ? "away" : "beside");
+    } catch {
+        // The page forgets it at the next reload.
+    }
+}
+
+function readCleared(campaign: string | undefined): number
+{
+    try {
+        return Number(localStorage.getItem(`${clearedKey}:${campaign ?? ""}`) ?? 0) || 0;
+    } catch {
+        return 0;
+    }
+}
+
+function writeCleared(campaign: string | undefined, at: number): void
+{
+    try {
+        localStorage.setItem(`${clearedKey}:${campaign ?? ""}`, String(at));
     } catch {
         // The page forgets it at the next reload.
     }

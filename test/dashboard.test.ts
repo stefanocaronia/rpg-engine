@@ -12,9 +12,9 @@ import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { explanations } from "../src/dashboard/api.ts";
-import type { SheetGroup, SheetValue, View } from "../src/dashboard/data.ts";
+import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { arrangedGroups, groupLayout, orderedValues, progressShare, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { arrangedGroups, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -437,6 +437,23 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect([names(plain.rail), names(plain.others)]).toEqual([["Abilities", "Saves", "Skills", "Combat"], ["Character"]]);
     });
 
+    it("shows the rolls of the last half hour since the list was cleared, and older ones as asked, read or still in the log (D-302)", () => {
+        const now = Date.parse("2026-10-09T18:00:00Z");
+        const roll = (id: string, minutesAgo: number): ShownRoll => ({ id, at: new Date(now - minutesAgo * 60_000).toISOString(), by: "player", notation: "1d20", total: 10, text: "1d20 = 10", dice: [] });
+        const rolls = [roll("a", 90), roll("b", 50), roll("c", 20), roll("d", 5)];
+        const shown = (given: { cleared: number; older: number; unread: boolean; }): string[] => rollWindow(rolls, { now, ...given }).shown.map((one) => one.id);
+        expect(shown({ cleared: 0, older: 0, unread: false })).toEqual(["c", "d"]);
+        expect(rollWindow(rolls, { now, cleared: 0, older: 0, unread: false })).toMatchObject({ before: 2, more: true });
+        expect(shown({ cleared: 0, older: 1, unread: false })).toEqual(["b", "c", "d"]);
+        expect(rollWindow(rolls, { now, cleared: 0, older: 2, unread: false }).more).toBe(false);
+        // The log has more than the page read: more to load.
+        expect(rollWindow(rolls, { now, cleared: 0, older: 2, unread: true }).more).toBe(true);
+        // Cleared ten minutes ago: only what came after, and nothing older to load.
+        const cleared = now - 10 * 60_000;
+        expect(shown({ cleared, older: 5, unread: true })).toEqual(["d"]);
+        expect(rollWindow(rolls, { now, cleared, older: 5, unread: true })).toMatchObject({ before: 0, more: false });
+    });
+
     it("draws a number on its way to the next mark with a bar, among the numbers (D-284)", () => {
         const level: SheetValue = { field: "level", text: "3", marks: 0 };
         const xp: SheetValue = { field: "xp", text: "1500", marks: 0, beside: "1200 to level 4", progress: { value: 1500, from: 900, to: 2700 } };
@@ -636,7 +653,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
-    it("names in the rolls only whom the character knows, and gives the last 20 (VIEW-4)", async () => {
+    it("names in the rolls only whom the character knows, and gives the last 20, or as many as asked (VIEW-4)", async () => {
         await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
         await ok("write", "Ombra", "--type", "character", "--set", "role=npc");
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Locanda", "--with", "Ettore", "--creatures", "Lupo mannaro=1");
@@ -653,8 +670,13 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
             await ok("roll", "1d4", "--why", `colpo ${count}`);
         }
 
-        const rolls = JSON.parse(await ok("view", "--json")).rolls;
+        const overview = JSON.parse(await ok("view", "--json"));
+        const rolls = overview.rolls;
         expect(rolls).toHaveLength(20);
+        // As many as the dashboard asks for, and how many the log has (D-302).
+        expect(overview.rollsTotal).toBe(24);
+        expect(JSON.parse(await ok("view", "--rolls", "22", "--json")).rolls).toHaveLength(22);
+        expect((await runCommandLine(["view", "--rolls", "0"], context)).output).toContain("is not how many rolls");
         expect(rolls.at(-1)).toMatchObject({ by: "master", notation: "1d4" });
         expect(rolls[0].who).toBeUndefined();
     });

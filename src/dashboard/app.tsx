@@ -17,6 +17,9 @@ import { Top } from "./top.tsx";
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";
 
+// How many of the last rolls the page reads at first, and how many more each time the player asks for older ones (D-302).
+const firstRolls = 20;
+
 /** What the page shows: the campaign, its system and its time, the party, whom the address names and their sheet, the rolls and what the master asks, as of when it was read. */
 interface Shown
 {
@@ -31,6 +34,8 @@ interface Shown
     cards?: SheetCards;
     text: string;
     rolls: ShownRoll[];
+    /** How many public rolls the log has, past those read. */
+    rollsTotal: number;
     asked?: Asked;
     /** How many times it was read: what was explained is told again after each. */
     version: number;
@@ -41,7 +46,7 @@ interface Shown
 
 function App()
 {
-    const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], version: 0 });
+    const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], rollsTotal: 0, version: 0 });
     const [live, setLive] = useState(false);
     const reading = useRef(0);
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new at a reading flash in the list.
@@ -50,6 +55,8 @@ function App()
     // The roll whose dice are in the air: its line comes into the rolls only as they go (D-300).
     const [held, setHeld] = useState<string>();
     const [fresh, setFresh] = useState<Set<string>>(new Set());
+    // How many of the last rolls the page reads: more when the player asks for older ones (D-302).
+    const rollsAsked = useRef(firstRolls);
     // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
 
@@ -58,14 +65,16 @@ function App()
         const number = ++reading.current;
 
         try {
-            const [overview, asked] = await Promise.all([readView(), readAsked().catch(() => undefined)]);
+            const [overview, asked] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined)]);
             const party = overview.kind === "overview" ? overview.party : [];
             const rolls = overview.kind === "overview" ? overview.rolls : [];
             const member = party.find((candidate) => candidate.name === addressedName()) ?? party[0];
             const page = member === undefined ? undefined : await readView(member.name);
 
             if (number === reading.current) {
-                const added = seen.current === undefined ? [] : rolls.filter((roll) => seen.current?.has(roll.id) !== true);
+                // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
+                const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
+                const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
                 const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined).at(-1);
                 seen.current = new Set(rolls.map((roll) => roll.id));
                 setFresh(new Set(added.map((roll) => roll.id)));
@@ -86,6 +95,7 @@ function App()
                     cards: page?.kind === "page" ? page.cards : undefined,
                     text: page?.kind === "page" ? page.text : "",
                     rolls,
+                    rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
                     asked,
                     version: before.version + 1,
                     readAt: new Date(),
@@ -156,7 +166,19 @@ function App()
                         />
                     )}
                 </main>
-                <RollLog rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)} party={shown.party} fresh={fresh} />
+                {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
+                <RollLog
+                    key={shown.campaign}
+                    rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
+                    unread={shown.rollsTotal > shown.rolls.length}
+                    campaign={shown.campaign}
+                    party={shown.party}
+                    fresh={fresh}
+                    onMore={() => {
+                        rollsAsked.current += firstRolls;
+                        void read();
+                    }}
+                />
             </div>
             {shown.system && (
                 <footer class="credits">

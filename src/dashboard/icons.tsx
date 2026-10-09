@@ -15,6 +15,7 @@ const diePaths: Record<number, string> = {
 
 const iconPaths = {
     clear: "M4 7h16 M10 4h4 M6.5 7l.9 12.2a1 1 0 0 0 1 .8h7.2a1 1 0 0 0 1-.8L17.5 7 M10 11v5.5 M14 11v5.5",
+    clearAll: "M7 8h14 M5 12h14 M3 16h14",
     soundOn: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11",
     soundOff: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M16 9.5l5 5 M21 9.5l-5 5",
     minus: "M6 12h12",

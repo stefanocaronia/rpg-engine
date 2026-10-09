@@ -1,9 +1,11 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
 import type { Asked, View } from "./data.ts";
 
-export async function readView(page?: string): Promise<View>
+/** What view gives: the party, with the last rolls, as many as asked; or a page. */
+export async function readView(page?: string, rolls?: number): Promise<View>
 {
-    const response = await fetch(page === undefined ? "/api/view" : `/api/view?${new URLSearchParams({ page })}`);
+    const query = new URLSearchParams({ ...(page === undefined ? {} : { page }), ...(rolls === undefined ? {} : { rolls: String(rolls) }) });
+    const response = await fetch(query.size === 0 ? "/api/view" : `/api/view?${query}`);
     const body = await response.json() as View | { error: string; };
 
     if ("error" in body) {

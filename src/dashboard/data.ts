@@ -125,6 +125,8 @@ export type View =
         diary: string[];
         total: number;
         rolls: ShownRoll[];
+        /** How many public rolls the log has. */
+        rollsTotal?: number;
     }
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }

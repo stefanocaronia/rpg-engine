@@ -1,5 +1,5 @@
 // How the page draws the values of any game (D-272, D-273): from the kind of each value, never from the names of one game's fields.
-import type { Member, SheetCards, SheetGroup, SheetValue } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetValue, ShownRoll } from "./data.ts";
 
 /**
  * How a value is drawn: a number on its way from one mark to the next, as the experience toward the next level, with a bar under it (D-284); a counter as pips up
@@ -15,6 +15,9 @@ const shortText = 40;
 
 // More numbers than this in a group read better as rows, such as the skills.
 const mostTiles = 8;
+
+// The rolls the page shows at first: those of the last half hour (D-302).
+const halfHour = 30 * 60 * 1000;
 
 // A number with its progress stays among the numbers, in the system's order.
 const widgetOrder: Widget[] = ["number", "bar", "track", "pips", "list", "text"];
@@ -67,6 +70,21 @@ export function arrangedGroups(groups: SheetGroup[], cards?: SheetCards): { rail
     return { rail, others: others.sort((first, second) => rank(first.group) - rank(second.group) || first.index - second.index).map(({ group }) => group) };
 }
 
+/**
+ * The rolls the page shows (D-302): of those read, the ones of the last half hour since the player last cleared the list, and as many older ones as they asked
+ * for; how many older ones the page has read, and whether there are more, read or still in the log, unless the list was cleared before them.
+ */
+export function rollWindow(rolls: ShownRoll[], given: { now: number; cleared: number; older: number; unread: boolean; }): { shown: ShownRoll[]; before: number; more: boolean; }
+{
+    const since = given.now - halfHour;
+    const kept = rolls.filter((roll) => rollTime(roll) >= given.cleared);
+    const before = kept.filter((roll) => rollTime(roll) < since);
+    const recent = kept.filter((roll) => rollTime(roll) >= since);
+    const older = given.older === 0 ? [] : before.slice(-given.older);
+    const unread = given.unread && (rolls.length === 0 || rollTime(rolls[0]) >= given.cleared);
+    return { shown: [...older, ...recent], before: before.length, more: before.length > older.length || unread };
+}
+
 /** A group's values in the order the page shows them: numbers, then counters, then lists, then text, each in the system's order. */
 export function orderedValues(values: SheetValue[]): SheetValue[]
 {
@@ -98,4 +116,11 @@ function widgetRank(value: SheetValue): number
 {
     const widget = widgetOf(value);
     return widgetOrder.indexOf(widget === "progress" ? "number" : widget);
+}
+
+/** When a roll was made, in milliseconds; 0 for a time that cannot be read. */
+function rollTime(roll: ShownRoll): number
+{
+    const time = Date.parse(roll.at);
+    return Number.isNaN(time) ? 0 : time;
 }
