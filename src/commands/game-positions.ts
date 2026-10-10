@@ -1,9 +1,11 @@
-// Positions in play (D-259, POS-1–POS-6): where a place is, its own position or one worked out; relations turned into a position; regions; what is near a point.
+// Positions in play (D-259, POS-1–POS-8): where a place is, its own position or one worked out; relations turned into a position; regions; what is near a point;
+// each on its map, with the coordinates its map uses (D-320).
 import { lengthHelp, readLength } from "../core/length.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { biomes, directionHelp, directionName, directionTo, distanceBetween, meanPoint, placeKinds, pointAlong, pointFrom, readDirection } from "../map/index.ts";
 import { environmentAt, formatPosition, isEmptyField, locate, type Page, pageNamed, pagesWithName, parsePageReference, type Position, readPosition, readStops, type World } from "../pages/index.ts";
+import { mapKey, mapOf, sameFrame } from "./game-maps.ts";
 import { lengthText, type Measures, roadsOf } from "./game-roads.ts";
 
 /** A region (POS-6): a place with a position and a radius, which covers the circle. */
@@ -57,9 +59,11 @@ export function placedPosition(world: World, page: Page): Position | undefined
 
 /**
  * The position a write gives a place (POS-2): written as the engine writes it, or as relations, whose points are averaged, with the largest distance between
- * them. When no place has a position yet, the one a relation starts from becomes the map's centre: `origin`, to write too. Refused with the fix otherwise.
+ * them. When no place with the same coordinates has a position yet, the one a relation starts from becomes the centre of its map: `origin`, to write too. The
+ * places it is given from share their coordinates, and those of the place written when something already holds it (POS-8); a place nothing holds yet takes
+ * them, and `map` names the map to put it in. Refused with the fix otherwise.
  */
-export function positionFromWrite(world: World, value: unknown, name: string): { position: Position; spread: number; origin?: Page; }
+export function positionFromWrite(world: World, value: unknown, name: string): { position: Position; spread: number; origin?: Page; map?: Page; }
 {
     const own = readPosition(value);
 
@@ -70,8 +74,9 @@ export function positionFromWrite(world: World, value: unknown, name: string): {
     const texts = Array.isArray(value) ? value.map(String) : [String(value)];
     const relations = texts.map((text) => relationOf(text));
     const places = relations.map((relation) => referenceOf(world, relation.place, name));
+    const map = sharedMap(world, places, pageNamed(world, name), name);
     const unplaced = places.filter((place) => positionOf(world, place) === undefined);
-    const known = world.pages.filter((page) => page.system === undefined && readPosition(page.fields.position) !== undefined);
+    const known = world.pages.filter((page) => page.system === undefined && readPosition(page.fields.position) !== undefined && mapOf(world, page).frame === mapOf(world, places[0]).frame);
 
     if (unplaced.length > 0 && (known.length > 0 || new Set(unplaced).size > 1 || unplaced.length < places.length)) {
         const such = known.length === 0 ? "" : `, such as ${known.slice(0, 3).map((page) => page.name).join(", ")}`;
@@ -81,7 +86,7 @@ export function positionFromWrite(world: World, value: unknown, name: string): {
     const origin = unplaced[0];
     const points = relations.map((relation, index) => pointFrom(positionOf(world, places[index]) ?? { east: 0, north: 0 }, relation.degrees, relation.metres));
     const spread = Math.max(0, ...points.flatMap((point) => points.map((other) => distanceBetween(point, other))));
-    return { position: meanPoint(points), spread, ...(origin === undefined ? {} : { origin }) };
+    return { position: meanPoint(points), spread, ...(origin === undefined ? {} : { origin }), ...(map === undefined ? {} : { map }) };
 }
 
 /** The regions of the world (POS-6): places of the campaign with a radius and a position, their own or one their roads give them. */
@@ -90,27 +95,29 @@ export function regionsOf(world: World): Region[]
     return placedOf(world).regions;
 }
 
-/** The smallest region that covers a point (POS-6); undefined when none does. */
-export function regionAt(world: World, point: Position): Region | undefined
+/** The smallest region of a map, by its key (POS-8), that covers a point (POS-6); undefined when none does. */
+export function regionAt(world: World, point: Position, map = ""): Region | undefined
 {
-    return regionsOf(world).filter((region) => distanceBetween(region.centre, point) <= region.radius).sort((first, second) => first.radius - second.radius)[0];
+    return regionsOf(world)
+        .filter((region) => mapKey(world, region.page) === map && distanceBetween(region.centre, point) <= region.radius)
+        .sort((first, second) => first.radius - second.radius)[0];
 }
 
 /**
  * The places near a point (TRV-13): those with a position of their own or from their roads within 3 km, nearest first, at most 5, or else the nearest one; each
  * as "Torre Mozza, 2.1 km north-east". Regions and roads are left out.
  */
-export function nearPlaces(world: World, point: Position, measures: Measures, except: Page[] = []): string[]
+export function nearPlaces(world: World, point: Position, measures: Measures, map = "", except: Page[] = []): string[]
 {
-    const placed = placesByDistance(world, point, except);
+    const placed = placesByDistance(world, point, map, except);
     const near = placed.filter((place) => place.distance <= 3000).slice(0, 5);
     return (near.length > 0 ? near : placed.slice(0, 1)).map((place) => `${place.page.name}, ${relationText(point, place.position, measures)}`);
 }
 
-/** "12 km west of Guadoscuro": a point told from the nearest place with a position, or that place's name at it; its position when there is none. */
-export function pointText(world: World, point: Position, measures: Measures): string
+/** "12 km west of Guadoscuro": a point of a map told from its nearest place with a position, or that place's name at it; its position when there is none. */
+export function pointText(world: World, point: Position, measures: Measures, map = ""): string
 {
-    const nearest = placesByDistance(world, point, [])[0];
+    const nearest = placesByDistance(world, point, map, [])[0];
 
     if (nearest === undefined) {
         return formatPosition(point);
@@ -171,12 +178,19 @@ function shortRoads(world: World): { road: string; from: string; to: string; pro
         }
 
         const placed = read.stops.flatMap((name, index) => {
+            const page = pagesWithName(world, name)[0];
             const position = ownPositionNamed(world, name);
-            return position === undefined ? [] : [{ name, index, position }];
+            return position === undefined || page === undefined ? [] : [{ name, index, position, page }];
         });
         const along = (index: number): number => read.lengths.slice(0, index).reduce((sum, length) => sum + length, 0);
         return placed.slice(1).flatMap((stop, index) => {
             const before = placed[index];
+
+            // A passage between maps measures nothing in a straight line (POS-8, ROA-8).
+            if (mapKey(world, before.page) !== mapKey(world, stop.page)) {
+                return [];
+            }
+
             const [length, straight] = [along(stop.index) - along(before.index), distanceBetween(before.position, stop.position)];
             const km = (metres: number): number => Math.round(metres / 100) / 10;
             return length >= straight * 0.99 ? [] : [{
@@ -206,6 +220,34 @@ function relationOf(text: string): Relation
     }
 
     return { metres, degrees, place: parsePageReference(match[3]).name };
+}
+
+/**
+ * The map whose coordinates the places a position is given from share (POS-8): refused when they do not, or when the place written is held where they are not;
+ * the map to put it in when nothing holds it yet and they are on a map a place holds, which write names.
+ */
+function sharedMap(world: World, places: Page[], written: Page | undefined, name: string): Page | undefined
+{
+    const first = places[0];
+    const other = places.find((place) => !sameFrame(world, place, first));
+
+    if (other !== undefined) {
+        throw new Error(`${first.name} and ${other.name} are on maps with other coordinates: give the position of ${name} from places of one map. Nothing changed.`);
+    }
+
+    const map = mapOf(world, first);
+    const held = written !== undefined && (locate(world, written).chain.length > 0 || written.fields.map !== undefined);
+
+    if (written !== undefined && held && !sameFrame(world, written, first)) {
+        const where = mapOf(world, written).root?.name ?? "the main map";
+        throw new Error(
+            `${name} is on ${where === "the main map" ? where : `the map of ${where}`}, ${first.name} on ${
+                map.root === undefined ? "the main map" : `that of ${map.root.name}`
+            }: give its position from a place of its map, or of one with the same coordinates. Nothing changed.`,
+        );
+    }
+
+    return held || written?.fields.map !== undefined ? undefined : map.root;
 }
 
 /** The place a relation starts from: a place of the campaign, not the place being written. */
@@ -263,8 +305,10 @@ function readPlaced(world: World): Placed
         pages.forEach((page, index) => {
             const before = owned.slice(0, index).findLastIndex((position) => position !== undefined);
             const after = owned.findIndex((position, at) => at > index && position !== undefined);
+            // Only between stops of the same map: a passage between maps places nothing (POS-8).
+            const shared = page !== undefined && before !== -1 && after !== -1 && [pages[before], pages[after]].every((other) => other !== undefined && mapKey(world, page) === mapKey(world, other));
 
-            if (page !== undefined && page.type === "place" && !positions.has(page.path) && before !== -1 && after !== -1) {
+            if (page !== undefined && page.type === "place" && !positions.has(page.path) && shared) {
                 const [from, to] = [owned[before] as Position, owned[after] as Position];
                 positions.set(page.path, pointAlong(from, to, (along(index) - along(before)) / (along(after) - along(before))));
             }
@@ -279,13 +323,13 @@ function readPlaced(world: World): Placed
     return { positions, regions };
 }
 
-/** The places of the campaign with a position of their own or from their roads, nearest to a point first; regions and roads left out. */
-function placesByDistance(world: World, point: Position, except: Page[]): { page: Page; position: Position; distance: number; }[]
+/** The places of a map with a position of their own or from their roads, nearest to a point first; regions and roads left out. */
+function placesByDistance(world: World, point: Position, map: string, except: Page[]): { page: Page; position: Position; distance: number; }[]
 {
     const { positions } = placedOf(world);
     return world.pages.flatMap((page) => {
         const position = positions.get(page.path);
-        const listed = position !== undefined && isEmptyField(page.fields.radius) && isEmptyField(page.fields.stops) && !except.includes(page);
+        const listed = position !== undefined && isEmptyField(page.fields.radius) && isEmptyField(page.fields.stops) && !except.includes(page) && mapKey(world, page) === map;
         return listed ? [{ page, position, distance: distanceBetween(point, position) }] : [];
     }).sort((first, second) => first.distance - second.distance);
 }

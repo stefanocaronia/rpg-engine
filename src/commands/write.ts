@@ -131,6 +131,7 @@ export const write = defineCommand({
         + "The introduction and sections are what the player reads once their character knows the page: what the character has not found out goes in a secret. "
         + 'A list field changes one item at a time with add and remove; a place\'s environment, one line at a time, such as add environment="light: dark". '
         + 'A place\'s position on the map is given from a place that has one, such as set position="12 km NE of [[Guadoscuro]]"; a region has a radius, such as set radius=10 km. '
+        + 'A place that holds a map of its own, as another plane, has set map=own, or map="under [[Guadoscuro]]" or "mirror of [[Guadoscuro]]" for the underdark or a plane that mirrors the land; a passage between maps is a road with kind=portal. '
         + "It also writes the fields of a copy in the open scene. Moving someone or something goes with move, what a character learns with reveal, conditions and forms with effect. "
         + 'Example: page Bruna, type character, set role=npc, text "A ferry keeper who knows every current of the river."',
     group: "game",

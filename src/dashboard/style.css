@@ -3882,6 +3882,68 @@ svg.icon {
     pointer-events: none;
 }
 
+/* The maps the character knows, as tabs (D-320); a gold dot where the party is. */
+.map-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 16px 10px;
+}
+
+.map-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.map-tab[aria-current="true"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.map-tab-party {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+/* The map this one lies under or mirrors, faint under its ways and places. */
+.ghost {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* A passage to another map: a ring of violet ink round its place (ROA-8). */
+.passage-ring {
+    fill: none;
+    stroke: #6b3fa0;
+    stroke-width: 2;
+    stroke-dasharray: 3 3;
+}
+
+.way-to-map {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 /* The trail: a band of red under the ways, where the party has been. */
 .trail {
     fill: none;

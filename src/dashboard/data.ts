@@ -179,11 +179,12 @@ export interface Asked
     words?: (string | null)[];
 }
 
-/** A point of the world map, in km east and north of its centre. */
+/** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */
 export interface MapPoint
 {
     x: number;
     y: number;
+    map?: string;
 }
 
 /** A place the character knows on the map (VIEW-7): its kind, its point when it is drawn, the known places that hold it, a region's radius, biome and terrain, where it is from the party. */
@@ -193,6 +194,7 @@ export interface MapPlace
     kind?: string;
     x?: number;
     y?: number;
+    map?: string;
     within: string[];
     radius?: number;
     biome?: string;
@@ -211,10 +213,20 @@ export interface MapRoad
     after?: MapPoint;
 }
 
-/** The world map as the character knows it (VIEW-7, D-318): the player's unit and its km, the places nearest the party first, the roads, the party and its trail. */
+/** A map the character knows (POS-8, D-320): its name, the main map's being the campaign's; and the map it lies under or mirrors, sharing its coordinates. */
+export interface KnownMap
+{
+    name: string;
+    main?: true;
+    under?: string;
+    mirror?: string;
+}
+
+/** The world map as the character knows it (VIEW-7, D-318): the player's unit and its km, the maps it knows, the places nearest the party first, the roads, the party and its trail. */
 export interface WorldMap
 {
     unit: { name: "km" | "mi"; km: number; };
+    maps: KnownMap[];
     places: MapPlace[];
     roads: MapRoad[];
     party?: MapPoint & { place?: string; };

@@ -111,7 +111,8 @@ async function makeDemo(context: Context): Promise<void>
 
 /**
  * The world around the inn, for the World map (D-318): Guadoscuro at the centre in its hills, a castle in the mountains to the north, a forest with a tower, a
- * marsh hiding a cave, a temple and a port heard of; the king's road, a path, and a river from a spring in the forest under the bridge to the port. Ettore
+ * marsh hiding a cave, a temple and a port heard of; the king's road, a path, and a river from a spring in the forest under the bridge to the port, with a
+ * towpath along it from the bridge to the mill. Ettore
  * and Lupa came down the road from the castle, with a night at a camp: the trail. The cave and the spring stay unknown.
  */
 async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise<void>
@@ -134,7 +135,27 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise
     await place("Strada del Re", "stops=[[Rocca di Vetta]], 9 km, [[Campo del Viandante]], 13 km, [[Guadoscuro]], 12 km, [[Ponte di Pietra]], 15 km, [[Santuario della Luce]]");
     await place("Sentiero della Torre", "kind=path", "stops=[[Guadoscuro]], 17 km, [[Torre dei Sussurri]]");
     await place("Fiume Scuro", "kind=river", "stops=[[Sorgente del Bosco]], 15 km, [[Ponte di Pietra]], 7 km, [[Mulino Rosso]], 28 km, [[Porto Salso]]");
-    const known = ["Santuario della Luce", "Bosco delle Fate", "Torre dei Sussurri", "Sentiero della Torre", "Fiume Scuro", "Mulino Rosso", "Palude dei Lamenti", "Ponte di Pietra", "Porto Salso"];
+    await place("Alzaia del Mulino", "kind=path", "stops=[[Ponte di Pietra]], 7 km, [[Mulino Rosso]]");
+    // Under the land, the Sottosuolo, with its own city and lake, which a well under the mill reaches; the Selva Fatata mirrors the land, and a ring of
+    // mushrooms at the tower opens on it (D-320).
+    await place("Città delle Radici", "position=14 km SE of [[Guadoscuro]]", "kind=city");
+    await place("Forte del Fungo", "position=6 km W of [[Guadoscuro]]", "kind=castle");
+    await place("Lago Nero", "position=8 km S of [[Guadoscuro]]", "radius=6 km", "environment=biome: water");
+    await place("Gallerie Profonde", "position=4 km SE of [[Guadoscuro]]", "radius=14 km", "environment=biome: mountains", "contains=[[Città delle Radici]]", "contains=[[Forte del Fungo]]");
+    await place("Sottosuolo", "map=under [[Guadoscuro]]", "contains=[[Gallerie Profonde]]", "contains=[[Lago Nero]]");
+    await place("Strada Buia", "stops=[[Forte del Fungo]], 23 km, [[Città delle Radici]]");
+    await place("Pozzo del Mulino", "kind=portal", "stops=[[Mulino Rosso]], 1 km, [[Città delle Radici]]");
+    await place("Radura Splendente", "position=16 km NE of [[Guadoscuro]]", "kind=shrine");
+    await place("Corte delle Lucciole", "position=24 km NNE of [[Guadoscuro]]", "kind=castle");
+    await place("Bosco Incantato", "position=18 km NE of [[Guadoscuro]]", "radius=12 km", "environment=biome: forest", "contains=[[Radura Splendente]]", "contains=[[Corte delle Lucciole]]");
+    await place("Selva Fatata", "map=mirror of [[Guadoscuro]]", "contains=[[Bosco Incantato]]");
+    await place("Via delle Lucciole", "kind=path", "stops=[[Radura Splendente]], 13 km, [[Corte delle Lucciole]]");
+    await place("Cerchio di Funghi", "kind=portal", "stops=[[Torre dei Sussurri]], 100 m, [[Radura Splendente]]");
+    const known = [
+        ...["Santuario della Luce", "Bosco delle Fate", "Torre dei Sussurri", "Sentiero della Torre", "Fiume Scuro", "Alzaia del Mulino", "Mulino Rosso", "Palude dei Lamenti", "Ponte di Pietra", "Porto Salso"],
+        ...["Sottosuolo", "Gallerie Profonde", "Città delle Radici", "Forte del Fungo", "Lago Nero", "Strada Buia", "Pozzo del Mulino"],
+        ...["Selva Fatata", "Bosco Incantato", "Radura Splendente", "Corte delle Lucciole", "Via delle Lucciole", "Cerchio di Funghi"],
+    ];
     await rpg("write", "Ettore", ...known.flatMap((name) => ["--add", `knows=[[${name}]]`]));
     await rpg("write", "Rocca di Vetta", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
 

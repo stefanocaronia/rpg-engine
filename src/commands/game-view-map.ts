@@ -1,27 +1,30 @@
-// The world map as the player character knows it, for the dashboard (VIEW-7, D-316, D-318): the places it knows with their kind and where they are, the regions
-// with their biome, the roads as far as it knows their stops, the party and its trail. Never a place it does not know, neither its name nor its point.
+// The world map as the player character knows it, for the dashboard (VIEW-7, D-316, D-318, D-320): the maps it knows; on each, the places it knows with their
+// kind and where they are, the regions with their biome, the roads as far as it knows their stops, the party and its trail. Never a place it does not know,
+// neither its name nor its point.
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
 import { distanceBetween, type Point } from "../map/index.ts";
 import { environmentAt, locate, type Page, pagesWithName, parsePageReference, readStops, type World } from "../pages/index.ts";
 import { shownImage } from "./game-images.ts";
-import { moversNamed, moversPosition, readJourney } from "./game-journey.ts";
+import { moversMap, moversNamed, moversPosition, readJourney } from "./game-journey.ts";
 import { knowsPage } from "./game-knowledge.ts";
+import { mapKey, mapOf } from "./game-maps.ts";
 import { placedPosition, positionOf, regionsOf, relationText } from "./game-positions.ts";
 import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "./game-roads.ts";
 import type { PlaceSight } from "./game-view-place.ts";
 import { campaignSystem } from "./game-world.ts";
 
-/** A point of the map, in km east and north of its centre. */
+/** A point of a map, in km east and north of its centre; with the map it is on, by the place that holds it, none for the main map (POS-8). */
 export interface MapPoint
 {
     x: number;
     y: number;
+    map?: string;
 }
 
 /**
- * A place the character knows: its kind, its point when it is drawn on the map (a position of its own or from its road), the places it knows that hold it,
- * the nearest first; for a region its radius in km, biome and terrain; where it is from the party, in the player's units.
+ * A place the character knows: its kind, its point when it is drawn on its map (a position of its own or from its road), the places it knows that hold it,
+ * the nearest first; for a region its radius in km, biome and terrain; where it is from the party, on the party's map, in the player's units.
  */
 export interface MapPlace
 {
@@ -29,6 +32,7 @@ export interface MapPlace
     kind?: string;
     x?: number;
     y?: number;
+    map?: string;
     within: string[];
     radius?: number;
     biome?: string;
@@ -38,8 +42,8 @@ export interface MapPlace
 }
 
 /**
- * A road the character knows, from its first known stop to its last: each point with its name when the character knows the stop, and the km from the point
- * before; beyond, toward a stop it does not know, a short stretch in its direction.
+ * A road the character knows, from its first known stop to its last: each point with its name when the character knows the stop, its map, and the km from the
+ * point before; beyond, toward a stop it does not know, a short stretch in its direction. A passage's points are on two maps (ROA-8).
  */
 export interface MapRoad
 {
@@ -50,10 +54,23 @@ export interface MapRoad
     after?: MapPoint;
 }
 
-/** The world map as the player character knows it (VIEW-7): the unit of the player and its km, the places nearest the party first, the roads, the party and its trail. */
+/** A map the character knows (POS-8): its name, the main map's being the campaign's; and the map it lies under or mirrors, sharing its coordinates. */
+export interface KnownMap
+{
+    name: string;
+    main?: true;
+    under?: string;
+    mirror?: string;
+}
+
+/**
+ * The world map as the player character knows it (VIEW-7): the unit of the player and its km, the maps it knows, the places nearest the party first, the roads,
+ * the party and its trail.
+ */
 export interface ShownMap
 {
     unit: { name: "km" | "mi"; km: number; };
+    maps: KnownMap[];
     places: MapPlace[];
     roads: MapRoad[];
     party?: MapPoint & { place?: string; };
@@ -66,7 +83,7 @@ const stubMetres = 3000;
 // How many places the chat lists.
 const mostListed = 20;
 
-export function shownMap(sight: PlaceSight, measures: Measures): ShownMap
+export function shownMap(sight: PlaceSight, measures: Measures, campaign: string): ShownMap
 {
     const { world, knowledge } = sight;
     const roads = roadsOf(world);
@@ -74,41 +91,54 @@ export function shownMap(sight: PlaceSight, measures: Measures): ShownMap
     const journey = readJourney(sight.root);
     const movers = journey === undefined ? travellingParty(world, knowledge.pc, []) : moversNamed(world, journey);
     const partyAt = moversPosition(world, roads, journey, movers) ?? positionOf(world, knowledge.pc);
+    const partyMap = moversMap(world, journey, movers);
     const partyPlace = locate(world, knowledge.pc).chain.find((holder) => isDrawn(world, roads, holder) && known(holder));
+    const party = partyAt === undefined ? undefined : { at: partyAt, map: partyMap?.path ?? "" };
     const places = world.pages.filter((page) => page.type === "place" && known(page) && !roads.pages.has(page.name)).flatMap((page) => {
-        const shown = mapPlace(sight, roads, page, known, partyAt, measures);
+        const shown = mapPlace(sight, roads, page, known, party, measures);
         return shown === undefined ? [] : [shown];
     });
     const system = campaignSystem(sight.root, sight.context);
     return {
         unit: measures.units === "imperial" ? { name: "mi", km: measures.imperial.mile / 1000 } : { name: "km", km: 1 },
-        places: nearestFirst(places, partyAt),
+        maps: knownMaps(world, places, known, campaign),
+        places: nearestFirst(places, partyAt, partyMap?.name),
         roads: [...roads.pages.values()].filter(known).flatMap((road) => {
             const course = roadCourse(world, road, known);
             return course === undefined ? [] : [{ name: road.name, kind: kindOf(system, road).name, ...course }];
         }),
-        ...(partyAt === undefined ? {} : { party: { ...mapPoint(partyAt), ...(partyPlace === undefined ? {} : { place: partyPlace.name }) } }),
-        trail: trailOf(sight, roads).map(mapPoint),
+        ...(partyAt === undefined ? {} : { party: { ...mapPoint(partyAt, partyMap), ...(partyPlace === undefined ? {} : { place: partyPlace.name }) } }),
+        trail: trailOf(sight, roads).map(({ at, page }) => mapPoint(at, mapOf(world, page).root)),
     };
 }
 
-/** The map in the chat (VIEW-7): the places drawn on it, nearest the party first, with their kind and where they are; then the regions with their biome. */
+/**
+ * The map in the chat (VIEW-7): the places drawn on the party's map, nearest it first, with their kind and where they are; the regions with their biome; then
+ * the places of the other maps the character knows, by map.
+ */
 export function mapText(map: ShownMap): string
 {
-    const points = map.places.filter((place) => place.x !== undefined && place.radius === undefined);
+    const partyMap = map.party?.map;
+    const drawn = map.places.filter((place) => place.x !== undefined && place.radius === undefined);
+    const points = drawn.filter((place) => place.map === partyMap);
     const shown = points.slice(0, mostListed);
-    const regions = map.places.filter((place) => place.radius !== undefined);
+    const regions = map.places.filter((place) => place.radius !== undefined && place.map === partyMap);
     const where = map.party === undefined ? "" : `, nearest first, from where the party is${map.party.place === undefined ? "" : ` (${map.party.place})`}`;
     const line = (place: MapPlace): string => `- ${place.name}${place.kind === undefined ? "" : ` (${place.kind})`}${place.from === undefined ? "" : `: ${place.from}`}`;
+    const others = map.maps.filter((known) => (known.main ? undefined : known.name) !== partyMap).flatMap((known) => {
+        const there = drawn.filter((place) => place.map === (known.main ? undefined : known.name));
+        return there.length === 0 ? [] : [`On ${known.main ? "the main map" : `the map of ${known.name}`}: ${there.map((place) => place.name).join(", ")}.`];
+    });
     return [
-        points.length === 0 ? "The character knows no place on the map yet." : `Places on the map${where}:\n${shown.map(line).join("\n")}`,
+        points.length === 0 ? "The character knows no place on this map yet." : `Places on the map${where}:\n${shown.map(line).join("\n")}`,
         points.length > shown.length ? `…and ${points.length - shown.length} more, on the dashboard's map.` : "",
         regions.length === 0 ? "" : `Regions: ${regions.map((region) => `${region.name}${region.biome === undefined ? "" : ` (${region.biome})`}`).join(", ")}.`,
+        ...others,
     ].filter((block) => block !== "").join("\n");
 }
 
-/** A place as the map shows it; none for one neither drawn nor held by a place that is. */
-function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Page) => boolean, partyAt: Point | undefined, measures: Measures): MapPlace | undefined
+/** A place as the map shows it; none for one neither drawn nor held by a place that is. Its distance from the party only on the party's map. */
+function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Page) => boolean, party: { at: Point; map: string; } | undefined, measures: Measures): MapPlace | undefined
 {
     const { world } = sight;
     const at = placedPosition(world, page);
@@ -122,17 +152,38 @@ function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Pag
     const kind = typeof page.fields.kind === "string" && page.fields.kind.trim() !== "" ? page.fields.kind.trim() : undefined;
     const voice = (name: string): string | undefined => environmentAt(world, page).find(({ entry }) => comparableText(entry.name) === name)?.entry.value;
     const image = shownImage(sight.root, sight.context, world, page, (base) => knowsPage(sight.knowledge, base));
+    const map = mapOf(world, page).root;
+    const near = at !== undefined && party !== undefined && mapKey(world, page) === party.map;
     return {
         name: page.name,
         ...(kind === undefined ? {} : { kind }),
-        ...(at === undefined ? {} : mapPoint(at)),
+        ...(at === undefined ? {} : mapPoint(at, map)),
+        ...(at !== undefined || map === undefined ? {} : { map: map.name }),
         within: holders.map((holder) => holder.name),
         ...(region === undefined ? {} : { radius: km(region.radius) }),
         ...(region === undefined || voice("biome") === undefined ? {} : { biome: voice("biome") }),
         ...(region === undefined || voice("terrain") === undefined ? {} : { terrain: voice("terrain") }),
-        ...(at === undefined || partyAt === undefined ? {} : { from: relationText(partyAt, at, measures) }),
+        ...(near ? { from: relationText(party.at, at, measures) } : {}),
         ...(image === undefined ? {} : { image }),
     };
+}
+
+/**
+ * The maps the character knows (POS-8): the main one, the campaign's, when it knows a place drawn there; each held by a place it knows, or where it knows a
+ * place drawn; with the map each lies under or mirrors.
+ */
+function knownMaps(world: World, places: MapPlace[], known: (page: Page) => boolean, campaign: string): KnownMap[]
+{
+    const roots = world.pages.filter((page) => page.type === "place" && page.system === undefined && mapOf(world, page).root === page);
+    const drawnOn = new Set(places.filter((place) => place.x !== undefined).map((place) => place.map ?? ""));
+    const name = (page: Page): string => mapOf(world, page).root?.name ?? campaign;
+    return [
+        ...(drawnOn.has("") ? [{ name: campaign, main: true as const }] : []),
+        ...roots.filter((root) => known(root) || drawnOn.has(root.name)).map((root): KnownMap => {
+            const aligned = mapOf(world, root).aligned;
+            return { name: root.name, ...(aligned === undefined ? {} : aligned.how === "under" ? { under: name(aligned.of) } : { mirror: name(aligned.of) }) };
+        }),
+    ];
 }
 
 /** Whether a page is drawn on the map as a point or an area: a place of the campaign, not a road, with a position of its own or from its road. */
@@ -141,10 +192,15 @@ function isDrawn(world: World, roads: Roads, page: Page): boolean
     return page.type === "place" && !roads.pages.has(page.name) && placedPosition(world, page) !== undefined;
 }
 
-/** The places drawn on the map, nearest the party first, then those held by them; as they come without a party on the map. */
-function nearestFirst(places: MapPlace[], partyAt: Point | undefined): MapPlace[]
+/** The places drawn on the party's map, nearest it first; then those of the other maps and those held by them; as they come without a party on a map. */
+function nearestFirst(places: MapPlace[], partyAt: Point | undefined, partyMap: string | undefined): MapPlace[]
 {
-    const distance = (place: MapPlace): number => place.x === undefined || place.y === undefined ? Number.MAX_SAFE_INTEGER : partyAt === undefined ? 0 : distanceBetween(partyAt, { east: place.x * 1000, north: place.y * 1000 });
+    const distance = (place: MapPlace): number =>
+        place.x === undefined || place.y === undefined || place.map !== partyMap
+            ? Number.MAX_SAFE_INTEGER
+            : partyAt === undefined
+            ? 0
+            : distanceBetween(partyAt, { east: place.x * 1000, north: place.y * 1000 });
     return [...places].sort((first, second) => distance(first) - distance(second));
 }
 
@@ -177,25 +233,25 @@ function roadCourse(world: World, road: Page, known: (page: Page) => boolean): O
             metres += stop.metres;
         }
 
-        if (index >= first && index <= last && stop.at !== undefined) {
-            points.push({ ...(stop.page !== undefined && known(stop.page) ? { name: stop.page.name } : {}), ...mapPoint(stop.at), km: km(metres) });
+        if (index >= first && index <= last && stop.at !== undefined && stop.page !== undefined) {
+            points.push({ ...(known(stop.page) ? { name: stop.page.name } : {}), ...mapPoint(stop.at, mapOf(world, stop.page).root), km: km(metres) });
             metres = 0;
         }
     }
 
-    // From an end of the course toward the next stop beyond it with a point, a beginning only.
-    const beyond = (from: Point | undefined, others: typeof stops): MapPoint | undefined => {
-        const next = others.find((stop) => stop.at !== undefined)?.at;
-        return from === undefined || next === undefined ? undefined : stub(from, next);
+    // From an end of the course toward the next stop beyond it with a point on the same map, a beginning only.
+    const beyond = (end: (typeof stops)[number], others: typeof stops): MapPoint | undefined => {
+        const next = others.find((stop) => stop.at !== undefined && stop.page !== undefined && end.page !== undefined && mapKey(world, stop.page) === mapKey(world, end.page))?.at;
+        return end.at === undefined || end.page === undefined || next === undefined ? undefined : stub(end.at, next, mapOf(world, end.page).root);
     };
 
-    const before = beyond(stops[first].at, stops.slice(0, first).reverse());
-    const after = beyond(stops[last].at, stops.slice(last + 1));
+    const before = beyond(stops[first], stops.slice(0, first).reverse());
+    const after = beyond(stops[last], stops.slice(last + 1));
     return { points, ...(before === undefined ? {} : { before }), ...(after === undefined ? {} : { after }) };
 }
 
 /** The beginning of a road from a point toward another: at most stubMetres, at most half the way. */
-function stub(from: Point, toward: Point): MapPoint | undefined
+function stub(from: Point, toward: Point, map: Page | undefined): MapPoint | undefined
 {
     const distance = distanceBetween(from, toward);
 
@@ -204,14 +260,15 @@ function stub(from: Point, toward: Point): MapPoint | undefined
     }
 
     const share = Math.min(stubMetres, distance / 2) / distance;
-    return mapPoint({ east: from.east + (toward.east - from.east) * share, north: from.north + (toward.north - from.north) * share });
+    return mapPoint({ east: from.east + (toward.east - from.east) * share, north: from.north + (toward.north - from.north) * share }, map);
 }
 
 /**
  * Where the party has been (VIEW-7): the places the player character moved from and to, as the public lines of the log keep them, in order; along a road
- * between the places it joined it at and left it at, by its stops; else in a straight line. A region is an area, not a point of the trail.
+ * between the places it joined it at and left it at, by its stops; else in a straight line. A region is an area, not a point of the trail. Each point with the
+ * place that gives it, for its map.
  */
-function trailOf(sight: PlaceSight, roads: Roads): Point[]
+function trailOf(sight: PlaceSight, roads: Roads): { at: Point; page: Page; }[]
 {
     const { world, knowledge } = sight;
     const pc = comparableText(knowledge.pc.name);
@@ -226,7 +283,7 @@ function trailOf(sight: PlaceSight, roads: Roads): Point[]
         const from = Object.entries((entry.data.from ?? {}) as Record<string, unknown>).find(([name]) => comparableText(name) === pc)?.[1];
         return [typeof from === "string" ? from : undefined, typeof entry.data.to === "string" ? entry.data.to : undefined];
     });
-    const points: Point[] = [];
+    const points: { at: Point; page: Page; }[] = [];
     let road: Page | undefined;
     let last: Page | undefined;
 
@@ -252,15 +309,15 @@ function trailOf(sight: PlaceSight, roads: Roads): Point[]
             points.push(...stopsBetween(world, road, last, page));
         }
 
-        points.push(at);
+        points.push({ at, page });
         [road, last] = [undefined, page];
     }
 
-    return points.filter((point, index) => index === 0 || distanceBetween(point, points[index - 1]) > 0);
+    return points.filter((point, index) => index === 0 || distanceBetween(point.at, points[index - 1].at) > 0 || mapKey(world, point.page) !== mapKey(world, points[index - 1].page));
 }
 
 /** The points of a road's stops strictly between the stops two places are at, or are held by, in the order of the way; none when either is not on it. */
-function stopsBetween(world: World, road: Page, from: Page, to: Page): Point[]
+function stopsBetween(world: World, road: Page, from: Page, to: Page): { at: Point; page: Page; }[]
 {
     const read = readStops(road.fields.stops);
 
@@ -283,13 +340,14 @@ function stopsBetween(world: World, road: Page, from: Page, to: Page): Point[]
     return between.flatMap((name) => {
         const page = pagesWithName(world, name)[0];
         const at = page === undefined ? undefined : placedPosition(world, page);
-        return at === undefined ? [] : [at];
+        return at === undefined || page === undefined ? [] : [{ at, page }];
     });
 }
 
-function mapPoint(point: Point): MapPoint
+/** A point in km with its map, none for the main one. */
+function mapPoint(point: Point, map?: Page): MapPoint
 {
-    return { x: km(point.east), y: km(point.north) };
+    return { x: km(point.east), y: km(point.north), ...(map === undefined ? {} : { map: map.name }) };
 }
 
 /** Metres as km with two decimals. */

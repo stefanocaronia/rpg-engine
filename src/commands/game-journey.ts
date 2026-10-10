@@ -6,6 +6,7 @@ import { comparableText } from "../core/text.ts";
 import { pointAlong, type Start, type Stretch } from "../map/index.ts";
 import { formatPosition, isEmptyField, locate, type Page, pagesWithName, parsePageReference, type Position, readPosition, type World } from "../pages/index.ts";
 import { formatDuration, formatGameDate, type GameDate, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
+import { mapOf } from "./game-maps.ts";
 import { pointText, positionOf, regionAt } from "./game-positions.ts";
 import { hoursText, lengthText, type Measures, type Roads } from "./game-roads.ts";
 
@@ -33,8 +34,9 @@ export interface Journey
     heading?: string;
     left?: number;
     on?: OnRoad;
-    /** Where in the open it stopped (TRV-12). */
+    /** Where in the open it stopped (TRV-12), and on which map, by the place that holds it; none for the main map (POS-8). */
     at?: Position;
+    map?: string;
     pace?: string;
     /** When its last travel ended, the minutes travelled since the last rest, and the hours of travel given for them (TRV-8). */
     last: GameDate;
@@ -73,7 +75,7 @@ export function readJourney(root: string): Journey | undefined
     const [road, from, toward, index] = [name(fields.road), name(fields.from), name(fields.toward), Number(fields.stretch) - 1];
     const on = road === undefined || from === undefined || toward === undefined ? undefined : { road, index: Number.isInteger(index) ? index : -1, from, toward, done: readLength(fields.done) ?? 0 };
     const at = readPosition(fields.at);
-    return { movers, to: name(fields.to), heading: text(fields.heading), left: readLength(fields.left), on, at, pace: text(fields.pace), last, travelled, hours };
+    return { movers, to: name(fields.to), heading: text(fields.heading), left: readLength(fields.left), on, at, map: name(fields.map), pace: text(fields.pace), last, travelled, hours };
 }
 
 /** Writes the journey in state.yaml, or removes it. */
@@ -93,6 +95,7 @@ export function saveJourney(root: string, journey: Journey | undefined): void
             done: `${Math.round(journey.on.done)} m`,
         }),
         ...(journey.at === undefined ? {} : { at: formatPosition(journey.at) }),
+        ...(journey.map === undefined ? {} : { map: link(journey.map) }),
         ...(journey.pace === undefined ? {} : { pace: journey.pace }),
         last: formatGameDate(journey.last),
         travelled: formatDuration(journey.travelled) || "0m",
@@ -144,6 +147,18 @@ export function journeyStart(world: World, roads: Roads, journey: Journey, mover
     return { stretch, done: same(stretch.from, on.from) ? done : stretch.length - done };
 }
 
+/** The map the movers are on (POS-8): that of the place they are in; in the open, the one their journey stopped on. Undefined for the main map. */
+export function moversMap(world: World, journey: Journey | undefined, movers: Page[]): Page | undefined
+{
+    const mover = movers[0];
+
+    if (mover !== undefined && locate(world, mover).chain.length > 0) {
+        return mapOf(world, mover).root;
+    }
+
+    return journey?.map === undefined ? undefined : pagesWithName(world, journey.map)[0];
+}
+
 /**
  * Where in the open a journey stopped (TRV-12), when its movers are still there: in the smallest region that covers the point, or in no place when none does;
  * undefined otherwise.
@@ -156,7 +171,7 @@ export function journeyPoint(world: World, journey: Journey, movers: Page[]): Po
         return undefined;
     }
 
-    return regionAt(world, journey.at)?.page === holder ? journey.at : undefined;
+    return regionAt(world, journey.at, moversMap(world, journey, movers)?.path)?.page === holder ? journey.at : undefined;
 }
 
 /**
@@ -193,11 +208,12 @@ export function journeyText(world: World, roads: Roads, journey: Journey | undef
 
     const movers = moversNamed(world, journey);
     const stopped = journey.at === undefined ? undefined : journeyPoint(world, journey, movers);
+    const map = moversMap(world, journey, movers)?.path;
 
     // Arrived at a point in the open, with nowhere more to go: where they are (TRV-13).
     if (journey.to === undefined && journey.heading === undefined) {
-        const region = stopped === undefined ? undefined : regionAt(world, stopped)?.page.name;
-        return stopped === undefined ? undefined : `stopped ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, stopped, measures)}.`;
+        const region = stopped === undefined ? undefined : regionAt(world, stopped, map)?.page.name;
+        return stopped === undefined ? undefined : `stopped ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, stopped, measures, map)}.`;
     }
 
     const onRoad = journey.on === undefined ? undefined : journeyStart(world, roads, journey, movers);
@@ -208,11 +224,11 @@ export function journeyText(world: World, roads: Roads, journey: Journey | undef
     }
 
     const goal = journey.to === undefined ? `${journey.heading}${journey.left === undefined ? "" : ` for ${lengthText(journey.left, measures)} more`}` : `to ${journey.to}`;
-    const region = open === undefined ? undefined : regionAt(world, open)?.page.name;
+    const region = open === undefined ? undefined : regionAt(world, open, map)?.page.name;
     const where = journey.on !== undefined
         ? `, on ${journey.on.road}, ${lengthText(journey.on.done, measures)} past ${journey.on.from}, toward ${journey.on.toward}`
         : open !== undefined
-        ? `, ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, open, measures)}`
+        ? `, ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, open, measures, map)}`
         : "";
     const call = journey.to === undefined ? `travel toward ${journey.heading}` : `travel to ${journey.to}${journey.at === undefined ? "" : ", across"}`;
     return `${goal}${where}; ${hoursText(journey.travelled)} of travel since the last rest. To go on: ${call}.`;

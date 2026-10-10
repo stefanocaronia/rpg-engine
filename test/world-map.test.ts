@@ -1,15 +1,38 @@
 // The World map as the page works it out (D-318): what is a point and what an area, the ways of a place, the hexes, the labels, the scale; the page's
 // symbols and biomes are the engine's (POS-7).
 import { describe, expect, it } from "vitest";
-import type { WorldMap } from "../src/dashboard/data.ts";
+import type { MapPoint, WorldMap } from "../src/dashboard/data.ts";
 import { biomes as pageBiomes, placeKinds as pageKinds } from "../src/dashboard/map-symbols.ts";
-import { fading, hexAcross, hexesOf, lengthText, liftedOf, mapLayout, marksOf, meander, nameRun, placeAreaLabels, placeLabels, regionEdges, riverOutline, scaleBar, trailCourse, wayShapes, waysOf } from "../src/dashboard/world-map.ts";
+import {
+    fading,
+    hexAcross,
+    hexAt,
+    hexCentre,
+    hexesOf,
+    lengthText,
+    liftedOf,
+    mapLayout,
+    mapPart,
+    marksOf,
+    meander,
+    nameRun,
+    nameShares,
+    placeAreaLabels,
+    placeLabels,
+    regionEdges,
+    riverOutline,
+    scaleBar,
+    trailCourse,
+    wayShapes,
+    waysOf,
+} from "../src/dashboard/world-map.ts";
 import { biomes, placeKinds } from "../src/map/index.ts";
 
 // Guado at the centre in the Colli, a hills region; Rocca 20 km north; the road Guado –8– (a stop the character does not know) –12– Rocca, then on toward
 // another; the Locanda inside Guado; the party at Guado.
 const map: WorldMap = {
     unit: { name: "km", km: 1 },
+    maps: [{ name: "Valle", main: true }],
     places: [
         { name: "Guado", kind: "village", x: 0, y: 0, within: ["Colli"], from: "here" },
         { name: "Colli", x: 1, y: 0, within: [], radius: 6, biome: "hills" },
@@ -40,9 +63,9 @@ describe("the world map's drawing (D-318)", () => {
         expect([hexAcross(10), hexAcross(3), hexAcross(2), hexAcross(0.5)]).toEqual([6, 12, 12, 48]);
         const layout = mapLayout(map);
         const ways = wayShapes(map);
-        const lifted = liftedOf(map, layout, ways, trailCourse(map.trail, ways));
+        const lifted = liftedOf(map, layout, ways, [trailCourse(map.trail, ways)]);
         const near = hexesOf({ x: 0, y: 10, s: 10 }, 400, 400, lifted, layout.regions);
-        const at = (x: number, y: number) => near.hexes.reduce((best, hex) => (Math.hypot(hex.x - x, hex.y - y) < Math.hypot(best.x - x, best.y - y) ? hex : best));
+        const at = (x: number, y: number) => hexAt(near.hexes, { x, y });
         expect(at(0, 20)).toMatchObject({ lit: true });
         expect(at(1, 0)).toMatchObject({ lit: true, biome: "hills" });
         expect(at(18, 10)).toMatchObject({ lit: false });
@@ -50,6 +73,13 @@ describe("the world map's drawing (D-318)", () => {
         const far = hexesOf({ x: 0, y: 10, s: 0.5 }, 400, 400, lifted, layout.regions);
         expect(far.across).toBe(48);
         expect(far.hexes.filter((hex) => hex.lit).some((hex) => Math.hypot(hex.x, hex.y - 20) <= 48 / Math.sqrt(3))).toBe(true);
+        // Galleries 28 km wide with a lake below their middle: their name goes over their own hexes, never on the lake; a plain the lake covers goes anywhere.
+        const galleries = { name: "Gallerie", x: 0, y: 0, within: [], radius: 14, biome: "mountains" };
+        const lake = { name: "Lago", x: 0, y: -8, within: [], radius: 6, biome: "water" };
+        const plain = { name: "Piana", x: 0, y: -8, within: [], radius: 6.5, biome: "plains" };
+        const nothing = { circles: [], lines: [] };
+        expect(nameShares(galleries, hexesOf({ x: 0, y: 0, s: 10 }, 600, 600, nothing, [galleries, lake]).hexes)).toEqual([0.55, 0, 0.8]);
+        expect(nameShares(plain, hexesOf({ x: 0, y: 0, s: 10 }, 600, 600, nothing, [plain, lake]).hexes)).toEqual([-0.55, 0.55, 0, -0.8, 0.8]);
     });
 
     it("puts a name right of its mark, else left, above or below, the heaviest first; one with no room is hidden", () => {
@@ -89,6 +119,25 @@ describe("the world map's drawing (D-318)", () => {
         expect(trailCourse(map.trail, [road]).length).toBeGreaterThan(map.trail.length);
     });
 
+    it("takes a road round a lake as the lake is drawn, never across its hexes, and a river through it; a river and a road between the same places meet only there", () => {
+        // A lake 8 km wide halfway between two villages 24 km apart, a road straight across it, a river from one village to the other and a road along it.
+        const ends = [{ name: "Ovest", x: 0, y: 0, km: 0 }, { name: "Est", x: 24, y: 0, km: 30 }];
+        const lake = { name: "Lago", x: 12, y: 0, within: [], radius: 4, biome: "water" };
+        const [road, river] = wayShapes({ ...map, places: [lake], roads: [{ name: "Strada", kind: "road", points: ends }, { name: "Fiume", kind: "river", points: ends }] });
+        const lakeHexes = (point: MapPoint): boolean => Math.hypot(nearestHex(point).x - 12, nearestHex(point).y) <= 4;
+        expect(road.course.some(lakeHexes)).toBe(false);
+        expect(road.stops.map((stop) => road.course[stop].x)).toEqual([0, 24]);
+        expect(river.course.some(lakeHexes)).toBe(true);
+        // Between two places on its shore 3 km apart, the road swings out only a little.
+        const [shore] = wayShapes({ ...map, places: [lake], roads: [{ name: "Riva", kind: "road", points: [{ x: 10.5, y: 4.3, km: 0 }, { x: 13.5, y: 4.3, km: 3 }] }] });
+        expect(Math.max(...shore.course.map((point) => point.y))).toBeLessThan(5.5);
+        expect(shore.course.some(lakeHexes)).toBe(false);
+        // Apart, they would cross each other between the villages; together, the river keeps to one bank and the road to the other.
+        const along = wayShapes({ ...map, places: [], roads: [{ name: "Strada", kind: "road", points: ends }, { name: "Fiume", kind: "river", points: ends }] });
+        expect(crossings(meander(ends, "road", "Strada").course, meander(ends, "river", "Fiume").course)).toBeGreaterThan(0);
+        expect(crossings(along[0].course, along[1].course)).toBe(0);
+    });
+
     it("draws the ink round a region along its hexes' edges, a river widening to its mouth, tails fading, a few marks a hex", () => {
         const hex = (x: number, y: number, region?: string) => ({ x, y, lit: true, tone: 0.5, ...(region === undefined ? {} : { region, biome: "forest" }) });
         const across = 6;
@@ -106,5 +155,49 @@ describe("the world map's drawing (D-318)", () => {
     it("has a symbol for every kind of place and a look for every biome the engine names (POS-7)", () => {
         expect(Object.keys(pageKinds)).toEqual([...placeKinds]);
         expect(Object.keys(pageBiomes)).toEqual([...biomes]);
+    });
+});
+
+/** The hex a point stands in at the nearest, 6 km wide: the nearest centre of the grid. */
+function nearestHex(point: MapPoint): MapPoint
+{
+    const column = Math.round(point.x / (6 / Math.sqrt(3) * 1.5));
+    const centres = [column - 1, column, column + 1].flatMap((each) => [-1, 0, 1].map((row) => hexCentre(each, Math.round(point.y / 6) + row, 6)));
+    return centres.reduce((best, centre) => (Math.hypot(centre.x - point.x, centre.y - point.y) < Math.hypot(best.x - point.x, best.y - point.y) ? centre : best));
+}
+
+/** How many times two lines cross, touching at an end not counted. */
+function crossings(first: MapPoint[], second: MapPoint[]): number
+{
+    const side = (from: MapPoint, to: MapPoint, point: MapPoint): number => Math.sign((to.x - from.x) * (point.y - from.y) - (to.y - from.y) * (point.x - from.x));
+    const cross = (a: MapPoint, b: MapPoint, c: MapPoint, d: MapPoint): boolean => side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+    return first.slice(1).reduce((count, to, index) => count + second.slice(1).filter((other, at) => cross(first[index], to, second[at], other)).length, 0);
+}
+
+describe("the maps on the page (D-320)", () => {
+    // Guado on the main map; the Sottosuolo under it, its city reached by a well from Guado.
+    const worlds: WorldMap = {
+        unit: { name: "km", km: 1 },
+        maps: [{ name: "Valle", main: true }, { name: "Sottosuolo", under: "Valle" }],
+        places: [
+            { name: "Guado", x: 0, y: 0, within: [] },
+            { name: "Città", x: 0, y: -3, map: "Sottosuolo", within: ["Sottosuolo"] },
+        ],
+        roads: [{ name: "Pozzo", kind: "portal", points: [{ name: "Guado", x: 0, y: 0, km: 0 }, { name: "Città", x: 0, y: -3, map: "Sottosuolo", km: 0.5 }] }],
+        party: { x: 0, y: 0, place: "Guado" },
+        trail: [{ x: 0, y: 5 }, { x: 0, y: 0 }, { x: 0, y: -3, map: "Sottosuolo" }],
+    };
+
+    it("draws one map at a time: its places, its roads cut where they leave it, its trail; the passages from it; the map it lies under as a ghost", () => {
+        const under = mapPart(worlds, "Sottosuolo");
+        expect(under.places.map((place) => place.name)).toEqual(["Città"]);
+        expect(under.party).toBeUndefined();
+        expect(under.passages).toEqual([{ place: "Città", road: "Pozzo", to: "Guado", map: "Valle" }]);
+        expect(under.ghost?.places.map((place) => place.name)).toEqual(["Guado"]);
+        const main = mapPart(worlds, "Valle");
+        expect(main.trails).toEqual([[{ x: 0, y: 5 }, { x: 0, y: 0 }]]);
+        expect(main.roads[0].points).toHaveLength(1);
+        expect(main.ghost).toBeUndefined();
+        expect(waysOf(worlds, "Guado")).toEqual([{ road: "Pozzo", kind: "portal", to: "Città", km: 0.5, map: "Sottosuolo" }]);
     });
 });

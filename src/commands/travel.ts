@@ -8,8 +8,9 @@ import { environmentAt, locate, type Page, pageNamed, parsePageReference, type P
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
-import { type Journey, journeyPoint, journeyStart, moversNamed, moversPosition, type OnRoad, readJourney, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
 import { playerCharacter } from "./game-knowledge.ts";
+import { mapKey, mapOf } from "./game-maps.ts";
 import { movePages } from "./game-moves.ts";
 import { acrossHint, crossedRoads, openLegs } from "./game-open.ts";
 import { nearPlaces, pointText, positionOf, regionAt } from "./game-positions.ts";
@@ -20,6 +21,7 @@ import {
     goingText,
     hoursText,
     isVehicleOnly,
+    kindOf,
     lengthText,
     type Measures,
     measuresOf,
@@ -69,6 +71,10 @@ interface Plan
     pace?: string;
     hours: number;
     from?: Position;
+    /** Off the roads, the map it goes on (POS-8); undefined for the main one. */
+    map?: Page;
+    /** By road, the passages between maps on the way (ROA-8). */
+    passages?: string[];
 }
 
 /** How a travel ended (TRV-7, TRV-12): at a place, at the end of a distance in the open, at an event, at the end of the day's travel, or before it began. */
@@ -173,15 +179,19 @@ export const travel = defineCommand({
         const total = { metres: plan.legs.reduce((sum, leg) => sum + leg.length, 0), minutes: plan.legs.reduce((sum, leg) => sum + leg.length / leg.metresAMinute, 0) };
         const headingLeft = plan.goal.heading !== undefined && input.distance !== undefined ? total.metres - covered.metres : undefined;
         const onRoad = stop !== undefined && "on" in stop.spot ? stop.spot.on : undefined;
-        saveJourney(root, stop === undefined ? { ...kept, at: point } : { ...kept, to: plan.goal.to?.name, heading: plan.goal.heading, left: headingLeft, on: onRoad, at: point });
+        // Where it stopped in the open, and on which map (POS-8).
+        const open = { at: point, map: point === undefined ? undefined : plan.map?.name };
+        saveJourney(root, stop === undefined ? { ...kept, ...open } : { ...kept, to: plan.goal.to?.name, heading: plan.goal.heading, left: headingLeft, on: onRoad, ...open });
         const ending: Ending = stop === undefined
             ? plan.goal.to === undefined ? { kind: "reached" } : { kind: "arrived", chain: [plan.goal.to, ...locate(world, plan.goal.to).chain].map((page) => page.name) }
-            : { kind: stop.kind, where: spotText(world, stop.spot, date, measures), left: leftText(plan, total, covered, headingLeft, measures) };
-        const around = point === undefined || plan.from === undefined ? [] : aroundLines(world, roads, plan.from, point, measures);
+            : { kind: stop.kind, where: spotText(world, stop.spot, date, measures, plan.map?.path), left: leftText(plan, total, covered, headingLeft, measures) };
+        const around = point === undefined || plan.from === undefined ? [] : aroundLines(world, roads, plan.from, point, measures, plan.map?.path);
         const merged = mergedTimes(walked.times);
         // What holds around the player character where the journey ended, not where the last hour passed (ENV-5).
         const time = merged === undefined ? undefined : { ...merged, around: merged.passed >= 60 ? aroundLead(world) : undefined };
-        return { ...told, reached: walked.reached, date: formatGameDate(date), travelled, hoursLeft: Math.max(0, plan.hours * 60 - travelled), ending, around, time, notes: walked.notes };
+        // A passage's conditions are its page's text, the master's to judge (ROA-8).
+        const passages = (plan.passages ?? []).map((name) => `The way goes through ${name}, a passage to another map: read its page for when and how it opens.`);
+        return { ...told, reached: walked.reached, date: formatGameDate(date), travelled, hoursLeft: Math.max(0, plan.hours * 60 - travelled), ending, around, time, notes: [...passages, ...walked.notes] };
     },
 
     format(result)
@@ -360,6 +370,7 @@ function roadPlan(setting: Setting, input: { to?: string; pace?: string; }): Pla
         };
     });
     const from = "stop" in start ? start.stop : `${start.stretch.road}, ${lengthText(start.done, measures)} past ${start.stretch.from}`;
+    const passages = [...new Set(legs.flatMap((leg) => (leg.into !== null && leg.into !== undefined && kindOf(system, leg.into).name === "portal" ? [leg.into.name] : [])))];
     return {
         legs: legs.length > 0 ? legs : [{ length: 0, metresAMinute: 1, then: destination, at: () => ({ place: destination.name }) }],
         goal: { to: destination, across: false },
@@ -367,6 +378,7 @@ function roadPlan(setting: Setting, input: { to?: string; pace?: string; }): Pla
         going: goingText(world, system, going, measures),
         pace: going.pace?.name ?? input.pace,
         hours: dayHours(system, roads, way, going, setting.hours),
+        passages,
     };
 }
 
@@ -403,6 +415,15 @@ function openPlan(setting: Setting, input: { to?: string; across?: boolean; towa
     const pace = paceOf(system, input.pace ?? journey?.pace, undefined) as NonNullable<Going["pace"]>;
     const hours = setting.hours ?? system?.travel?.hours ?? 8;
     const destination = input.to === undefined ? undefined : placeNamed(world, input.to);
+    // Off the roads one stays on the map one is on: to another, a passage leads (POS-8, ROA-8).
+    const map = moversMap(world, journey, movers);
+
+    if (destination !== undefined && mapKey(world, destination) !== (map?.path ?? "")) {
+        const where = (root: Page | undefined): string => (root === undefined ? "the main map" : `the map of ${root.name}`);
+        throw new Error(
+            `${destination.name} is on ${where(mapOf(world, destination).root)}, ${movers[0].name} on ${where(map)}: across country one stays on one map. Go through a passage, a road of kind portal, or move them. Nothing changed.`,
+        );
+    }
 
     // Already there only inside the destination: a region holds places kilometres apart, so being in the region is not being at them.
     if (destination !== undefined && movers[0] !== undefined && [movers[0], ...locate(world, movers[0]).chain].includes(destination)) {
@@ -411,7 +432,7 @@ function openPlan(setting: Setting, input: { to?: string; across?: boolean; towa
 
     const { target, bounded } = destination === undefined ? headingTarget(from, input.toward ?? "", input.distance, journey, pace.speed) : { target: destinationPosition(world, destination), bounded: true };
     const length = distanceBetween(from, target);
-    const legs = openLegs(world, system, from, target, pace.speed);
+    const legs = openLegs(world, system, from, target, pace.speed, map?.path);
     let start = 0;
     const steps: Leg[] = legs.map((leg, index) => {
         const offset = start;
@@ -428,8 +449,8 @@ function openPlan(setting: Setting, input: { to?: string; across?: boolean; towa
     const time = durationText(legs.reduce((sum, leg) => sum + leg.length / leg.metresAMinute, 0), hours);
     const heading = input.toward === undefined ? undefined : directionName(readDirection(input.toward) ?? 0);
     const way = destination === undefined
-        ? `${heading} from ${pointText(world, from, measures)}, ${bounded ? `${lengthText(length, measures)} through ${through}; ${time}` : "until the day's travel ends"}`
-        : `straight from ${pointText(world, from, measures)} to ${destination.name}, ${lengthText(length, measures)} through ${through}; ${time}`;
+        ? `${heading} from ${pointText(world, from, measures, map?.path)}, ${bounded ? `${lengthText(length, measures)} through ${through}; ${time}` : "until the day's travel ends"}`
+        : `straight from ${pointText(world, from, measures, map?.path)} to ${destination.name}, ${lengthText(length, measures)} through ${through}; ${time}`;
     return {
         legs: steps.length > 0 ? steps : [{ length: 0, metresAMinute: 1, then: destination, at: () => ({ at: target }) }],
         goal: { to: destination, heading, across: true },
@@ -438,6 +459,7 @@ function openPlan(setting: Setting, input: { to?: string; across?: boolean; towa
         pace: pace.name ?? input.pace,
         hours,
         from,
+        ...(map === undefined ? {} : { map }),
     };
 }
 
@@ -477,15 +499,18 @@ function destinationPosition(world: World, destination: Page): Position
     return position;
 }
 
-/** What is around a point in the open (TRV-13): the region and its terrain, the places near, the roads crossed on the way, and how to make the spot a place. */
-function aroundLines(world: World, roads: Roads, from: Position, point: Position, measures: Measures): string[]
+/**
+ * What is around a point in the open of a map (TRV-13, POS-8): the region and its terrain, the places near, the roads crossed on the way, and how to make the
+ * spot a place.
+ */
+function aroundLines(world: World, roads: Roads, from: Position, point: Position, measures: Measures, map = ""): string[]
 {
-    const region = regionAt(world, point)?.page;
+    const region = regionAt(world, point, map)?.page;
     const terrain = region === undefined ? undefined : environmentAt(world, region).find(({ entry }) => entry.name.toLowerCase() === "terrain")?.entry.value;
-    const crossed = crossedRoads(world, roads, from, point, measures);
+    const crossed = crossedRoads(world, roads, from, point, measures, map);
     return [
         region === undefined ? "In the open, in no region." : `In ${region.name}${terrain === undefined ? "" : `, terrain ${terrain}`}.`,
-        `Near: ${nearPlaces(world, point, measures).join(" · ") || "no place with a position"}.`,
+        `Near: ${nearPlaces(world, point, measures, map).join(" · ") || "no place with a position"}.`,
         crossed.length === 0 ? "" : `Crossed: ${crossed.join(" · ")}.`,
         "No place is written here: to make it one, such as a camp, write <name>, type place, here.",
     ].filter((line) => line !== "");
@@ -582,7 +607,7 @@ function readHours(value: number | string | undefined): number | undefined
 }
 
 /** "on Sentiero dei colli, 8 km past Bivio, toward Ponte, at day 3, 13:00"; "at Bivio at day 3, 10:30"; "in Brughiera Nera, 3 km west of Torre, at day 5, 16:00". */
-function spotText(world: World, spot: Spot, date: GameDate, measures: Measures): string
+function spotText(world: World, spot: Spot, date: GameDate, measures: Measures, map = ""): string
 {
     if ("on" in spot) {
         return `on ${spot.on.road}, ${lengthText(spot.on.done, measures)} past ${spot.on.from}, toward ${spot.on.toward}, at ${formatGameDate(date)}`;
@@ -592,8 +617,8 @@ function spotText(world: World, spot: Spot, date: GameDate, measures: Measures):
         return `at ${spot.place} at ${formatGameDate(date)}`;
     }
 
-    const region = regionAt(world, spot.at)?.page.name;
-    const point = pointText(world, spot.at, measures);
+    const region = regionAt(world, spot.at, map)?.page.name;
+    const point = pointText(world, spot.at, measures, map);
     return `${region === undefined ? "in the open" : `in ${region}`}, ${point.includes(" of ") ? point : `at ${point}`}, at ${formatGameDate(date)}`;
 }
 

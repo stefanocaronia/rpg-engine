@@ -7,10 +7,11 @@ import { effectProblems } from "./game-effects.ts";
 import { eventProblems } from "./game-events.ts";
 import { experienceProblems } from "./game-experience.ts";
 import { imageProblems } from "./game-images.ts";
+import { mapProblems } from "./game-maps.ts";
 import { modeProblems } from "./game-mode.ts";
 import { moneyProblems } from "./game-money.ts";
 import { shortRoadProblems } from "./game-positions.ts";
-import { roadProblems } from "./game-roads.ts";
+import { passageProblems, roadProblems } from "./game-roads.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
 import { campaignSystem, systemOccasions, systemProblems, systemSettingProblems } from "./game-world.ts";
@@ -34,6 +35,8 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...experienceProblems(world),
         ...imageProblems(root, context, world),
         ...roadProblems(world, campaignSystem(root, context)),
+        ...passageProblems(world, campaignSystem(root, context)),
+        ...mapProblems(world),
         ...shortRoadProblems(world),
         ...timeProblems(root),
         ...modeProblems(root),

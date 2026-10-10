@@ -7,6 +7,7 @@ import { locate, type Page, pageNamed, parsePageReference, type Position, type W
 import type { GameSystem } from "../systems/index.ts";
 import { journeyStart, moversPosition, readJourney } from "./game-journey.ts";
 import { playerCharacter } from "./game-knowledge.ts";
+import { mapKey } from "./game-maps.ts";
 import { acrossHint, openLegs } from "./game-open.ts";
 import { pointText, positionOf } from "./game-positions.ts";
 import { dayHours, durationText, type Going, goingText, lengthText, type Measures, measuresOf, moversOf, noWayText, paceOf, roadsOf, sameSpot, stopOf, travellingParty, unknownOnRoad, wayFor, wayText } from "./game-roads.ts";
@@ -108,11 +109,18 @@ function acrossRoute(world: World, system: GameSystem | undefined, measures: Mea
         return { kind: "none", text: `${missing?.name} has no position on the map: give it one, such as write ${missing?.name}, set position="12 km NE of [[<a place with one>]]".` };
     }
 
+    // Across country one stays on one map (POS-8): to another, a passage leads.
+    const map = mapKey(world, origin);
+
+    if (mapKey(world, destination) !== map) {
+        return { kind: "none", text: `${destination.name} is on another map than ${origin.name}: across country one stays on one map. A passage, a road of kind portal, leads from one to the other.` };
+    }
+
     const going: Going = { pace: paceOf(system, pace, undefined) };
-    const legs = openLegs(world, system, from, to, going.pace?.speed ?? 0);
+    const legs = openLegs(world, system, from, to, going.pace?.speed ?? 0, map);
     const through = legs.map((leg) => `${leg.region?.name ?? "the open"} (${lengthText(leg.length, measures)})`).join(", ");
     const minutes = legs.reduce((sum, leg) => sum + leg.length / leg.metresAMinute, 0);
-    const way = `Straight from ${pointText(world, from, measures)} to ${destination.name}, ${lengthText(distanceBetween(from, to), measures)} through ${through || "nothing"}`;
+    const way = `Straight from ${pointText(world, from, measures, map)} to ${destination.name}, ${lengthText(distanceBetween(from, to), measures)} through ${through || "nothing"}`;
     return { kind: "way", way, going: goingText(world, system, going, measures), time: durationText(minutes, system?.travel?.hours ?? 8), then: `To go: travel to ${destination.name}, across.` };
 }
 

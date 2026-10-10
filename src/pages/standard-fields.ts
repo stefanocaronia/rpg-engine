@@ -1,6 +1,7 @@
 import { readLength } from "../core/length.ts";
 import { moods } from "../core/mood.ts";
 import { comparableText, sameName } from "../core/text.ts";
+import { mapHelp, readMapField } from "./maps.ts";
 import type { PageType } from "./page-types.ts";
 import { positionHelp, readPosition } from "./positions.ts";
 import { readStops } from "./roads.ts";
@@ -11,17 +12,17 @@ const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;
 /**
  * What a standard field holds: text, a link, a list of links or text, a list of links only, a link or a list of links, a counter, conditions as text or a list of texts,
  * lines of text (a line written without quotes, which YAML reads as a map of one key, counts as the line it was), a road's stops (ROA-1), a place's position (POS-1),
- * a length in metric, or one of some values.
+ * a length in metric, a place's map (POS-8), or one of some values.
  * Counters, conditions and lines are read fully by the commands that use them.
  */
-type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | "stops" | "position" | "length" | readonly string[];
+type Rule = "text" | "link" | "list" | "links" | "linkOrLinks" | "counter" | "conditions" | "lines" | "stops" | "position" | "length" | "map" | readonly string[];
 
 // A page's picture is a link to a file in an images folder (D-267).
 const commonRules: Record<string, Rule> = { tags: "list", aliases: "list", image: "link" };
 
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"], mood: moods },
-    place: { contains: "list", environment: "lines", stops: "stops", position: "position", radius: "length" },
+    place: { contains: "list", environment: "lines", stops: "stops", position: "position", radius: "length", map: "map" },
     item: { contains: "list" },
     creature: { creature: "link" },
     quest: { status: ["planned", "open", "done", "failed"] },
@@ -180,6 +181,8 @@ function problemWith(value: unknown, rule: Rule): string | undefined
             return readPosition(value) !== undefined ? undefined : `must be a point of the map, ${positionHelp}; write gives one from a relation, such as 12 km NE of [[Guadoscuro]].`;
         case "length":
             return readLength(value) !== undefined ? undefined : "must be a length in km or m, such as 10 km.";
+        case "map":
+            return readMapField(value) !== undefined ? undefined : `must be ${mapHelp}, such as under [[Guadoscuro]].`;
     }
 }
 

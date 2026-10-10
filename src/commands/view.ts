@@ -195,7 +195,7 @@ export const view = defineCommand({
         const sight = { root, context, world, knowledge, party: [pc, ...companions] };
 
         if (input.map === true) {
-            return { kind: "map", ...shownMap(sight, measuresOf(root, system)) };
+            return { kind: "map", ...shownMap(sight, measuresOf(root, system), readSettings(root).name) };
         }
 
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).

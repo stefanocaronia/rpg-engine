@@ -276,3 +276,69 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
         expect(map.party).toEqual({ x: 20, y: 0, place: "Rocca" });
     });
 });
+
+describe("the maps (POS-8, ROA-8, D-320)", () => {
+    // Under the main map, the Sottosuolo: the city 3 km south of Guadoscuro, in caverns that lie right under the meadows around Guadoscuro.
+    async function underground(): Promise<void>
+    {
+        await placeTheMap();
+        await ok("write", "Prati", "--type", "place", "--set", "position=0 km E, 0 km N", "--set", "radius=6 km", "--add", "environment=terrain: difficult", "--add", "contains=[[Guadoscuro]]");
+        await ok("write", "Sottosuolo", "--type", "place", "--set", "map=under [[Guadoscuro]]");
+        await ok("write", "Caverne", "--type", "place");
+        await ok("write", "Sottosuolo", "--add", "contains=[[Caverne]]");
+        await ok("write", "Caverne", "--set", "position=3 km S of [[Guadoscuro]]", "--set", "radius=6 km");
+        await ok("write", "Città", "--type", "place");
+        await ok("write", "Caverne", "--add", "contains=[[Città]]");
+        await ok("write", "Città", "--set", "position=3 km S of [[Guadoscuro]]");
+    }
+
+    it("POS-8: a map of its own has its own centre, and positions come from places of one map's coordinates; a place nothing holds is told where to go", async () => {
+        await placeTheMap();
+        await ok("write", "Inferi", "--type", "place", "--set", "map=own");
+        await ok("write", "Dite", "--type", "place");
+        await ok("write", "Stige", "--type", "place");
+        await ok("write", "Inferi", "--add", "contains=[[Dite]]", "--add", "contains=[[Stige]]");
+        expect(await ok("write", "Stige", "--set", "position=5 km N of [[Dite]]")).toContain("Dite is now the centre of the map, at 0 km E, 0 km N");
+        expect(await refused("write", "Stige", "--set", "position=5 km N of [[Rocca]]")).toBe(
+            "Stige is on the map of Inferi, Rocca on the main map: give its position from a place of its map, or of one with the same coordinates. Nothing changed.",
+        );
+        expect(await ok("write", "Fiume ardente", "--type", "place", "--set", "position=2 km E of [[Stige]]")).toContain(
+            "Fiume ardente has its position on the map of Inferi, but nothing holds it there yet: put it in, such as write Inferi, add contains=[[Fiume ardente]].",
+        );
+        expect(await refused("write", "Dite", "--set", "map=sotto [[Guadoscuro]]")).toContain('"map" must be own, for coordinates of its own, or under [[Place]] or mirror of [[Place]]');
+    });
+
+    it("POS-8, TRV-12: off the roads under the map, the regions are the map's own, and the journey keeps the map it stopped on; across country one stays on one map", async () => {
+        await underground();
+        await ok("move", "Ettore", "Lena", "--to", "Città");
+        const output = await ok("travel", "--toward", "east", "--distance", "2 km");
+        // The caverns, not the meadows above them.
+        expect(output).toContain("In Caverne.");
+        expect(output).not.toContain("Prati");
+        expect(state()).toContain('map: "[[Sottosuolo]]"');
+        expect(await ok("status")).toContain("in Caverne");
+        expect(await refused("travel", "Rocca", "--across")).toBe(
+            "Rocca is on the main map, Ettore on the map of Sottosuolo: across country one stays on one map. Go through a passage, a road of kind portal, or move them. Nothing changed.",
+        );
+    });
+
+    it("ROA-8: a passage joins two maps, the journey says it goes through it; another road between maps is a problem", async () => {
+        await underground();
+        await ok("write", "Scala del Drago", "--type", "place", "--set", "kind=portal", "--set", "stops=[[Guadoscuro]], 500 m, [[Città]]");
+        expect(await ok("travel", "Città")).toContain("The way goes through Scala del Drago, a passage to another map: read its page for when and how it opens.");
+        expect(await ok("validate")).not.toContain("Scala del Drago");
+        await ok("write", "Galleria", "--type", "place", "--set", "stops=[[Rocca]], 4 km, [[Città]]");
+        expect(await ok("validate")).toContain("Galleria joins places of different maps, as only a passage does.");
+    });
+
+    it("VIEW-7: the maps the character knows, each place and point with its map, the distance from the party only on its map", async () => {
+        await underground();
+        await ok("write", "Scala del Drago", "--type", "place", "--set", "kind=portal", "--set", "stops=[[Guadoscuro]], 500 m, [[Città]]");
+        await ok("reveal", "Sottosuolo", "Città", "Scala del Drago");
+        const map = JSON.parse(await ok("view", "--map", "--json"));
+        expect(map.maps).toEqual([{ name: "Valle", main: true }, { name: "Sottosuolo", under: "Valle" }]);
+        expect(map.places.find((place: { name: string; }) => place.name === "Città")).toEqual({ name: "Città", x: 0, y: -3, map: "Sottosuolo", within: ["Sottosuolo"] });
+        expect(map.roads.find((road: { name: string; }) => road.name === "Scala del Drago").points).toEqual([{ name: "Guadoscuro", x: 0, y: 0, km: 0 }, { name: "Città", x: 0, y: -3, map: "Sottosuolo", km: 0.5 }]);
+        expect(await ok("view", "--map")).toContain("On the map of Sottosuolo: Città.");
+    });
+});

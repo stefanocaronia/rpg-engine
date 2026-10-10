@@ -8,6 +8,7 @@ import { quickestWay, type Speed, type Start, type Step, type Stretch, stretches
 import { environmentAt, isEmptyField, isInParty, locate, type Page, pagesWithName, readStops, type World } from "../pages/index.ts";
 import type { GameSystem, TravelKind } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { mapKey } from "./game-maps.ts";
 
 /** The roads of the world (ROA-4): their stretches, in the order of the pages and of their stops; the page of each road by its name; the names of the stops. */
 export interface Roads
@@ -299,13 +300,26 @@ export function roadProblems(world: World, system: GameSystem | undefined): Prob
 
     return [...roadsOf(world).pages.values()].flatMap((road) => {
         const { name, kind } = kindOf(system, road);
-        return kind !== undefined || name === "road"
+        // A road and a passage between maps are the engine's own kinds (ROA-2, ROA-8).
+        return kind !== undefined || name === "road" || name === "portal"
             ? []
             : [{
                 path: road.path,
                 message: `${road.name} has kind ${name}, which the game system does not know: it is travelled as a road.`,
                 fix: `write ${road.name}, set kind to one of ${kinds.map((known) => known.name).join(", ")}, or add the kind to the campaign with config travel`,
             }];
+    });
+}
+
+/** The roads between places of different maps that are not passages (ROA-8): a road stays on one map, a passage joins two. */
+export function passageProblems(world: World, system: GameSystem | undefined): Problem[]
+{
+    return [...roadsOf(world).pages.values()].flatMap((road) => {
+        const stops = roadsOf(world).stretches.filter((stretch) => stretch.road === road.name).flatMap((stretch) => [stretch.from, stretch.to]);
+        const maps = new Set(stops.map((name) => pagesWithName(world, name)[0]).filter((page) => page !== undefined).map((page) => mapKey(world, page)));
+        return maps.size < 2 || kindOf(system, road).name === "portal"
+            ? []
+            : [{ path: road.path, message: `${road.name} joins places of different maps, as only a passage does.`, fix: `write ${road.name}, set kind=portal, if it is one; else move its stops onto one map` }];
     });
 }
 

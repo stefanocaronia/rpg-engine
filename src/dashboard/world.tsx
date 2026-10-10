@@ -21,9 +21,13 @@ import {
     liftedOf,
     type MapLayout,
     mapLayout,
+    mapNameOf,
+    type MapPart,
+    mapPart,
     type MapView,
     marksOf,
     nameRun,
+    nameShares,
     pathOf,
     placeAreaLabels,
     placeLabels,
@@ -32,6 +36,7 @@ import {
     scaleBar,
     type Spot,
     trailCourse,
+    waterOf,
     type WayShape,
     wayShapes,
     waysOf,
@@ -54,7 +59,13 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
     const [chosen, setChosen] = useState<string>();
     // A place chosen from the list or on the map: the map brings it where the card leaves room.
     const [focus, setFocus] = useState({ name: "", count: 0 });
-    const layout = useMemo(() => (map === undefined ? undefined : mapLayout(map)), [map]);
+    // The map shown (POS-8): the one the player picked, else the party's, else the first the character knows.
+    const [picked, setPicked] = useState<string>();
+    const current = map === undefined ? undefined : [picked, map.party === undefined ? undefined : mapNameOf(map, map.party), map.maps[0]?.name].find((name) => name !== undefined && map.maps.some((known) => known.name === name));
+    const part = useMemo(() => (map === undefined || current === undefined ? undefined : mapPart(map, current)), [map, current]);
+    // What the current map draws, as the drawing reads a world map: its places, its roads, its party.
+    const drawn = useMemo(() => (map === undefined || part === undefined ? undefined : { ...map, places: part.places, roads: part.roads, party: part.party, trail: [] }), [map, part]);
+    const layout = useMemo(() => (drawn === undefined ? undefined : mapLayout(drawn)), [drawn]);
 
     // Read again whenever the game changes.
     useEffect(() => {
@@ -64,7 +75,7 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
         }, (error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
     }, [version]);
 
-    if (map === undefined || layout === undefined || (layout.spots.length === 0 && layout.regions.length === 0)) {
+    if (map === undefined || drawn === undefined || part === undefined || layout === undefined || (layout.spots.length === 0 && layout.regions.length === 0)) {
         return (
             <section class="upcoming" aria-labelledby="world-title">
                 <h2 id="world-title">World</h2>
@@ -81,18 +92,41 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
         }
     };
 
+    // Another map, and a place on it: the map changes, the place opens (ROA-8).
+    const goTo = (name: string, place?: string): void => {
+        setPicked(name);
+        setChosen(place);
+
+        if (place !== undefined) {
+            setFocus((before) => ({ name: place, count: before.count + 1 }));
+        }
+    };
+
     return (
         <section class="world" aria-labelledby="world-title">
             <h2 id="world-title" class="visually-hidden">World</h2>
-            <MapCard map={map} layout={layout} lead={lead} chosen={chosen} focus={focus} onChoose={choose} />
-            <PlacesList map={map} layout={layout} onChoose={choose} />
+            <MapCard key={part.name} map={drawn} full={map} part={part} layout={layout} lead={lead} chosen={chosen} focus={focus} onChoose={choose} onGo={goTo} />
+            <PlacesList map={drawn} layout={layout} onChoose={choose} />
         </section>
     );
 }
 
-/** The map's card: its head, the map with its tools and the card of the chosen place, the key under it. */
+/**
+ * The map's card: its head, with the maps the character knows as tabs; the map with its tools and the card of the chosen place; the key under it. `map` is what
+ * the current map draws, `full` the whole world map, for the ways that lead to other maps.
+ */
 function MapCard(
-    { map, layout, lead, chosen, focus, onChoose }: { map: WorldMap; layout: MapLayout; lead?: Member; chosen?: string; focus: { name: string; count: number; }; onChoose: (name: string | undefined) => void; },
+    { map, full, part, layout, lead, chosen, focus, onChoose, onGo }: {
+        map: WorldMap;
+        full: WorldMap;
+        part: MapPart;
+        layout: MapLayout;
+        lead?: Member;
+        chosen?: string;
+        focus: { name: string; count: number; };
+        onChoose: (name: string | undefined) => void;
+        onGo: (map: string, place?: string) => void;
+    },
 )
 {
     const box = useRef<HTMLDivElement>(null);
@@ -100,8 +134,17 @@ function MapCard(
     const [view, setView] = useState<MapView>();
     // The ways drawn by hand and the trail along them, once for each map: the same at every drawing.
     const ways = useMemo(() => wayShapes(map), [map]);
-    const trail = useMemo(() => trailCourse(map.trail, ways), [map, ways]);
-    const lifted = useMemo(() => liftedOf(map, layout, ways, trail), [map, layout, ways, trail]);
+    const trails = useMemo(() => part.trails.map((run) => trailCourse(run, ways, waterOf(map))), [part, ways, map]);
+    const lifted = useMemo(() => liftedOf(map, layout, ways, trails), [map, layout, ways, trails]);
+    // Under a map aligned with another, the other one as a ghost: its ways and its places, faint (D-320).
+    const ghost = useMemo(() => {
+        if (part.ghost === undefined) {
+            return undefined;
+        }
+
+        const { places, roads } = part.ghost;
+        return { ways: wayShapes({ ...full, places, roads }), spots: places.filter((place): place is Spot => place.x !== undefined && place.y !== undefined && place.radius === undefined) };
+    }, [part, full]);
     const pointers = useRef(new Map<number, { x: number; y: number; }>());
     const drag = useRef<{ view: MapView; x: number; y: number; spread: number; moved: boolean; }>();
     const narrow = size !== undefined && size.width < 600;
@@ -240,16 +283,35 @@ function MapCard(
 
     const spot = layout.spots.find((one) => one.name === chosen);
     const where = layout.partySpot === undefined ? "" : `, your party at ${layout.partySpot.name}`;
+    const here = full.maps.find((known) => known.name === part.name);
+    const partyMap = full.party === undefined ? undefined : mapNameOf(full, full.party);
     return (
         <section class="map-card" aria-labelledby="map-title">
             <header class="map-head">
                 <h3 id="map-title">Map</h3>
-                <span class="map-sub">{`${layout.spots.length} ${layout.spots.length === 1 ? "place" : "places"} you know`}</span>
+                <span class="map-sub">
+                    {[
+                        `${layout.spots.length} ${layout.spots.length === 1 ? "place" : "places"} you know`,
+                        here?.under === undefined ? undefined : `under ${here.under}`,
+                        here?.mirror === undefined ? undefined : `the mirror of ${here.mirror}`,
+                        partyMap === undefined || partyMap === part.name ? undefined : `your party is on ${partyMap}`,
+                    ].filter((text) => text !== undefined).join(" · ")}
+                </span>
                 <button type="button" class="map-to-list" onClick={() => document.getElementById("places-title")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
                     <Icon name="list" />
                     <span>List</span>
                 </button>
             </header>
+            {full.maps.length > 1 && (
+                <nav class="map-tabs" aria-label="Maps">
+                    {full.maps.map((known) => (
+                        <button key={known.name} type="button" class="map-tab" aria-current={known.name === part.name ? "true" : undefined} onClick={() => onGo(known.name)}>
+                            {known.name}
+                            {known.name === partyMap && <span class="map-tab-party" aria-label="your party is here" />}
+                        </button>
+                    ))}
+                </nav>
+            )}
             <div
                 ref={box}
                 class="map"
@@ -264,17 +326,36 @@ function MapCard(
                 onPointerCancel={onPointerUp}
                 onKeyDown={onKeyDown}
             >
-                {size !== undefined && view !== undefined && <Drawing map={map} layout={layout} ways={ways} trail={trail} lifted={lifted} lead={lead} view={view} size={size} narrow={narrow} chosen={chosen} />}
+                {size !== undefined && view !== undefined && (
+                    <Drawing
+                        map={map}
+                        layout={layout}
+                        ways={ways}
+                        trails={trails}
+                        lifted={lifted}
+                        ghost={ghost}
+                        passages={part.passages.map((passage) => passage.place)}
+                        lead={lead}
+                        view={view}
+                        size={size}
+                        narrow={narrow}
+                        chosen={chosen}
+                    />
+                )}
                 <div class="map-tools" role="toolbar" aria-label="Map">
                     <Tool name="plus" label="Zoom in" onClick={() => zoom(zoomStep)} />
                     <Tool name="minus" label="Zoom out" onClick={() => zoom(1 / zoomStep)} />
-                    <Tool name="locate" label="Your party" onClick={() => map.party !== undefined && view !== undefined && setView({ ...view, x: map.party.x, y: map.party.y })} />
+                    <Tool
+                        name="locate"
+                        label="Your party"
+                        onClick={() => (map.party !== undefined && view !== undefined ? setView({ ...view, x: map.party.x, y: map.party.y }) : partyMap !== undefined && onGo(partyMap))}
+                    />
                     <Tool name="fit" label="All you know" onClick={() => size !== undefined && setView(fitView(lifted, size.width, size.height))} />
                 </div>
                 <p id="map-help" class="visually-hidden">Arrows move the map, plus and minus zoom, Escape closes a place's card. The list of places below says the same.</p>
-                {spot !== undefined && <PlaceCard place={spot} map={map} layout={layout} narrow={narrow} onClose={() => onChoose(undefined)} />}
+                {spot !== undefined && <PlaceCard place={spot} map={full} layout={layout} narrow={narrow} onClose={() => onChoose(undefined)} onGo={onGo} />}
             </div>
-            <Key map={map} layout={layout} narrow={narrow} />
+            <Key map={map} layout={layout} narrow={narrow} trail={trails.length > 0} passages={part.passages.length > 0} />
         </section>
     );
 }
@@ -284,12 +365,14 @@ function MapCard(
  * their tails into the fog, the trail, the places, the party, the labels, the compass and the scale.
  */
 function Drawing(
-    { map, layout, ways, trail, lifted, lead, view, size, narrow, chosen }: {
+    { map, layout, ways, trails, lifted, ghost, passages, lead, view, size, narrow, chosen }: {
         map: WorldMap;
         layout: MapLayout;
         ways: WayShape[];
-        trail: MapPoint[];
+        trails: MapPoint[][];
         lifted: Lifted;
+        ghost?: { ways: WayShape[]; spots: Spot[]; };
+        passages: string[];
         lead?: Member;
         view: MapView;
         size: { width: number; height: number; };
@@ -317,7 +400,7 @@ function Drawing(
     const markBoxes = layout.spots.map((spot) => ({ x: X(spot.x) - symbolOf(spot).r, y: Y(spot.y) - symbolOf(spot).r, width: symbolOf(spot).r * 2, height: symbolOf(spot).r * 2 }));
     const regionWishes = layout.regions.map((region) => ({
         x: X(region.x),
-        ys: [-0.55, 0.55, 0, -0.8, 0.8].map((share) => Y(region.y + region.radius * share)),
+        ys: nameShares(region, hexes).map((share) => Y(region.y + region.radius * share)),
         width: region.name.length * 14,
         height: region.terrain === undefined ? 20 : 34,
     }));
@@ -326,8 +409,8 @@ function Drawing(
     // A way's name along its longest run between two stops on the screen, following its bends, when the run holds it.
     const wayNames = drawn.map((way) => {
         const run = nameRun(screen(way.course), way.stops, way.name.length * 7.5 + 60);
-        // A river's bends would scatter its name: it goes along the river's way instead, beside the water.
-        return run === undefined || wayLook(way.kind) !== "river" ? run : [run[0], run.at(-1) as MapPoint];
+        // The bends of a river or a path would scatter its name: it goes along their way instead, beside them.
+        return run === undefined || wayLook(way.kind) === "road" ? run : [run[0], run.at(-1) as MapPoint];
     });
     const labels = placeLabels(
         layout.spots.map((spot) => {
@@ -394,7 +477,14 @@ function Drawing(
             ))}
             <rect class="map-grain" width={width} height={height} filter="url(#map-grain)" />
             {/* Where the party has been: a band under the ways, as a highlighter would mark it. */}
-            {trail.length > 1 && <path class="trail" d={line(trail)} />}
+            {trails.map((run, index) => <path key={index} class="trail" d={line(run)} />)}
+            {/* The map this one lies under or mirrors, as a ghost under its ways: it shares its coordinates (D-320). */}
+            {ghost !== undefined && (
+                <g class="ghost">
+                    {ghost.ways.map((way) => <WayDrawing key={way.name} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
+                    {ghost.spots.map((spot) => <PlaceSymbol key={spot.name} spot={spot} x={X(spot.x)} y={Y(spot.y)} chosen={false} />)}
+                </g>
+            )}
             {drawn.map((way) => <WayDrawing key={way.name} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
             {drawn.map((way, index) =>
                 wayNames[index] === undefined ? null : (
@@ -404,6 +494,8 @@ function Drawing(
                 )
             )}
             <rect class="map-age" width={width} height={height} fill="url(#map-age)" />
+            {/* A passage to another map: a ring round its place (ROA-8). */}
+            {layout.spots.filter((spot) => passages.includes(spot.name)).map((spot) => <circle key={spot.name} class="passage-ring" cx={X(spot.x)} cy={Y(spot.y)} r={symbolOf(spot).r + 5} />)}
             {layout.spots.filter((spot) => spot !== layout.partySpot).map((spot) => <PlaceSymbol key={spot.name} spot={spot} x={X(spot.x)} y={Y(spot.y)} chosen={spot.name === chosen} />)}
             {party !== undefined && (
                 <g
@@ -504,7 +596,7 @@ function PlaceSymbol({ spot, x, y, chosen }: { spot: Spot; x: number; y: number;
 }
 
 /** The card of a place: its picture, what it is and where, its text as the character knows it, what it holds, its ways, the scene when the party is there. */
-function PlaceCard({ place, map, layout, narrow, onClose }: { place: Spot; map: WorldMap; layout: MapLayout; narrow: boolean; onClose: () => void; })
+function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot; map: WorldMap; layout: MapLayout; narrow: boolean; onClose: () => void; onGo: (map: string, place?: string) => void; })
 {
     const [text, setText] = useState<string>();
     const here = place === layout.partySpot;
@@ -561,7 +653,12 @@ function PlaceCard({ place, map, layout, narrow, onClose }: { place: Spot; map: 
                                     <Icon name={wayIcon(way.kind)} />
                                     <span>
                                         <b>{way.road}</b>
-                                        {` to ${way.to ?? "somewhere you do not know"}`}
+                                        {` to `}
+                                        {way.map === undefined || way.to === undefined ? way.to ?? "somewhere you do not know" : (
+                                            <button type="button" class="way-to-map" onClick={() => onGo(way.map as string, way.to)}>
+                                                {`${way.to}, on ${way.map}`}
+                                            </button>
+                                        )}
                                         {way.km !== undefined && <span class="way-km num">{` · ${lengthText(way.km, map.unit)}`}</span>}
                                     </span>
                                 </li>
@@ -581,9 +678,10 @@ function PlaceCard({ place, map, layout, narrow, onClose }: { place: Spot; map: 
 }
 
 /** The key under the map: the ways, the trail and the party; the land's biomes, difficult terrain and the fog; the kinds of place on this map. */
-function Key({ map, layout, narrow }: { map: WorldMap; layout: MapLayout; narrow: boolean; })
+function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: MapLayout; narrow: boolean; trail: boolean; passages: boolean; })
 {
-    const ways = [...new Set(map.roads.map((road) => wayLook(road.kind)))].sort((first, second) => wayRank(first) - wayRank(second));
+    // A passage is no line on the map: its ring says it (ROA-8).
+    const ways = [...new Set(map.roads.filter((road) => road.kind !== "portal").map((road) => wayLook(road.kind)))].sort((first, second) => wayRank(first) - wayRank(second));
     const lands = [...new Set(layout.regions.map((region) => biomeLook(region.biome)))].filter((look) => look !== "open");
     const kinds = [...new Set(layout.spots.map((spot) => (spot.kind !== undefined && placeKinds[spot.kind] !== undefined ? spot.kind : "other")))];
     return (
@@ -608,7 +706,7 @@ function Key({ map, layout, narrow }: { map: WorldMap; layout: MapLayout; narrow
                                 {look === "other" ? "Other way" : `${look[0].toUpperCase()}${look.slice(1)}`}
                             </li>
                         ))}
-                        {map.trail.length > 1 && (
+                        {trail && (
                             <li>
                                 <svg class="key-way" viewBox="0 0 30 16" aria-hidden="true">
                                     <path class="trail" d="M4 8h22" />
@@ -623,6 +721,14 @@ function Key({ map, layout, narrow }: { map: WorldMap; layout: MapLayout; narrow
                             </svg>
                             Your party
                         </li>
+                        {passages && (
+                            <li>
+                                <svg class="key-symbol" viewBox="-12 -12 24 24" aria-hidden="true">
+                                    <circle class="passage-ring" r={9} />
+                                </svg>
+                                Passage to another map
+                            </li>
+                        )}
                     </ul>
                 </div>
                 <div class="key-group">

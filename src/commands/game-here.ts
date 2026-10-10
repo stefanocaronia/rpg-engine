@@ -3,7 +3,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
 import { type FieldChange, formatPosition, type Page, pagesWithName, type Position, readStops, withPage, type World, writePage } from "../pages/index.ts";
-import { type Journey, journeyPoint, journeyStart, moversNamed, type OnRoad, readJourney, saveJourney } from "./game-journey.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, type OnRoad, readJourney, saveJourney } from "./game-journey.ts";
 import { movePages } from "./game-moves.ts";
 import { positionFromWrite, regionAt } from "./game-positions.ts";
 import { lengthText, roadsOf } from "./game-roads.ts";
@@ -66,7 +66,7 @@ export function hereFields(here: Here, change: FieldChange): FieldChange
 export function placeHere(root: string, context: Context, world: World, page: Page, here: Here): { world: World; notes: string[]; }
 {
     let now = world;
-    const holder = here.on === undefined ? (here.at === undefined ? undefined : regionAt(now, here.at)?.page) : pagesWithName(now, here.on.road)[0];
+    const holder = here.on === undefined ? (here.at === undefined ? undefined : regionAt(now, here.at, moversMap(now, here.journey, here.movers)?.path)?.page) : pagesWithName(now, here.on.road)[0];
     const notes: string[] = [];
 
     if (here.on !== undefined) {
@@ -101,10 +101,12 @@ export function positionToWrite(world: World, name: string, change: FieldChange)
         return { change, placed: { notes: [] } };
     }
 
-    const { position, spread, origin } = positionFromWrite(world, value, name);
+    const { position, spread, origin, map } = positionFromWrite(world, value, name);
     const notes = [
         spread >= 100 ? `The relations given are up to ${Math.round(spread / 100) / 10} km apart: ${name} is at their middle. If one is wrong, write the position again.` : "",
         origin === undefined ? "" : `${origin.name} is now the centre of the map, at 0 km E, 0 km N: every other position is given from a place that has one.`,
+        // A place given its position from another map is on that map only once that map's place holds it (POS-8).
+        map === undefined ? "" : `${name} has its position on the map of ${map.name}, but nothing holds it there yet: put it in, such as write ${map.name}, add contains=[[${name}]].`,
     ].filter((note) => note !== "");
     return { change: { ...change, set: { ...change.set, position: formatPosition(position) } }, placed: { origin, notes } };
 }

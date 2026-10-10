@@ -91,10 +91,35 @@ export interface Way
     kind: string;
     to?: string;
     km?: number;
+    /** The map the next stop is on, when it is another, through a passage (ROA-8). */
+    map?: string;
 }
 
-// How a kind of way wanders off the straight line: at most a share of the stretch, and so many km; and how long its bends are, in km.
-const wander: Record<string, { share: number; most: number; bend: number; }> = {
+/**
+ * What one map draws (POS-8, D-320): its places, its roads cut where they leave it, its party and the runs of the trail on it; the passages from it to other
+ * maps; and, under a map aligned with another, that other one as a ghost.
+ */
+export interface MapPart
+{
+    name: string;
+    places: WorldMap["places"];
+    roads: WorldMap["roads"];
+    party?: WorldMap["party"];
+    trails: MapPoint[][];
+    passages: { place: string; road: string; to: string; map: string; }[];
+    ghost?: { name: string; places: WorldMap["places"]; roads: WorldMap["roads"]; };
+}
+
+/** How a kind of way wanders off the straight line: at most a share of the stretch, and so many km; and how long its bends are, in km. */
+interface Wander
+{
+    share: number;
+    most: number;
+    bend: number;
+}
+
+// How each kind of way wanders.
+const wander: Record<string, Wander> = {
     river: { share: 0.09, most: 1.6, bend: 7 },
     road: { share: 0.05, most: 0.9, bend: 7 },
     path: { share: 0.1, most: 1.3, bend: 2.6 },
@@ -104,6 +129,12 @@ const wander: Record<string, { share: number; most: number; bend: number; }> = {
 // How many marks a hex of each biome holds, and where, as shares of its radius from its centre.
 const markCounts: Record<string, number> = { forest: 3, moor: 3, swamp: 2, hills: 2, mountains: 2, plains: 2, desert: 2, snow: 2, water: 2 };
 const markPattern: [number, number][] = [[-0.36, -0.18], [0.34, -0.12], [0.0, 0.36]];
+// How far past a lake's or a sea's hexes a road or a path goes round it, in km.
+const shore = 0.8;
+// How far at least a river and a way between the same two places keep off the line between them, each on its side, in km.
+const bank = 0.3;
+// How wide a hex is at the nearest, in km.
+const hexKm = 6;
 // How far a way's tail goes into the fog, in km: a hex and a half.
 const tailKm = 9;
 // How near a place, in km, the fog lifts around it, and along a road or the trail.
@@ -124,7 +155,7 @@ export function mapLayout(map: WorldMap): MapLayout
 }
 
 /** What the fog lifts: around the places and over the regions, along the ways as drawn and their beginnings toward the unknown, and along the trail. */
-export function liftedOf(map: WorldMap, layout: MapLayout, ways: WayShape[], trail: MapPoint[]): Lifted
+export function liftedOf(map: WorldMap, layout: MapLayout, ways: WayShape[], trails: MapPoint[][]): Lifted
 {
     const beginnings = map.roads.flatMap((road) => [
         ...(road.before === undefined || road.points[0] === undefined ? [] : [[road.points[0], road.before]]),
@@ -132,15 +163,20 @@ export function liftedOf(map: WorldMap, layout: MapLayout, ways: WayShape[], tra
     ]);
     return {
         circles: [...layout.spots.map((spot) => ({ x: spot.x, y: spot.y, r: placeReach })), ...layout.regions.map((region) => ({ x: region.x, y: region.y, r: region.radius }))],
-        lines: [...ways.map((way) => way.course), ...beginnings, trail].filter((line) => line.length > 0),
+        lines: [...ways.map((way) => way.course), ...beginnings, ...trails].filter((line) => line.length > 0),
     };
 }
 
 /** The ways as drawn by hand: each road's course wandering through its points, seeded by its name, and its tails into the fog beyond its known ends. */
 export function wayShapes(map: WorldMap): WayShape[]
 {
+    const water = waterOf(map);
+    const banks = sharedStretches(map.roads);
     return map.roads.map((road) => {
-        const { course, stops } = meander(road.points, road.kind, road.name);
+        // A river may run into a lake and out of it; a road or a path goes round it. Between two places a river and a way share, each keeps to its bank.
+        const around = road.kind === "river" ? [] : water;
+        const side = (from: MapPoint, to: MapPoint): number => banks.has(stretchKey(from, to)) ? (road.kind === "river" ? 1 : -1) * (pointKey(from) < pointKey(to) ? 1 : -1) : 0;
+        const { course, stops } = meander(road.points, road.kind, road.name, around, side);
 
         const tail = (end: MapPoint | undefined, toward: MapPoint | undefined, from: "before" | "after"): WayShape["tails"] => {
             const length = end === undefined || toward === undefined ? 0 : Math.hypot(toward.x - end.x, toward.y - end.y);
@@ -150,7 +186,7 @@ export function wayShapes(map: WorldMap): WayShape[]
             }
 
             const far = { x: end.x + (toward.x - end.x) / length * tailKm, y: end.y + (toward.y - end.y) / length * tailKm };
-            return [{ from, course: meander([end, far], road.kind, `${road.name} ${from}`).course }];
+            return [{ from, course: meander([end, far], road.kind, `${road.name} ${from}`, around).course }];
         };
 
         return { name: road.name, kind: road.kind, course, stops, tails: [...tail(road.points[0], road.before, "before"), ...tail(road.points.at(-1), road.after, "after")] };
@@ -159,9 +195,13 @@ export function wayShapes(map: WorldMap): WayShape[]
 
 /**
  * A line drawn by hand through its points, in km: each stretch wanders off the straight line and back, as a kind of way does, the same at every drawing for
- * the same seed. Returns the course and the place of each point in it.
+ * the same seed; one that would cross a lake or a sea of `around` goes round it, and one that `sideOf` gives a side, 1 or -1, keeps to that side of its line.
+ * Returns the course and the place of each point in it.
  */
-export function meander(points: MapPoint[], kind: string, seed: string): { course: MapPoint[]; stops: number[]; }
+export function meander(points: MapPoint[], kind: string, seed: string, around: Water[] = [], sideOf = (from: MapPoint, to: MapPoint): number => 0): {
+    course: MapPoint[];
+    stops: number[];
+}
 {
     const random = seeded(seed);
     const style = wander[kind] ?? wander.other;
@@ -170,20 +210,9 @@ export function meander(points: MapPoint[], kind: string, seed: string): { cours
 
     for (const [index, point] of points.entries()) {
         const from = points[index - 1];
-        const length = from === undefined ? 0 : Math.hypot(point.x - from.x, point.y - from.y);
 
-        if (from !== undefined && length > 0) {
-            const steps = Math.max(2, Math.min(160, Math.ceil(length / 0.25)));
-            const amplitude = Math.min(style.most, length * style.share);
-            const bends = Math.max(0.6, length / style.bend);
-            const [first, second, weight] = [random() * Math.PI * 2, random() * Math.PI * 2, 0.25 + random() * 0.3];
-
-            for (let step = 1; step < steps; step++) {
-                const share = step / steps;
-                const wave = Math.sin(2 * Math.PI * bends * share + first) * (1 - weight) + Math.sin(2 * Math.PI * bends * 2.3 * share + second) * weight;
-                const offset = amplitude * Math.sin(Math.PI * share) * wave;
-                course.push({ x: from.x + (point.x - from.x) * share - (point.y - from.y) / length * offset, y: from.y + (point.y - from.y) * share + (point.x - from.x) / length * offset });
-            }
+        if (from !== undefined) {
+            course.push(...stretch(from, point, around, style, random, sideOf(from, point)));
         }
 
         course.push(point);
@@ -193,8 +222,47 @@ export function meander(points: MapPoint[], kind: string, seed: string): { cours
     return { course, stops };
 }
 
-/** The trail as drawn: along a way between two of its points where it went by one, else wandering a little, as one walks in the open. */
-export function trailCourse(trail: MapPoint[], ways: WayShape[]): MapPoint[]
+/** A lake or a sea of the map, in km: its circle, and how far from its centre a way keeps when it can, past the hexes it is drawn with at the nearest. */
+export interface Water
+{
+    x: number;
+    y: number;
+    radius: number;
+    reach: number;
+}
+
+/** The lakes and the seas of a map: its regions whose biome is water. */
+export function waterOf(map: WorldMap): Water[]
+{
+    const hexRadius = hexKm / Math.sqrt(3);
+    return map.places.flatMap((place) => {
+        if (place.biome !== "water" || place.radius === undefined || place.x === undefined || place.y === undefined) {
+            return [];
+        }
+
+        // The water as drawn: the hexes whose centre is in its circle, whose corners reach past it.
+        const [x, y, radius] = [place.x, place.y, place.radius];
+        const [firstColumn, lastColumn] = [Math.floor((x - radius) / (hexRadius * 1.5)), Math.ceil((x + radius) / (hexRadius * 1.5))];
+        const [firstRow, lastRow] = [Math.floor((y - radius) / hexKm) - 1, Math.ceil((y + radius) / hexKm)];
+        let reach = radius;
+
+        for (let column = firstColumn; column <= lastColumn; column++) {
+            for (let row = firstRow; row <= lastRow; row++) {
+                const centre = hexCentre(column, row, hexKm);
+                const distance = Math.hypot(centre.x - x, centre.y - y);
+
+                if (distance <= radius) {
+                    reach = Math.max(reach, distance + hexRadius);
+                }
+            }
+        }
+
+        return [{ x, y, radius, reach: reach + shore }];
+    });
+}
+
+/** The trail as drawn: along a way between two of its points where it went by one, else wandering a little, as one walks in the open, round the water. */
+export function trailCourse(trail: MapPoint[], ways: WayShape[], around: Water[] = []): MapPoint[]
 {
     const same = (first: MapPoint, second: MapPoint): boolean => Math.abs(first.x - second.x) < 0.02 && Math.abs(first.y - second.y) < 0.02;
     return trail.flatMap((point, index) => {
@@ -212,7 +280,7 @@ export function trailCourse(trail: MapPoint[], ways: WayShape[]): MapPoint[]
             }
         }
 
-        return meander([before, point], "trail", `${before.x} ${before.y} ${point.x} ${point.y}`).course.slice(1);
+        return meander([before, point], "trail", `${before.x} ${before.y} ${point.x} ${point.y}`, around).course.slice(1);
     });
 }
 
@@ -248,7 +316,7 @@ export function clampScale(s: number): number
 /** How wide a hex is drawn, in km: 6, or twice as much as often as it takes to stay wider than narrowestHex pixels. */
 export function hexAcross(s: number): number
 {
-    let across = 6;
+    let across = hexKm;
 
     while (across * s < narrowestHex) {
         across *= 2;
@@ -273,7 +341,7 @@ export function hexesOf(view: MapView, width: number, height: number, lifted: Li
 
     for (let column = firstColumn; column <= lastColumn; column++) {
         for (let row = firstRow; row <= lastRow; row++) {
-            const centre = { x: column * radius * 1.5, y: row * across + (Math.abs(column % 2) === 1 ? across / 2 : 0) };
+            const centre = hexCentre(column, row, across);
             const lit = lifted.circles.some((circle) => Math.hypot(centre.x - circle.x, centre.y - circle.y) <= Math.max(circle.r, radius))
                 || lifted.lines.some((line) => line.some((point, index) => index > 0 && toSegment(centre, line[index - 1], point) <= Math.max(lineReach, radius * 0.9)));
             const region = smallestFirst.find((candidate) => Math.hypot(centre.x - candidate.x, centre.y - candidate.y) <= candidate.radius);
@@ -314,6 +382,30 @@ export function regionEdges(hexes: Hex[], across: number): Map<string, [MapPoint
     }
 
     return edges;
+}
+
+/**
+ * Where a region's name may go, as shares of its radius north of its centre, below its middle first, then above, across it: those over its own hexes, not
+ * over a region inside it, as a lake; all of them when none is.
+ */
+export function nameShares(region: Area, hexes: Hex[]): number[]
+{
+    const shares = [-0.55, 0.55, 0, -0.8, 0.8];
+    const own = shares.filter((share) => hexAt(hexes, { x: region.x, y: region.y + region.radius * share })?.region === region.name);
+    return own.length > 0 ? own : shares;
+}
+
+/** The hex a point stands in, of those given: the one whose centre is nearest; none when there are none. */
+export function hexAt(hexes: Hex[], point: MapPoint): Hex | undefined
+{
+    const distance = (hex: Hex): number => Math.hypot(hex.x - point.x, hex.y - point.y);
+    return hexes.reduce<Hex | undefined>((best, hex) => (best === undefined || distance(hex) < distance(best) ? hex : best), undefined);
+}
+
+/** The centre of a hex of the grid, in km: flat on top, its odd columns half a hex lower. */
+export function hexCentre(column: number, row: number, across: number): MapPoint
+{
+    return { x: column * across / Math.sqrt(3) * 1.5, y: row * across + (Math.abs(column % 2) === 1 ? across / 2 : 0) };
 }
 
 /** The corners of a hex flat on top, in km, from its centre and how wide it is. */
@@ -465,7 +557,8 @@ export function waysOf(map: WorldMap, name: string): Way[]
                 const point = road.points[index];
 
                 if (point.name !== undefined) {
-                    return [{ road: road.name, kind: road.kind, to: point.name, km: Math.round(km * 10) / 10 }];
+                    const there = mapNameOf(map, point);
+                    return [{ road: road.name, kind: road.kind, to: point.name, km: Math.round(km * 10) / 10, ...(there === mapNameOf(map, road.points[at]) ? {} : { map: there }) }];
                 }
             }
 
@@ -474,6 +567,45 @@ export function waysOf(map: WorldMap, name: string): Way[]
             return beyond !== undefined || passed ? [{ road: road.name, kind: road.kind }] : [];
         });
     });
+}
+
+/** The map a point or a place is on, by name: the main map's for one that names none. */
+export function mapNameOf(map: WorldMap, thing: { map?: string; }): string
+{
+    return thing.map ?? map.maps.find((known) => known.main)?.name ?? "";
+}
+
+/** One map of the world as drawn (POS-8): what is on it, its roads cut where they leave it, the trail's runs on it, its passages, the map it lies over as a ghost. */
+export function mapPart(map: WorldMap, name: string): MapPart
+{
+    const on = (thing: { map?: string; }): boolean => mapNameOf(map, thing) === name;
+    const known = map.maps.find((one) => one.name === name);
+    const under = known?.under ?? known?.mirror;
+    const passages = map.roads.flatMap((road) =>
+        road.points.flatMap((point, index) => {
+            const others = [road.points[index - 1], road.points[index + 1]].filter((other) => other !== undefined && !on(other) && other.name !== undefined);
+            return on(point) && point.name !== undefined ? others.map((other) => ({ place: point.name as string, road: road.name, to: other.name as string, map: mapNameOf(map, other) })) : [];
+        })
+    );
+    const part = (wanted: (thing: { map?: string; }) => boolean): Pick<MapPart, "places" | "roads"> => ({
+        places: map.places.filter(wanted),
+        roads: map.roads.flatMap((road) =>
+            runsOf(road.points, wanted).map((points, index, runs) => ({
+                ...road,
+                points,
+                ...(index === 0 && road.before !== undefined && wanted(road.points[0]) ? { before: road.before } : { before: undefined }),
+                ...(index === runs.length - 1 && road.after !== undefined && wanted(road.points.at(-1) ?? {}) ? { after: road.after } : { after: undefined }),
+            }))
+        ).map((road) => withoutUndefined(road)),
+    });
+    return {
+        name,
+        ...part(on),
+        ...(map.party !== undefined && on(map.party) ? { party: map.party } : {}),
+        trails: runsOf(map.trail, on).filter((run) => run.length > 1),
+        passages,
+        ...(under === undefined ? {} : { ghost: { name: under, ...part((thing) => mapNameOf(map, thing) === under) } }),
+    };
 }
 
 /** A length in km as the player measures it: km, or the game's miles. */
@@ -489,6 +621,111 @@ export function scaleBar(s: number, unit: WorldMap["unit"], about = 96): { value
     const perUnit = s * unit.km;
     const value = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000].find((candidate) => candidate * perUnit >= about * 0.7) ?? 5000;
     return { value, width: value * perUnit };
+}
+
+/**
+ * The points a stretch is drawn through between its ends, them left out: wandering off the straight line and back, on either side or on the one given, and
+ * round the water it would cross.
+ */
+function stretch(from: MapPoint, to: MapPoint, around: Water[], style: Wander, random: () => number, side: number): MapPoint[]
+{
+    for (const water of around) {
+        const arc = shoreArc(from, to, water, style, random);
+
+        if (arc.length > 0) {
+            const rest = around.filter((other) => other !== water);
+            return [...stretch(from, arc[0], rest, style, random, side), ...arc, ...stretch(arc[arc.length - 1], to, rest, style, random, side)];
+        }
+    }
+
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+
+    if (length === 0) {
+        return [];
+    }
+
+    const [dx, dy] = [to.x - from.x, to.y - from.y];
+    const steps = stepsAlong(length);
+    const offset = swing(length, style, random, side);
+    return Array.from({ length: steps - 1 }, (_, index) => {
+        const share = (index + 1) / steps;
+        return { x: from.x + dx * share - dy / length * offset(share), y: from.y + dy * share + dx / length * offset(share) };
+    });
+}
+
+/**
+ * The way round a lake or a sea a stretch would cross, the short way: from where the line from its start touches the water's reach, along it, to where the
+ * line to its end leaves it, wandering only outward; from a place on the shore it starts at the place and swings out. None when the stretch does not cross
+ * it, or starts or ends on the water, as at a port.
+ */
+function shoreArc(from: MapPoint, to: MapPoint, water: Water, style: Wander, random: () => number): MapPoint[]
+{
+    const [fromDistance, toDistance] = [from, to].map((point) => Math.hypot(point.x - water.x, point.y - water.y));
+    const [fromAngle, toAngle] = [from, to].map((point) => Math.atan2(point.y - water.y, point.x - water.x));
+    // How near the water the way starts and ends its turn round it, and how far round from each end the line touches it there.
+    const [fromRadius, toRadius] = [fromDistance, toDistance].map((distance) => Math.min(water.reach, Math.max(water.radius, distance - 0.05)));
+    const [fromTouch, toTouch] = [Math.acos(fromRadius / fromDistance), Math.acos(toRadius / toDistance)];
+    const total = Math.atan2(Math.sin(toAngle - fromAngle), Math.cos(toAngle - fromAngle));
+
+    if (Math.min(fromDistance, toDistance) <= water.radius || Math.abs(total) <= fromTouch + toTouch) {
+        return [];
+    }
+
+    const sign = Math.sign(total);
+    const sweep = total - sign * (fromTouch + toTouch);
+    const length = Math.abs(sweep) * Math.max(fromRadius, toRadius);
+    // From a place on the shore the way swings out to the reach, as little as a short way allows.
+    const top = Math.min(water.reach, Math.max(fromRadius, toRadius) + length / 4);
+    const steps = stepsAlong(length);
+    const offset = swing(length, style, random, 1);
+    return Array.from({ length: steps + 1 }, (_, index) => {
+        const at = index / steps;
+        const angle = fromAngle + sign * fromTouch + sweep * at;
+        const radius = top - (top - fromRadius) * (1 - at) ** 4 - (top - toRadius) * at ** 4 + offset(at);
+        return { x: water.x + radius * Math.cos(angle), y: water.y + radius * Math.sin(angle) };
+    });
+}
+
+/**
+ * How far off its line a stretch of a way wanders at each share of it, in km, to its left: either side, or only on the side given, 1 for the left and -1 for
+ * the right, and then at least a bank off it.
+ */
+function swing(length: number, style: Wander, random: () => number, side = 0): (share: number) => number
+{
+    const amplitude = Math.min(style.most, length * style.share);
+    const bends = Math.max(0.6, length / style.bend);
+    const least = Math.min(bank, length * 0.08);
+    const [first, second, weight] = [random() * Math.PI * 2, random() * Math.PI * 2, 0.25 + random() * 0.3];
+
+    return (share) => {
+        const wave = Math.sin(2 * Math.PI * bends * share + first) * (1 - weight) + Math.sin(2 * Math.PI * bends * 2.3 * share + second) * weight;
+        return Math.sin(Math.PI * share) * (side === 0 ? amplitude * wave : side * (least + amplitude * (1 + wave) / 2));
+    };
+}
+
+/** The stretches between two places that a river shares with a road or a path, by their stretchKey. */
+function sharedStretches(roads: WorldMap["roads"]): Set<string>
+{
+    const keys = (rivers: boolean): string[] => roads.filter((road) => (road.kind === "river") === rivers).flatMap((road) => road.points.slice(1).map((point, index) => stretchKey(road.points[index], point)));
+    const river = new Set(keys(true));
+    return new Set(keys(false).filter((key) => river.has(key)));
+}
+
+/** A stretch between two points, the same both ways. */
+function stretchKey(from: MapPoint, to: MapPoint): string
+{
+    return [pointKey(from), pointKey(to)].sort().join(" ");
+}
+
+function pointKey(point: MapPoint): string
+{
+    return `${point.x.toFixed(3)},${point.y.toFixed(3)}`;
+}
+
+/** In how many steps a line of this length is drawn: one each 250 m, from 2 to 160. */
+function stepsAlong(length: number): number
+{
+    return Math.max(2, Math.min(160, Math.ceil(length / 0.25)));
 }
 
 /** Numbers that look random, the same for the same seed: mulberry32 over a hash of the seed. */
@@ -509,6 +746,31 @@ function seeded(seed: string): () => number
 function toneOf(column: number, row: number): number
 {
     return seeded(`${column} ${row}`)();
+}
+
+/** The runs of points that stand where `wanted` says, in order: a line cut where it leaves a map. */
+function runsOf<T>(points: T[], wanted: (point: T) => boolean): T[][]
+{
+    return points.reduce<T[][]>((runs, point, index) => {
+        if (!wanted(point)) {
+            return runs;
+        }
+
+        if (index > 0 && wanted(points[index - 1]) && runs.length > 0) {
+            runs[runs.length - 1].push(point);
+        } else {
+            runs.push([point]);
+        }
+
+        return runs;
+    }, []);
+}
+
+/** A road without the ends it does not have. */
+function withoutUndefined<T extends { before?: MapPoint; after?: MapPoint; }>(road: T): T
+{
+    const { before, after, ...rest } = road;
+    return { ...rest, ...(before === undefined ? {} : { before }), ...(after === undefined ? {} : { after }) } as T;
 }
 
 function labelBox(x: number, y: number, anchor: PlacedLabel["anchor"], width: number, size: number): Box
