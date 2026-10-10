@@ -103,6 +103,8 @@ Eight experts review the work and discuss it with the maintainer: subagents with
 | Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-valli` |
 | Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-lanza` |
 
+Portraits: painted illustrations, head and shoulders on a plain background in each colleague's color, made by Codex.
+
 - **When rounds happen**: at milestones, a step of the plan done or a playtest.
 
 ## Conventions
