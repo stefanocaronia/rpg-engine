@@ -10,7 +10,7 @@ import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
-import type { Context, Player, Said } from "./core/context.ts";
+import type { Context, Picked, Player, Said } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -178,14 +178,15 @@ interface Served
     notify(): void;
 }
 
-/** A question of ask on the page: its buttons, and what settles it: a click, a stop or a timeout, or the pages gone. */
+/** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 interface Asked
 {
     id: string;
     question: string;
     title: string;
     labels: string[];
-    settle(choice: number | Said | undefined | "absent"): void;
+    square?: true;
+    settle(choice: number | Said | Picked | undefined | "absent"): void;
 }
 
 // How many characters the player's own words may have, in place of a button (ASK-10).
@@ -261,7 +262,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         const asked = served.asked;
         // Each button's dice in words, for its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
         const words = asked?.labels.map((label) => notationWords(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
-        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words } });
+        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, ...(asked.square ? { square: true } : {}) } });
         return;
     }
 
@@ -340,42 +341,52 @@ function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: U
  */
 function pagePlayer(served: Served): Player
 {
+    const put = (question: string, title: string, labels: string[], square: boolean, signal?: AbortSignal): Promise<number | Said | Picked | undefined | "absent"> => {
+        if (served.pages.size === 0) {
+            return Promise.resolve("absent");
+        }
+
+        // A call stopped before its question was put on the page asks nothing (ASK-9).
+        if (signal?.aborted === true) {
+            return Promise.resolve(undefined);
+        }
+
+        // A question asked again, as after a summary, takes the place of the one before.
+        served.asked?.settle(undefined);
+        return new Promise((done) => {
+            const timer = setTimeout(() => settle(undefined), playerWait).unref();
+
+            const settle = (choice: number | Said | Picked | undefined | "absent"): void => {
+                clearTimeout(timer);
+                signal?.removeEventListener("abort", stop);
+
+                if (served.asked?.id === asked.id) {
+                    served.asked = undefined;
+                    served.notify();
+                }
+
+                done(choice);
+            };
+
+            const stop = (): void => settle(undefined);
+            const asked: Asked = { id: randomUUID(), question, title, labels, ...(square ? { square: true as const } : {}), settle };
+            served.asked = asked;
+            signal?.addEventListener("abort", stop);
+            served.notify();
+        });
+    };
+
     return {
         asking: () => served.asked !== undefined,
-        choose(question, title, labels, signal)
+        async choose(question, title, labels, signal)
         {
-            if (served.pages.size === 0) {
-                return Promise.resolve("absent");
-            }
-
-            // A call stopped before its question was put on the page asks nothing (ASK-9).
-            if (signal?.aborted === true) {
-                return Promise.resolve(undefined);
-            }
-
-            // A question asked again, as after a summary, takes the place of the one before.
-            served.asked?.settle(undefined);
-            return new Promise((done) => {
-                const timer = setTimeout(() => settle(undefined), playerWait).unref();
-
-                const settle = (choice: number | Said | undefined | "absent"): void => {
-                    clearTimeout(timer);
-                    signal?.removeEventListener("abort", stop);
-
-                    if (served.asked?.id === asked.id) {
-                        served.asked = undefined;
-                        served.notify();
-                    }
-
-                    done(choice);
-                };
-
-                const stop = (): void => settle(undefined);
-                const asked: Asked = { id: randomUUID(), question, title, labels, settle };
-                served.asked = asked;
-                signal?.addEventListener("abort", stop);
-                served.notify();
-            });
+            const chosen = await put(question, title, labels, false, signal);
+            return typeof chosen === "object" && "square" in chosen ? undefined : chosen;
+        },
+        async chooseSquare(question, title, change, signal)
+        {
+            const chosen = await put(question, title, [change], true, signal);
+            return typeof chosen === "number" ? (chosen === 0 ? 0 : undefined) : chosen;
         },
     };
 }
@@ -390,15 +401,18 @@ async function answerAsked(request: IncomingMessage, response: ServerResponse, s
     const parsed = z.union([
         z.object({ asked: z.string(), choice: z.number().int().min(0) }).strict(),
         z.object({ asked: z.string(), text: z.string().trim().min(1).max(mostSaid) }).strict(),
+        z.object({ asked: z.string(), square: z.string().regex(/^[A-Za-z]{1,3}\d{1,3}$/) }).strict(),
     ]).safeParse(body);
     const asked = served.asked;
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: `Send which button was clicked, { asked, choice }, or the player's words, { asked, text }, up to ${mostSaid} characters.` });
-    } else if (asked === undefined || asked.id !== parsed.data.asked || ("choice" in parsed.data && parsed.data.choice >= asked.labels.length)) {
+        sendJson(response, 400, { error: `Send which button was clicked, { asked, choice }, the player's words, { asked, text }, up to ${mostSaid} characters, or a square of the map, { asked, square }.` });
+    } else if (
+        asked === undefined || asked.id !== parsed.data.asked || ("choice" in parsed.data && parsed.data.choice >= asked.labels.length) || ("square" in parsed.data && asked.square !== true)
+    ) {
         sendJson(response, 409, { error: "The master no longer asks this." });
     } else {
-        asked.settle("choice" in parsed.data ? parsed.data.choice : { said: parsed.data.text });
+        asked.settle("choice" in parsed.data ? parsed.data.choice : "square" in parsed.data ? { square: parsed.data.square.toUpperCase() } : { said: parsed.data.text });
         sendJson(response, 202, {});
     }
 }

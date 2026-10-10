@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { drawnKinds } from "../src/dashboard/place-map.ts";
+import type { ShownGrid } from "../src/dashboard/data.ts";
+import { drawnKinds, isStandable } from "../src/dashboard/place-map.ts";
 import { closedSquare, mapBlock, readGrid, readSquare, squareName, withoutMapBlock } from "../src/grid/index.ts";
 import { squareKinds } from "../src/map/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
@@ -234,6 +235,18 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         ]);
         await ok("write", "Kira", "--add", "knows=[[Oste]]");
         expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual({ name: "Oste", role: "other", square: "H3", distance: "4.5 m" });
+    });
+
+    it("lets the page offer the player exactly the squares the engine lets one stand on (ASK-11)", async () => {
+        await ok("move", "Kira", "--to", "Locanda");
+        const map: ShownGrid = JSON.parse(await ok("view", "--json")).place.map;
+        const { grid } = readGrid(mapBlock(inn) ?? "");
+        // The map and a square beyond it each way, which is outside.
+        const squares = Array.from({ length: (grid.rows + 1) * (grid.columns + 1) }, (_, index) => ({ column: index % (grid.columns + 1), row: Math.floor(index / (grid.columns + 1)) }));
+        const offered = squares.filter((square) => isStandable(map, square)).map((square) => squareName(square));
+        expect(offered).toEqual(squares.filter((square) => closedSquare(grid, square) === undefined).map((square) => squareName(square)));
+        expect(offered).toContain("E5");
+        expect(offered).not.toContain("B2");
     });
 
     it("gives the dashboard how far each one stands from the player character and how big, and on its turn the squares it can still reach, a hidden pit taken for the floor (D-328)", async () => {

@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
-import type { Context, Player } from "../src/core/context.ts";
+import type { Context, Picked, Player } from "../src/core/context.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -171,5 +171,48 @@ describe("laws of ask (ASK-3, ASK-4)", () => {
             }),
             { numRuns: 60 },
         );
+    });
+});
+
+describe("where the player's character moves on the map (ASK-11)", () => {
+    /** A page that shows the map and gives back the square touched, the change of mind, or nothing. */
+    const pagePicking = (choice: Picked | 0 | undefined): Player => ({
+        choose: async () => undefined,
+        chooseSquare: async (question, title, change) => {
+            shown.push({ question, title, labels: [change] });
+            return choice;
+        },
+    });
+
+    const moved = async (choice: Picked | 0 | undefined): Promise<string> => ask.format(await ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), { ...context, page: pagePicking(choice) }));
+
+    beforeEach(async () => {
+        await rpg("write", "Sala", "--type", "place", "--text", "```map\n#####\n#...#\n#...#\n#####\n```");
+        await rpg("move", "Bruna", "--to", "Sala", "--at", "B2");
+    });
+
+    it("shows the map on the page and moves the character to the square touched, telling the master the way", async () => {
+        expect(await moved({ square: "D3" })).toBe("The player chose where to go: Bruna: now on D3 in Sala, 3 m from B2.");
+        expect(shown).toEqual([{ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"] }]);
+        expect(readLogFile(folder).filter((entry) => entry.type === "asked").at(-1)).toMatchObject({ by: "player", visibility: "public", data: { question: "Dove ti sposti?", answer: "D3" } });
+    });
+
+    it("leaves the character where it is when the player changes their mind, and has the master ask in words without a page", async () => {
+        expect(await moved(0)).toBe("The player changed their mind: their character does not move. Ask what they do instead, and stop.");
+        const inWords = ask.format(await ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), { ...context, player: playerClicking(0) }));
+        expect(inWords).toContain("ask them in words this time what the call held, which they have not seen: Dove ti sposti? (a square of the map of Sala, such as E4)");
+    });
+
+    it("is refused with options, and when the character stands in no place with a map", async () => {
+        expect(await refused({ question: "Dove ti sposti?", square: true, options: ["Sì", "No"] })).toContain("Give square without options");
+        await rpg("write", "Prato", "--type", "place");
+        await rpg("move", "Bruna", "--to", "Prato");
+        expect(await refused({ question: "Dove ti sposti?", square: true })).toBe("Bruna stands in no place with a map: ask in words where they go, and stop.");
+    });
+
+    it("moves no one and logs nothing for a square no one stands on", async () => {
+        const asked = readLogFile(folder).filter((entry) => entry.type === "asked").length;
+        await expect(moved({ square: "A1" })).rejects.toThrow("The player chose A1, but A1 is a wall: Bruna cannot stand there, and nothing moved. Ask again where they go, and stop.");
+        expect(readLogFile(folder).filter((entry) => entry.type === "asked")).toHaveLength(asked);
     });
 });

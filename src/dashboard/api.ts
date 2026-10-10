@@ -40,10 +40,13 @@ export async function readAsked(): Promise<Asked | undefined>
     return body.asked ?? undefined;
 }
 
-/** The player's answer to what the master asks, a button by its place or their own words (ASK-10): true when it counted, false when the master no longer asks it. */
-export async function answer(asked: string, reply: number | string): Promise<boolean>
+/**
+ * The player's answer to what the master asks, a button by its place, their own words (ASK-10) or a square of the map (ASK-11): true when it counted, false when
+ * the master no longer asks it.
+ */
+export async function answer(asked: string, reply: number | string | { square: string; }): Promise<boolean>
 {
-    const body = typeof reply === "number" ? { asked, choice: reply } : { asked, text: reply };
+    const body = typeof reply === "number" ? { asked, choice: reply } : typeof reply === "string" ? { asked, text: reply } : { asked, square: reply.square };
     const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return response.status === 202;
 }

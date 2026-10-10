@@ -132,6 +132,14 @@ export function isSolid(map: ShownGrid, square: Square): boolean
     return solidKinds.includes(kindAt(map, square));
 }
 
+/** Whether one can stand on a square (GRD-3): inside the map, on what the legend names, neither a wall nor what blocks. */
+export function isStandable(map: ShownGrid, square: Square): boolean
+{
+    const symbol = symbolAt(map, square);
+    const feature = map.legend.find((one) => one.symbol === symbol);
+    return symbol !== " " && feature !== undefined && feature.blocks !== true;
+}
+
 /** Whether the map has walls or rock: a building or a cave, which ends at its walls; without, an open map, which fades into the paper. */
 export function isWalled(map: ShownGrid): boolean
 {

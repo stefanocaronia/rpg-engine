@@ -2,17 +2,19 @@
 // the master its result. Or the player's own words, in place of a button (ASK-10). A banner over the page, which never changes section by itself (D-276).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
-import type { Asked } from "./data.ts";
+import type { Asked, ShownGrid } from "./data.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, signed } from "./labels.ts";
+import { MapSheet } from "./map-sheet.tsx";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 8;
 const mostWords = 500;
 
-export function AskedBanner({ asked, yourTurn, onAnswered }: { asked: Asked; yourTurn?: boolean; onAnswered(): void; })
+export function AskedBanner({ asked, yourTurn, map, place, onAnswered }: { asked: Asked; yourTurn?: boolean; map?: ShownGrid; place?: string; onAnswered(): void; })
 {
-    const [sent, setSent] = useState<number | "words">();
+    const [sent, setSent] = useState<number | "words" | "square">();
+    const [picking, setPicking] = useState(false);
     const [problem, setProblem] = useState<string>();
     const [words, setWords] = useState("");
     const banner = useRef<HTMLElement>(null);
@@ -42,11 +44,13 @@ export function AskedBanner({ asked, yourTurn, onAnswered }: { asked: Asked; you
         setSent(undefined);
         setProblem(undefined);
         setWords("");
+        setPicking(false);
     }, [asked.id]);
 
-    // A button by its place, or the player's own words.
-    const reply = async (given: number | string): Promise<void> => {
-        setSent(typeof given === "number" ? given : "words");
+    // A button by its place, the player's own words, or a square of the map.
+    const reply = async (given: number | string | { square: string; }): Promise<void> => {
+        setSent(typeof given === "number" ? given : typeof given === "string" ? "words" : "square");
+        setPicking(false);
         setProblem(undefined);
 
         try {
@@ -78,6 +82,13 @@ export function AskedBanner({ asked, yourTurn, onAnswered }: { asked: Asked; you
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 <div class="asked-buttons">
+                    {/* Where to go is chosen on the map, over the whole page (ASK-11). */}
+                    {asked.square && map !== undefined && (
+                        <button type="button" class={sent === "square" ? "asked-check sent" : "asked-check"} disabled={sent !== undefined} onClick={() => setPicking(true)}>
+                            <Icon name="world" />
+                            <span class="asked-check-name">Choose on the map</span>
+                        </button>
+                    )}
                     {asked.labels.map((label, index) => {
                         const check = checks[index];
                         const kind = check !== undefined ? "asked-check" : roll ? "asked-other" : "asked-answer";
@@ -111,6 +122,7 @@ export function AskedBanner({ asked, yourTurn, onAnswered }: { asked: Asked; you
                 </form>
                 {problem && <p class="asked-problem" role="alert">{problem}</p>}
             </div>
+            {picking && map !== undefined && <MapSheet map={map} place={place ?? ""} question={asked.question} onPick={(square) => void reply({ square })} onClose={() => setPicking(false)} />}
         </section>
     );
 }

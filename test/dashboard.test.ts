@@ -574,6 +574,24 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
+    it("asks for a square of the map on the page: a square to a question of buttons counts for nothing, the square touched moves the character (ASK-11)", async () => {
+        await runCommandLine(["write", "Sala", "--type", "place", "--text", "```map\n#####\n#...#\n#####\n```"], served);
+        await runCommandLine(["move", "Ettore", "--to", "Sala", "--at", "B2"], served);
+        const page = await openPage();
+        const rolling = ask.run(ask.input.parse(wall), served);
+        const roll = await waitAsked();
+        expect((await send("POST", "/api/answer", { asked: roll.id, square: "C2" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: roll.id, choice: 2 })).status).toBe(202);
+        await rolling;
+        const asking = ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), served);
+        const asked = await waitAsked();
+        expect(asked).toMatchObject({ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"], square: true });
+        expect((await send("POST", "/api/answer", { asked: asked.id, square: "zz" })).status).toBe(400);
+        expect((await send("POST", "/api/answer", { asked: asked.id, square: "d2" })).status).toBe(202);
+        expect(ask.format(await asking)).toBe("The player chose where to go: Ettore: now on D2 in Sala, 3 m from B2.");
+        page.close();
+    });
+
     it("gives each check's dice in words for its button's tooltip, when they say more than their dice (D-297)", async () => {
         const page = await openPage();
         const asking = ask.run(ask.input.parse({ question: "Lo spettro ti stringe la gola", options: ["Tiro salvezza Saggezza 2d20kh1+5"] }), served);

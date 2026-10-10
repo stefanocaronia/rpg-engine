@@ -205,6 +205,8 @@ export interface Asked
     labels: string[];
     /** By button, its dice in words when they say more than their dice, as "2d20, keep the highest, +5". */
     words?: (string | null)[];
+    /** Whether it asks where the player's character moves on the map of its place, its one button the change of mind (ASK-11). */
+    square?: true;
 }
 
 /** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */

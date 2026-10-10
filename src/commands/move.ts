@@ -99,6 +99,13 @@ export const move = defineCommand({
     },
 });
 
+/** Puts one on a square of the map of the place it is right in, as move with at, and what move says of it (ASK-11). */
+export function placeOnMap(root: string, context: Context, name: string, square: string): string
+{
+    const { scene } = readOpenScene(root);
+    return move.format(moveOnMap(root, context, campaignWorld(root, context), scene, [name], square, undefined));
+}
+
 /** Moves pages into a place, an item or a character (CON-4), and says what changed around them (CON-8, ENV-5). */
 function moveInto(root: string, context: Context, world: World, scene: Scene | undefined, names: string[], to: string, placing = false): MoveResult
 {

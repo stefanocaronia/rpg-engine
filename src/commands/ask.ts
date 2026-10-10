@@ -4,13 +4,16 @@ import type { Context, Said } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
-import { findPage, loadWorld, type World } from "../pages/index.ts";
+import { closedSquare, readSquare } from "../grid/index.ts";
+import { findPage, loadWorld, locate, type World } from "../pages/index.ts";
+import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
+import { placeOnMap } from "./move.ts";
 
 // The words of the buttons, in the campaign's language; English for the others (ASK-7).
-const buttonWords: Record<string, { roll: string; change: string; choice: string; }> = {
-    en: { roll: "Roll", change: "Change my mind", choice: "Choice" },
-    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta" },
+const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; }> = {
+    en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move" },
+    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento" },
 };
 
 // A list, or one text, as an MCP client may send it.
@@ -31,6 +34,8 @@ type AskResult =
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "said"; words: string; }
+    | { kind: "moved"; text: string; }
+    | { kind: "stays"; }
     | InWords;
 
 export const ask = defineCommand({
@@ -40,14 +45,16 @@ export const ask = defineCommand({
         + "For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice; "
         + "the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
+        + "For where the player's character moves on the map of its place: square, without options; the engine moves them to the square the player touches and gives you the way. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
         + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+5", "Acrobazia 1d20+3"], who Bruna.',
     group: "game",
     needsPlayer: true,
     input: z.object({
         question: z.string().describe("what is at stake either way, or the choice, in one line, in the player's language"),
-        options: textList.describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+5; for a choice, the answers, such as Sì and No; from 1 to 4"),
-        who: z.string().optional().describe("for a roll, the player's character, such as Bruna; the only one there is, if left out"),
+        options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+5; for a choice, the answers, such as Sì and No; from 1 to 4"),
+        who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
+        square: z.boolean().optional().describe("true to ask where the player's character moves on the map of the place it stands in, without options"),
     }),
 
     async run(input, context): Promise<AskResult>
@@ -59,14 +66,22 @@ export const ask = defineCommand({
         }
 
         const question = input.question.trim();
-        const options = readOptions(input.options);
+        const words = buttonWords[(readSettings(root).language ?? "en").split("-")[0]] ?? buttonWords.en;
 
         if (question === "") {
             throw new Error("Give the question: for a roll, what is at stake either way; for a choice, what the player chooses.");
         }
 
+        if (input.square === true) {
+            if (input.options !== undefined) {
+                throw new Error("Give square without options: the player touches a square of the map, and the engine moves their character there.");
+            }
+
+            return squareChosen(root, context, question, input.who, words);
+        }
+
+        const options = readOptions(input.options ?? []);
         const checks = options.filter((option) => option.notation !== undefined);
-        const words = buttonWords[(readSettings(root).language ?? "en").split("-")[0]] ?? buttonWords.en;
 
         // One answer alone is no choice: a roll whose dice are not at the end would become one, and nothing would be rolled (ASK-2, D-266).
         if (checks.length === 0 && options.length === 1) {
@@ -103,6 +118,10 @@ export const ask = defineCommand({
                 return `The player chose: ${result.answer}.`;
             case "said":
                 return `The player answered in their own words, without a button: «${result.words}». Take it as what they do, as if they had written it in the chat; nothing was rolled.`;
+            case "moved":
+                return `The player chose where to go: ${result.text}`;
+            case "stays":
+                return "The player changed their mind: their character does not move. Ask what they do instead, and stop.";
             case "unavailable":
                 return `The player saw no buttons: ask them in words what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop. From now on, always in words.`;
             case "absent":
@@ -151,6 +170,51 @@ async function rollChosen(root: string, context: Context, question: string, chec
     return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total };
 }
 
+/**
+ * Where the player's character moves on the map of its place (ASK-11): only the page can show the map; the square touched moves it, as move with at, and the
+ * master gets what move says. Refused when it stands on no map.
+ */
+async function squareChosen(root: string, context: Context, question: string, given: string | undefined, words: typeof buttonWords.en): Promise<AskResult>
+{
+    const world = loadWorld(root);
+    const who = playerCharacter(world, given);
+    const page = findPage(world, who);
+    const place = page === undefined ? undefined : locate(world, page).chain[0];
+    const map = place === undefined ? undefined : placeGrid(place);
+
+    if (place === undefined || map === undefined) {
+        throw new Error(`${who} stands in no place with a map: ask in words where they go, and stop.`);
+    }
+
+    const asked = `${question} (a square of the map of ${place.name}, such as E4)`;
+    const chosen = context.page?.chooseSquare === undefined ? "absent" : await context.page.chooseSquare(question, words.square, words.change, context.signal);
+
+    // A call the user stopped logs nothing (ASK-9).
+    if (chosen === "absent" || context.signal?.aborted === true) {
+        return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
+    }
+
+    if (isSaid(chosen)) {
+        return said(root, context, question, [words.change], chosen);
+    }
+
+    if (chosen === undefined || chosen === 0) {
+        logAnswer(root, context, question, [words.change], chosen === 0 ? words.change : undefined);
+        return chosen === 0 ? { kind: "stays" } : { kind: "unanswered", asked };
+    }
+
+    const square = readSquare(chosen.square);
+    const closed = square === undefined ? `${chosen.square} is no square of the map` : closedSquare(map.grid, square);
+
+    // A square no one stands on, as one a hidden thing blocks, moves no one and logs nothing.
+    if (closed !== undefined) {
+        throw new Error(`The player chose ${chosen.square}, but ${closed}: ${who} cannot stand there, and nothing moved. Ask again where they go, and stop.`);
+    }
+
+    logAnswer(root, context, question, [words.change], chosen.square);
+    return { kind: "moved", text: placeOnMap(root, context, who, chosen.square) };
+}
+
 /** The buttons of a forced choice: the answers as given (ASK-5). */
 async function answer(root: string, context: Context, question: string, options: Option[], words: typeof buttonWords.en): Promise<AskResult>
 {
@@ -183,9 +247,9 @@ function said(root: string, context: Context, question: string, labels: string[]
     return { kind: "said", words: words.said };
 }
 
-function isSaid(chosen: number | Said | undefined | "unavailable"): chosen is Said
+function isSaid(chosen: unknown): chosen is Said
 {
-    return typeof chosen === "object";
+    return typeof chosen === "object" && chosen !== null && "said" in chosen;
 }
 
 /** "Scavalcare il muro… (the checks: Atletica 1d20+5, Acrobazia 1d20-1)": the call as the master gave it, to ask in words. */

@@ -6,7 +6,7 @@ import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
-import { columnName, exitSide, floorLoops, groundKinds, isSolid, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
+import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
 
 // How wide a square is drawn, in pixels.
 const size = 40;
@@ -15,7 +15,14 @@ const roles = ["pc", "companion", "other"];
 
 type Feature = ShownGrid["legend"][number];
 
-export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string; acting?: string; })
+/** Where the player's character goes, when the master asks (ASK-11): the square chosen so far, and what a touch on a square does. */
+export interface Picking
+{
+    selected?: string;
+    onSelect(square: string): void;
+}
+
+export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; place: string; acting?: string; picking?: Picking; })
 {
     const svg = useRef<SVGSVGElement>(null);
     const scale = useScale(svg);
@@ -80,8 +87,16 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                 <h3 id="lm-title">Map</h3>
                 <span class="lm-sub">{place}</span>
             </header>
-            <div class="lm-frame">
-                <svg ref={svg} class={`lm-svg lm-look-${map.ground}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Map of ${place}`}>
+            <div class={picking === undefined ? "lm-frame" : "lm-frame panned"}>
+                {/* To choose a square, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
+                <svg
+                    ref={svg}
+                    class={`lm-svg lm-look-${map.ground}`}
+                    viewBox={`0 0 ${width} ${height}`}
+                    {...(picking === undefined ? {} : { width: width * 1.2 })}
+                    role="img"
+                    aria-label={`Map of ${place}`}
+                >
                     <defs>
                         <Patterns />
                         <GlassDefs prefix="lm" />
@@ -129,6 +144,24 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                     <g class="lm-tokens">
                         {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} x={middle(one)[0]} y={middle(one)[1]} />)}
                     </g>
+                    {picking !== undefined && (
+                        <g class="lm-picks">
+                            {squares.filter((square) => isStandable(map, square)).map((square) => (
+                                <rect
+                                    key={squareName(square)}
+                                    class={picking.selected === squareName(square) ? "lm-pick selected" : "lm-pick"}
+                                    x={X(square.column) + 1}
+                                    y={Y(square.row) + 1}
+                                    width={size - 2}
+                                    height={size - 2}
+                                    rx={4}
+                                    onClick={() => picking.onSelect(squareName(square))}
+                                >
+                                    <title>{squareName(square)}</title>
+                                </rect>
+                            ))}
+                        </g>
+                    )}
                 </svg>
             </div>
             <ul class="lm-key" aria-label="Legend">

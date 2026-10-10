@@ -4080,6 +4080,104 @@ svg.icon {
     font: 700 10px system-ui, sans-serif;
 }
 
+/* Where the player's character goes, when the master asks (D-332): the map over the whole page, a square touched ringed in gold, the bar to send it. */
+.map-sheet {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.map-sheet[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.map-sheet::backdrop {
+    background: rgb(0 0 0 / 0.4);
+}
+
+.map-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+}
+
+.map-sheet-head h2 {
+    flex: 1;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+}
+
+.map-sheet-body {
+    overflow: auto;
+    padding: 12px 0;
+}
+
+.map-sheet-body .lm {
+    max-width: none;
+}
+
+.map-sheet-bar {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+    background: var(--panel);
+}
+
+.map-sheet-bar input {
+    width: 6em;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    text-transform: uppercase;
+}
+
+.map-sheet-go {
+    flex: 1;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: var(--gold);
+    color: var(--on-gold);
+    font-weight: 700;
+}
+
+.map-sheet-go:disabled {
+    background: color-mix(in srgb, var(--gold) 35%, var(--panel));
+    color: var(--muted);
+}
+
+.lm-pick {
+    fill: transparent;
+    cursor: pointer;
+}
+
+.lm-pick:hover {
+    fill: var(--l-gold);
+    fill-opacity: 0.35;
+}
+
+.lm-pick.selected {
+    fill: var(--l-gold);
+    fill-opacity: 0.45;
+    stroke: #8a5a00;
+    stroke-width: 2.5;
+}
+
 /* The squares the player's character can still reach on its turn (D-328): a gold wash, edged dark as the gold halo, which cream alone would hide. */
 .lm-reach rect {
     fill: var(--l-gold);

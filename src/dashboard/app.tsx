@@ -217,7 +217,7 @@ function App()
                 yourTurn={yourTurn}
             />
             <Notices notices={notices} />
-            {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} onAnswered={() => void read()} />}
+            {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} onAnswered={() => void read()} />}
             {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
             {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
                 <a class="turn-notice" href={sectionAddress("combat")}>

@@ -164,13 +164,14 @@ Read-only: no. Positional parameters: `notation`.
 
 ### ask
 
-Ask the player with buttons: every roll of the player's character, and every choice that is truly theirs to make. The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice; the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. Write nothing before the call: the question carries what is at stake, and the story goes on after the click. Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+5", "Acrobazia 1d20+3"], who Bruna.
+Ask the player with buttons: every roll of the player's character, and every choice that is truly theirs to make. The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice; the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. For where the player's character moves on the map of its place: square, without options; the engine moves them to the square the player touches and gives you the way. Write nothing before the call: the question carries what is at stake, and the story goes on after the click. Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+5", "Acrobazia 1d20+3"], who Bruna.
 
 Read-only: no.
 
 - `question` (`string`, required): what is at stake either way, or the choice, in one line, in the player's language
-- `options` (`string | string[]`, required): for a roll, the checks that fit with their dice, such as Atletica 1d20+5; for a choice, the answers, such as Sì and No; from 1 to 4
-- `who` (`string`, optional): for a roll, the player's character, such as Bruna; the only one there is, if left out
+- `options` (`string | string[]`, optional): for a roll, the checks that fit with their dice, such as Atletica 1d20+5; for a choice, the answers, such as Sì and No; from 1 to 4
+- `who` (`string`, optional): for a roll or a square, the player's character, such as Bruna; the only one there is, if left out
+- `square` (`boolean`, optional): true to ask where the player's character moves on the map of the place it stands in, without options
 
 ### change
 

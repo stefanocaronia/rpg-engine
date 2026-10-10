@@ -63,9 +63,17 @@ export interface Said
     said: string;
 }
 
+/** A square of a place's map the player touched, by its name, such as E4 (ASK-11). */
+export interface Picked
+{
+    square: string;
+}
+
 export interface Player
 {
     choose(question: string, title: string, labels: string[], signal?: AbortSignal): Promise<number | Said | undefined | "unavailable" | "absent">;
+    /** Asks where the player's character moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
+    chooseSquare?(question: string, title: string, change: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
     asking?(): boolean;
 }
