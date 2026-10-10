@@ -1,7 +1,8 @@
 // The dice tray (D-278, D-279, D-284): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check, each die and the
 // total. The player can also always throw dice from the column of dice over the button, as many as they like and a modifier: dice that make a check the master
 // asks answer it, and the engine rolls it (D-330); any other throw is free, the engine does not hear of it, the dice fade away and its line stays in this
-// browser's rolls alone. The dice and their physics load at the first throw.
+// browser's rolls alone. With two dice or more of a kind, which count: all, the highest or the lowest (D-337). The dice show as pictures, never as their
+// notation. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
 import { DiceFaces } from "../faces.tsx";
@@ -11,6 +12,7 @@ import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
+import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
 import { wakeSound } from "./sounds.ts";
 
@@ -27,6 +29,9 @@ const mostDice = 20;
 
 // Where the page remembers whether the dice make a sound, in this browser alone.
 const soundKey = "rpg-engine.dice-sound";
+
+// The choices of what counts, as the tray says them.
+const keepWords: Record<"sum" | Keep, string> = { sum: "Sum", highest: "Highest", lowest: "Lowest" };
 
 /** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, whose sheet it is, and which throw it is. */
 export interface SheetThrow
@@ -78,6 +83,7 @@ export function DiceTray(
     const [fading, setFading] = useState(false);
     const [open, setOpen] = useState(false);
     const [pool, setPool] = useState<number[]>([]);
+    const [keeps, setKeeps] = useState<Partial<Record<number, Keep>>>({});
     const [modifier, setModifier] = useState(0);
     const [sound, setSound] = useState(readSound);
 
@@ -240,13 +246,16 @@ export function DiceTray(
         }
     }, [sheetThrow?.number]);
 
+    // Only the kinds with two dice or more keep a choice of which count.
+    const shownKeeps = keptOf(pool, keeps);
     // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330).
-    const answering = pool.length === 0 ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier)));
+    const answering = pool.length === 0 ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier, shownKeeps)));
 
     const throwPool = (): void => {
         // Dice that make a check the master asks answer it: the engine rolls it, and its dice land as for its button. The tray closes, and starts empty again.
         setOpen(false);
         setPool([]);
+        setKeeps({});
         setModifier(0);
 
         if (answering !== undefined) {
@@ -255,9 +264,9 @@ export function DiceTray(
         }
 
         // A free throw: the page decides it, as fairly as the browser can, leaving the dice in sight.
-        const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
-        const total = dice.reduce((sum, die) => sum + die.value, modifier);
-        void throwAndShow({ free: true, title: notation(pool, modifier), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
+        const dice = withDropped(pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), shownKeeps);
+        const total = dice.reduce((sum, die) => sum + (die.dropped === true ? 0 : die.value), modifier);
+        void throwAndShow({ free: true, title: "Dice", notation: notation(pool, modifier, shownKeeps), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };
 
     const toggleSound = (): void => {
@@ -277,6 +286,7 @@ export function DiceTray(
 
     const clear = (): void => {
         setPool([]);
+        setKeeps({});
         setModifier(0);
         button.current?.focus();
     };
@@ -321,7 +331,7 @@ export function DiceTray(
                         <ul class="tray-dice">
                             {freeDice.map((sides) => {
                                 const count = pool.filter((one) => one === sides).length;
-                                return (
+                                return [
                                     <li key={sides} class={count > 0 ? "chosen" : undefined}>
                                         {count > 0 && (
                                             <button key="less" type="button" class="tray-less" aria-label={`One ${dieName(sides)} less`} data-tip="One less" onClick={() => less(sides)}>
@@ -343,8 +353,24 @@ export function DiceTray(
                                             </span>
                                             <DieIcon sides={sides} />
                                         </button>
-                                    </li>
-                                );
+                                    </li>,
+                                    // With two dice or more of a kind, which count (D-337).
+                                    count >= 2 && sides !== 100 && (
+                                        <li key={`keep ${sides}`} class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`}>
+                                            {(["sum", "highest", "lowest"] as const).map((mode) => (
+                                                <button
+                                                    key={mode}
+                                                    type="button"
+                                                    role="radio"
+                                                    aria-checked={(shownKeeps[sides] ?? "sum") === mode}
+                                                    onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
+                                                >
+                                                    {keepWords[mode]}
+                                                </button>
+                                            ))}
+                                        </li>
+                                    ),
+                                ];
                             })}
                         </ul>
                         <div class="tray-modifier">
@@ -381,9 +407,12 @@ export function DiceTray(
                             <span>
                                 {answering === undefined
                                     ? (
-                                        <>
-                                            Roll <span class="notation">{notation(pool, modifier)}</span>
-                                        </>
+                                        <span class="tray-roll">
+                                            Roll
+                                            <PoolIcons pool={pool} keeps={shownKeeps} />
+                                            {modifier !== 0 && <span class="notation">{signed(modifier)}</span>}
+                                            <span class="visually-hidden">{notation(pool, modifier, shownKeeps)}</span>
+                                        </span>
                                     )
                                     : `Answer: ${answering.check}`}
                             </span>
@@ -404,10 +433,10 @@ function PlateContent({ plate }: { plate: Plate; })
                 {plate.member && <Token member={plate.member} />}
                 <span class="plate-what">
                     <span class="plate-title">{plate.title}</span>
-                    {(plate.notation !== undefined || plate.free) && (
+                    {/* The dice say themselves as pictures, never as their notation. */}
+                    {plate.free && (
                         <span class="plate-under">
-                            {plate.notation !== undefined && <span class="plate-notation">{shownText(plate.notation)}</span>}
-                            {plate.free && <span class="plate-tag">Free roll · not logged</span>}
+                            <span class="plate-tag">Free roll · not logged</span>
                         </span>
                     )}
                 </span>
@@ -427,8 +456,8 @@ function pageRoll(plate: Omit<Plate, "shown">, number: number): PageRoll
         id: `free-${Date.now()}-${number}`,
         at: new Date().toISOString(),
         by: "player",
-        ...(plate.who === undefined ? {} : { who: plate.who }),
-        ...(plate.notation === undefined ? {} : { check: plate.title }),
+        // A number of the sheet keeps its label as its check; the tray's dice have none.
+        ...(plate.who === undefined ? {} : { who: plate.who, check: plate.title }),
         notation: (plate.notation ?? plate.title).replaceAll("−", "-"),
         total: plate.total,
         text: plate.text,
@@ -477,26 +506,23 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     }, flight);
 }
 
-/** A die's name, as the tray shows it: d20, and d% for the percentile. */
-function dieName(sides: number): string
-{
-    return sides === 100 ? "d%" : `d${sides}`;
-}
-
-/** The dice chosen as a notation, the biggest first, with the modifier: 2d20+1d6+3. */
-function notation(pool: number[], modifier: number): string
+/** The dice chosen as pictures, the biggest first: of a kind its die once or twice, the one that may not count faded, or once with how many past two. */
+function PoolIcons({ pool, keeps }: { pool: number[]; keeps: Partial<Record<number, Keep>>; })
 {
     const kinds = [...new Set(pool)].sort((first, second) => second - first);
-    const dice = kinds.map((sides) => `${pool.filter((chosen) => chosen === sides).length}${dieName(sides)}`).join("+");
-    return modifier === 0 ? dice : `${dice}${signed(modifier)}`;
-}
-
-/** The dice thrown as the chat writes them: each kind's faces in brackets, the biggest first, then the modifier. */
-function diceText(dice: ThrownDie[], modifier: number): string
-{
-    const kinds = [...new Set(dice.map((die) => die.sides))].sort((first, second) => Number(second) - Number(first));
-    const faces = kinds.map((sides) => `[${dice.filter((die) => die.sides === sides).map((die) => die.value).join(", ")}]`).join(" + ");
-    return modifier === 0 ? faces : `${faces} ${modifier > 0 ? "+" : "−"} ${Math.abs(modifier)}`;
+    return (
+        <>
+            {kinds.map((sides) => {
+                const count = pool.filter((chosen) => chosen === sides).length;
+                return (
+                    <span key={sides} class="die-icons">
+                        {Array.from({ length: Math.min(count, 2) }, (_, index) => <DieIcon key={index} sides={sides} faded={index === 1 && keeps[sides] !== undefined && count === 2} />)}
+                        {count > 2 && <span class="die-more">×{count}</span>}
+                    </span>
+                );
+            })}
+        </>
+    );
 }
 
 /** A die's face, as fairly as the browser can: a random number of the system's, without the bias of a remainder. */

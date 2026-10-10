@@ -2287,11 +2287,6 @@ summary.fixed {
     gap: 2px 8px;
 }
 
-.plate-notation {
-    color: var(--muted);
-    font-size: 0.85rem;
-    font-variant-numeric: tabular-nums;
-}
 
 .plate-tag {
     padding: 1px 6px;
@@ -2670,6 +2665,46 @@ svg.icon {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+/* With two dice or more of a kind, which count (D-337): all, the highest, the lowest; the one chosen in gold. */
+.tray-dice .tray-keep {
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    box-shadow: var(--overlay);
+}
+
+.tray-keep button {
+    height: 36px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.tray-keep button[aria-checked="true"] {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+/* The throw's button: Roll, the dice as pictures, the number added. */
+.tray-roll {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tray-roll .die-icons svg.die {
+    width: 22px;
+    height: 22px;
 }
 
 .tray-die {

@@ -83,7 +83,8 @@ export function checkOf(label: string, title: string): { check: string; dice: st
 /** Whether two notations are the same dice and number, as the tray and a check write them: 1d20+2 and 1d20 + 2, 1d20−1 and 1d20-1, 1d20+0 and 1d20. */
 export function sameDice(first: string, second: string): boolean
 {
-    const plain = (notation: string): string => notation.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").replace(/[+-]0$/, "");
+    // Of two dice, dropping the lowest is keeping the highest: 2d20dl1 is 2d20kh1, as advantage writes it.
+    const plain = (notation: string): string => notation.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").replace(/[+-]0$/, "").replace(/\b2d(\d+)dl1/g, "2d$1kh1").replace(/\b2d(\d+)dh1/g, "2d$1kl1");
     return plain(first) === plain(second);
 }
 
