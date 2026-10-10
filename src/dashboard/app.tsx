@@ -235,6 +235,8 @@ function App()
                     {address.section === "combat" && (
                         <CombatView
                             scene={shown.openScene}
+                            map={shown.place?.map}
+                            place={shown.place?.name}
                             lead={lead}
                             own={{
                                 sheet: shown.chosen === lead?.name ? shown.sheet : [],

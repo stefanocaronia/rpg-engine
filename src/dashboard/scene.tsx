@@ -20,12 +20,14 @@ export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownS
     }
 
     return (
-        <section class={scene === undefined ? "place-view" : "place-view with-scene"} aria-labelledby="place-name">
+        // With a map the place's picture is the low strip it is with a scene, and the map rises (D-325).
+        <section class={scene === undefined && place?.map === undefined ? "place-view" : "place-view with-scene"} aria-labelledby="place-name">
             {place && <PlaceBand place={place} />}
             {scene && <SceneCard scene={scene} />}
             {place?.map && <PlaceMap map={place.map} place={place.name} />}
             <div class="groups">
-                {scene === undefined && place && place.here.length > 0 && (
+                {/* Who is here: under the map, who is where says it (D-325). */}
+                {scene === undefined && place && place.here.length > 0 && place.map === undefined && (
                     <Card name="Here" icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>
                         <People people={place.here} />
                     </Card>

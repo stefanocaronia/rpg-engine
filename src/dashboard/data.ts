@@ -94,6 +94,8 @@ export interface ShownGrid
     rows: number;
     lines: string[];
     legend: { symbol: string; name: string; kind: string; blocks?: true; difficult?: true; }[];
+    /** How its ground looks (D-325): floor, cave, paving, a biome, or plain. */
+    ground: string;
     exits: { square: string; to?: string; }[];
     at: (ShownPerson & { square: string; })[];
 }

@@ -16,6 +16,8 @@ export interface Feature
     kind: string;
     blocks: boolean;
     difficult: boolean;
+    /** Not found yet (GRD-6): the player sees what lies under it. */
+    hidden: boolean;
 }
 
 export interface Grid
@@ -32,13 +34,13 @@ export interface Grid
 
 /** The symbols every map has (GRD-1): a wall, the floor and a door; a space is outside. */
 export const builtIn: readonly Feature[] = [
-    { symbol: "#", name: "wall", kind: "wall", blocks: true, difficult: false },
-    { symbol: ".", name: "floor", kind: "floor", blocks: false, difficult: false },
-    { symbol: "+", name: "door", kind: "door", blocks: false, difficult: false },
+    { symbol: "#", name: "wall", kind: "wall", blocks: true, difficult: false, hidden: false },
+    { symbol: ".", name: "floor", kind: "floor", blocks: false, difficult: false, hidden: false },
+    { symbol: "+", name: "door", kind: "door", blocks: false, difficult: false, hidden: false },
 ];
 
 /** The flags a symbol of the legend may have, after its kind. */
-export const flags = ["blocks", "difficult"] as const;
+export const flags = ["blocks", "difficult", "hidden"] as const;
 
 /** The first map block of a text: what stands between ```map and ```; none when it has none. */
 export function mapBlock(text: string): string | undefined
@@ -68,6 +70,7 @@ export function readGrid(block: string): { grid: Grid; problems: string[]; }
     const features: Feature[] = [...builtIn];
     const exits: Grid["exits"] = [];
     const problems: string[] = [];
+    const legendSymbols = new Set<string>();
 
     for (const line of blank === -1 ? [] : lines.slice(blank + 1).map((each) => each.trim()).filter((each) => each !== "")) {
         const exit = /^([A-Za-z]+\d+)\s*(?:→|->)\s*(.+)$/.exec(line);
@@ -87,16 +90,26 @@ export function readGrid(block: string): { grid: Grid; problems: string[]; }
             const words = (named[3] ?? "").split(",").map((word) => word.trim().toLowerCase()).filter((word) => word !== "");
             const unknown = words.slice(1).filter((word) => !(flags as readonly string[]).includes(word));
 
-            if (builtIn.some((feature) => feature.symbol === symbol)) {
-                problems.push(`${symbol} is the map's ${builtIn.find((feature) => feature.symbol === symbol)?.name}: give ${name} another symbol.`);
-            } else if (features.some((feature) => feature.symbol === symbol)) {
+            const own = builtIn.find((feature) => feature.symbol === symbol);
+
+            if (legendSymbols.has(symbol)) {
                 problems.push(`The legend names ${symbol} twice: keep one line for it.`);
+            } else if (own !== undefined) {
+                // A symbol every map has takes another name and drawing, as rock for the walls of a cave; it never stops or starts blocking.
+                const index = features.findIndex((feature) => feature.symbol === symbol);
+                features[index] = { ...own, name, kind: words[0] ?? own.kind, difficult: words.includes("difficult") };
+
+                if ((words.includes("blocks") && !own.blocks) || words.includes("hidden")) {
+                    problems.push(`${symbol} is the map's ${own.name}, which ${own.blocks ? "always blocks" : "never blocks"} and is never hidden: change only its name and kind, such as "${symbol} ${name}: ${words[0] ?? own.kind}".`);
+                }
             } else {
-                features.push({ symbol, name, kind: words[0] ?? "", blocks: words.includes("blocks"), difficult: words.includes("difficult") });
+                features.push({ symbol, name, kind: words[0] ?? "", blocks: words.includes("blocks"), difficult: words.includes("difficult"), hidden: words.includes("hidden") });
             }
 
+            legendSymbols.add(symbol);
+
             if (unknown.length > 0) {
-                problems.push(`${symbol} ${name} has ${unknown.join(", ")}, which the map does not know: after the kind come only ${flags.join(" and ")}.`);
+                problems.push(`${symbol} ${name} has ${unknown.join(", ")}, which the map does not know: after the kind come only ${flags.slice(0, -1).join(", ")} and ${flags.at(-1)}.`);
             }
         } else {
             problems.push(`The legend's line "${line}" is neither a symbol, such as t table: table, difficult, nor an exit, such as G8 → [[Place]].`);

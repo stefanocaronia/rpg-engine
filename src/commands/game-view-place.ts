@@ -8,7 +8,7 @@ import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName
 import type { GameSystem } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectParts, effectText, keptEffects } from "./game-effects.ts";
-import { placeGrid, standing } from "./game-grids.ts";
+import { placeGrid, placeLook, standing } from "./game-grids.ts";
 import { shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
@@ -53,7 +53,10 @@ export interface ShownGrid
     columns: number;
     rows: number;
     lines: string[];
+    /** Each symbol of the map, those every map has too, by the kind it is drawn as; never one not found yet. */
     legend: { symbol: string; name: string; kind: string; blocks?: true; difficult?: true; }[];
+    /** How its ground looks (D-325): floor, cave, paving, a biome, or plain. */
+    ground: string;
     exits: { square: string; to?: string; }[];
     at: (ShownPerson & { square: string; })[];
 }
@@ -151,8 +154,13 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
  * A place's map as the player sees it (GRD-6): who stands where, the party and the characters the character knows by name, the others of the open scene as
  * someone, its copies as the scene names them; a character it does not know outside the scene is not shown, as in VIEW-6.
  */
-function shownGrid(sight: PlaceSight, place: Page, grid: Grid): ShownGrid
+function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
 {
+    const { grid, ground } = placeLook(sight.world, place, written);
+    // What is not found yet looks like what lies under it: a hidden door like the wall, anything else like the floor (GRD-6).
+    const hidden = new Map(grid.features.filter((feature) => feature.hidden).map((feature) => [feature.symbol, ["door", "open-door", "secret-door", "opening", "window"].includes(feature.kind) ? "#" : "."]));
+    const lines = grid.lines.map((line) => [...line].map((symbol) => hidden.get(symbol) ?? symbol).join(""));
+    const used = new Set(lines.join(""));
     const scene = readOpenScene(sight.root).scene;
     const here = scene?.place !== undefined && comparableText(parsePageReference(scene.place).name) === comparableText(place.name) ? scene : undefined;
     const inScene = new Set((here?.with ?? []).map((link) => comparableText(parsePageReference(link).name)));
@@ -188,18 +196,21 @@ function shownGrid(sight: PlaceSight, place: Page, grid: Grid): ShownGrid
     return {
         columns: grid.columns,
         rows: grid.rows,
-        lines: grid.lines,
-        legend: grid.features.filter((feature) => ![".", "#", "+"].includes(feature.symbol)).map((feature) => ({
+        lines,
+        legend: grid.features.filter((feature) => !feature.hidden && used.has(feature.symbol)).map((feature) => ({
             symbol: feature.symbol,
             name: feature.name,
             kind: feature.kind,
             ...(feature.blocks ? { blocks: true as const } : {}),
             ...(feature.difficult ? { difficult: true as const } : {}),
         })),
-        exits: grid.exits.map((exit) => {
-            const to = knownPage(sight, exit.to);
-            return { square: squareName(exit.square), ...(to === undefined ? {} : { to: to.name }) };
-        }),
+        ground,
+        exits: grid.exits.filter((exit) => !hidden.has(lines[exit.square.row]?.[exit.square.column] ?? "") && !grid.features.some((feature) => feature.hidden && feature.symbol === written.lines[exit.square.row]?.[exit.square.column])).map(
+            (exit) => {
+                const to = knownPage(sight, exit.to);
+                return { square: squareName(exit.square), ...(to === undefined ? {} : { to: to.name }) };
+            },
+        ),
         at,
     };
 }

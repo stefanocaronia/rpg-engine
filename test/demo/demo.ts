@@ -79,6 +79,84 @@ const innMap = [
     "G8 → [[Guadoscuro]]",
 ];
 
+/** A square of Guadoscuro (D-325): blocks of houses as roofs, doors into other places, stalls, a fountain, a well; paved, as the village is. */
+const squareMap = [
+    "HHHHHH..HHHHHHHHHH",
+    "HHHHHH..HHHHHHHHHH",
+    "HHHH+H..HHHHH+HHHH",
+    "..................",
+    "......ss....ss....",
+    "HHH.........FF..HH",
+    "HHH+........FF..+H",
+    "HHH.....ss......HH",
+    "..................",
+    "HHHHHHH...o...HHHH",
+    "HHHHHHH......HHHHH",
+    "HHHHHHH......HHHHH",
+    "",
+    "H case: building, blocks",
+    "s bancarelle: stall, blocks",
+    "F fontana: fountain, blocks",
+    "o pozzo: well, blocks",
+    "E3 → [[Locanda del Guado]]",
+    "N3 → [[Bottega di Bertoldo]]",
+    "G1 → [[Porta nord]]",
+    "A4 → [[Strada del Re]]",
+    "J12 → [[Ponte di Pietra]]",
+];
+
+/** A clearing on a road in the fairies' wood (D-325): no walls, the ground of the forest it is in; trees, brush, a boulder, a pond, an overturned cart. */
+const clearingMap = [
+    "TT..TT...==....TT.TT",
+    "T....,,..==..^...TTT",
+    "..TT,~~,.==......T..",
+    "...T,~~,..==.bbb....",
+    ".T..,,,...==.bbb..T.",
+    "...TT......==......T",
+    "...........==..OO...",
+    "TT...bb....==.....TT",
+    "T...bbb.....==.TT...",
+    "..T.........==.TT.T.",
+    "TT...T......==....TT",
+    ".TT.........==...TT.",
+    "",
+    "T alberi: tree, blocks",
+    "b sottobosco: brush, difficult",
+    "^ masso: rocks, blocks",
+    "O carro rovesciato: vehicle, blocks",
+    ", riva dello stagno: shallow-water, difficult",
+    "~ stagno: deep-water, difficult",
+    "= Strada del Re: road",
+    "J1 → [[Ponte di Pietra]]",
+    "M12 → [[Guadoscuro]]",
+];
+
+/** The dragon's cave (D-325): rock for walls, drawn round; water shallow and deep, rubble, pillars, a well, stalagmites, two passages out. */
+const caveMap = [
+    "  ##########",
+    " ##...rr...###",
+    "##..O..rr....##",
+    "#.......,,,...##",
+    "+......,,~~,,..#",
+    "#...^..,~~~~,..#",
+    "##.....,,~~,,..#",
+    " #..o....,,....#",
+    " ##.......O..###",
+    "  ####.....###",
+    "     ###+###",
+    "",
+    "# parete di roccia: rock",
+    "+ cunicolo: opening",
+    "O colonna: pillar, blocks",
+    "r macerie: rubble, difficult",
+    ", acqua bassa: shallow-water, difficult",
+    "~ acqua profonda: deep-water, difficult",
+    "o pozzo: well, blocks",
+    "^ stalagmiti: rocks, blocks",
+    "A5 → [[Gallerie Profonde]]",
+    "I11 → [[Palude dei Lamenti]]",
+];
+
 /** Ettore, a cleric of the third level hurt and with a blessing, and Lupa, a wolf at his side, at the inn. */
 async function makeDemo(context: Context): Promise<void>
 {
@@ -165,6 +243,16 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise
     await place("Gallerie Profonde", "position=4 km SE of [[Guadoscuro]]", "radius=14 km", "environment=biome: mountains", "contains=[[Città delle Radici]]", "contains=[[Forte del Fungo]]");
     await place("Sottosuolo", "map=under [[Guadoscuro]]", "contains=[[Gallerie Profonde]]", "contains=[[Lago Nero]]");
     await place("Strada Buia", "stops=[[Forte del Fungo]], 23 km, [[Città delle Radici]]");
+    // The maps of a square, of a clearing on the road and of the cave (D-325): the village's square with the shop and the north gate it leads to.
+    await place("Bottega di Bertoldo");
+    await place("Porta nord");
+    await place("Piazza del Pozzo", "contains=[[Bottega di Bertoldo]]", "contains=[[Porta nord]]");
+    await rpg("write", "Piazza del Pozzo", "--text", ["```map", ...squareMap, "```"].join("\n"));
+    await rpg("write", "Guadoscuro", "--add", "contains=[[Piazza del Pozzo]]");
+    await place("Radura sulla Strada del Re");
+    await rpg("write", "Radura sulla Strada del Re", "--text", ["```map", ...clearingMap, "```"].join("\n"));
+    await rpg("write", "Bosco delle Fate", "--add", "contains=[[Radura sulla Strada del Re]]");
+    await rpg("write", "Grotta del Drago", "--text", ["```map", ...caveMap, "```"].join("\n"));
     await place("Pozzo del Mulino", "kind=portal", "stops=[[Mulino Rosso]], 1 km, [[Città delle Radici]]");
     await place("Radura Splendente", "position=16 km NE of [[Guadoscuro]]", "kind=shrine");
     await place("Corte delle Lucciole", "position=24 km NNE of [[Guadoscuro]]", "kind=castle");

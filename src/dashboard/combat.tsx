@@ -3,10 +3,11 @@
 // "can't act", what they keep, the death saves at 0. Beside it what the player's character has at hand, the fields and groups of its sheet the system names. The
 // page never decides a rule: it shows.
 import { sectionAddress } from "./address.ts";
-import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
+import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { shownText } from "./labels.ts";
 import { Token } from "./party.tsx";
+import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
 import { DeathSaves, Effects } from "./widgets.tsx";
 
@@ -19,7 +20,7 @@ interface OwnSheet
     onRoll: FreeRoll;
 }
 
-export function CombatView({ scene, lead, own }: { scene?: ShownScene; lead?: Member; own: OwnSheet; })
+export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScene; lead?: Member; own: OwnSheet; map?: ShownGrid; place?: string; })
 {
     const fighters = scene?.type === "combat" ? scene.fighters ?? [] : undefined;
 
@@ -39,6 +40,12 @@ export function CombatView({ scene, lead, own }: { scene?: ShownScene; lead?: Me
     const next = acting < 0 || fighters.length < 2 ? undefined : fighters[(acting + 1) % fighters.length];
     const mine = lead !== undefined && scene.turn === lead.name;
     const self = fighters.find((fighter) => fighter.role === "pc");
+    const order = (
+        <ol class="turn-order" aria-label="The order of the turns">
+            {fighters.map((fighter, index) => <FighterRow key={`${fighter.name} ${index}`} fighter={fighter} place={index + 1} acting={index === acting} />)}
+        </ol>
+    );
+    const atHand = lead && self && (own.cards?.atHand.length ?? 0) > 0 ? <AtHand lead={lead} fighter={self} own={own} /> : null;
     return (
         <section class="combat" aria-labelledby="combat-title">
             <header class={mine ? "turn-band mine" : `turn-band ${acting < 0 ? "" : fighters[acting].role}`}>
@@ -67,12 +74,23 @@ export function CombatView({ scene, lead, own }: { scene?: ShownScene; lead?: Me
                 )}
                 {scene.now && <p class="scene-line">{scene.now}</p>}
             </header>
-            <div class="combat-body">
-                <ol class="turn-order" aria-label="The order of the turns">
-                    {fighters.map((fighter, index) => <FighterRow key={`${fighter.name} ${index}`} fighter={fighter} place={index + 1} acting={index === acting} />)}
-                </ol>
-                {lead && self && (own.cards?.atHand.length ?? 0) > 0 && <AtHand lead={lead} fighter={self} own={own} />}
-            </div>
+            {map === undefined
+                ? (
+                    <div class="combat-body">
+                        {order}
+                        {atHand}
+                    </div>
+                )
+                : (
+                    // The map of the place beside the order and what is at hand, in a column (D-325).
+                    <div class="combat-body with-map">
+                        <div class="lm-side">
+                            {order}
+                            {atHand}
+                        </div>
+                        <PlaceMap map={map} place={place ?? scene.title} acting={scene.turn} />
+                    </div>
+                )}
         </section>
     );
 }
@@ -121,10 +139,12 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
 
 function FighterToken({ fighter }: { fighter: Fighter; })
 {
+    // A stranger's number, as Creature 2's, the same on their token on the map (D-325).
+    const number = fighter.stranger ? /\d+$/.exec(fighter.name)?.[0] : undefined;
     return fighter.stranger
         ? (
-            <span class="token stranger" aria-hidden="true">
-                <Icon name="stranger" />
+            <span class={number === undefined ? "token stranger" : "token stranger numbered"} aria-hidden="true">
+                {number ?? <Icon name="stranger" />}
             </span>
         )
         : <Token member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }) }} />;

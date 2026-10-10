@@ -3,8 +3,9 @@
 import { rememberedByText } from "../core/memo.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
-import { closedSquare, firstOpenSquare, type Grid, mapBlock, readGrid, readSquare, type Square, squareName } from "../grid/index.ts";
-import { links, locate, type MovePlan, type Page, pagesWithName, parsePageReference, type World, writePage } from "../pages/index.ts";
+import { builtIn, closedSquare, firstOpenSquare, type Grid, mapBlock, readGrid, readSquare, type Square, squareName } from "../grid/index.ts";
+import { squareKinds } from "../map/index.ts";
+import { environmentAt, links, locate, type MovePlan, type Page, pagesWithName, parsePageReference, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 
 /** Someone or something on a place's map (GRD-3): the entry of `at` as written, the page or the copy of the open scene it names, and its square. */
@@ -21,6 +22,39 @@ export interface Standing
 export function placeGrid(page: Page): { grid: Grid; problems: string[]; } | undefined
 {
     return page.type === "place" ? readMap(page.body) : undefined;
+}
+
+/**
+ * The grid as the place draws it (D-325): the walls of a cave or a mine as rock, unless the legend says otherwise; and how its ground looks: the legend's own
+ * floor or ground, else a cave's rock, a building's floor where it has walls, a town's paving, the biome the place has or inherits, or plain ground.
+ */
+export function placeLook(world: World, place: Page, grid: Grid): { grid: Grid; ground: string; }
+{
+    const kindOf = (page: Page): string | undefined => (typeof page.fields.kind === "string" ? page.fields.kind.trim().toLowerCase() : undefined);
+    const underground = ["cave", "mine"].includes(kindOf(place) ?? "");
+    const named = (symbol: string): boolean => !builtInLook(grid, symbol);
+    const features = grid.features.map((feature) => (feature.symbol === "#" && underground && !named("#") ? { ...feature, kind: "rock" } : feature));
+    const floor = features.find((feature) => feature.symbol === ".")?.kind ?? "floor";
+    const walled = grid.lines.some((line) => line.includes("#")) && features.find((feature) => feature.symbol === "#")?.kind === "wall";
+    const town = [place, ...locate(world, place).chain].some((page) => ["city", "town", "village"].includes(kindOf(page) ?? ""));
+    const biome = environmentAt(world, place).find(({ entry }) => comparableText(entry.name) === "biome")?.entry.value;
+    const ground = named(".") && floor === "floor" ? "floor" : underground ? "cave" : !named(".") && walled ? "floor" : town ? "paving" : (biome ?? "plain");
+    return { grid: { ...grid, features }, ground };
+}
+
+/** A word on a map just written (GRD-2): what of it does not read, and the kinds the dashboard does not draw, which it draws neutral. */
+export function gridNotes(before: Page | undefined, after: Page): string[]
+{
+    const map = placeGrid(after);
+
+    if (map === undefined || (before !== undefined && mapBlock(before.body) === mapBlock(after.body))) {
+        return [];
+    }
+
+    const known = new Set<string>(squareKinds);
+    const unknown = map.grid.features.filter((feature) => feature.kind !== "" && !known.has(feature.kind)).map((feature) => `${feature.symbol} ${feature.kind}`);
+    const drawn = unknown.length === 0 ? [] : [`The map draws ${unknown.join(", ")} neutral: its kinds are ${squareKinds.join(", ")}.`];
+    return [...map.problems.map((problem) => `${after.name}'s map: ${problem}`), ...drawn];
 }
 
 /** Who stands where in a place (GRD-3): its `at` entries, each with the page or the copy of the open scene it names, and its square when it gives one. */
@@ -127,6 +161,14 @@ export function gridProblems(world: World, scene: Scene | undefined): Problem[]
             ...placed.flatMap((one) => standingProblem(world, place, map.grid, one)),
         ];
     });
+}
+
+/** Whether a symbol every map has keeps its own name and drawing, the legend saying nothing of it. */
+function builtInLook(grid: Grid, symbol: string): boolean
+{
+    const feature = grid.features.find((one) => one.symbol === symbol);
+    const own = builtIn.find((one) => one.symbol === symbol);
+    return feature !== undefined && own !== undefined && feature.name === own.name && feature.kind === own.kind;
 }
 
 const readMap = rememberedByText((text: string): { grid: Grid; problems: string[]; } | undefined => {

@@ -73,6 +73,7 @@ import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
+import { gridNotes } from "./game-grids.ts";
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
@@ -296,7 +297,13 @@ export const write = defineCommand({
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
         const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
         const map = changed
-            ? [...positioned.placed.notes, ...(hereDone?.notes ?? []), ...(["stops", "position"].some((field) => changedFieldNames(fields).includes(field)) ? shortRoadNotes(now, page) : []), ...mapLookNotes(world, existing, now, page)]
+            ? [
+                ...positioned.placed.notes,
+                ...(hereDone?.notes ?? []),
+                ...(["stops", "position"].some((field) => changedFieldNames(fields).includes(field)) ? shortRoadNotes(now, page) : []),
+                ...mapLookNotes(world, existing, now, page),
+                ...(page.type === "place" ? gridNotes(existing, page) : []),
+            ]
             : [];
         // The death of the last living player character: what the saves allow, said at once (SAV-7).
         const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : [];
