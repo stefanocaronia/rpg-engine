@@ -32,3 +32,5 @@ computed:
 # Momentum goes down to -6, and each debility takes one from its maximum.
 counters:
   momentum: {min: -6, max: 10 - count(debilities)}
+# What a fight follows on the dashboard's Combat (D-314): each foe's progress track, shown as it is.
+combat: {track: progress}

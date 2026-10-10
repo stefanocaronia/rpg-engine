@@ -87,6 +87,12 @@ const systemSchema = z.object({
     keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
         error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
     }).strict().optional(),
+    combat: z.object({ track: z.string().min(1), "in-words": z.boolean().optional(), inactive: z.array(z.string().min(1)).optional() }, {
+        error: "write it as the counter a fight follows, whether the player hears a foe's in words, and the conditions that keep from acting, such as {track: hp, in-words: true, inactive: [Stunned]}",
+    }).strict().optional(),
+    dying: z.object({ at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'), show: z.array(z.string().min(1)).min(1) }, {
+        error: "write it as when the panel of the dying shows and its counters, such as {at: hp 0, show: [death-successes, death-failures]}",
+    }).strict().optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
         list: z.string().min(1),
@@ -135,6 +141,22 @@ export interface Keeping
     counter: string;
     conditions: string[];
     rules: string;
+}
+
+/** What a fight follows on the dashboard's Combat (D-314): each one's counter, whether the player hears a foe's in words, and the conditions that keep from acting. */
+export interface CombatData
+{
+    track: string;
+    inWords: boolean;
+    inactive: string[];
+}
+
+/** When the dashboard shows the panel of the dying, and its counters (D-314): at a counter's value, such as hp 0. */
+export interface Dying
+{
+    field: string;
+    value: number;
+    show: string[];
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -249,6 +271,10 @@ export interface GameSystem
     conditions: string[];
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
     keeping?: Keeping;
+    /** What a fight follows on the dashboard (D-314). */
+    combat?: CombatData;
+    /** The panel of the dying on the dashboard (D-314). */
+    dying?: Dying;
     /** By counter, the counter it shields, which loses from it first, as temp-hp shields hp (DAT-14). */
     shields: Record<string, string>;
     /** What it works out from the fields of a page (D-199, FOR-1). */
@@ -411,13 +437,18 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     // What breaks what someone keeps, and what a counter shields, read counters (EFF-14, DAT-14).
     const counted = [
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
+        ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
+        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show].map((field) => ({ where: "dying", field }))),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
 
-    const unknownCondition = data.keeping?.conditions?.find((condition) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(condition)));
+    const unknownCondition = [
+        ...(data.keeping?.conditions ?? []).map((condition) => ({ where: "keeping.conditions", condition })),
+        ...(data.combat?.inactive ?? []).map((condition) => ({ where: "combat.inactive", condition })),
+    ].find((entry) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(entry.condition)));
 
     if (unknownCondition !== undefined) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: keeping.conditions: ${unknownCondition} is not one of its conditions.`);
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${unknownCondition.where}: ${unknownCondition.condition} is not one of its conditions.`);
     }
 
     if (counted !== undefined) {
@@ -496,6 +527,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         })),
         conditions: data.conditions ?? [],
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
+        ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
+        ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),
         shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
