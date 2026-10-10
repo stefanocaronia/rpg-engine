@@ -1,6 +1,6 @@
 // The glass over a token on a map (D-326): a low lens over the picture, which shows to the edge; never written into it. Its flat top takes the light in a
-// band with a crisp edge, as flat glass does; at its rim it rounds off into the edge with no line where it begins: a little lighter at the top left, a little
-// darker at the bottom right, a soft gleam where the light catches it. No border of its own; and the token's shadow falls on the paper.
+// band with a crisp edge, as flat glass does; only over its outer fifth it rounds off into the edge, soft, with no line where it begins: a little lighter at
+// the top left, a little darker at the bottom right, a soft gleam where the light catches it. No border of its own; and the token's shadow falls on the paper.
 
 /** The gradients, the rim's mask and the shadow of the glass, once in a drawing's defs, their ids starting with `prefix`. */
 export function GlassDefs({ prefix }: { prefix: string; })
@@ -25,12 +25,12 @@ export function GlassDefs({ prefix }: { prefix: string; })
                 <stop offset="0" stop-color="#fff" stop-opacity="0.6" />
                 <stop offset="1" stop-color="#fff" stop-opacity="0" />
             </radialGradient>
-            {/* The rim grows from nothing at half the radius to the edge. */}
+            {/* The rim grows from nothing at four fifths of the radius to the edge. */}
             <radialGradient id={`${prefix}-rim-fade`}>
-                <stop offset="0.5" stop-color="#fff" stop-opacity="0" />
-                <stop offset="0.625" stop-color="#fff" stop-opacity="0.05" />
-                <stop offset="0.75" stop-color="#fff" stop-opacity="0.22" />
-                <stop offset="0.875" stop-color="#fff" stop-opacity="0.53" />
+                <stop offset="0.78" stop-color="#fff" stop-opacity="0" />
+                <stop offset="0.84" stop-color="#fff" stop-opacity="0.1" />
+                <stop offset="0.9" stop-color="#fff" stop-opacity="0.4" />
+                <stop offset="0.95" stop-color="#fff" stop-opacity="0.75" />
                 <stop offset="1" stop-color="#fff" stop-opacity="1" />
             </radialGradient>
             <mask id={`${prefix}-rim-mask`} maskContentUnits="objectBoundingBox">
