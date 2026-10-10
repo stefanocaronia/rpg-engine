@@ -189,7 +189,7 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
             const image = creature === undefined ? undefined : picture(sight, creature);
             return [
                 creature === undefined
-                    ? { name: `creature ${/\d+$/.exec(one.copy)?.[0] ?? ""}`.trim(), role: "other", stranger: true, ...measured }
+                    ? { name: strangerName(here, one.copy), role: "other", stranger: true, ...measured }
                     : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), ...measured },
             ];
         }
@@ -271,7 +271,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         const page = knownPage(sight, creature);
         return page === undefined ? { name: "creature", role: "other" as const, stranger: true as const, count } : { ...person(sight, page), count };
     });
-    const turnName = (name: string): string => shownTurn(sight, scene.copies, name);
+    const turnName = (name: string): string => shownTurn(sight, scene, name);
     return {
         title: scene.title,
         type: scene.type,
@@ -297,7 +297,7 @@ function fightersOf(sight: PlaceSight, scene: { with: string[]; copies: Record<s
 }
 
 /** One in the fight (D-314): a copy as the character knows its creature, a character as it knows them; the party in full, the others by what anyone sees. */
-function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature: string; }>; }, name: string): Fighter | undefined
+function fighterOf(sight: PlaceSight, scene: Pick<Scene, "copies" | "gone">, name: string): Fighter | undefined
 {
     const system = campaignSystem(sight.root, sight.context);
     const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
@@ -311,7 +311,7 @@ function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature
     // A copy is named when the character knows its creature; a character when it knows them.
     const creature = copy === undefined ? undefined : knownPage(sight, copy[1].creature);
     const stranger = copy === undefined ? !party && !knowsPage(sight.knowledge, page) : creature === undefined;
-    const shown = !stranger ? page.name : copy === undefined ? "someone" : `creature ${/\d+$/.exec(copy[0])?.[0] ?? ""}`.trim();
+    const shown = !stranger ? page.name : copy === undefined ? "someone" : strangerName(scene, copy[0]);
     const image = stranger ? undefined : picture(sight, creature ?? page);
     const counters = pageCounters(sight.world, page);
     const track = system?.combat === undefined ? undefined : readCounter(counters[system.combat.track]);
@@ -359,8 +359,8 @@ export function seenEffect(sight: PlaceSight, effect: Effect): { name: string; e
         return effectParts(sight.world, effect);
     }
 
-    const copies = readOpenScene(sight.root).scene?.copies ?? {};
-    return effectParts(sight.world, { ...effect, end: { ...end, turn: shownTurn(sight, copies, end.turn) } });
+    const scene = readOpenScene(sight.root).scene ?? { copies: {} };
+    return effectParts(sight.world, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } });
 }
 
 /** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */
@@ -410,13 +410,27 @@ function knownPage(sight: PlaceSight, name: string | undefined): Page | undefine
 }
 
 /** Whose turn it is, as the character knows them: a character it knows by name, a copy by its own name when it knows the creature, else creature and its number. */
-function shownTurn(sight: PlaceSight, copies: Record<string, { creature: string; }>, name: string): string
+function shownTurn(sight: PlaceSight, scene: Pick<Scene, "copies" | "gone">, name: string): string
 {
-    const copy = Object.entries(copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
+    const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
 
     if (copy === undefined) {
         return knownPage(sight, name)?.name ?? "someone";
     }
 
-    return knownPage(sight, copy[1].creature) === undefined ? `creature ${/\d+$/.exec(copy[0])?.[0] ?? ""}`.trim() : copy[0];
+    return knownPage(sight, copy[1].creature) === undefined ? strangerName(scene, copy[0]) : copy[0];
+}
+
+/**
+ * The name the player hears for a copy of a creature its character does not know (D-325, D-331): creature 1; with more kinds of creature in the scene, a letter
+ * for each kind, in the order of their names and counting those that left, so that it never changes: creature A1, creature B1.
+ */
+function strangerName(scene: Pick<Scene, "copies" | "gone">, copy: string): string
+{
+    const all = { ...scene.gone, ...scene.copies };
+    const kindOf = (name: string): string | undefined => (all[name] === undefined ? undefined : comparableText(parsePageReference(all[name].creature).name));
+    const kinds = [...new Set(Object.keys(all).map(kindOf).filter((kind) => kind !== undefined))].sort();
+    const kind = kindOf(copy);
+    const letter = kinds.length > 1 && kind !== undefined ? String.fromCharCode(65 + kinds.indexOf(kind)) : "";
+    return `creature ${letter}${/\d+$/.exec(copy)?.[0] ?? ""}`.trim();
 }

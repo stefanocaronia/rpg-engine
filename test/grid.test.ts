@@ -245,14 +245,18 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         await ok("move", "Ogre 1", "--at", "E2");
         await ok("scene", "order", "--order", "Kira", "--order", "Bandit 1", "--order", "Ogre 1");
         const map = JSON.parse(await ok("view", "--json")).place.map;
-        expect(map.at).toContainEqual(expect.objectContaining({ square: "D4", distance: "3 m" }));
-        expect(map.at).toContainEqual(expect.objectContaining({ square: "E2", side: 2, distance: "4.5 m" }));
+        // Two kinds the character does not know: a letter for each, by their names (D-331).
+        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature A1", square: "D4", distance: "3 m" }));
+        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "E2", side: 2, distance: "4.5 m" }));
         expect(map.at.find((one: { role: string; }) => one.role === "pc")).not.toHaveProperty("distance");
         // Two squares of speed: the pit, which the player does not know, is a square like the others.
         expect(map.reach).toEqual(expect.arrayContaining(["B2", "C3", "D2", "D3"]));
         expect(map.reach).not.toContain("E3");
         await ok("scene", "next");
         expect(JSON.parse(await ok("view", "--json")).place.map.reach).toBeUndefined();
+        // When the bandit leaves, the ogre keeps its letter: those who left are counted too.
+        await ok("scene", "leave", "--who", "Bandit 1");
+        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "E2" }));
         const sheet = JSON.parse(await ok("view", "Kira", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
         expect(sheet.flatMap((group) => group.values).find((value) => value.field === "speed")?.text).toBe("3 m");
     });

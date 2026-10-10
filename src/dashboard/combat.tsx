@@ -139,8 +139,8 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
 
 function FighterToken({ fighter }: { fighter: Fighter; })
 {
-    // A stranger's number, as Creature 2's, the same on their token on the map (D-325).
-    const number = fighter.stranger ? /\d+$/.exec(fighter.name)?.[0] : undefined;
+    // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
+    const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
     return fighter.stranger
         ? (
             <span class={number === undefined ? "token stranger" : "token stranger numbered"} aria-hidden="true">

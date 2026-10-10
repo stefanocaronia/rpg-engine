@@ -10,6 +10,8 @@ import { columnName, exitSide, floorLoops, groundKinds, isSolid, isWalled, kindA
 
 // How wide a square is drawn, in pixels.
 const size = 40;
+// The order of who is where under the map.
+const roles = ["pc", "companion", "other"];
 
 type Feature = ShownGrid["legend"][number];
 
@@ -147,7 +149,8 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
             </ul>
             {standing.length > 0 && (
                 <ul class="lm-where" aria-label="Who is where">
-                    {standing.map((one, index) => (
+                    {/* The player's character first, then the companions, then the others, each as the map lists them. */}
+                    {standing.toSorted((first, second) => roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
                         <li key={index} class={`lm-where-${one.role}`}>
                             <span class="lm-where-name">{capitalized(one.name)}</span>
                             <span class="lm-key-square">{one.square}</span>
@@ -614,7 +617,7 @@ function Token({ one, index, acting, x, y }: { one: ShownGrid["at"][number]; ind
 {
     const side = one.side ?? 1;
     const r = size * side * 0.43;
-    const number = one.stranger ? /\d+$/.exec(one.name)?.[0] : undefined;
+    const number = one.stranger ? /[A-Z]?\d+$/.exec(one.name)?.[0] : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
             <title>{`${capitalized(one.name)}, ${one.square}`}</title>
