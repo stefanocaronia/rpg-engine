@@ -103,7 +103,7 @@ Eight experts review the work and discuss it with the maintainer: subagents with
 | Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-valli` |
 | Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-lanza` |
 
-Portraits: painted illustrations, head and shoulders on a plain background in each colleague's color, made by Codex.
+Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain background in each colleague's color, made by Codex.
 
 - **When rounds happen**: at milestones, a step of the plan done or a playtest.
 - **Without the plugin** (another AI host, or Claude Code without it): when the maintainer asks to talk with colleagues, run `node F:/sviluppo/AI/claude-crew/plugins/crew/scripts/conversation.mjs talk <first names>` (then `invite`, `leave`, `end`) and follow what it prints; where it is missing, read their profile, `MEMORY.md` and `todo.md` yourself, start every message with `[Name]`, and when they leave have each update memory and todo.
