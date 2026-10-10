@@ -1,12 +1,15 @@
 // Where the player character is and the open scene, as data for the dashboard (VIEW-6, D-310): what the player may see of them, as the character knows them.
 import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { effectText } from "./game-effects.ts";
+import { effectShown, effectText, keptEffects } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
-import { readOpenScene } from "./game-scene.ts";
+import { copyPage, readOpenScene } from "./game-scene.ts";
+import { campaignSystem } from "./game-world.ts";
+import { pageCounters } from "./page-counters.ts";
 
 /** Someone at the place or in the scene as the player sees them: a name, or someone; their role and picture; for copies of a creature, how many. */
 export interface ShownPerson
@@ -35,6 +38,23 @@ export interface ShownPlace
     here: ShownPerson[];
 }
 
+/**
+ * Someone in a fight as the player sees them (D-314): their counter, the party's as numbers and a foe's in words, or none; what is on them, for others only the
+ * conditions anyone sees; whether they cannot act; what they keep alive; the panel of the dying.
+ */
+export interface Fighter
+{
+    name: string;
+    role: "pc" | "companion" | "other";
+    image?: { file: string; version: number; };
+    stranger?: true;
+    health?: string;
+    effects: string[];
+    inactive?: true;
+    keeps?: string[];
+    dying?: { field: string; value: number; limit?: number; }[];
+}
+
 /** The open scene as the player sees it (VIEW-6): who is in it as in VIEW-4, and the order of the turns. */
 export interface ShownScene
 {
@@ -49,6 +69,8 @@ export interface ShownScene
     order?: string[];
     turn?: string;
     round?: number;
+    /** In a fight, each one in it, in the order of the turns when there is one (D-314). */
+    fighters?: Fighter[];
 }
 
 /** What the view reads to show the place and the scene: the campaign, the world, what the character knows, and who the party are. */
@@ -123,7 +145,85 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
         ...(scene.turn === undefined ? {} : { turn: turnName(scene.turn) }),
         ...(scene.round === undefined ? {} : { round: scene.round }),
+        ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
     };
+}
+
+/** Everyone in a fight, in the order of the turns when there is one, else the characters then the copies; those the view cannot name are left out. */
+function fightersOf(sight: PlaceSight, scene: { with: string[]; copies: Record<string, { creature: string; }>; order?: string[]; }): Fighter[]
+{
+    const names = scene.order ?? [...scene.with.map((link) => parsePageReference(link).name), ...Object.keys(scene.copies)];
+    return names.flatMap((name) => {
+        const fighter = fighterOf(sight, scene, name);
+        return fighter === undefined ? [] : [fighter];
+    });
+}
+
+/** One in the fight (D-314): a copy as the character knows its creature, a character as it knows them; the party in full, the others by what anyone sees. */
+function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature: string; }>; }, name: string): Fighter | undefined
+{
+    const system = campaignSystem(sight.root, sight.context);
+    const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
+    const page = copy === undefined ? pagesWithName(sight.world, parsePageReference(name).name)[0] : copyPage(copy[0], copy[1]);
+
+    if (page === undefined) {
+        return undefined;
+    }
+
+    const party = sight.party.includes(page);
+    // A copy is named when the character knows its creature; a character when it knows them.
+    const creature = copy === undefined ? undefined : knownPage(sight, copy[1].creature);
+    const stranger = copy === undefined ? !party && !knowsPage(sight.knowledge, page) : creature === undefined;
+    const shown = !stranger ? page.name : copy === undefined ? "someone" : `creature ${/\d+$/.exec(copy[0])?.[0] ?? ""}`.trim();
+    const image = stranger ? undefined : picture(sight, creature ?? page);
+    const counters = pageCounters(sight.world, page);
+    const track = system?.combat === undefined ? undefined : readCounter(counters[system.combat.track]);
+    const conditions = new Set((system?.conditions ?? []).map(comparableText));
+    const effects = effectsOf(page).filter((effect) => party || conditions.has(comparableText(effect.name)));
+    const inactive = new Set((system?.combat?.inactive ?? []).map(comparableText));
+    const health = track === undefined ? undefined : party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
+    const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
+    const dying = party && system?.dying !== undefined && readCounter(counters[system.dying.field])?.value === system.dying.value ? system.dying : undefined;
+    return {
+        name: shown,
+        role: page === sight.knowledge.pc ? "pc" : party ? "companion" : "other",
+        ...(image === undefined ? {} : { image }),
+        ...(stranger ? { stranger: true as const } : {}),
+        ...(health === undefined ? {} : { health }),
+        effects: effects.map((effect) => (party ? effectShown(sight.world, effect) : effect.name)),
+        ...(effects.some((effect) => inactive.has(comparableText(effect.name))) ? { inactive: true as const } : {}),
+        ...(keeps.length === 0 ? {} : { keeps }),
+        ...(dying === undefined
+            ? {}
+            : {
+                dying: dying.show.map((field) => ({
+                    field,
+                    value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0,
+                    ...limitOf(system?.thresholds ?? [], field),
+                })),
+            }),
+    };
+}
+
+/** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */
+function healthWord(value: number, most: number | undefined): string
+{
+    if (value <= 0) {
+        return "down";
+    }
+
+    if (most === undefined || value >= most) {
+        return "unhurt";
+    }
+
+    return value * 2 <= most ? "bloodied" : "hurt";
+}
+
+/** The limit a threshold of the system gives a counter, as death-failures 3. */
+function limitOf(thresholds: { field: string; value?: number; }[], field: string): { limit?: number; }
+{
+    const limit = thresholds.find((threshold) => comparableText(threshold.field) === comparableText(field))?.value;
+    return limit === undefined ? {} : { limit };
 }
 
 /** Someone the character knows, with their picture and their role. */

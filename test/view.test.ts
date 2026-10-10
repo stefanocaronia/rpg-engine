@@ -291,6 +291,23 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(place.here.map((person: { name: string; }) => person.name)).toEqual(["Kira", "Bran", "Varro"]);
     });
 
+    it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, the panel of the dying (D-314)", async () => {
+        await ok("write", "Kira", "--set", "hp=0/12");
+        await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Lupo nero=2");
+        await ok("scene", "order", "--order", "Lupo nero 1", "--order", "Kira", "--order", "Lupo nero 2", "--order", "Bran");
+        // The wolf's 11 hit points, 5 left: half or less.
+        await ok("change", "Lupo nero 1", "hp", "--by=-6");
+        await ok("effect", "add", "Lupo nero 2", "Stunned");
+        await ok("effect", "add", "Lupo nero 2", "Maledizione");
+        const fighters = JSON.parse(await ok("view", "--json")).openScene.fighters;
+        expect(fighters.map((fighter: { name: string; }) => fighter.name)).toEqual(["creature 1", "Kira", "creature 2", "Bran"]);
+        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "bloodied", effects: [] });
+        // Of a foe only the conditions anyone sees; a stunned one does not act.
+        expect(fighters[2]).toMatchObject({ health: "unhurt", effects: ["Stunned"], inactive: true });
+        expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", dying: [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 0, limit: 3 }] });
+        expect(JSON.stringify(fighters)).not.toContain("Lupo nero");
+    });
+
     it("gives the open scene as data: whom it meets there by name (VIEW-2), the copies counted, the turns as the character knows them", async () => {
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Strega", "--creatures", "Lupo nero=2");
         await ok("scene", "order", "--order", "Kira", "--order", "Lupo nero 1", "--order", "Strega");
