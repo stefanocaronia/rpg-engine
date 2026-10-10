@@ -105,6 +105,39 @@ async function makeDemo(context: Context): Promise<void>
     await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
     await rpg("write", "Ettore", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
-    await rpg("write", "Locanda del Guado", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
+    await makeDemoWorld(rpg);
     await rpg("effect", "add", "Ettore", "Benedizione", "--for", "1m");
+}
+
+/**
+ * The world around the inn, for the World map (D-318): Guadoscuro at the centre in its hills, a castle in the mountains to the north, a forest with a tower, a
+ * marsh hiding a cave, a temple heard of; the king's road, a path and a river toward a port no one has found. Ettore and Lupa came down the road from the
+ * castle, with a night at a camp: the trail. The cave and the port stay unknown.
+ */
+async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise<void>
+{
+    const place = (name: string, ...fields: string[]): Promise<void> => rpg("write", name, "--type", "place", ...fields.flatMap((field) => [field.startsWith("environment=") || field.startsWith("contains=") ? "--add" : "--set", field]));
+    await place("Guadoscuro", "kind=village", "contains=[[Locanda del Guado]]");
+    await place("Rocca di Vetta", "position=21 km N of [[Guadoscuro]]", "kind=castle");
+    await place("Campo del Viandante", "kind=camp");
+    await place("Ponte di Pietra", "position=12 km E of [[Guadoscuro]]", "kind=bridge");
+    await place("Santuario della Luce", "position=26 km E of [[Guadoscuro]]", "kind=temple");
+    await place("Torre dei Sussurri", "position=15 km NE of [[Guadoscuro]]", "kind=tower");
+    await place("Mulino Rosso", "position=7 km SE of [[Guadoscuro]]", "kind=mill");
+    await place("Porto Salso", "position=40 km SE of [[Guadoscuro]]", "kind=port");
+    await place("Grotta del Drago", "position=17 km SW of [[Guadoscuro]]", "kind=cave");
+    await place("Colli del Guado", "position=2 km W of [[Guadoscuro]]", "radius=10 km", "environment=biome: hills", "contains=[[Guadoscuro]]");
+    await place("Monti del Corvo", "position=33 km N of [[Guadoscuro]]", "radius=15 km", "environment=biome: mountains", "contains=[[Rocca di Vetta]]");
+    await place("Bosco delle Fate", "position=15 km NE of [[Guadoscuro]]", "radius=8 km", "environment=biome: forest", "contains=[[Torre dei Sussurri]]");
+    await place("Palude dei Lamenti", "position=16 km SW of [[Guadoscuro]]", "radius=7 km", "environment=biome: swamp", "environment=terrain: difficult", "contains=[[Grotta del Drago]]");
+    await place("Strada del Re", "stops=[[Rocca di Vetta]], 9 km, [[Campo del Viandante]], 13 km, [[Guadoscuro]], 12 km, [[Ponte di Pietra]], 15 km, [[Santuario della Luce]]");
+    await place("Sentiero della Torre", "kind=path", "stops=[[Guadoscuro]], 17 km, [[Torre dei Sussurri]]");
+    await place("Fiume Scuro", "kind=river", "stops=[[Guadoscuro]], 7 km, [[Mulino Rosso]], 36 km, [[Porto Salso]]");
+    const known = ["Santuario della Luce", "Bosco delle Fate", "Torre dei Sussurri", "Sentiero della Torre", "Fiume Scuro", "Mulino Rosso", "Palude dei Lamenti", "Ponte di Pietra"];
+    await rpg("write", "Ettore", ...known.flatMap((name) => ["--add", `knows=[[${name}]]`]));
+    await rpg("write", "Rocca di Vetta", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
+
+    for (const stop of ["Strada del Re", "Campo del Viandante", "Strada del Re", "Guadoscuro", "Locanda del Guado"]) {
+        await rpg("move", "Ettore", "Lupa", "--to", stop);
+    }
 }

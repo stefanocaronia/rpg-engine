@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { Asked, View } from "./data.ts";
+import type { Asked, View, WorldMap } from "./data.ts";
 
 /** What view gives: the party, with the last rolls, as many as asked; or a page. */
 export async function readView(page?: string, rolls?: number): Promise<View>
@@ -10,6 +10,23 @@ export async function readView(page?: string, rolls?: number): Promise<View>
 
     if ("error" in body) {
         throw new Error(body.error);
+    }
+
+    return body;
+}
+
+/** The world map as the player character knows it (VIEW-7). */
+export async function readMap(): Promise<WorldMap>
+{
+    const response = await fetch("/api/view?map=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    if (body.kind !== "map") {
+        throw new Error("There is no player character yet: the map starts with one.");
     }
 
     return body;

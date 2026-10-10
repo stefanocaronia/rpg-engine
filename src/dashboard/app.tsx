@@ -19,6 +19,7 @@ import { SceneView } from "./scene.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
+import { WorldView } from "./world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";
@@ -243,7 +244,8 @@ function App()
                             }}
                         />
                     )}
-                    {!["party", "scene", "combat", "about"].includes(address.section) && <Upcoming section={address.section} />}
+                    {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
+                    {!["party", "scene", "combat", "world", "about"].includes(address.section) && <Upcoming section={address.section} />}
                     {address.section === "party" && member && (
                         <MemberSheet
                             key={member.name}

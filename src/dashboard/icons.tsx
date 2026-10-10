@@ -20,6 +20,13 @@ const iconPaths = {
     soundOff: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M16 9.5l5 5 M21 9.5l-5 5",
     minus: "M6 12h12",
     plus: "M12 6v12 M6 12h12",
+    // The world map's tools and ways (D-318), drawn by Joseph.
+    locate: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10Z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z",
+    fit: "M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5",
+    list: "M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01",
+    road: "M4 20 10 4 M20 20 14 4 M12 6v2 M12 11v2 M12 16v2",
+    path: "M5 20c4-3 10-3 8-8s-4-6 2-8",
+    river: "M3 8c3 2 6-2 9 0s6-2 9 0 M3 14c3 2 6-2 9 0s6-2 9 0",
     close: "M6 6l12 12 M18 6 6 18",
     clock: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 7.5V12l3 2",
     place: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z",
