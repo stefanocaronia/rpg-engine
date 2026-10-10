@@ -1,4 +1,4 @@
-// The glass over a token on a map (Stefano, 10 October): a low lens with bevelled edges, as a button, not a dome. Its flat top takes the light in a band
+// The glass over a token on a map (D-326): a low lens with bevelled edges, as a button, not a dome, drawn over the picture, never into it. Its flat top takes the light in a band
 // with a crisp edge, as flat glass does; its chamfer is lit at the top left and shaded at the bottom right, its inner edge the other way; and the token's
 // shadow falls on the paper.
 
