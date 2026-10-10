@@ -4,11 +4,11 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { closedSquare, firstOpenSquare, readSquare, type Square, squareName } from "../grid/index.ts";
+import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type Square, squareName } from "../grid/index.ts";
 import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
-import { atEntries, atEntry, clearCopies, placeGrid, standing } from "./game-grids.ts";
+import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
 import { picturesNote } from "./game-images.ts";
 import { movePages } from "./game-moves.ts";
 import { roadsOf, sameSpot, stopOf } from "./game-roads.ts";
@@ -141,7 +141,8 @@ function moveInto(root: string, context: Context, world: World, scene: Scene | u
 
 /**
  * Puts one page or copy of the open scene on a square of a place's map (GRD-3): of the place it goes to with `to`, or of the one it is right in; the place's
- * `at` changes, and a line goes in the log, kept out of the diary. Refused outside the map, on a wall or on what blocks, or for a place without a map.
+ * `at` changes, and a line goes in the log, kept out of the diary. Refused before anything moves: outside the map, on a wall or on what blocks, or for a place
+ * without a map.
  */
 function moveOnMap(root: string, context: Context, world: World, scene: Scene | undefined, names: string[], at: string, to: string | undefined): MoveResult
 {
@@ -162,14 +163,16 @@ function moveOnMap(root: string, context: Context, world: World, scene: Scene | 
     }
 
     const page = copy === undefined ? pageOf(world, scene, names[0], "what") : undefined;
-    const moved = to === undefined ? undefined : moveInto(root, context, world, scene, names, to, true);
-    const now = moved === undefined ? world : campaignWorld(root, context);
-    const fresh = page === undefined ? undefined : now.pages.find((other) => other.path === page.path);
-    const place = copy !== undefined ? scenePlace(now, scene) : fresh === undefined ? undefined : locate(now, fresh).chain[0];
-    const who = copy ?? fresh?.name ?? names[0];
+    const who = copy ?? page?.name ?? names[0];
+    // The place whose map they stand on: the scene's for a copy, the one they go into with to, else the one they are right in.
+    const place = copy !== undefined ? scenePlace(world, scene) : to !== undefined ? pageOf(world, scene, to, "where") : page === undefined ? undefined : locate(world, page).chain[0];
 
     if (place === undefined || place.type !== "place") {
-        throw new Error(`${who} is not right in a place${place === undefined ? "" : `: it is in ${place.name}`}, so it has no square to stand on. Move it into a place first, with to. Nothing moved.`);
+        throw new Error(
+            to === undefined
+                ? `${who} is not right in a place${place === undefined ? "" : `: it is in ${place.name}`}, so it has no square to stand on. Move it into a place first, with to. Nothing moved.`
+                : `${place?.name ?? to} is not a place, so ${who} would stand on no square of it: give at only with a place, or move without at. Nothing moved.`,
+        );
     }
 
     const map = placeGrid(place);
@@ -184,17 +187,30 @@ function moveOnMap(root: string, context: Context, world: World, scene: Scene | 
         throw new Error(`${closed}: ${who} cannot stand there. Give a square of the floor. Nothing moved.`);
     }
 
-    const mine = (entry: string): boolean => standing(now, place, scene).some((one) => one.entry === entry && (copy === undefined ? one.page === fresh : one.copy === copy));
+    const moved = to === undefined ? undefined : moveInto(root, context, world, scene, names, to, true);
+    const now = moved === undefined ? world : campaignWorld(root, context);
+    const fresh = page === undefined ? undefined : now.pages.find((other) => other.path === page.path);
+    const here = now.pages.find((other) => other.path === place.path) ?? place;
+    const mine = (entry: string): boolean => standing(now, here, scene).some((one) => one.entry === entry && (copy === undefined ? one.page === fresh : one.copy === copy));
     const entry = atEntry({ ...(fresh === undefined ? {} : { page: fresh }), ...(copy === undefined ? {} : { copy }) }, square);
-    const kept = atEntries(place).filter((other) => !mine(other));
-    writePage(now, place.name, undefined, { set: { at: [...kept, entry] } });
+    const kept = atEntries(here).filter((other) => !mine(other));
+    writePage(now, here.name, undefined, { set: { at: [...kept, entry] } });
     const party = fresh !== undefined && (isInParty(fresh) || locate(now, fresh).chain.some(isInParty));
-    appendLogEntry(root, newDatedLogEntry(root, context, "placed", party ? "public" : "hidden", { page: who, place: place.name, square: squareName(square) }));
+    appendLogEntry(root, newDatedLogEntry(root, context, "placed", party ? "public" : "hidden", { page: who, place: here.name, square: squareName(square) }));
+    const ground = groundNote(map.grid, square);
     return {
-        ...(moved ?? { moved: [], already: [], to: place.name, chain: [place.name], there: [], here: [], noLonger: [], notes: [], problems: world.problems }),
-        notes: moved?.notes ?? [],
-        placed: { who, square: squareName(square), place: place.name },
+        ...(moved ?? { moved: [], already: [], to: here.name, chain: [here.name], there: [], here: [], noLonger: [], notes: [], problems: world.problems }),
+        notes: [...(moved?.notes ?? []), ...(ground === undefined ? [] : [ground])],
+        placed: { who, square: squareName(square), place: here.name },
     };
+}
+
+/** A word to the master on the square one now stands on (GRD-5): what it is, when it is difficult or hidden from the player. */
+function groundNote(grid: Grid, square: Square): string | undefined
+{
+    const feature = featureAt(grid, square);
+    const marks = [feature?.difficult ? "difficult ground" : "", feature?.hidden ? "hidden: the player does not know it is there" : ""].filter((mark) => mark !== "");
+    return feature === undefined || marks.length === 0 ? undefined : `${squareName(square)} is ${feature.name}, ${marks.join(", ")}.`;
 }
 
 /** The place where the open scene is; none when there is no scene, or it is in no place. */
@@ -217,7 +233,7 @@ function squaresNote(world: World, place: Page, moved: Page[]): string | undefin
     }
 
     const placed = standing(world, place, undefined);
-    const on = characters.flatMap((page) => placed.filter((one) => one.page?.path === page.path && one.square !== undefined).map((one) => `${page.name} on ${squareName(one.square as Square)}`));
+    const on = characters.flatMap((page) => placed.flatMap((one) => (one.page?.path === page.path && one.square !== undefined ? [`${page.name} on ${squareName(one.square)}`] : [])));
     const off = characters.filter((page) => !placed.some((one) => one.page?.path === page.path)).map((page) => page.name);
     const entered = on.length === 0 ? "" : `They stand where they came in: ${on.join(", ")}.`;
     const missing = off.length === 0 ? "" : `${place.name} has a map: put ${off.join(", ")} on it, such as page ${off[0]}, at ${squareName(firstOpenSquare(map.grid))}.`;
@@ -280,7 +296,10 @@ function followParty(root: string, context: Context, world: World, scene: Scene,
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: scene.title, place: `[[${spot.name}]]` }));
         const copies = Object.keys(scene.copies);
         const copiesToo = copies.length === 0 ? "" : `, with ${copies.join(", ")}`;
-        return `The open scene, ${scene.title}, goes with them: now at ${spot.name}${copiesToo}. Close it if it ended${place === undefined ? "" : ` in ${place.name}`}; scene leave whoever stays behind.`;
+        // The copies stand on no square of the new map until the master puts them there.
+        const onTheMap = offMapNote(world, spot, scene, copies);
+        const ended = `Close it if it ended${place === undefined ? "" : ` in ${place.name}`}; scene leave whoever stays behind.`;
+        return `The open scene, ${scene.title}, goes with them: now at ${spot.name}${copiesToo}. ${ended}${onTheMap === undefined ? "" : ` ${onTheMap}`}`;
     }
 
     if (place === undefined) {

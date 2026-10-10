@@ -67,6 +67,23 @@ describe("the grid as the master writes it (GRD-1, GRD-2)", () => {
             'The map has z, which its legend does not name: add a line such as "z barrel: barrel, blocks".',
         ]);
     });
+
+    it("says which written characters make no square, an emoji or a tab, reads an accent written apart as one, and keeps one off a square the legend does not name", () => {
+        const { grid, problems } = readGrid(["#.🌲.#", "#.e\u0301.#", "#.\t.z", "", "🌲 quercia: tree, blocks", "é erba: grass"].join("\n"));
+        expect(grid.columns).toBe(5);
+        expect(problems).toEqual([
+            "The map has 🌲, which is not one character a square: use a letter or a sign, such as T, and name it in the legend.",
+            "The map has a tab, which is not a square: write a space for each square outside the map, and a symbol for each of its squares.",
+            'The map has z, which its legend does not name: add a line such as "z barrel: barrel, blocks".',
+        ]);
+        expect([closedSquare(grid, { column: 2, row: 0 }), closedSquare(grid, { column: 2, row: 1 }), closedSquare(grid, { column: 4, row: 2 })])
+            .toEqual(["C1 is a square the map cannot read", undefined, "E3 is z, which the legend does not name"]);
+    });
+
+    it("says when an exit is written on a wall, where one coming in would stand", () => {
+        expect(readGrid(["#####", "#...#", "#####", "", "C1 → [[Guado]]"].join("\n")).problems)
+            .toEqual(["C1 leads to Guado, but C1 is a wall: write the exit on the door, or on the square one comes in by."]);
+    });
 });
 
 describe("who stands where, in play (GRD-3, GRD-6)", () => {
@@ -119,8 +136,27 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(await refused("move", "Kira", "--at", "A1")).toContain("A1 is a wall");
         expect(await refused("move", "Kira", "Bran", "--at", "D3")).toContain("Put one at a time on the map");
         expect(await refused("move", "Bran", "--at", "D3")).toContain("Guado has no map");
+        // Into a place and onto a wall: refused before anything moves.
+        expect(await refused("move", "Oste", "--to", "Locanda", "--at", "A1")).toContain("A1 is a wall");
+        expect(innPage()).not.toContain("Oste");
         expect(await ok("move", "Oste", "--to", "Locanda", "--at", "H3")).toContain("Oste: now on H3 in Locanda.");
         expect(innPage()).toContain("[[Oste]] H3");
+        expect(await ok("move", "Kira", "--at", "E2")).toBe("Kira: now on E2 in Locanda.\nE2 is tavolo, difficult ground.");
+    });
+
+    it("puts on a door only who comes in through it: not a thing put down by one who is there, nor one up from a place inside, nor on a wall (GRD-3)", async () => {
+        await ok("move", "Kira", "--to", "Locanda", "--at", "D3");
+        await ok("write", "Spada", "--type", "item");
+        await ok("move", "Spada", "--to", "Kira");
+        await ok("move", "Spada", "--to", "Locanda");
+        expect(innPage()).not.toMatch(/\[\[Spada\]\] [A-Z]+\d/);
+        await ok("write", "Cantina", "--type", "place");
+        await ok("write", "Locanda", "--add", "contains=[[Cantina]]");
+        await ok("move", "Bran", "--to", "Cantina");
+        expect(await ok("move", "Bran", "--to", "Locanda")).toContain("Locanda has a map: put Bran on it");
+        expect(innPage()).not.toContain("[[Bran]] E5");
+        await ok("write", "Torre", "--type", "place", "--text", "```map\n#####\n#...#\n#####\n\nC1 → [[Locanda]]\n```");
+        expect(await ok("move", "Kira", "--to", "Torre")).toContain("Torre has a map: put Kira on it");
     });
 
     it("puts the copies of the open scene on the map of its place, and takes them off when they leave or the scene closes", async () => {
@@ -135,6 +171,14 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(innPage()).not.toContain("Bandit 1");
         await ok("scene", "close", "--summary", "La rissa finisce.");
         expect(innPage()).not.toContain("Bandit 2");
+    });
+
+    it("asks for the copies on the map of the place the scene follows the party to (GRD-3)", async () => {
+        await ok("write", "Grotta", "--type", "place", "--text", "```map\n#####\n#...#\n##+##\n\nC3 → [[Guado]]\n```");
+        await ok("scene", "open", "--title", "Fuga", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=1");
+        const output = await ok("move", "Kira", "Bran", "--to", "Grotta");
+        expect(output).toContain("They stand where they came in: Kira on C3, Bran on C3.");
+        expect(output).toContain("Grotta has a map: put Bandit 1 on it");
     });
 
     it("gives the dashboard the map of the place where the party is, the text without it, who stands where as the character knows them (GRD-6)", async () => {
@@ -180,6 +224,7 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(map.legend.map((feature: { symbol: string; }) => feature.symbol)).toEqual(["#", "."]);
         expect(map.exits).toEqual([]);
         expect(JSON.stringify(map)).not.toMatch(/trappola|segreta|Cantina/);
+        expect(await ok("move", "Kira", "--at", "C2")).toContain("C2 is trappola a spuntoni, hidden: the player does not know it is there.");
     });
 
     it("tells the master which kinds of a map just written the dashboard draws neutral, and what of it does not read (GRD-2)", async () => {
@@ -194,5 +239,11 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(output).toContain("Locanda's map leads from E5 to Fiume, which is no page.");
         expect(output).toContain("Bran stands on D3 in Locanda, but is not in it.");
         expect(output).toContain("Kira stands on A1 in Locanda, but is not in it.");
+    });
+
+    it("validate says who stands on more than one square of a place (GRD-3)", async () => {
+        await ok("move", "Kira", "--to", "Locanda", "--at", "D3");
+        await ok("write", "Locanda", "--add", "at=[[kira]] C2");
+        expect((await runCommandLine(["validate"], context)).output).toContain("Kira stands on more than one square in Locanda: D3, C2.");
     });
 });

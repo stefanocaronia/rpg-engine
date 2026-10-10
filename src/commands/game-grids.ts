@@ -96,7 +96,7 @@ export function withSquares(world: World, plan: MovePlan, destination: Page | un
     });
     const map = destination === undefined ? undefined : placeGrid(destination);
     const entering = map === undefined || destination === undefined ? [] : plan.moving.flatMap((page) => {
-        const door = doorFrom(world, map.grid, page);
+        const door = doorFrom(world, map.grid, page, destination);
         return door === undefined ? [] : [atEntry({ page }, door)];
     });
     const intoDestination = entering.length === 0 || destination === undefined ? [] : [{ holder: destination, field: "at", remove: [], add: entering }];
@@ -130,11 +130,16 @@ export function clearCopies(world: World, scene: Scene, names: string[]): void
     }
 }
 
-/** The square a page enters a map by: the one that leads to where it is, the nearest of its containers first; none when no square leads there. */
-export function doorFrom(world: World, grid: Grid, page: Page): Square | undefined
+/**
+ * The square a page enters a place's map by (GRD-3): the open one that leads to where it comes from, the nearest of its containers first; none when no such
+ * square leads there, or it comes from inside the place itself, as up from its cellar, or put down by one who is there.
+ */
+export function doorFrom(world: World, grid: Grid, page: Page, place: Page): Square | undefined
 {
-    const chain = locate(world, page).chain.map((holder) => comparableText(holder.name));
-    const exits = grid.exits.filter((exit) => chain.includes(comparableText(exit.to)));
+    const holders = locate(world, page).chain;
+    const inside = holders.findIndex((holder) => holder.path === place.path);
+    const chain = (inside === -1 ? holders : holders.slice(0, inside)).map((holder) => comparableText(holder.name));
+    const exits = grid.exits.filter((exit) => chain.includes(comparableText(exit.to)) && closedSquare(grid, exit.square) === undefined);
     return exits.sort((first, second) => chain.indexOf(comparableText(first.to)) - chain.indexOf(comparableText(second.to)))[0]?.square;
 }
 
@@ -159,6 +164,7 @@ export function gridProblems(world: World, scene: Scene | undefined): Problem[]
             ...map.problems.map((message): Problem => ({ path: place.path, message: `${place.name}'s map: ${message}` })),
             ...exits,
             ...placed.flatMap((one) => standingProblem(world, place, map.grid, one)),
+            ...twiceOn(place, placed),
         ];
     });
 }
@@ -195,4 +201,14 @@ function standingProblem(world: World, place: Page, grid: Grid, one: Standing): 
 
     const closed = closedSquare(grid, one.square);
     return closed === undefined ? [] : [{ path: place.path, message: `${one.name} stands on ${squareName(one.square)} in ${place.name}, but ${closed}.`, fix }];
+}
+
+/** Those who stand on more than one square of a place (GRD-3): each once, with their squares. */
+function twiceOn(place: Page, placed: Standing[]): Problem[]
+{
+    const same = (one: Standing, other: Standing): boolean => (one.page !== undefined && one.page === other.page) || (one.copy !== undefined && one.copy === other.copy);
+    return placed.filter((one, index) => placed.findIndex((other) => same(other, one)) === index).flatMap((one): Problem[] => {
+        const squares = placed.flatMap((other) => (same(other, one) && other.square !== undefined ? [squareName(other.square)] : []));
+        return squares.length < 2 ? [] : [{ path: place.path, message: `${one.name} stands on more than one square in ${place.name}: ${squares.join(", ")}.`, fix: "move them with move, at the one square they are on" }];
+    });
 }

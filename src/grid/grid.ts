@@ -42,6 +42,9 @@ export const builtIn: readonly Feature[] = [
 /** The flags a symbol of the legend may have, after its kind. */
 export const flags = ["blocks", "difficult", "hidden"] as const;
 
+// What stands in the grid for a written character that makes no square, as an emoji or a tab: no legend names it, and no one stands on it.
+const unreadableSymbol = "\uFFFD";
+
 /** The first map block of a text: what stands between ```map and ```; none when it has none. */
 export function mapBlock(text: string): string | undefined
 {
@@ -63,9 +66,10 @@ export function withoutMapBlock(text: string): string
 /** The grid of a map block (GRD-1, GRD-2), and what of it cannot be read, each as a sentence that says how to fix it. */
 export function readGrid(block: string): { grid: Grid; problems: string[]; }
 {
-    const lines = block.split("\n");
+    const lines = block.normalize("NFC").split("\n");
     const blank = lines.findIndex((line) => line.trim() === "");
-    const rows = (blank === -1 ? lines : lines.slice(0, blank)).map((line) => line.replace(/\s+$/, ""));
+    const written = (blank === -1 ? lines : lines.slice(0, blank)).map((line) => [...line.replace(/\s+$/, "")]);
+    const rows = written.map((symbols) => symbols.map((symbol) => (isOneSquare(symbol) ? symbol : unreadableSymbol)).join(""));
     const columns = Math.max(0, ...rows.map((line) => line.length));
     const features: Feature[] = [...builtIn];
     const exits: Grid["exits"] = [];
@@ -74,7 +78,7 @@ export function readGrid(block: string): { grid: Grid; problems: string[]; }
 
     for (const line of blank === -1 ? [] : lines.slice(blank + 1).map((each) => each.trim()).filter((each) => each !== "")) {
         const exit = /^([A-Za-z]+\d+)\s*(?:→|->)\s*(.+)$/.exec(line);
-        const named = /^(\S)\s+([^:]+?)\s*(?::\s*(.*))?$/.exec(line);
+        const named = /^(\S)\s+([^:]+?)\s*(?::\s*(.*))?$/u.exec(line);
 
         if (exit !== null) {
             const square = readSquare(exit[1]);
@@ -85,6 +89,8 @@ export function readGrid(block: string): { grid: Grid; problems: string[]; }
             } else {
                 exits.push({ square, to });
             }
+        } else if (named !== null && !isOneSquare(named[1])) {
+            problems.push(notOneSquare(named[1]));
         } else if (named !== null) {
             const [symbol, name] = [named[1], named[2]];
             const words = (named[3] ?? "").split(",").map((word) => word.trim().toLowerCase()).filter((word) => word !== "");
@@ -117,8 +123,15 @@ export function readGrid(block: string): { grid: Grid; problems: string[]; }
     }
 
     const grid = { columns, rows: rows.length, lines: rows.map((line) => line.padEnd(columns, " ")), features, exits };
-    const unnamed = [...new Set(grid.lines.join(""))].filter((symbol) => symbol !== " " && !features.some((feature) => feature.symbol === symbol));
-    return { grid, problems: [...problems, ...unnamed.map((symbol) => `The map has ${symbol}, which its legend does not name: add a line such as "${symbol} barrel: barrel, blocks".`)] };
+    const unreadable = written.flat().filter((symbol) => !isOneSquare(symbol)).map(notOneSquare);
+    const unnamed = [...new Set(grid.lines.join(""))].filter((symbol) => symbol !== " " && symbol !== unreadableSymbol && !features.some((feature) => feature.symbol === symbol));
+    const nameless = unnamed.map((symbol) => `The map has ${symbol}, which its legend does not name: add a line such as "${symbol} barrel: barrel, blocks".`);
+    // One comes in by an exit's square: a wall or what blocks there would put them on it.
+    const shut = exits.flatMap((exit) => {
+        const closed = closedSquare(grid, exit.square);
+        return closed === undefined ? [] : [`${squareName(exit.square)} leads to ${exit.to}, but ${closed}: write the exit on the door, or on the square one comes in by.`];
+    });
+    return { grid, problems: [...new Set([...problems, ...unreadable, ...nameless, ...shut])] };
 }
 
 /** A square's name, as the player says it: its column's letters and its row's number, from A1 at the top left; after Z, AA. */
@@ -173,14 +186,33 @@ export function firstOpenSquare(grid: Grid): Square
     return { column: 0, row: 0 };
 }
 
-/** Why one cannot stand at a square (GRD-3): outside the map, a wall, or what blocks; none when one can. */
+/** Why one cannot stand at a square (GRD-3): outside the map, a wall, what blocks, or a symbol the legend does not name; none when one can. */
 export function closedSquare(grid: Grid, square: Square): string | undefined
 {
+    const symbol = symbolAt(grid, square);
     const feature = featureAt(grid, square);
 
-    if (square.column < 0 || square.row < 0 || square.column >= grid.columns || square.row >= grid.rows || symbolAt(grid, square) === " ") {
+    if (square.column < 0 || square.row < 0 || square.column >= grid.columns || square.row >= grid.rows || symbol === " ") {
         return `${squareName(square)} is outside the map`;
     }
 
-    return feature?.blocks ? `${squareName(square)} is ${feature.symbol === "#" ? "a wall" : `${feature.name}, which blocks`}` : undefined;
+    if (feature === undefined) {
+        return `${squareName(square)} is ${symbol === unreadableSymbol ? "a square the map cannot read" : `${symbol}, which the legend does not name`}`;
+    }
+
+    return feature.blocks ? `${squareName(square)} is ${feature.symbol === "#" ? "a wall" : `${feature.name}, which blocks`}` : undefined;
+}
+
+/** Whether a written character makes one square: a letter or a sign, not a tab, nor what shows as one character but is written as two, as an emoji. */
+function isOneSquare(symbol: string): boolean
+{
+    return symbol !== "\t" && symbol.length === 1 && !/\p{M}/u.test(symbol);
+}
+
+/** What to say of a written character that makes no square. */
+function notOneSquare(symbol: string): string
+{
+    return symbol === "\t"
+        ? "The map has a tab, which is not a square: write a space for each square outside the map, and a symbol for each of its squares."
+        : `The map has ${symbol}, which is not one character a square: use a letter or a sign, such as T, and name it in the legend.`;
 }
