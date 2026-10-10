@@ -1,5 +1,6 @@
 // The Scene section (D-309, VIEW-6): where the party is, its picture with the places around it, its name and what holds there; the open scene, who is in it and
 // whose turn it is; outside a scene who is there of those the character knows; then the place's text.
+import { sectionAddress } from "./address.ts";
 import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { Markdown, plainLine } from "./markdown.tsx";
@@ -107,7 +108,15 @@ function SceneCard({ scene }: { scene: ShownScene; })
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />
-            {turn && <p class="scene-turn">{turn}</p>}
+            {/* In a fight, the line leads to Combat, where the turns are (D-314). */}
+            {scene.type === "combat"
+                ? (
+                    <p class="scene-turn">
+                        {turn && `${turn} · `}
+                        <a href={sectionAddress("combat")}>Turn order</a>
+                    </p>
+                )
+                : turn && <p class="scene-turn">{turn}</p>}
         </section>
     );
 }
