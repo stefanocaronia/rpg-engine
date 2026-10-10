@@ -5,10 +5,10 @@
 import { sectionAddress } from "./address.ts";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { fieldLabel, phraseLabel, shownText } from "./labels.ts";
+import { shownText } from "./labels.ts";
 import { Token } from "./party.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
-import { Effects } from "./widgets.tsx";
+import { DeathSaves, Effects } from "./widgets.tsx";
 
 /** The player character's sheet as the page read it, for what it has at hand. */
 interface OwnSheet
@@ -96,22 +96,6 @@ function FighterRow({ fighter, place, acting }: { fighter: Fighter; place: numbe
                 {fighter.dying && <DeathSaves dying={fighter.dying} />}
             </div>
         </li>
-    );
-}
-
-/** The death saves, large (D-310, 7): the successes and the failures, by shape as well as colour. */
-function DeathSaves({ dying }: { dying: NonNullable<Fighter["dying"]>; })
-{
-    return (
-        <div class="death-saves">
-            {dying.map((counter, index) => (
-                <p key={counter.field} class="saves-row">
-                    <span class="saves-label">{phraseLabel(fieldLabel(counter.field))}</span>
-                    {Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, mark) => <span key={mark} class={`save ${index === 0 ? "success" : "failure"}${mark < counter.value ? " marked" : ""}`} aria-hidden="true" />)}
-                    <span class="visually-hidden">{`${counter.value} of ${counter.limit ?? "?"}`}</span>
-                </p>
-            ))}
-        </div>
     );
 }
 

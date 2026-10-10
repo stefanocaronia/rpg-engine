@@ -3487,6 +3487,31 @@ svg.icon {
     background: var(--low);
 }
 
+/* In the band of the sheet at 0 (D-310, 7): the band's whole width, larger, on a tint of danger. */
+.band .death-saves {
+    flex-basis: 100%;
+    gap: 10px;
+    margin: 0;
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--low) 45%, transparent);
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--low) 8%, transparent);
+}
+
+.band .saves-row {
+    gap: 10px;
+}
+
+.band .saves-label {
+    min-width: 10em;
+    font-size: 0.95rem;
+}
+
+.band .save {
+    width: 30px;
+    height: 30px;
+}
+
 /* What the player has at hand, one panel: the name, what they keep or the death saves, the line of the fields the system names, its groups as sections. */
 .at-hand {
     display: grid;

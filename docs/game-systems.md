@@ -289,14 +289,14 @@ When `change` lowers `counter` on whoever keeps an effect, a page or a copy, whe
 
 ### combat and dying
 
-What the dashboard's Combat section shows of a fight (D-314); the engine decides nothing by them.
+What the dashboard's Combat section shows of a fight (D-314), and the band of a sheet at the dying point (D-310); the engine decides nothing by them.
 
 ```yaml
 combat: {track: hp, in-words: true, inactive: [Incapacitated, Paralyzed, Petrified, Stunned, Unconscious]}
 dying: {at: hp 0, show: [death-successes, death-failures]}
 ```
 
-`combat.track` is the counter of each one in the fight: the party's shown as numbers, a foe's, with `in-words`, as words the player may hear (unhurt, hurt, bloodied at half or less, down), never as numbers (D-238); without `in-words` a foe shows none. `inactive` names the conditions that keep from acting: the dashboard marks "does not act" beside whoever has one, never a turn skipped. `dying` shows, for the party at that value of a counter, those counters large, with the limits `thresholds` gives them. Ironsworn's `combat: {track: progress}` shows each foe's progress as it is. The counters must be declared counters, the conditions among `conditions`.
+`combat.track` is the counter of each one in the fight: the party's shown as numbers, a foe's, with `in-words`, as words the player may hear (unhurt, hurt, bloodied at half or less, down), never as numbers (D-238); without `in-words` a foe shows none. `inactive` names the conditions that keep from acting: the dashboard marks "does not act" beside whoever has one, never a turn skipped. `dying` shows, for the party at that value of a counter, those counters large, with the limits `thresholds` gives them, in Combat and in the band of their sheet, never for the dead. Ironsworn's `combat: {track: progress}` shows each foe's progress as it is. The counters must be declared counters, the conditions among `conditions`.
 
 ### tables, computed, counters
 

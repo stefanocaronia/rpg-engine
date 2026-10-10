@@ -96,7 +96,15 @@ export interface Fighter
     effects: Member["effects"];
     inactive?: true;
     keeps?: string[];
-    dying?: { field: string; value: number; limit?: number; }[];
+    dying?: DyingCounter[];
+}
+
+/** A counter of the panel of the dying (D-314): its value, and its limit. */
+export interface DyingCounter
+{
+    field: string;
+    value: number;
+    limit?: number;
 }
 
 /** The open scene as the player sees it (VIEW-6). */
@@ -129,6 +137,8 @@ export interface Member
     effects: { name: string; end?: string; text: string; }[];
     /** Their mood, none when neutral or dead (MOOD-6). */
     mood?: Mood;
+    /** At the system's dying point, the counters shown large in their band (D-310 (7)). */
+    dying?: DyingCounter[];
 }
 
 /** A die as it was thrown: its sides, the face it shows, the faces that add up on it with explosions, the face before a reroll, dropped or a success. */

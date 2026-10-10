@@ -4,6 +4,7 @@ import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
 import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectParts, effectText, keptEffects } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
@@ -53,7 +54,15 @@ export interface Fighter
     effects: { name: string; end?: string; text: string; }[];
     inactive?: true;
     keeps?: string[];
-    dying?: { field: string; value: number; limit?: number; }[];
+    dying?: DyingCounter[];
+}
+
+/** A counter of the panel of the dying (D-314): its value, and the limit the system's thresholds give it. */
+export interface DyingCounter
+{
+    field: string;
+    value: number;
+    limit?: number;
 }
 
 /** The open scene as the player sees it (VIEW-6): who is in it as in VIEW-4, and the order of the turns. */
@@ -184,7 +193,7 @@ function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature
     const inactive = new Set((system?.combat?.inactive ?? []).map(comparableText));
     const health = track === undefined ? undefined : party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
     const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
-    const dying = party && system?.dying !== undefined && readCounter(counters[system.dying.field])?.value === system.dying.value ? system.dying : undefined;
+    const dying = party ? dyingOf(sight.world, system, page) : undefined;
     return {
         name: shown,
         role: page === sight.knowledge.pc ? "pc" : party ? "companion" : "other",
@@ -194,16 +203,24 @@ function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature
         effects: effects.map((effect) => (party ? seenEffect(sight, effect) : { name: effect.name, text: effect.name })),
         ...(effects.some((effect) => inactive.has(comparableText(effect.name))) ? { inactive: true as const } : {}),
         ...(keeps.length === 0 ? {} : { keeps }),
-        ...(dying === undefined
-            ? {}
-            : {
-                dying: dying.show.map((field) => ({
-                    field,
-                    value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0,
-                    ...limitOf(system?.thresholds ?? [], field),
-                })),
-            }),
+        ...(dying === undefined ? {} : { dying }),
     };
+}
+
+/**
+ * The panel of the dying of someone of the party (D-310 (7), D-314): at the value of the counter the system names, as hp 0, the counters it shows, with their
+ * limits; none at any other value, nor for the dead.
+ */
+export function dyingOf(world: World, system: GameSystem | undefined, page: Page): DyingCounter[] | undefined
+{
+    const counters = pageCounters(world, page);
+    const dying = system?.dying;
+
+    if (dying === undefined || page.fields.status === "dead" || readCounter(counters[dying.field])?.value !== dying.value) {
+        return undefined;
+    }
+
+    return dying.show.map((field) => ({ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field) }));
 }
 
 /** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */

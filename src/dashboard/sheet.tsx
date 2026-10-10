@@ -11,7 +11,7 @@ import { fieldLabel, groupLabels, phraseLabel, readableIds, shownText } from "./
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { MemberToken } from "./party.tsx";
-import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
+import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The card of the page's text, after the system's groups.
 const descriptionCard = "Description";
@@ -28,6 +28,8 @@ export function MemberSheet(
     const title = [headline, member.mood].filter((part) => part !== undefined && part !== "").join(" · ");
     const fields = sheetFields(member, sheet);
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
+    // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
+    const dying = new Set(member.dying?.map((counter) => counter.field));
     return (
         <section class="sheet" aria-label={member.name}>
             <header class="band">
@@ -39,7 +41,8 @@ export function MemberSheet(
                         {member.place && <p class="place">{member.place}</p>}
                     </div>
                 </div>
-                <ValueLine values={member.counters} fields={fields} />
+                {member.dying && <DeathSaves dying={member.dying} />}
+                <ValueLine values={member.counters.filter((value) => !dying.has(value.field))} fields={fields} />
                 <Effects effects={member.effects} />
             </header>
             <div class="sheet-body">

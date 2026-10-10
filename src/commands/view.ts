@@ -19,7 +19,7 @@ import { measuresOf } from "./game-roads.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
-import { seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
+import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
@@ -73,6 +73,8 @@ export interface PartyMember
     effects: { name: string; end?: string; text: string; }[];
     /** Their mood (MOOD-6); none when neutral, or dead. */
     mood?: Mood;
+    /** At the system's dying point, as hp 0, the counters the dashboard shows large in their band (D-310 (7)). */
+    dying?: DyingCounter[];
 }
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
@@ -206,6 +208,7 @@ export const view = defineCommand({
             const place = where.length > 0 ? `in ${where.join(" › ")}` : chain.length > 0 ? "elsewhere" : open ? "in the open" : undefined;
             const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
             const mood = livingMood(page);
+            const dying = dyingOf(world, system, page);
             return {
                 name: page.name,
                 role: page === pc ? "pc" : "companion",
@@ -215,6 +218,7 @@ export const view = defineCommand({
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)),
                 effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
                 ...(mood === "neutral" ? {} : { mood }),
+                ...(dying === undefined ? {} : { dying }),
             };
         };
 

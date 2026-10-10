@@ -311,9 +311,24 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(fighters[3].effects).toEqual([{ name: "Benedizione", end: "round 2, creature 1", text: "Benedizione until round 2, creature 1" }]);
         expect(overview.party[1].effects).toEqual(fighters[3].effects);
         expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", dying: [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 0, limit: 3 }] });
+        // The same panel in the band of her sheet (D-310 (7)); none for Bran, who has no hit points at 0.
+        expect(overview.party[0].dying).toEqual(fighters[1].dying);
+        expect(overview.party[1].dying).toBeUndefined();
         // Nowhere the copies' names, of a creature the character does not know: in the diary the end is at a creature's turn.
         expect(JSON.stringify(overview)).not.toContain("Lupo nero");
         expect(overview.diary).toContain("Bran: Benedizione until round 2, a creature");
+    });
+
+    it("gives someone of the party at the dying point the panel of the dying in their band, outside a fight too; never the dead (D-310 (7))", async () => {
+        await ok("write", "Bran", "--set", "hp=0/9", "--set", "death-failures=2");
+        const dying = [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 2, limit: 3 }];
+        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toEqual(dying);
+        await ok("change", "Bran", "hp", "--to=1");
+        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();
+        await ok("change", "Bran", "hp", "--to=0");
+        await ok("write", "Bran", "--set", "status=dead");
+        expect(JSON.parse(await ok("view", "--json")).party[1]).toMatchObject({ dead: true });
+        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();
     });
 
     it("gives the open scene as data: whom it meets there by name (VIEW-2), the copies counted, the turns as the character knows them", async () => {
