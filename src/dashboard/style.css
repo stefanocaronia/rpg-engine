@@ -3064,6 +3064,13 @@ svg.icon {
     padding: 0 6px 0 4px;
 }
 
+/* On a wide screen the line under the top says where the place stands (D-333); on a phone, where that line is not, the band. */
+@media (min-width: 601px) {
+    .place-path {
+        display: none;
+    }
+}
+
 .place-band h2 {
     font-size: 1.9rem;
     line-height: 1.1;
