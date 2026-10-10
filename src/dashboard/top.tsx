@@ -1,8 +1,10 @@
-// The page's top (D-276, D-293): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time, its place
-// and whether the game is live. Past it, a bar that stays on top with the same things, the master whole and moving, a little smaller, for its moods to be seen
-// (D-295); what the master asks and the rolls stay in sight under it. In both the robot shows the master's mood, a moment's face, and sleeps while the chat is
-// away (D-305). Under the name, the sections, the same in the bar; beside the theme, the menu; on a phone the sections at the bottom (D-309).
-import { useEffect, useRef, useState } from "preact/hooks";
+// The page's top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time and
+// whether the game is live; under the name the sections, then the saves, the settings and About at the row's end, what does not fit in a menu there; under them
+// all, where the party is. Past it, a bar that stays on top with the same things but where, the master whole and moving, a little smaller, for its moods to be
+// seen (D-295); what the master asks and the rolls stay in sight under it. In both the robot shows the master's mood, a moment's face, and sleeps while the
+// chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
+import type { RefObject } from "preact";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
 import type { Moment, Mood } from "./data.ts";
 import { Icon } from "./icons.tsx";
@@ -16,7 +18,8 @@ interface TopOf
     product: string;
     system?: string;
     now?: string;
-    place?: string;
+    /** Where the party is, from the largest place that holds it to its own (D-333). */
+    path?: string[];
     live: boolean;
     mood?: Mood;
     moment?: Moment;
@@ -29,6 +32,11 @@ interface TopOf
     /** It is the player's character's turn in the fight (D-315). */
     yourTurn?: boolean;
 }
+
+// What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
+const linkGap = 2;
+const pagesGap = 24;
+const menuRoom = 48;
 
 export function Top(top: TopOf)
 {
@@ -68,9 +76,9 @@ export function Top(top: TopOf)
                         </p>
                     )}
                 </div>
-                <Sections current={top.section} fight={top.fight} yourTurn={top.yourTurn} />
-                <StatusChips {...top} />
-                <Menu current={top.section} />
+                <StatusChips now={top.now} live={top.live} />
+                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} />
+                {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
@@ -84,43 +92,94 @@ export function Top(top: TopOf)
                         </span>
                     )}
                 </span>
-                <Sections current={top.section} fight={top.fight} yourTurn={top.yourTurn} hidden />
-                <StatusChips {...top} hidden />
+                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} hidden />
+                <StatusChips now={top.now} live={top.live} />
             </div>
         </>
     );
 }
 
 /**
- * The sections, each a link to its address (D-276, D-309), the one shown marked; in the bar that stays a copy out of the keyboard's way, as the bar is hidden
+ * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, the settings and About at the row's end (D-333): what does not
+ * fit goes into the menu, those three first, then the sections from the last. In the bar that stays a copy out of the keyboard's way, as the bar is hidden
  * from a screen reader.
  */
-function Sections({ current, hidden, fight, yourTurn }: { current: Section; hidden?: boolean; fight?: boolean; yourTurn?: boolean; })
+function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hidden?: boolean; fight?: boolean; yourTurn?: boolean; })
 {
     // Combat only while a fight is open; on the player's turn, from another section, a gold chip that says so (D-315).
     const shown = sections.filter((section) => section !== "combat" || fight === true);
+    const turn = yourTurn === true && current !== "combat";
+    const row = useRef<HTMLDivElement>(null);
+    const fitting = useFitting(row, shown.length, `${shown.join()} ${turn}`);
+    const away = [...shown.slice(fitting.sections), ...(fitting.pages ? [] : menuPages)];
     return (
-        <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : "Sections"}>
-            {shown.map((section) => (
-                <a
-                    key={section}
-                    href={sectionAddress(section)}
-                    class={section === "combat" && yourTurn && current !== "combat" ? "your-turn" : undefined}
-                    aria-current={section === current ? "page" : undefined}
-                    tabIndex={hidden ? -1 : undefined}
-                >
-                    <span class="section-mark">
-                        <Icon name={section} />
-                    </span>
-                    {section === "combat" && yourTurn && current !== "combat" ? "Your turn" : sectionLabel(section)}
-                </a>
-            ))}
-        </nav>
+        <div ref={row} class="nav-row">
+            <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : "Sections"}>
+                {[...shown, ...menuPages].map((section, index) => {
+                    const gone = away.includes(section);
+                    const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link" : "", gone ? "away" : ""];
+                    return (
+                        <a
+                            key={section}
+                            href={sectionAddress(section)}
+                            class={kinds.filter((kind) => kind !== "").join(" ") || undefined}
+                            aria-current={section === current ? "page" : undefined}
+                            aria-hidden={gone ? true : undefined}
+                            tabIndex={hidden || gone ? -1 : undefined}
+                        >
+                            <span class="section-mark">
+                                <Icon name={section} />
+                            </span>
+                            {section === "combat" && turn ? "Your turn" : sectionLabel(section)}
+                        </a>
+                    );
+                })}
+            </nav>
+            <Menu current={current} away={away} hidden={hidden} />
+        </div>
     );
 }
 
-/** The menu (D-309): the saves, the settings and what the page is; the theme too, which on a phone has no switch of its own. */
-function Menu({ current }: { current: Section; })
+/** How many sections fit in the row, and whether the saves, the settings and About fit after them; on a phone the sections are at the bottom, the rest in the menu. */
+function useFitting(row: RefObject<HTMLElement>, count: number, shape: string): { sections: number; pages: boolean; }
+{
+    const [fitting, setFitting] = useState({ sections: count, pages: true });
+
+    useLayoutEffect(() => {
+        const element = row.current;
+        const phone = window.matchMedia("(max-width: 600px)");
+
+        if (element === null) {
+            return;
+        }
+
+        // Every link stays in the row, what does not fit unseen, so that each can be measured.
+        const measure = (): void => {
+            const widths = [...element.querySelectorAll<HTMLElement>("nav > a")].map((link) => link.offsetWidth + linkGap);
+            const total = (from: number, to?: number): number => widths.slice(from, to).reduce((sum, width) => sum + width, 0);
+            const room = element.clientWidth;
+            const left = phone.matches ? Infinity : room - menuRoom;
+            const fit = widths.slice(0, count).findIndex((_, index) => total(0, index + 1) > left);
+            const next = phone.matches || total(0) + pagesGap > room ? { sections: fit === -1 ? count : fit, pages: false } : { sections: count, pages: true };
+            setFitting((before) => (before.sections === next.sections && before.pages === next.pages ? before : next));
+        };
+
+        measure();
+        const watcher = new ResizeObserver(measure);
+        watcher.observe(element);
+        phone.addEventListener("change", measure);
+
+        return () => {
+            watcher.disconnect();
+            phone.removeEventListener("change", measure);
+        };
+    }, [count, shape]);
+
+    return fitting;
+}
+
+/** The menu (D-309, D-333): what does not fit in the row, and on a phone the theme too, which has no switch of its own there; none when all fits. */
+function Menu({ current, away, hidden }: { current: Section; away: Section[]; hidden?: boolean; })
 {
     const [open, setOpen] = useState(false);
     const holder = useRef<HTMLDivElement>(null);
@@ -153,15 +212,27 @@ function Menu({ current }: { current: Section; })
         };
     }, [open]);
 
+    if (away.length === 0) {
+        return null;
+    }
+
     return (
         <div class="menu" ref={holder}>
-            <button type="button" class="icon-button tonal menu-button tip-left" aria-label="Menu" data-tip="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+            <button
+                type="button"
+                class="icon-button tonal menu-button tip-left"
+                aria-label="Menu"
+                data-tip="Menu"
+                aria-expanded={open}
+                tabIndex={hidden ? -1 : undefined}
+                onClick={() => setOpen(!open)}
+            >
                 <Icon name="menu" />
             </button>
             {open && (
                 <div class="menu-pop">
-                    {menuPages.map((page) => (
-                        <a key={page} href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
+                    {away.map((page) => (
+                        <a key={page} href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} tabIndex={hidden ? -1 : undefined} onClick={() => setOpen(false)}>
                             <Icon name={page} />
                             {sectionLabel(page)}
                         </a>
@@ -201,8 +272,19 @@ function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
     return [{ next, name: next === "dark" ? "Dark theme" : "Light theme" }, flip];
 }
 
-/** The game's time, its place and whether the game is live, each a chip; the place's leads to the scene, out of the keyboard's way in the bar. */
-function StatusChips({ now, place, live, hidden }: TopOf & { hidden?: boolean; })
+/** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; it leads to the scene (D-309). */
+function PlacePath({ path }: { path: string[]; })
+{
+    return (
+        <a class="top-place" href={sectionAddress("scene")} aria-label={`Where the party is: ${path.toReversed().join(", ")}`}>
+            <Icon name="place" />
+            <ol>{path.map((name, index) => <li key={index}>{name}</li>)}</ol>
+        </a>
+    );
+}
+
+/** The game's time and whether the game is live, each a chip. */
+function StatusChips({ now, live }: { now?: string; live: boolean; })
 {
     return (
         <div class="status-chips">
@@ -211,12 +293,6 @@ function StatusChips({ now, place, live, hidden }: TopOf & { hidden?: boolean; }
                     <Icon name="clock" />
                     {now}
                 </span>
-            )}
-            {place && (
-                <a class="status-chip place-chip" href={sectionAddress("scene")} tabIndex={hidden ? -1 : undefined}>
-                    <Icon name="place" />
-                    {place}
-                </a>
             )}
             <span class={live ? "status-chip live on" : "status-chip live"}>
                 <span class="dot" />

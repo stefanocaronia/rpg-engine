@@ -191,7 +191,6 @@ function App()
         document.title = shown.asked !== undefined ? `🎲 ${title}` : yourTurn ? `⚔ ${title}` : title;
     }, [shown.campaign, shown.asked === undefined, yourTurn]);
 
-    const place = lead?.place?.replace(/^in /, "");
     // The page's own messages, over it (D-298): a problem, the game away, a word to know.
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
@@ -207,7 +206,7 @@ function App()
                 product={productName}
                 system={shown.system?.name}
                 now={shown.now}
-                place={place === "" ? undefined : place}
+                path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
                 live={live}
                 mood={shown.masterMood}
                 moment={moment}

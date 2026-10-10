@@ -164,12 +164,12 @@ a {
     outline-offset: 2px;
 }
 
-/* The top (D-276, D-293): the master large, the campaign's name with the product's and the system's below, and the time, the place and whether the game is
-   live as chips; under the name the sections, beside the theme the menu (D-309). */
+/* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the time and whether the game is live
+   as chips, clear of the theme's corner; under the name the sections and the pages, the menu at the row's end (D-309); under them all, where the party is. */
 .top {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "robot titles chips menu" "robot sections sections sections";
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "robot titles chips" "robot nav nav" "place place place";
     align-items: center;
     column-gap: 20px;
     row-gap: 4px;
@@ -186,16 +186,91 @@ a {
 
 .top > .status-chips {
     grid-area: chips;
-}
-
-.top > .menu {
-    grid-area: menu;
     margin-right: 30px;
 }
 
-.top > .sections {
-    grid-area: sections;
+.top > .nav-row {
+    grid-area: nav;
     margin-left: -14px;
+}
+
+/* The row of the sections (D-333): the sections, then the pages at its end, then the menu with what does not fit; what does not fit stays in the row unseen,
+   for the page to measure it. */
+.nav-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.nav-row > .sections {
+    flex: 1;
+    min-width: 0;
+}
+
+.sections a.pages-start {
+    margin-left: auto;
+}
+
+.sections a.away {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Where the party is (D-333): from the largest place to its own, which stays whole while the others give way; it leads to Scene. */
+.top-place {
+    grid-area: place;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin-top: -4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.top-place svg.icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+}
+
+.top-place ol {
+    display: flex;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.top-place li {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-place li + li::before {
+    content: "›" / "";
+    padding: 0 6px 0 4px;
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.top-place li:last-child {
+    flex: none;
+    color: var(--ink);
+    font-weight: 650;
+}
+
+.top-place:hover li:last-child {
+    text-decoration: underline;
 }
 
 /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer. */
@@ -231,11 +306,6 @@ a {
 .section-mark {
     display: inline-grid;
     place-items: center;
-}
-
-/* The place's chip leads to the scene (D-309). */
-a.status-chip {
-    text-decoration: none;
 }
 
 /* The menu (D-309): the saves, the settings, About; the theme only on a phone, which has no switch of its own. */
@@ -452,13 +522,13 @@ a.status-chip {
     line-height: 1.1;
 }
 
-.top-bar > .sections {
+.top-bar > .nav-row {
     grid-column: 2 / span 2;
     grid-row: 2;
     margin-left: -14px;
 }
 
-.top-bar > .sections a {
+.top-bar .sections a {
     height: 36px;
     font-size: 0.9rem;
 }
@@ -466,6 +536,7 @@ a.status-chip {
 .top-bar > .status-chips {
     grid-column: 4;
     grid-row: 1 / span 2;
+    margin-right: 40px;
 }
 
 .top-bar-title {
@@ -2695,12 +2766,23 @@ svg.icon {
         grid-template-areas: "robot titles chips menu";
     }
 
-    .top > .menu {
+    /* On a phone the sections go to the bottom, the pages into the menu, which stands beside whether the game is live; where the party is, Scene says. */
+    .top > .nav-row {
+        display: contents;
+    }
+
+    .top .menu {
+        grid-area: menu;
+    }
+
+    .top > .status-chips {
         margin-right: 0;
     }
 
+    .top-place,
+    .top .sections a.page-link,
     .theme-corner,
-    .top-bar > .sections {
+    .top-bar > .nav-row {
         display: none;
     }
 
@@ -2709,7 +2791,7 @@ svg.icon {
     }
 
     /* The sections in a bar at the bottom (D-309), each its picture over its name; the dice's button and its tray above it. */
-    .top > .sections {
+    .top .main-nav {
         position: fixed;
         inset: auto 0 0;
         z-index: 21;
@@ -2724,7 +2806,7 @@ svg.icon {
         box-shadow: 0 -6px 18px -12px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
     }
 
-    .top > .sections a {
+    .top .main-nav a {
         flex-direction: column;
         justify-content: center;
         gap: 3px;
@@ -2734,29 +2816,29 @@ svg.icon {
         font-size: 0.72rem;
     }
 
-    .top > .sections a[aria-current="page"] {
+    .top .main-nav a[aria-current="page"] {
         background: none;
         color: var(--ink);
     }
 
-    .top > .sections .section-mark {
+    .top .main-nav .section-mark {
         width: 52px;
         height: 30px;
         border-radius: var(--radius-m);
     }
 
-    .top > .sections a[aria-current="page"] .section-mark {
+    .top .main-nav a[aria-current="page"] .section-mark {
         background: color-mix(in srgb, var(--accent) 22%, transparent);
         color: var(--accent);
     }
 
     /* The player's turn in the bar: the gold on Combat's picture. */
-    .top > .sections a.your-turn {
+    .top .main-nav a.your-turn {
         background: none;
         color: var(--ink);
     }
 
-    .top > .sections a.your-turn .section-mark {
+    .top .main-nav a.your-turn .section-mark {
         background: var(--gold);
         color: var(--on-gold);
     }

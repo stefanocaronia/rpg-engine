@@ -1,5 +1,5 @@
 // The demo campaign of the dashboard (D-272), in tmp/dashboard-demo: made the first time, then kept, so that rpg can change it from its folder. Not part of the tests.
-import { existsSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { runCommandLine } from "../../src/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
@@ -189,6 +189,10 @@ async function makeDemo(context: Context): Promise<void>
     );
     // Its map (GRD-1, D-324): the hall with the hearth and the tables, the back room with the counter, the stairs and the barrels, the door to the village.
     await rpg("write", "Locanda del Guado#Pianta", "--text", ["```map", ...innMap, "```"].join("\n"));
+    // Its picture (D-308), made once by Codex for the demo.
+    mkdirSync(join(demoFolder, "images"), { recursive: true });
+    copyFileSync(join(import.meta.dirname, "locanda-del-guado.webp"), join(demoFolder, "images", "Locanda del Guado.webp"));
+    await rpg("write", "Locanda del Guado", "--set", "image=[[Locanda del Guado.webp]]");
     const ettore = [
         "role=pc",
         "creature=[[Hill Dwarf]]",
