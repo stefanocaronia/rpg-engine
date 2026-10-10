@@ -2,7 +2,8 @@
 // nothing. #/character/Ettore, the sheet's first address, still leads there (D-310). The page never changes section by itself.
 
 /** The sections, in the order the page shows them. */
-export const sections = ["party", "scene", "journal", "world", "rules"] as const;
+// Combat is there only while a fight is open (D-314).
+export const sections = ["party", "scene", "combat", "journal", "world", "rules"] as const;
 
 /** The pages of the menu. */
 export const menuPages = ["saves", "settings", "about"] as const;

@@ -1566,6 +1566,15 @@ button.row,
     min-width: 0;
 }
 
+.asked-turn {
+    margin: 0 0 2px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
 .asked-title {
     font: inherit;
     font-size: 1.25rem;
@@ -2680,7 +2689,8 @@ svg.icon {
         inset: auto 0 0;
         z-index: 21;
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-auto-columns: 1fr;
+        grid-auto-flow: column;
         height: 68px;
         margin: 0;
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
@@ -2713,6 +2723,17 @@ svg.icon {
     .top > .sections a[aria-current="page"] .section-mark {
         background: color-mix(in srgb, var(--accent) 22%, transparent);
         color: var(--accent);
+    }
+
+    /* The player's turn in the bar: the gold on Combat's picture. */
+    .top > .sections a.your-turn {
+        background: none;
+        color: var(--ink);
+    }
+
+    .top > .sections a.your-turn .section-mark {
+        background: var(--gold);
+        color: var(--on-gold);
     }
 
     .page {
@@ -3196,6 +3217,398 @@ svg.icon {
     .place-disc svg.icon {
         width: 30px;
         height: 30px;
+    }
+}
+
+/* The Combat section (D-314, D-315), as Joseph tried it: the turn's band on top, gold on the player's turn; the order of the turns, fixed, whoever acts
+   marked by side, the foes red, the companions green, the player gold, as the tokens' rings; beside it what the player has at hand. */
+.combat {
+    display: grid;
+    gap: 14px;
+}
+
+.combat .eyebrow {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.turn-band {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "round now next" "line line line";
+    align-items: center;
+    gap: 10px 18px;
+    padding: 14px 18px;
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.turn-band.other {
+    border-left-color: var(--low);
+}
+
+.turn-band.companion {
+    border-left-color: var(--ally);
+}
+
+/* The player's own turn: the band in the robot's gold, the words dark on it in both themes. */
+.turn-band.mine {
+    --muted: rgb(24 44 76 / 0.75);
+    --rule: rgb(24 44 76 / 0.25);
+    border-color: var(--gold);
+    background: var(--gold);
+    box-shadow: var(--lift), 0 10px 26px -12px rgb(245 198 62 / 0.7);
+    color: var(--on-gold);
+}
+
+.round {
+    grid-area: round;
+    display: grid;
+    justify-items: center;
+    margin: 0;
+}
+
+.round-number {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.turn-now {
+    grid-area: now;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.turn-now .token {
+    --size: 64px;
+}
+
+.turn-now h2 {
+    font-size: 1.9rem;
+    line-height: 1.1;
+}
+
+.turn-next {
+    grid-area: next;
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding-left: 18px;
+    border-left: 1px solid var(--rule);
+}
+
+.next-who {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 650;
+}
+
+.next-who .token {
+    --size: 32px;
+}
+
+.turn-band .scene-line {
+    grid-area: line;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule);
+}
+
+.combat-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    align-items: start;
+    gap: 14px;
+}
+
+.turn-order {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 8px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+    list-style: none;
+}
+
+.turn-row {
+    display: grid;
+    grid-template-columns: 22px auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-m);
+}
+
+.turn-row .token {
+    --size: 44px;
+}
+
+/* Whoever acts, by side. */
+.turn-row.now {
+    background: color-mix(in srgb, var(--low) 10%, var(--panel-2));
+    box-shadow: inset 4px 0 0 var(--low);
+}
+
+.turn-row.now.companion {
+    background: color-mix(in srgb, var(--ally) 10%, var(--panel-2));
+    box-shadow: inset 4px 0 0 var(--ally);
+}
+
+.turn-row.now.pc {
+    background: color-mix(in srgb, var(--gold) 18%, var(--panel-2));
+    box-shadow: inset 4px 0 0 var(--gold);
+}
+
+.turn-place {
+    padding-top: 12px;
+    color: var(--muted);
+    font-weight: 700;
+    text-align: right;
+}
+
+.turn-main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.turn-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 700;
+}
+
+.turn-name .you,
+.turn-name .cant-act {
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.turn-name .you {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.turn-name .cant-act {
+    background: color-mix(in srgb, var(--low) 16%, transparent);
+    color: var(--low);
+}
+
+.turn-health {
+    font-weight: 700;
+}
+
+/* A foe's wound in words (D-238): never a number. */
+.wound {
+    justify-self: start;
+    padding: 1px 8px;
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    font-size: 0.8rem;
+    font-weight: 650;
+    text-transform: capitalize;
+}
+
+.wound.bloodied {
+    background: color-mix(in srgb, var(--low) 16%, transparent);
+    color: var(--low);
+}
+
+.wound.down {
+    background: transparent;
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.keeping {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+/* The death saves, large (D-310, 7): successes as circles, failures as squares, by shape as well as colour. */
+.death-saves {
+    display: grid;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.saves-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.saves-label {
+    min-width: 8em;
+    font-size: 0.8rem;
+    font-weight: 650;
+}
+
+.save {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--ally);
+    border-radius: 50%;
+}
+
+.save.failure {
+    border-color: var(--low);
+    border-radius: var(--radius-xs);
+}
+
+.save.success.marked {
+    background: var(--ally);
+}
+
+.save.failure.marked {
+    background: var(--low);
+}
+
+/* What the player has at hand, one panel: the name, what they keep or the death saves, the line of the fields the system names, its groups as sections. */
+.at-hand {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    min-width: 0;
+    padding: 12px 16px 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.at-hand:has(.death-saves) {
+    padding-bottom: 14px;
+}
+
+.at-hand h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05rem;
+}
+
+/* The sheet's cards inside it, as its sections. */
+.at-hand .group {
+    margin: 0 -16px;
+    border: 0;
+    border-top: 1px solid var(--rule);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.at-hand .group > summary {
+    border-radius: 0;
+}
+
+.at-hand .group:last-child > summary {
+    border-radius: 0 0 calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px);
+}
+
+.at-hand h3 svg.icon {
+    width: 20px;
+    height: 20px;
+    color: var(--accent);
+}
+
+/* The fields at hand: boxes that share the panel's width. */
+.at-hand .line-value {
+    --box: 64px;
+    flex: 1 1 auto;
+    padding: 8px;
+}
+
+.at-hand-note {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* The player's turn from another section (D-315): the Combat link a gold chip, and a notice on top that leads there. */
+.sections a.your-turn {
+    border-radius: var(--radius-m);
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.turn-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding: 12px 16px;
+    border-radius: var(--radius-l);
+    background: var(--gold);
+    box-shadow: var(--overlay);
+    color: var(--on-gold);
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.turn-notice svg.icon {
+    width: 22px;
+    height: 22px;
+}
+
+.turn-notice-go {
+    margin-left: auto;
+    padding: 4px 12px;
+    border-radius: var(--radius-m);
+    background: rgb(24 44 76 / 0.12);
+}
+
+@media (max-width: 600px) {
+    .turn-band {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: "round now" "next next" "line line";
+    }
+
+    .turn-next {
+        padding: 8px 0 0;
+        border-top: 1px solid var(--rule);
+        border-left: 0;
+    }
+
+    .turn-now h2 {
+        font-size: 1.4rem;
+    }
+
+    .turn-now .token {
+        --size: 48px;
+    }
+
+    .combat-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* On the player's turn what they have at hand comes up under the band. */
+    .combat:has(.turn-band.mine) .at-hand {
+        order: -1;
     }
 }
 

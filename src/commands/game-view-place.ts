@@ -2,9 +2,10 @@
 import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
+import type { Effect } from "../effects/index.ts";
 import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { effectShown, effectText, keptEffects } from "./game-effects.ts";
+import { effectParts, effectText, keptEffects } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
@@ -39,8 +40,8 @@ export interface ShownPlace
 }
 
 /**
- * Someone in a fight as the player sees them (D-314): their counter, the party's as numbers and a foe's in words, or none; what is on them, for others only the
- * conditions anyone sees; whether they cannot act; what they keep alive; the panel of the dying.
+ * Someone in a fight as the player sees them (D-314): their counter, the party's as numbers and a foe's in words, or none; what is on them, the party's as their
+ * line gives it, with its end, for others only the conditions anyone sees, by name; whether they cannot act; what they keep alive; the panel of the dying.
  */
 export interface Fighter
 {
@@ -49,7 +50,7 @@ export interface Fighter
     image?: { file: string; version: number; };
     stranger?: true;
     health?: string;
-    effects: string[];
+    effects: { name: string; end?: string; text: string; }[];
     inactive?: true;
     keeps?: string[];
     dying?: { field: string; value: number; limit?: number; }[];
@@ -190,7 +191,7 @@ function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature
         ...(image === undefined ? {} : { image }),
         ...(stranger ? { stranger: true as const } : {}),
         ...(health === undefined ? {} : { health }),
-        effects: effects.map((effect) => (party ? effectShown(sight.world, effect) : effect.name)),
+        effects: effects.map((effect) => (party ? seenEffect(sight, effect) : { name: effect.name, text: effect.name })),
         ...(effects.some((effect) => inactive.has(comparableText(effect.name))) ? { inactive: true as const } : {}),
         ...(keeps.length === 0 ? {} : { keeps }),
         ...(dying === undefined
@@ -203,6 +204,19 @@ function fighterOf(sight: PlaceSight, scene: { copies: Record<string, { creature
                 })),
             }),
     };
+}
+
+/** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
+export function seenEffect(sight: PlaceSight, effect: Effect): { name: string; end?: string; text: string; }
+{
+    const end = effect.end;
+
+    if (end === undefined || !("turn" in end)) {
+        return effectParts(sight.world, effect);
+    }
+
+    const copies = readOpenScene(sight.root).scene?.copies ?? {};
+    return effectParts(sight.world, { ...effect, end: { ...end, turn: shownTurn(sight, copies, end.turn) } });
 }
 
 /** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */

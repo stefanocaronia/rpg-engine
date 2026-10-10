@@ -108,7 +108,14 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         system(near, "prova", `${declared}sheet-headline: "Vigore {vigore} {doti}"\n`);
         expect(findSystem([near], "prova")?.sheetHeadline).toBe("Vigore {vigore} {doti}");
         system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { rail: [corpo], order: [] }\n`);
-        expect(findSystem([near], "prova")?.sheetCards).toEqual({ rail: ["corpo"], order: [] });
+        expect(findSystem([near], "prova")?.sheetCards).toEqual({ rail: ["corpo"], order: [], atHand: [] });
+        // At hand in a fight, a field of the sheet too (D-315).
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { at-hand: [forza, Corpo] }\n`);
+        expect(findSystem([near], "prova")?.sheetCards).toEqual({ rail: [], order: [], atHand: ["forza", "Corpo"] });
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { at-hand: [Animo] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-cards.at-hand: the sheet has no group or field Animo; its groups are Corpo.");
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { rail: [forza] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-cards.rail: the sheet has no group forza; its groups are Corpo.");
         system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-cards: { rail: [Animo] }\n`);
         expect(() => findSystem([near], "prova")).toThrow("sheet-cards.rail: the sheet has no group Animo; its groups are Corpo.");
         system(near, "prova", `${declared}sheet-headline: "Livello {livello}"\n`);

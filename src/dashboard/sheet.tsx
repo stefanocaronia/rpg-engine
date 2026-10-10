@@ -26,7 +26,7 @@ export function MemberSheet(
     const { rail, others } = arrangedGroups(sheet, cards);
     // The system's headline, and the mood in words, which the badge's tooltip never shows on a touch screen (D-306).
     const title = [headline, member.mood].filter((part) => part !== undefined && part !== "").join(" · ");
-    const fields = new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
+    const fields = sheetFields(member, sheet);
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     return (
         <section class="sheet" aria-label={member.name}>
@@ -39,16 +39,7 @@ export function MemberSheet(
                         {member.place && <p class="place">{member.place}</p>}
                     </div>
                 </div>
-                <div class="line">
-                    {member.counters.map((value) => (
-                        <span key={value.field} class="line-value">
-                            <span class="label">{fieldLabel(value.field, fields)}</span>
-                            <Changing text={value.text}>
-                                <ValueDrawing value={value} label={fieldLabel(value.field, fields)} />
-                            </Changing>
-                        </span>
-                    ))}
-                </div>
+                <ValueLine values={member.counters} fields={fields} />
                 <Effects effects={member.effects} />
             </header>
             <div class="sheet-body">
@@ -63,6 +54,38 @@ export function MemberSheet(
                 </div>
             </div>
         </section>
+    );
+}
+
+/** What of someone's sheet the Combat section keeps at hand (D-315): the fields it names in a line of boxes, as under the name, then the groups it names as their cards. */
+export function SheetAtHand({ member, sheet, names, version, onRoll }: { member: Member; sheet: SheetGroup[]; names: string[]; version: number; onRoll: FreeRoll; })
+{
+    const fields = sheetFields(member, sheet);
+    const same = (name: string, wanted: string): boolean => name.toLowerCase() === wanted.toLowerCase();
+    const line = names.flatMap((wanted) => sheet.flatMap((group) => group.values).filter((value) => same(value.field, wanted)));
+    const groups = names.flatMap((wanted) => sheet.filter((group) => same(group.name, wanted)));
+    return (
+        <>
+            {line.length > 0 && <ValueLine values={line} fields={fields} />}
+            {groups.map((group) => <Group key={group.name} member={member.name} group={group} fields={fields} version={version} onRoll={onRoll} />)}
+        </>
+    );
+}
+
+/** Values in a line of boxes, as under someone's name (D-299): each its label and its drawing, flashing when it changes. */
+function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlySet<string>; })
+{
+    return (
+        <div class="line">
+            {values.map((value) => (
+                <span key={value.field} class="line-value">
+                    <span class="label">{fieldLabel(value.field, fields)}</span>
+                    <Changing text={value.text}>
+                        <ValueDrawing value={value} label={fieldLabel(value.field, fields)} />
+                    </Changing>
+                </span>
+            ))}
+        </div>
     );
 }
 
@@ -281,6 +304,12 @@ function Changing({ text, children }: { text: string; children: ComponentChildre
     }, [text]);
 
     return <span key={flash} class={flash === 0 ? "changing" : "changing changed"}>{children}</span>;
+}
+
+/** The fields of someone's line and sheet, which the labels read to tell a field's short name. */
+function sheetFields(member: Member, sheet: SheetGroup[]): ReadonlySet<string>
+{
+    return new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
 }
 
 /** What a closed group says of itself: its first values, or its items. */

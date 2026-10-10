@@ -5,7 +5,7 @@ import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { notationWords, type ThrownDie } from "../dice/index.ts";
-import { formatEnd, readEffect } from "../effects/index.ts";
+import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -17,7 +17,7 @@ import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
-import { type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
+import { seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
@@ -102,8 +102,8 @@ export type ViewResult =
         /** The line under the character's name on the dashboard (D-288). */
         headline?: string;
         sheet: SheetGroupData[];
-        /** Where the dashboard puts the groups of the sheet, as the system says (D-295). */
-        cards?: { rail: string[]; order: string[]; };
+        /** Where the dashboard puts the groups of the sheet, as the system says (D-295), and those at hand in a fight (D-315). */
+        cards?: { rail: string[]; order: string[]; atHand: string[]; };
         text: string;
     }
     | { kind: "section"; title: string; lines: string[]; text: string; }
@@ -182,6 +182,8 @@ export const view = defineCommand({
         const system = campaignSystem(root, context);
 
         const open = readJourney(root)?.at !== undefined;
+        const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
+        const sight = { root, context, world, knowledge, party: [pc, ...companions] };
 
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
@@ -198,12 +200,11 @@ export const view = defineCommand({
                 ...(image === undefined ? {} : { image }),
                 ...(place === undefined ? {} : { place }),
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)),
-                effects: effectsOf(page).map((effect) => ({ name: effect.name, ...(effect.end === undefined ? {} : { end: formatEnd(effect.end) }), text: effectShown(world, effect) })),
+                effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
                 ...(mood === "neutral" ? {} : { mood }),
             };
         };
 
-        const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
         const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
 
@@ -218,7 +219,6 @@ export const view = defineCommand({
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         const shownRolls = shownLines.filter((entry) => entry.type === "roll");
-        const sight = { root, context, world, knowledge, party: [pc, ...companions] };
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
         return {
@@ -441,7 +441,7 @@ function diaryLine(world: World, entry: LogEntry, named: (name: unknown) => stri
             case "learned":
                 return `${text(data.page)} learned: ${textsIn(data.knows).map(learnedText).join(", ")}`;
             case "effect-added":
-                return `${who(data.page)}: ${effectText(world, text(data.effect))}`;
+                return `${who(data.page)}: ${effectText(world, text(data.effect), named)}`;
             case "effect-ended":
                 return `${who(data.page)}: ${text(data.effect)} ended`;
             case "saved":
@@ -471,9 +471,16 @@ function learnedText(link: string): string
     return reference.section === undefined ? reference.name : `${reference.name}#${reference.section}`;
 }
 
-/** An effect as the player sees it: its name and its end, without who keeps it, which may be a secret. */
-function effectText(world: World, line: string): string
+/** An effect as the player sees it: its name and its end, without who keeps it, which may be a secret; an end at someone's turn names them as the diary does. */
+function effectText(world: World, line: string, named: (name: unknown) => string | undefined): string
 {
     const read = readEffect(line);
-    return "effect" in read ? effectShown(world, { ...read.effect, values: [] }) : line;
+
+    if (!("effect" in read)) {
+        return line;
+    }
+
+    const end = read.effect.end;
+    const seen = end !== undefined && "turn" in end ? { end: { ...end, turn: named(end.turn) ?? (isCopyName(world, end.turn) ? "a creature" : "someone") } } : {};
+    return effectShown(world, { ...read.effect, values: [], ...seen });
 }

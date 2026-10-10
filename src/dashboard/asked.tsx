@@ -10,7 +10,7 @@ import { checkOf, notationModifier, signed } from "./labels.ts";
 const bannerTop = 8;
 const mostWords = 500;
 
-export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered(): void; })
+export function AskedBanner({ asked, yourTurn, onAnswered }: { asked: Asked; yourTurn?: boolean; onAnswered(): void; })
 {
     const [sent, setSent] = useState<number | "words">();
     const [problem, setProblem] = useState<string>();
@@ -73,6 +73,8 @@ export function AskedBanner({ asked, onAnswered }: { asked: Asked; onAnswered():
         <section ref={banner} class={["asked", roll ? "asked-roll" : "", sent !== undefined ? "leaving" : ""].filter((name) => name !== "").join(" ")} aria-labelledby={`asked-${asked.id}`}>
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
+                {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). */}
+                {yourTurn && <p class="asked-turn">Your turn</p>}
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 <div class="asked-buttons">

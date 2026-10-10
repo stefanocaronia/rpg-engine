@@ -163,6 +163,7 @@ sheet-headline: "Level {level} {classes}"
 sheet-cards:
   rail: [Abilities, Saving Throws]
   order: [Skills, Combat, Attacks]
+  at-hand: [ac, hp, Attacks]
 ```
 
 - `field`: a field the character writes; `status` reminds it until it is written, unless the system works it out (`computed`).
@@ -174,7 +175,7 @@ sheet-cards:
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
 - `sheet-icons`: a group's icon on the dashboard (D-284), the `d` of an SVG path on a grid of 24, drawn as a line 1.5 wide in the page's accent; a group without one gets a plain one. An icon for a group the sheet does not have, or with more than a path's letters and numbers, is refused when the system loads.
 - `sheet-headline`: the line under a character's name on the dashboard (D-288), words with fields in braces: each field as the sheet shows it, a list as the names of its items, so that `Level {level} {classes}` reads `Level 3 Cleric`. With all its fields empty there is no line. A field it names must be declared.
-- `sheet-cards`: where the dashboard puts the groups (D-295). `rail`, those in the narrow column beside the others, in order; `order`, the order of the others, the groups it does not name coming after them as the sheet has them. Without it, the rail holds the groups of a few short numbers, and the others keep the sheet's order. A name must be a group of the sheet.
+- `sheet-cards`: where the dashboard puts the groups (D-295). `rail`, those in the narrow column beside the others, in order; `order`, the order of the others, the groups it does not name coming after them as the sheet has them; `at-hand`, what the Combat section shows of the player character beside the order of the turns (D-315): fields of the sheet in a line of boxes, as under a name, and groups as their cards. Without it, the rail holds the groups of a few short numbers, the others keep the sheet's order, and Combat shows nothing at hand. A name must be a group of the sheet, or in `at-hand` a field of it.
 
 ### values
 

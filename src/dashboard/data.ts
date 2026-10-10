@@ -42,11 +42,12 @@ export interface SheetGroup
     items?: { item: string; values: SheetValue[]; }[];
 }
 
-/** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295). */
+/** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295); those at hand in a fight (D-315). */
 export interface SheetCards
 {
     rail: string[];
     order: string[];
+    atHand: string[];
 }
 
 /** A mood of the master or of a character (MOOD-1, D-305): the engine's closed list, which the robot and the badges draw. */
@@ -84,6 +85,20 @@ export interface ShownPlace
     here: ShownPerson[];
 }
 
+/** Someone in a fight as the player sees them (D-314): the party's counter as numbers, a foe's in words; what is on them; whether they act; what they keep; the dying's counters. */
+export interface Fighter
+{
+    name: string;
+    role: "pc" | "companion" | "other";
+    image?: { file: string; version: number; };
+    stranger?: true;
+    health?: string;
+    effects: Member["effects"];
+    inactive?: true;
+    keeps?: string[];
+    dying?: { field: string; value: number; limit?: number; }[];
+}
+
 /** The open scene as the player sees it (VIEW-6). */
 export interface ShownScene
 {
@@ -97,6 +112,8 @@ export interface ShownScene
     order?: string[];
     turn?: string;
     round?: number;
+    /** In a fight, each one in it, in the order of the turns (D-314). */
+    fighters?: Fighter[];
 }
 
 /** Someone of the party. */

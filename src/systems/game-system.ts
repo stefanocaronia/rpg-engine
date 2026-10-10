@@ -70,8 +70,8 @@ const systemSchema = z.object({
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
     "sheet-notes": z.record(z.string().min(1), z.string().min(1)).optional(),
-    "sheet-cards": z.object({ rail: z.array(z.string().min(1)).optional(), order: z.array(z.string().min(1)).optional() }, {
-        error: "write it as the groups the dashboard puts in its rail and the order of the others, such as {rail: [Abilities], order: [Skills, Combat]}",
+    "sheet-cards": z.object({ rail: z.array(z.string().min(1)).optional(), order: z.array(z.string().min(1)).optional(), "at-hand": z.array(z.string().min(1)).optional() }, {
+        error: "write it as the groups the dashboard puts in its rail, the order of the others, and the fields and groups at hand in a fight, such as {rail: [Abilities], order: [Skills, Combat], at-hand: [ac, hp, Attacks]}",
     }).strict().optional(),
     "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
@@ -257,8 +257,8 @@ export interface GameSystem
     sheetDice: Record<string, string>;
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
-    /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, and the order of the others. */
-    sheetCards?: { rail: string[]; order: string[]; };
+    /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, the order of the others, and the fields and groups at hand in a fight (D-315). */
+    sheetCards?: { rail: string[]; order: string[]; atHand: string[]; };
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
@@ -474,12 +474,14 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice: ${twice[0]} is listed twice; give each field one set of dice.`);
     }
 
-    // The cards the dashboard places are groups of the sheet (D-295).
+    // The cards the dashboard places are groups of the sheet (D-295); at hand in a fight, its fields too (D-315).
     for (const [key, names] of Object.entries(data["sheet-cards"] ?? {})) {
-        const stray = (names ?? []).find((group) => !sheet.some((declared) => comparableText(declared.name) === comparableText(group)));
+        const fields = key === "at-hand" ? sheet.flatMap((group) => group.entries.map((entry) => comparableText(entry.field))) : [];
+        const stray = (names ?? []).find((group) => !sheet.some((declared) => comparableText(declared.name) === comparableText(group)) && !fields.includes(comparableText(group)));
 
         if (stray !== undefined) {
-            throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-cards.${key}: the sheet has no group ${stray}; its groups are ${sheet.map((group) => group.name).join(", ")}.`);
+            const kinds = key === "at-hand" ? "group or field" : "group";
+            throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-cards.${key}: the sheet has no ${kinds} ${stray}; its groups are ${sheet.map((group) => group.name).join(", ")}.`);
         }
     }
 
@@ -510,7 +512,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         sheet,
         sheetDice: Object.fromEntries(rolled),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
-        ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [] } }),
+        ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,
         marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),

@@ -153,6 +153,12 @@ export function effectShown(world: World, effect: Effect): string
     return `${effect.name}${values.length === 0 ? "" : ` (${values.join(", ")})`}${end}`;
 }
 
+/** An effect as the dashboard shows it on someone of the party: its name, its end, and the line status gives (D-276, D-314). */
+export function effectParts(world: World, effect: Effect): { name: string; end?: string; text: string; }
+{
+    return { name: effect.name, ...(effect.end === undefined ? {} : { end: formatEnd(effect.end) }), text: effectShown(world, effect) };
+}
+
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */
 export function keptEffects(world: World, scene: Scene | undefined, name: string): string[]
 {

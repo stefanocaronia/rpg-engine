@@ -99,9 +99,9 @@ describe("view as data (VIEW-1, D-272)", () => {
     it("gives the sheet by the system's groups, each value with its text, marks, what is beside it, a counter's limits and the items of a list", async () => {
         const data = JSON.parse(await ok("view", "Ettore", "--json"));
         const group = (name: string) => data.sheet.find((candidate: { name: string; }) => candidate.name === name);
-        // Under the name, the system's headline, a list as its items' names (D-288); where the page puts the groups (D-295).
+        // Under the name, the system's headline, a list as its items' names (D-288); where the page puts the groups (D-295), and those at hand in a fight (D-315).
         expect(data.headline).toBe("Level 3 Cleric");
-        expect(data.cards).toEqual({ rail: ["Abilities", "Saving Throws"], order: expect.arrayContaining(["Skills", "Personality"]) });
+        expect(data.cards).toEqual({ rail: ["Abilities", "Saving Throws"], order: expect.arrayContaining(["Skills", "Personality"]), atHand: ["ac", "initiative", "speed", "hp", "temp-hp", "Attacks", "Spells"] });
         // A score rolls the modifier beside it, for fun (D-280).
         expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "number", text: "14", marks: 0, beside: "+2", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
         expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
@@ -432,7 +432,7 @@ describe("the page's reading of a sheet (D-273)", () => {
         const group = (name: string, text = "1"): SheetGroup => ({ name, values: [{ field: name.toLowerCase(), text, marks: 0 }] });
         const sheet = [group("Character", "Cito le scritture, sempre, e a ogni pasto ne trovo una nuova."), group("Abilities"), group("Saves"), group("Skills"), group("Combat")];
         const names = (groups: SheetGroup[]): string[] => groups.map((shown) => shown.name);
-        const laid = arrangedGroups(sheet, { rail: ["saves", "Abilities"], order: ["Skills"] });
+        const laid = arrangedGroups(sheet, { rail: ["saves", "Abilities"], order: ["Skills"], atHand: [] });
         expect([names(laid.rail), names(laid.others)]).toEqual([["Saves", "Abilities"], ["Skills", "Character", "Combat"]]);
         const plain = arrangedGroups(sheet);
         expect([names(plain.rail), names(plain.others)]).toEqual([["Abilities", "Saves", "Skills", "Combat"], ["Character"]]);

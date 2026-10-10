@@ -31,6 +31,8 @@ const iconPaths = {
     moon: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z",
     // The sections and the menu (D-309); the scene's is the place's pin, as its chip.
     party: "M12 3.5a4 4 0 1 0 0 8a4 4 0 1 0 0-8Z M4.5 20.5c.6-4 3.6-6.5 7.5-6.5s6.9 2.5 7.5 6.5",
+    // Two blades crossed, for the fight (D-314).
+    combat: "M4 4l11 11 M4 4v3l9.5 9.5 M4 4h3l9.5 9.5 M14 17l3-3 M15.5 15.5 20 20 M20 4 9 15 M20 4v3l-2.5 2.5 M20 4h-3l-2.5 2.5 M10 17l-3-3 M8.5 15.5 4 20",
     scene: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z",
     journal: "M6.5 3.5H18v17H6.5A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5Z M9.5 3.5v7.5l2-1.5 2 1.5V3.5 M5 17h13",
     world: "M3.5 6.5 9 4l6 2.5L20.5 4v13.5L15 20l-6-2.5-5.5 2.5Z M9 4v13.5 M15 6.5V20",

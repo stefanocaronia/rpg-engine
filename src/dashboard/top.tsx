@@ -24,6 +24,10 @@ interface TopOf
     asleep?: boolean;
     /** The section the page shows. */
     section: Section;
+    /** A fight is open: Combat is among the sections (D-314). */
+    fight?: boolean;
+    /** It is the player's character's turn in the fight (D-315). */
+    yourTurn?: boolean;
 }
 
 export function Top(top: TopOf)
@@ -64,7 +68,7 @@ export function Top(top: TopOf)
                         </p>
                     )}
                 </div>
-                <Sections current={top.section} />
+                <Sections current={top.section} fight={top.fight} yourTurn={top.yourTurn} />
                 <StatusChips {...top} />
                 <Menu current={top.section} />
             </header>
@@ -80,7 +84,7 @@ export function Top(top: TopOf)
                         </span>
                     )}
                 </span>
-                <Sections current={top.section} hidden />
+                <Sections current={top.section} fight={top.fight} yourTurn={top.yourTurn} hidden />
                 <StatusChips {...top} hidden />
             </div>
         </>
@@ -91,16 +95,24 @@ export function Top(top: TopOf)
  * The sections, each a link to its address (D-276, D-309), the one shown marked; in the bar that stays a copy out of the keyboard's way, as the bar is hidden
  * from a screen reader.
  */
-function Sections({ current, hidden }: { current: Section; hidden?: boolean; })
+function Sections({ current, hidden, fight, yourTurn }: { current: Section; hidden?: boolean; fight?: boolean; yourTurn?: boolean; })
 {
+    // Combat only while a fight is open; on the player's turn, from another section, a gold chip that says so (D-315).
+    const shown = sections.filter((section) => section !== "combat" || fight === true);
     return (
         <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : "Sections"}>
-            {sections.map((section) => (
-                <a key={section} href={sectionAddress(section)} aria-current={section === current ? "page" : undefined} tabIndex={hidden ? -1 : undefined}>
+            {shown.map((section) => (
+                <a
+                    key={section}
+                    href={sectionAddress(section)}
+                    class={section === "combat" && yourTurn && current !== "combat" ? "your-turn" : undefined}
+                    aria-current={section === current ? "page" : undefined}
+                    tabIndex={hidden ? -1 : undefined}
+                >
                     <span class="section-mark">
                         <Icon name={section} />
                     </span>
-                    {sectionLabel(section)}
+                    {section === "combat" && yourTurn && current !== "combat" ? "Your turn" : sectionLabel(section)}
                 </a>
             ))}
         </nav>

@@ -2,11 +2,13 @@
 // names and the rolls beside it (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { type Address, readAddress } from "./address.ts";
+import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
+import { CombatView } from "./combat.tsx";
 import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
+import { Icon } from "./icons.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
@@ -14,7 +16,7 @@ import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { RollLog } from "./rolls.tsx";
 import { SceneView } from "./scene.tsx";
-import { MemberSheet } from "./sheet.tsx";
+import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
 
@@ -174,14 +176,20 @@ function App()
         };
     }, []);
 
-    // The tab tells that the master asks something, when the page is behind another.
-    useEffect(() => {
-        const title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
-        document.title = shown.asked === undefined ? title : `🎲 ${title}`;
-    }, [shown.campaign, shown.asked === undefined]);
-
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const lead = shown.party.find((candidate) => candidate.role === "pc");
+    // A number of a sheet thrown for fun, each a throw of its own (D-280).
+    const throwFromSheet: FreeRoll = (roll, label) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label }));
+    // A fight open, and whether the turn is the player's character's (D-314, D-315).
+    const fight = shown.openScene?.type === "combat";
+    const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
+
+    // The tab tells that the master asks something, or that it is the player's turn, when the page is behind another.
+    useEffect(() => {
+        const title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
+        document.title = shown.asked !== undefined ? `🎲 ${title}` : yourTurn ? `⚔ ${title}` : title;
+    }, [shown.campaign, shown.asked === undefined, yourTurn]);
+
     const place = lead?.place?.replace(/^in /, "");
     // The page's own messages, over it (D-298): a problem, the game away, a word to know.
     const notices: Notice[] = [
@@ -204,16 +212,38 @@ function App()
                 moment={moment}
                 asleep={!live && shown.readAt !== undefined}
                 section={address.section}
+                fight={fight}
+                yourTurn={yourTurn}
             />
             <Notices notices={notices} />
-            {live && shown.asked && <AskedBanner asked={shown.asked} onAnswered={() => void read()} />}
+            {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} onAnswered={() => void read()} />}
+            {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
+            {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
+                <a class="turn-notice" href={sectionAddress("combat")}>
+                    <Icon name="combat" />
+                    <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
+                    <span class="turn-notice-go">Combat</span>
+                </a>
+            )}
             {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
             {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
             <div class="body">
                 <main>
                     {address.section === "about" && <About product={productName} system={shown.system} />}
                     {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
-                    {!["party", "scene", "about"].includes(address.section) && <Upcoming section={address.section} />}
+                    {address.section === "combat" && (
+                        <CombatView
+                            scene={shown.openScene}
+                            lead={lead}
+                            own={{
+                                sheet: shown.chosen === lead?.name ? shown.sheet : [],
+                                cards: shown.cards,
+                                version: shown.version,
+                                onRoll: throwFromSheet,
+                            }}
+                        />
+                    )}
+                    {!["party", "scene", "combat", "about"].includes(address.section) && <Upcoming section={address.section} />}
                     {address.section === "party" && member && (
                         <MemberSheet
                             key={member.name}
@@ -223,7 +253,7 @@ function App()
                             cards={shown.cards}
                             text={shown.text}
                             version={shown.version}
-                            onRoll={(roll, label) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label }))}
+                            onRoll={throwFromSheet}
                         />
                     )}
                 </main>

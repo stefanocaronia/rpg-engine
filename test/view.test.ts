@@ -299,13 +299,21 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         await ok("change", "Lupo nero 1", "hp", "--by=-6");
         await ok("effect", "add", "Lupo nero 2", "Stunned");
         await ok("effect", "add", "Lupo nero 2", "Maledizione");
-        const fighters = JSON.parse(await ok("view", "--json")).openScene.fighters;
+        // At the first wolf's turn: the blessing ends at its turn in the next round.
+        await ok("effect", "add", "Bran", "Benedizione", "--for", "1 round");
+        const overview = JSON.parse(await ok("view", "--json"));
+        const fighters = overview.openScene.fighters;
         expect(fighters.map((fighter: { name: string; }) => fighter.name)).toEqual(["creature 1", "Kira", "creature 2", "Bran"]);
         expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "bloodied", effects: [] });
-        // Of a foe only the conditions anyone sees; a stunned one does not act.
-        expect(fighters[2]).toMatchObject({ health: "unhurt", effects: ["Stunned"], inactive: true });
+        // Of a foe only the conditions anyone sees, by name; a stunned one does not act. The party's effects as their line gives them, with the end, at the turn
+        // of a creature the character does not know by its number (VIEW-4).
+        expect(fighters[2]).toMatchObject({ health: "unhurt", effects: [{ name: "Stunned", text: "Stunned" }], inactive: true });
+        expect(fighters[3].effects).toEqual([{ name: "Benedizione", end: "round 2, creature 1", text: "Benedizione until round 2, creature 1" }]);
+        expect(overview.party[1].effects).toEqual(fighters[3].effects);
         expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", dying: [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 0, limit: 3 }] });
-        expect(JSON.stringify(fighters)).not.toContain("Lupo nero");
+        // Nowhere the copies' names, of a creature the character does not know: in the diary the end is at a creature's turn.
+        expect(JSON.stringify(overview)).not.toContain("Lupo nero");
+        expect(overview.diary).toContain("Bran: Benedizione until round 2, a creature");
     });
 
     it("gives the open scene as data: whom it meets there by name (VIEW-2), the copies counted, the turns as the character knows them", async () => {
