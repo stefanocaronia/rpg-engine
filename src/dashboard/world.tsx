@@ -12,20 +12,28 @@ import {
     type Area,
     type Box,
     clampScale,
+    fading,
     fitView,
     hexCorners,
     hexesOf,
     lengthText,
     type Lifted,
     liftedOf,
-    longestStretch,
     type MapLayout,
     mapLayout,
     type MapView,
+    marksOf,
+    nameRun,
+    pathOf,
     placeAreaLabels,
     placeLabels,
+    regionEdges,
+    riverOutline,
     scaleBar,
     type Spot,
+    trailCourse,
+    type WayShape,
+    wayShapes,
     waysOf,
     zoomedView,
 } from "./world-map.ts";
@@ -90,7 +98,10 @@ function MapCard(
     const box = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState<{ width: number; height: number; }>();
     const [view, setView] = useState<MapView>();
-    const lifted = useMemo(() => liftedOf(map, layout), [map, layout]);
+    // The ways drawn by hand and the trail along them, once for each map: the same at every drawing.
+    const ways = useMemo(() => wayShapes(map), [map]);
+    const trail = useMemo(() => trailCourse(map.trail, ways), [map, ways]);
+    const lifted = useMemo(() => liftedOf(map, layout, ways, trail), [map, layout, ways, trail]);
     const pointers = useRef(new Map<number, { x: number; y: number; }>());
     const drag = useRef<{ view: MapView; x: number; y: number; spread: number; moved: boolean; }>();
     const narrow = size !== undefined && size.width < 600;
@@ -253,7 +264,7 @@ function MapCard(
                 onPointerCancel={onPointerUp}
                 onKeyDown={onKeyDown}
             >
-                {size !== undefined && view !== undefined && <Drawing map={map} layout={layout} lifted={lifted} lead={lead} view={view} size={size} narrow={narrow} chosen={chosen} />}
+                {size !== undefined && view !== undefined && <Drawing map={map} layout={layout} ways={ways} trail={trail} lifted={lifted} lead={lead} view={view} size={size} narrow={narrow} chosen={chosen} />}
                 <div class="map-tools" role="toolbar" aria-label="Map">
                     <Tool name="plus" label="Zoom in" onClick={() => zoom(zoomStep)} />
                     <Tool name="minus" label="Zoom out" onClick={() => zoom(1 / zoomStep)} />
@@ -268,11 +279,16 @@ function MapCard(
     );
 }
 
-/** The drawing, from the view: the paper, the hexes lit and fogged, the ways, the trail, the places, the party, the labels, north and the scale. */
+/**
+ * The drawing, from the view: the paper, the hexes lit and fogged with the marks of their biome and the ink round each region, the ways drawn by hand with
+ * their tails into the fog, the trail, the places, the party, the labels, the compass and the scale.
+ */
 function Drawing(
-    { map, layout, lifted, lead, view, size, narrow, chosen }: {
+    { map, layout, ways, trail, lifted, lead, view, size, narrow, chosen }: {
         map: WorldMap;
         layout: MapLayout;
+        ways: WayShape[];
+        trail: MapPoint[];
         lifted: Lifted;
         lead?: Member;
         view: MapView;
@@ -285,14 +301,19 @@ function Drawing(
     const { width, height } = size;
     const X = (x: number): number => width / 2 + (x - view.x) * view.s;
     const Y = (y: number): number => height / 2 - (y - view.y) * view.s;
-    const line = (points: MapPoint[]): string => points.map((point, index) => `${index === 0 ? "M" : "L"}${X(point.x).toFixed(1)} ${Y(point.y).toFixed(1)}`).join(" ");
+    const screen = (points: MapPoint[]): MapPoint[] => points.map((point) => ({ x: X(point.x), y: Y(point.y) }));
+    const line = (points: MapPoint[]): string => pathOf(screen(points));
     const { across, hexes } = hexesOf(view, width, height, lifted, layout.regions);
-    const marks = across * view.s >= 24;
+    const hexPixels = across * view.s;
+    const edges = regionEdges(hexes, across);
     const scale = scaleBar(view.s, map.unit);
     const image = lead?.image === undefined ? undefined : `/images/${encodeURIComponent(lead.image.file)}?v=${lead.image.version}`;
     const party = map.party;
-    // What the labels must leave free: the tools, north, the scale and the places' symbols; the regions' names go first, below their middle, above, across it.
-    const reserved: Box[] = [{ x: width - 64, y: 0, width: 64, height: 220 }, { x: 0, y: 0, width: 60, height: 64 }, { x: 0, y: height - 50, width: 210, height: 50 }];
+    // Ink a little bolder near, finer far.
+    const weight = Math.min(1.5, Math.max(0.7, view.s / 8));
+    const drawn = [...ways].sort((first, second) => wayRank(first.kind) - wayRank(second.kind));
+    // What the labels must leave free: the tools, the compass, the scale and the places' symbols; the regions' names go first, below their middle, above, across it.
+    const reserved: Box[] = [{ x: width - 64, y: 0, width: 64, height: 220 }, { x: 0, y: 0, width: 80, height: 86 }, { x: 0, y: height - 50, width: 210, height: 50 }];
     const markBoxes = layout.spots.map((spot) => ({ x: X(spot.x) - symbolOf(spot).r, y: Y(spot.y) - symbolOf(spot).r, width: symbolOf(spot).r * 2, height: symbolOf(spot).r * 2 }));
     const regionWishes = layout.regions.map((region) => ({
         x: X(region.x),
@@ -302,11 +323,11 @@ function Drawing(
     }));
     const regionLabels = placeAreaLabels(regionWishes, markBoxes, reserved, width, height);
     const regionBoxes = regionLabels.flatMap((placed, index) => placed === undefined ? [] : [{ x: placed.x - regionWishes[index].width / 2 - 3, y: placed.y - 15, width: regionWishes[index].width + 6, height: regionWishes[index].height }]);
-    const ways = [...map.roads].sort((first, second) => wayRank(first.kind) - wayRank(second.kind));
-    // A way's name along its longest stretch on the screen, away from the stops, when the stretch holds it.
-    const wayNames = ways.map((road) => {
-        const stretch = longestStretch(road.points.map((point) => ({ x: X(point.x), y: Y(point.y) })));
-        return stretch !== undefined && Math.hypot(stretch[1].x - stretch[0].x, stretch[1].y - stretch[0].y) >= road.name.length * 7.5 + 40 ? stretch : undefined;
+    // A way's name along its longest run between two stops on the screen, following its bends, when the run holds it.
+    const wayNames = drawn.map((way) => {
+        const run = nameRun(screen(way.course), way.stops, way.name.length * 7.5 + 60);
+        // A river's bends would scatter its name: it goes along the river's way instead, beside the water.
+        return run === undefined || wayLook(way.kind) !== "river" ? run : [run[0], run.at(-1) as MapPoint];
     });
     const labels = placeLabels(
         layout.spots.map((spot) => {
@@ -328,49 +349,61 @@ function Drawing(
                     <feComposite in2="SourceGraphic" operator="in" />
                 </filter>
                 <filter id="map-ink" x="-5%" y="-5%" width="110%" height="110%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves={2} seed={4} />
-                    <feDisplacementMap in="SourceGraphic" scale={3.5} />
+                    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves={2} seed={4} />
+                    <feDisplacementMap in="SourceGraphic" scale={2.2} />
                 </filter>
+                <radialGradient id="map-age" cx="50%" cy="50%" r="72%">
+                    <stop offset="0.62" stop-color="#6e5028" stop-opacity="0" />
+                    <stop offset="1" stop-color="#6e5028" stop-opacity="0.3" />
+                </radialGradient>
                 <clipPath id="map-token">
                     <circle r={13} />
                 </clipPath>
-                {wayNames.map((stretch, index) =>
-                    stretch === undefined ? null : <path key={index} id={`world-way-name-${index}`} d={`M${stretch[0].x.toFixed(1)} ${stretch[0].y.toFixed(1)} L${stretch[1].x.toFixed(1)} ${stretch[1].y.toFixed(1)}`} />
-                )}
+                {wayNames.map((run, index) => run === undefined ? null : <path key={index} id={`world-way-name-${index}`} d={pathOf(run)} />)}
             </defs>
             <rect class="map-fog" width={width} height={height} />
             {hexes.map((hex, index) => (
                 <polygon
                     key={index}
                     class={hex.lit ? `hex lit ${biomeLook(hex.biome)}` : "hex fogged"}
+                    fill-opacity={hex.lit ? (0.8 + hex.tone * 0.2).toFixed(2) : undefined}
                     points={hexCorners(hex, across).map((corner) => `${X(corner.x).toFixed(1)},${Y(corner.y).toFixed(1)}`).join(" ")}
                 />
             ))}
-            {marks && (
+            {hexPixels >= 24 && (
                 <g class="tufts">
-                    {hexes.filter((hex) => hex.lit && hex.biome !== undefined && biomes[hex.biome] !== undefined).map((hex, index) => (
-                        <path key={index} class={`tuft ${hex.biome}`} transform={`translate(${X(hex.x).toFixed(1)} ${(Y(hex.y) + 2).toFixed(1)})`} d={biomes[hex.biome ?? ""].mark} />
-                    ))}
+                    {hexes.filter((hex) => hex.lit && hex.biome !== undefined && biomes[hex.biome] !== undefined).flatMap((hex, index) =>
+                        marksOf(hex, hexPixels).map((mark, at) => (
+                            <path
+                                key={`${index} ${at}`}
+                                class={`tuft ${hex.biome}`}
+                                transform={`translate(${(X(hex.x) + mark.x).toFixed(1)} ${(Y(hex.y) + mark.y).toFixed(1)}) scale(${mark.scale.toFixed(2)})`}
+                                d={biomes[hex.biome ?? ""].mark}
+                            />
+                        ))
+                    )}
                 </g>
             )}
+            {[...edges].map(([region, segments]) => (
+                <path
+                    key={region}
+                    class={`region-edge ${biomeLook(layout.regions.find((one) => one.name === region)?.biome)}`}
+                    d={segments.map(([from, to]) => `M${X(from.x).toFixed(1)} ${Y(from.y).toFixed(1)}L${X(to.x).toFixed(1)} ${Y(to.y).toFixed(1)}`).join("")}
+                    filter="url(#map-ink)"
+                />
+            ))}
             <rect class="map-grain" width={width} height={height} filter="url(#map-grain)" />
             {/* Where the party has been: a band under the ways, as a highlighter would mark it. */}
-            {map.trail.length > 1 && <path class="trail" d={line(map.trail)} />}
-            {ways.map((road) => (
-                <g key={road.name} class={`way-group ${wayLook(road.kind)}`}>
-                    <path class="way casing" d={line(road.points)} filter="url(#map-ink)" />
-                    <path class="way" d={line(road.points)} filter="url(#map-ink)" />
-                    {road.before !== undefined && road.points[0] !== undefined && <path class="way stub" d={line([road.points[0], road.before])} />}
-                    {road.after !== undefined && road.points.at(-1) !== undefined && <path class="way stub" d={line([road.points.at(-1) as MapPoint, road.after])} />}
-                </g>
-            ))}
-            {ways.map((road, index) =>
+            {trail.length > 1 && <path class="trail" d={line(trail)} />}
+            {drawn.map((way) => <WayDrawing key={way.name} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
+            {drawn.map((way, index) =>
                 wayNames[index] === undefined ? null : (
-                    <text key={road.name} class={`way-label ${wayLook(road.kind)}`} dy={wayLook(road.kind) === "river" ? -6 : -5}>
-                        <textPath href={`#world-way-name-${index}`} startOffset="50%" text-anchor="middle">{road.name}</textPath>
+                    <text key={way.name} class={`way-label ${wayLook(way.kind)}`} dy={wayLook(way.kind) === "river" ? -16 : -6}>
+                        <textPath href={`#world-way-name-${index}`} startOffset="50%" text-anchor="middle">{way.name}</textPath>
                     </text>
                 )
             )}
+            <rect class="map-age" width={width} height={height} fill="url(#map-age)" />
             {layout.spots.filter((spot) => spot !== layout.partySpot).map((spot) => <PlaceSymbol key={spot.name} spot={spot} x={X(spot.x)} y={Y(spot.y)} chosen={spot.name === chosen} />)}
             {party !== undefined && (
                 <g
@@ -400,10 +433,12 @@ function Drawing(
                     return label.hidden ? null : <text key={spot.name} class={`label place-label${big ? " big" : ""}`} x={label.x} y={label.y} text-anchor={label.anchor}>{label.text}</text>;
                 })}
             </g>
-            <g class="north" transform={`translate(${narrow ? 26 : 30} ${narrow ? 30 : 34})`}>
-                <circle class="north-disc" r={15} />
-                <path class="north-arrow" d="M0 -10 5 6 0 3 -5 6Z" />
-                <text class="north-n" y={-17} text-anchor="middle">N</text>
+            <g class="compass" transform={`translate(${narrow ? 34 : 40} ${narrow ? 42 : 46}) scale(${narrow ? 0.85 : 1})`}>
+                <circle class="compass-ring" r={15} />
+                <path class="compass-diagonals" d="M-12-12 12 12 M-12 12 12-12" />
+                <path class="compass-point" d="M0-26 5-5 26 0 5 5 0 26-5 5-26 0-5-5Z" />
+                <path class="compass-shade" d="M0-26 5-5 0 0Z M26 0 5 5 0 0Z M0 26-5 5 0 0Z M-26 0-5-5 0 0Z" />
+                <text class="compass-n" y={-30} text-anchor="middle">N</text>
             </g>
             <g class="scale" transform={`translate(16 ${height - 22})`}>
                 <rect class="scale-back" x={-8} y={-20} width={scale.width + 64} height={34} rx={6} />
@@ -414,6 +449,38 @@ function Drawing(
                 <text class="scale-text" x={scale.width + 8} y={5}>{map.unit.name === "km" ? "km" : "miles"}</text>
             </g>
         </svg>
+    );
+}
+
+/**
+ * A way drawn by hand, in the map's ink: a road as two lines, a path dashed, a river in water widening toward its mouth, outlined in ink; its tails fade into
+ * the fog.
+ */
+function WayDrawing({ way, look, screen, weight }: { way: WayShape; look: string; screen: (points: MapPoint[]) => MapPoint[]; weight: number; })
+{
+    const course = screen(way.course);
+    return (
+        <g class={`way-drawing ${look}`}>
+            {way.tails.map((tail) =>
+                fading(screen(tail.course)).map((piece, index) => (
+                    <path
+                        key={`${tail.from} ${index}`}
+                        class={`tail ${look}`}
+                        d={pathOf(piece.points)}
+                        stroke-opacity={piece.opacity.toFixed(2)}
+                        stroke-width={(look === "river" ? (tail.from === "before" ? 1.6 : 4.4) : look === "road" ? 2.2 : 1.3) * weight}
+                    />
+                ))
+            )}
+            {look === "river" && <path class="river-water" d={riverOutline(course, 1.6 * weight, 4.6 * weight)} filter="url(#map-ink)" />}
+            {look === "road" && (
+                <>
+                    <path class="road-ink" d={pathOf(course)} stroke-width={3.8 * weight} filter="url(#map-ink)" />
+                    <path class="road-paper" d={pathOf(course)} stroke-width={1.5 * weight} />
+                </>
+            )}
+            {(look === "path" || look === "other") && <path class={`${look}-ink`} d={pathOf(course)} stroke-width={1.4 * weight} filter="url(#map-ink)" />}
+        </g>
     );
 }
 
@@ -528,19 +595,23 @@ function Key({ map, layout, narrow }: { map: WorldMap; layout: MapLayout; narrow
                     <ul>
                         {ways.map((look) => (
                             <li key={look}>
-                                <svg class="key-way" viewBox="0 0 28 10" aria-hidden="true">
-                                    <g class={`way-group ${look}`}>
-                                        <path class="way casing" d="M1 5h26" />
-                                        <path class="way" d="M1 5h26" />
-                                    </g>
+                                <svg class="key-way" viewBox="0 0 30 16" aria-hidden="true">
+                                    {look === "river" && <path class="river-water" d="M2 9.6Q8 5.8 15 8.2T28 6.6L28 9.6Q22 12 15 10.4T2 10.8Z" />}
+                                    {look === "road" && (
+                                        <>
+                                            <path class="road-ink" d="M2 9q7-4 13-1t13-1" stroke-width={3.8} />
+                                            <path class="road-paper" d="M2 9q7-4 13-1t13-1" stroke-width={1.5} />
+                                        </>
+                                    )}
+                                    {(look === "path" || look === "other") && <path class={`${look}-ink`} d="M2 9q7-4 13-1t13-1" stroke-width={1.4} />}
                                 </svg>
                                 {look === "other" ? "Other way" : `${look[0].toUpperCase()}${look.slice(1)}`}
                             </li>
                         ))}
                         {map.trail.length > 1 && (
                             <li>
-                                <svg class="key-way" viewBox="0 0 28 10" aria-hidden="true">
-                                    <path class="trail" d="M1 5h26" />
+                                <svg class="key-way" viewBox="0 0 30 16" aria-hidden="true">
+                                    <path class="trail" d="M4 8h22" />
                                 </svg>
                                 Your trail
                             </li>

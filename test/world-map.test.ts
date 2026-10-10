@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import type { WorldMap } from "../src/dashboard/data.ts";
 import { biomes as pageBiomes, placeKinds as pageKinds } from "../src/dashboard/map-symbols.ts";
-import { hexAcross, hexesOf, lengthText, liftedOf, longestStretch, mapLayout, placeAreaLabels, placeLabels, scaleBar, waysOf } from "../src/dashboard/world-map.ts";
+import { fading, hexAcross, hexesOf, lengthText, liftedOf, mapLayout, marksOf, meander, nameRun, placeAreaLabels, placeLabels, regionEdges, riverOutline, scaleBar, trailCourse, wayShapes, waysOf } from "../src/dashboard/world-map.ts";
 import { biomes, placeKinds } from "../src/map/index.ts";
 
 // Guado at the centre in the Colli, a hills region; Rocca 20 km north; the road Guado –8– (a stop the character does not know) –12– Rocca, then on toward
@@ -39,7 +39,8 @@ describe("the world map's drawing (D-318)", () => {
     it("draws hexes 6 km wide, doubled as the map goes farther; a place lights the hex it stands in, the region colours its own", () => {
         expect([hexAcross(10), hexAcross(3), hexAcross(2), hexAcross(0.5)]).toEqual([6, 12, 12, 48]);
         const layout = mapLayout(map);
-        const lifted = liftedOf(map, layout);
+        const ways = wayShapes(map);
+        const lifted = liftedOf(map, layout, ways, trailCourse(map.trail, ways));
         const near = hexesOf({ x: 0, y: 10, s: 10 }, 400, 400, lifted, layout.regions);
         const at = (x: number, y: number) => near.hexes.reduce((best, hex) => (Math.hypot(hex.x - x, hex.y - y) < Math.hypot(best.x - x, best.y - y) ? hex : best));
         expect(at(0, 20)).toMatchObject({ lit: true });
@@ -66,11 +67,40 @@ describe("the world map's drawing (D-318)", () => {
     });
 
     it("writes a way's name along its longest stretch, upright; a scale and lengths in the player's units", () => {
-        expect(longestStretch([{ x: 300, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 50 }])).toEqual([{ x: 0, y: 0 }, { x: 300, y: 0 }]);
+        // The longest run between two stops, turned to read from left to right; none shorter than asked.
+        expect(nameRun([{ x: 300, y: 0 }, { x: 150, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 50 }], [0, 2, 3], 100)).toEqual([{ x: 0, y: 0 }, { x: 150, y: 5 }, { x: 300, y: 0 }]);
+        expect(nameRun([{ x: 0, y: 0 }, { x: 50, y: 0 }], [0, 1], 100)).toBeUndefined();
         expect(lengthText(20, map.unit)).toBe("20 km");
         expect(lengthText(1.5, { name: "mi", km: 1.5 })).toBe("1 mile");
         expect(scaleBar(10, map.unit)).toEqual({ value: 10, width: 100 });
         expect(scaleBar(10, { name: "mi", km: 1.5 })).toEqual({ value: 5, width: 75 });
+    });
+
+    it("draws the ways by hand: through every point of the road, the same at every drawing, off the straight line between them; tails beyond the known ends", () => {
+        const [road] = wayShapes(map);
+        expect(road.stops.map((stop) => road.course[stop])).toEqual(map.roads[0].points.map((point) => ({ x: point.x, y: point.y, ...(point.name === undefined ? {} : { name: point.name }), km: point.km })));
+        expect(wayShapes(map)[0].course).toEqual(road.course);
+        expect(road.course.some((point) => Math.abs(point.x) > 0.05)).toBe(true);
+        // Toward the stop beyond Rocca the road goes on into the fog, 9 km.
+        expect(road.tails).toHaveLength(1);
+        expect(road.tails[0].course.at(-1)?.y).toBeCloseTo(29);
+        expect(meander([{ x: 0, y: 0 }, { x: 10, y: 0 }], "river", "Fiume").course).not.toEqual(meander([{ x: 0, y: 0 }, { x: 10, y: 0 }], "river", "Torrente").course);
+        // The trail goes along the road where it went by it.
+        expect(trailCourse(map.trail, [road]).length).toBeGreaterThan(map.trail.length);
+    });
+
+    it("draws the ink round a region along its hexes' edges, a river widening to its mouth, tails fading, a few marks a hex", () => {
+        const hex = (x: number, y: number, region?: string) => ({ x, y, lit: true, tone: 0.5, ...(region === undefined ? {} : { region, biome: "forest" }) });
+        const across = 6;
+        // A forest of one hex, ringed by six others: its six edges.
+        const ring = Array.from({ length: 6 }, (_, side) => hex(across * Math.cos(Math.PI / 6 + Math.PI / 3 * side), across * Math.sin(Math.PI / 6 + Math.PI / 3 * side)));
+        expect(regionEdges([hex(0, 0, "Bosco"), ...ring], across).get("Bosco")).toHaveLength(6);
+        const outline = riverOutline([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0 }], 2, 6);
+        expect(outline.endsWith("Z")).toBe(true);
+        expect(outline).toContain("L20.0 3.0");
+        expect(fading(Array.from({ length: 11 }, (_, index) => ({ x: index, y: 0 }))).map((piece) => piece.opacity)).toEqual([0.7, 0.5, 0.32, 0.18, 0.08]);
+        expect(marksOf(hex(0, 0, "Bosco"), 60)).toHaveLength(3);
+        expect(marksOf({ x: 0, y: 0, lit: true, tone: 0 }, 60)).toHaveLength(0);
     });
 
     it("has a symbol for every kind of place and a look for every biome the engine names (POS-7)", () => {

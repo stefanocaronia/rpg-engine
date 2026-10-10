@@ -1,6 +1,7 @@
-// The world map as the page works it out (D-318): what is drawn as a point or an area, what the fog lifts, the hexes, where the labels go, the ways of a
-// place. Hexes are only the drawing, never a measure: they grow as the map goes farther. Pure, so the tests read it.
-import type { MapPlace, MapPoint, MapRoad, WorldMap } from "./data.ts";
+// The world map as the page works it out (D-318): what is drawn as a point or an area, the ways as drawn by hand, what the fog lifts, the hexes and the
+// regions' edges, where the labels go, the ways of a place. Hexes are only the drawing, never a measure: they grow as the map goes farther. Pure, so the tests
+// read it; what looks random is seeded by names and places, so the map is the same at every drawing.
+import type { MapPlace, MapPoint, WorldMap } from "./data.ts";
 
 /** Where the map looks and how near: its centre in km, and pixels a km. */
 export interface MapView
@@ -29,13 +30,28 @@ export interface Lifted
     lines: MapPoint[][];
 }
 
-/** A hex of the drawing: its centre in km, whether something known is near, the biome of the smallest region over it. */
+/** A hex of the drawing: its centre in km, whether something known is near, the smallest region over it and its biome, and its tone, from 0 to 1. */
 export interface Hex
 {
     x: number;
     y: number;
     lit: boolean;
+    region?: string;
     biome?: string;
+    tone: number;
+}
+
+/**
+ * A way as drawn by hand (D-318): its course wandering through every point of the road, in km, the place of each point in the course, and the tails that
+ * fade into the fog beyond the known ends, in the direction the road goes on.
+ */
+export interface WayShape
+{
+    name: string;
+    kind: string;
+    course: MapPoint[];
+    stops: number[];
+    tails: { from: "before" | "after"; course: MapPoint[]; }[];
 }
 
 /** A rectangle on the screen, in pixels. */
@@ -77,6 +93,19 @@ export interface Way
     km?: number;
 }
 
+// How a kind of way wanders off the straight line: at most a share of the stretch, and so many km; and how long its bends are, in km.
+const wander: Record<string, { share: number; most: number; bend: number; }> = {
+    river: { share: 0.09, most: 1.6, bend: 7 },
+    road: { share: 0.05, most: 0.9, bend: 7 },
+    path: { share: 0.1, most: 1.3, bend: 2.6 },
+    trail: { share: 0.06, most: 0.8, bend: 4 },
+    other: { share: 0.03, most: 0.8, bend: 9 },
+};
+// How many marks a hex of each biome holds, and where, as shares of its radius from its centre.
+const markCounts: Record<string, number> = { forest: 3, moor: 3, swamp: 2, hills: 2, mountains: 2, plains: 2, desert: 2, snow: 2, water: 2 };
+const markPattern: [number, number][] = [[-0.36, -0.18], [0.34, -0.12], [0.0, 0.36]];
+// How far a way's tail goes into the fog, in km: a hex and a half.
+const tailKm = 9;
 // How near a place, in km, the fog lifts around it, and along a road or the trail.
 const placeReach = 5;
 const lineReach = 3.4;
@@ -94,18 +123,97 @@ export function mapLayout(map: WorldMap): MapLayout
     return { spots, regions, inside: (name) => map.places.filter((place) => place.within[0] === name), ...(partySpot === undefined ? {} : { partySpot }) };
 }
 
-export function liftedOf(map: WorldMap, layout: MapLayout): Lifted
+/** What the fog lifts: around the places and over the regions, along the ways as drawn and their beginnings toward the unknown, and along the trail. */
+export function liftedOf(map: WorldMap, layout: MapLayout, ways: WayShape[], trail: MapPoint[]): Lifted
 {
+    const beginnings = map.roads.flatMap((road) => [
+        ...(road.before === undefined || road.points[0] === undefined ? [] : [[road.points[0], road.before]]),
+        ...(road.after === undefined || road.points.at(-1) === undefined ? [] : [[road.points.at(-1) as MapPoint, road.after]]),
+    ]);
     return {
         circles: [...layout.spots.map((spot) => ({ x: spot.x, y: spot.y, r: placeReach })), ...layout.regions.map((region) => ({ x: region.x, y: region.y, r: region.radius }))],
-        lines: [...map.roads.map(roadLine), map.trail].filter((line) => line.length > 0),
+        lines: [...ways.map((way) => way.course), ...beginnings, trail].filter((line) => line.length > 0),
     };
 }
 
-/** A road as drawn: its beginning toward a stop the character does not know, its points, its end toward another. */
-export function roadLine(road: MapRoad): MapPoint[]
+/** The ways as drawn by hand: each road's course wandering through its points, seeded by its name, and its tails into the fog beyond its known ends. */
+export function wayShapes(map: WorldMap): WayShape[]
 {
-    return [...(road.before === undefined ? [] : [road.before]), ...road.points, ...(road.after === undefined ? [] : [road.after])];
+    return map.roads.map((road) => {
+        const { course, stops } = meander(road.points, road.kind, road.name);
+
+        const tail = (end: MapPoint | undefined, toward: MapPoint | undefined, from: "before" | "after"): WayShape["tails"] => {
+            const length = end === undefined || toward === undefined ? 0 : Math.hypot(toward.x - end.x, toward.y - end.y);
+
+            if (end === undefined || toward === undefined || length === 0) {
+                return [];
+            }
+
+            const far = { x: end.x + (toward.x - end.x) / length * tailKm, y: end.y + (toward.y - end.y) / length * tailKm };
+            return [{ from, course: meander([end, far], road.kind, `${road.name} ${from}`).course }];
+        };
+
+        return { name: road.name, kind: road.kind, course, stops, tails: [...tail(road.points[0], road.before, "before"), ...tail(road.points.at(-1), road.after, "after")] };
+    });
+}
+
+/**
+ * A line drawn by hand through its points, in km: each stretch wanders off the straight line and back, as a kind of way does, the same at every drawing for
+ * the same seed. Returns the course and the place of each point in it.
+ */
+export function meander(points: MapPoint[], kind: string, seed: string): { course: MapPoint[]; stops: number[]; }
+{
+    const random = seeded(seed);
+    const style = wander[kind] ?? wander.other;
+    const course: MapPoint[] = [];
+    const stops: number[] = [];
+
+    for (const [index, point] of points.entries()) {
+        const from = points[index - 1];
+        const length = from === undefined ? 0 : Math.hypot(point.x - from.x, point.y - from.y);
+
+        if (from !== undefined && length > 0) {
+            const steps = Math.max(2, Math.min(160, Math.ceil(length / 0.25)));
+            const amplitude = Math.min(style.most, length * style.share);
+            const bends = Math.max(0.6, length / style.bend);
+            const [first, second, weight] = [random() * Math.PI * 2, random() * Math.PI * 2, 0.25 + random() * 0.3];
+
+            for (let step = 1; step < steps; step++) {
+                const share = step / steps;
+                const wave = Math.sin(2 * Math.PI * bends * share + first) * (1 - weight) + Math.sin(2 * Math.PI * bends * 2.3 * share + second) * weight;
+                const offset = amplitude * Math.sin(Math.PI * share) * wave;
+                course.push({ x: from.x + (point.x - from.x) * share - (point.y - from.y) / length * offset, y: from.y + (point.y - from.y) * share + (point.x - from.x) / length * offset });
+            }
+        }
+
+        course.push(point);
+        stops.push(course.length - 1);
+    }
+
+    return { course, stops };
+}
+
+/** The trail as drawn: along a way between two of its points where it went by one, else wandering a little, as one walks in the open. */
+export function trailCourse(trail: MapPoint[], ways: WayShape[]): MapPoint[]
+{
+    const same = (first: MapPoint, second: MapPoint): boolean => Math.abs(first.x - second.x) < 0.02 && Math.abs(first.y - second.y) < 0.02;
+    return trail.flatMap((point, index) => {
+        const before = trail[index - 1];
+
+        if (before === undefined) {
+            return [point];
+        }
+
+        for (const way of ways) {
+            const [from, to] = [way.stops.find((stop) => same(way.course[stop], before)), way.stops.find((stop) => same(way.course[stop], point))];
+
+            if (from !== undefined && to !== undefined) {
+                return from < to ? way.course.slice(from + 1, to + 1) : way.course.slice(to, from).reverse();
+            }
+        }
+
+        return meander([before, point], "trail", `${before.x} ${before.y} ${point.x} ${point.y}`).course.slice(1);
+    });
 }
 
 /** The view that shows all the character knows; a view around the origin when it knows nothing. */
@@ -168,12 +276,44 @@ export function hexesOf(view: MapView, width: number, height: number, lifted: Li
             const centre = { x: column * radius * 1.5, y: row * across + (Math.abs(column % 2) === 1 ? across / 2 : 0) };
             const lit = lifted.circles.some((circle) => Math.hypot(centre.x - circle.x, centre.y - circle.y) <= Math.max(circle.r, radius))
                 || lifted.lines.some((line) => line.some((point, index) => index > 0 && toSegment(centre, line[index - 1], point) <= Math.max(lineReach, radius * 0.9)));
-            const biome = smallestFirst.find((region) => Math.hypot(centre.x - region.x, centre.y - region.y) <= region.radius)?.biome;
-            hexes.push({ ...centre, lit, ...(biome === undefined ? {} : { biome }) });
+            const region = smallestFirst.find((candidate) => Math.hypot(centre.x - candidate.x, centre.y - candidate.y) <= candidate.radius);
+            hexes.push({ ...centre, lit, ...(region === undefined ? {} : { region: region.name }), ...(region?.biome === undefined ? {} : { biome: region.biome }), tone: toneOf(column, row) });
         }
     }
 
     return { across, hexes };
+}
+
+/**
+ * The edges between a region's lit hexes and those outside it, by region: the ink line around a region, as a hexcrawl map draws it. An edge at the screen's
+ * border, with no hex beyond it, is not drawn.
+ */
+export function regionEdges(hexes: Hex[], across: number): Map<string, [MapPoint, MapPoint][]>
+{
+    const key = (point: MapPoint): string => `${Math.round(point.x * 10)},${Math.round(point.y * 10)}`;
+    const byPlace = new Map(hexes.map((hex) => [key(hex), hex]));
+    const edges = new Map<string, [MapPoint, MapPoint][]>();
+
+    for (const hex of hexes) {
+        const region = hex.region;
+
+        if (!hex.lit || region === undefined) {
+            continue;
+        }
+
+        const corners = hexCorners(hex, across);
+
+        for (let side = 0; side < 6; side++) {
+            const angle = Math.PI / 6 + Math.PI / 3 * side;
+            const neighbour = byPlace.get(key({ x: hex.x + across * Math.cos(angle), y: hex.y + across * Math.sin(angle) }));
+
+            if (neighbour !== undefined && (neighbour.region !== region || !neighbour.lit)) {
+                edges.set(region, [...(edges.get(region) ?? []), [corners[side], corners[(side + 1) % 6]]]);
+            }
+        }
+    }
+
+    return edges;
 }
 
 /** The corners of a hex flat on top, in km, from its centre and how wide it is. */
@@ -243,11 +383,68 @@ export function placeAreaLabels(wishes: AreaLabelWish[], marks: Box[], reserved:
     });
 }
 
-/** The longest stretch of a line on the screen, from left to right, so that a name written along it reads upright; none for a line of one point. */
-export function longestStretch(points: MapPoint[]): [MapPoint, MapPoint] | undefined
+/**
+ * Where a way's name goes on the screen: the longest run of its course between two of its stops, from left to right so that the name reads upright, when it is
+ * at least `minimum` pixels long; none otherwise.
+ */
+export function nameRun(points: MapPoint[], stops: number[], minimum: number): MapPoint[] | undefined
 {
-    const stretches = points.slice(1).map((point, index): [MapPoint, MapPoint] => (points[index].x <= point.x ? [points[index], point] : [point, points[index]]));
-    return stretches.sort((first, second) => Math.hypot(second[1].x - second[0].x, second[1].y - second[0].y) - Math.hypot(first[1].x - first[0].x, first[1].y - first[0].y))[0];
+    const runs = stops.slice(1).map((stop, index) => points.slice(stops[index], stop + 1));
+    const longest = runs.sort((first, second) => lengthOf(second) - lengthOf(first))[0];
+
+    if (longest === undefined || lengthOf(longest) < minimum) {
+        return undefined;
+    }
+
+    return (longest[0]?.x ?? 0) <= (longest.at(-1)?.x ?? 0) ? longest : [...longest].reverse();
+}
+
+/** A line on the screen as an SVG path. */
+export function pathOf(points: MapPoint[]): string
+{
+    return points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join("");
+}
+
+/** A river on the screen as water: a shape around its course, `from` pixels wide at its source and `to` at its mouth. */
+export function riverOutline(points: MapPoint[], from: number, to: number): string
+{
+    if (points.length < 2) {
+        return "";
+    }
+
+    const sides = points.map((point, index) => {
+        const [before, after] = [points[Math.max(0, index - 1)], points[Math.min(points.length - 1, index + 1)]];
+        const length = Math.hypot(after.x - before.x, after.y - before.y) || 1;
+        const half = (from + (to - from) * index / (points.length - 1)) / 2;
+        const [nx, ny] = [-(after.y - before.y) / length * half, (after.x - before.x) / length * half];
+        return { left: { x: point.x + nx, y: point.y + ny }, right: { x: point.x - nx, y: point.y - ny } };
+    });
+    return `${pathOf(sides.map((side) => side.left))}L${pathOf([...sides].reverse().map((side) => side.right)).slice(1)}Z`;
+}
+
+/** A tail into the fog in pieces, each fainter than the one before. */
+export function fading(points: MapPoint[]): { points: MapPoint[]; opacity: number; }[]
+{
+    const shades = [0.7, 0.5, 0.32, 0.18, 0.08];
+    const size = Math.max(1, Math.ceil((points.length - 1) / shades.length));
+    return shades.flatMap((opacity, index) => {
+        const piece = points.slice(index * size, (index + 1) * size + 1);
+        return piece.length < 2 ? [] : [{ points: piece, opacity }];
+    });
+}
+
+/** Where a hex's marks go, in pixels from its centre, and how large, by its biome: a few, turned by the hex's tone so that no two hexes look alike. */
+export function marksOf(hex: Hex, hexPixels: number): { x: number; y: number; scale: number; }[]
+{
+    const radius = hexPixels / Math.sqrt(3);
+    const count = hex.biome === undefined ? 0 : markCounts[hex.biome] ?? 2;
+    const size = Math.min(1.6, Math.max(0.75, hexPixels / 56)) * (hex.biome === "mountains" ? 1.35 : 1);
+    const turn = hex.tone * Math.PI * 2;
+    return markPattern.slice(0, count).map(([x, y], index) => ({
+        x: (x * Math.cos(turn) - y * Math.sin(turn)) * radius,
+        y: (x * Math.sin(turn) + y * Math.cos(turn)) * radius + 2,
+        scale: size * (0.85 + ((hex.tone * 7 + index * 0.37) % 1) * 0.3),
+    }));
 }
 
 /** The ways out of a place by the roads through it (D-318): to the next stop the character knows each way, the km summed; past a stop it does not know, no distance. */
@@ -294,6 +491,26 @@ export function scaleBar(s: number, unit: WorldMap["unit"], about = 96): { value
     return { value, width: value * perUnit };
 }
 
+/** Numbers that look random, the same for the same seed: mulberry32 over a hash of the seed. */
+function seeded(seed: string): () => number
+{
+    let state = [...seed].reduce((hash, character) => Math.imul(hash ^ character.charCodeAt(0), 16777619), 2166136261) >>> 0;
+
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let value = state;
+        value = Math.imul(value ^ (value >>> 15), value | 1);
+        value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+        return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+/** A hex's tone, from 0 to 1, by its column and row: the same at every drawing. */
+function toneOf(column: number, row: number): number
+{
+    return seeded(`${column} ${row}`)();
+}
+
 function labelBox(x: number, y: number, anchor: PlacedLabel["anchor"], width: number, size: number): Box
 {
     const left = anchor === "start" ? x : anchor === "end" ? x - width : x - width / 2;
@@ -303,6 +520,11 @@ function labelBox(x: number, y: number, anchor: PlacedLabel["anchor"], width: nu
 function overlaps(first: Box, second: Box): boolean
 {
     return first.x < second.x + second.width && second.x < first.x + first.width && first.y < second.y + second.height && second.y < first.y + first.height;
+}
+
+function lengthOf(points: MapPoint[]): number
+{
+    return points.reduce((sum, point, index) => (index === 0 ? 0 : sum + Math.hypot(point.x - points[index - 1].x, point.y - points[index - 1].y)), 0);
 }
 
 /** How far a point is from a segment, in km. */

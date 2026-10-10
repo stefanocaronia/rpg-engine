@@ -3634,7 +3634,6 @@ svg.icon {
     --m-fog: #dccaa2;
     --m-ink: #3f2f1f;
     --m-halo: #f1e6cc;
-    --m-road: #7a4f2a;
     --m-river: #3a6d96;
     --m-trail: #b2361f;
     --m-mark: #6b4a5c;
@@ -3798,46 +3797,89 @@ svg.icon {
     stroke: #7a6230;
 }
 
-.way {
+/* The ways in the map's own ink, their widths set by the drawing: a road as two lines, a path dashed, a river in water outlined in ink. */
+.road-ink,
+.road-paper,
+.path-ink,
+.other-ink,
+.tail {
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-.way.casing {
+.road-ink,
+.path-ink,
+.other-ink {
+    stroke: var(--m-ink);
+}
+
+.road-paper {
     stroke: var(--m-land);
-    stroke-width: 6;
 }
 
-.way-group.road .way:not(.casing) {
-    stroke: var(--m-road);
-    stroke-width: 2.6;
+.path-ink {
+    stroke-dasharray: 5 3.5;
 }
 
-.way-group.path .way:not(.casing),
-.way-group.other .way:not(.casing) {
-    stroke: var(--m-road);
-    stroke-width: 1.6;
-    stroke-dasharray: 5 4;
-}
-
-.way-group.other .way:not(.casing) {
+.other-ink {
     stroke-dasharray: 1 4;
 }
 
-.way-group.river .way:not(.casing) {
+.river-water {
+    fill: var(--m-river);
+    stroke: #234a6b;
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+}
+
+/* Beyond the known ends, the ways fade into the fog. */
+.tail.river {
     stroke: var(--m-river);
-    stroke-width: 3.2;
 }
 
-.way-group.river .way.casing {
-    stroke-width: 0;
+.tail.road,
+.tail.path,
+.tail.other {
+    stroke: var(--m-ink);
 }
 
-/* Toward a stop the character does not know: a beginning that fades. */
-.way.stub {
-    stroke-dasharray: 2 4;
-    opacity: 0.55;
+.tail.path {
+    stroke-dasharray: 5 3.5;
+}
+
+/* The ink round each region, along the edges of its hexes. */
+.region-edge {
+    fill: none;
+    stroke: var(--m-region-ink);
+    stroke-width: 1.7;
+    stroke-opacity: 0.6;
+    stroke-linecap: round;
+}
+
+.region-edge.forest {
+    stroke: #3f5a35;
+}
+
+.region-edge.swamp {
+    stroke: #3d5a4f;
+}
+
+.region-edge.hills {
+    stroke: #7a6230;
+}
+
+.region-edge.mountains {
+    stroke: #5b5148;
+}
+
+.region-edge.water {
+    stroke: #2f5b80;
+}
+
+/* The paper aged at its edges. */
+.map-age {
+    pointer-events: none;
 }
 
 /* The trail: a band of red under the ways, where the party has been. */
@@ -3888,7 +3930,7 @@ svg.icon {
     font-size: 12.5px;
     font-style: italic;
     font-weight: 600;
-    fill: var(--m-road);
+    fill: var(--m-ink);
     paint-order: stroke;
     stroke: var(--m-halo);
     stroke-width: 3px;
@@ -3983,18 +4025,38 @@ svg.icon {
     }
 }
 
-.north-disc {
+.compass-ring {
     fill: var(--m-halo);
     fill-opacity: 0.85;
     stroke: var(--m-ink);
-    stroke-opacity: 0.4;
+    stroke-width: 1;
 }
 
-.north-arrow {
+.compass-diagonals {
+    stroke: var(--m-ink);
+    stroke-width: 1;
+}
+
+.compass-point {
+    fill: var(--m-land);
+    stroke: var(--m-ink);
+    stroke-width: 1.1;
+    stroke-linejoin: round;
+}
+
+.compass-shade {
     fill: var(--m-ink);
 }
 
-.north-n,
+.compass-n {
+    font-size: 13px;
+    font-weight: 700;
+    fill: var(--m-ink);
+    paint-order: stroke;
+    stroke: var(--m-halo);
+    stroke-width: 3px;
+}
+
 .scale-text {
     font-size: 11px;
     font-weight: 700;
@@ -4259,7 +4321,7 @@ svg.icon {
 
 .key-way {
     flex: none;
-    width: 28px;
+    width: 30px;
     height: 16px;
     border-radius: 3px;
     background: var(--m-land);
