@@ -206,7 +206,7 @@ Files: [pages/markdown.ts](../src/pages/markdown.ts), [pages/world.ts](../src/pa
 
 File: [commands/reveal.ts](../src/commands/reveal.ts). Codes: `REV-1`–`REV-3`.
 
-Only characters know things, in their `knows` list of links to pages and to secrets such as `[[Coppa#Veleno]]` (`REV-1`). `reveal` adds the links, refuses what does not exist and skips public sections (`REV-2`); it logs one line per learner, public only for what the player's character knows (`REV-3`). `show` gives the master everything, secrets included: what reaches the player is the AI's call.
+Only characters know things, in their `knows` list of links to pages and to secrets such as `[[Coppa#Veleno]]` (`REV-1`). `reveal` adds the links, refuses what does not exist and skips public sections (`REV-2`); it logs one line per learner, public only for what the player's character knows (`REV-3`), and says when a place the player's character just learned of has no point on the map, neither its own nor its holders', with a place to give it one from, as when the character finds a map (D-319). `show` gives the master everything, secrets included: what reaches the player is the AI's call.
 
 ### Counters and money
 

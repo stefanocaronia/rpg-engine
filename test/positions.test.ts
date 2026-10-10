@@ -214,6 +214,18 @@ describe("move and journeys (TRV-15)", () => {
 });
 
 describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () => {
+    it("REV-3: reveal says when a place the character now knows has no point on the map, and from which place to give it one, as a found map brings (D-319)", async () => {
+        await placeTheMap();
+        await ok("write", "Fonte", "--type", "place");
+        await ok("write", "Cantina", "--type", "place");
+        await ok("write", "Guadoscuro", "--add", "contains=[[Cantina]]");
+        // The cellar is in Guadoscuro, drawn on the map; Rocca has its own point; a road is drawn by its stops; the spring has none.
+        expect(await ok("reveal", "Fonte", "Cantina", "Rocca", "Strada vecchia")).toBe(
+            'Ettore now knows Fonte, Cantina, Rocca, Strada vecchia. Fonte has no position, so the map does not show it yet: give one from a place that has one, such as write Fonte, set position="12 km NE of [[Guadoscuro]]".',
+        );
+        expect(await ok("reveal", "Cantina", "--to", "Lena")).toBe("Lena now knows Cantina.");
+    });
+
     it("POS-7: write reminds a kind when a place first comes on the map without one, and a biome when a place becomes a region without one", async () => {
         expect(await ok("write", "Rocca", "--set", "position=20 km E of [[Guadoscuro]]", "--set", "kind=castle")).not.toContain("give Rocca a kind");
         expect(await ok("write", "Torre", "--type", "place", "--set", "position=10 km N of [[Bivio]]")).toContain("give Torre a kind, as set kind=village:");

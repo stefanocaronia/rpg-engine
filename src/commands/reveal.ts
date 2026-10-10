@@ -4,8 +4,9 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import { baseChain, isEmptyField, isPartyMember, links, type Page, pageNamed, parsePageReference, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
+import { baseChain, isEmptyField, isPartyMember, links, locate, type Page, pageNamed, parsePageReference, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { placedPosition } from "./game-positions.ts";
 import { copyName, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
@@ -16,12 +17,13 @@ const textList = z.union([z.string(), z.array(z.string())]);
 /** Something that can be learned, as knows records it: a page, or one of its secrets where it is written (REV-1, REV-2); or a section everyone can read. */
 type Learnable = { kind: "known"; link: string; shown: string; asked?: string; } | { kind: "public"; shown: string; page: string; };
 
-/** What reveal recorded, as its output tells it (REV-3). */
+/** What reveal recorded, as its output tells it (REV-3): and the places the player's character now knows that have no point on the map, with one that has (D-319). */
 interface RevealResult
 {
     learned: { who: string; what: string[]; }[];
     known: { who: string; what: string[]; }[];
     notSecret: { what: string; page: string; }[];
+    unplaced?: { places: string[]; from?: string; };
 }
 
 export const reveal = defineCommand({
@@ -75,7 +77,8 @@ export const reveal = defineCommand({
         }
 
         logLearned(root, context, world, lines);
-        return result;
+        const unplaced = unplacedPlaces(world, lines);
+        return unplaced === undefined ? result : { ...result, unplaced };
     },
 
     format(result)
@@ -83,7 +86,8 @@ export const reveal = defineCommand({
         const learned = result.learned.map((entry) => `${entry.who} now knows ${entry.what.join(", ")}.`);
         const known = result.known.length === 0 ? "" : `Already known: ${result.known.map((entry) => `${entry.who}: ${entry.what.join(", ")}`).join("; ")}.`;
         const notSecret = result.notSecret.length === 0 ? "" : `Not secrets, nothing to record: ${result.notSecret.map((entry) => `${entry.what} (whoever knows ${entry.page} knows it)`).join(", ")}.`;
-        return [...(learned.length === 0 ? ["Nothing new to record."] : learned), known, notSecret].filter((line) => line !== "").join(" ");
+        const unplaced = result.unplaced === undefined ? "" : placesNote(result.unplaced.places, result.unplaced.from);
+        return [...(learned.length === 0 ? ["Nothing new to record."] : learned), known, notSecret, unplaced].filter((line) => line !== "").join(" ");
     },
 });
 
@@ -100,6 +104,33 @@ function logLearned(root: string, context: Context, world: World, lines: { learn
         const visible = learner.fields.role === "pc" || (isPartyMember(learner) && learned.every(playerKnows));
         appendLogEntry(root, newDatedLogEntry(root, context, "learned", visible ? "public" : "hidden", { page: learner.name, knows: learned }));
     }
+}
+
+/**
+ * The places the player's character just learned of that have no point on the map, neither their own nor from a place that holds them (D-319), as a found map
+ * may bring; and a place with a position to give theirs from. Undefined when there is none.
+ */
+function unplacedPlaces(world: World, lines: { learner: Page; links: string[]; }[]): RevealResult["unplaced"]
+{
+    const player = lines.find((line) => line.learner.fields.role === "pc");
+    const places = (player?.links ?? []).flatMap((link) => links(link)).filter((link) => link.section === undefined).flatMap((link) => {
+        const page = pageNamed(world, link.page);
+        return page?.type === "place" && page.fields.stops === undefined && [page, ...locate(world, page).chain].every((holder) => placedPosition(world, holder) === undefined) ? [page.name] : [];
+    });
+
+    if (player === undefined || places.length === 0) {
+        return undefined;
+    }
+
+    const from = [...locate(world, player.learner).chain, ...world.pages].find((page) => placedPosition(world, page) !== undefined)?.name;
+    return { places, ...(from === undefined ? {} : { from }) };
+}
+
+/** What reveal says of places with no point on the map: they are not on it until they have a position, given from a place that has one (POS-2). */
+function placesNote(places: string[], from: string | undefined): string
+{
+    const example = `write ${places[0]}, set position="12 km NE of [[${from ?? "a place with a position"}]]"`;
+    return `${places.join(", ")} ${places.length === 1 ? "has" : "have"} no position, so the map does not show ${places.length === 1 ? "it" : "them"} yet: give one from a place that has one, such as ${example}.`;
 }
 
 /** What a name gives to learn (REV-2): a page, a secret where it is written, or a public section to skip. Anything that does not exist stops the command. */
