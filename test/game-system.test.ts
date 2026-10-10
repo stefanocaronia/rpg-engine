@@ -78,6 +78,22 @@ describe("what a fight follows on the dashboard (D-314)", () => {
     });
 });
 
+describe("the map of a place (GRD-4)", () => {
+    const base = "title: one of our own\nlanguage: it\nfields: { velocita: text, taglia: text }\n";
+
+    it("reads the square in metres, the costs, the fields of the speed and the size, the footprints and the rule of leaving one's side", () => {
+        system(near, "nostro", `${base}grid: {square: 2 m, diagonal: 1.5, difficult: 2, speed: velocita, size: taglia, footprints: {Grande: 2}, leaving: Attacchi di opportunità}\n`);
+        expect(installedSystems([near])[0].grid).toEqual({ square: 2, diagonal: 1.5, difficult: 2, speed: "velocita", size: "taglia", footprints: { Grande: 2 }, leaving: "Attacchi di opportunità" });
+    });
+
+    it("refuses a field of the speed or the size it does not declare, and a square not in metric", () => {
+        system(near, "nostro", `${base}grid: {square: 1.5 m, diagonal: 1, difficult: 2, speed: passo}\n`);
+        expect(() => installedSystems([near])).toThrow("grid: passo is not declared in fields");
+        system(near, "nostro", `${base}grid: {square: 5 ft, diagonal: 1, difficult: 2, speed: velocita}\n`);
+        expect(() => installedSystems([near])).toThrow("grid.square");
+    });
+});
+
 describe("the sheet of a system (DAT-2, SYS-8)", () => {
     const declared = "title: one of our own\nlanguage: it\nfields: { vigore: counter, forza: number, forza-mod: modifier, doti: list, motto: text }\n";
 

@@ -42,7 +42,7 @@ There is no `extensions/` folder in the code today.
 | `progression` | Tables whose first column counts levels: the row at a level, the features up to it, those a part lists with their level | [progression/index.ts](../src/progression/index.ts) |
 | `images` | Pictures of pages: the formats a picture can have (PNG, JPEG, WebP, SVG, known by their bytes), the largest one, finding a linked file in the `images/` folders | [images/index.ts](../src/images/index.ts) |
 | `map` | The world map: roads as stretches between stops, the quickest way across them; points, the 16 directions of the compass, distances, crossings | [map/index.ts](../src/map/index.ts) |
-| `grid` | The map of a place: the squares of a map block, a symbol each, its legend and where its squares lead; the squares' names, from A1 | [grid/index.ts](../src/grid/index.ts) |
+| `grid` | The map of a place: the squares of a map block, a symbol each, its legend and where its squares lead; the squares' names, from A1; the shortest way between two squares, the squares within reach, who stands next to whom (`GRD-4`) | [grid/index.ts](../src/grid/index.ts) |
 
 None of the modules names a game's concepts: hit points, ability modifiers or conditions exist only as data in a system's `system.yaml` and pages.
 

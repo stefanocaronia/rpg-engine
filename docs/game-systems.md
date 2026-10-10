@@ -132,6 +132,28 @@ travel:
 
 A campaign adds to it in `campaign.yaml`, key by key, its paces, terrain and kinds by name (section 7).
 
+### grid
+
+How the map of a place counts (`GRD-4`, `GRD-5`, D-327, D-329), read by `move` with `at` and by the player's view:
+
+```yaml
+grid:
+  square: 1.5 m
+  diagonal: 1
+  difficult: 2
+  speed: speed
+  size: size
+  footprints: {Large: 2, Huge: 3, Gargantuan: 4}
+  leaving: Opportunity Attacks
+```
+
+- `square`: what a square is worth, in metric; outputs give it in the campaign's `units`.
+- `diagonal`: what a diagonal step costs, in squares; `difficult`: what difficult ground multiplies a step by. The engine counts the shortest way a square at a time, round walls and what blocks, never across their corners; who stands on a square and how big one is do not count, and squeezing through stays a rule for the AI.
+- `speed`: the field that gives the walking speed, read from its first value in feet or metres (`30 ft`, `9 m`); `size`: the field that gives the size, and `footprints` the side in squares of each size larger than one, at the square at its top left.
+- `leaving`: the rule to read when one leaves the side of another, which `move` names.
+
+Without it, `move` with `at` only puts one on a square, with no measures.
+
 ### settings
 
 What the setup asks for the system, with the campaign's own settings (`DAT-10`):

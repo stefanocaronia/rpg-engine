@@ -57,6 +57,16 @@ const travelSchema = z.object({
     path: ["pace"],
 });
 
+const gridSchema = z.object({
+    square: lengthSchema,
+    diagonal: z.number().positive(),
+    difficult: z.number().positive(),
+    speed: z.string().min(1),
+    size: z.string().min(1).optional(),
+    footprints: z.record(z.string().min(1), z.number().int().min(1)).optional(),
+    leaving: z.string().min(1).optional(),
+}, { error: "write it as a square's length, a diagonal step's cost in squares, the factor of difficult ground and the field of the speed, such as {square: 1.5 m, diagonal: 1, difficult: 2, speed: speed}" }).strict();
+
 const systemSchema = z.object({
     title: z.string().min(1),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/),
@@ -66,6 +76,7 @@ const systemSchema = z.object({
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
     imperial: z.object({ mile: lengthSchema, foot: lengthSchema }).strict().optional(),
     travel: travelSchema.optional(),
+    grid: gridSchema.optional(),
     sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies')).min(1), {
         error: "write the sheet as groups, each with its fields, such as Abilities: [str (str-mod), dex (dex-mod)]",
     }).optional(),
@@ -228,6 +239,21 @@ export interface TravelKind
     current?: number;
 }
 
+/**
+ * How a game counts on the map of a place (GRD-4, GRD-5): a square in metres, a diagonal step in squares, the factor of difficult ground, the fields that give
+ * the speed and the size, the side in squares of each size larger than one, and the rule to read when one leaves the side of another.
+ */
+export interface GridRules
+{
+    square: number;
+    diagonal: number;
+    difficult: number;
+    speed: string;
+    size?: string;
+    footprints: Record<string, number>;
+    leaving?: string;
+}
+
 /** An installed game system: what it is and what it declares (SYS-1). */
 export interface GameSystem
 {
@@ -251,6 +277,8 @@ export interface GameSystem
     imperial?: ImperialUnits;
     /** How one travels, when the game says so (D-261, TRV-1). */
     travel?: Travel;
+    /** How the map of a place counts, when the game has one (GRD-4). */
+    grid?: GridRules;
     /** The groups of a character sheet, in order (D-183, D-207, DAT-2). */
     sheet: SheetGroup[];
     /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
@@ -451,6 +479,12 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${unknownCondition.where}: ${unknownCondition.condition} is not one of its conditions.`);
     }
 
+    const gridField = [data.grid?.speed, data.grid?.size].find((field) => field !== undefined && kindOf(field) === undefined);
+
+    if (gridField !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: grid: ${gridField} is not declared in fields.`);
+    }
+
     if (counted !== undefined) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${counted.where}: ${counted.field} is not declared as a counter in fields.`);
     }
@@ -509,6 +543,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
+        ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
@@ -769,6 +804,13 @@ function withoutNames(map: Record<string, unknown>, names: string[]): Record<str
 function nameIn(map: Record<string, unknown>, name: string): string | undefined
 {
     return sameName(Object.keys(map), name);
+}
+
+/** How the system's map of a place counts, as the engine reads it (GRD-4): the square in metres. */
+function gridOf(data: z.infer<typeof gridSchema>): GridRules
+{
+    const { square, size, footprints, leaving, ...rest } = data;
+    return { ...rest, square: readLength(square) ?? 0, ...(size === undefined ? {} : { size }), footprints: footprints ?? {}, ...(leaving === undefined ? {} : { leaving }) };
 }
 
 /** The system's travel as the engine reads it (TRV-1–TRV-3): speeds in metres an hour, factors as numbers. */
