@@ -61,6 +61,12 @@ export function formatStep(metres: number, units: UnitSystem, imperial: Imperial
     return units === "imperial" ? `${Math.round(metres / imperial.foot)} feet` : `${oneDecimal(metres)} m`;
 }
 
+/** A text with the lengths it writes in feet told in the units of the story, as a speed of the sheet (D-328): 30 ft., fly 60 ft. is 9 m, fly 18 m in metric. */
+export function lengthsInUnits(text: string, units: UnitSystem, imperial: ImperialUnits = trueImperialUnits): string
+{
+    return units === "imperial" ? text : text.replace(/(\d+(?:\.\d+)?)\s*(?:ft\.?|feet|foot)(?![a-z])/gi, (_, number: string) => formatStep(Number(number) * imperial.foot, units, imperial));
+}
+
 /** The first length a text gives, in metres, as a sheet writes a speed: 30 ft., 30 feet, 9 m; undefined when it gives none, or a number without its unit. */
 export function readFirstLength(value: unknown, imperial: ImperialUnits = trueImperialUnits): number | undefined
 {

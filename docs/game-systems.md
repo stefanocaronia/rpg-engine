@@ -149,7 +149,7 @@ grid:
 
 - `square`: what a square is worth, in metric; outputs give it in the campaign's `units`.
 - `diagonal`: what a diagonal step costs, in squares; `difficult`: what difficult ground multiplies a step by. The engine counts the shortest way a square at a time, round walls and what blocks, never across their corners; who stands on a square and how big one is do not count, and squeezing through stays a rule for the AI.
-- `speed`: the field that gives the walking speed, read from its first value in feet or metres (`30 ft`, `9 m`); `size`: the field that gives the size, and `footprints` the side in squares of each size larger than one, at the square at its top left.
+- `speed`: the field that gives the walking speed, read from its first value in feet or metres (`30 ft`, `9 m`); the dashboard shows it in the campaign's units, as the map counts; `size`: the field that gives the size, and `footprints` the side in squares of each size larger than one, at the square at its top left.
 - `leaving`: the rule to read when one leaves the side of another, which `move` names.
 
 Without it, `move` with `at` only puts one on a square, with no measures.

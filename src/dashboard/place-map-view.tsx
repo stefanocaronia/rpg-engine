@@ -38,6 +38,12 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
         return square === undefined ? [] : [{ ...one, at: square }];
     });
     const self = standing.find((one) => one.role === "pc");
+    // What one fills, in squares a side: a large creature stands on the square at the top left of its own (GRD-4).
+    const middle = (one: { at: Square; side?: number; }): [number, number] => [X(one.at.column) + (size * (one.side ?? 1)) / 2, Y(one.at.row) + (size * (one.side ?? 1)) / 2];
+    const reach = (map.reach ?? []).flatMap((name) => {
+        const square = squareOf(name);
+        return square === undefined ? [] : [square];
+    });
     const letters = Math.max(11, 11 / scale);
     const drawn = (
         <>
@@ -88,7 +94,7 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                         )}
                         {standing.map((one, index) => (
                             <clipPath key={index} id={`lm-token-${index}`}>
-                                <circle cx={X(one.at.column) + size / 2} cy={Y(one.at.row) + size / 2} r={size * 0.43 - 2} />
+                                <circle cx={middle(one)[0]} cy={middle(one)[1]} r={size * (one.side ?? 1) * 0.43 - 2} />
                             </clipPath>
                         ))}
                     </defs>
@@ -102,6 +108,10 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                         ))}
                     </g>
                     {walled ? drawn : <g mask="url(#lm-fade)">{drawn}</g>}
+                    {/* On the player's turn, the squares their character can still reach (D-328). */}
+                    <g class="lm-reach" aria-hidden="true">
+                        {reach.map((square) => <rect key={squareName(square)} x={X(square.column) + 2} y={Y(square.row) + 2} width={size - 4} height={size - 4} rx={4} />)}
+                    </g>
                     <path class="lm-outline" d={outline} filter="url(#lm-ink)" />
                     {squares.filter((square) => ["door", "open-door", "secret-door"].includes(kindAt(map, square))).map((square) => (
                         <Door key={squareName(square)} kind={kindAt(map, square)} name={featureAt(square)?.name ?? "door"} square={square} map={map} x={X(square.column)} y={Y(square.row)} />
@@ -115,7 +125,7 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                         {Array.from({ length: map.rows }, (_, row) => <text key={`r${row}`} x={left - 10} y={Y(row) + size / 2} text-anchor="end" dominant-baseline="middle">{row + 1}</text>)}
                     </g>
                     <g class="lm-tokens">
-                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} x={X(one.at.column) + size / 2} y={Y(one.at.row) + size / 2} />)}
+                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} x={middle(one)[0]} y={middle(one)[1]} />)}
                     </g>
                 </svg>
             </div>
@@ -141,7 +151,9 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                         <li key={index} class={`lm-where-${one.role}`}>
                             <span class="lm-where-name">{capitalized(one.name)}</span>
                             <span class="lm-key-square">{one.square}</span>
-                            {self !== undefined && one !== self && nextTo(one.at, self.at) && <span class="lm-where-far">next to you</span>}
+                            {one.distance !== undefined
+                                ? <span class="lm-where-far">{one.distance}</span>
+                                : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && <span class="lm-where-far">next to you</span>}
                         </li>
                     ))}
                 </ul>
@@ -600,7 +612,8 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
 /** Someone on the map: a disc ringed by side, their picture, or a stranger's number, as Creature 2's, or the hood; the player's character ringed twice. */
 function Token({ one, index, acting, x, y }: { one: ShownGrid["at"][number]; index: number; acting: boolean; x: number; y: number; })
 {
-    const r = size * 0.43;
+    const side = one.side ?? 1;
+    const r = size * side * 0.43;
     const number = one.stranger ? /\d+$/.exec(one.name)?.[0] : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
@@ -616,11 +629,16 @@ function Token({ one, index, acting, x, y }: { one: ShownGrid["at"][number]; ind
                 <circle class="lm-disc" cx={x} cy={y} r={r} />
                 {one.image && !one.stranger
                     ? <image href={`/images/${encodeURIComponent(one.image.file)}?v=${one.image.version}`} x={x - r} y={y - r} width={r * 2} height={r * 2} clip-path={`url(#lm-token-${index})`} />
-                    : number !== undefined
-                    ? <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{number}</text>
-                    : one.stranger
-                    ? <path class="lm-stranger" d="M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z" transform={`translate(${x - 10.8} ${y - 11}) scale(0.9)`} />
-                    : <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{one.name.slice(0, 1).toUpperCase()}</text>}
+                    : (
+                        // The mark grows with the token, a large creature's too.
+                        <g transform={`translate(${x} ${y}) scale(${side})`}>
+                            {number !== undefined
+                                ? <text class="lm-number" y={1} text-anchor="middle" dominant-baseline="middle">{number}</text>
+                                : one.stranger
+                                ? <path class="lm-stranger" d="M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z" transform="translate(-10.8 -11) scale(0.9)" />
+                                : <text class="lm-number" y={1} text-anchor="middle" dominant-baseline="middle">{one.name.slice(0, 1).toUpperCase()}</text>}
+                        </g>
+                    )}
                 <Glass x={x} y={y} r={r} prefix="lm" />
                 <circle class="lm-ring" cx={x} cy={y} r={r} />
                 {one.role === "pc" && <circle class="lm-ring outer" cx={x} cy={y} r={r + 3.2} />}

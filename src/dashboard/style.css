@@ -3548,6 +3548,8 @@ svg.icon {
 /* What the player has at hand, one panel: the name, what they keep or the death saves, the line of the fields the system names, its groups as sections. */
 .at-hand {
     display: grid;
+    /* Never wider than the panel: a long preview of a group would stretch it past a phone's screen. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     align-content: start;
     min-width: 0;
@@ -4076,6 +4078,15 @@ svg.icon {
 .lm-badge-number {
     fill: #fff;
     font: 700 10px system-ui, sans-serif;
+}
+
+/* The squares the player's character can still reach on its turn (D-328): a gold wash, edged dark as the gold halo, which cream alone would hide. */
+.lm-reach rect {
+    fill: var(--l-gold);
+    fill-opacity: 0.26;
+    stroke: #8a5a00;
+    stroke-opacity: 0.3;
+    stroke-width: 1;
 }
 
 .lm-halo {

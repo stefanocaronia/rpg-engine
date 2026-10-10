@@ -97,7 +97,10 @@ export interface ShownGrid
     /** How its ground looks (D-325): floor, cave, paving, a biome, or plain. */
     ground: string;
     exits: { square: string; to?: string; }[];
-    at: (ShownPerson & { square: string; })[];
+    /** Who stands where: the side of what they fill, when more than a square, and how far from the player character (GRD-4, D-328). */
+    at: (ShownPerson & { square: string; side?: number; distance?: string; })[];
+    /** On the player character's turn in a fight, the squares it can still reach (D-328). */
+    reach?: string[];
 }
 
 /** Someone in a fight as the player sees them (D-314): the party's counter as numbers, a foe's in words; what is on them; whether they act; what they keep; the dying's counters. */

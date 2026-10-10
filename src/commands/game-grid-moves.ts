@@ -3,7 +3,7 @@
 import { formatStep, readFirstLength } from "../core/length.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { closedSquare, coveredSquares, type Footprint, type Grid, isNextTo, shortestWay, type Square, squareName } from "../grid/index.ts";
-import { isEmptyField, type Page, type World } from "../pages/index.ts";
+import { isEmptyField, isPartyMember, type Page, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
@@ -48,10 +48,11 @@ export function moveFacts(world: World, system: GameSystem | undefined, measures
     const step = (squares: number): string => formatStep(squares * rules.square, measures.units, measures.imperial);
     const side = sideOf(world, rules, scene, move.who);
     const footprint = (square: Square): Footprint => ({ square, side });
-    const others = move.others.filter(isAlive).flatMap((one) => (one.square === undefined ? [] : [{ name: one.name, footprint: { square: one.square, side: sideOf(world, rules, scene, one) } }]));
-    const besideAny = (squares: Square[]): string[] => others.filter((one) => squares.some((square) => isNextTo(footprint(square), one.footprint))).map((one) => one.name);
-    const now = besideAny([move.to]);
-    const left = besideAny([move.from, ...way.squares.slice(0, -1)]).filter((one) => !now.includes(one));
+    const others = move.others.filter(isAlive).flatMap((one) => (one.square === undefined ? [] : [{ name: one.name, foe: isParty(one) !== isParty(move.who), footprint: { square: one.square, side: sideOf(world, rules, scene, one) } }]));
+    const besideAny = (squares: Square[]): typeof others => others.filter((one) => squares.some((square) => isNextTo(footprint(square), one.footprint)));
+    const now = besideAny([move.to]).map((one) => one.name);
+    // Only the side of one on the other side counts: the party, or everyone else.
+    const left = besideAny([move.from, ...way.squares.slice(0, -1)]).filter((one) => one.foe && !now.includes(one.name)).map((one) => one.name);
     const covered = coveredSquares(footprint(move.to));
     const shut = covered.map((square) => closedSquare(move.grid, square)).find((closed) => closed !== undefined);
     const turn = turnFacts(world, rules, measures, scene, move.who, way.cost, step);
@@ -75,19 +76,37 @@ export function sideOf(world: World, rules: GridRules, scene: Scene | undefined,
     return (typeof size === "string" ? Object.entries(rules.footprints).find(([name]) => comparableText(name) === comparableText(size))?.[1] : undefined) ?? 1;
 }
 
+/** Whether it is one's turn in the open scene, which has turns (GRD-5). */
+export function isTurnOf(scene: Scene | undefined, name: string): boolean
+{
+    return scene?.order !== undefined && scene.turn !== undefined && comparableText(scene.turn) === comparableText(name);
+}
+
+/** How many squares the one whose turn it is has moved in it, as the scene keeps it (GRD-5): 0 at the start of a turn. */
+export function movedThisTurn(scene: Scene): number
+{
+    const counted = scene.moved !== undefined && scene.turn !== undefined && scene.moved.round === (scene.round ?? 1) && comparableText(scene.moved.turn) === comparableText(scene.turn);
+    return counted ? (scene.moved?.squares ?? 0) : 0;
+}
+
+/** One's walking speed (GRD-5): the field the system names as written, and its first length in metres, when it gives one. */
+export function walkingSpeed(world: World, rules: GridRules, measures: Measures, scene: Scene | undefined, one: Standing): { written: unknown; metres?: number; }
+{
+    const page = standingPage(scene, one);
+    const written = page === undefined ? undefined : valueNamed(effectiveFields(world, page), rules.speed);
+    const metres = readFirstLength(written, measures.imperial);
+    return { written, ...(metres === undefined ? {} : { metres }) };
+}
+
 /** On the turn of who moves, in a scene with turns: how far they have moved in it and what is left of their speed, and the scene's new count (GRD-5). */
 function turnFacts(world: World, rules: GridRules, measures: Measures, scene: Scene | undefined, who: Standing, cost: number, step: (squares: number) => string): { notes: string[]; moved?: Scene["moved"]; }
 {
-    if (scene?.order === undefined || scene.turn === undefined || comparableText(scene.turn) !== comparableText(who.name)) {
+    if (scene === undefined || scene.turn === undefined || !isTurnOf(scene, who.name)) {
         return { notes: [] };
     }
 
-    const round = scene.round ?? 1;
-    const counted = scene.moved !== undefined && scene.moved.round === round && comparableText(scene.moved.turn) === comparableText(scene.turn);
-    const moved = { round, turn: scene.turn, squares: (counted ? (scene.moved?.squares ?? 0) : 0) + cost };
-    const page = standingPage(scene, who);
-    const written = page === undefined ? undefined : valueNamed(effectiveFields(world, page), rules.speed);
-    const speed = readFirstLength(written, measures.imperial);
+    const moved = { round: scene.round ?? 1, turn: scene.turn, squares: movedThisTurn(scene) + cost };
+    const { written, metres: speed } = walkingSpeed(world, rules, measures, scene, who);
 
     if (speed === undefined) {
         const how = `write ${rules.speed} as 30 ft or 9 m`;
@@ -107,6 +126,12 @@ function standingPage(scene: Scene | undefined, one: Standing): Page | undefined
 {
     const copy = one.copy === undefined ? undefined : scene?.copies[one.copy];
     return copy === undefined || one.copy === undefined ? one.page : copyPage(one.copy, copy);
+}
+
+/** Whether one on the map is of the party: the player's character or a companion; a copy never is. */
+function isParty(one: Standing): boolean
+{
+    return one.page !== undefined && isPartyMember(one.page);
 }
 
 /** Whether one on the map is someone whose side counts: a copy of the scene, or a living character; never a thing, nor the dead. */

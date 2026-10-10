@@ -158,7 +158,10 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
             "Along the shortest way Kira leaves the side of Bandit 1: read Opportunity Attacks.",
             "This turn Kira has moved 6 m of 9 m: 3 m left.",
         ].join("\n"));
-        expect(await ok("move", "Kira", "--at", "G4")).toContain("This turn Kira has moved 7.5 m of 9 m: 1.5 m left.");
+        // Away from Bran, of her own side: no rule to read.
+        const away = await ok("move", "Kira", "--at", "G4");
+        expect(away).toContain("This turn Kira has moved 7.5 m of 9 m: 1.5 m left.");
+        expect(away).not.toContain("leaves the side");
         expect(await ok("move", "Kira", "--at", "I3")).toContain("This turn Kira has moved 12 m, 3 m beyond the 9 m of Kira's speed: yours to judge, with what lets one go farther.");
         // Bran moves out of turn: only the way. On the bandit's turn, its speed is its creature's.
         expect(await ok("move", "Bran", "--at", "D2")).toBe("Bran: now on D2 in Locanda, 1.5 m from E2.");
@@ -227,10 +230,31 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(place.map.at).toEqual([
             { name: "Kira", role: "pc", square: "E5" },
             { name: "Bran", role: "companion", square: "E5" },
-            { name: "creature 1", role: "other", stranger: true, square: "D2" },
+            { name: "creature 1", role: "other", stranger: true, square: "D2", distance: "4.5 m" },
         ]);
         await ok("write", "Kira", "--add", "knows=[[Oste]]");
-        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual({ name: "Oste", role: "other", square: "H3" });
+        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual({ name: "Oste", role: "other", square: "H3", distance: "4.5 m" });
+    });
+
+    it("gives the dashboard how far each one stands from the player character and how big, and on its turn the squares it can still reach, a hidden pit taken for the floor (D-328)", async () => {
+        await ok("write", "Kira", "--set", "speed=10 ft");
+        await ok("write", "Sala", "--type", "place", "--text", "```map\n#######\n#.....#\n#..^..#\n#.....#\n#######\n\n^ fossa: pit, blocks, hidden\n```");
+        await ok("move", "Kira", "--to", "Sala", "--at", "B3");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--place", "Sala", "--with", "Kira", "--creatures", "Bandit=1", "--creatures", "Ogre=1");
+        await ok("move", "Bandit 1", "--at", "D4");
+        await ok("move", "Ogre 1", "--at", "E2");
+        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 1", "--order", "Ogre 1");
+        const map = JSON.parse(await ok("view", "--json")).place.map;
+        expect(map.at).toContainEqual(expect.objectContaining({ square: "D4", distance: "3 m" }));
+        expect(map.at).toContainEqual(expect.objectContaining({ square: "E2", side: 2, distance: "4.5 m" }));
+        expect(map.at.find((one: { role: string; }) => one.role === "pc")).not.toHaveProperty("distance");
+        // Two squares of speed: the pit, which the player does not know, is a square like the others.
+        expect(map.reach).toEqual(expect.arrayContaining(["B2", "C3", "D2", "D3"]));
+        expect(map.reach).not.toContain("E3");
+        await ok("scene", "next");
+        expect(JSON.parse(await ok("view", "--json")).place.map.reach).toBeUndefined();
+        const sheet = JSON.parse(await ok("view", "Kira", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
+        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "speed")?.text).toBe("3 m");
     });
 
     it("draws the ground by the place: a building's floor, a cave's rock and its walls round, a village's paving, the forest it is in (D-325)", async () => {

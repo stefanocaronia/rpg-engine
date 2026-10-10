@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
+import { lengthsInUnits } from "../core/length.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -7,6 +8,7 @@ import { comparableText } from "../core/text.ts";
 import { notationWords, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
@@ -15,7 +17,7 @@ import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
-import { measuresOf } from "./game-roads.ts";
+import { type Measures, measuresOf } from "./game-roads.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
@@ -176,7 +178,7 @@ export const view = defineCommand({
             }
 
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
-            const sheet = !party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page);
+            const sheet = speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system));
             const headline = party ? sheetHeadline(world, system, page) : undefined;
             const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
             return {
@@ -502,4 +504,12 @@ function effectText(world: World, line: string, named: (name: unknown) => string
     const end = read.effect.end;
     const seen = end !== undefined && "turn" in end ? { end: { ...end, turn: named(end.turn) ?? (isCopyName(world, end.turn) ? "a creature" : "someone") } } : {};
     return effectShown(world, { ...read.effect, values: [], ...seen });
+}
+
+/** A sheet with the speed told in the units of the story (D-328), as the maps tell their measures: 30 ft is 9 m in metric. */
+function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, measures: Measures): SheetGroupData[]
+{
+    const field = system?.grid?.speed;
+    const told = (value: SheetValue): SheetValue => (field !== undefined && comparableText(value.field) === comparableText(field) ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) } : value);
+    return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
 }

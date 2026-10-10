@@ -1,16 +1,20 @@
 // Where the player character is and the open scene, as data for the dashboard (VIEW-6, D-310): what the player may see of them, as the character knows them.
 import type { Context } from "../core/context.ts";
+import { formatStep } from "../core/length.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { type Grid, squareName, withoutMapBlock } from "../grid/index.ts";
+import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../grid/index.ts";
 import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
-import type { GameSystem } from "../systems/index.ts";
+import type { Scene } from "../scene/index.ts";
+import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectParts, effectText, keptEffects } from "./game-effects.ts";
-import { placeGrid, placeLook, standing } from "./game-grids.ts";
+import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
+import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
 import { shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
+import { type Measures, measuresOf } from "./game-roads.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignSystem } from "./game-world.ts";
 import { pageCounters } from "./page-counters.ts";
@@ -58,7 +62,10 @@ export interface ShownGrid
     /** How its ground looks (D-325): floor, cave, paving, a biome, or plain. */
     ground: string;
     exits: { square: string; to?: string; }[];
-    at: (ShownPerson & { square: string; })[];
+    /** Who stands where: the side of what they fill, when more than a square, and how far from the player character, in the player's units (GRD-4, D-328). */
+    at: (ShownPerson & { square: string; side?: number; distance?: string; })[];
+    /** On the player character's turn in a fight, the squares it can still reach with what is left of its speed (D-328). */
+    reach?: string[];
 }
 
 /**
@@ -164,20 +171,26 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
     const scene = readOpenScene(sight.root).scene;
     const here = scene?.place !== undefined && comparableText(parsePageReference(scene.place).name) === comparableText(place.name) ? scene : undefined;
     const inScene = new Set((here?.with ?? []).map((link) => comparableText(parsePageReference(link).name)));
-    const at = standing(sight.world, place, here).flatMap((one): ShownGrid["at"] => {
+    const system = campaignSystem(sight.root, sight.context);
+    const measures = measuresOf(sight.root, system);
+    const standings = standing(sight.world, place, here);
+    const self = standings.find((one): one is Standing & { square: Square; } => one.page === sight.party[0] && one.square !== undefined);
+    const at = standings.flatMap((one): ShownGrid["at"] => {
         const square = one.square === undefined ? undefined : squareName(one.square);
 
         if (square === undefined) {
             return [];
         }
 
+        const measured = { square, ...(system?.grid === undefined ? {} : measuredFrom(sight, system.grid, measures, here, self, one)) };
+
         if (one.copy !== undefined && here !== undefined) {
             const creature = knownPage(sight, here.copies[one.copy]?.creature);
             const image = creature === undefined ? undefined : picture(sight, creature);
             return [
                 creature === undefined
-                    ? { name: `creature ${/\d+$/.exec(one.copy)?.[0] ?? ""}`.trim(), role: "other", stranger: true, square }
-                    : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), square },
+                    ? { name: `creature ${/\d+$/.exec(one.copy)?.[0] ?? ""}`.trim(), role: "other", stranger: true, ...measured }
+                    : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), ...measured },
             ];
         }
 
@@ -188,11 +201,12 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
         }
 
         if (sight.party.includes(page) || knowsPage(sight.knowledge, page)) {
-            return [{ ...person(sight, page), square }];
+            return [{ ...person(sight, page), ...measured }];
         }
 
-        return inScene.has(comparableText(page.name)) ? [{ name: "someone", role: "other", stranger: true, square }] : [];
+        return inScene.has(comparableText(page.name)) ? [{ name: "someone", role: "other", stranger: true, ...measured }] : [];
     });
+    const reach = system?.grid === undefined || here === undefined || self === undefined || !isTurnOf(here, self.name) ? [] : reachOf(sight, system.grid, measures, here, self, { ...grid, lines });
     return {
         columns: grid.columns,
         rows: grid.rows,
@@ -212,7 +226,30 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
             },
         ),
         at,
+        ...(reach.length === 0 ? {} : { reach }),
     };
+}
+
+/** How big one on the map is, when more than a square, and how far from the player character, in the player's units (GRD-4, D-328). */
+function measuredFrom(sight: PlaceSight, rules: GridRules, measures: Measures, scene: Scene | undefined, self: Standing & { square: Square; } | undefined, one: Standing): { side?: number; distance?: string; }
+{
+    const side = sideOf(sight.world, rules, scene, one);
+    const apart = self === undefined || one === self || one.square === undefined
+        ? undefined
+        : squaresApart({ square: self.square, side: sideOf(sight.world, rules, scene, self) }, { square: one.square, side }, rules);
+    // On the player character's own square no distance: the page says they are next to it.
+    return { ...(side > 1 ? { side } : {}), ...(apart === undefined || apart === 0 ? {} : { distance: formatStep(apart * rules.square, measures.units, measures.imperial) }) };
+}
+
+/**
+ * The squares the player character can still reach on its turn in a fight (D-328), with what is left of its speed, on the map as the player sees it: what is
+ * hidden counts as what lies under it, so that the way round a trap never gives it away (GRD-6).
+ */
+function reachOf(sight: PlaceSight, rules: GridRules, measures: Measures, scene: Scene, self: Standing & { square: Square; }, grid: Grid): string[]
+{
+    const speed = walkingSpeed(sight.world, rules, measures, scene, self).metres;
+    const left = speed === undefined ? 0 : speed / rules.square - movedThisTurn(scene);
+    return left <= 0 ? [] : reachable(grid, self.square, left + 1e-9, rules).filter((one) => one.cost > 0).map((one) => squareName(one.square));
 }
 
 /** The open scene as the player sees it; none when no scene is open, or it cannot be read. */
