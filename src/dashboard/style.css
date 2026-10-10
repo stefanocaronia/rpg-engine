@@ -1770,12 +1770,20 @@ button.row,
     margin: 0 0 14px;
 }
 
+/* A check's name on the line of the text, its dice before it, set down to the text's middle. */
 .asked-hand-check {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     font-weight: 700;
-    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.asked-hand-check .die-icons {
+    margin-right: 4px;
+    vertical-align: -5px;
+}
+
+.asked-hand-check svg.die {
+    width: 20px;
+    height: 20px;
 }
 
 .asked-hand-note svg.icon {
@@ -1785,11 +1793,25 @@ button.row,
     color: var(--accent);
 }
 
+/* The player's words and, in the banner's bottom right corner, the switch; on a narrow screen the switch on a line of its own, still on the right. */
+.asked-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-top: 10px;
+}
+
+.asked-foot .asked-own {
+    flex: 1 1 320px;
+    margin-top: 0;
+}
+
 .asked-hand {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin-left: 8px;
+    margin-left: auto;
     color: var(--muted);
     font-size: 0.85rem;
     white-space: nowrap;

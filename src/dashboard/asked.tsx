@@ -145,19 +145,22 @@ export function AskedBanner(
                         );
                     })}
                 </div>
-                <form class="asked-own" onSubmit={own}>
-                    <input
-                        type="text"
-                        value={words}
-                        maxLength={mostWords}
-                        placeholder="Or write what you do…"
-                        aria-label="Or write what you do"
-                        disabled={gone}
-                        onInput={(event) => setWords(event.currentTarget.value)}
-                    />
-                    <button type="submit" class="icon-button" aria-label="Send" data-tip="Send" disabled={gone || words.trim() === ""}>
-                        <Icon name="send" />
-                    </button>
+                {/* The player's words, and in the banner's corner the switch to roll by hand. */}
+                <div class="asked-foot">
+                    <form class="asked-own" onSubmit={own}>
+                        <input
+                            type="text"
+                            value={words}
+                            maxLength={mostWords}
+                            placeholder="Or write what you do…"
+                            aria-label="Or write what you do"
+                            disabled={gone}
+                            onInput={(event) => setWords(event.currentTarget.value)}
+                        />
+                        <button type="submit" class="icon-button" aria-label="Send" data-tip="Send" disabled={gone || words.trim() === ""}>
+                            <Icon name="send" />
+                        </button>
+                    </form>
                     {roll && (
                         <label class="asked-hand">
                             <input
@@ -173,7 +176,7 @@ export function AskedBanner(
                             By hand
                         </label>
                     )}
-                </form>
+                </div>
                 {problem && <p class="asked-problem" role="alert">{problem}</p>}
             </div>
             {picking && map !== undefined && <MapSheet map={map} place={place ?? ""} question={asked.question} onPick={(square) => void reply({ square })} onClose={() => setPicking(false)} />}
