@@ -129,7 +129,8 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
 
     it("moves one on the map of the place they are in, or into a place and onto its map; refuses walls, what blocks, places without a map, more than one", async () => {
         await ok("move", "Kira", "--to", "Locanda");
-        expect(await ok("move", "Kira", "--at", "D3")).toBe("Kira: now on D3 in Locanda.");
+        // Through the pool, never across the corner of the wall by the door: three squares.
+        expect(await ok("move", "Kira", "--at", "D3")).toBe("Kira: now on D3 in Locanda, 4.5 m from E5.");
         expect(innPage()).toContain("[[Kira]] D3");
         expect(innPage()).not.toContain("[[Kira]] E5");
         expect(await refused("move", "Kira", "--at", "B2")).toContain("B2 is camino, which blocks: Kira cannot stand there.");
@@ -141,7 +142,39 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(innPage()).not.toContain("Oste");
         expect(await ok("move", "Oste", "--to", "Locanda", "--at", "H3")).toContain("Oste: now on H3 in Locanda.");
         expect(innPage()).toContain("[[Oste]] H3");
-        expect(await ok("move", "Kira", "--at", "E2")).toBe("Kira: now on E2 in Locanda.\nE2 is tavolo, difficult ground.");
+        expect(await ok("move", "Kira", "--at", "E2")).toBe("Kira: now on E2 in Locanda, 3 m from D3.\nE2 is tavolo, difficult ground.");
+    });
+
+    it("says how far one went by the shortest way, whose side they left on it and who stands next to them now; on their turn, what is left of their speed (GRD-5)", async () => {
+        await ok("write", "Kira", "--set", "speed=30 ft");
+        expect(await ok("move", "Kira", "--to", "Locanda", "--at", "B3")).toContain("Kira: now on B3 in Locanda, 7.5 m from E5, where Kira came in.");
+        await ok("move", "Bran", "--to", "Locanda", "--at", "E2");
+        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=1");
+        expect(await ok("move", "Bandit 1", "--at", "C4")).toBe("Bandit 1: now on C4 in Locanda.\nC4 is tavolo, difficult ground.");
+        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 1", "--order", "Bran");
+        expect(await ok("move", "Kira", "--at", "F3")).toBe([
+            "Kira: now on F3 in Locanda, 6 m from B3.",
+            "Next to Kira now: Bran.",
+            "Along the shortest way Kira leaves the side of Bandit 1: read Opportunity Attacks.",
+            "This turn Kira has moved 6 m of 9 m: 3 m left.",
+        ].join("\n"));
+        expect(await ok("move", "Kira", "--at", "G4")).toContain("This turn Kira has moved 7.5 m of 9 m: 1.5 m left.");
+        expect(await ok("move", "Kira", "--at", "I3")).toContain("This turn Kira has moved 12 m, 3 m beyond the 9 m of Kira's speed: yours to judge, with what lets one go farther.");
+        // Bran moves out of turn: only the way. On the bandit's turn, its speed is its creature's.
+        expect(await ok("move", "Bran", "--at", "D2")).toBe("Bran: now on D2 in Locanda, 1.5 m from E2.");
+        await ok("scene", "next");
+        expect(await ok("move", "Bandit 1", "--at", "D3")).toContain("This turn Bandit 1 has moved 1.5 m of 9 m: 7.5 m left.");
+    });
+
+    it("puts one where no way on foot leads, and says so; says what of a large creature's squares it cannot fill (GRD-4, GRD-5)", async () => {
+        await ok("write", "Cella", "--type", "place", "--text", "```map\n######\n#.#..#\n#....#\n######\n```", "--add", "contains=[[Oste]]");
+        await ok("move", "Oste", "--at", "B2");
+        await ok("write", "Cella", "--text", "```map\n######\n#.#..#\n###..#\n######\n```");
+        expect(await ok("move", "Oste", "--at", "D2")).toBe("Oste: now on D2 in Cella.\nNo way on foot leads from B2 to D2: Oste stands there all the same, and how is yours to tell.");
+        await ok("move", "Kira", "--to", "Locanda", "--at", "D3");
+        await ok("scene", "open", "--title", "Orco", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--creatures", "Ogre=1");
+        await ok("move", "Ogre 1", "--at", "F2");
+        expect(await ok("move", "Ogre 1", "--at", "G2")).toContain("Ogre 1 fills G2 to H3, but H2 is a wall.");
     });
 
     it("puts on a door only who comes in through it: not a thing put down by one who is there, nor one up from a place inside, nor on a wall (GRD-3)", async () => {

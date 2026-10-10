@@ -8,13 +8,14 @@ import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type S
 import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
-import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
+import { moveFacts } from "./game-grid-moves.ts";
+import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./game-grids.ts";
 import { picturesNote } from "./game-images.ts";
 import { movePages } from "./game-moves.ts";
-import { roadsOf, sameSpot, stopOf } from "./game-roads.ts";
+import { measuresOf, roadsOf, sameSpot, stopOf } from "./game-roads.ts";
 import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld, missingSystemHint } from "./game-world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { shortList, skippedPagesNote } from "./notes.ts";
 
 // A list, or one text, as an MCP client may send it.
@@ -36,8 +37,8 @@ interface MoveResult
     noLonger: string[];
     notes: string[];
     problems: string[];
-    /** Who stands on a square of the place's map now (GRD-3), and the place. */
-    placed?: { who: string; square: string; place: string; };
+    /** Who stands on a square of the place's map now (GRD-3), and the place; how far they went, and from where, when the game counts it (GRD-5). */
+    placed?: { who: string; square: string; place: string; distance?: string; from?: string; };
 }
 
 export const move = defineCommand({
@@ -79,7 +80,8 @@ export const move = defineCommand({
 
     format(result)
     {
-        const placed = result.placed === undefined ? "" : `${result.placed.who}: now on ${result.placed.square} in ${result.placed.place}.`;
+        const way = result.placed?.distance === undefined ? "" : `, ${result.placed.distance} from ${result.placed.from ?? "where they stood"}`;
+        const placed = result.placed === undefined ? "" : `${result.placed.who}: now on ${result.placed.square} in ${result.placed.place}${way}.`;
 
         if (result.moved.length === 0 && result.placed !== undefined) {
             return [[placed, ...result.notes].filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
@@ -191,17 +193,35 @@ function moveOnMap(root: string, context: Context, world: World, scene: Scene | 
     const now = moved === undefined ? world : campaignWorld(root, context);
     const fresh = page === undefined ? undefined : now.pages.find((other) => other.path === page.path);
     const here = now.pages.find((other) => other.path === place.path) ?? place;
-    const mine = (entry: string): boolean => standing(now, here, scene).some((one) => one.entry === entry && (copy === undefined ? one.page === fresh : one.copy === copy));
+    // Where everyone stood before: the mover's square, from which the way is counted, the one it came in by when it just came in (GRD-5).
+    const before = standing(now, here, scene);
+    const isMover = (one: Standing): boolean => (copy === undefined ? one.page === fresh : one.copy === copy);
+    const from = before.find((one) => isMover(one) && one.square !== undefined)?.square;
     const entry = atEntry({ ...(fresh === undefined ? {} : { page: fresh }), ...(copy === undefined ? {} : { copy }) }, square);
-    const kept = atEntries(here).filter((other) => !mine(other));
+    const kept = atEntries(here).filter((other) => !before.some((one) => one.entry === other && isMover(one)));
     writePage(now, here.name, undefined, { set: { at: [...kept, entry] } });
     const party = fresh !== undefined && (isInParty(fresh) || locate(now, fresh).chain.some(isInParty));
     appendLogEntry(root, newDatedLogEntry(root, context, "placed", party ? "public" : "hidden", { page: who, place: here.name, square: squareName(square) }));
+    const system = campaignSystem(root, context);
+    const mover: Standing = { entry, name: who, ...(fresh === undefined ? {} : { page: fresh }), ...(copy === undefined ? {} : { copy }), square };
+    const others = before.filter((one) => !isMover(one));
+    const facts = from === undefined ? undefined : moveFacts(now, system, measuresOf(root, system), scene, { grid: map.grid, who: mover, from, to: square, others });
+
+    if (facts?.moved !== undefined) {
+        updateScene(root, [[["moved"], facts.moved]]);
+    }
+
+    const cameIn = moved !== undefined && moved.moved.length > 0;
     const ground = groundNote(map.grid, square);
     return {
         ...(moved ?? { moved: [], already: [], to: here.name, chain: [here.name], there: [], here: [], noLonger: [], notes: [], problems: world.problems }),
-        notes: [...(moved?.notes ?? []), ...(ground === undefined ? [] : [ground])],
-        placed: { who, square: squareName(square), place: here.name },
+        notes: [...(moved?.notes ?? []), ...(ground === undefined ? [] : [ground]), ...(facts?.notes ?? [])],
+        placed: {
+            who,
+            square: squareName(square),
+            place: here.name,
+            ...(facts?.distance === undefined || from === undefined ? {} : { distance: facts.distance, from: cameIn ? `${squareName(from)}, where ${who} came in` : squareName(from) }),
+        },
     };
 }
 

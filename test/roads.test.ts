@@ -1,7 +1,7 @@
 // Roads as a graph (MECCANICHE, ROA-1, ROA-4, TRV-4, D-262): lengths, the stops of a road, and the laws of the quickest way on roads made at random.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { formatLength, readLength, readSpeed } from "../src/core/length.ts";
+import { formatLength, formatStep, readFirstLength, readLength, readSpeed } from "../src/core/length.ts";
 import { crossingAlong, directionName, directionTo, distanceBetween, meanPoint, pointAlong, pointFrom, quickestWay, readDirection, type Stretch, stretchesOf, type Way } from "../src/map/index.ts";
 import { readStops } from "../src/pages/index.ts";
 
@@ -34,6 +34,13 @@ describe("lengths and speeds (ROA-1, TRV-1, D-262)", () => {
         expect(formatLength(1500, "imperial", { mile: 1500, foot: 0.3 })).toBe("1 mile");
         expect(formatLength(90, "imperial", { mile: 1500, foot: 0.3 })).toBe("300 feet");
         expect(formatLength(1609.344, "imperial")).toBe("1 mile");
+    });
+
+    it("GRD-5: a speed of the sheet reads from its first length, in feet with the game's foot or in metres; a step on a map is told to the tenth of a metre, or in feet", () => {
+        const fifth = { mile: 1500, foot: 0.3 };
+        expect([readFirstLength("30 ft., fly 60 ft.", fifth), readFirstLength("25 feet", fifth), readFirstLength("9 m", fifth), readFirstLength("0 ft", fifth)]).toEqual([9, 7.5, 9, 0]);
+        expect([readFirstLength(30, fifth), readFirstLength("trenta piedi", fifth), readFirstLength("6 km/h", fifth), readFirstLength("9 metri", fifth)]).toEqual([undefined, undefined, undefined, undefined]);
+        expect([formatStep(7.5, "metric"), formatStep(12, "metric"), formatStep(7.5, "imperial", fifth), formatStep(1.5, "imperial", fifth)]).toEqual(["7.5 m", "12 m", "25 feet", "5 feet"]);
     });
 });
 

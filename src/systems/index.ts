@@ -5,6 +5,7 @@ export {
     findCampaignSystem,
     findSystem,
     type GameSystem,
+    type GridRules,
     installedSystems,
     type InstructionPart,
     type Recipe,

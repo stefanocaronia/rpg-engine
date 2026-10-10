@@ -55,6 +55,19 @@ export function formatSpeed(metresAnHour: number, units: UnitSystem, imperial: I
     return `${formatLength(metresAnHour, units, imperial)} an hour`;
 }
 
+/** A short length, as on the map of a place (GRD-5), in the units of the story: 7.5 m; in imperial with the game's foot, 25 feet. */
+export function formatStep(metres: number, units: UnitSystem, imperial: ImperialUnits = trueImperialUnits): string
+{
+    return units === "imperial" ? `${Math.round(metres / imperial.foot)} feet` : `${oneDecimal(metres)} m`;
+}
+
+/** The first length a text gives, in metres, as a sheet writes a speed: 30 ft., 30 feet, 9 m; undefined when it gives none, or a number without its unit. */
+export function readFirstLength(value: unknown, imperial: ImperialUnits = trueImperialUnits): number | undefined
+{
+    const match = typeof value === "string" ? /(\d+(?:\.\d+)?)\s*(ft|feet|foot|m)(?![a-z])/i.exec(value) : null;
+    return match === null ? undefined : Number(match[1]) * (match[2].toLowerCase() === "m" ? 1 : imperial.foot);
+}
+
 function oneDecimal(value: number): number
 {
     return Math.round(value * 10) / 10;
