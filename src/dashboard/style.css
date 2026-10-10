@@ -3347,6 +3347,7 @@ svg.icon {
 .combat {
     display: grid;
     gap: 14px;
+    container: combat / inline-size;
 }
 
 .combat .eyebrow {
@@ -4422,6 +4423,24 @@ svg.icon {
     display: grid;
     gap: 14px;
     min-width: 0;
+}
+
+/* Where the map beside them would be too small to read (D-335): the map over the whole width under the band, the order and at hand side by side under it. */
+@media (min-width: 601px) {
+    @container combat (max-width: 860px) {
+        .combat-body.with-map {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .combat-body.with-map > .lm {
+            order: -1;
+        }
+
+        .lm-side {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            align-items: start;
+        }
+    }
 }
 
 @media (max-width: 600px) {

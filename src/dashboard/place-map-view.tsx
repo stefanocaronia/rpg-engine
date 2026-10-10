@@ -165,6 +165,18 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                 </svg>
             </div>
             <ul class="lm-key" aria-label="Legend">
+                {/* What the gold on the player's turn is (D-335). */}
+                {reach.length > 0 && (
+                    <li>
+                        <svg class={`lm-swatch lm-look-${map.ground}`} viewBox="0 0 40 40" aria-hidden="true">
+                            <rect class="lm-floor-fill" width={40} height={40} />
+                            <g class="lm-reach">
+                                <rect x={4} y={4} width={32} height={32} rx={4} />
+                            </g>
+                        </svg>
+                        <span class="lm-key-name">within your move this turn</span>
+                    </li>
+                )}
                 {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
                     <li key={feature.symbol}>
                         <Swatch feature={feature} ground={map.ground} />
