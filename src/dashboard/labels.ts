@@ -80,6 +80,13 @@ export function checkOf(label: string, title: string): { check: string; dice: st
     return match === null || match[1] !== title ? undefined : { check: match[2], dice: match[3] };
 }
 
+/** Whether two notations are the same dice and number, as the tray and a check write them: 1d20+2 and 1d20 + 2, 1d20−1 and 1d20-1, 1d20+0 and 1d20. */
+export function sameDice(first: string, second: string): boolean
+{
+    const plain = (notation: string): string => notation.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").replace(/[+-]0$/, "");
+    return plain(first) === plain(second);
+}
+
 /** The labels of a group's values by field: a last word they all share, such as save in str-save and dex-save, is left out. */
 export function groupLabels(groupFields: string[], fields: ReadonlySet<string> = new Set()): Map<string, string>
 {
@@ -111,6 +118,12 @@ export function notationModifier(notation: string): number
 export function shownText(text: string): string
 {
     return text.replace(/(^|[\s(])-(?=\d)/g, "$1−");
+}
+
+/** Dice as they read: 1d20−1 with a minus sign rather than a hyphen. */
+export function shownNotation(notation: string): string
+{
+    return notation.replace(/-(?=\d)/g, "−");
 }
 
 /** "Ettore Lanza" as "EL", for a token without a picture. */

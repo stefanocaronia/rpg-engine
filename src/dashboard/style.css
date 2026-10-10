@@ -1742,6 +1742,72 @@ button.row,
     outline-offset: 2px;
 }
 
+/* A number of the sheet the master asks a check of (D-330, ASK-12): lit in gold, breathing unless motion is reduced; a click answers the check. */
+.requested {
+    z-index: 1;
+    outline: 2px solid var(--gold);
+    outline-offset: -1px;
+    background: color-mix(in srgb, var(--gold) 18%, var(--panel));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .requested {
+        animation: requested-glow 1.4s var(--ease) infinite alternate;
+    }
+}
+
+@keyframes requested-glow {
+    to {
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 40%, transparent);
+    }
+}
+
+/* By hand (D-330 (2)): where the checks are rolled, and the switch beside the player's words. */
+.asked-hand-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+}
+
+.asked-hand-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+    vertical-align: bottom;
+}
+
+.asked-hand-note svg.icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
+}
+
+.asked-hand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.asked-hand input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--gold);
+}
+
+.asked-hand svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
 /* The player's own words, in place of a button (ASK-10). */
 .asked-own {
     display: flex;
@@ -1982,6 +2048,12 @@ summary.fixed {
 .roll.by-player {
     border-color: color-mix(in srgb, var(--accent) 22%, var(--rule));
     background: color-mix(in srgb, var(--accent) 7%, var(--panel-2));
+}
+
+/* A free roll, in this browser alone (D-330 (4)): dashed and dimmed. */
+.roll.free {
+    border-style: dashed;
+    opacity: 0.68;
 }
 
 /* On a roll's card its dice stand out of it. */
@@ -2542,6 +2614,14 @@ svg.icon {
     box-shadow: var(--overlay);
     color: var(--muted);
     font-size: 0.78rem;
+}
+
+/* The tray's dice make a check the master asks: the throw answers it (D-330). */
+.tray-note.answers {
+    border-style: solid;
+    border-color: var(--gold);
+    color: var(--ink);
+    font-weight: 650;
 }
 
 .tray-note .icon-button {

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
-import type { Context, Picked, Player, Said } from "./core/context.ts";
+import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -186,6 +186,8 @@ interface Asked
     title: string;
     labels: string[];
     square?: true;
+    /** Whose sheet the checks read and the field of each, for the page to light its row (ASK-12). */
+    rows?: Rows;
     settle(choice: number | Said | Picked | undefined | "absent"): void;
 }
 
@@ -262,7 +264,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         const asked = served.asked;
         // Each button's dice in words, for its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
         const words = asked?.labels.map((label) => notationWords(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
-        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, ...(asked.square ? { square: true } : {}) } });
+        const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};
+        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, ...rows, ...(asked.square ? { square: true } : {}) } });
         return;
     }
 
@@ -341,7 +344,7 @@ function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: U
  */
 function pagePlayer(served: Served): Player
 {
-    const put = (question: string, title: string, labels: string[], square: boolean, signal?: AbortSignal): Promise<number | Said | Picked | undefined | "absent"> => {
+    const put = (question: string, title: string, labels: string[], square: boolean, signal?: AbortSignal, rows?: Rows): Promise<number | Said | Picked | undefined | "absent"> => {
         if (served.pages.size === 0) {
             return Promise.resolve("absent");
         }
@@ -369,7 +372,7 @@ function pagePlayer(served: Served): Player
             };
 
             const stop = (): void => settle(undefined);
-            const asked: Asked = { id: randomUUID(), question, title, labels, ...(square ? { square: true as const } : {}), settle };
+            const asked: Asked = { id: randomUUID(), question, title, labels, ...(square ? { square: true as const } : {}), ...(rows === undefined ? {} : { rows }), settle };
             served.asked = asked;
             signal?.addEventListener("abort", stop);
             served.notify();
@@ -378,9 +381,9 @@ function pagePlayer(served: Served): Player
 
     return {
         asking: () => served.asked !== undefined,
-        async choose(question, title, labels, signal)
+        async choose(question, title, labels, signal, rows)
         {
-            const chosen = await put(question, title, labels, false, signal);
+            const chosen = await put(question, title, labels, false, signal, rows);
             return typeof chosen === "object" && "square" in chosen ? undefined : chosen;
         },
         async chooseSquare(question, title, change, signal)

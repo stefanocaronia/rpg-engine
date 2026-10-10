@@ -1,10 +1,12 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
-// rolls never come here. A card like the sheet's, which shows the newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those
-// of the last half hour, older ones at a click at the end of the list; Clear starts the list again, the log untouched, and Restore brings it back (D-302, D-304).
+// rolls never come here. The player's free rolls come in too, dashed and dimmed, from this browser alone (D-330 (4)). A card like the sheet's, which shows the
+// newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those of the last half hour, older ones at a click at the end of the
+// list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
+import type { PageRoll } from "./free-rolls.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { notationModifier } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
@@ -24,7 +26,18 @@ const markLength = 9000;
 const windowMargin = 12;
 const leastRoom = 160;
 
-export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rolls: ShownRoll[]; unread: boolean; campaign?: string; party: Member[]; fresh: Set<string>; onMore: () => void; })
+export function RollLog(
+    { rolls, free, unread, campaign, party, fresh, onMore, onClearFree }: {
+        rolls: ShownRoll[];
+        free: PageRoll[];
+        unread: boolean;
+        campaign?: string;
+        party: Member[];
+        fresh: Set<string>;
+        onMore: () => void;
+        onClearFree: () => void;
+    },
+)
 {
     const lead = party.find((member) => member.role === "pc");
     const [chosen, toggle] = useOpen("Rolls");
@@ -37,7 +50,9 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
     const [track, setTrack] = useState<HTMLElement | null>(null);
     const [scroller, setScroller] = useState<HTMLElement | null>(null);
     const open = beside || chosen;
-    const listed = rollWindow(rolls, { now: Date.now(), cleared, older, unread });
+    // The log's rolls and the free ones, by when each was rolled.
+    const all = [...rolls, ...free].toSorted((first, second) => Date.parse(first.at) - Date.parse(second.at));
+    const listed = rollWindow(all, { now: Date.now(), cleared, older, unread });
     const newest = listed.shown.at(-1);
     const below = useMoreBelow(scroller);
     useListRoom(track, beside);
@@ -47,6 +62,7 @@ export function RollLog({ rolls, unread, campaign, party, fresh, onMore }: { rol
         setCleared(now);
         setOlder(0);
         writeCleared(campaign, now);
+        onClearFree();
     };
 
     // The whole log again, from the last half hour, older rolls at Load more as before the clearing.
@@ -146,14 +162,17 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
     }, []);
 
     const player = roll.by === "player";
+    const free = "free" in roll;
     // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll)].filter((line) => line !== undefined && line !== "").join("\n");
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll), free ? "Free roll · not logged" : undefined]
+        .filter((line) => line !== undefined && line !== "")
+        .join("\n");
     return (
-        <li class={["roll", player ? "by-player" : "by-master", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
+        <li class={["roll", player ? "by-player" : "by-master", free ? "free" : "", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
             {marked && <span class="roll-flag" aria-hidden="true">!</span>}
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-who">
-                <span class="visually-hidden">{`${marked ? "New. " : ""}${player ? "Your roll: " : "The master's roll: "}`}</span>
+                <span class="visually-hidden">{`${marked ? "New. " : ""}${free ? "Your free roll, not logged: " : player ? "Your roll: " : "The master's roll: "}`}</span>
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}

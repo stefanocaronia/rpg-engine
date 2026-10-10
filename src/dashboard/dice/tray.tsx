@@ -1,12 +1,15 @@
 // The dice tray (D-278, D-279, D-284): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check, each die and the
-// total. The player can also always throw dice for fun from the column of dice over the button, as many as they like and a modifier: the throw counts for
-// nothing, the engine does not hear of it, and the dice fade away. The dice and their physics load at the first throw.
+// total. The player can also always throw dice from the column of dice over the button, as many as they like and a modifier: dice that make a check the master
+// asks answer it, and the engine rolls it (D-330); any other throw is free, the engine does not hear of it, the dice fade away and its line stays in this
+// browser's rolls alone. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
 import { DiceFaces } from "../faces.tsx";
+import type { PageRoll } from "../free-rolls.ts";
 import { DieIcon, Icon } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
+import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import type { Roller } from "./roller.ts";
 import { wakeSound } from "./sounds.ts";
@@ -25,12 +28,13 @@ const mostDice = 20;
 // Where the page remembers whether the dice make a sound, in this browser alone.
 const soundKey = "rpg-engine.dice-sound";
 
-/** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, and which throw it is. */
+/** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, whose sheet it is, and which throw it is. */
 export interface SheetThrow
 {
     number: number;
     roll: SheetRoll;
     label: string;
+    who?: string;
 }
 
 /** What the plate under the dice says: the check or the dice of a free throw, the notation, the dice one by one, the total, and its dice as the chat writes them. */
@@ -51,10 +55,15 @@ interface Plate
     roll?: string;
     /** The rare face of a die that counts, and its words, as natural 20 (D-281). */
     rare?: { face: RareFace; words: string; };
+    /** Whose sheet a free roll of a number is from. */
+    who?: string;
 }
 
-export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; onShown?: (roll: string) => void; })
+export function DiceTray(
+    { requested, sheetThrow, party, onShown, onFree }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; onShown?: (roll: string) => void; onFree?: (roll: PageRoll) => void; },
+)
 {
+    const asked = useRequested();
     const canvas = useRef<HTMLCanvasElement>(null);
     const shownPlate = useRef<HTMLDivElement>(null);
     const button = useRef<HTMLButtonElement>(null);
@@ -175,6 +184,11 @@ export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?
                 onShown?.(shown.roll);
             }
 
+            // A free throw's line comes into this browser's rolls as its dice go (D-330 (4)).
+            if (shown.free) {
+                onFree?.(pageRoll(shown, number));
+            }
+
             const flies = shown.roll !== undefined && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches;
 
             window.setTimeout(() => {
@@ -216,19 +230,32 @@ export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?
     // A number of the sheet, rolled for fun: its dice and its number, which counts for nothing (D-280).
     useEffect(() => {
         if (sheetThrow !== undefined) {
-            const { roll, label } = sheetThrow;
+            const { roll, label, who } = sheetThrow;
             const dice = roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
             const total = dice.reduce((sum, die) => sum + die.value, roll.modifier);
-            void throwAndShow({ free: true, title: label, notation: roll.notation, dice, modifier: roll.modifier, total, text: diceText(dice, roll.modifier) }, lingers.free);
+            void throwAndShow(
+                { free: true, title: label, notation: roll.notation, dice, modifier: roll.modifier, total, text: diceText(dice, roll.modifier), ...(who === undefined ? {} : { who }) },
+                lingers.free,
+            );
         }
     }, [sheetThrow?.number]);
 
+    // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330).
+    const answering = pool.length === 0 ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier)));
+
     const throwPool = (): void => {
-        // A free throw: the page decides it, as fairly as the browser can. The tray closes, so as to leave the dice in sight, and starts empty again.
-        const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
+        // Dice that make a check the master asks answer it: the engine rolls it, and its dice land as for its button. The tray closes, and starts empty again.
         setOpen(false);
         setPool([]);
         setModifier(0);
+
+        if (answering !== undefined) {
+            asked?.answer(answering.index);
+            return;
+        }
+
+        // A free throw: the page decides it, as fairly as the browser can, leaving the dice in sight.
+        const dice = pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
         const total = dice.reduce((sum, die) => sum + die.value, modifier);
         void throwAndShow({ free: true, title: notation(pool, modifier), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };
@@ -280,9 +307,13 @@ export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?
             {open && <div class="tray-scrim" aria-hidden="true" />}
             <div ref={controls} class="dice-controls">
                 {open && (
-                    <div ref={tray} class="dice-tray" role="group" aria-label="Free roll: it counts for nothing">
-                        <p class="tray-note">
-                            Free roll · not logged
+                    <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? "Free roll: it counts for nothing" : "Dice: a check the master asks, or a free roll"}>
+                        <p class={answering === undefined ? "tray-note" : "tray-note answers"}>
+                            {answering !== undefined
+                                ? `Answers the master: ${answering.check}`
+                                : asked === undefined
+                                ? "Free roll · not logged"
+                                : `Asked: ${asked.checks.map((check) => check.check).join(" · ")}`}
                             <button type="button" class="icon-button" aria-label="Dice sound" aria-pressed={sound} data-tip={sound ? "Sound: on" : "Sound: off"} onClick={toggleSound}>
                                 <Icon name={sound ? "soundOn" : "soundOff"} />
                             </button>
@@ -348,7 +379,13 @@ export function DiceTray({ requested, sheetThrow, party, onShown }: { requested?
                         {open && !chosen ? <Icon name="close" /> : <DieIcon sides={20} />}
                         {chosen && (
                             <span>
-                                Roll <span class="notation">{notation(pool, modifier)}</span>
+                                {answering === undefined
+                                    ? (
+                                        <>
+                                            Roll <span class="notation">{notation(pool, modifier)}</span>
+                                        </>
+                                    )
+                                    : `Answer: ${answering.check}`}
                             </span>
                         )}
                     </button>
@@ -381,6 +418,23 @@ function PlateContent({ plate }: { plate: Plate; })
             <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
         </>
     );
+}
+
+/** A free throw as this browser's rolls keep it (D-330 (4)): whose sheet it is from, the number's label as its check, its dice and total. */
+function pageRoll(plate: Omit<Plate, "shown">, number: number): PageRoll
+{
+    return {
+        id: `free-${Date.now()}-${number}`,
+        at: new Date().toISOString(),
+        by: "player",
+        ...(plate.who === undefined ? {} : { who: plate.who }),
+        ...(plate.notation === undefined ? {} : { check: plate.title }),
+        notation: (plate.notation ?? plate.title).replaceAll("−", "-"),
+        total: plate.total,
+        text: plate.text,
+        dice: plate.dice,
+        free: true,
+    };
 }
 
 /** The rare face of the dice that count, the highest first, with its words: natural 20, natural 1 (D-281). */

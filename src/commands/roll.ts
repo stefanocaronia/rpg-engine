@@ -260,7 +260,7 @@ function takeKept(kept: KeptField & { value: number; }): string
  * The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. Without names to
  * read, a name two pages share is a label too: the roll needs no sheet.
  */
-function rollerOf(root: string, context: Context, who: string | undefined, readsSheet: boolean): { world: World; page: Page; } | undefined
+export function rollerOf(root: string, context: Context, who: string | undefined, readsSheet: boolean): { world: World; page: Page; } | undefined
 {
     if (who === undefined) {
         return undefined;
@@ -280,13 +280,19 @@ function rollerOf(root: string, context: Context, who: string | undefined, reads
 }
 
 /** Whether a notation names a field, such as athletics in 1d20+athletics (DAT-8). */
-function hasNames(notation: string): boolean
+export function hasNames(notation: string): boolean
 {
     return [...notation.matchAll(namePattern)].some((match) => !diePattern.test(notation.slice((match.index ?? 0) + match[1].length + match[2].length)));
 }
 
+/** The notation with each name of a field as 0, to tell whether it is dice before a sheet is read: 1d20+athletics as 1d20+0. */
+export function namesAsZero(notation: string): string
+{
+    return notation.replace(namePattern, (whole: string, sign: string, space: string, name: string, offset: number) => (diePattern.test(notation.slice(offset + sign.length + space.length)) ? whole : whole.replace(name, "0")));
+}
+
 /** The notation with each name of a field replaced by its value on the sheet of who rolls, effects and formulas included, and the values taken (DAT-8). */
-function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined, system: GameSystem | undefined): { notation: string; taken: Record<string, number>; }
+export function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined, system: GameSystem | undefined): { notation: string; taken: Record<string, number>; }
 {
     const taken: Record<string, number> = {};
     const fields = roller === undefined ? undefined : effectiveFields(roller.world, roller.page);

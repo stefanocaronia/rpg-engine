@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context, Said } from "../core/context.ts";
+import type { Context, Rows, Said } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
@@ -8,7 +8,9 @@ import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type World } from "../pages/index.ts";
 import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
+import { campaignSystem } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
+import { hasNames, namesAsZero, rollerOf, withSheetValues } from "./roll.ts";
 
 // The words of the buttons, in the campaign's language; English for the others (ASK-7).
 const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; }> = {
@@ -19,11 +21,12 @@ const buttonWords: Record<string, { roll: string; change: string; choice: string
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);
 
-/** One button: a check with its dice, or an answer. */
+/** One button: a check with its dice and the field of the sheet it rolls, when it names one; or an answer. */
 interface Option
 {
     label: string;
     notation?: string;
+    field?: string;
 }
 
 // What the call asked, for the master to ask it again in words: the player has not seen it.
@@ -42,17 +45,18 @@ export const ask = defineCommand({
     name: "ask",
     description: "Ask the player with buttons: every roll of the player's character, and every choice that is truly theirs to make. "
         + "The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. "
-        + "For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice; "
+        + "For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice, "
+        + "a number of the sheet by its field's name as in roll, which the engine works out and the player can also roll from that row of their sheet; "
         + "the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "For where the player's character moves on the map of its place: square, without options; the engine moves them to the square the player touches and gives you the way. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
-        + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+5", "Acrobazia 1d20+3"], who Bruna.',
+        + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who Bruna.',
     group: "game",
     needsPlayer: true,
     input: z.object({
         question: z.string().describe("what is at stake either way, or the choice, in one line, in the player's language"),
-        options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+5; for a choice, the answers, such as Sì and No; from 1 to 4"),
+        options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4"),
         who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
         square: z.boolean().optional().describe("true to ask where the player's character moves on the map of the place it stands in, without options"),
     }),
@@ -98,13 +102,15 @@ export const ask = defineCommand({
             );
         }
 
+        const who = playerCharacter(loadWorld(root), input.who);
+        const worked = sheetChecks(root, context, checks, who);
+
         // The player rolls their own dice: a roll is asked in words, and they tell the values (ASK-8).
         if (readSettings(root).dice === "physical") {
-            return { kind: "physical", asked: askedText(question, "checks", options) };
+            return { kind: "physical", asked: askedText(question, "checks", worked) };
         }
 
-        const who = playerCharacter(loadWorld(root), input.who);
-        return rollChosen(root, context, question, checks, who, words);
+        return rollChosen(root, context, question, worked, who, words);
     },
 
     format(result)
@@ -138,7 +144,7 @@ export const ask = defineCommand({
 async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
-    const chosen = await choose(context, question, words.roll, labels);
+    const chosen = await choose(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] });
 
     const asked = askedText(question, "checks", checks);
 
@@ -262,9 +268,9 @@ function askedText(question: string, what: "checks" | "answers", options: Option
  * The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). A form that does not show, while
  * the dashboard runs, is only absent this time: a page may open.
  */
-async function choose(context: Context, question: string, title: string, labels: string[]): Promise<number | Said | undefined | "unavailable" | "absent">
+async function choose(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">
 {
-    const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal);
+    const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal, rows);
 
     if (onPage !== "absent" || context.player === undefined) {
         return onPage;
@@ -301,7 +307,27 @@ function readOptions(given: string | string[]): Option[]
 function readOption(text: string): Option
 {
     const match = /^(.+?)\s+(\S+)$/.exec(text);
-    return match !== null && isDice(match[2]) ? { label: match[1].trim(), notation: match[2] } : { label: text };
+    return match !== null && isDice(namesAsZero(match[2])) ? { label: match[1].trim(), notation: match[2] } : { label: text };
+}
+
+/**
+ * The checks with the numbers of who's sheet their dice name worked out, effects included, as roll does (ASK-12, DAT-8); each with the field it rolls when it
+ * names one alone, whose row of the sheet the page lights.
+ */
+function sheetChecks(root: string, context: Context, checks: Option[], who: string): Option[]
+{
+    const named = checks.filter((check) => check.notation !== undefined && hasNames(check.notation));
+    const roller = named.length === 0 ? undefined : rollerOf(root, context, who, true);
+    const system = named.length === 0 ? undefined : campaignSystem(root, context);
+    return checks.map((check) => {
+        if (!named.includes(check) || check.notation === undefined) {
+            return check;
+        }
+
+        const { notation, taken } = withSheetValues(check.notation, roller, who, system);
+        const fields = Object.keys(taken);
+        return { ...check, notation, ...(fields.length === 1 ? { field: fields[0] } : {}) };
+    });
 }
 
 /** Whether a text is dice to roll, such as 1d20+5 or 2d20kh1+3: a number alone is not. */

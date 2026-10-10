@@ -3,17 +3,19 @@
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { readAsked, readView } from "./api.ts";
+import { answer, readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { CombatView } from "./combat.tsx";
 import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
+import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Icon } from "./icons.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
+import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
 import { SceneView } from "./scene.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
@@ -76,6 +78,9 @@ function App()
     const toldMoment = useRef<string>();
     // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
+    // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
+    const [answering, setAnswering] = useState<string>();
+    const [free, setFree] = useState<PageRoll[]>([]);
 
     // Reads view again for whom the address names, or the player character, and what the master asks; an answer that comes after a newer one is left out.
     const read = async (): Promise<void> => {
@@ -177,10 +182,34 @@ function App()
         };
     }, []);
 
+    // Each campaign's free rolls, as this browser kept them.
+    useEffect(() => setFree(readFree(shown.campaign)), [shown.campaign]);
+
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const lead = shown.party.find((candidate) => candidate.role === "pc");
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
-    const throwFromSheet: FreeRoll = (roll, label) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label }));
+    const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
+
+    // A check answered from its row of the sheet or the tray's dice (D-330): as its button, the engine rolls it; the banner folds away meanwhile.
+    const answerFrom = async (index: number): Promise<void> => {
+        const asked = shown.asked;
+
+        if (asked === undefined) {
+            return;
+        }
+
+        setAnswering(asked.id);
+
+        try {
+            await answer(asked.id, index);
+        } catch {
+            setAnswering(undefined);
+        }
+
+        void read();
+    };
+
+    const requested = live ? requestedOf(answering === shown.asked?.id ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
     // A fight open, and whether the turn is the player's character's (D-314, D-315).
     const fight = shown.openScene?.type === "combat";
     const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
@@ -200,106 +229,117 @@ function App()
         ...(shown.noCharacter ? [{ kind: "info" as const, text: "There is no player character yet: the sheet comes when the master writes one." }] : []),
     ];
     return (
-        <div class={live ? "page" : "page stale"}>
-            <Top
-                campaign={shown.campaign}
-                product={productName}
-                system={shown.system?.name}
-                now={shown.now}
-                path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
-                live={live}
-                mood={shown.masterMood}
-                moment={moment}
-                asleep={!live && shown.readAt !== undefined}
-                section={address.section}
-                fight={fight}
-                yourTurn={yourTurn}
-            />
-            <Notices notices={notices} />
-            {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} onAnswered={() => void read()} />}
-            {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
-            {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
-                <a class="turn-notice" href={sectionAddress("combat")}>
-                    <Icon name="combat" />
-                    <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
-                    <span class="turn-notice-go">Combat</span>
-                </a>
-            )}
-            {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-            {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
-            <div class="body">
-                <main>
-                    {address.section === "about" && <About product={productName} system={shown.system} />}
-                    {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
-                    {address.section === "combat" && (
-                        <CombatView
-                            scene={shown.openScene}
-                            map={shown.place?.map}
-                            place={shown.place?.name}
-                            lead={lead}
-                            own={{
-                                sheet: shown.chosen === lead?.name ? shown.sheet : [],
-                                cards: shown.cards,
-                                version: shown.version,
-                                onRoll: throwFromSheet,
-                            }}
-                        />
-                    )}
-                    {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
-                    {!["party", "scene", "combat", "world", "about"].includes(address.section) && <Upcoming section={address.section} />}
-                    {address.section === "party" && member && (
-                        <MemberSheet
-                            key={member.name}
-                            member={member}
-                            headline={shown.headline}
-                            sheet={shown.sheet}
-                            cards={shown.cards}
-                            text={shown.text}
-                            version={shown.version}
-                            onRoll={throwFromSheet}
-                        />
-                    )}
-                </main>
-                {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
-                <RollLog
-                    key={shown.campaign}
-                    rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
-                    unread={shown.rollsTotal > shown.rolls.length}
+        <RequestedRoll.Provider value={requested}>
+            <div class={live ? "page" : "page stale"}>
+                <Top
                     campaign={shown.campaign}
+                    product={productName}
+                    system={shown.system?.name}
+                    now={shown.now}
+                    path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
+                    live={live}
+                    mood={shown.masterMood}
+                    moment={moment}
+                    asleep={!live && shown.readAt !== undefined}
+                    section={address.section}
+                    fight={fight}
+                    yourTurn={yourTurn}
+                />
+                <Notices notices={notices} />
+                {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
+                {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
+                {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
+                    <a class="turn-notice" href={sectionAddress("combat")}>
+                        <Icon name="combat" />
+                        <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
+                        <span class="turn-notice-go">Combat</span>
+                    </a>
+                )}
+                {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
+                {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
+                <div class="body">
+                    <main>
+                        {address.section === "about" && <About product={productName} system={shown.system} />}
+                        {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
+                        {address.section === "combat" && (
+                            <CombatView
+                                scene={shown.openScene}
+                                map={shown.place?.map}
+                                place={shown.place?.name}
+                                lead={lead}
+                                own={{
+                                    sheet: shown.chosen === lead?.name ? shown.sheet : [],
+                                    cards: shown.cards,
+                                    version: shown.version,
+                                    onRoll: throwFromSheet,
+                                }}
+                            />
+                        )}
+                        {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
+                        {!["party", "scene", "combat", "world", "about"].includes(address.section) && <Upcoming section={address.section} />}
+                        {address.section === "party" && member && (
+                            <MemberSheet
+                                key={member.name}
+                                member={member}
+                                headline={shown.headline}
+                                sheet={shown.sheet}
+                                cards={shown.cards}
+                                text={shown.text}
+                                version={shown.version}
+                                onRoll={throwFromSheet}
+                            />
+                        )}
+                    </main>
+                    {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
+                    <RollLog
+                        key={shown.campaign}
+                        rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
+                        free={free}
+                        unread={shown.rollsTotal > shown.rolls.length}
+                        campaign={shown.campaign}
+                        party={shown.party}
+                        fresh={fresh}
+                        onMore={() => {
+                            rollsAsked.current += firstRolls;
+                            void read();
+                        }}
+                        onClearFree={() => {
+                            setFree([]);
+                            writeFree(shown.campaign, []);
+                        }}
+                    />
+                </div>
+                {shown.system && (
+                    <footer class="credits">
+                        <span>
+                            {shown.system.name} · {phraseLabel(shown.system.title)}
+                        </span>
+                        {shown.system.attribution && (
+                            <details>
+                                <summary>Credits</summary>
+                                <p>{shown.system.attribution}</p>
+                            </details>
+                        )}
+                    </footer>
+                )}
+                <DiceTray
+                    requested={thrown}
+                    sheetThrow={sheetThrow}
                     party={shown.party}
-                    fresh={fresh}
-                    onMore={() => {
-                        rollsAsked.current += firstRolls;
-                        void read();
+                    onShown={(id) => {
+                        setHeld((now) => (now === id ? undefined : now));
+
+                        if (thrown?.id === id) {
+                            react(thrown, shown.party);
+                        }
+                    }}
+                    onFree={(roll) => {
+                        setFree((before) => withFree(shown.campaign, before, roll));
+                        setFresh((before) => new Set([...before, roll.id]));
                     }}
                 />
             </div>
-            {shown.system && (
-                <footer class="credits">
-                    <span>
-                        {shown.system.name} · {phraseLabel(shown.system.title)}
-                    </span>
-                    {shown.system.attribution && (
-                        <details>
-                            <summary>Credits</summary>
-                            <p>{shown.system.attribution}</p>
-                        </details>
-                    )}
-                </footer>
-            )}
-            <DiceTray
-                requested={thrown}
-                sheetThrow={sheetThrow}
-                party={shown.party}
-                onShown={(id) => {
-                    setHeld((now) => (now === id ? undefined : now));
-
-                    if (thrown?.id === id) {
-                        react(thrown, shown.party);
-                    }
-                }}
-            />
-        </div>
+        </RequestedRoll.Provider>
     );
 }
 

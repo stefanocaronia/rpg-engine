@@ -207,6 +207,9 @@ export interface Asked
     words?: (string | null)[];
     /** Whether it asks where the player's character moves on the map of its place, its one button the change of mind (ASK-11). */
     square?: true;
+    /** Whose sheet the checks read, and by button the field of the sheet it rolls, whose row answers it too (ASK-12). */
+    who?: string;
+    fields?: (string | null)[];
 }
 
 /** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */

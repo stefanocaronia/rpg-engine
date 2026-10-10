@@ -574,6 +574,17 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
+    it("tells the page whose sheet a roll's checks read and the field each one rolls, for its row to answer too (ASK-12, D-330)", async () => {
+        await runCommandLine(["write", "Ettore", "--set", "str=14"], served);
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse({ ...wall, options: ["Atletica 1d20+athletics", "Acrobazia 1d20-1"] }), served);
+        const asked = await waitAsked();
+        expect(asked).toMatchObject({ labels: ["Tiro: Atletica (1d20+2)", "Tiro: Acrobazia (1d20-1)", "Cambio idea"], who: "Ettore", fields: ["athletics", null, null] });
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
+        expect(await asking).toMatchObject({ kind: "roll", who: "Ettore", check: "Atletica" });
+        page.close();
+    });
+
     it("asks for a square of the map on the page: a square to a question of buttons counts for nothing, the square touched moves the character (ASK-11)", async () => {
         await runCommandLine(["write", "Sala", "--type", "place", "--text", "```map\n#####\n#...#\n#####\n```"], served);
         await runCommandLine(["move", "Ettore", "--to", "Sala", "--at", "B2"], served);

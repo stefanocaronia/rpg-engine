@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
-import type { Context, Picked, Player } from "../src/core/context.ts";
+import type { Context, Picked, Player, Rows } from "../src/core/context.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -171,6 +171,45 @@ describe("laws of ask (ASK-3, ASK-4)", () => {
             }),
             { numRuns: 60 },
         );
+    });
+});
+
+describe("checks that name the numbers of the sheet (ASK-12)", () => {
+    const named = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who: "Bruna" };
+
+    beforeEach(async () => {
+        await rpg("write", "Bruna", "--set", "str=14", "--set", "dex=12");
+    });
+
+    it("works out the numbers from the sheet, as roll does, and tells the page the field of each check, whose row it lights", async () => {
+        let rows: Rows | undefined;
+        const page: Player = {
+            choose: async (...given: Parameters<Player["choose"]>) => {
+                const [question, title, labels] = given;
+                shown.push({ question, title, labels });
+                rows = given[4];
+                return 0;
+            },
+        };
+        const result = ask.format(await ask.run(ask.input.parse(named), { ...context, page }));
+        expect(shown[0].labels).toEqual(["Tiro: Atletica (1d20+2)", "Tiro: Acrobazia (1d20+1)", "Cambio idea"]);
+        expect(rows).toEqual({ who: "Bruna", fields: ["athletics", "acrobatics", null] });
+        expect(result).toMatch(/^\S+ Bruna, Atletica: 1d20\+2 = \d+ \[\d+\] \+ 2, rolled by the player\./);
+    });
+
+    it("gives no field for a check with a number, or with more than one name; refuses a field the sheet does not have; with physical dice, asks the numbers in words", async () => {
+        let rows: Rows | undefined;
+        const page: Player = {
+            choose: async (...given: Parameters<Player["choose"]>) => {
+                rows = given[4];
+                return undefined;
+            },
+        };
+        await ask.run(ask.input.parse({ ...named, options: ["Atletica 1d20+5", "Acrobazia 1d20+dex-mod+acrobatics"] }), { ...context, page });
+        expect(rows?.fields).toEqual([null, null, null]);
+        expect(await refused({ ...named, options: ["Atletica 1d20+athletix"] })).toContain("Bruna has no athletix.");
+        await rpg("config", "dice", "physical");
+        expect(await asked(named, 0)).toContain("Atletica 1d20+2, Acrobazia 1d20+1");
     });
 });
 
