@@ -318,12 +318,7 @@ export function DiceTray(
             <div ref={controls} class="dice-controls">
                 {open && (
                     <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? "Free roll: it counts for nothing" : "Dice: a check the master asks, or a free roll"}>
-                        <p class={answering === undefined ? "tray-note" : "tray-note answers"}>
-                            {answering !== undefined
-                                ? `Answers the master: ${answering.check}`
-                                : asked === undefined
-                                ? "Free roll · not logged"
-                                : `Asked: ${asked.checks.map((check) => check.check).join(" · ")}`}
+                        <p class="tray-note">
                             <button type="button" class="icon-button" aria-label="Dice sound" aria-pressed={sound} data-tip={sound ? "Sound: on" : "Sound: off"} onClick={toggleSound}>
                                 <Icon name={sound ? "soundOn" : "soundOff"} />
                             </button>
@@ -331,8 +326,24 @@ export function DiceTray(
                         <ul class="tray-dice">
                             {freeDice.map((sides) => {
                                 const count = pool.filter((one) => one === sides).length;
-                                return [
+                                return (
                                     <li key={sides} class={count > 0 ? "chosen" : undefined}>
+                                        {/* With two dice or more of a kind, which count (D-337), left of its minus. */}
+                                        {count >= 2 && sides !== 100 && (
+                                            <span class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`}>
+                                                {(["sum", "highest", "lowest"] as const).map((mode) => (
+                                                    <button
+                                                        key={mode}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={(shownKeeps[sides] ?? "sum") === mode}
+                                                        onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
+                                                    >
+                                                        {keepWords[mode]}
+                                                    </button>
+                                                ))}
+                                            </span>
+                                        )}
                                         {count > 0 && (
                                             <button key="less" type="button" class="tray-less" aria-label={`One ${dieName(sides)} less`} data-tip="One less" onClick={() => less(sides)}>
                                                 <Icon name="minus" />
@@ -353,24 +364,8 @@ export function DiceTray(
                                             </span>
                                             <DieIcon sides={sides} />
                                         </button>
-                                    </li>,
-                                    // With two dice or more of a kind, which count (D-337).
-                                    count >= 2 && sides !== 100 && (
-                                        <li key={`keep ${sides}`} class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`}>
-                                            {(["sum", "highest", "lowest"] as const).map((mode) => (
-                                                <button
-                                                    key={mode}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={(shownKeeps[sides] ?? "sum") === mode}
-                                                    onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
-                                                >
-                                                    {keepWords[mode]}
-                                                </button>
-                                            ))}
-                                        </li>
-                                    ),
-                                ];
+                                    </li>
+                                );
                             })}
                         </ul>
                         <div class="tray-modifier">

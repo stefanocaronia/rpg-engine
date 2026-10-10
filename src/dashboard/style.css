@@ -2619,13 +2619,14 @@ svg.icon {
     gap: 6px;
 }
 
+/* Above the dice, the sound's switch alone. */
 .tray-note {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     margin: 0;
-    padding: 2px 4px 2px 10px;
-    border: 1px dashed var(--accent);
+    padding: 2px;
+    border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: var(--float);
     box-shadow: var(--overlay);
@@ -2633,13 +2634,6 @@ svg.icon {
     font-size: 0.78rem;
 }
 
-/* The tray's dice make a check the master asks: the throw answers it (D-330). */
-.tray-note.answers {
-    border-style: solid;
-    border-color: var(--gold);
-    color: var(--ink);
-    font-weight: 650;
-}
 
 .tray-note .icon-button {
     width: 36px;
@@ -2667,10 +2661,12 @@ svg.icon {
     gap: 6px;
 }
 
-/* With two dice or more of a kind, which count (D-337): all, the highest, the lowest; the one chosen in gold. */
-.tray-dice .tray-keep {
+/* With two dice or more of a kind, which count (D-337), on the die's line left of its minus, as tall: all, the highest, the lowest; the one chosen in gold. */
+.tray-keep {
+    display: inline-flex;
     gap: 2px;
-    padding: 3px;
+    height: 36px;
+    padding: 2px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: var(--float);
@@ -2678,7 +2674,7 @@ svg.icon {
 }
 
 .tray-keep button {
-    height: 36px;
+    height: 30px;
     padding: 0 10px;
     border: 0;
     border-radius: var(--radius-s);
