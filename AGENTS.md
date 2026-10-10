@@ -90,7 +90,7 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Colleagues
 
-Eight experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [colleagues](https://github.com/stefanocaronia/colleagues) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), and its hook hands the chat over ("voglio parlare con Matteo", "torna Claude"). Install it once with `/plugin marketplace add stefanocaronia/colleagues` and `/plugin install colleagues@colleagues`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
+Eight experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [Crew](https://github.com/stefanocaronia/claude-crew) plugins run them: the `crew` skill holds the method (hiring and firing, portraits, the round, conversations and meetings), its commands hand the chat over ("voglio parlare con Matteo", "torna Claude"), and `crew-mod` draws the Crew panel. Install them once with `/plugin marketplace add stefanocaronia/claude-crew`, `/plugin install crew@claude-crew` and `/plugin install crew-mod@claude-crew`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
 
 | Who | Field | `<id>` |
 |---|---|---|
@@ -106,7 +106,7 @@ Eight experts review the work and discuss it with the maintainer: subagents with
 Portraits: painted illustrations, head and shoulders on a plain background in each colleague's color, made by Codex.
 
 - **When rounds happen**: at milestones, a step of the plan done or a playtest.
-- **Without the plugin** (another AI host, or Claude Code without it): when the maintainer asks to talk with colleagues, run `node F:/sviluppo/AI/colleagues/plugins/colleagues/scripts/conversation.mjs talk <first names>` (then `invite`, `leave`, `end`) and follow what it prints; where it is missing, read their profile, `MEMORY.md` and `todo.md` yourself, start every message with `[Name]`, and when they leave have each update memory and todo.
+- **Without the plugin** (another AI host, or Claude Code without it): when the maintainer asks to talk with colleagues, run `node F:/sviluppo/AI/claude-crew/plugins/crew/scripts/conversation.mjs talk <first names>` (then `invite`, `leave`, `end`) and follow what it prints; where it is missing, read their profile, `MEMORY.md` and `todo.md` yourself, start every message with `[Name]`, and when they leave have each update memory and todo.
 
 ## Conventions
 
