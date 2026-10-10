@@ -171,13 +171,15 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(JSON.parse(await ok("view", "--json")).place.map.ground).toBe("paving");
     });
 
-    it("keeps from the player what is not found yet: a secret door looks like the wall, a trap like the floor, and neither is named (GRD-6)", async () => {
-        await ok("write", "Locanda", "--text", ["Una locanda.", "", "```map", "####", "#.^S", "####", "", "^ trappola a spuntoni: hazard, hidden", "S porta segreta: secret-door, hidden", "```"].join("\n"));
+    it("keeps from the player what is not found yet: a secret door looks like the wall, a trap like the floor, and neither is named nor where it leads (GRD-6)", async () => {
+        const text = ["Una locanda.", "", "```map", "####", "#.^S", "####", "", "^ trappola a spuntoni: hazard, hidden", "S porta segreta: secret-door, hidden", "D2 → [[Cantina]]", "```"];
+        await ok("write", "Locanda", "--text", text.join("\n"));
         await ok("move", "Kira", "--to", "Locanda", "--at", "B2");
         const map = JSON.parse(await ok("view", "--json")).place.map;
         expect(map.lines).toEqual(["####", "#..#", "####"]);
         expect(map.legend.map((feature: { symbol: string; }) => feature.symbol)).toEqual(["#", "."]);
-        expect(JSON.stringify(map)).not.toMatch(/trappola|segreta/);
+        expect(map.exits).toEqual([]);
+        expect(JSON.stringify(map)).not.toMatch(/trappola|segreta|Cantina/);
     });
 
     it("tells the master which kinds of a map just written the dashboard draws neutral, and what of it does not read (GRD-2)", async () => {

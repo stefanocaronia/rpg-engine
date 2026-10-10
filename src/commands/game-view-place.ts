@@ -205,7 +205,7 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
             ...(feature.difficult ? { difficult: true as const } : {}),
         })),
         ground,
-        exits: grid.exits.filter((exit) => !hidden.has(lines[exit.square.row]?.[exit.square.column] ?? "") && !grid.features.some((feature) => feature.hidden && feature.symbol === written.lines[exit.square.row]?.[exit.square.column])).map(
+        exits: grid.exits.filter((exit) => !hidden.has(grid.lines[exit.square.row]?.[exit.square.column] ?? "")).map(
             (exit) => {
                 const to = knownPage(sight, exit.to);
                 return { square: squareName(exit.square), ...(to === undefined ? {} : { to: to.name }) };
