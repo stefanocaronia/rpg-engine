@@ -90,23 +90,20 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Colleagues
 
-Eight experts review the work and discuss it with the maintainer. Each one is a file, `.claude/agents/<id>.md` (who they are, what they know, how they work), and a folder, `.claude/agent-memory/<id>/`, with `MEMORY.md`, their memory, and `todo.md`, one line per task (`- [ ] description`; done becomes `- [x]`, and ticked lines are removed in the next session). Memory and todo are edited, never rewritten: other sessions write to them too.
+Eight experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [colleagues](https://github.com/stefanocaronia/colleagues) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), and its hook hands the chat over ("voglio parlare con Matteo", "torna Claude"). Install it once with `/plugin marketplace add stefanocaronia/colleagues` and `/plugin install colleagues@colleagues`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
 
 | Who | Field | `<id>` |
 |---|---|---|
-| Giulia Ferri | the game master's craft, the instructions | `giulia-master` |
-| Andrea Moretti | rules as data, systems, licences | `andrea-regole` |
-| Sara Lombardi | game design: the experience, modes and options | `sara-design` |
-| Davide Russo | the player who does not program | `davide-giocatore` |
-| Elena Galli | AI agents: tools, MCP, instructions, hosts | `elena-agenti` |
-| Matteo Conti | code review | `matteo-codice` |
-| Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-narrativa` |
-| Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-interfacce` |
+| Giulia Ferri | the game master's craft, the instructions | `giulia-ferri` |
+| Andrea Moretti | rules as data, systems, licences | `andrea-moretti` |
+| Sara Lombardi | game design: the experience, modes and options | `sara-lombardi` |
+| Davide Russo | the player who does not program | `davide-russo` |
+| Elena Galli | AI agents: tools, MCP, instructions, hosts | `elena-galli` |
+| Matteo Conti | code review | `matteo-conti` |
+| Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-valli` |
+| Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-lanza` |
 
-- **The round.** At milestones (a step of the plan done, a playtest) Claude calls the colleagues the work concerns as subagents, with a narrow scope. They are read-only except their memory and todo, and their findings reach the maintainer as proposals, one at a time. Before calling one, Claude reads their memory and todo: if they already answered or have an idea on the matter, start from there and skip the call, unless the context has changed.
-- **Their todos.** Claude puts in each brief the todo lines that touch the scope, brings the open lines that concern the maintainer along with the findings, and after each decision ticks the lines it closes.
-- **The conversation.** "Voglio parlare con Matteo", and from then on Matteo answers, with their file, memory and todo; "voglio parlare con Matteo e Giulia" opens a meeting, "voglio parlare anche con Sara" adds someone. Every message starts with the speaker's name, [Matteo]; in a meeting whoever has something to say speaks, disagreement included. They talk instead of reporting, and they also write the files of their own field, with the usual rules. Claude stays out of the dialogue as a narrator, in italics and without a name: it says what happens (tools, files, errors), never the colleagues' opinions. "Torna Claude" or "riunione finita" ends it: each one updates memory and todo, and Claude is back.
-- **The hook.** `.claude/hooks/colleghi.mjs`, enabled in `.claude/settings.json`, enforces this: it recognises the phrases ("voglio / vorrei / fammi / posso parlare con", "parliamo con", "riunione con", "dev'essere presente"; "torna Claude", "riunione finita", "chiudiamo la riunione" to leave), puts the file, memory and todo of whoever joins into the context, reminds at every message who is speaking, and restores the colleagues after a compaction. Who is speaking is kept per session in `tmp/colleghi/`.
+- **When rounds happen**: at milestones, a step of the plan done or a playtest.
 
 ## Conventions
 
