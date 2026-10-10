@@ -3,10 +3,12 @@ import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
+import { type Grid, squareName, withoutMapBlock } from "../grid/index.ts";
 import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 import { effectParts, effectText, keptEffects } from "./game-effects.ts";
+import { placeGrid, standing } from "./game-grids.ts";
 import { shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
@@ -38,6 +40,22 @@ export interface ShownPlace
     text: string;
     /** The party and the characters the character knows who are there; never someone it does not know, who would give themselves away. */
     here: ShownPerson[];
+    /** Its map, when it has one (GRD-6). */
+    map?: ShownGrid;
+}
+
+/**
+ * The map of the place where the party is (GRD-6, D-323): its squares as written, its legend, where its squares lead, the places the character does not know
+ * left unnamed, and who stands where as the scene and VIEW-4 name them.
+ */
+export interface ShownGrid
+{
+    columns: number;
+    rows: number;
+    lines: string[];
+    legend: { symbol: string; name: string; kind: string; blocks?: true; difficult?: true; }[];
+    exits: { square: string; to?: string; }[];
+    at: (ShownPerson & { square: string; })[];
 }
 
 /**
@@ -114,14 +132,75 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
         && (sight.party.includes(page) || knowsPage(knowledge, page))
     );
     const image = picture(sight, place);
+    const grid = placeGrid(place)?.grid;
+    const text = knownText(world, knowledge, place);
     return {
         name: place.name,
         ...(image === undefined ? {} : { image }),
         within: places.slice(1).map((holder) => holder.name).reverse(),
         around,
-        text: knownText(world, knowledge, place),
+        // The map block is drawn, not read.
+        text: grid === undefined ? text : withoutMapBlock(text),
         // The party first, the player character at its head.
         here: [...sight.party.filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => person(sight, page)),
+        ...(grid === undefined ? {} : { map: shownGrid(sight, place, grid) }),
+    };
+}
+
+/**
+ * A place's map as the player sees it (GRD-6): who stands where, the party and the characters the character knows by name, the others of the open scene as
+ * someone, its copies as the scene names them; a character it does not know outside the scene is not shown, as in VIEW-6.
+ */
+function shownGrid(sight: PlaceSight, place: Page, grid: Grid): ShownGrid
+{
+    const scene = readOpenScene(sight.root).scene;
+    const here = scene?.place !== undefined && comparableText(parsePageReference(scene.place).name) === comparableText(place.name) ? scene : undefined;
+    const inScene = new Set((here?.with ?? []).map((link) => comparableText(parsePageReference(link).name)));
+    const at = standing(sight.world, place, here).flatMap((one): ShownGrid["at"] => {
+        const square = one.square === undefined ? undefined : squareName(one.square);
+
+        if (square === undefined) {
+            return [];
+        }
+
+        if (one.copy !== undefined && here !== undefined) {
+            const creature = knownPage(sight, here.copies[one.copy]?.creature);
+            const image = creature === undefined ? undefined : picture(sight, creature);
+            return [
+                creature === undefined
+                    ? { name: `creature ${/\d+$/.exec(one.copy)?.[0] ?? ""}`.trim(), role: "other", stranger: true, square }
+                    : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), square },
+            ];
+        }
+
+        const page = one.page;
+
+        if (page === undefined || page.type !== "character" || page.fields.status === "dead") {
+            return [];
+        }
+
+        if (sight.party.includes(page) || knowsPage(sight.knowledge, page)) {
+            return [{ ...person(sight, page), square }];
+        }
+
+        return inScene.has(comparableText(page.name)) ? [{ name: "someone", role: "other", stranger: true, square }] : [];
+    });
+    return {
+        columns: grid.columns,
+        rows: grid.rows,
+        lines: grid.lines,
+        legend: grid.features.filter((feature) => ![".", "#", "+"].includes(feature.symbol)).map((feature) => ({
+            symbol: feature.symbol,
+            name: feature.name,
+            kind: feature.kind,
+            ...(feature.blocks ? { blocks: true as const } : {}),
+            ...(feature.difficult ? { difficult: true as const } : {}),
+        })),
+        exits: grid.exits.map((exit) => {
+            const to = knownPage(sight, exit.to);
+            return { square: squareName(exit.square), ...(to === undefined ? {} : { to: to.name }) };
+        }),
+        at,
     };
 }
 

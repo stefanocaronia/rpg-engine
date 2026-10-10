@@ -82,12 +82,13 @@ Read-only: no. Positional parameters: `page`.
 
 ### move
 
-Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire; it says where they are now, who else is there and what changes around them. Time does not pass: advance does that. Example: page [Ettore, Lena], to Ossario.
+Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire; it says where they are now, who else is there and what changes around them. Time does not pass: advance does that. With at, the square of the place's map one stands on, such as E6: on the map of the place they are in, a copy of the open scene too, or with to on the map they go into. Example: page [Ettore, Lena], to Ossario.
 
 Read-only: no. Positional parameters: `page`.
 
 - `page` (`string | string[]`, required): what moves: one or more characters, items or places, such as [Ettore, Lena]
-- `to` (`string`, required): where: a place; for characters and items also an item, such as a cart; for items also a character who carries them
+- `to` (`string`, optional): where: a place; for characters and items also an item, such as a cart; for items also a character who carries them
+- `at` (`string`, optional): the square of the place's map one stands on, such as E6: for one page or one copy of the open scene
 
 ### reveal
 

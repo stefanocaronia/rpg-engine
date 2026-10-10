@@ -5,6 +5,7 @@ import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
+import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
 
 export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownScene; })
@@ -22,6 +23,7 @@ export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownS
         <section class={scene === undefined ? "place-view" : "place-view with-scene"} aria-labelledby="place-name">
             {place && <PlaceBand place={place} />}
             {scene && <SceneCard scene={scene} />}
+            {place?.map && <PlaceMap map={place.map} place={place.name} />}
             <div class="groups">
                 {scene === undefined && place && place.here.length > 0 && (
                     <Card name="Here" icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>

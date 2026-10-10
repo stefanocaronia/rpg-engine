@@ -3,6 +3,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { applyMove, concernsPlayer, isInParty, links, locate, type MovePlan, type Page, planLeave, planMove, type World } from "../pages/index.ts";
 import { fireEvents, heldNote, linkedStoryNotes, nowDueNote } from "./game-events.ts";
+import { withSquares } from "./game-grids.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 
 /** What a move did: the pages that changed place, the world after it and after the events it set off, the events it made due, and what the master should know. */
@@ -21,11 +22,14 @@ export interface MoveDone
 export function movePages(root: string, context: Context, world: World, pages: Page[], destination: Page | undefined): MoveDone
 {
     // Without a destination, out of every container: in the open, between the places of the map (TRV-12).
-    const plan = destination === undefined ? planLeave(world, pages) : planMove(world, pages, destination);
+    const planned = destination === undefined ? planLeave(world, pages) : planMove(world, pages, destination);
 
-    if (plan.edits.length === 0) {
+    if (planned.edits.length === 0) {
         return { moved: [], world, due: [], notes: [] };
     }
+
+    // Who moves leaves the squares they had, and enters a map by the square that leads from where they were (GRD-3).
+    const plan = withSquares(world, planned, destination);
 
     const after = applyMove(world, plan);
     logMoves(root, context, world, after, plan.moving, destination);

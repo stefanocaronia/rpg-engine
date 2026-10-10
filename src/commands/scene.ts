@@ -14,6 +14,7 @@ import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
+import { clearCopies, offMapNote } from "./game-grids.ts";
 import { picturesNote } from "./game-images.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
@@ -279,6 +280,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     const part = situationPart(created.type, context, system);
     // A place without a picture, where the campaign wants one for each new place (D-308).
     const picture = picturesNote(root, context, after, place === undefined ? undefined : pageWithPath(after, place.path));
+    const offMap = offMapNote(after, place === undefined ? undefined : pageWithPath(after, place.path), created, [...characters.map((page) => page.name), ...Object.keys(copies)]);
     return {
         action: "open",
         title: created.title,
@@ -289,7 +291,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
         around,
         part,
         moved: brought.moved,
-        notes: [...brought.notes, ...(picture === undefined ? [] : [picture])],
+        notes: [...brought.notes, ...(picture === undefined ? [] : [picture]), ...(offMap === undefined ? [] : [offMap])],
     };
 }
 
@@ -322,7 +324,8 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     logCopies(root, context, current.title, copies);
     const system = campaignSystem(root, context);
     const entered = [...characters.map((page) => characterMember(brought.world, page, system)), ...copyMembers(brought.world, copies)];
-    return { action: "add", title: current.title, place: place?.name, members: entered, ordered: current.order !== undefined, moved: brought.moved, notes: brought.notes };
+    const offMap = offMapNote(brought.world, place === undefined ? undefined : pageWithPath(brought.world, place.path), { ...current, copies: { ...current.copies, ...copies } }, added);
+    return { action: "add", title: current.title, place: place?.name, members: entered, ordered: current.order !== undefined, moved: brought.moved, notes: [...brought.notes, ...(offMap === undefined ? [] : [offMap])] };
 }
 
 /**
@@ -386,6 +389,7 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     changes.push(...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["gone", name], Object.fromEntries(Object.entries(copy).filter(([field]) => field !== "effects"))]));
 
     updateScene(root, changes);
+    clearCopies(world, current, Object.keys(copies));
     // The turn it moves to, as next logs it, so that the open scene's log reads the round (SCN-10).
     const moved = turns === undefined || (turns.turn === current.turn && turns.round === (current.round ?? 1)) ? {} : { round: turns.round, turn: turns.turn };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, left: leaving, copies: Object.keys(copies).length === 0 ? undefined : copies, ...moved }));
@@ -490,6 +494,11 @@ function close(root: string, world: World, summary: string, context: Context): S
     // A scene that ends may end the story of a quest whose goals are all ticked: the master says whether it did (D-239).
     const quests = world.pages.filter(isTickedOpenQuest).map(tickedQuestNote);
     const ended = endEffects(root, context, world, undefined, (effect) => endsWithScene(effect) || keptByCopy(effect), "scene closed");
+
+    if (current !== undefined) {
+        clearCopies(campaignWorld(root, context), current, Object.keys(current.copies));
+    }
+
     saveScene(root, undefined);
 
     if (current === undefined) {

@@ -3654,6 +3654,237 @@ svg.icon {
 }
 
 /* The paper's colours, fixed: the map is a sheet, not a screen. */
+/* The map of the place (GRD-6, D-323): a building's plan on light paper in both themes, walls hatched in ink, the floor squared, tokens ringed by side. */
+.local-map {
+    --l-paper: #f1e6cc;
+    --l-floor: #f9f2e1;
+    --l-grid: #cdb98f;
+    --l-ink: #3f2f1f;
+    --l-wood: #d6b585;
+    --l-wood-dark: #bf9361;
+    --l-stone: #d2c8b8;
+    --l-water: #b5d1ea;
+    --l-flame: #d9682a;
+    margin-bottom: 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+    overflow: hidden;
+}
+
+.local-map-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 12px 16px;
+}
+
+.local-map-sub {
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
+.local-map-frame {
+    background: var(--l-paper);
+    color-scheme: light;
+}
+
+.local-map-svg {
+    display: block;
+    width: 100%;
+    max-width: 820px;
+    height: auto;
+    margin: 0 auto;
+    font-family: var(--serif, Georgia, serif);
+}
+
+.lm-paper {
+    fill: var(--l-paper);
+}
+
+.lm-wall {
+    fill: url(#lm-hatch);
+}
+
+.lm-hatch-line {
+    stroke: var(--l-ink);
+    stroke-width: 1.1;
+    opacity: 0.55;
+}
+
+.lm-floor {
+    fill: var(--l-floor);
+    stroke: var(--l-grid);
+    stroke-width: 0.7;
+}
+
+.lm-outline {
+    fill: none;
+    stroke: var(--l-ink);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.lm-door {
+    fill: var(--l-wood);
+    stroke: var(--l-ink);
+    stroke-width: 1.6;
+}
+
+.lm-thing rect,
+.lm-thing circle {
+    stroke: var(--l-ink);
+    stroke-width: 1.4;
+}
+
+.lm-thing.table rect {
+    fill: var(--l-wood);
+}
+
+.lm-thing.counter rect {
+    fill: var(--l-wood-dark);
+}
+
+.lm-thing.hearth rect {
+    fill: var(--l-stone);
+}
+
+.lm-flame {
+    fill: var(--l-flame);
+}
+
+.lm-thing.barrel circle {
+    fill: var(--l-wood);
+}
+
+.lm-thing.barrel .lm-barrel-hoop {
+    fill: none;
+    stroke-width: 1;
+}
+
+.lm-thing.stairs rect {
+    fill: var(--l-floor);
+}
+
+.lm-thing.stairs line {
+    stroke: var(--l-ink);
+    stroke-width: 1.1;
+}
+
+.lm-thing.water rect {
+    fill: var(--l-water);
+    stroke: none;
+}
+
+.lm-wave {
+    fill: none;
+    stroke: #3a6d96;
+    stroke-width: 1.2;
+}
+
+.lm-thing circle {
+    fill: var(--l-stone);
+}
+
+.lm-thing-symbol {
+    fill: var(--l-ink);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.lm-exit path {
+    fill: none;
+    stroke: var(--l-ink);
+    stroke-width: 1.6;
+}
+
+.lm-exit text {
+    fill: var(--l-ink);
+    font-size: 13px;
+    font-style: italic;
+}
+
+.lm-token-disc {
+    fill: #1f3550;
+}
+
+.lm-token-ring {
+    fill: none;
+    stroke-width: 3;
+}
+
+.lm-token.pc .lm-token-ring {
+    stroke: #d9a42b;
+}
+
+.lm-token.companion .lm-token-ring {
+    stroke: #2f7d4a;
+}
+
+.lm-token.other .lm-token-ring {
+    stroke: #b2361f;
+}
+
+.lm-token-initial {
+    fill: #fff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.lm-coordinate {
+    fill: var(--l-ink);
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.local-map-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 0;
+    padding: 10px 16px 14px;
+    list-style: none;
+    font-size: 0.85rem;
+}
+
+.local-map-key li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lm-key-swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #3f2f1f;
+    border-radius: 3px;
+    background: #d2c8b8;
+}
+
+.lm-key-swatch.table,
+.lm-key-swatch.barrel {
+    background: #d6b585;
+}
+
+.lm-key-swatch.counter {
+    background: #bf9361;
+}
+
+.lm-key-swatch.water {
+    background: #b5d1ea;
+}
+
+.lm-key-swatch.stairs {
+    background: repeating-linear-gradient(90deg, #f9f2e1 0 3px, #3f2f1f 3px 4px);
+}
+
+.lm-key-note {
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
 .map-card {
     --m-land: #f1e6cc;
     --m-fog: #dccaa2;

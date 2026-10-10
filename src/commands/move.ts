@@ -4,9 +4,11 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World } from "../pages/index.ts";
+import { closedSquare, firstOpenSquare, readSquare, type Square, squareName } from "../grid/index.ts";
+import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
+import { atEntries, atEntry, clearCopies, placeGrid, standing } from "./game-grids.ts";
 import { picturesNote } from "./game-images.ts";
 import { movePages } from "./game-moves.ts";
 import { roadsOf, sameSpot, stopOf } from "./game-roads.ts";
@@ -34,6 +36,8 @@ interface MoveResult
     noLonger: string[];
     notes: string[];
     problems: string[];
+    /** Who stands on a square of the place's map now (GRD-3), and the place. */
+    placed?: { who: string; square: string; place: string; };
 }
 
 export const move = defineCommand({
@@ -41,12 +45,14 @@ export const move = defineCommand({
     description: "Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. "
         + "Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire; it says where they are now, who else is there and what changes around them. "
         + "Time does not pass: advance does that. "
+        + "With at, the square of the place's map one stands on, such as E6: on the map of the place they are in, a copy of the open scene too, or with to on the map they go into. "
         + "Example: page [Ettore, Lena], to Ossario.",
     group: "game",
     positionals: ["page"],
     input: z.object({
         page: textList.describe("what moves: one or more characters, items or places, such as [Ettore, Lena]"),
-        to: z.string().describe("where: a place; for characters and items also an item, such as a cart; for items also a character who carries them"),
+        to: z.string().optional().describe("where: a place; for characters and items also an item, such as a cart; for items also a character who carries them"),
+        at: z.string().optional().describe("the square of the place's map one stands on, such as E6: for one page or one copy of the open scene"),
     }),
 
     run(input, context): MoveResult
@@ -60,44 +66,25 @@ export const move = defineCommand({
             throw new Error("Give what moves, such as page Ettore.");
         }
 
-        const pages = names.map((name) => pageOf(world, scene, name, "what")).filter((page, index, all) => all.indexOf(page) === index);
-        const destination = pageOf(world, scene, input.to, "where");
-        // The characters who go, by themselves or inside a place that goes, such as a cart or a ship (CON-8, ENV-5).
-        const riders = world.pages.filter((page) => page.type === "character" && (pages.includes(page) || locate(world, page).chain.some((holder) => pages.includes(holder))));
-        const before = new Map(riders.map((page) => [page.path, surroundings(world, page)]));
-        const journey = journeyNote(world, riders, destination);
-        const done = movePages(root, context, world, pages, destination);
-        const after = done.world;
-        const now = (page: Page): Page => after.pages.find((other) => other.path === page.path) ?? page;
-        const target = now(destination);
-        const moved = new Set(done.moved.map((page) => page.path));
-        const changes = riders.map((page) => surroundingsChange(before.get(page.path) ?? [], surroundings(after, now(page))));
-        const went = riders.filter((page) => moved.has(page.path) || locate(world, page).chain.some((holder) => moved.has(holder.path)));
-        const sceneNote = scene === undefined ? undefined : followParty(root, context, after, scene, went, target);
-        // Who else is there matters to characters who arrive (CON-8), not to things.
-        // The party's player character arrives where the campaign wants pictures: the place gets one (D-308).
-        const arrived = went.some((page) => page.fields.role === "pc") ? picturesNote(root, context, after, target) : undefined;
-        const there = riders.length === 0 ? [] : after.pages.filter((page) => page.type === "character" && !pages.some((other) => other.path === page.path) && locate(after, page).chain[0] === target);
-        return {
-            moved: done.moved.map((page) => page.name),
-            already: pages.filter((page) => !moved.has(page.path)).map((page) => page.name),
-            to: target.name,
-            chain: [target, ...locate(after, target).chain].map((page) => page.name),
-            there: there.map((page) => (page.fields.status === "dead" ? `${page.name} (dead)` : page.name)),
-            here: distinctTexts(changes.flatMap((change) => change.here)),
-            noLonger: distinctTexts(changes.flatMap((change) => change.noLonger)),
-            notes: [
-                ...done.notes,
-                ...(sceneNote === undefined ? [] : [sceneNote]),
-                ...(done.moved.length === 0 || journey === undefined ? [] : [journey]),
-                ...(arrived === undefined ? [] : [arrived]),
-            ],
-            problems: world.problems,
-        };
+        if (input.at !== undefined) {
+            return moveOnMap(root, context, world, scene, names, input.at, input.to);
+        }
+
+        if (input.to === undefined) {
+            throw new Error("Give where they go, to, such as to Ossario; or the square of the map they stand on, at, such as E6. Nothing moved.");
+        }
+
+        return moveInto(root, context, world, scene, names, input.to);
     },
 
     format(result)
     {
+        const placed = result.placed === undefined ? "" : `${result.placed.who}: now on ${result.placed.square} in ${result.placed.place}.`;
+
+        if (result.moved.length === 0 && result.placed !== undefined) {
+            return [[placed, ...result.notes].filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        }
+
         if (result.moved.length === 0) {
             return [`Nothing changed: ${result.already.join(", ")} ${result.already.length === 1 ? "is" : "are"} already in ${result.to}.`, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
         }
@@ -105,10 +92,137 @@ export const move = defineCommand({
         const already = result.already.length === 0 ? "" : ` Already there: ${result.already.join(", ")}.`;
         const there = result.there.length === 0 ? "" : ` There: ${shortList(result.there, ", ")}.`;
         const around = [result.here.length === 0 ? "" : `Here: ${result.here.join(" · ")}.`, result.noLonger.length === 0 ? "" : `No longer: ${result.noLonger.join(" · ")}.`].filter((part) => part !== "").join(" ");
-        const lines = [`Moved ${result.moved.join(", ")}: now in ${result.chain.join(" › ")}.${already}${there}`, around, ...result.notes];
+        const lines = [`Moved ${result.moved.join(", ")}: now in ${result.chain.join(" › ")}.${already}${there}`, placed, around, ...result.notes];
         return [lines.filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** Moves pages into a place, an item or a character (CON-4), and says what changed around them (CON-8, ENV-5). */
+function moveInto(root: string, context: Context, world: World, scene: Scene | undefined, names: string[], to: string, placing = false): MoveResult
+{
+    const pages = names.map((name) => pageOf(world, scene, name, "what")).filter((page, index, all) => all.indexOf(page) === index);
+    const destination = pageOf(world, scene, to, "where");
+    // The characters who go, by themselves or inside a place that goes, such as a cart or a ship (CON-8, ENV-5).
+    const riders = world.pages.filter((page) => page.type === "character" && (pages.includes(page) || locate(world, page).chain.some((holder) => pages.includes(holder))));
+    const before = new Map(riders.map((page) => [page.path, surroundings(world, page)]));
+    const journey = journeyNote(world, riders, destination);
+    const done = movePages(root, context, world, pages, destination);
+    const after = done.world;
+    const now = (page: Page): Page => after.pages.find((other) => other.path === page.path) ?? page;
+    const target = now(destination);
+    const moved = new Set(done.moved.map((page) => page.path));
+    const changes = riders.map((page) => surroundingsChange(before.get(page.path) ?? [], surroundings(after, now(page))));
+    const went = riders.filter((page) => moved.has(page.path) || locate(world, page).chain.some((holder) => moved.has(holder.path)));
+    const sceneNote = scene === undefined ? undefined : followParty(root, context, after, scene, went, target);
+    // Who else is there matters to characters who arrive (CON-8), not to things.
+    // The party's player character arrives where the campaign wants pictures: the place gets one (D-308).
+    const arrived = went.some((page) => page.fields.role === "pc") ? picturesNote(root, context, after, target) : undefined;
+    const there = riders.length === 0 ? [] : after.pages.filter((page) => page.type === "character" && !pages.some((other) => other.path === page.path) && locate(after, page).chain[0] === target);
+    // Who is put on a square at once needs no word on where they came in.
+    const squares = placing ? undefined : squaresNote(after, target, done.moved);
+    return {
+        moved: done.moved.map((page) => page.name),
+        already: pages.filter((page) => !moved.has(page.path)).map((page) => page.name),
+        to: target.name,
+        chain: [target, ...locate(after, target).chain].map((page) => page.name),
+        there: there.map((page) => (page.fields.status === "dead" ? `${page.name} (dead)` : page.name)),
+        here: distinctTexts(changes.flatMap((change) => change.here)),
+        noLonger: distinctTexts(changes.flatMap((change) => change.noLonger)),
+        notes: [
+            ...done.notes,
+            ...(sceneNote === undefined ? [] : [sceneNote]),
+            ...(done.moved.length === 0 || journey === undefined ? [] : [journey]),
+            ...(arrived === undefined ? [] : [arrived]),
+            ...(squares === undefined ? [] : [squares]),
+        ],
+        problems: world.problems,
+    };
+}
+
+/**
+ * Puts one page or copy of the open scene on a square of a place's map (GRD-3): of the place it goes to with `to`, or of the one it is right in; the place's
+ * `at` changes, and a line goes in the log, kept out of the diary. Refused outside the map, on a wall or on what blocks, or for a place without a map.
+ */
+function moveOnMap(root: string, context: Context, world: World, scene: Scene | undefined, names: string[], at: string, to: string | undefined): MoveResult
+{
+    const square = readSquare(at);
+
+    if (square === undefined) {
+        throw new Error(`Give the square as the map names it, a letter and a number, such as E6. Nothing moved.`);
+    }
+
+    if (names.length > 1) {
+        throw new Error(`Put one at a time on the map: each stands on its own square, such as page ${names[0]}, at ${squareName(square)}. Nothing moved.`);
+    }
+
+    const copy = copyName(world, scene, parsePageReference(names[0]).name);
+
+    if (copy !== undefined && to !== undefined) {
+        throw new Error(`${copy} is a copy in the open scene: it stands where the scene is, so give it only at, such as page ${copy}, at ${squareName(square)}. Nothing moved.`);
+    }
+
+    const page = copy === undefined ? pageOf(world, scene, names[0], "what") : undefined;
+    const moved = to === undefined ? undefined : moveInto(root, context, world, scene, names, to, true);
+    const now = moved === undefined ? world : campaignWorld(root, context);
+    const fresh = page === undefined ? undefined : now.pages.find((other) => other.path === page.path);
+    const place = copy !== undefined ? scenePlace(now, scene) : fresh === undefined ? undefined : locate(now, fresh).chain[0];
+    const who = copy ?? fresh?.name ?? names[0];
+
+    if (place === undefined || place.type !== "place") {
+        throw new Error(`${who} is not right in a place${place === undefined ? "" : `: it is in ${place.name}`}, so it has no square to stand on. Move it into a place first, with to. Nothing moved.`);
+    }
+
+    const map = placeGrid(place);
+
+    if (map === undefined) {
+        throw new Error(`${place.name} has no map, so ${who} has no square to stand on: write one in a map block of its page (GRD-1). Nothing moved.`);
+    }
+
+    const closed = closedSquare(map.grid, square);
+
+    if (closed !== undefined) {
+        throw new Error(`${closed}: ${who} cannot stand there. Give a square of the floor. Nothing moved.`);
+    }
+
+    const mine = (entry: string): boolean => standing(now, place, scene).some((one) => one.entry === entry && (copy === undefined ? one.page === fresh : one.copy === copy));
+    const entry = atEntry({ ...(fresh === undefined ? {} : { page: fresh }), ...(copy === undefined ? {} : { copy }) }, square);
+    const kept = atEntries(place).filter((other) => !mine(other));
+    writePage(now, place.name, undefined, { set: { at: [...kept, entry] } });
+    const party = fresh !== undefined && (isInParty(fresh) || locate(now, fresh).chain.some(isInParty));
+    appendLogEntry(root, newDatedLogEntry(root, context, "placed", party ? "public" : "hidden", { page: who, place: place.name, square: squareName(square) }));
+    return {
+        ...(moved ?? { moved: [], already: [], to: place.name, chain: [place.name], there: [], here: [], noLonger: [], notes: [], problems: world.problems }),
+        notes: moved?.notes ?? [],
+        placed: { who, square: squareName(square), place: place.name },
+    };
+}
+
+/** The place where the open scene is; none when there is no scene, or it is in no place. */
+function scenePlace(world: World, scene: Scene | undefined): Page | undefined
+{
+    return scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+}
+
+/**
+ * Where those who went into a place with a map stand (GRD-3): on the square they entered by, or, for those whose way in the map does not show, a word that the
+ * map wants them on it.
+ */
+function squaresNote(world: World, place: Page, moved: Page[]): string | undefined
+{
+    const map = placeGrid(place);
+    const characters = moved.filter((page) => page.type === "character");
+
+    if (map === undefined || characters.length === 0) {
+        return undefined;
+    }
+
+    const placed = standing(world, place, undefined);
+    const on = characters.flatMap((page) => placed.filter((one) => one.page?.path === page.path && one.square !== undefined).map((one) => `${page.name} on ${squareName(one.square as Square)}`));
+    const off = characters.filter((page) => !placed.some((one) => one.page?.path === page.path)).map((page) => page.name);
+    const entered = on.length === 0 ? "" : `They stand where they came in: ${on.join(", ")}.`;
+    const missing = off.length === 0 ? "" : `${place.name} has a map: put ${off.join(", ")} on it, such as page ${off[0]}, at ${squareName(firstOpenSquare(map.grid))}.`;
+    return [entered, missing].filter((part) => part !== "").join(" ");
+}
 
 /** The page that moves, or where it goes: by name or alias, never a copy in the open scene, which has no place of its own (CON-3). */
 function pageOf(world: World, scene: Scene | undefined, name: string, role: "what" | "where"): Page
@@ -160,6 +274,8 @@ function followParty(root: string, context: Context, world: World, scene: Scene,
     const spot = [destination, ...locate(world, destination).chain].find((holder) => holder.type === "place");
 
     if (spot !== undefined && party.every((page) => locate(world, page).chain.includes(destination) && outside(page))) {
+        // The copies leave the squares of the place they were in: on the new map the master puts them again (GRD-3).
+        clearCopies(world, scene, Object.keys(scene.copies));
         updateScene(root, [[["place"], `[[${spot.name}]]`]]);
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: scene.title, place: `[[${spot.name}]]` }));
         const copies = Object.keys(scene.copies);

@@ -119,6 +119,7 @@ The maintainer's design documents and the talks with the colleagues are in Itali
 | posizione, centro della mappa | position, the map's centre | a place's `position`, km east and north of the first place given one |
 | relazione | relation | how a position is written: `12 km NE of [[Guadoscuro]]` |
 | regione, raggio | region, radius | a place with a position and a `radius`, which covers the circle |
+| mappa del luogo, casella | map of a place, square | a place's map block of squares, one symbol each, from A1 at the top left; who stands where is its `at` (GRD-1–GRD-6) |
 | mappa, mappa allineata | map, aligned map | a place with `map` holds a map of its own (`own`), or one with another map's coordinates, `under` it or its `mirror` |
 | passaggio | passage | a road of kind `portal`, which joins two maps |
 | fuori strada, attraverso i campi, verso | off the roads, across, toward | `travel` with `across` or `toward` |

@@ -60,6 +60,25 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
     };
 }
 
+/** The inn's map as the master writes it (GRD-1, GRD-2). */
+const innMap = [
+    "##############",
+    "#CC....#SS...#",
+    "#CC.t..#....k#",
+    "#......+....k#",
+    "#.t..t.#BBBB.#",
+    "#............#",
+    "#..t...t.....#",
+    "######+#######",
+    "",
+    "C camino: hearth, blocks",
+    "t tavolo: table, difficult",
+    "B bancone: counter, blocks",
+    "S scala per le stanze: stairs",
+    "k botti di vino: barrel, blocks",
+    "G8 → [[Guadoscuro]]",
+];
+
 /** Ettore, a cleric of the third level hurt and with a blessing, and Lupa, a wolf at his side, at the inn. */
 async function makeDemo(context: Context): Promise<void>
 {
@@ -82,6 +101,8 @@ async function makeDemo(context: Context): Promise<void>
         "--text",
         "Una locanda bassa di pietra sul guado, col tetto che gocciola e un camino che non si spegne mai. Bertoldo tiene il vino buono sotto il bancone e le chiavi delle stanze al collo.",
     );
+    // Its map (GRD-1, D-324): the hall with the hearth and the tables, the back room with the counter, the stairs and the barrels, the door to the village.
+    await rpg("write", "Locanda del Guado#Pianta", "--text", ["```map", ...innMap, "```"].join("\n"));
     const ettore = [
         "role=pc",
         "creature=[[Hill Dwarf]]",
@@ -162,4 +183,8 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise
     for (const stop of ["Strada del Re", "Campo del Viandante", "Strada del Re", "Guadoscuro", "Locanda del Guado"]) {
         await rpg("move", "Ettore", "Lupa", "--to", stop);
     }
+
+    // In from the village by the door, then by the fire.
+    await rpg("move", "Ettore", "--at", "E6");
+    await rpg("move", "Lupa", "--at", "F6");
 }

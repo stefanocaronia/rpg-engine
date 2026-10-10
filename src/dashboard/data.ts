@@ -83,6 +83,19 @@ export interface ShownPlace
     around: { text: string; place?: string; }[];
     text: string;
     here: ShownPerson[];
+    /** Its map, when it has one (GRD-6). */
+    map?: ShownGrid;
+}
+
+/** The map of the place where the party is (GRD-6, D-323): its rows of squares as written, its legend, where its squares lead, who stands where. */
+export interface ShownGrid
+{
+    columns: number;
+    rows: number;
+    lines: string[];
+    legend: { symbol: string; name: string; kind: string; blocks?: true; difficult?: true; }[];
+    exits: { square: string; to?: string; }[];
+    at: (ShownPerson & { square: string; })[];
 }
 
 /** Someone in a fight as the player sees them (D-314): the party's counter as numbers, a foe's in words; what is on them; whether they act; what they keep; the dying's counters. */
