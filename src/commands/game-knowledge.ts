@@ -23,7 +23,7 @@ export function playerCharacter(world: World): Page | undefined
 /**
  * What the player character knows (D-250): what its knows lists, pages and the pages of its secrets; itself, the companions, and the creatures both derive
  * from (D-275, D-277), what it carries, the places around
- * it, the characters and places of the scenes it was in, and the places it was moved from and to; the pages of the game system but its creatures, which anyone may read (SYS-2). Never a creature
+ * it, the characters and places of the scenes it was in, and the places it was moved from and to, with those that hold them (D-316); the pages of the game system but its creatures, which anyone may read (SYS-2). Never a creature
  * of the campaign it was not told of.
  */
 export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
@@ -45,7 +45,8 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         ...world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))),
         ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),
         ...locate(world, pc).chain,
-        ...livedOf(root, pc).flatMap(named).filter((page) => page.type === "character" || page.type === "place"),
+        // The places it was in, and those that hold them, as the regions it crossed (D-316).
+        ...livedOf(root, pc).flatMap(named).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
     ]);
     return { pc, pages, secrets };
 }

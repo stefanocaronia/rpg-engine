@@ -50,13 +50,13 @@ async function ok(...args: string[]): Promise<string>
 }
 
 // The table of what the player character knows (VIEW-2, D-250), before and after a scene with Varro at the mill, which brings Kira there from Guado, and a secret
-// of the cup discovered: Valle, around her before, is no more.
+// of the cup discovered: Valle, around her before, stays known, as she was in it (D-316).
 const known: [string, "before" | "after" | "always" | "never"][] = [
     ["Kira", "always"],
     ["Bran", "always"],
     ["Zaino", "always"],
     ["Guado", "always"],
-    ["Valle", "before"],
+    ["Valle", "always"],
     ["Longsword", "always"],
     ["Varro", "after"],
     ["Mulino", "after"],
@@ -133,8 +133,8 @@ describe("the player's view", () => {
         expect(await ok("view")).toBe(
             [
                 "Kira, in Mulino: hp 7/12",
-                // Kira knows Guado, where she came from, no more Valle around it (VIEW-2).
-                "Bran (companion), in Guado",
+                // Kira knows Guado, where she came from, and Valle around it, where she was too (VIEW-2, D-316).
+                "Bran (companion), in Guado › Valle",
                 "",
                 "Open quests: La lanterna",
                 "",
