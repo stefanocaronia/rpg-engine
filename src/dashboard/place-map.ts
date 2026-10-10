@@ -18,7 +18,7 @@ export interface Piece
     bottom: number;
 }
 
-/** A side of a square of the floor that faces a wall or the outside, in pixels: whether it is a door's own, and whether rock lies past it. */
+/** A side of a square of the floor that faces a wall or the outside, in pixels: whether it is a door's side toward the outside, and whether rock lies past it. */
 export interface Edge
 {
     x1: number;
@@ -208,7 +208,8 @@ export function floorLoops(map: ShownGrid, X: (column: number) => number, Y: (ro
                         y1: Y(row + y1),
                         x2: X(column + x2),
                         y2: Y(row + y2),
-                        gap: ["door", "open-door", "secret-door", "opening"].includes(kindAt(map, { column, row })),
+                        // A door's sides along the wall are the wall's ends, drawn; only its side toward the outside is left open, as the way goes on there.
+                        gap: beyond === "outside" && ["door", "open-door", "secret-door", "opening"].includes(kindAt(map, { column, row })),
                         rock: beyond === "rock" || (beyond === "outside" && rockLike),
                     });
                 }
@@ -244,8 +245,8 @@ export function floorLoops(map: ShownGrid, X: (column: number) => number, Y: (ro
 }
 
 /**
- * A loop of the floor's outline as a path: rounded at the corners where rock lies on both sides, as a cave's, at most half a square; with gaps, the doors' own
- * sides left out and the loop left open, as the ink draws it; without, closed, as the floor's fill.
+ * A loop of the floor's outline as a path: rounded at the corners where rock lies on both sides, as a cave's, at most half a square; with gaps, the doors'
+ * sides toward the outside left out and the loop left open, as the ink draws it; without, closed, as the floor's fill.
  */
 export function tracedLoop(loop: Edge[], withGaps: boolean, rounding: number): string
 {
