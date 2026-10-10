@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 import { commands } from "./commands/index.ts";
 import { type Context, defaultContext } from "./core/context.ts";
-import type { Command } from "./core/registry.ts";
+import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
 import { getVersion } from "./core/version.ts";
 import { codexPictures } from "./pictures/index.ts";
 
@@ -139,34 +139,6 @@ function checkRepeatedOptions(tokens: { kind: string; name?: string; }[], option
 function inputFields(command: AnyCommand): [string, z.ZodType][]
 {
     return Object.entries(command.input.shape as Record<string, z.ZodType>);
-}
-
-function isBoolean(field: z.ZodType): boolean
-{
-    return baseType(field) === "boolean";
-}
-
-/** A list option can be given more than once, as in --set a=1 --set b=2; a field that also takes an object, through MCP, is a list here. */
-function isList(field: z.ZodType): boolean
-{
-    const definition = baseDefinition(field);
-    return definition.type === "array" || (definition.type === "union" && (definition.options ?? []).some(isList));
-}
-
-function baseType(field: z.ZodType): string
-{
-    return baseDefinition(field).type;
-}
-
-function baseDefinition(field: z.ZodType): { type: string; innerType?: z.ZodType; options?: z.ZodType[]; }
-{
-    let definition = field.def as { type: string; innerType?: z.ZodType; options?: z.ZodType[]; };
-
-    while (definition.innerType && ["optional", "default", "nullable"].includes(definition.type)) {
-        definition = definition.innerType.def as typeof definition;
-    }
-
-    return definition;
 }
 
 /** The commands in two groups, each with the first sentence of its description. */

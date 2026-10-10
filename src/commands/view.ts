@@ -15,8 +15,10 @@ import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
+import { measuresOf } from "./game-roads.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
+import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
@@ -107,6 +109,8 @@ export type ViewResult =
         text: string;
     }
     | { kind: "section"; title: string; lines: string[]; text: string; }
+    /** The world map as the player character knows it (VIEW-7). */
+    | ({ kind: "map"; } & ShownMap)
     | { kind: "unknown"; text: string; };
 
 export const view = defineCommand({
@@ -123,6 +127,7 @@ export const view = defineCommand({
         page: z.string().optional().describe("a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view"),
         diary: z.string().optional().describe(`how many lines of the diary, from the last; ${diaryLines} if left out; all only when the player asks for the whole story`),
         rolls: z.string().optional().describe(`for the dashboard: how many of the last public rolls; ${rollsShown} if left out`),
+        map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
     }),
 
     run(input, context): ViewResult
@@ -136,6 +141,10 @@ export const view = defineCommand({
         }
 
         const knowledge = knowledgeOf(root, world, pc);
+
+        if (input.map === true && [input.page, input.diary, input.rolls].some((given) => given !== undefined)) {
+            throw new Error("Give map alone: it is the world map, apart from the page, the diary and the rolls.");
+        }
 
         if (input.page !== undefined && input.page.trim() !== "") {
             if (input.diary !== undefined) {
@@ -184,6 +193,10 @@ export const view = defineCommand({
         const open = readJourney(root)?.at !== undefined;
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
         const sight = { root, context, world, knowledge, party: [pc, ...companions] };
+
+        if (input.map === true) {
+            return { kind: "map", ...shownMap(sight, measuresOf(root, system)) };
+        }
 
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
@@ -250,6 +263,8 @@ export const view = defineCommand({
                 return [result.title, sheetText(result.sheet).join("\n"), result.text].filter((block) => block !== "").join("\n\n");
             case "section":
                 return [result.title, result.lines.join("\n"), result.text].filter((block) => block !== "").join("\n\n");
+            case "map":
+                return mapText(result);
 
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";

@@ -67,7 +67,11 @@ async function placeTheMap(): Promise<void>
 describe("positions (POS-1–POS-5)", () => {
     it("POS-2: a relation gives coordinates; the first place named becomes the map's centre, written too", async () => {
         expect(await ok("write", "Rocca", "--set", "position=20 km E of [[Guadoscuro]]")).toBe(
-            "Updated Rocca (place, world/places/Rocca.md): set position.\nGuadoscuro is now the centre of the map, at 0 km E, 0 km N: every other position is given from a place that has one.",
+            [
+                "Updated Rocca (place, world/places/Rocca.md): set position.",
+                "Guadoscuro is now the centre of the map, at 0 km E, 0 km N: every other position is given from a place that has one.",
+                "For the dashboard's map, give Rocca a kind, as set kind=village: city, town, village, castle, tower, ruin, temple, shrine, inn, farm, mill, port, bridge, ford, crossroads, cave, mine, peak, camp.",
+            ].join("\n"),
         );
         expect(page("places/Rocca.md")).toBe("---\nposition: 20 km E, 0 km N\n---\n");
         expect(page("places/Guadoscuro.md")).toContain("position: 0 km E, 0 km N");
@@ -206,5 +210,57 @@ describe("move and journeys (TRV-15)", () => {
             "Guadoscuro and Rocca are joined by roads: a journey goes with travel, which lets the time pass and moves them stop by stop (route to Rocca says how long). If the time has passed already, advance it.",
         );
         expect(await ok("move", "Ettore", "--to", "Rocca")).not.toContain("joined by roads");
+    });
+});
+
+describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () => {
+    it("POS-7: write reminds a kind when a place first comes on the map without one, and a biome when a place becomes a region without one", async () => {
+        expect(await ok("write", "Rocca", "--set", "position=20 km E of [[Guadoscuro]]", "--set", "kind=castle")).not.toContain("give Rocca a kind");
+        expect(await ok("write", "Torre", "--type", "place", "--set", "position=10 km N of [[Bivio]]")).toContain("give Torre a kind, as set kind=village:");
+        expect(await ok("write", "Torre", "--set", "position=11 km N of [[Bivio]]")).not.toContain("a kind");
+        // A region is an area: a biome, never a kind.
+        const region = await ok("write", "Brughiera", "--type", "place", "--set", "position=8 km NNE of [[Bivio]]", "--set", "radius=6 km");
+        expect(region).not.toContain("a kind");
+        expect(region).toContain('For the map, give Brughiera\'s environment a biome, as add environment="biome: forest": forest, swamp, moor, hills, mountains, plains, desert, snow, water; what it holds shares it.');
+        expect(await ok("write", "Palude", "--type", "place", "--set", "position=5 km S of [[Rocca]]", "--set", "radius=3 km", "--add", "environment=biome: swamp")).not.toContain("a biome");
+    });
+
+    it("gives the places and regions it knows, nearest first, with kind, biome and where they are; a road through a stop it does not know as a point without a name", async () => {
+        await placeTheMap();
+        await ok("write", "Guadoscuro", "--set", "kind=village");
+        await ok("write", "Brughiera", "--add", "environment=biome: moor");
+        await ok("write", "Ettore", "--add", "knows=[[Rocca]]", "--add", "knows=[[Strada vecchia]]", "--add", "knows=[[Brughiera]]");
+        const map = JSON.parse(await ok("view", "--map", "--json"));
+        expect(map.places.map((place: { name: string; }) => place.name)).toEqual(["Guadoscuro", "Brughiera", "Rocca", "Locanda"]);
+        expect(map.places[0]).toEqual({ name: "Guadoscuro", kind: "village", x: 0, y: 0, within: [], from: "here" });
+        expect(map.places[1]).toMatchObject({ name: "Brughiera", radius: 6, biome: "moor", terrain: "difficult" });
+        // The Locanda has no point of its own: it is drawn in Guadoscuro.
+        expect(map.places[3]).toEqual({ name: "Locanda", within: ["Guadoscuro"] });
+        expect(map.roads).toEqual([{ name: "Strada vecchia", kind: "road", points: [{ name: "Guadoscuro", x: 0, y: 0, km: 0 }, { x: 12, y: 0, km: 12 }, { name: "Rocca", x: 20, y: 0, km: 8 }] }]);
+        expect(map.party).toEqual({ x: 0, y: 0, place: "Guadoscuro" });
+        expect(JSON.stringify(map)).not.toMatch(/Bivio|Torre/);
+        expect(await ok("view", "--map")).toBe(
+            [
+                "Places on the map, nearest first, from where the party is (Guadoscuro):",
+                "- Guadoscuro (village): here",
+                "- Rocca: 20 km east",
+                "Regions: Brughiera (moor).",
+            ].join("\n"),
+        );
+        expect((await rpg("view", "Rocca", "--map")).output).toBe("Give map alone: it is the world map, apart from the page, the diary and the rolls.");
+    });
+
+    it("draws a known road only up to its last known stop, with a beginning toward the next; the trail goes along the roads it took", async () => {
+        await placeTheMap();
+        await ok("write", "Ettore", "--add", "knows=[[Strada vecchia]]");
+        let map = JSON.parse(await ok("view", "--map", "--json"));
+        // Neither Bivio nor Rocca is known: 3 km of the road toward Bivio, no more.
+        expect(map.roads).toEqual([{ name: "Strada vecchia", kind: "road", points: [{ name: "Guadoscuro", x: 0, y: 0, km: 0 }], after: { x: 3, y: 0 } }]);
+        expect(JSON.stringify(map)).not.toMatch(/Bivio|Rocca/);
+        expect(map.trail).toEqual([]);
+        await ok("travel", "Rocca");
+        map = JSON.parse(await ok("view", "--map", "--json"));
+        expect(map.trail).toEqual([{ x: 0, y: 0 }, { x: 12, y: 0 }, { x: 20, y: 0 }]);
+        expect(map.party).toEqual({ x: 20, y: 0, place: "Rocca" });
     });
 });

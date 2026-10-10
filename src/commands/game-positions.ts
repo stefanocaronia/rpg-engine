@@ -2,8 +2,8 @@
 import { lengthHelp, readLength } from "../core/length.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
-import { directionHelp, directionName, directionTo, distanceBetween, meanPoint, pointAlong, pointFrom, readDirection } from "../map/index.ts";
-import { formatPosition, isEmptyField, locate, type Page, pageNamed, pagesWithName, parsePageReference, type Position, readPosition, readStops, type World } from "../pages/index.ts";
+import { biomes, directionHelp, directionName, directionTo, distanceBetween, meanPoint, placeKinds, pointAlong, pointFrom, readDirection } from "../map/index.ts";
+import { environmentAt, formatPosition, isEmptyField, locate, type Page, pageNamed, pagesWithName, parsePageReference, type Position, readPosition, readStops, type World } from "../pages/index.ts";
 import { lengthText, type Measures, roadsOf } from "./game-roads.ts";
 
 /** A region (POS-6): a place with a position and a radius, which covers the circle. */
@@ -125,6 +125,26 @@ export function relationText(from: Position, to: Position, measures: Measures): 
 {
     const distance = distanceBetween(from, to);
     return distance < 50 ? "here" : `${lengthText(distance, measures)} ${directionName(directionTo(from, to))}`;
+}
+
+/**
+ * What write says when a place first comes on the map without a kind, a region apart, or becomes a region without a biome (POS-7): the names the map draws. `before`
+ * is the world before the write, `existing` the page as it was there.
+ */
+export function mapLookNotes(before: World, existing: Page | undefined, after: World, page: Page): string[]
+{
+    const placed = (world: World, candidate: Page | undefined): boolean => candidate !== undefined && placedPosition(world, candidate) !== undefined;
+    const region = (world: World, candidate: Page | undefined): boolean => candidate !== undefined && regionsOf(world).some((found) => found.page.path === candidate.path);
+    const isRoad = page.fields.stops !== undefined;
+    const biome = environmentAt(after, page).some(({ entry }) => comparableText(entry.name) === "biome");
+    return [
+        !isRoad && !region(after, page) && isEmptyField(page.fields.kind) && placed(after, page) && !placed(before, existing)
+            ? `For the dashboard's map, give ${page.name} a kind, as set kind=${placeKinds[2]}: ${placeKinds.join(", ")}.`
+            : "",
+        region(after, page) && !region(before, existing) && !biome
+            ? `For the map, give ${page.name}'s environment a biome, as add environment="biome: ${biomes[0]}": ${biomes.join(", ")}; what it holds shares it.`
+            : "",
+    ].filter((note) => note !== "");
 }
 
 /** The roads shorter than the straight line between two of their stops that have a position of their own (POS-5): a length or a position is wrong. */

@@ -29,3 +29,33 @@ export function defineCommand<Schema extends z.ZodObject, Result>(command: Comma
     // Each call reads and writes through a store of its own, which reads each file once, or through the session's that the MCP server keeps (D-137).
     return { ...command, run: (input, context) => withFiles(context.files ?? new FileStore(context.systemFolders), () => command.run(input, context)) };
 }
+
+/** Whether a field of a command's input is a flag, true or false, as --hidden. */
+export function isBoolean(field: z.ZodType): boolean
+{
+    return baseType(field) === "boolean";
+}
+
+/** A list option can be given more than once, as in --set a=1 --set b=2; a field that also takes an object, through MCP, is a list here. */
+export function isList(field: z.ZodType): boolean
+{
+    const definition = baseDefinition(field);
+    return definition.type === "array" || (definition.type === "union" && (definition.options ?? []).some(isList));
+}
+
+/** The type of a field of a command's input, past optional, default and nullable: string, boolean, array… */
+export function baseType(field: z.ZodType): string
+{
+    return baseDefinition(field).type;
+}
+
+function baseDefinition(field: z.ZodType): { type: string; innerType?: z.ZodType; options?: z.ZodType[]; }
+{
+    let definition = field.def as { type: string; innerType?: z.ZodType; options?: z.ZodType[]; };
+
+    while (definition.innerType && ["optional", "default", "nullable"].includes(definition.type)) {
+        definition = definition.innerType.def as typeof definition;
+    }
+
+    return definition;
+}

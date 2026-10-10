@@ -11,7 +11,7 @@ import { findCampaign } from "./campaign/index.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Player, Said } from "./core/context.ts";
-import type { Command } from "./core/registry.ts";
+import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { notationWords } from "./dice/index.ts";
@@ -454,7 +454,10 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
         return;
     }
 
-    const parsed = command.input.strict().safeParse(Object.fromEntries(parameters));
+    // A flag of the command comes in the address as true or false, as view's map.
+    const shape = command.input.shape as Record<string, z.ZodType>;
+    const given = [...parameters].map(([name, value]) => [name, shape[name] !== undefined && isBoolean(shape[name]) ? value === "true" : value]);
+    const parsed = command.input.strict().safeParse(Object.fromEntries(given));
 
     if (!parsed.success) {
         sendJson(response, 400, { error: z.prettifyError(parsed.error) });

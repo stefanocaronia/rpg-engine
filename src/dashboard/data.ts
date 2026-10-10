@@ -179,7 +179,49 @@ export interface Asked
     words?: (string | null)[];
 }
 
-/** What view gives: the party, a page with its sheet, one section, or nothing. */
+/** A point of the world map, in km east and north of its centre. */
+export interface MapPoint
+{
+    x: number;
+    y: number;
+}
+
+/** A place the character knows on the map (VIEW-7): its kind, its point when it is drawn, the known places that hold it, a region's radius, biome and terrain, where it is from the party. */
+export interface MapPlace
+{
+    name: string;
+    kind?: string;
+    x?: number;
+    y?: number;
+    within: string[];
+    radius?: number;
+    biome?: string;
+    terrain?: string;
+    from?: string;
+    image?: { file: string; version: number; };
+}
+
+/** A known road from its first known stop to its last (VIEW-7): a stop the character does not know is a point without a name; beyond, a beginning toward the next. */
+export interface MapRoad
+{
+    name: string;
+    kind: string;
+    points: (MapPoint & { name?: string; km: number; })[];
+    before?: MapPoint;
+    after?: MapPoint;
+}
+
+/** The world map as the character knows it (VIEW-7, D-318): the player's unit and its km, the places nearest the party first, the roads, the party and its trail. */
+export interface WorldMap
+{
+    unit: { name: "km" | "mi"; km: number; };
+    places: MapPlace[];
+    roads: MapRoad[];
+    party?: MapPoint & { place?: string; };
+    trail: MapPoint[];
+}
+
+/** What view gives: the party, a page with its sheet, one section, the world map, or nothing. */
 export type View =
     | { kind: "none"; }
     | {
@@ -203,4 +245,5 @@ export type View =
     }
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
+    | ({ kind: "map"; } & WorldMap)
     | { kind: "unknown"; text: string; };

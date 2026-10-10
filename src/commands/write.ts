@@ -75,7 +75,7 @@ import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, held
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
 import { campaignCoins } from "./game-money.ts";
-import { shortRoadNotes } from "./game-positions.ts";
+import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
 import { tickedQuestNotes } from "./game-quests.ts";
 import { deathNotes, isPlayerDead } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
@@ -294,7 +294,9 @@ export const write = defineCommand({
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
         const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
-        const map = changed ? [...positioned.placed.notes, ...(hereDone?.notes ?? []), ...(["stops", "position"].some((field) => changedFieldNames(fields).includes(field)) ? shortRoadNotes(now, page) : [])] : [];
+        const map = changed
+            ? [...positioned.placed.notes, ...(hereDone?.notes ?? []), ...(["stops", "position"].some((field) => changedFieldNames(fields).includes(field)) ? shortRoadNotes(now, page) : []), ...mapLookNotes(world, existing, now, page)]
+            : [];
         // The death of the last living player character: what the saves allow, said at once (SAV-7).
         const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : [];
         return {

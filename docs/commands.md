@@ -125,6 +125,7 @@ Read-only: yes. Positional parameters: `page`.
 - `page` (`string`, optional): a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view
 - `diary` (`string`, optional): how many lines of the diary, from the last; 10 if left out; all only when the player asks for the whole story
 - `rolls` (`string`, optional): for the dashboard: how many of the last public rolls; 20 if left out
+- `map` (`boolean`, optional): the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions
 
 ### find
 

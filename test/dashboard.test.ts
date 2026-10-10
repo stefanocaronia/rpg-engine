@@ -223,6 +223,8 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(shown.body).not.toContain("fratello");
         expect(JSON.parse(shown.body).error).toBe("The dashboard has no command show: it has view.");
         expect((await get("/api/view?pagina=Varro")).status).toBe(400);
+        // A flag comes in the address as true (VIEW-7).
+        expect(JSON.parse((await get("/api/view?map=true")).body)).toEqual(JSON.parse(await ok("view", "--map", "--json")));
     });
 
     it("serves the page, which runs only its own scripts and the import map written in it, its dice, and Preact and three.js from their packages", async () => {
