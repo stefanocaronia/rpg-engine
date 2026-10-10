@@ -5,6 +5,7 @@
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ShownGrid } from "./data.ts";
+import { Glass, GlassDefs } from "./glass.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
 
 // How wide a square is drawn, in pixels.
@@ -75,6 +76,7 @@ export function PlaceMap({ map, place, acting }: { map: ShownGrid; place: string
                 <svg ref={svg} class={`lm-svg lm-look-${map.ground}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Map of ${place}`}>
                     <defs>
                         <Patterns />
+                        <GlassDefs prefix="lm" />
                         <clipPath id="lm-open">
                             <path d={floor} clip-rule="evenodd" />
                         </clipPath>
@@ -609,16 +611,20 @@ function Token({ one, index, acting, x, y }: { one: ShownGrid["at"][number]; ind
                     <circle class="lm-halo-edge" cx={x} cy={y} r={r + 9} />
                 </>
             )}
-            <circle class="lm-disc" cx={x} cy={y} r={r} />
-            {one.image && !one.stranger
-                ? <image href={`/images/${encodeURIComponent(one.image.file)}?v=${one.image.version}`} x={x - r} y={y - r} width={r * 2} height={r * 2} clip-path={`url(#lm-token-${index})`} />
-                : number !== undefined
-                ? <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{number}</text>
-                : one.stranger
-                ? <path class="lm-stranger" d="M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z" transform={`translate(${x - 10.8} ${y - 11}) scale(0.9)`} />
-                : <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{one.name.slice(0, 1).toUpperCase()}</text>}
-            <circle class="lm-ring" cx={x} cy={y} r={r} />
-            {one.role === "pc" && <circle class="lm-ring outer" cx={x} cy={y} r={r + 3.2} />}
+            {/* A token under glass, its shadow on the paper. */}
+            <g filter="url(#lm-drop)">
+                <circle class="lm-disc" cx={x} cy={y} r={r} />
+                {one.image && !one.stranger
+                    ? <image href={`/images/${encodeURIComponent(one.image.file)}?v=${one.image.version}`} x={x - r} y={y - r} width={r * 2} height={r * 2} clip-path={`url(#lm-token-${index})`} />
+                    : number !== undefined
+                    ? <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{number}</text>
+                    : one.stranger
+                    ? <path class="lm-stranger" d="M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z" transform={`translate(${x - 10.8} ${y - 11}) scale(0.9)`} />
+                    : <text class="lm-number" x={x} y={y + 1} text-anchor="middle" dominant-baseline="middle">{one.name.slice(0, 1).toUpperCase()}</text>}
+                <Glass x={x} y={y} r={r} prefix="lm" />
+                <circle class="lm-ring" cx={x} cy={y} r={r} />
+                {one.role === "pc" && <circle class="lm-ring outer" cx={x} cy={y} r={r + 3.2} />}
+            </g>
         </g>
     );
 }

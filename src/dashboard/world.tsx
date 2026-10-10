@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { readMap, readView } from "./api.ts";
 import type { MapPlace, MapPoint, Member, WorldMap } from "./data.ts";
+import { Glass, GlassDefs } from "./glass.tsx";
 import { Icon, type IconName } from "./icons.tsx";
 import { biomes, placeKinds, symbolRadius } from "./map-symbols.ts";
 import { plainLine } from "./markdown.tsx";
@@ -426,6 +427,7 @@ function Drawing(
     return (
         <svg class="map-svg" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
             <defs>
+                <GlassDefs prefix="map" />
                 <filter id="map-grain" x="0" y="0" width="100%" height="100%">
                     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={3} seed={2} />
                     <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.12  0 0 0 0.09 0" />
@@ -504,9 +506,13 @@ function Drawing(
                     data-place={layout.partySpot?.name}
                 >
                     <circle class="party-pulse" r={17} />
-                    <circle class="party-ring" r={17} />
-                    <circle class="party-disc" r={14.5} />
-                    {image !== undefined && <image href={image} x={-13} y={-13} width={26} height={26} clip-path="url(#map-token)" />}
+                    {/* The party's token under glass, as the places' symbols, its shadow on the paper. */}
+                    <g filter="url(#map-drop)">
+                        <circle class="party-ring" r={17} />
+                        <circle class="party-disc" r={14.5} />
+                        {image !== undefined && <image href={image} x={-13} y={-13} width={26} height={26} clip-path="url(#map-token)" />}
+                        <Glass r={14.5} prefix="map" />
+                    </g>
                 </g>
             )}
             <g class="labels">
@@ -585,10 +591,12 @@ function PlaceSymbol({ spot, x, y, chosen }: { spot: Spot; x: number; y: number;
     return (
         <g class={`spot size-${kind?.size ?? "dot"}${chosen ? " selected" : ""}`} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} data-place={spot.name}>
             {kind === undefined ? <circle class="spot-dot" r={4} /> : (
-                <>
+                // A place's symbol is a token under glass, its shadow on the paper.
+                <g filter="url(#map-drop)">
                     <circle class="spot-disc" r={r} />
                     <path class="spot-glyph" transform={`translate(${-12 * scale} ${-12 * scale}) scale(${scale})`} d={kind.glyph} />
-                </>
+                    <Glass r={r} prefix="map" />
+                </g>
             )}
             <circle class="spot-hit" r={Math.max(r, 16)} />
         </g>
