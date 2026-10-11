@@ -141,6 +141,8 @@ describe("the player's view", () => {
                 "Scene: Al mulino (social), at Mulino, with Kira and Varro",
                 "",
                 "Diary:",
+                // A quest the character takes is a fact of the story (D-369).
+                "- Quest taken: La lanterna",
                 "- day 1, 18:00 · The story starts on day 1, 18:00",
                 "- day 1, 18:00 · Kira to Mulino",
                 "- day 1, 18:00 · Scene opened: Al mulino (social)",
@@ -150,7 +152,7 @@ describe("the player's view", () => {
         );
         const view = await ok("view", "--diary", "all");
         expect(view).not.toMatch(/conte trama|segreto|strega|umore/);
-        expect(await ok("view", "--diary", "1")).toContain("Diary (the last 1 of 5: view, diary all gives every one):\n- day 1, 18:00 · Kira: hp 10/12 → 7/12");
+        expect(await ok("view", "--diary", "1")).toContain("Diary (the last 1 of 6: view, diary all gives every one):\n- day 1, 18:00 · Kira: hp 10/12 → 7/12");
         expect((await rpg("view", "--diary", "0")).output).toBe('"0" is not how many lines of the diary: give a whole number from 1, or all.');
         expect((await rpg("view", "Varro", "--diary", "2")).output).toBe("Give page or diary, not both: diary goes with the whole view.");
     });

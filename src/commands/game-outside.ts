@@ -18,6 +18,8 @@ import { campaignWorld } from "./game-world.ts";
 const mostNamed = 10;
 // The files a command writes before its line in the log is stamped: a file changed this long after the log's last line was changed outside it.
 const writeSlack = 2000;
+// The files of the game a change can be told of: pages, settings and state, house rules, pictures; never an editor's copy or a system's file (OUT-1).
+const gameKinds = /\.(md|ya?ml|png|jpe?g|webp|gif|svg)$/i;
 
 /** One file changed outside the commands, as the master hears it and the log keeps it. */
 interface OutsideItem
@@ -38,13 +40,19 @@ interface OutsideItem
  */
 export function outsideNews(root: string, context: Context, changes: OutsideChange[], before: World | undefined): string[]
 {
-    const items = changes.filter((change) => isGameFile(root, change.path) && relative(root, change.path) !== logFileName).flatMap((change) => itemOf(root, change));
+    const counted = changes.filter((change) => isToldFile(root, change.path));
+    const items = counted.flatMap((change) => itemOf(root, change));
+    const outside = { ...context, actor: "outside" };
 
     if (items.length === 0) {
+        // A change of form alone, as spaces: nothing to tell, but the log notes it, so that the next chat never takes it for one made while it was closed.
+        if (counted.length > 0) {
+            appendLogEntry(root, newDatedLogEntry(root, outside, "changed-outside", "hidden", { files: counted.map((change) => ({ file: fileOf(root, change.path), form: true })) }));
+        }
+
         return [];
     }
 
-    const outside = { ...context, actor: "outside" };
     appendLogEntry(root, newDatedLogEntry(root, outside, "changed-outside", "hidden", { files: items.map(logged) }));
     const shown = items.slice(0, mostNamed).map(itemText).join(" · ");
     const more = items.length > mostNamed ? `, and ${items.length - mostNamed} more` : "";
@@ -55,10 +63,10 @@ export function outsideNews(root: string, context: Context, changes: OutsideChan
 }
 
 /**
- * The files changed while no chat was open (OUT-4): those of world, rules and campaign.yaml written after the log's last line, as by hand in Obsidian. Named
- * only, with a hidden line in the log: no earlier copy of them is kept.
+ * The files changed while no chat was open (OUT-4): those of world, rules and campaign.yaml written after the log's last line and before the chat `began`, as by
+ * hand in Obsidian. Named only, with a hidden line in the log: no earlier copy of them is kept.
  */
-export function whileClosedNews(root: string, context: Context): string[]
+export function whileClosedNews(root: string, context: Context, began: number): string[]
 {
     const last = readLog(root).at(-1);
     const since = last === undefined ? Number.NaN : Date.parse(last.at) + writeSlack;
@@ -68,7 +76,7 @@ export function whileClosedNews(root: string, context: Context): string[]
     }
 
     const changed = [...filesIn(join(root, worldFolderName), () => true), ...filesIn(join(root, "rules"), () => true), join(root, campaignFileName)]
-        .filter((path) => (files().modified(path) ?? 0) > since)
+        .filter((path) => isToldFile(root, path) && (files().modified(path) ?? 0) > since && (files().modified(path) ?? 0) < began)
         .map((path) => relative(root, path).split(sep).join("/"));
 
     if (changed.length === 0) {
@@ -78,6 +86,18 @@ export function whileClosedNews(root: string, context: Context): string[]
     appendLogEntry(root, newDatedLogEntry(root, { ...context, actor: "outside" }, "changed-outside", "hidden", { files: changed.map((file) => ({ file })), whileClosed: true }));
     const more = changed.length > mostNamed ? `, and ${changed.length - mostNamed} more` : "";
     return [`Changed outside rpg while no chat was open (the log keeps it, hidden): ${changed.slice(0, mostNamed).join(" · ")}${more}. Read those that matter with show.`];
+}
+
+/** Whether a changed file is one the master hears of: a game file of its kinds, not the log, nor a name with a dot or a tilde anywhere in its path. */
+function isToldFile(root: string, path: string): boolean
+{
+    const parts = relative(root, path).split(sep);
+    return isGameFile(root, path) && relative(root, path) !== logFileName && gameKinds.test(path) && !parts.some((part) => part.startsWith(".") || part.endsWith("~"));
+}
+
+function fileOf(root: string, path: string): string
+{
+    return relative(root, path).split(sep).join("/");
 }
 
 /** A change as an item: a page by its name, campaign.yaml and state.yaml by their keys, any other file by its path; none when nothing that counts changed. */

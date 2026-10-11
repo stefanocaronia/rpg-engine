@@ -361,6 +361,9 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
             writeFileSync(varro, readFileSync(varro, "utf8").replace("role: npc", "role: npc\nstatus: dead"));
             writeFileSync(join(folder, "world", "places", "Cortile.md"), "---\ntype: place\n---\n");
             writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("difficulty: normal", "difficulty: hard"));
+            // An editor's copies and a system's files are never the game's.
+            writeFileSync(join(folder, "world", "characters", ".DS_Store"), "x");
+            writeFileSync(join(folder, "world", "characters", "Bruna.md~"), "x");
 
             // The next call checks everything, as instructions does: what changed comes first, with the events it set off.
             const told = await tool("instructions", {});
@@ -369,6 +372,8 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
             expect(told).toContain("Varro: status — → dead");
             expect(told).toContain("campaign.yaml: difficulty normal → hard");
             expect(told).toContain("new: Cortile");
+            expect(told).not.toContain("DS_Store");
+            expect(told).not.toContain("Bruna.md~");
             expect(told).toMatch(/Take it as the game's truth, and go on from it\.\n\nNow due: La vendetta del fratello/);
             const log = readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
             expect(log.filter((entry) => entry.type === "changed-outside").at(-1)).toMatchObject({
@@ -389,12 +394,15 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
     it("names at a chat's first call the files changed while no chat was open (OUT-4)", async () => {
         // The real clock: what changed while no chat was open is told by the time of the log's last line (OUT-4).
         const context = { ...testContext(folder), now: () => new Date() };
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
-        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], context);
+        // The last line of the log a minute ago; the page written by hand half a minute ago, before the chat begins.
+        const earlier = { ...context, now: () => new Date(Date.now() - 60_000) };
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], earlier);
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], earlier);
         const bruna = join(folder, "world", "characters", "Bruna.md");
         writeFileSync(bruna, `${readFileSync(bruna, "utf8")}\nScritto a mano.\n`);
-        const later = new Date(Date.now() + 60_000);
-        utimesSync(bruna, later, later);
+        const handWritten = new Date(Date.now() - 30_000);
+        utimesSync(bruna, handWritten, handWritten);
+        utimesSync(join(folder, "campaign.yaml"), handWritten, new Date(Date.now() - 90_000));
         const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
         await createMcpServer({ ...context, files: session }).connect(serverTransport);

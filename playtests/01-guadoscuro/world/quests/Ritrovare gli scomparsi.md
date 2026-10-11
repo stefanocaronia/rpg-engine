@@ -1,5 +1,7 @@
 ---
 status: planned
+kind: main
+giver: "[[Agnese]]"
 ---
 
 [[Agnese]], la sindaca, cerca qualcuno che ritrovi chi è sparito nella nebbia, e promette l'argento del comune.

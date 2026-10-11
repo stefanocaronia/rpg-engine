@@ -327,7 +327,7 @@ export interface ShownQuest
     text: string;
     goals: { text: string; done: boolean; }[];
     counters: { field: string; value: number; max: number; }[];
-    clock?: { value: number; max: number; };
+    clock?: { value: number; max: number; name?: string; };
     deadline?: { date: string; minutes?: number; };
 }
 

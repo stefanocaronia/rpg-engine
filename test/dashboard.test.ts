@@ -212,10 +212,10 @@ describe("view as data (VIEW-1, D-272)", () => {
 
 describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => {
     it("gives the quests the character knows, open ones first and the main one first among them, each with its goals, counters, clock and deadline", async () => {
-        const fields = ["status=open", "kind=main", "giver=[[Varro]]", "place=[[Locanda]]", "sigilli=1/3", "clock=2/6", "deadline=day 2, 06:00"];
+        const fields = ["status=open", "kind=main", "giver=[[Varro]]", "place=[[Locanda]]", "sigilli=1/3", "clock=2/6", "clock-name=I rapitori partono", "deadline=day 2, 06:00"];
         const made = await ok("write", "Ritrovare i pellegrini", "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", "Spariti.\n\n- [x] Ascoltare\n- [ ] Seguire");
-        // Once, as the quest is made, the master hears what the journal shows of it.
-        expect(made).toContain("The player's journal shows a quest the character knows: its goals as - [ ] lines in its text");
+        // As the quest opens, made open or opened from planned, the master hears what the journal shows of it (D-369).
+        expect(made).toContain("The player's journal shows this quest now. Give it only what the story has, and keep each up to date:");
         expect(await ok("write", "Ritrovare i pellegrini", "--set", "giver=Varro")).not.toContain("The player's journal shows");
         await ok("change", "Ritrovare i pellegrini", "sigilli", "--by=1");
         await ok("write", "Il vino", "--type", "quest", "--set", "status=open", "--text=- [ ] Trovare le botti");
@@ -234,18 +234,37 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             text: "Spariti.",
             goals: [{ text: "Ascoltare", done: true }, { text: "Seguire", done: false }],
             counters: [{ field: "sigilli", value: 2, max: 3 }],
-            clock: { value: 2, max: 6 },
+            clock: { value: 2, max: 6, name: "I rapitori partono" },
             deadline: { date: "day 2, 06:00", minutes: 720 },
         });
-        expect(await ok("view", "--journal")).toContain("Ritrovare i pellegrini: open, main, 1/2 goals, sigilli 2/3, clock 2/6, deadline day 2, 06:00\nIl vino: open, 0/1 goals\nLa scorta: done");
+        expect(await ok("view", "--journal")).toContain(
+            "Ritrovare i pellegrini: open, main, 1/2 goals, sigilli 2/3, I rapitori partono 2/6, deadline day 2, 06:00 (in 12h)\nIl vino: open, 0/1 goals\nLa scorta: done",
+        );
+        // The master's status tells the open quests with what they measure (D-369).
+        expect(await ok("status")).toContain("Ritrovare i pellegrini (main; sigilli 2/3, I rapitori partono 2/6, deadline day 2, 06:00 (in 12h))");
+        // Opened from planned, a quest brings the note; who gave it, unknown to the character, shows by the words of the link, or not at all (VIEW-4).
+        expect(await ok("write", "Il segreto", "--set", "status=open", "--set", "giver=[[Rasco|lo straniero]]", "--set", "place=[[Covo]]")).toContain("The player's journal shows this quest now.");
+        const secret = JSON.parse(await ok("view", "--journal", "--json")).quests.find((quest: { name: string; }) => quest.name === "Il segreto");
+        expect(secret).toMatchObject({ giver: "lo straniero" });
+        expect(secret.place).toBeUndefined();
+        // A deadline passed: status asks the master, who ends the story; a deadline or a clock that does not read, validate says how to write it.
+        await ok("advance", "--by", "13h");
+        expect(await ok("status")).toContain("deadline day 2, 06:00 (passed); deadline passed: if the story has ended it, write status failed");
+        await ok("write", "Il vino", "--set", "deadline=domani", "--set", "clock=2");
+        const problems = await ok("validate");
+        expect(problems).toContain('The deadline of Il vino, "domani", is not a game date');
+        expect(problems).toContain("The clock of Il vino, 2, has no maximum");
         expect((await runCommandLine(["view", "--journal", "--map"], context)).output).toBe(
             "Give journal alone: it is the quests and the story, apart from the page, the diary, the rolls and the map.",
         );
     });
 
-    it("tells the story by scenes, the last first, each with its summary and what happened in it; what came between apart, the saves left out", async () => {
+    it("tells the story by scenes, the last first, each with its summary and what happened in it; what came between apart, the saves and rolls left out", async () => {
         await ok("scene", "open", "--title", "Al guado", "--type", "social");
         await ok("change", "Ettore", "hp", "--by=-2");
+        await ok("roll", "1d20", "--who", "Ettore", "--why", "guado");
+        // A quest taken is a fact of the story (D-369).
+        await ok("write", "Il guado", "--type", "quest", "--set", "status=open");
         await ok("scene", "close", "--summary", "Ettore attraversa il guado, ferito.");
         await ok("advance", "--by", "1h");
         await ok("scene", "open", "--title", "Alla torre", "--type", "exploration");
@@ -256,7 +275,13 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             ["Al guado", false],
             ["between", false],
         ]);
-        expect(chapters[2]).toMatchObject({ type: "social", place: "Locanda", date: "day 1, 18:00", summary: "Ettore attraversa il guado, ferito.", facts: ["day 1, 18:00 · Ettore: hp 20/24 → 18/24"] });
+        expect(chapters[2]).toMatchObject({
+            type: "social",
+            place: "Locanda",
+            date: "day 1, 18:00",
+            summary: "Ettore attraversa il guado, ferito.",
+            facts: ["day 1, 18:00 · Ettore: hp 20/24 → 18/24", "day 1, 18:00 · Quest taken: Il guado"],
+        });
         expect(chapters[1].facts).toEqual(["day 1, 19:00 · Time passes: day 1, 18:00 → day 1, 19:00", "day 1, 19:00 · Ettore: Benedizione ended"]);
         expect(JSON.stringify(chapters)).not.toContain("Saved:");
     });

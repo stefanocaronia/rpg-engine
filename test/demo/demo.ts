@@ -321,7 +321,7 @@ async function makeDemoQuests(rpg: (...args: string[]) => Promise<void>): Promis
     const quest = (name: string, fields: string[], text: string): Promise<void> => rpg("write", name, "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", text);
     await quest(
         "Ritrovare i pellegrini",
-        ["status=open", "kind=main", "giver=Il castellano di Rocca di Vetta", "place=[[Torre dei Sussurri]]", "sigilli=1/3", "clock=2/6", "deadline=day 3, 06:00"],
+        ["status=open", "kind=main", "giver=Il castellano di Rocca di Vetta", "place=[[Torre dei Sussurri]]", "sigilli=1/3", "clock=2/6", "clock-name=I rapitori lasciano la torre", "deadline=day 3, 06:00"],
         [
             "Sei pellegrini sono spariti sulla Strada del Re, fra la Rocca e Guadoscuro. Chi li ha presi lascia sigilli spezzati.",
             "",

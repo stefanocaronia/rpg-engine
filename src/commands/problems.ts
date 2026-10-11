@@ -12,6 +12,7 @@ import { mapProblems } from "./game-maps.ts";
 import { modeProblems } from "./game-mode.ts";
 import { moneyProblems } from "./game-money.ts";
 import { shortRoadProblems } from "./game-positions.ts";
+import { questProblems } from "./game-quests.ts";
 import { passageProblems, roadProblems } from "./game-roads.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
@@ -43,6 +44,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...timeProblems(root),
         ...modeProblems(root),
         ...eventProblems(world),
+        ...questProblems(world),
         ...effectProblems(world, readOpenScene(root).scene, readPresent(root).date, systemOccasions(root, context)),
         ...sceneProblems(root, world),
     ];

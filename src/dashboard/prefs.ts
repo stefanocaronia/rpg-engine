@@ -63,13 +63,13 @@ export function readChoice(choice: Choice): string
     return value !== undefined && choice.values.includes(value) ? value : choice.initial;
 }
 
-/** A text the page keeps by its key, as the quest the player follows, and what changes it, on every part of the page that uses it; undefined for none. */
-export function useKeptText(key: string): [string | undefined, (value: string | undefined) => void]
+/**
+ * A text the page keeps by its key, as the quest the player follows, and what changes it, on every part of the page that uses it: undefined while the player
+ * never chose, empty once they chose none.
+ */
+export function useKeptText(key: string): [string | undefined, (value: string) => void]
 {
-    const read = (): string | undefined => {
-        const value = readKept(key);
-        return value === undefined || value === "" ? undefined : value;
-    };
+    const read = (): string | undefined => readKept(key);
 
     const [value, setValue] = useState(read);
 
@@ -80,7 +80,7 @@ export function useKeptText(key: string): [string | undefined, (value: string | 
         return () => window.removeEventListener(changed, follow);
     }, [key]);
 
-    return [value, (text) => writeKept(key, text ?? "")];
+    return [value, (text) => writeKept(key, text)];
 }
 
 /** Tells every part of the page that a preference changed, as the theme does. */

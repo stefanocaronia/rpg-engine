@@ -529,6 +529,8 @@ function diaryLine(world: World, entry: LogEntry, named: (name: unknown) => stri
                 return `Back to save ${text(data.save)}: what came after it is gone`;
             case "mode-changed":
                 return `The campaign is now in ${text(data.to)}`;
+            case "quest-changed":
+                return `${data.status === "open" ? "Quest taken" : data.status === "done" ? "Quest completed" : "Quest failed"}: ${named(data.quest) ?? text(data.quest)}`;
             default:
                 return undefined;
         }

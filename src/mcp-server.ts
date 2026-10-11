@@ -49,7 +49,7 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
-    const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : () => [];
+    const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
 
     // Before each call, once the files are read again: the dashboard opens, and its page asks the player too, so the asking tools are there, forms or not (ASK-1, D-279).
     const prepare = async (): Promise<void> => {
@@ -158,7 +158,14 @@ function toolConfig(command: AnyCommand)
     return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
-async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>, outside: () => string[]): Promise<CallToolResult>
+async function runTool(
+    command: AnyCommand,
+    input: unknown,
+    context: Context,
+    extra: ToolExtra,
+    prepare: () => Promise<void>,
+    outside: { take(): string[]; giveBack(lines: string[]): void; },
+): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
@@ -182,7 +189,7 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         }
 
         // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
-        changedOutside = outside();
+        changedOutside = outside.take();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
         const text = command.format(await command.run(input, { ...context, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
@@ -197,6 +204,7 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         // An answer that never goes, as for a call the user stopped, gives what the player changed back to the next one, and its parts.
         if (extra.signal.aborted) {
             news?.restore();
+            outside.giveBack(changedOutside);
             context.told?.clear();
             told.forEach((name) => context.told?.add(name));
         }
@@ -207,10 +215,13 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
  * What changed outside the chat's commands since its last call (OUT-1–OUT-4): the world as it was is read before the session lets the changes in, so that the
  * events they set off fire; at the server's first call, the files changed while no chat was open.
  */
-function watchOutside(context: Context, session: SessionStore): () => string[]
+function watchOutside(context: Context, session: SessionStore): { take(): string[]; giveBack(lines: string[]): void; }
 {
     let before: World | undefined;
     let first = true;
+    // What an answer that never went told, for the next call; and when the chat began, for what changed while no chat was open.
+    let untold: string[] = [];
+    const began = Date.now();
 
     const inCampaign = <T>(work: (root: string) => T, none: T): T => {
         try {
@@ -228,11 +239,17 @@ function watchOutside(context: Context, session: SessionStore): () => string[]
         before ??= inCampaign((root) => campaignWorld(root, context), undefined);
     });
 
-    return () => {
-        const lines = inCampaign((root) => [...(first ? whileClosedNews(root, context) : []), ...outsideNews(root, context, session.takeOutsideChanges(), before)], []);
-        first = false;
-        before = undefined;
-        return lines;
+    return {
+        take: () => {
+            const lines = [...untold, ...inCampaign((root) => [...(first ? whileClosedNews(root, context, began) : []), ...outsideNews(root, context, session.takeOutsideChanges(), before)], [])];
+            untold = [];
+            first = false;
+            before = undefined;
+            return lines;
+        },
+        giveBack: (lines) => {
+            untold = [...lines, ...untold];
+        },
     };
 }
 

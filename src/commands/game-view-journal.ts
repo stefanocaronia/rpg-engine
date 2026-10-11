@@ -2,10 +2,10 @@
 // deadline; and the story by its scenes, as chapters, each with what the diary tells of it.
 import { type LogEntry, readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
-import { readCounter } from "../counters/index.ts";
 import { goalsIn, links, type Page, textsIn, type World } from "../pages/index.ts";
-import { formatGameDate, type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
+import type { GameDate } from "../time/index.ts";
 import { type Knowledge, knownText } from "./game-knowledge.ts";
+import { measuresText, questMeasures } from "./game-quests.ts";
 
 /** A quest as the journal shows it (VIEW-8). */
 export interface ShownQuest
@@ -20,7 +20,8 @@ export interface ShownQuest
     goals: { text: string; done: boolean; }[];
     /** Its fields that are counters with a maximum, as clues: 3/5. */
     counters: { field: string; value: number; max: number; }[];
-    clock?: { value: number; max: number; };
+    /** Its clock, with what happens when it fills when the master named it (clock-name, D-369). */
+    clock?: { value: number; max: number; name?: string; };
     /** Its deadline, a game date, with the minutes still to come, below zero once passed; none before the game has a date. */
     deadline?: { date: string; minutes?: number; };
 }
@@ -38,10 +39,8 @@ export interface ShownChapter
 }
 
 const statuses = ["open", "done", "failed"] as const;
-// Lines of the game, not of the story: the saves have their own section, and the mode is the setup's.
-const outOfStory = new Set(["saved", "mode-changed"]);
-// The fields of a quest the card shows apart; any other counter is a bar.
-const ownFields = new Set(["status", "kind", "giver", "place", "deadline", "clock"]);
+// Lines of the game, not of the story: the saves made have their own section, the mode is the setup's, the rolls have their column (D-369).
+const outOfStory = new Set(["saved", "mode-changed", "roll", "roll-revealed"]);
 
 /**
  * The journal (VIEW-8, VIEW-9): the quests the character knows, open ones first, the main ones first among them, then those changed last; and the chapters, the
@@ -56,61 +55,67 @@ export function shownJournal(
     named: (name: unknown) => string | undefined,
 ): { quests: ShownQuest[]; chapters: ShownChapter[]; }
 {
-    const log = readLog(root);
+    // Changed last, as the player saw it: by the public lines alone, never by what the master wrote unseen.
+    const log = readLog(root).filter((entry) => entry.visibility === "public");
     const changed = new Map<string, number>();
-    log.forEach((entry, index) => typeof entry.data.page === "string" && changed.set(comparableText(entry.data.page), index));
+    log.forEach((entry, index) => typeof entry.data.quest === "string" && changed.set(comparableText(entry.data.quest), index));
     const order = (quest: ShownQuest): number[] => [statuses.indexOf(quest.status), quest.status === "open" && quest.main ? 0 : 1, -(changed.get(comparableText(quest.name)) ?? -1)];
     const quests = [...knowledge.pages]
         .filter((page) => page.type === "quest" && (statuses as readonly string[]).includes(String(page.fields.status)))
-        .map((page) => shownQuest(world, knowledge, page, now))
+        .map((page) => shownQuest(world, knowledge, page, now, named))
         .sort((one, other) => compareOrders(order(one), order(other)) || one.name.localeCompare(other.name));
-    return { quests, chapters: chaptersOf(log.filter((entry) => entry.visibility === "public"), fact, named) };
+    return { quests, chapters: chaptersOf(log, fact, named) };
 }
 
-/** "Ritrovare gli scomparsi: open, main, 1/2 goals, clues 3/5, clock 2/6, deadline day 5, 18:00 (in 2d 4h)": a quest in the chat's words. */
+/** "Ritrovare gli scomparsi: open, main, 1/2 goals, clues 3/5, I rapitori 2/6, deadline day 5, 18:00 (in 2d 4h)": a quest in the chat's words. */
 export function questText(quest: ShownQuest): string
 {
     const done = quest.goals.filter((goal) => goal.done).length;
+    const measures = measuresText(quest);
     return [
         `${quest.name}: ${quest.status}`,
         ...(quest.main ? ["main"] : []),
         ...(quest.goals.length === 0 ? [] : [`${done}/${quest.goals.length} goals`]),
-        ...quest.counters.map((counter) => `${counter.field} ${counter.value}/${counter.max}`),
-        ...(quest.clock === undefined ? [] : [`clock ${quest.clock.value}/${quest.clock.max}`]),
-        ...(quest.deadline === undefined ? [] : [`deadline ${quest.deadline.date}`]),
+        ...(measures === "" ? [] : [measures]),
     ].join(", ");
 }
 
-function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDate | undefined): ShownQuest
+function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDate | undefined, named: (name: unknown) => string | undefined): ShownQuest
 {
     const { goals, rest } = goalsIn(knownText(world, knowledge, page));
-    const counters = Object.entries(page.fields).filter(([field]) => !ownFields.has(field)).flatMap(([field, value]) => {
-        const counter = readCounter(value);
-        return counter?.max === undefined || counter.max < 1 ? [] : [{ field, value: counter.value, max: counter.max }];
-    });
-    const clock = readCounter(page.fields.clock);
-    const deadline = readGameDate(page.fields.deadline);
-    const giver = linkedName(page.fields.giver);
-    const place = linkedName(page.fields.place);
+    const giver = shownLink(page.fields.giver, named);
+    const place = shownLink(page.fields.place, named);
     return {
         name: page.name,
         status: page.fields.status as ShownQuest["status"],
-        main: comparableText(String(page.fields.kind ?? "")) === "main",
+        ...questMeasures(page, now),
         ...(giver === undefined ? {} : { giver }),
         ...(place === undefined ? {} : { place }),
         text: rest,
         goals,
-        counters,
-        ...(clock?.max === undefined || clock.max < 1 ? {} : { clock: { value: clock.value, max: clock.max } }),
-        ...(deadline === undefined ? {} : { deadline: { date: formatGameDate(deadline), ...(now === undefined ? {} : { minutes: minutesBetween(now, deadline) }) } }),
     };
 }
 
-/** The page a field links, else its text: who gave a quest, where it is. */
-function linkedName(value: unknown): string | undefined
+/**
+ * Who gave a quest, where it is, as the character knows them (VIEW-4): a page it knows by its name, one it does not by the words the link shows instead, if
+ * any; a field without a link as it is written.
+ */
+function shownLink(value: unknown, named: (name: unknown) => string | undefined): string | undefined
 {
-    const text = textsIn(value)[0];
-    return text === undefined || text.trim() === "" ? undefined : (links(text)[0]?.page ?? text.trim());
+    const text = textsIn(value)[0]?.trim();
+
+    if (text === undefined || text === "") {
+        return undefined;
+    }
+
+    const link = links(text)[0];
+
+    if (link === undefined) {
+        return text;
+    }
+
+    const alias = /\|([^\]]+)\]\]/.exec(text)?.[1]?.trim();
+    return named(link.page) === undefined ? alias : (alias ?? named(link.page));
 }
 
 /**

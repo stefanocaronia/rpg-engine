@@ -43,7 +43,7 @@ export class SessionStore extends FileStore
     private changes = 0;
     private wrote = false;
     // The files changed outside the session since they were last taken, each with its text before; and who reads the world before they are let in (OUT-1).
-    private readonly outside = new Map<string, string | undefined>();
+    private readonly outside = new Map<string, { before: string | undefined; after?: { text: string | undefined; }; }>();
     private beforeOutside: (() => void) | undefined;
 
     /** `systemFolders` hold the game systems, kept for the whole session; `watchFolder` is Node's watcher, unless a test gives its own. */
@@ -84,7 +84,7 @@ export class SessionStore extends FileStore
     /** The files of the campaigns changed outside the session since this was last asked, with their text before and now; those back as they were are left out. */
     takeOutsideChanges(): OutsideChange[]
     {
-        const taken = [...this.outside].map(([path, before]) => ({ path, before, after: this.text(path) }));
+        const taken = [...this.outside].map(([path, change]) => ({ path, before: change.before, after: change.after === undefined ? this.text(path) : change.after.text }));
         this.outside.clear();
         return taken.filter((change) => change.before !== change.after);
     }
@@ -139,24 +139,28 @@ export class SessionStore extends FileStore
 
     override write(path: string, text: string): void
     {
+        this.freezeOutside(path);
         super.write(path, text);
         this.wrote = true;
     }
 
     override append(path: string, text: string): void
     {
+        this.freezeOutside(path);
         super.append(path, text);
         this.wrote = true;
     }
 
     override writeBytes(path: string, bytes: Uint8Array): void
     {
+        this.freezeOutside(path);
         super.writeBytes(path, bytes);
         this.wrote = true;
     }
 
     override remove(path: string): void
     {
+        this.freezeOutside(path);
         super.remove(path);
         this.wrote = true;
     }
@@ -269,7 +273,17 @@ export class SessionStore extends FileStore
         }
 
         for (const path of paths.filter((one) => !this.outside.has(one))) {
-            this.outside.set(path, this.kept.get(path)?.text);
+            this.outside.set(path, { before: this.kept.get(path)?.text });
+        }
+    }
+
+    /** A file changed outside that the session now writes: what changed outside is what the disk had before this write, never what the session writes. */
+    private freezeOutside(path: string): void
+    {
+        const change = this.outside.get(resolve(path));
+
+        if (change !== undefined && change.after === undefined) {
+            change.after = { text: readNow(resolve(path))?.text };
         }
     }
 
@@ -312,7 +326,10 @@ export class SessionStore extends FileStore
         const texts = await Promise.all(paths.map((path) => readFile(path, "utf8").catch(() => undefined)));
         // The files that came into a folder listed, which the session did not write: new, outside it (OUT-1).
         const listed = [...this.listings].filter(([folder]) => [...this.roots].some((root) => folder === root || isInside(root, folder)));
-        const added = listed.flatMap(([folder, listing]) => filesIn(folder, () => true).filter((path) => !listing.includes(path) && !this.kept.has(path)));
+        const added = listed.flatMap(([folder, listing]) => {
+            const known = new Set(listing);
+            return filesIn(folder, () => true).filter((path) => !known.has(path) && !this.kept.has(path));
+        });
         this.noteOutside([...paths.filter((path, index) => this.kept.get(path)?.text !== texts[index]), ...new Set(added)]);
 
         paths.forEach((path, index) => {

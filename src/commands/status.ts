@@ -6,7 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
-import { formatGameDate } from "../time/index.ts";
+import { formatGameDate, type GameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
@@ -136,7 +136,7 @@ export const status = defineCommand({
             journey: journeyText(world, roadsOf(world), readJourney(root), measuresOf(root, system)),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
-            openQuests: openQuests(world),
+            openQuests: openQuests(world, now),
             now: now === undefined ? undefined : formatGameDate(now),
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
@@ -317,10 +317,10 @@ function sceneCounts(scenes: ClosedScene[]): string
 }
 
 /** The open quests, those whose goals are all ticked first, with what to do about them (D-239). */
-function openQuests(world: World): string[]
+function openQuests(world: World, now: GameDate | undefined): string[]
 {
     const open = world.pages.filter((page) => page.type === "quest" && page.fields.status === "open");
-    return [...open.filter(isTickedOpenQuest), ...open.filter((page) => !isTickedOpenQuest(page))].map(openQuestText);
+    return [...open.filter(isTickedOpenQuest), ...open.filter((page) => !isTickedOpenQuest(page))].map((page) => openQuestText(page, now));
 }
 
 /** "Label: A · B · C, and 2 more: find …", or nothing when there are none. */
