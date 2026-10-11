@@ -1294,10 +1294,6 @@ a {
     color: #f3f4fa;
 }
 
-.quest-card.main .quest-cover {
-    border-bottom-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
-}
-
 .quest-cover > img,
 .quest-cover > .quest-cover-mark {
     position: absolute;
