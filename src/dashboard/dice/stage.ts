@@ -1,10 +1,11 @@
 // Where the dice are shown (D-278): a three.js scene over the page, with a light, the dice's shadows on an invisible floor, and the dice of make-dice.py in the
-// colours chosen in Settings, by default the theme's (D-279, D-348).
+// set chosen in Settings, by default the theme's (D-279, D-348, D-352): resin, metal mirroring a room made on the spot, wood or stone with its grain.
 import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { shownTheme } from "../theme.ts";
 import { celebrate, type Effect, type Glow, makePictures, type Pictures, type Showing } from "./celebration.ts";
-import { diceColours } from "./colours.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
+import { diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
 
 // A die that does not count, as the lower of two d20 with advantage, turns grey as its chip in the plate, whatever its set: its body mostly, its ink half way;
@@ -23,7 +24,8 @@ export interface Pose
 export interface Stage
 {
     tray: Tray;
-    place(kinds: string[]): void;
+    /** Puts dice of these kinds, by the meshes given for each kind. */
+    place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
     show(poses: (Pose | undefined)[]): void;
     dim(die: number): void;
     celebrate(die: number, rare: RareFace, showing: Showing): void;
@@ -31,8 +33,8 @@ export interface Stage
     resize(): void;
 }
 
-/** Makes the stage on a canvas, for dice that look as given by their kinds; throws when the browser has no WebGL. */
-export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Object3D>): Stage
+/** Makes the stage on a canvas; throws when the browser has no WebGL. */
+export function makeStage(canvas: HTMLCanvasElement): Stage
 {
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -59,6 +61,53 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     scene.add(floor);
 
     let dice: { object: THREE.Object3D; materials: THREE.MeshStandardMaterial[]; }[] = [];
+    // The room the metals and the polished stones mirror, and the grains' pictures, each made or loaded once, the chosen set's at once.
+    let room: THREE.Texture | undefined;
+    const grains = new Map<string, THREE.Texture>();
+
+    const grain = (name: string): THREE.Texture => {
+        const known = grains.get(name);
+
+        if (known !== undefined) {
+            return known;
+        }
+
+        const loaded = new THREE.TextureLoader().load(texturePath(name));
+        loaded.colorSpace = THREE.SRGBColorSpace;
+        loaded.wrapS = THREE.RepeatWrapping;
+        loaded.wrapT = THREE.RepeatWrapping;
+        grains.set(name, loaded);
+        return loaded;
+    };
+
+    const chosenTexture = diceLook().finish.texture;
+
+    if (chosenTexture !== undefined) {
+        grain(chosenTexture);
+    }
+
+    // A body of the set's material; the grain laid from a different place on each die, once its picture is there, so that no two dice look alike.
+    const bodyOf = (finish: Finish, colour: string): THREE.MeshStandardMaterial => {
+        const material = new THREE.MeshStandardMaterial({ name: "body", color: colour, roughness: finish.roughness, metalness: finish.metalness });
+
+        if (finish.shine > 0) {
+            room ??= new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+            material.envMap = room;
+            material.envMapIntensity = finish.shine;
+        }
+
+        const picture = finish.texture === undefined ? undefined : grain(finish.texture);
+
+        if (picture !== undefined) {
+            const laid = picture.image === null || picture.image === undefined ? picture : picture.clone();
+            laid.offset.set(Math.random(), Math.random());
+            laid.needsUpdate = laid !== picture;
+            material.map = laid;
+        }
+
+        return material;
+    };
+
     // The celebrations shown, drawn frame by frame while one of them moves.
     let effects: Effect[] = [];
     let pictures: Pictures | undefined;
@@ -90,7 +139,14 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     const clear = (): void => {
         dice.forEach((die) => {
             scene.remove(die.object);
-            die.materials.forEach((material) => material.dispose());
+            die.materials.forEach((material) => {
+                // A grain's picture laid for this die alone goes with it.
+                if (material.map !== null && ![...grains.values()].includes(material.map)) {
+                    material.map.dispose();
+                }
+
+                material.dispose();
+            });
         });
         effects.forEach((effect) => effect.dispose());
         Object.values(pictures ?? {}).forEach((texture: THREE.Texture) => texture.dispose());
@@ -102,17 +158,17 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     resize();
     return {
         tray,
-        place(kinds)
+        place(kinds, looks)
         {
             clear();
-            const colours = diceColours();
+            const look = diceLook();
             dice = kinds.map((kind) => {
                 const object = (looks.get(kind) ?? new THREE.Group()).clone();
                 const materials: THREE.MeshStandardMaterial[] = [];
                 object.traverse((part) => {
                     if (part instanceof THREE.Mesh) {
                         const ink = (part.material as THREE.Material).name === "ink";
-                        const material = new THREE.MeshStandardMaterial({ name: ink ? "ink" : "body", color: ink ? colours.ink : colours.body, roughness: ink ? 0.6 : 0.35, metalness: 0.05 });
+                        const material = ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body);
                         part.material = material;
                         part.castShadow = true;
                         materials.push(material);
@@ -139,7 +195,20 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
         dim(die)
         {
             const grey = new THREE.Color(themeColours().dropped);
-            dice[die]?.materials.forEach((material) => material.color.lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody));
+            dice[die]?.materials.forEach((material) => {
+                material.color.lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody);
+                // A metal set aside mirrors little: grey, not silver; a wood or a stone loses its grain, which its colour only tinted.
+                material.envMapIntensity *= 0.3;
+
+                if (material.map !== null) {
+                    if (![...grains.values()].includes(material.map)) {
+                        material.map.dispose();
+                    }
+
+                    material.map = null;
+                    material.needsUpdate = true;
+                }
+            });
             dice[die]?.object.traverse((part) => {
                 part.castShadow = false;
             });

@@ -1,8 +1,10 @@
 // The dice thrown on the page (D-278): the models loaded once, the stage, and each throw: all the dice together, then again those rerolled or exploded, past
 // those that lie still; each shown turned by one of its symmetries so that it lands on its value, with its knocks. The tray loads it, with three.js and
 // cannon-es, at its first throw.
+import { readChoice } from "../prefs.ts";
 import { loadDice } from "./load.ts";
 import { combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
+import { diceEdgesPref } from "./sets.ts";
 import { knock } from "./sounds.ts";
 import { makeStage, type Pose } from "./stage.ts";
 import { type Frame, type Lying, type Throw, throwDice } from "./throw.ts";
@@ -31,8 +33,8 @@ export interface Roller
 /** Loads the dice and makes the stage on the canvas; throws when the browser has no WebGL. */
 export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
 {
-    const loaded = await loadDice();
-    const stage = makeStage(canvas, loaded.looks);
+    const loaded = await loadDice(readChoice(diceEdgesPref));
+    const stage = makeStage(canvas);
     const turns = new Map([...loaded.models].map(([kind, model]) => [kind, symmetries(model.shape)]));
     const model = (die: DieThrow): DieModel => loaded.models.get(die.kind) as DieModel;
 
@@ -40,7 +42,8 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
         kinds: new Set(loaded.models.keys()),
         async roll(dice, showing)
         {
-            stage.place(dice.map((die) => die.kind));
+            // The edges chosen in Settings, rounded or sharp (D-354).
+            stage.place(dice.map((die) => die.kind), await loaded.looks(readChoice(diceEdgesPref)));
             const poses: (Pose | undefined)[] = dice.map(() => undefined);
             const lying: (Frame | undefined)[] = dice.map(() => undefined);
             const throws = Math.max(0, ...dice.map((die) => die.values.length));

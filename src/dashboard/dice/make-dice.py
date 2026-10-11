@@ -1,7 +1,8 @@
-# The dashboard's dice (D-278, D-279): the seven dice, made by Blender from this script alone, bevelled and with their numbers engraved. Run it again when their
-# style changes, from the repository's folder:
+# The dashboard's dice (D-278, D-279, D-354): the seven dice, made by Blender from this script alone, bevelled and with their numbers engraved. Run it again
+# when their style changes, from the repository's folder, once for the rounded edges and once, with -- sharp, for the sharp ones:
 #   blender --background --factory-startup --python src/dashboard/dice/make-dice.py
-# It writes src/dashboard/assets/dice/dice.glb, a mesh for each die (d4, d6, d8, d10, d12, d20, and d100, the tens of a d%) with two materials, body and ink,
+#   blender --background --factory-startup --python src/dashboard/dice/make-dice.py -- sharp
+# It writes src/dashboard/assets/dice/dice.glb, or dice-sharp.glb, a mesh for each die (d4, d6, d8, d10, d12, d20, and d100, the tens of a d%) with two materials, body and ink,
 # whose colours the page gives by its theme; and dice.json, each die's shape without bevels for the physics and, for each of its values, the direction that
 # looks up when it is rolled and the direction of the top of its number. Opposite faces add up as on real dice, and the numbers are spread so that each corner
 # has about the same sum. The numbers are in Inter, the font Blender ships (SIL Open Font License 1.1).
@@ -9,6 +10,7 @@ import json
 import math
 import os
 import random
+import sys
 
 import bmesh
 import bpy
@@ -18,10 +20,10 @@ phi = (1 + 5 ** 0.5) / 2
 here = os.path.dirname(os.path.abspath(__file__))
 out = os.path.normpath(os.path.join(here, "..", "assets", "dice"))
 
-# How deep a number is engraved, and how much of an edge the bevel takes.
+# How deep a number is engraved, and how wide the bevel of every edge is, the same on every die: rounded, or sharp, as a precision die, with a glint on its edges.
 engraving = 0.035
-bevelShare = 0.05
-bevelMost = 0.07
+sharp = "sharp" in sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else False
+bevelWidth = 0.025 if sharp else 0.07
 
 
 def tetrahedron(radius):
@@ -226,9 +228,8 @@ def make_die(name, corners, faces, labels):
     mesh.materials.append(material("body", (0.96, 0.78, 0.30, 1)))
     die = bpy.data.objects.new(name, mesh)
     bpy.context.scene.collection.objects.link(die)
-    edge = min((corners[face[0]] - corners[face[1]]).length for face in faces)
     bevel = die.modifiers.new("bevel", "BEVEL")
-    bevel.width = min(edge * bevelShare, bevelMost)
+    bevel.width = bevelWidth
     bevel.segments = 3
     bevel.limit_method = "NONE"
 
@@ -385,7 +386,7 @@ def main():
         data[name] = {"shape": {"vertices": [gltf(corner) for corner in corners], "faces": faces}, "values": values}
 
     bpy.ops.export_scene.gltf(
-        filepath=os.path.join(out, "dice.glb"),
+        filepath=os.path.join(out, "dice-sharp.glb" if sharp else "dice.glb"),
         export_format="GLB",
         use_selection=True,
         export_apply=True,

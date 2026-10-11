@@ -10,11 +10,12 @@ import type { PageRoll } from "../free-rolls.ts";
 import { DieIcon, Icon } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
-import { soundPref, usePref } from "../prefs.ts";
+import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
+import { diceEdgesPref, diceSetPref } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
@@ -89,6 +90,9 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     const [keeps, setKeeps] = useState<Partial<Record<number, Keep>>>({});
     const [modifier, setModifier] = useState(0);
     const [sound, setSound] = usePref(soundPref);
+    const [diceSet] = useChoice(diceSetPref);
+    const [edges] = useChoice(diceEdgesPref);
+    const shownSet = useRef(`${diceSet} ${edges}`);
 
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
@@ -235,6 +239,27 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
             }, lingers.asked);
         }
     }, [requested?.id]);
+
+    // A set of dice or their edges chosen in Settings: a d20 of them rolls, to be seen, with no plate and no line in the rolls, then goes (D-352, D-354).
+    useEffect(() => {
+        if (`${diceSet} ${edges}` === shownSet.current) {
+            return;
+        }
+
+        shownSet.current = `${diceSet} ${edges}`;
+        const number = ++throwing.current;
+        const current = (): boolean => number === throwing.current;
+        skipping.current = false;
+        setPlate(undefined);
+        setRolling(false);
+        void loadRoller().then(async (loaded) => {
+            const showing = { instant: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current };
+
+            if (await loaded?.roll([{ kind: "d20", values: [fairDie(20)], dropped: false }], showing) === true) {
+                window.setTimeout(() => current() && loaded?.hide(), lingers.free);
+            }
+        });
+    }, [diceSet, edges]);
 
     // A number of the sheet, rolled for fun: its dice and its number, which counts for nothing (D-280).
     useEffect(() => {

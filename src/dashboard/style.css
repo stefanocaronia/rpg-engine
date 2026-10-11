@@ -377,6 +377,8 @@ a {
 .settings {
     display: grid;
     gap: 14px;
+    /* Room at the end for the dice button, which stays over the page: no row is left under it. */
+    padding-bottom: 72px;
 }
 
 .settings > h2 {
@@ -599,6 +601,12 @@ a {
     vertical-align: -6px;
     stroke-width: 1.2;
     stroke-linejoin: round;
+}
+
+/* A grain's picture shows through thin, faded edges. */
+.segmented .die-swatch.grained path + path {
+    stroke-width: 0.6;
+    stroke-opacity: 0.7;
 }
 
 .segmented button[aria-checked="true"] {

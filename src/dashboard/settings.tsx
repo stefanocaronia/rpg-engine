@@ -1,10 +1,10 @@
 // The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, which the page changes as config does,
-// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound and colours, rolling by hand.
+// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, set and edges, rolling by hand.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { changeSetting, readSettings, type SettingChange } from "./api.ts";
 import type { PlayerSetting } from "./data.ts";
-import { diceColours, diceSetPref, diceSets } from "./dice/colours.ts";
+import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { DieSwatch, Icon } from "./icons.tsx";
 import { itemLabel, phraseLabel } from "./labels.ts";
 import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
@@ -351,25 +351,27 @@ function idOf(name: string): string
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/** The page's own settings, in this browser alone: the theme, the dice's sound and colours, rolling by hand. */
+/** The page's own settings, in this browser alone: the theme, the dice's sound, set and edges, rolling by hand. */
 function PageSettings()
 {
     usePrefChange();
     const [sound, setSound] = usePref(soundPref);
     const [diceSet, setDiceSet] = useChoice(diceSetPref);
+    const [edges, setEdges] = useChoice(diceEdgesPref);
     const [byHand, setByHand] = usePref(byHandPref);
     // A row with many values has them under its name.
     const rows: { name: string; about: string; options: Option[]; value: string; pick(value: string): void; under?: boolean; }[] = [
         { name: "Theme", about: "the page's look", options: [{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], value: shownTheme(), pick: (value) => pickTheme(value === "dark" ? "dark" : "light") },
         { name: "Dice sound", about: "the dice as they roll", options: [{ value: "on", label: "On" }, { value: "off", label: "Off" }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
         {
-            name: "Dice colours",
-            about: "the dice you roll",
-            options: diceSets.map((set) => ({ value: set.value, label: set.label, picture: <DieSwatch {...diceColours(set.value)} /> })),
+            name: "Dice set",
+            about: "what your dice are made of",
+            options: diceSets.map((set) => ({ value: set.value, label: set.label, picture: <SetSwatch value={set.value} /> })),
             value: diceSet,
             pick: setDiceSet,
             under: true,
         },
+        { name: "Dice edges", about: "how the dice's edges are cut", options: [{ value: "rounded", label: "Rounded" }, { value: "sharp", label: "Sharp" }], value: edges, pick: setEdges },
         {
             name: "Checks",
             about: "what the master asks you to roll",
@@ -407,6 +409,13 @@ function PageSettings()
             })}
         </section>
     );
+}
+
+/** A set of dice's d20, in its colours or its grain. */
+function SetSwatch({ value }: { value: string; })
+{
+    const look = diceLook(value);
+    return <DieSwatch body={look.body} ink={look.ink} picture={look.finish.texture === undefined ? undefined : texturePath(look.finish.texture)} />;
 }
 
 /** A value to choose, with what it means when chosen, and a picture before its name. */

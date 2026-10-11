@@ -78,13 +78,21 @@ export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean
     );
 }
 
-/** A d20 in a set's colours, its body filled and its edges in the ink of its numbers, as Settings shows the sets of dice (D-348). */
-export function DieSwatch({ body, ink }: { body: string; ink: string; })
+/** A d20 of a set, its body filled with its colour or the picture of its grain and its edges in the ink of its numbers, as Settings shows the sets (D-348). */
+export function DieSwatch({ body, ink, picture }: { body: string; ink: string; picture?: string; })
 {
     const outline = diePaths[20].split(" M")[0];
+    const pattern = picture === undefined ? undefined : `grain-${picture.replace(/[^a-z0-9]+/gi, "-")}`;
     return (
-        <svg class="die-swatch" viewBox="0 0 24 24" aria-hidden="true">
-            <path d={outline} fill={body} stroke="none" />
+        <svg class={pattern === undefined ? "die-swatch" : "die-swatch grained"} viewBox="0 0 24 24" aria-hidden="true">
+            {pattern !== undefined && (
+                <defs>
+                    <pattern id={pattern} patternUnits="userSpaceOnUse" width="24" height="24">
+                        <image href={picture} width="48" height="48" x="-12" y="-12" />
+                    </pattern>
+                </defs>
+            )}
+            <path d={outline} fill={pattern === undefined ? body : `url(#${pattern})`} stroke="none" />
             <path d={diePaths[20]} fill="none" stroke={ink} />
         </svg>
     );

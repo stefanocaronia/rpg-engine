@@ -72,6 +72,7 @@ const pageTypes: Record<string, string> = {
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
     ".png": "image/png",
+    ".jpg": "image/jpeg",
     ".glb": "model/gltf-binary",
     ".json": "application/json; charset=utf-8",
     ".wav": "audio/wav",
@@ -84,7 +85,7 @@ const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
 
 // The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
-// beside it; three's loader of the dice's models imports two of its utilities beside it.
+// beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too.
 const vendorModules: Record<string, [string, string]> = {
     "preact.js": ["preact", "dist/preact.module.js"],
     "hooks.js": ["preact", "hooks/dist/hooks.module.js"],
@@ -94,6 +95,7 @@ const vendorModules: Record<string, [string, string]> = {
     "three/addons/loaders/GLTFLoader.js": ["three", "examples/jsm/loaders/GLTFLoader.js"],
     "three/addons/utils/BufferGeometryUtils.js": ["three", "examples/jsm/utils/BufferGeometryUtils.js"],
     "three/addons/utils/SkeletonUtils.js": ["three", "examples/jsm/utils/SkeletonUtils.js"],
+    "three/addons/environments/RoomEnvironment.js": ["three", "examples/jsm/environments/RoomEnvironment.js"],
     "cannon-es.js": ["cannon-es", "dist/cannon-es.js"],
 };
 const importMap = JSON.stringify({
