@@ -762,6 +762,16 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
             "The player started the campaign over on the dashboard. Back to the start, 1 - day 1, 18.00 - Prima del muro: the campaign starts over from there with the same "
             + `character, what happened since gone from the game, every later save too. ${newChat}`,
         ]);
+        // Until the player confirms a new chat with the master, here or there, view says where the game went back to (D-362).
+        expect(JSON.parse(await ok("view", "--saves", "--json")).wentBack).toBe("1 - day 1, 18.00 - Prima del muro");
+        expect((await send("POST", "/api/saves", { action: "new chat" })).status).toBe(202);
+        expect(JSON.parse(await ok("view", "--saves", "--json")).wentBack).toBeUndefined();
+        expect(dashboard.news().lines).toEqual([
+            "The player opened a new chat after going back to save 1 - day 1, 18.00 - Prima del muro, and confirmed it on the dashboard: the game goes on in it, from that save.",
+        ]);
+        const nothing = await send("POST", "/api/saves", { action: "new chat" });
+        expect(nothing.status).toBe(400);
+        expect(JSON.parse(nothing.body).error).toMatch(/^The game did not go back since the last chat began/);
         // While the master asks the player something, going back waits for the answer (D-361).
         const page = await openPage();
         const asking = ask.run(ask.input.parse(wall), served);

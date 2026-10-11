@@ -20,7 +20,7 @@ import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCha
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
-import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy } from "./game-saves.ts";
+import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
@@ -121,7 +121,7 @@ export type ViewResult =
     /** The player's settings, which the dashboard changes (D-341). */
     | { kind: "settings"; settings: PlayerSetting[]; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
-    | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; }
+    | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "unknown"; text: string; };
 
 export const view = defineCommand({
@@ -610,6 +610,8 @@ function shownSaves(root: string, context: Context): Extract<ViewResult, { kind:
         })).toReversed(),
         make: mode === "free",
         reset: resetPoints.filter((point) => [...points.values()].includes(point)),
+        // Until the player confirms a new chat with the master (D-362).
+        ...(wentBackTo(root) === undefined ? {} : { wentBack: wentBackTo(root) }),
     };
 }
 

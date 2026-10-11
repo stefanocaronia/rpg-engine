@@ -294,7 +294,7 @@ export type View =
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
-    | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; }
+    | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "unknown"; text: string; };
 
 /**

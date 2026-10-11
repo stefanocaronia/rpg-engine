@@ -138,14 +138,14 @@ export function loadSave(root: string, context: Context, save: Save): { removed:
     return { removed: later, copy };
 }
 
-/** The save the game went back to since the chat going on began, when it did: that chat remembers what is gone (D-361). */
+/** The save the game went back to, until the player confirms a new chat: the chat that went on before remembers what is gone (D-361, D-362). */
 export function wentBackTo(root: string): string | undefined
 {
     const mark = files().bytes(join(root, savesFolderName, newChatMarkName));
     return mark === undefined ? undefined : new TextDecoder().decode(mark).trim();
 }
 
-/** A new chat begins: the game goes on in it. */
+/** The player confirmed a new chat: the game goes on in it (D-362). */
 export function newChatBegun(root: string): void
 {
     files().remove(join(root, savesFolderName, newChatMarkName));

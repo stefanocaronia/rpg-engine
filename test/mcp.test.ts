@@ -353,11 +353,14 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
             await tool("write", { page: "Varro", type: "character", set: { role: "npc" } });
             expect(await tool("status", {})).toContain("hp 7/12");
             await tool("save", { action: "load", save: "1" });
-            // The chat that went on remembers what is gone: nothing runs in it, until a new chat begins with instructions, told once where it starts (D-361).
-            expect(await tool("status", {})).toMatch(/^The game went back to save 1 - save\. This chat remembers what is gone: ask the player to open a new chat /);
-            expect(await tool("write", { page: "Lia", type: "character" })).toContain("Nothing goes on in this one.");
-            expect(await tool("instructions", {})).toMatch(/^The game went back to save 1 - save before this chat: start the story again from there, as status gives it/);
+            // The chat that went on remembers what is gone: nothing runs in it, instructions too leaves the game shut, until the player confirms a new chat (D-361, D-362).
+            expect(await tool("status", {})).toMatch(/^The game went back to save 1 - save\. If this chat went on before that: This chat remembers what is gone: ask the player to open a new chat /);
+            expect(await tool("write", { page: "Lia", type: "character" })).toContain("then call save with action new chat.");
+            expect(await tool("instructions", {})).toMatch(/^The game went back to save 1 - save\. Before going on, ask the player to confirm this chat began after it/);
+            expect(await tool("status", {})).toMatch(/^The game went back to save 1 - save\./);
+            expect(await tool("save", { action: "new chat" })).toBe("The game goes on in this chat, from save 1 - save, as status gives it: tell nothing of what came after.");
             expect(await tool("instructions", {})).not.toContain("The game went back");
+            expect(await tool("save", { action: "new chat" })).toBe("The game did not go back since the last chat began: there is nothing to confirm. Go on with the story.");
             expect(await tool("status", {})).toContain("hp 12/12");
             expect(await tool("show", { page: "Lia" })).toContain("There is no page named Lia");
             expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
@@ -430,6 +433,8 @@ describe("MCP server, starting a session (D-194)", () => {
             await vi.waitFor(() => expect(readFileSync(agents, "utf8")).toBe(`${current}\nParla come un bardo.\n`));
             expect(readFileSync(join(folder, "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
             expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toEqual({ autoMemoryEnabled: false });
+            expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toContain("use_memories = false");
+            expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8"))).toMatchObject({ tools: { exclude: ["write_file", "replace"] } });
         } finally {
             await host.close();
             session.close();

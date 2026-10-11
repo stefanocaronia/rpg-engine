@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
-import { newChatBegun, newChatText, wentBackTo } from "./commands/game-saves.ts";
+import { newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
 import { type Context, defaultContext, type Player } from "./core/context.ts";
@@ -138,7 +138,7 @@ async function preload(context: Context, session: SessionStore): Promise<void>
 
             if (root !== undefined) {
                 session.track(root);
-                refreshHostFiles(root, startInstructions());
+                refreshHostFiles(root, startInstructions(), context.platform);
                 campaignWorld(root, context);
             }
         });
@@ -169,7 +169,7 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
 
         await prepare();
         // After a load the chat going on remembers what is gone: nothing runs in it, until a new chat begins with instructions (D-361).
-        const back = chatAfterLoad(context, command.name);
+        const back = chatAfterLoad(context, command.name, input);
 
         if (back.refused !== undefined) {
             news = context.news?.();
@@ -197,10 +197,10 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
 }
 
 /**
- * The chat after a load (SAV-5, D-361): one going on when the game went back remembers what is gone, so every call of it is refused; instructions begins a new
- * chat, which goes on from the save, told so once.
+ * The chat after a load (SAV-5, D-361, D-362): one going on when the game went back remembers what is gone, so every call is refused but instructions, which
+ * begins a chat, and save new chat, once the player confirms the chat began after it; or until the player confirms it on the dashboard.
  */
-function chatAfterLoad(context: Context, command: string): { refused?: string; begun: string[]; }
+function chatAfterLoad(context: Context, command: string, input: unknown): { refused?: string; begun: string[]; }
 {
     const run = <T>(work: () => T): T => (context.files === undefined ? work() : withFiles(context.files, work));
     return run(() => {
@@ -211,12 +211,22 @@ function chatAfterLoad(context: Context, command: string): { refused?: string; b
             return { begun: [] };
         }
 
-        if (command !== "instructions") {
-            return { refused: `The game went back to save ${save}. ${newChatText} Do not call instructions here: a new chat begins with it.`, begun: [] };
+        const confirmed = command === "save" && (input as { action?: unknown; } | undefined)?.action === "new chat";
+
+        if (command !== "instructions" && !confirmed) {
+            return {
+                refused: `The game went back to save ${save}. If this chat went on before that: ${newChatText} If it began after: ask the player to confirm it, `
+                    + "here or on the dashboard, then call save with action new chat.",
+                begun: [],
+            };
         }
 
-        newChatBegun(root);
-        return { begun: [`The game went back to save ${save} before this chat: start the story again from there, as status gives it, and tell nothing of what came after.`] };
+        return {
+            begun: confirmed ? [] : [
+                `The game went back to save ${save}. Before going on, ask the player to confirm this chat began after it, here or on the dashboard (Saves), then call save `
+                + `with action new chat; if it went on before, ${newChatText.charAt(0).toLowerCase()}${newChatText.slice(1)}`,
+            ],
+        };
     });
 }
 

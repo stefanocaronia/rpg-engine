@@ -4,7 +4,7 @@ import { stringify } from "yaml";
 import { z } from "zod";
 import { files } from "../core/store.ts";
 import { campaignFileName, findCampaign } from "./find-campaign.ts";
-import { hostFileChanges } from "./host-files.ts";
+import { hostFileChanges, rpgServer } from "./host-files.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
 /**
@@ -22,7 +22,7 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     }
 
     const mcpConfig = mcpConfigWithRpg(root, platform);
-    const hostFiles = hostFileChanges(root, startLines);
+    const hostFiles = hostFileChanges(root, startLines, platform);
     files().makeFolder(join(root, "sessions"));
     files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
     // A new campaign starts in setup (MOD-1).
@@ -46,8 +46,7 @@ function mcpConfigWithRpg(root: string, platform: string): { mcpServers?: Record
         }
     }
 
-    const rpg = platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
-    return { ...config, mcpServers: { ...config.mcpServers, rpg } };
+    return { ...config, mcpServers: { ...config.mcpServers, rpg: rpgServer(platform) } };
 }
 
 /** A campaign cannot sit inside another one, nor hold one. */

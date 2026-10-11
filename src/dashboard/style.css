@@ -799,6 +799,21 @@ a {
     outline: none;
 }
 
+/* After going back, until the player confirms a new chat with the master (D-362). */
+.saves-chat {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--gold);
+    border-radius: var(--radius-l);
+    background: color-mix(in srgb, var(--gold) 12%, var(--panel));
+}
+
+.saves-chat p {
+    margin: 0;
+}
+
 .saves-make {
     display: flex;
     gap: 8px;

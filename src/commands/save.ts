@@ -2,17 +2,36 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import type { Save } from "../saves/index.ts";
-import { campaignSaves, interruptedLoad, isPlayerDead, loadRefusal, loadRule, loadSave, makeSave, newChatText, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, saveText } from "./game-saves.ts";
+import {
+    campaignSaves,
+    interruptedLoad,
+    isPlayerDead,
+    loadRefusal,
+    loadRule,
+    loadSave,
+    makeSave,
+    newChatBegun,
+    newChatText,
+    type ResetPoint,
+    resetPoints,
+    resetSave,
+    type SaveMode,
+    saveMode,
+    savesWhy,
+    saveText,
+    wentBackTo,
+} from "./game-saves.ts";
 import { campaignWorld } from "./game-world.ts";
 
-const actions = ["list", "make", "load", "reset"] as const;
+const actions = ["list", "make", "load", "reset", "new chat"] as const;
 
 /** What save did: the list, a save made, or the game gone back to a save or to its start. */
 export type SaveResult =
     | { action: "list"; mode: SaveMode; saves: Save[]; }
     | { action: "make"; save: Save; }
     | { action: "load"; save: Save; removed: Save[]; copy?: string; finished: boolean; }
-    | { action: "reset"; to: ResetPoint; save: Save; removed: Save[]; copy?: string; finished: boolean; };
+    | { action: "reset"; to: ResetPoint; save: Save; removed: Save[]; copy?: string; finished: boolean; }
+    | { action: "new chat"; save: string; };
 
 export const save = defineCommand({
     name: "save",
@@ -22,11 +41,12 @@ export const save = defineCommand({
         + "reset starts the campaign over, in every mode, permadeath too: to start, the start of play with the same character, or to session zero, before it, "
         + "the character to make again. "
         + "Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. "
+        + "After going back the game goes on only in a new chat: new chat, once the player confirms this chat began after it, never in one that went on before. "
         + "Example: action load, save last.",
     group: "game",
     positionals: ["action", "save"],
     input: z.object({
-        action: z.enum(actions).default("list").describe("list, make, load or reset"),
+        action: z.enum(actions).default("list").describe("list, make, load, reset or new chat"),
         label: z.string().optional().describe("make: a few words that name the save, such as before the duel"),
         save: z.string().optional().describe("load: the number of a save, or last"),
         to: z.enum(resetPoints).optional().describe("reset: start, the start of play with the same character (if left out), or session zero, to make the character again"),
@@ -41,6 +61,18 @@ export const save = defineCommand({
 
         if (input.action === "list") {
             return { action: "list", mode, saves };
+        }
+
+        // The player confirms the chat began after going back: the game goes on in it (D-362).
+        if (input.action === "new chat") {
+            const back = wentBackTo(root);
+
+            if (back === undefined) {
+                throw new Error("The game did not go back since the last chat began: there is nothing to confirm. Go on with the story.");
+            }
+
+            newChatBegun(root);
+            return { action: "new chat", save: back };
         }
 
         if (input.action === "make") {
@@ -90,6 +122,10 @@ export const save = defineCommand({
 
     format(result)
     {
+        if (result.action === "new chat") {
+            return `The game goes on in this chat, from save ${result.save}, as status gives it: tell nothing of what came after.`;
+        }
+
         if (result.action === "make") {
             return `Saved: ${saveText(result.save)}.`;
         }
@@ -158,6 +194,8 @@ export function playerSaveNews(result: SaveResult): string
                 + `the later saves too. ${newChatText}`;
         case "reset":
             return `The player started the campaign over on the dashboard. ${resetText(result.to, result.save)}, what happened since gone from the game, every later save too. ${newChatText}`;
+        case "new chat":
+            return `The player opened a new chat after going back to save ${result.save}, and confirmed it on the dashboard: the game goes on in it, from that save.`;
         default:
             return "";
     }

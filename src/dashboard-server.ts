@@ -523,18 +523,19 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
         z.object({ action: z.literal("make"), label: z.string().trim().max(80).optional() }).strict(),
         z.object({ action: z.literal("load"), save: z.number().int().positive() }).strict(),
         z.object({ action: z.literal("reset"), campaign: z.string().trim().max(mostSaid), to: z.enum(resetPoints).optional() }).strict(),
+        z.object({ action: z.literal("new chat") }).strict(),
     ]).safeParse(await readBody(request));
 
     if (!parsed.success) {
         sendJson(response, 400, {
             error: "Send { action: make } with a label if you like, { action: load, save } with its number, or { action: reset, campaign } with the campaign's name, "
-                + "to start it over, and to: start or session zero.",
+                + "to start it over, and to: start or session zero; or { action: new chat } once a new chat with the master is open after going back.",
         });
         return;
     }
 
     // Going back while the master waits for the player's answer would answer it in the game started over (D-361).
-    if (parsed.data.action !== "make" && served.asked !== undefined) {
+    if ((parsed.data.action === "load" || parsed.data.action === "reset") && served.asked !== undefined) {
         sendJson(response, 409, { error: "The master is asking you something: answer it first, then go back." });
         return;
     }
@@ -553,6 +554,8 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
                 ? { action: "make", ...(change.label === undefined || change.label === "" ? {} : { label: change.label }) }
                 : change.action === "load"
                 ? { action: "load", save: String(change.save) }
+                : change.action === "new chat"
+                ? { action: "new chat" }
                 : { action: "reset", ...(change.to === undefined ? {} : { to: change.to }) };
             return playerSaveNews(await save.run(save.input.parse(input), { ...served.context, actor: "player" }));
         });

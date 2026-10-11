@@ -19,7 +19,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `AGENTS.md`, `CLAUDE.md` | this guide (`CLAUDE.md` only imports it) | yes | no |
 | `private/` | the maintainer's private repository: project docs (`project/`, Italian) and the colleagues (`.claude/`) | no | no |
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
-| `docs/` | user guide, and the docs for developers and agents: `architecture.md`, `game-systems.md`, `glossary.md`, `commands.md` (generated) | yes | no |
+| `docs/` | user guide (`hosts.md`: playing in each AI host), and the docs for developers and agents: `architecture.md`, `game-systems.md`, `glossary.md`, `commands.md` (generated) | yes | no |
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
 | `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/` | yes | yes, without their tests and scripts |
 | `extensions/` | built-in extensions (settings, adventures, features such as tarot, house rules), optional: none yet, phase 4 | yes | yes |

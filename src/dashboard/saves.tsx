@@ -17,9 +17,6 @@ const modeTexts: Record<string, string> = {
     permadeath: "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.",
 };
 
-// What the player does once the game went back: the chat going on remembers what is gone, and the master goes on only in a new one (D-361).
-const newChat = "Now open a new chat with the master (/clear in Claude Code) and write «continua»: this chat remembers what is gone, and the game goes on only in a new one.";
-
 // The two ways to start over, when the campaign has both.
 const pointTexts: Record<ResetPoint, { title: string; about: string; }> = {
     start: { title: "With the same character", about: "Back to the start of play, after session zero." },
@@ -65,7 +62,8 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
         const refused = await changeSaves(change);
         setBusy(false);
         setAsking(undefined);
-        setSaid(refused === undefined ? { problem: false, text: done, went: change.action !== "make" } : { problem: true, text: refused, went: change.action !== "make" });
+        const went = change.action === "load" || change.action === "reset";
+        setSaid(refused === undefined ? { problem: false, text: done, went } : { problem: true, text: refused, went });
         read();
     };
 
@@ -80,6 +78,13 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
             )}
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
             {said !== undefined && <p ref={saying} tabIndex={-1} class={said.problem ? "saves-said problem" : "saves-said"} role="status">{said.text}</p>}
+            {saves?.wentBack !== undefined && (
+                <NewChat
+                    back={wentBackTitle(saves.wentBack, saves.saves)}
+                    busy={busy}
+                    onConfirm={() => void send({ action: "new chat" }, "✓ The game goes on in the new chat: write «continua» there.")}
+                />
+            )}
             {saves?.make === true && <SaveNow busy={busy} onSave={(label) => void send({ action: "make", ...(label === "" ? {} : { label }) }, "✓ Saved.")} />}
             {saves !== undefined && saves.saves.length === 0 && <p class="saves-none">No saves yet: the game saves its start when play begins, then at the end of each scene.</p>}
             {saves !== undefined && saves.saves.length > 0 && (
@@ -113,7 +118,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                     later={saves.saves.filter((save) => save.number > asking.number).length}
                     busy={busy}
                     onClose={() => setAsking(undefined)}
-                    onConfirm={() => void send({ action: "load", save: asking.number }, `Back to ${saveTitle(asking)}. ${newChat}`)}
+                    onConfirm={() => void send({ action: "load", save: asking.number }, `Back to ${saveTitle(asking)}.`)}
                 />
             )}
             {asking === "reset" && saves !== undefined && points.length > 0 && (
@@ -123,7 +128,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                     campaign={campaign}
                     busy={busy}
                     onClose={() => setAsking(undefined)}
-                    onConfirm={(name, to) => void send({ action: "reset", campaign: name, to }, `The campaign starts over${to === "session zero" ? ", your character to make again" : ""}. ${newChat}`)}
+                    onConfirm={(name, to) => void send({ action: "reset", campaign: name, to }, `The campaign starts over${to === "session zero" ? ", your character to make again" : ""}.`)}
                 />
             )}
         </section>
@@ -162,6 +167,30 @@ function SaveFace({ save }: { save: ShownSave; })
             </div>
         </>
     );
+}
+
+/**
+ * After going back, until the player confirms it (D-361, D-362): the chat they played in remembers what is gone, so the master goes on only in a new one, which
+ * the player opens and confirms here, or tells the master there.
+ */
+function NewChat({ back, busy, onConfirm }: { back: string; busy: boolean; onConfirm(): void; })
+{
+    return (
+        <div class="saves-chat">
+            <p>
+                <strong>Open a new chat with the master.</strong> The game went back to{" "}
+                {back}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.
+            </p>
+            <button type="button" class="save-button gold" disabled={busy} onClick={onConfirm}>I opened a new chat</button>
+        </div>
+    );
+}
+
+/** The save the game went back to, by its card's title when it is still there. */
+function wentBackTitle(back: string, saves: ShownSave[]): string
+{
+    const save = saves.find((one) => back.startsWith(`${one.number} - `));
+    return save === undefined ? back : saveTitle(save);
 }
 
 /** Saving now, with a name if the player likes. */

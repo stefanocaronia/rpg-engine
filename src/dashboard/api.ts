@@ -66,7 +66,7 @@ export async function readSaves(): Promise<SavesView>
 }
 
 /** What the player does with the saves: save now, go back to a save, or start the campaign over, with its name written. */
-export type SavesChange = { action: "make"; label?: string; } | { action: "load"; save: number; } | { action: "reset"; campaign: string; to?: ResetPoint; };
+export type SavesChange = { action: "make"; label?: string; } | { action: "load"; save: number; } | { action: "reset"; campaign: string; to?: ResetPoint; } | { action: "new chat"; };
 
 /** Saves, goes back to a save or starts the campaign over (D-359): undefined when done, else what went wrong, as the engine says it. */
 export async function changeSaves(change: SavesChange): Promise<string | undefined>

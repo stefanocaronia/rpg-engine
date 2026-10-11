@@ -100,6 +100,38 @@ describe("rpg init", () => {
         expect(readFileSync(join(folder, "nuova", "AGENTS.md"), "utf8")).toBe(`${startMark}\n${startInstructions()}\n${endMark}\n`);
         expect(readFileSync(join(folder, "nuova", "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
         expect(readFileSync(join(folder, "nuova", ".claude", "settings.json"), "utf8")).toBe('{\n  "autoMemoryEnabled": false\n}\n');
+        // Codex's memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself (D-362).
+        expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe("[memories]\ngenerate_memories = false\nuse_memories = false\n");
+        const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
+        expect(JSON.parse(readFileSync(join(folder, "nuova", ".gemini", "settings.json"), "utf8"))).toEqual({
+            mcpServers: { rpg },
+            context: { fileName: ["AGENTS.md"] },
+            tools: { exclude: ["write_file", "replace"] },
+        });
+    });
+
+    it("keeps what the player wrote in Codex's and Gemini CLI's settings, and adds only what is missing (D-362)", async () => {
+        mkdirSync(join(folder, "mia", ".codex"), { recursive: true });
+        mkdirSync(join(folder, "mia", ".gemini"), { recursive: true });
+        writeFileSync(join(folder, "mia", ".codex", "config.toml"), 'model = "gpt-5"\n');
+        writeFileSync(join(folder, "mia", ".gemini", "settings.json"), '{ "mcpServers": { "altro": { "command": "x" } }, "tools": { "exclude": [] } }');
+        await runCommandLine(["init", "mia"], context);
+        expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
+        expect(JSON.parse(readFileSync(join(folder, "mia", ".gemini", "settings.json"), "utf8"))).toMatchObject({
+            mcpServers: { altro: { command: "x" }, rpg: expect.any(Object) },
+            context: { fileName: ["AGENTS.md"] },
+            tools: { exclude: [] },
+        });
+
+        mkdirSync(join(folder, "scelta", ".codex"), { recursive: true });
+        writeFileSync(join(folder, "scelta", ".codex", "config.toml"), "[memories]\nuse_memories = true\n");
+        await runCommandLine(["init", "scelta"], context);
+        expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toBe("[memories]\nuse_memories = true\n");
+
+        mkdirSync(join(folder, "rotto", ".gemini"), { recursive: true });
+        writeFileSync(join(folder, "rotto", ".gemini", "settings.json"), "{ non è json");
+        expect((await runCommandLine(["init", "rotto"], context)).output).toContain("settings.json is not valid JSON, so Gemini CLI cannot be set to find the rpg server in it");
+        expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
     });
 
     it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and a memory choice", async () => {

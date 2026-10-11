@@ -268,11 +268,11 @@ Read-only: no. Positional parameters: `action`.
 
 ### save
 
-The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. reset starts the campaign over, in every mode, permadeath too: to start, the start of play with the same character, or to session zero, before it, the character to make again. Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. Example: action load, save last.
+The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. reset starts the campaign over, in every mode, permadeath too: to start, the start of play with the same character, or to session zero, before it, the character to make again. Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. After going back the game goes on only in a new chat: new chat, once the player confirms this chat began after it, never in one that went on before. Example: action load, save last.
 
 Read-only: no. Positional parameters: `action`, `save`.
 
-- `action` (`"list" | "make" | "load" | "reset"`, optional): list, make, load or reset
+- `action` (`"list" | "make" | "load" | "reset" | "new chat"`, optional): list, make, load, reset or new chat
 - `label` (`string`, optional): make: a few words that name the save, such as before the duel
 - `save` (`string`, optional): load: the number of a save, or last
 - `to` (`"start" | "session zero"`, optional): reset: start, the start of play with the same character (if left out), or session zero, to make the character again
