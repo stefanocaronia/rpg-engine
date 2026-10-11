@@ -2964,8 +2964,27 @@ svg.icon {
     .top-place,
     .top .sections a.page-link,
     .theme-corner,
-    .top-bar > .nav-row {
+    .top-bar .sections {
         display: none;
+    }
+
+    /* The bar that stays keeps the menu at its right, as on top; its sections are at the bottom. */
+    .top-bar {
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+    }
+
+    .top-bar > .nav-row {
+        display: contents;
+    }
+
+    .top-bar > .status-chips {
+        grid-column: 3;
+        margin-right: 0;
+    }
+
+    .top-bar .menu {
+        grid-column: 4;
+        grid-row: 1 / span 2;
     }
 
     .menu-pop .menu-theme {
@@ -4451,12 +4470,10 @@ svg.icon {
 }
 
 /* The squares the player's character can still reach on its turn (D-328): a gold wash, edged dark as the gold halo, which cream alone would hide. */
-.lm-reach rect {
-    fill: var(--l-gold);
-    fill-opacity: 0.26;
-    stroke: #8a5a00;
-    stroke-opacity: 0.3;
-    stroke-width: 1;
+/* On the player's turn, the floor out of their character's move veiled in ink, what they can reach left as it is (D-340). */
+.lm-out rect {
+    fill: var(--l-ink);
+    fill-opacity: 0.2;
 }
 
 .lm-halo {

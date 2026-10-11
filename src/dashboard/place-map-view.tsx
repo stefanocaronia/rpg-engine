@@ -125,10 +125,14 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                         ))}
                     </g>
                     {walled ? drawn : <g mask="url(#lm-fade)">{drawn}</g>}
-                    {/* On the player's turn, the squares their character can still reach (D-328). */}
-                    <g class="lm-reach" aria-hidden="true">
-                        {reach.map((square) => <rect key={squareName(square)} x={X(square.column) + 2} y={Y(square.row) + 2} width={size - 4} height={size - 4} rx={4} />)}
-                    </g>
+                    {/* On the player's turn, the squares of the floor their character can no longer reach veiled, the others left as they are (D-328, D-340). */}
+                    {reach.length > 0 && (
+                        <g class="lm-out" aria-hidden="true" clip-path="url(#lm-open)">
+                            {open.filter((square) => !reach.some((near) => near.column === square.column && near.row === square.row)).map((square) => (
+                                <rect key={squareName(square)} x={X(square.column)} y={Y(square.row)} width={size} height={size} />
+                            ))}
+                        </g>
+                    )}
                     <path class="lm-outline" d={outline} filter="url(#lm-ink)" />
                     {squares.filter((square) => ["door", "open-door", "secret-door"].includes(kindAt(map, square))).map((square) => (
                         <Door key={squareName(square)} kind={kindAt(map, square)} name={featureAt(square)?.name ?? "door"} square={square} map={map} x={X(square.column)} y={Y(square.row)} />
@@ -165,16 +169,16 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                 </svg>
             </div>
             <ul class="lm-key" aria-label="Legend">
-                {/* What the gold on the player's turn is (D-335). */}
+                {/* What the veil on the player's turn is (D-335, D-340). */}
                 {reach.length > 0 && (
                     <li>
                         <svg class={`lm-swatch lm-look-${map.ground}`} viewBox="0 0 40 40" aria-hidden="true">
                             <rect class="lm-floor-fill" width={40} height={40} />
-                            <g class="lm-reach">
-                                <rect x={4} y={4} width={32} height={32} rx={4} />
+                            <g class="lm-out">
+                                <rect width={40} height={40} />
                             </g>
                         </svg>
-                        <span class="lm-key-name">within your move this turn</span>
+                        <span class="lm-key-name">out of your move this turn</span>
                     </li>
                 )}
                 {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
