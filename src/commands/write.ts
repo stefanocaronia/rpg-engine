@@ -77,7 +77,7 @@ import { gridNotes } from "./game-grids.ts";
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
-import { tickedQuestNotes } from "./game-quests.ts";
+import { newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
 import { deathNotes, isPlayerDead } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
@@ -289,7 +289,7 @@ export const write = defineCommand({
         const levelUp = (): string => situationPart("level-up", context, system);
         const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, levelUp), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
-        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page)] : [];
+        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page), ...newQuestNotes(existing, page)] : [];
         const twice = changed && page.type === "character" ? givenListNotes(now, page, changedFieldNames(fields)) : [];
         const shadows = changed && section !== undefined ? featureSectionNotes(now, page, section) : [];
         const links = changed ? linkNotes(now, fields) : [];

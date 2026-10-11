@@ -290,18 +290,56 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
     await rpg("write", "Ettore", ...known.flatMap((name) => ["--add", `knows=[[${name}]]`]));
     await rpg("write", "Rocca di Vetta", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
     save("start", "start");
+    await makeDemoQuests(rpg);
+
+    // Three scenes on the way, each a chapter of the story and a save at its end (D-367).
+    const scene = async (title: string, type: string, summary: string): Promise<void> => {
+        await rpg("scene", "open", "--title", title, "--type", type);
+        await rpg("scene", "close", "--summary", summary);
+    };
+
+    await scene("Il commiato del castellano", "social", "Il castellano affida a Ettore i pellegrini scomparsi sulla Strada del Re, e gli dà tre giorni.");
 
     for (const stop of ["Strada del Re", "Campo del Viandante", "Strada del Re", "Guadoscuro", "Locanda del Guado"]) {
         await rpg("move", "Ettore", "Lupa", "--to", stop);
 
         if (stop === "Campo del Viandante") {
-            save("La notte al campo", "scene closed");
+            await scene("La notte al campo", "exploration", "Tracce di carri e un sigillo spezzato accanto al fuoco spento; Lupa fiuta qualcosa verso nord-est.");
         }
     }
 
-    save("Arrivo alla locanda", "scene closed");
+    await scene("Arrivo alla locanda", "social", "Bertoldo parla di luci sulla Torre dei Sussurri e di un mercante che compra sigilli.");
 
     // In from the village by the door, then by the fire.
     await rpg("move", "Ettore", "--at", "E6");
     await rpg("move", "Lupa", "--at", "F6");
+}
+
+/** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; one on the side; one done and one failed. */
+async function makeDemoQuests(rpg: (...args: string[]) => Promise<void>): Promise<void>
+{
+    const quest = (name: string, fields: string[], text: string): Promise<void> => rpg("write", name, "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", text);
+    await quest(
+        "Ritrovare i pellegrini",
+        ["status=open", "kind=main", "giver=Il castellano di Rocca di Vetta", "place=[[Torre dei Sussurri]]", "sigilli=1/3", "clock=2/6", "deadline=day 3, 06:00"],
+        [
+            "Sei pellegrini sono spariti sulla Strada del Re, fra la Rocca e Guadoscuro. Chi li ha presi lascia sigilli spezzati.",
+            "",
+            "- [x] Ascoltare il castellano",
+            "- [x] Cercare tracce al Campo del Viandante",
+            "- [ ] Seguire le luci della Torre dei Sussurri",
+            "- [ ] Riportare i pellegrini alla Rocca",
+        ].join("\n"),
+    );
+    await quest(
+        "Il vino di Bertoldo",
+        ["status=open", "giver=Bertoldo", "place=[[Locanda del Guado]]", "botti=1/3"],
+        [
+            "Il vino buono di Bertoldo è finito, e le botti del mulino non arrivano.",
+            "",
+            "- [ ] Trovare tre botti al Mulino Rosso",
+        ].join("\n"),
+    );
+    await quest("La scorta al mercato", ["status=done", "giver=Mastro Ivo"], "Ettore ha scortato il carro di Mastro Ivo fino al mercato della Rocca.\n\n- [x] Arrivare al mercato");
+    await quest("Il carro rovesciato", ["status=failed"], "Il carro nella radura era vuoto quando Ettore è arrivato.\n\n- [ ] Trovare il carrettiere");
 }

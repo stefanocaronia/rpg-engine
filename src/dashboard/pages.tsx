@@ -5,7 +5,6 @@ import { phraseLabel } from "./labels.ts";
 
 // What each section to come will hold, as the plan says (D-269).
 const upcoming: Partial<Record<Section, string>> = {
-    journal: "The summary of the last session, the diary, your private notes and the quests.",
     world: "What your character knows, the documents found and the calendar; the world map later.",
     rules: "The rules of the game, to look up.",
 };

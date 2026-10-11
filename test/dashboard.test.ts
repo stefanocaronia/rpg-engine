@@ -210,6 +210,58 @@ describe("view as data (VIEW-1, D-272)", () => {
     });
 });
 
+describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => {
+    it("gives the quests the character knows, open ones first and the main one first among them, each with its goals, counters, clock and deadline", async () => {
+        const fields = ["status=open", "kind=main", "giver=[[Varro]]", "place=[[Locanda]]", "sigilli=1/3", "clock=2/6", "deadline=day 2, 06:00"];
+        const made = await ok("write", "Ritrovare i pellegrini", "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", "Spariti.\n\n- [x] Ascoltare\n- [ ] Seguire");
+        // Once, as the quest is made, the master hears what the journal shows of it.
+        expect(made).toContain("The player's journal shows a quest the character knows: its goals as - [ ] lines in its text");
+        expect(await ok("write", "Ritrovare i pellegrini", "--set", "giver=Varro")).not.toContain("The player's journal shows");
+        await ok("change", "Ritrovare i pellegrini", "sigilli", "--by=1");
+        await ok("write", "Il vino", "--type", "quest", "--set", "status=open", "--text=- [ ] Trovare le botti");
+        await ok("write", "La scorta", "--type", "quest", "--set", "status=done");
+        // A quest still planned is the master's alone.
+        await ok("write", "Il segreto", "--type", "quest", "--set", "status=planned");
+        const journal = JSON.parse(await ok("view", "--journal", "--json"));
+        expect(journal.now).toBe("day 1, 18:00");
+        expect(journal.quests.map((quest: { name: string; }) => quest.name)).toEqual(["Ritrovare i pellegrini", "Il vino", "La scorta"]);
+        expect(journal.quests[0]).toEqual({
+            name: "Ritrovare i pellegrini",
+            status: "open",
+            main: true,
+            giver: "Varro",
+            place: "Locanda",
+            text: "Spariti.",
+            goals: [{ text: "Ascoltare", done: true }, { text: "Seguire", done: false }],
+            counters: [{ field: "sigilli", value: 2, max: 3 }],
+            clock: { value: 2, max: 6 },
+            deadline: { date: "day 2, 06:00", minutes: 720 },
+        });
+        expect(await ok("view", "--journal")).toContain("Ritrovare i pellegrini: open, main, 1/2 goals, sigilli 2/3, clock 2/6, deadline day 2, 06:00\nIl vino: open, 0/1 goals\nLa scorta: done");
+        expect((await runCommandLine(["view", "--journal", "--map"], context)).output).toBe(
+            "Give journal alone: it is the quests and the story, apart from the page, the diary, the rolls and the map.",
+        );
+    });
+
+    it("tells the story by scenes, the last first, each with its summary and what happened in it; what came between apart, the saves left out", async () => {
+        await ok("scene", "open", "--title", "Al guado", "--type", "social");
+        await ok("change", "Ettore", "hp", "--by=-2");
+        await ok("scene", "close", "--summary", "Ettore attraversa il guado, ferito.");
+        await ok("advance", "--by", "1h");
+        await ok("scene", "open", "--title", "Alla torre", "--type", "exploration");
+        const { chapters } = JSON.parse(await ok("view", "--journal", "--json"));
+        expect(chapters.map((chapter: { title?: string; open: boolean; }) => [chapter.title ?? "between", chapter.open])).toEqual([
+            ["Alla torre", true],
+            ["between", false],
+            ["Al guado", false],
+            ["between", false],
+        ]);
+        expect(chapters[2]).toMatchObject({ type: "social", place: "Locanda", date: "day 1, 18:00", summary: "Ettore attraversa il guado, ferito.", facts: ["day 1, 18:00 · Ettore: hp 20/24 → 18/24"] });
+        expect(chapters[1].facts).toEqual(["day 1, 19:00 · Time passes: day 1, 18:00 → day 1, 19:00", "day 1, 19:00 · Ettore: Benedizione ended"]);
+        expect(JSON.stringify(chapters)).not.toContain("Saved:");
+    });
+});
+
 describe("the saves as the dashboard shows them (D-359)", () => {
     it("gives them newest first, each with the place the party was in and its picture, the game date and the real time, and what the mode allows", async () => {
         await ok("image", "Locanda", join(folder, "ritratto.png"));
@@ -243,7 +295,7 @@ describe("the saves as the dashboard shows them (D-359)", () => {
         await ok("config", "saves", "free");
         expect(JSON.parse(await ok("view", "--saves", "--json"))).toMatchObject({ make: true, reset: ["start"], saves: [{ load: true }, { point: "start", load: false }] });
         expect((await runCommandLine(["view", "--saves", "--map"], context)).output).toBe(
-            "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map and the settings.",
+            "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings and the journal.",
         );
     });
 });

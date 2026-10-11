@@ -10,6 +10,7 @@ import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, S
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Icon } from "./icons.tsx";
+import { FollowedQuest, JournalView } from "./journal.tsx";
 import { phraseLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
@@ -262,6 +263,8 @@ function App()
                 <div class="body">
                     <main>
                         {address.section === "about" && <About product={productName} system={shown.system} />}
+                        {/* The quest the player follows, small, where the story goes on (D-367). */}
+                        {(address.section === "scene" || address.section === "combat") && <FollowedQuest version={shown.version} campaign={shown.campaign} />}
                         {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
                         {address.section === "combat" && (
                             <CombatView
@@ -280,7 +283,8 @@ function App()
                         {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
                         {address.section === "settings" && <SettingsView version={shown.version} />}
                         {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
-                        {!["party", "scene", "combat", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
+                        {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
+                        {!["party", "scene", "combat", "journal", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
                         {address.section === "party" && member && (
                             <MemberSheet
                                 key={member.name}

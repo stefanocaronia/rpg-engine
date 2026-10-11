@@ -48,6 +48,22 @@ export async function readSettings(): Promise<PlayerSetting[]>
     return body.kind === "settings" ? body.settings : [];
 }
 
+/** The journal as the Journal section shows it (D-367). */
+export type JournalView = Extract<View, { kind: "journal"; }>;
+
+/** The quests the character knows and the story by scenes (D-367); none before there is a player character. */
+export async function readJournal(): Promise<JournalView | undefined>
+{
+    const response = await fetch("/api/view?journal=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.kind === "journal" ? body : undefined;
+}
+
 /** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */
 export async function readSaves(): Promise<SavesView>
 {

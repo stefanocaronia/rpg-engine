@@ -1151,6 +1151,480 @@ a {
     }
 }
 
+/* The Journal (D-367): the quest log as a video game's, cards with goals, bars, a clock and the time left, the main quests in gold; the story by chapters. */
+.journal {
+    display: grid;
+    gap: 14px;
+    /* Room at the end for the dice button, which stays over the page. */
+    padding-bottom: 72px;
+}
+
+.journal > h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.journal-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.journal-tabs button {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.journal-tabs button[aria-selected="true"] {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+}
+
+.journal-none,
+.journal-problem {
+    margin: 0;
+    color: var(--muted);
+}
+
+.journal-problem {
+    color: var(--low);
+}
+
+.quest-log {
+    display: grid;
+    gap: 12px;
+}
+
+.quest-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.quest-group span {
+    padding: 0 7px;
+    border-radius: var(--radius-xs);
+    background: var(--panel-2);
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.quest-folded summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.quest-folded summary::before {
+    content: "▸";
+    transition: rotate var(--short) var(--ease);
+}
+
+.quest-folded[open] summary::before {
+    rotate: 90deg;
+}
+
+.quest-folded .quest-cards {
+    margin-top: 10px;
+}
+
+.quest-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+}
+
+.quest-card {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.quest-card.main {
+    border-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+    background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 9%, var(--panel)), var(--panel) 55%);
+}
+
+.quest-card.done,
+.quest-card.failed {
+    opacity: 0.8;
+}
+
+.quest-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quest-name {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
+}
+
+.quest-badge,
+.quest-status,
+.chapter-now,
+.chapter-type {
+    padding: 1px 8px;
+    border-radius: var(--radius-xs);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.quest-badge {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.quest-status.done {
+    background: color-mix(in srgb, var(--ally) 16%, var(--panel));
+    color: var(--ally);
+}
+
+.quest-status.failed {
+    background: color-mix(in srgb, var(--low) 14%, var(--panel));
+    color: var(--low);
+}
+
+.followed-star {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.followed-star .star {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+
+.followed-star.on {
+    color: var(--gold);
+}
+
+.followed-star.on .star {
+    fill: var(--gold);
+}
+
+.followed-star:hover {
+    background: color-mix(in srgb, var(--ink) calc(var(--state-hover) * 100%), transparent);
+}
+
+.quest-from {
+    margin: -4px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.quest-text {
+    font-size: 0.92rem;
+}
+
+.quest-text p {
+    margin: 0 0 6px;
+}
+
+.quest-goals {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.quest-goals li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.quest-goals li p {
+    margin: 0;
+}
+
+.quest-tick {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    border: 1.5px solid var(--rule);
+    border-radius: var(--radius-xs);
+    color: var(--on-gold);
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.quest-goals li.done .quest-tick {
+    border-color: var(--gold);
+    background: var(--gold);
+}
+
+.quest-goals li.done > span:nth-child(2) {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.quest-measures {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule);
+}
+
+.quest-bar {
+    display: flex;
+    flex: 1 1 200px;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.quest-bar-label {
+    color: var(--muted);
+}
+
+.quest-bar-track {
+    flex: 1;
+    min-width: 60px;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--panel-2);
+    box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.quest-bar-track span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--gold);
+}
+
+.quest-bar-value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+}
+
+.quest-clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+}
+
+.clock-face {
+    flex: none;
+}
+
+.clock-slice {
+    fill: var(--panel-2);
+    stroke: var(--rule);
+    stroke-width: 1;
+}
+
+.clock-slice.filled {
+    fill: var(--gold);
+    stroke: color-mix(in srgb, var(--gold), var(--ink) 30%);
+}
+
+.quest-deadline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: var(--radius-s);
+    background: var(--panel-2);
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.quest-deadline svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.quest-deadline.near {
+    background: color-mix(in srgb, var(--low) 14%, var(--panel));
+    color: var(--low);
+}
+
+/* The followed quest, small, at the top of Scene and Combat. */
+.followed {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 6px 12px 6px 6px;
+    border: 1px solid color-mix(in srgb, var(--gold) 60%, var(--rule));
+    border-radius: var(--radius-l);
+    background: color-mix(in srgb, var(--gold) 8%, var(--panel));
+}
+
+.followed-what {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.followed-name {
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.followed-next {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.followed-next::before {
+    content: "▸ ";
+    color: var(--gold);
+}
+
+/* The story by chapters, the last first. */
+.story {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chapter {
+    padding: 12px 16px;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift);
+}
+
+.chapter.now {
+    border-left-color: var(--gold);
+}
+
+.chapter.between {
+    padding: 0 16px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.chapter.between .chapter-facts {
+    margin: 0;
+}
+
+.chapter.between summary {
+    color: var(--muted);
+}
+
+.chapter-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chapter-head h3 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+}
+
+.chapter-now {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.chapter-type {
+    background: var(--panel-2);
+    color: var(--muted);
+}
+
+.chapter-when {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.chapter-summary {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: 1rem;
+}
+
+.chapter-facts {
+    margin-top: 8px;
+    font-size: 0.85rem;
+}
+
+.chapter-facts summary {
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.chapter-facts ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    color: var(--muted);
+}
+
+@media (pointer: coarse) {
+    .followed-star,
+    .journal-tabs button {
+        min-height: var(--target);
+        min-width: var(--target);
+    }
+}
+
 .upcoming {
     padding: 20px;
     border: 1px solid var(--rule);

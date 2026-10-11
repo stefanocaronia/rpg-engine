@@ -26,7 +26,7 @@ export {
     writtenFieldName,
 } from "./inheritance.ts";
 export { type MapField, mapHelp, readMapField } from "./maps.ts";
-export { everyGoalTicked, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
+export { everyGoalTicked, goalsIn, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";

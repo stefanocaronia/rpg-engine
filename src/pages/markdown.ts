@@ -321,6 +321,24 @@ export function unreadSecretLines(text: string): number[]
     return lines.flatMap((line, index) => (isProse(views[index]) && /\[!secret\]/i.test(line) && !secretPattern.test(line) ? [index + 1] : []));
 }
 
+/** The goals a text lists as checkboxes, outside code blocks, each with whether it is ticked; and the text without them, for a quest's card (VIEW-8). */
+export function goalsIn(text: string): { goals: { text: string; done: boolean; }[]; rest: string; }
+{
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    const views = lineViews(lines);
+    const goals: { text: string; done: boolean; }[] = [];
+    const rest = lines.filter((line, index) => {
+        const match = isProse(views[index]) ? goalPattern.exec(line) : null;
+
+        if (match !== null) {
+            goals.push({ text: line.slice(match[0].length).trim(), done: match[1] !== " " });
+        }
+
+        return match === null;
+    });
+    return { goals, rest: trimBlankLines(rest.join("\n")) };
+}
+
 /** Whether a text lists goals as checkboxes, outside code blocks, and every one is ticked. */
 export function everyGoalTicked(text: string): boolean
 {

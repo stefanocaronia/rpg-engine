@@ -23,6 +23,7 @@ import { type Measures, measuresOf } from "./game-roads.ts";
 import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
+import { questText, type ShownChapter, shownJournal, type ShownQuest } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -120,6 +121,8 @@ export type ViewResult =
     | ({ kind: "map"; } & ShownMap)
     /** The player's settings, which the dashboard changes (D-341). */
     | { kind: "settings"; settings: PlayerSetting[]; }
+    /** The journal (D-367): the quests the player character knows, and the story by scenes. */
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
     | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "unknown"; text: string; };
@@ -141,6 +144,7 @@ export const view = defineCommand({
         map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
         settings: z.boolean().optional().describe("for the dashboard: the player's settings, with their values and what each means"),
         saves: z.boolean().optional().describe("for the dashboard: the saves, with what the campaign's saves setting lets the player do with each"),
+        journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with their goals, counters, clock and deadline, and the story by scenes"),
     }),
 
     run(input, context): ViewResult
@@ -149,16 +153,16 @@ export const view = defineCommand({
 
         // The player's settings, with or without a player character (D-341).
         if (input.settings === true) {
-            if ([input.page, input.diary, input.rolls, input.map].some((given) => given !== undefined)) {
-                throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls and the map.");
+            if ([input.page, input.diary, input.rolls, input.map, input.journal].some((given) => given !== undefined)) {
+                throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls, the map and the journal.");
             }
 
             return { kind: "settings", settings: shownPlayerSettings(root, context) };
         }
 
         if (input.saves === true) {
-            if ([input.page, input.diary, input.rolls, input.map, input.settings].some((given) => given !== undefined)) {
-                throw new Error("Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map and the settings.");
+            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.journal].some((given) => given !== undefined)) {
+                throw new Error("Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings and the journal.");
             }
 
             return shownSaves(root, context);
@@ -172,6 +176,21 @@ export const view = defineCommand({
         }
 
         const knowledge = knowledgeOf(root, world, pc);
+
+        // The journal (D-367, VIEW-8, VIEW-9).
+        if (input.journal === true) {
+            if ([input.page, input.diary, input.rolls, input.map].some((given) => given !== undefined)) {
+                throw new Error("Give journal alone: it is the quests and the story, apart from the page, the diary, the rolls and the map.");
+            }
+
+            const present = readPresent(root).date;
+            const known = (name: unknown): string | undefined => shownName(world, knowledge, name);
+            return {
+                kind: "journal",
+                ...(present === undefined ? {} : { now: formatGameDate(present) }),
+                ...shownJournal(root, world, knowledge, present, (entry) => diaryLine(world, entry, known), known),
+            };
+        }
 
         if (input.map === true && [input.page, input.diary, input.rolls].some((given) => given !== undefined)) {
             throw new Error("Give map alone: it is the world map, apart from the page, the diary and the rolls.");
@@ -300,6 +319,11 @@ export const view = defineCommand({
                 return mapText(result);
             case "settings":
                 return result.settings.map((setting) => `${setting.name}: ${settingText(setting)}`).join("\n");
+            case "journal":
+                return [
+                    ...(result.quests.length === 0 ? ["No quests yet."] : result.quests.map(questText)),
+                    ...result.chapters.map((chapter) => `${chapter.title ?? "Between scenes"}${chapter.date === undefined ? "" : `, ${chapter.date}`}${chapter.summary === undefined ? "" : `: ${chapter.summary}`}`),
+                ].join("\n");
             case "saves":
                 return [
                     ...result.saves.map((save) => `${save.number} - ${save.label}${save.place === undefined ? "" : `, in ${save.place}`}${save.point === undefined ? "" : ` (${save.point})`}${save.load ? "" : " (not to go back to)"}`),

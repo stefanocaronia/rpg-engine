@@ -295,6 +295,7 @@ export type View =
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
     | { kind: "unknown"; text: string; };
 
 /**
@@ -313,6 +314,33 @@ export interface ShownSave
     picture?: { file: string; version: number; };
     point?: ResetPoint;
     load: boolean;
+}
+
+/** A quest as the journal shows it (D-367): its goals, its counters, its clock and its deadline, with the minutes still to come. */
+export interface ShownQuest
+{
+    name: string;
+    status: "open" | "done" | "failed";
+    main: boolean;
+    giver?: string;
+    place?: string;
+    text: string;
+    goals: { text: string; done: boolean; }[];
+    counters: { field: string; value: number; max: number; }[];
+    clock?: { value: number; max: number; };
+    deadline?: { date: string; minutes?: number; };
+}
+
+/** A scene as a chapter of the story (D-367); without a title, what happened between scenes. */
+export interface ShownChapter
+{
+    title?: string;
+    type?: string;
+    place?: string;
+    date?: string;
+    summary?: string;
+    open: boolean;
+    facts: string[];
 }
 
 /** Where the campaign starts over from (D-361): the start of play, with the same character, or before session zero, to make one again. */
