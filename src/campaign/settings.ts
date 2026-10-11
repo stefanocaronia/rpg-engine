@@ -93,7 +93,7 @@ export const settingsSchema = z.object({
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
     saves: z.enum(saveModes).optional().describe(
-        "when the game may go back: permadeath (never), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
+        "when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
     ),
     rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food, spell components and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),

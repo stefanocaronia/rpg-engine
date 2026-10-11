@@ -56,7 +56,7 @@ export const config = defineCommand({
         + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
         + "system is one of the game systems installed: config lists them while it is missing. "
         + "difficulty (story, easy, normal, hard, brutal) is how hard the world plays; lethality what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide); "
-        + "saves when the game may go back: permadeath (never), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks). "
+        + "saves when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks). "
         + "rigor is how closely travel, fatigue, food, spell components and the like follow the rules: smooth (you gloss over them), rules (as written) or simulation (beyond them); "
         + "dice who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values); units metric or imperial; "
         + "companions how they come: none, made with the player or made by you in session zero, or met in play. "
@@ -184,7 +184,7 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     saves: {
         about: "when the game may go back",
         values: saveModes,
-        means: { permadeath: "never: what happens stays", checkpoint: "if your character dies: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
+        means: { permadeath: "never: what happens stays; only starting the campaign over", checkpoint: "if your character dies: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
     },
     rigor: {
         about: "how closely food, light, fatigue, spell components and the like follow the rules",

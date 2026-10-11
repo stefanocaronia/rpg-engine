@@ -3,6 +3,7 @@ import { changeState, requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { blockingMode, campaignMode, missingText, type Mode, modePart, modes } from "./game-mode.ts";
+import { campaignSaves, makeSave } from "./game-saves.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 
@@ -18,7 +19,7 @@ export const mode = defineCommand({
         to: z.enum(modes).describe(`the mode to enter: ${modes.join(", ")}`),
     }),
 
-    run(input, context): { to: Mode; changed: boolean; dateless: boolean; part: string; }
+    run(input, context): { to: Mode; changed: boolean; dateless: boolean; part: string; start?: string; }
     {
         const root = requireCampaign(context.folder);
         const world = campaignWorld(root, context);
@@ -37,7 +38,15 @@ export const mode = defineCommand({
 
         changeState(root, { mode: input.to });
         appendLogEntry(root, newDatedLogEntry(root, context, "mode-changed", "public", { from, to: input.to }));
-        return { to: input.to, changed: true, dateless: readPresent(root).date === undefined, part: modePart(input.to, campaignSystem(root, context)) ?? "" };
+        // The first time in play, with no save yet, the start is saved: the save reset goes back to (SAV-3, D-359).
+        const start = input.to === "play" && campaignSaves(root).length === 0 ? makeSave(root, context, "start", "start") : undefined;
+        return {
+            to: input.to,
+            changed: true,
+            dateless: readPresent(root).date === undefined,
+            part: modePart(input.to, campaignSystem(root, context)) ?? "",
+            ...(start === undefined ? {} : { start: `${start.number} - ${start.label}` }),
+        };
     },
 
     format(result)
@@ -48,6 +57,7 @@ export const mode = defineCommand({
 
         // The game starts with its first scene, and its date when it has none (D-103).
         const start = result.to !== "play" ? "" : ` Open the first scene${result.dateless ? ", and set the game date with advance to, at its hour, such as day 1, 18:00" : ""}.`;
-        return [`The campaign is now in ${result.to}.${start}`, result.part].filter((block) => block !== "").join("\n\n");
+        const saved = result.start === undefined ? "" : ` Its start is saved, ${result.start}: the save reset goes back to, if the player wants to start over.`;
+        return [`The campaign is now in ${result.to}.${saved}${start}`, result.part].filter((block) => block !== "").join("\n\n");
     },
 });

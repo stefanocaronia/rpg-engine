@@ -7,14 +7,16 @@ import { connect } from "node:net";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { findCampaign, requireCampaign, settingNames } from "./campaign/index.ts";
+import { findCampaign, readSettings, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
+import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
+import { comparableText } from "./core/text.ts";
 import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
 
@@ -42,8 +44,8 @@ export interface Dashboard
     /** The player through the page: ask's buttons, while a page is open (D-279). */
     player: Player;
     /**
-     * What the player changed on the page since it was last taken, each setting as it is now against how it was, for the master's next call, and what gives it
-     * back when that call never answers (D-341).
+     * What the player did on the page since it was last taken, for the master's next call: the saves, in order (D-359), then each setting as it is now against
+     * how it was (D-341); and what gives it back when that call never answers.
      */
     news(): { lines: string[]; restore(): void; };
     close(): Promise<void>;
@@ -144,7 +146,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn, changed: new Map<string, PlayerSetting>() };
+            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn, changed: new Map<string, PlayerSetting>(), events: [] };
             return serve(server, { ...served, notify: () => undefined });
         }
     }
@@ -198,6 +200,8 @@ interface Served
     pageReturn: number;
     /** Each setting the player changed on the page since the master's last call, as it was before the first of those changes (D-341). */
     changed: Map<string, PlayerSetting>;
+    /** What the player did with the saves on the page since the master's last call, in order (D-359). */
+    events: string[];
     /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
     returning?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
@@ -250,7 +254,7 @@ function serve(server: Server, served: Served): Dashboard
     return {
         url: `http://127.0.0.1:${served.port}`,
         player: pagePlayer(served),
-        news: () => settingNews(served),
+        news: () => pageNews(served),
         close: () =>
             new Promise((done) => {
                 stopListening();
@@ -284,6 +288,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (request.method === "POST" && path === "/api/config" && origin !== undefined) {
         await changeSetting(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/saves" && origin !== undefined) {
+        await changeSaves(request, response, served);
         return;
     }
 
@@ -501,6 +510,63 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
+}
+
+/**
+ * A save the player makes on the page, one they go back to, or the campaign started over from its first, as save does, with the player as who did it; the
+ * mode of saves allows it or refuses it as in the chat, and starting over needs the campaign's name written. The master hears of it at their next call (D-359).
+ */
+async function changeSaves(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.union([
+        z.object({ action: z.literal("make"), label: z.string().trim().max(80).optional() }).strict(),
+        z.object({ action: z.literal("load"), save: z.number().int().positive() }).strict(),
+        z.object({ action: z.literal("reset"), campaign: z.string().trim().max(mostSaid) }).strict(),
+    ]).safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, {
+            error: "Send { action: make } with a label if you like, { action: load, save } with its number, or { action: reset, campaign } with the campaign's name, to start it over.",
+        });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const change = parsed.data;
+        const news = await withFiles(served.session, async () => {
+            const name = readSettings(requireCampaign(served.context.folder)).name;
+
+            if (change.action === "reset" && comparableText(change.campaign) !== comparableText(name)) {
+                throw new Error(`Write the campaign's name, ${name}, to start it over. Nothing changed.`);
+            }
+
+            const input = change.action === "make"
+                ? { action: "make", ...(change.label === undefined || change.label === "" ? {} : { label: change.label }) }
+                : change.action === "load"
+                ? { action: "load", save: String(change.save) }
+                : { action: "reset" };
+            return playerSaveNews(await save.run(save.input.parse(input), { ...served.context, actor: "player" }));
+        });
+        served.events.push(news);
+        sendJson(response, 202, {});
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/** What the master hears of what the player did on the page since their last call: the saves, in order, then the settings; all given back when the call never answers. */
+function pageNews(served: Served): { lines: string[]; restore(): void; }
+{
+    const events = served.events.splice(0);
+    const settings = settingNews(served);
+    return {
+        lines: [...events, ...settings.lines],
+        restore: () => {
+            served.events.unshift(...events);
+            settings.restore();
+        },
+    };
 }
 
 /**

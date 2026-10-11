@@ -17,6 +17,7 @@ import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
+import { SavesView } from "./saves.tsx";
 import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
@@ -278,7 +279,8 @@ function App()
                         )}
                         {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
                         {address.section === "settings" && <SettingsView version={shown.version} />}
-                        {!["party", "scene", "combat", "world", "about", "settings"].includes(address.section) && <Upcoming section={address.section} />}
+                        {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
+                        {!["party", "scene", "combat", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
                         {address.section === "party" && member && (
                             <MemberSheet
                                 key={member.name}

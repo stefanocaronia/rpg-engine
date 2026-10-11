@@ -750,6 +750,289 @@ a {
 }
 
 /* A section still to come: what it will hold. */
+/* The Saves section (D-359): the saves as a video game shows them, cards with the picture of the place the party was in, newest first; starting over apart,
+   at the end, in red. */
+.saves {
+    display: grid;
+    gap: 14px;
+    /* Room at the end for the dice button, which stays over the page. */
+    padding-bottom: 72px;
+}
+
+.saves > h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.saves-lead,
+.saves-none {
+    margin: -6px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.saves-lead a {
+    color: var(--accent);
+}
+
+.saves-said {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 3px solid var(--ally);
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--ally) 10%, var(--panel));
+}
+
+.saves-said.problem {
+    border-left-color: var(--low);
+    background: color-mix(in srgb, var(--low) 10%, var(--panel));
+}
+
+.saves-make {
+    display: flex;
+    gap: 8px;
+    max-width: 560px;
+}
+
+.saves-make input,
+.confirm-name input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.save-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.save-card {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.save-picture {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, var(--panel-2)), var(--panel-2));
+    color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.save-picture img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.save-picture svg.icon {
+    width: 40px;
+    height: 40px;
+}
+
+.save-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    background: var(--gold);
+    color: var(--on-gold);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.save-what {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    padding: 10px 14px;
+    min-width: 0;
+}
+
+.save-title {
+    overflow-wrap: anywhere;
+    font-weight: 650;
+}
+
+.save-place,
+.save-at {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.save-card > .save-button {
+    margin: 0 14px 12px;
+    justify-self: start;
+}
+
+.save-button {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.save-button.gold {
+    border-color: transparent;
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.save-button.danger {
+    border-color: var(--low);
+    color: var(--low);
+}
+
+.save-button.danger:not(:disabled):hover {
+    background: color-mix(in srgb, var(--low) 10%, var(--float));
+}
+
+.save-button:disabled {
+    border-color: var(--rule);
+    background: var(--float);
+    color: var(--muted);
+    cursor: default;
+}
+
+.saves-over {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--low) 45%, var(--rule));
+    border-radius: var(--radius-l);
+}
+
+.saves-over h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.saves-over p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* On a phone, each save a row: its picture on the left, small, as in a game's list of saves. */
+@media (max-width: 600px) {
+    .save-card {
+        grid-template-columns: 112px minmax(0, 1fr);
+        grid-template-rows: auto auto;
+    }
+
+    .save-picture {
+        grid-row: 1 / -1;
+        aspect-ratio: auto;
+        min-height: 84px;
+    }
+
+    .save-badge {
+        top: 6px;
+        left: 6px;
+        font-size: 0.65rem;
+    }
+
+    .save-what {
+        padding: 8px 12px 4px;
+    }
+
+    .save-card > .save-button {
+        margin: 0 12px 10px;
+    }
+}
+
+/* A question over the whole page, the dice too: going back, or starting over. */
+.confirm {
+    width: min(440px, calc(100% - 32px));
+    padding: 18px 20px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-xl);
+    background: var(--panel);
+    color: var(--ink);
+    box-shadow: var(--overlay);
+}
+
+.confirm::backdrop {
+    background: rgb(0 0 0 / 0.45);
+}
+
+.confirm h2 {
+    margin: 0 0 12px;
+    font-size: 1.2rem;
+}
+
+.confirm p {
+    margin: 12px 0 0;
+}
+
+.confirm .confirm-note {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.confirm .save-card.shown {
+    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-rows: auto;
+    box-shadow: none;
+}
+
+.confirm .save-card.shown .save-picture {
+    aspect-ratio: auto;
+    min-height: 72px;
+}
+
+.confirm-name {
+    display: grid;
+    gap: 8px;
+}
+
+.confirm-name input {
+    flex: none;
+}
+
+.confirm-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+@media (pointer: coarse) {
+    .save-button,
+    .saves-make input,
+    .confirm-name input {
+        min-height: var(--target);
+    }
+}
+
 .upcoming {
     padding: 20px;
     border: 1px solid var(--rule);

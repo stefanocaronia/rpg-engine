@@ -5,10 +5,12 @@ import type { Context } from "../core/context.ts";
 import { filesIn } from "../core/files.ts";
 import { appendLogEntry, logFileName, logLine } from "../core/log.ts";
 import { files, isInside } from "../core/store.ts";
-import type { World } from "../pages/index.ts";
+import { locate, type World } from "../pages/index.ts";
 import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../saves/index.ts";
 import { formatGameDate } from "../time/index.ts";
+import { playerCharacter } from "./game-knowledge.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
+import { campaignWorld } from "./game-world.ts";
 
 /** The folder of the saves, at the top of the campaign. */
 export const savesFolderName = ".saves";
@@ -55,7 +57,8 @@ export function makeSave(root: string, context: Context, label: string | undefin
     const number = (campaignSaves(root).at(-1)?.number ?? 0) + 1;
     const date = readPresent(root).date;
     const file = saveFileName(number, [date === undefined ? undefined : formatGameDate(date), label]);
-    const entry = newDatedLogEntry(root, context, "saved", "public", { save: number, label, why });
+    const place = partyPlace(root, context);
+    const entry = newDatedLogEntry(root, context, "saved", "public", { save: number, label, why, ...(place === undefined ? {} : { place }) });
     const held = gameFileBytes(root);
     held[logFileName] = joinBytes(held[logFileName], new TextEncoder().encode(logLine(entry)));
     files().writeBytes(join(root, savesFolderName, file), packFiles(held));
@@ -159,7 +162,10 @@ export function deathNotes(root: string, name: string): string[]
     const last = campaignSaves(root).at(-1);
 
     if (mode === "permadeath") {
-        return [`${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.`];
+        return [
+            `${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, or the campaign started over from its start, `
+            + "if they want to go on; save reset only once they choose it.",
+        ];
     }
 
     if (last === undefined) {
@@ -215,4 +221,49 @@ function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Arra
     joined.set(first ?? new Uint8Array(), 0);
     joined.set(second, first?.length ?? 0);
     return joined;
+}
+
+/** What loading may do under each mode of saves (D-55); reset, back to the start, in every mode (D-359). */
+export function loadRule(mode: SaveMode): string
+{
+    switch (mode) {
+        case "free":
+            return "With saves free, load goes back to any of them when the player asks, and make saves when they ask.";
+        case "checkpoint":
+            return "With saves checkpoint, load goes back to the last one, and only once the player character is dead, if the player wants.";
+        default:
+            return "With saves permadeath, the game never goes back, but to its start with reset when the player wants to start over. "
+                + "If something broke outside the story, the player may unzip a save from .saves by hand.";
+    }
+}
+
+/** Why the mode of saves does not allow going back to a save (D-55): permadeath never, checkpoint only to the last and once the player character is dead; undefined when it may. */
+export function loadRefusal(mode: SaveMode, saves: Save[], chosen: Save, dead: boolean): string | undefined
+{
+    if (mode === "permadeath") {
+        return loadRule(mode);
+    }
+
+    if (mode === "checkpoint" && !dead) {
+        return "With saves checkpoint, the game goes back only once the player character is dead, and they are alive: go on with the story.";
+    }
+
+    if (mode === "checkpoint" && chosen !== saves.at(-1)) {
+        return `With saves checkpoint, the game goes back only to the last save, ${saveText(saves.at(-1) as Save)}.`;
+    }
+
+    return undefined;
+}
+
+/** The place the player character is in, the nearest that holds it, which a save keeps for its picture, as in a video game (D-359); undefined in none. */
+function partyPlace(root: string, context: Context): string | undefined
+{
+    try {
+        const world = campaignWorld(root, context);
+        const character = playerCharacter(world);
+        return character === undefined ? undefined : [character, ...locate(world, character).chain].find((holder) => holder.type === "place")?.name;
+    } catch {
+        // A world that does not read now never stops a save: it only has no place.
+        return undefined;
+    }
 }

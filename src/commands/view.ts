@@ -19,6 +19,7 @@ import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCha
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
+import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type SaveMode, saveMode } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
@@ -118,6 +119,8 @@ export type ViewResult =
     | ({ kind: "map"; } & ShownMap)
     /** The player's settings, which the dashboard changes (D-341). */
     | { kind: "settings"; settings: PlayerSetting[]; }
+    /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
+    | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: boolean; }
     | { kind: "unknown"; text: string; };
 
 export const view = defineCommand({
@@ -136,6 +139,7 @@ export const view = defineCommand({
         rolls: z.string().optional().describe(`for the dashboard: how many of the last public rolls; ${rollsShown} if left out`),
         map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
         settings: z.boolean().optional().describe("for the dashboard: the player's settings, with their values and what each means"),
+        saves: z.boolean().optional().describe("for the dashboard: the saves, with what the campaign's saves setting lets the player do with each"),
     }),
 
     run(input, context): ViewResult
@@ -149,6 +153,14 @@ export const view = defineCommand({
             }
 
             return { kind: "settings", settings: shownPlayerSettings(root, context) };
+        }
+
+        if (input.saves === true) {
+            if ([input.page, input.diary, input.rolls, input.map, input.settings].some((given) => given !== undefined)) {
+                throw new Error("Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map and the settings.");
+            }
+
+            return shownSaves(root, context);
         }
 
         const world = campaignWorld(root, context);
@@ -287,6 +299,11 @@ export const view = defineCommand({
                 return mapText(result);
             case "settings":
                 return result.settings.map((setting) => `${setting.name}: ${settingText(setting)}`).join("\n");
+            case "saves":
+                return [
+                    ...result.saves.map((save) => `${save.number} - ${save.label}${save.place === undefined ? "" : `, in ${save.place}`}${save.start ? " (start)" : ""}${save.load ? "" : " (not to go back to)"}`),
+                    result.rule,
+                ].join("\n");
 
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";
@@ -534,4 +551,67 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
 function settingText(setting: PlayerSetting): string
 {
     return setting.items === undefined ? (setting.value ?? "(not chosen)") : setting.items.length === 0 ? "(none)" : setting.items.join(", ");
+}
+
+/**
+ * A save as the dashboard shows it (D-359): its number and label, the words that name it and the game date, when it was made in real time, the place the party
+ * was in with its picture, whether it is the start, and whether the player may go back to it.
+ */
+export interface ShownSave
+{
+    number: number;
+    label: string;
+    name?: string;
+    date?: string;
+    at?: string;
+    place?: string;
+    picture?: { file: string; version: number; };
+    start: boolean;
+    load: boolean;
+}
+
+/** The saves, newest first, each with whether the mode lets the player go back to it; whether they may make one, and start over from the first (D-359). */
+function shownSaves(root: string, context: Parameters<typeof campaignWorld>[1]): Extract<ViewResult, { kind: "saves"; }>
+{
+    const mode = saveMode(root);
+    const saves = campaignSaves(root);
+    const world = campaignWorld(root, context);
+    const dead = isPlayerDead(world);
+    const made = new Map(readLog(root).filter((entry) => entry.type === "saved").map((entry) => [Number((entry.data as { save?: unknown; }).save), entry]));
+
+    const madeOf = (number: number): Partial<ShownSave> => {
+        const entry = made.get(number);
+        const { label, place } = (entry?.data ?? {}) as { label?: unknown; place?: unknown; };
+        return {
+            ...(typeof label === "string" ? { name: label } : {}),
+            ...(entry?.date === undefined ? {} : { date: entry.date }),
+            ...(entry === undefined ? {} : { at: entry.at }),
+            ...(typeof place === "string" ? savedPlace(root, context, world, place) : {}),
+        };
+    };
+
+    return {
+        kind: "saves",
+        mode,
+        rule: loadRule(mode),
+        saves: saves.map((save, index) => ({
+            number: save.number,
+            label: save.label,
+            ...madeOf(save.number),
+            start: index === 0,
+            load: loadRefusal(mode, saves, save, dead) === undefined,
+        })).toReversed(),
+        make: mode === "free",
+        reset: saves.length > 0,
+    };
+}
+
+/** The place a save was made in, with its picture, else that of the nearest place that holds it, as a room of the inn shows the inn. */
+function savedPlace(root: string, context: Parameters<typeof campaignWorld>[1], world: World, name: string): { place: string; picture?: { file: string; version: number; }; }
+{
+    const page = pagesWithName(world, name)[0];
+    const picture = page === undefined
+        ? undefined
+        : [page, ...locate(world, page).chain].map((holder) => shownImage(root, context, world, holder)).find((image) => image !== undefined);
+    return { place: name, ...(picture === undefined ? {} : { picture }) };
 }

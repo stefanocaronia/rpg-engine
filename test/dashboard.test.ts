@@ -210,6 +210,44 @@ describe("view as data (VIEW-1, D-272)", () => {
     });
 });
 
+describe("the saves as the dashboard shows them (D-359)", () => {
+    it("gives them newest first, each with the place the party was in and its picture, the game date and the real time, and what the mode allows", async () => {
+        await ok("image", "Locanda", join(folder, "ritratto.png"));
+        await ok("scene", "open", "--title", "Uno", "--type", "social");
+        await ok("scene", "close", "--summary", "Fatto.");
+        // A room of the inn, without a picture of its own: its save shows the inn's.
+        await ok("write", "Cortile", "--type", "place");
+        await ok("write", "Locanda", "--add", "contains=[[Cortile]]");
+        await ok("move", "Ettore", "--to", "Cortile");
+        await ok("scene", "open", "--title", "Due", "--type", "social");
+        await ok("scene", "close", "--summary", "Fatto.");
+        const picture = { file: "Locanda.png", version: expect.any(Number) };
+        const saves = JSON.parse(await ok("view", "--saves", "--json"));
+        expect(saves).toEqual({
+            kind: "saves",
+            mode: "checkpoint",
+            rule: expect.stringMatching(/^With saves checkpoint, load goes back to the last one/),
+            saves: [
+                { number: 2, label: "day 1, 18.00 - Due", name: "Due", date: "day 1, 18:00", at: expect.any(String), place: "Cortile", picture, start: false, load: false },
+                { number: 1, label: "day 1, 18.00 - Uno", name: "Uno", date: "day 1, 18:00", at: expect.any(String), place: "Locanda", picture, start: true, load: false },
+            ],
+            make: false,
+            reset: true,
+        });
+        expect(new Date(saves.saves[0].at).getTime()).not.toBeNaN();
+        expect(await ok("view", "--saves")).toBe(
+            "2 - day 1, 18.00 - Due, in Cortile (not to go back to)\n1 - day 1, 18.00 - Uno, in Locanda (start) (not to go back to)\n"
+                + "With saves checkpoint, load goes back to the last one, and only once the player character is dead, if the player wants.",
+        );
+        // With saves free, every save is one to go back to, and the player may save.
+        await ok("config", "saves", "free");
+        expect(JSON.parse(await ok("view", "--saves", "--json"))).toMatchObject({ make: true, reset: true, saves: [{ load: true }, { load: true }] });
+        expect((await runCommandLine(["view", "--saves", "--map"], context)).output).toBe(
+            "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map and the settings.",
+        );
+    });
+});
+
 describe("the dashboard's server (D-270, D-272)", () => {
     let watchers: { changed: (name: string | undefined) => void; failed: () => void; }[];
     let session: SessionStore;
@@ -682,6 +720,48 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "lines", add: "   " })).status).toBe(400);
         expect(dashboard.news().lines).toEqual([]);
         expect(await ok("config", "difficulty")).toContain("difficulty: hard");
+    });
+
+    it("saves, goes back and starts over from the page as save does, as the mode allows, logged as the player's, and the master hears of each (D-359)", async () => {
+        const refused = await send("POST", "/api/saves", { action: "make" });
+        expect(refused.status).toBe(400);
+        expect(JSON.parse(refused.body).error).toMatch(/^With saves checkpoint, a save is made by itself at the end of each scene/);
+        expect((await send("POST", "/api/config", { setting: "saves", value: "free" })).status).toBe(202);
+        dashboard.news();
+        expect((await send("POST", "/api/saves", { action: "make", label: "Prima del muro" })).status).toBe(202);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "saved", by: "player", data: { save: 1, label: "Prima del muro", why: "asked", place: "Locanda" } });
+        expect((await send("POST", "/api/saves", { action: "make", label: " " })).status).toBe(202);
+        // Given back when the master's call never answered, then taken again, in order.
+        const saved = dashboard.news();
+        expect(saved.lines).toEqual(["The player saved on the dashboard: 1 - day 1, 18.00 - Prima del muro.", "The player saved on the dashboard: 2 - day 1, 18.00."]);
+        saved.restore();
+        expect(dashboard.news().lines).toEqual(saved.lines);
+        // Back to the first: the later one is gone, and the master tells the story again from there.
+        expect((await send("POST", "/api/saves", { action: "load", save: 1 })).status).toBe(202);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", by: "player", data: { save: 1, removed: [2] } });
+        expect(dashboard.news().lines).toEqual([
+            "The player went back on the dashboard to save 1 - day 1, 18.00 - Prima del muro: the campaign's files are as they were then, and what happened since is gone from "
+            + "the game, the later saves too. Forget it: call status, and tell the story again from there.",
+        ]);
+        // With saves permadeath the game never goes back, but starting over, once the campaign's name is written.
+        expect((await send("POST", "/api/config", { setting: "saves", value: "permadeath" })).status).toBe(202);
+        dashboard.news();
+        const permadeath = await send("POST", "/api/saves", { action: "load", save: 1 });
+        expect(permadeath.status).toBe(400);
+        expect(JSON.parse(permadeath.body).error).toMatch(/^With saves permadeath, the game never goes back, but to its start with reset when the player wants to start over\./);
+        const unnamed = await send("POST", "/api/saves", { action: "reset", campaign: "Guado" });
+        expect(unnamed.status).toBe(400);
+        expect(JSON.parse(unnamed.body)).toEqual({ error: "Write the campaign's name, Guadoscuro, to start it over. Nothing changed." });
+        expect(dashboard.news().lines).toEqual([]);
+        expect((await send("POST", "/api/saves", { action: "reset", campaign: " guadoscuro " })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([
+            "The player started the campaign over on the dashboard, back to its start, save 1 - day 1, 18.00 - Prima del muro: what happened since is gone from the game, "
+            + "every later save too. Forget it: call status, and start the story again from there.",
+        ]);
+        // Anything else sent changes nothing.
+        expect((await send("POST", "/api/saves", { action: "load", save: "last" })).status).toBe(400);
+        expect((await send("POST", "/api/saves", { action: "reset" })).status).toBe(400);
+        expect((await send("POST", "/api/saves", { action: "delete" })).status).toBe(400);
     });
 
     it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {

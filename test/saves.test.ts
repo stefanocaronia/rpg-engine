@@ -73,7 +73,8 @@ async function scene(title: string): Promise<string>
     return ok("scene", "close", "--summary", "Fatto.");
 }
 
-// The table of cases (SAV-5, D-55): each mode, with the player character alive or dead, loading the last save or an earlier one, and making one on request.
+// The table of cases (SAV-5, D-55): each mode, with the player character alive or dead, loading the last save or an earlier one, making one on request, and
+// starting over.
 const table: [string, "alive" | "dead", string, "done" | "refused"][] = [
     ["free", "alive", "load last", "done"],
     ["free", "alive", "load 1", "done"],
@@ -86,6 +87,11 @@ const table: [string, "alive" | "dead", string, "done" | "refused"][] = [
     ["permadeath", "dead", "load last", "refused"],
     ["permadeath", "alive", "load 1", "refused"],
     ["permadeath", "alive", "make", "refused"],
+    // Starting over, back to the first save, in every mode (D-359).
+    ["free", "alive", "reset", "done"],
+    ["checkpoint", "alive", "reset", "done"],
+    ["permadeath", "alive", "reset", "done"],
+    ["permadeath", "dead", "reset", "done"],
 ];
 
 describe("the table of cases of the saves", () => {
@@ -156,6 +162,30 @@ describe("the table of cases of the saves", () => {
         expect((await rpg("save", "list", "1")).output).toBe("save list does not take save: only load does.");
     });
 
+    it("SAV-5 (D-359): reset goes back to the first save in every mode, the later ones gone; with none it says when the start is saved", async () => {
+        expect((await rpg("save", "reset")).output).toBe(
+            "There are no saves yet: the start is saved when the campaign enters play, and the end of each scene makes one. Nothing changed.",
+        );
+        await scene("Uno");
+        await ok("write", "Bran", "--type", "character", "--set", "role=npc");
+        await scene("Due");
+        await ok("config", "saves", "permadeath");
+        expect(await ok("save", "reset")).toBe(
+            "Back to the start, 1 - Uno: the campaign starts over from there, what happened since gone from the game, every later save too. "
+                + "What the reset replaced is in .saves/before load 001.zip, to undo it by hand. Call status, and start the story again from there.",
+        );
+        expect(existsSync(join(folder, "world", "characters", "Bran.md"))).toBe(false);
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip"]);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", data: { save: 1, removed: [2] } });
+        expect((await rpg("save", "reset", "1")).output).toBe("save reset does not take save: only load does.");
+    });
+
+    it("SAV-3 (D-359): a save keeps the place the player character was in, the nearest that holds them", async () => {
+        await ok("write", "Rifugio", "--type", "place", "--add", "contains=[[Kira]]");
+        await scene("Uno");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "saved", data: { save: 1, label: "Uno", why: "scene closed", place: "Rifugio" } });
+    });
+
     it("SAV-5: refuses a save that holds files outside the game's, before writing anything", async () => {
         await ok("config", "saves", "free");
         mkdirSync(join(folder, ".saves"));
@@ -182,7 +212,9 @@ describe("the death of the player character (SAV-7)", () => {
         await scene("Al guado");
         expect(await dies("checkpoint")).toContain("Kira is dead. With saves checkpoint, offer the player to go back to the last save, 1 - Al guado, or a new character; save load only once they choose it.");
         expect(await dies("free")).toContain("offer the player to go back to a save, the last being 1 - Al guado (save list gives every one), or a new character;");
-        expect(await dies("permadeath")).toContain("Kira is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.");
+        expect(await dies("permadeath")).toContain(
+            "Kira is dead, and with saves permadeath the game never goes back: offer the player a new character, or the campaign started over from its start, if they want to go on;",
+        );
         // While another player character lives, nothing is said.
         await ok("write", "Lia", "--set", "status=alive");
         await ok("write", "Kira", "--set", "status=alive");

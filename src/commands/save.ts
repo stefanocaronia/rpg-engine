@@ -2,27 +2,30 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import type { Save } from "../saves/index.ts";
-import { campaignSaves, interruptedLoad, isPlayerDead, loadSave, makeSave, type SaveMode, saveMode, saveText } from "./game-saves.ts";
+import { campaignSaves, interruptedLoad, isPlayerDead, loadRefusal, loadRule, loadSave, makeSave, type SaveMode, saveMode, saveText } from "./game-saves.ts";
 import { campaignWorld } from "./game-world.ts";
 
-const actions = ["list", "make", "load"] as const;
+const actions = ["list", "make", "load", "reset"] as const;
 
-type SaveResult =
+/** What save did: the list, a save made, or the game gone back to a save or to its start. */
+export type SaveResult =
     | { action: "list"; mode: SaveMode; saves: Save[]; }
     | { action: "make"; save: Save; }
-    | { action: "load"; save: Save; removed: Save[]; copy?: string; finished: boolean; };
+    | { action: "load"; save: Save; removed: Save[]; copy?: string; finished: boolean; }
+    | { action: "reset"; save: Save; removed: Save[]; copy?: string; finished: boolean; };
 
 export const save = defineCommand({
     name: "save",
     description: "The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. "
         + "list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; "
         + "load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. "
-        + "Going back removes what happened since, the later saves too: load only when the player has said so. A load that stopped halfway is finished by save load. "
+        + "reset goes back to the first save, the campaign's start after session zero, in every mode, permadeath too: the campaign starting over. "
+        + "Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. "
         + "Example: action load, save last.",
     group: "game",
     positionals: ["action", "save"],
     input: z.object({
-        action: z.enum(actions).default("list").describe("list, make or load"),
+        action: z.enum(actions).default("list").describe("list, make, load or reset"),
         label: z.string().optional().describe("make: a few words that name the save, such as before the duel"),
         save: z.string().optional().describe("load: the number of a save, or last"),
     }),
@@ -53,8 +56,24 @@ export const save = defineCommand({
             return { action: "load", save: interrupted, ...loadSave(root, context, interrupted), finished: true };
         }
 
+        // The campaign starting over, from the first save, its start (SAV-5, D-359).
+        if (input.action === "reset") {
+            const start = saves.at(0);
+
+            if (start === undefined) {
+                throw new Error("There are no saves yet: the start is saved when the campaign enters play, and the end of each scene makes one. Nothing changed.");
+            }
+
+            return { action: "reset", save: start, ...loadSave(root, context, start), finished: false };
+        }
+
         const chosen = chosenSave(saves, input.save);
-        checkLoad(mode, saves, chosen, isPlayerDead(campaignWorld(root, context)));
+        const refusal = loadRefusal(mode, saves, chosen, isPlayerDead(campaignWorld(root, context)));
+
+        if (refusal !== undefined) {
+            throw new Error(`${refusal} Nothing changed.`);
+        }
+
         return { action: "load", save: chosen, ...loadSave(root, context, chosen), finished: false };
     },
 
@@ -62,6 +81,12 @@ export const save = defineCommand({
     {
         if (result.action === "make") {
             return `Saved: ${saveText(result.save)}.`;
+        }
+
+        if (result.action === "reset") {
+            const copy = result.copy === undefined ? "" : ` What the reset replaced is in .saves/${result.copy}, to undo it by hand.`;
+            return `Back to the start, ${saveText(result.save)}: the campaign starts over from there, what happened since gone from the game, every later save too.${copy} `
+                + "Call status, and start the story again from there.";
         }
 
         if (result.action === "load") {
@@ -75,19 +100,6 @@ export const save = defineCommand({
         return `${listed}\n${loadRule(result.mode)}`;
     },
 });
-
-/** What loading may do under each mode of saves (D-55). */
-function loadRule(mode: SaveMode): string
-{
-    switch (mode) {
-        case "free":
-            return "With saves free, load goes back to any of them when the player asks, and make saves when they ask.";
-        case "checkpoint":
-            return "With saves checkpoint, load goes back to the last one, and only once the player character is dead, if the player wants.";
-        default:
-            return "With saves permadeath, the game never goes back. If something broke outside the story, the player may unzip a save from .saves by hand.";
-    }
-}
 
 /** The save asked for, by its number or last. */
 function chosenSave(saves: Save[], asked: string | undefined): Save
@@ -110,22 +122,6 @@ function chosenSave(saves: Save[], asked: string | undefined): Save
     return wanted;
 }
 
-/** Refuses what the mode of saves does not allow (D-55): permadeath never goes back, checkpoint only to the last and only once the player character is dead. */
-function checkLoad(mode: SaveMode, saves: Save[], chosen: Save, dead: boolean): void
-{
-    if (mode === "permadeath") {
-        throw new Error(`${loadRule(mode)} Nothing changed.`);
-    }
-
-    if (mode === "checkpoint" && !dead) {
-        throw new Error(`With saves checkpoint, the game goes back only once the player character is dead, and they are alive: go on with the story. Nothing changed.`);
-    }
-
-    if (mode === "checkpoint" && chosen !== saves.at(-1)) {
-        throw new Error(`With saves checkpoint, the game goes back only to the last save, ${saveText(saves.at(-1) as Save)}. Nothing changed.`);
-    }
-}
-
 function checkParameters(input: { action: (typeof actions)[number]; label?: string; save?: string; }): void
 {
     if (input.label !== undefined && input.action !== "make") {
@@ -134,5 +130,22 @@ function checkParameters(input: { action: (typeof actions)[number]; label?: stri
 
     if (input.save !== undefined && input.action !== "load") {
         throw new Error(`save ${input.action} does not take save: only load does.`);
+    }
+}
+
+/** What the master hears of what the player did with the saves on the dashboard, at the head of their next call (D-359). */
+export function playerSaveNews(result: SaveResult): string
+{
+    switch (result.action) {
+        case "make":
+            return `The player saved on the dashboard: ${saveText(result.save)}.`;
+        case "load":
+            return `The player went back on the dashboard to save ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game, `
+                + "the later saves too. Forget it: call status, and tell the story again from there.";
+        case "reset":
+            return `The player started the campaign over on the dashboard, back to its start, save ${saveText(result.save)}: what happened since is gone from the game, `
+                + "every later save too. Forget it: call status, and start the story again from there.";
+        default:
+            return "";
     }
 }

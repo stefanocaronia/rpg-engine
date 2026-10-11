@@ -1,6 +1,6 @@
 // The mode of the campaign and the checklists that open each (MECCANICHE, MOD-1–MOD-7; D-77, D-221, D-241): a table of cases, then laws on campaigns made at random.
 import fc from "fast-check";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -123,7 +123,11 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await ok("write", "Bran", "--set", "status=alive");
         expect(await ok("status")).toMatch(/· mode session zero\n(?:.+\n)*Nothing is missing\. When the player confirms: mode, to play\./);
         // The part of play comes with it, the core's: this test system adds none (MOD-5).
-        expect(await ok("mode", "play")).toMatch(/^The campaign is now in play\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./);
+        // The first time in play, the start is saved: the save reset goes back to (SAV-3, D-359).
+        expect(await ok("mode", "play")).toMatch(
+            /^The campaign is now in play\. Its start is saved, 1 - start: the save reset goes back to, if the player wants to start over\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./,
+        );
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - start.zip"]);
     });
 
     it("MOD-2: the setup is always open, play is not without its checklists, and session zero again makes a new character", async () => {
@@ -134,6 +138,10 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await ok("write", "Kira", "--set", "status=dead");
         expect(await ok("mode", "session zero")).toContain("The campaign is now in session zero.");
         expect(await ok("mode", "setup")).toMatch(/^The campaign is now in setup\.\n\n## Setup\n\nOut of the game/);
+        // Back in play, the start is saved already: no other (SAV-3, D-359).
+        await ok("write", "Kira", "--set", "status=alive");
+        expect(await ok("mode", "play")).not.toContain("Its start is saved");
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - start.zip"]);
     });
 
     it("MOD-5: instructions give the core and the part of the mode, with the system's", async () => {

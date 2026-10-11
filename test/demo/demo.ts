@@ -3,6 +3,7 @@ import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { runCommandLine } from "../../src/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
+import { makeSave } from "../../src/commands/game-saves.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
@@ -222,7 +223,7 @@ async function makeDemo(context: Context): Promise<void>
     await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
     await rpg("write", "Ettore", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
-    await makeDemoWorld(rpg);
+    await makeDemoWorld(rpg, (label, why) => makeSave(demoFolder, context, label, why));
     await rpg("effect", "add", "Ettore", "Benedizione", "--for", "1m");
 }
 
@@ -230,9 +231,10 @@ async function makeDemo(context: Context): Promise<void>
  * The world around the inn, for the World map (D-318): Guadoscuro at the centre in its hills, a castle in the mountains to the north, a forest with a tower, a
  * marsh hiding a cave, a temple and a port heard of; the king's road, a path, and a river from a spring in the forest under the bridge to the port, with a
  * towpath along it from the bridge to the mill. Ettore
- * and Lupa came down the road from the castle, with a night at a camp: the trail. The cave and the spring stay unknown.
+ * and Lupa came down the road from the castle, with a night at a camp: the trail, and a save at the castle, the start, at the camp and at the inn (D-359). The
+ * cave and the spring stay unknown.
  */
-async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise<void>
+async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (label: string, why: string) => void): Promise<void>
 {
     const place = (name: string, ...fields: string[]): Promise<void> => rpg("write", name, "--type", "place", ...fields.flatMap((field) => [field.startsWith("environment=") || field.startsWith("contains=") ? "--add" : "--set", field]));
     await place("Guadoscuro", "kind=village", "contains=[[Locanda del Guado]]");
@@ -285,10 +287,17 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>): Promise
     ];
     await rpg("write", "Ettore", ...known.flatMap((name) => ["--add", `knows=[[${name}]]`]));
     await rpg("write", "Rocca di Vetta", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
+    save("start", "start");
 
     for (const stop of ["Strada del Re", "Campo del Viandante", "Strada del Re", "Guadoscuro", "Locanda del Guado"]) {
         await rpg("move", "Ettore", "Lupa", "--to", stop);
+
+        if (stop === "Campo del Viandante") {
+            save("La notte al campo", "scene closed");
+        }
     }
+
+    save("Arrivo alla locanda", "scene closed");
 
     // In from the village by the door, then by the fire.
     await rpg("move", "Ettore", "--at", "E6");

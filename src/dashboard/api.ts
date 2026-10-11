@@ -1,6 +1,9 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
 import type { Asked, PlayerSetting, View, WorldMap } from "./data.ts";
 
+/** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
+export type SavesView = Extract<View, { kind: "saves"; }>;
+
 /** What view gives: the party, with the last rolls, as many as asked; or a page. */
 export async function readView(page?: string, rolls?: number): Promise<View>
 {
@@ -43,6 +46,43 @@ export async function readSettings(): Promise<PlayerSetting[]>
     }
 
     return body.kind === "settings" ? body.settings : [];
+}
+
+/** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */
+export async function readSaves(): Promise<SavesView>
+{
+    const response = await fetch("/api/view?saves=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    if (body.kind !== "saves") {
+        throw new Error("The game gave no saves: reload the page.");
+    }
+
+    return body;
+}
+
+/** What the player does with the saves: save now, go back to a save, or start the campaign over, with its name written. */
+export type SavesChange = { action: "make"; label?: string; } | { action: "load"; save: number; } | { action: "reset"; campaign: string; };
+
+/** Saves, goes back to a save or starts the campaign over (D-359): undefined when done, else what went wrong, as the engine says it. */
+export async function changeSaves(change: SavesChange): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/saves", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });
+
+        if (response.status === 202) {
+            return undefined;
+        }
+
+        const body = await response.json() as { error?: string; };
+        return body.error ?? "It did not reach the game: try again.";
+    } catch {
+        return "It did not reach the game: try again.";
+    }
 }
 
 /** A change of one of the player's settings: a value, or an item added to a list or taken off it. */
