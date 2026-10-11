@@ -105,8 +105,8 @@ Eight experts review the work and discuss it with the maintainer: subagents with
 
 Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain background in each colleague's color, made by Codex.
 
-- **When rounds happen**: at milestones, a step of the plan done or a playtest.
-- **Tasks**: Claude also gives a colleague a check, a test or a change in their field whenever it helps, within the permissions of their profile's `tools` (Read, Write, Testing, Web, set in the panel's card).
+- **Rounds**: when a step of the plan is done, a feature finished or a playtest played, Claude runs a review round with the colleagues the work touches (the crew skill), before calling the step done.
+- **Tasks**: when a question or a check falls in a colleague's field and needs more than a glance, Claude gives it to them as a subagent, within the permissions of their `tools`.
 - **Without the plugin** (another AI host, or Claude Code without it): when the maintainer asks to talk with colleagues, run `node F:/sviluppo/AI/claude-crew/plugins/crew/scripts/conversation.mjs talk <first names>` (then `invite`, `leave`, `end`) and follow what it prints; where it is missing, read their profile, `MEMORY.md` and `todo.md` yourself, start every message with `[Name]`, and when they leave have each update memory and todo.
 
 ## Conventions
