@@ -299,7 +299,7 @@ function trailOf(sight: PlaceSight, roads: Roads): { at: Point; page: Page; }[]
             continue;
         }
 
-        const at = positionOf(world, page);
+        const at = trailPoint(world, page, regions);
 
         if (at === undefined) {
             continue;
@@ -314,6 +314,27 @@ function trailOf(sight: PlaceSight, roads: Roads): { at: Point; page: Page; }[]
     }
 
     return points.filter((point, index) => index === 0 || distanceBetween(point.at, points[index - 1].at) > 0 || mapKey(world, point.page) !== mapKey(world, points[index - 1].page));
+}
+
+/**
+ * Where a place is on the trail: its own point, or that of the nearest place holding it that has one; none when a region comes first, an area where the party
+ * was somewhere, never at its centre.
+ */
+function trailPoint(world: World, page: Page, regions: Set<Page>): Point | undefined
+{
+    for (const holder of [page, ...locate(world, page).chain]) {
+        if (regions.has(holder)) {
+            return undefined;
+        }
+
+        const position = placedPosition(world, holder);
+
+        if (position !== undefined) {
+            return position;
+        }
+    }
+
+    return undefined;
 }
 
 /** The points of a road's stops strictly between the stops two places are at, or are held by, in the order of the way; none when either is not on it. */

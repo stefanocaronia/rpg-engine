@@ -275,6 +275,15 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
         expect(map.trail).toEqual([{ x: 0, y: 0 }, { x: 12, y: 0 }, { x: 20, y: 0 }]);
         expect(map.party).toEqual({ x: 20, y: 0, place: "Rocca" });
     });
+
+    it("leaves out of the trail a place that has no point but its region's: the party was somewhere in it, not at its centre", async () => {
+        await placeTheMap();
+        await ok("write", "Cerchio", "--type", "place");
+        await ok("write", "Brughiera", "--add", "contains=[[Cerchio]]");
+        await ok("move", "Ettore", "--to", "Cerchio");
+        await ok("move", "Ettore", "--to", "Guadoscuro");
+        expect(JSON.parse(await ok("view", "--map", "--json")).trail).toEqual([{ x: 0, y: 0 }]);
+    });
 });
 
 describe("the maps (POS-8, ROA-8, D-320)", () => {

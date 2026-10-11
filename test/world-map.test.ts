@@ -117,6 +117,11 @@ describe("the world map's drawing (D-318)", () => {
         expect(meander([{ x: 0, y: 0 }, { x: 10, y: 0 }], "river", "Fiume").course).not.toEqual(meander([{ x: 0, y: 0 }, { x: 10, y: 0 }], "river", "Torrente").course);
         // The trail goes along the road where it went by it.
         expect(trailCourse(map.trail, [road]).length).toBeGreaterThan(map.trail.length);
+        // A stretch walked there and back in the open is one course, the same wandering from either end.
+        const there = trailCourse([{ x: 0, y: 0 }, { x: 9, y: 4 }], []);
+        const back = trailCourse([{ x: 9, y: 4 }, { x: 0, y: 0 }], []);
+        expect(back.toReversed()).toEqual(there);
+        expect(there.length).toBeGreaterThan(2);
     });
 
     it("takes a road round a lake as the lake is drawn, never across its hexes, and a river through it; a river and a road between the same places meet only there", () => {

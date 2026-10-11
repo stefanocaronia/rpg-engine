@@ -280,7 +280,10 @@ export function trailCourse(trail: MapPoint[], ways: WayShape[], around: Water[]
             }
         }
 
-        return meander([before, point], "trail", `${before.x} ${before.y} ${point.x} ${point.y}`, around).course.slice(1);
+        // A stretch walked there and back is one course, the same wandering from either end.
+        const [first, second] = [before, point].sort((one, other) => one.x - other.x || one.y - other.y);
+        const course = meander([first, second], "trail", `${first.x} ${first.y} ${second.x} ${second.y}`, around).course;
+        return (first === before ? course : [...course].reverse()).slice(1);
     });
 }
 
