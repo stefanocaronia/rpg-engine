@@ -84,7 +84,7 @@ export function FollowedQuest({ version, campaign }: { version: number; campaign
             <button type="button" class="followed-star on" aria-label={`Follow ${quest.name}`} aria-pressed={true} onClick={() => setFollowed(undefined)}>
                 <Star />
             </button>
-            {quest.picture !== undefined && <img class="followed-picture" src={pictureAddress(quest.picture)} alt="" />}
+            <QuestFace quest={quest} small />
             <a class="followed-what" href={sectionAddress("journal")}>
                 <span class="followed-name">{quest.name}</span>
                 {next !== undefined && <span class="followed-next">{plainText(next.text)}</span>}
@@ -145,28 +145,26 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     ].filter((part) => part !== undefined);
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
-            {/* The quest's picture as a banner on its card's top, as a video game's quest log has it (D-388); nothing without one. */}
-            {quest.picture !== undefined && (
-                <div class="quest-picture" aria-hidden="true">
-                    <img src={pictureAddress(quest.picture)} alt="" loading="lazy" />
+            {/* The card's head is its picture, as a video game's quest log has it: the star, the time left and Main over its top, its name over its foot (D-388, D-389). */}
+            <header class="quest-cover">
+                <QuestFace quest={quest} />
+                <div class="quest-cover-top">
+                    {open && (
+                        <button
+                            type="button"
+                            class={followed ? "followed-star on" : "followed-star"}
+                            aria-pressed={followed}
+                            aria-label={`Follow ${quest.name}`}
+                            data-tip="Shown in Scene and Combat"
+                            onClick={() => onFollow(followed ? undefined : quest.name)}
+                        >
+                            <Star />
+                        </button>
+                    )}
+                    {open && quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
+                    {quest.main && <span class="quest-badge">Main</span>}
                 </div>
-            )}
-            <header class="quest-head">
-                {open && (
-                    <button
-                        type="button"
-                        class={followed ? "followed-star on" : "followed-star"}
-                        aria-pressed={followed}
-                        aria-label={`Follow ${quest.name}`}
-                        data-tip="Shown in Scene and Combat"
-                        onClick={() => onFollow(followed ? undefined : quest.name)}
-                    >
-                        <Star />
-                    </button>
-                )}
                 <h4 class="quest-name" id={id}>{quest.name}</h4>
-                {open && quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
-                {quest.main && <span class="quest-badge">Main</span>}
             </header>
             {from.length > 0 && <p class="quest-from">{from.join(" · ")}</p>}
             {quest.text !== "" && (
@@ -199,6 +197,30 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                 </div>
             )}
         </article>
+    );
+}
+
+// The mark of a quest whose place has no kind the map draws: a flag.
+const questFlag = "M6 21V3.5 M6 4.5h11l-2.6 4 2.6 4H6";
+
+/**
+ * A quest's face (D-389), always there: its picture, else its place's, else the mark of its place's kind, or a flag, on the night's blue, the main quest's on
+ * dark gold; as the head of its card, or small in the followed quest's strip.
+ */
+function QuestFace({ quest, small = false }: { quest: ShownQuest; small?: boolean; })
+{
+    const picture = quest.picture ?? quest.placePicture;
+
+    if (picture !== undefined) {
+        return <img class={small ? "followed-picture" : undefined} src={pictureAddress(picture)} alt="" aria-hidden="true" loading="lazy" />;
+    }
+
+    return (
+        <div class={small ? "followed-picture quest-cover-mark" : "quest-cover-mark"} aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d={placeKinds[quest.placeKind ?? ""]?.glyph ?? questFlag} />
+            </svg>
+        </div>
     );
 }
 

@@ -1272,33 +1272,138 @@ a {
     opacity: 0.8;
 }
 
-/* The quest's picture, a banner on its card's top (D-388), as Joseph drew it; its margins follow the card's padding. */
-.quest-picture {
-    display: block;
-    /* The width given, so that the height's cap crops the picture rather than narrowing it. */
+/* The quest card's head is its picture (D-388, D-389), as Joseph drew it: the star, the time left and Main over its top, its name over its foot, on a dark veil
+   that keeps them light in both themes, as the place's band in Scene; its width given, so that the height's cap crops the picture. Its margins follow the
+   card's padding. */
+.quest-card {
+    padding-top: 0;
+}
+
+.quest-cover {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
     width: calc(100% + 32px);
+    min-height: 132px;
     max-height: 168px;
-    margin: -14px -16px 2px;
+    margin: 0 -16px 2px;
     overflow: hidden;
     aspect-ratio: 16 / 6;
     border-bottom: 1px solid var(--rule);
     border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
-    background: var(--panel-2);
+    color: #f3f4fa;
 }
 
-.quest-picture img {
-    display: block;
+.quest-card.main .quest-cover {
+    border-bottom-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+}
+
+.quest-cover > img,
+.quest-cover > .quest-cover-mark {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     width: 100%;
     height: 100%;
+}
+
+.quest-cover > img {
     object-fit: cover;
     object-position: 50% 40%;
 }
 
-.quest-card.main .quest-picture {
-    border-bottom-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+.quest-cover:has(> .quest-cover-mark) {
+    background: radial-gradient(120% 140% at 85% 30%, #2c3f66, #0e1a33 70%);
 }
 
-.quest-card.failed .quest-picture img {
+.quest-card.main .quest-cover:has(> .quest-cover-mark) {
+    background: radial-gradient(120% 140% at 85% 30%, #6b5320, #1d1a14 72%);
+}
+
+.quest-cover > .quest-cover-mark {
+    display: grid;
+    place-items: center end;
+    padding-right: 9%;
+}
+
+.quest-cover-mark svg {
+    width: auto;
+    height: 62%;
+    fill: none;
+    stroke: #f1e6cc;
+    stroke-width: 1.1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.42;
+}
+
+.quest-cover::before {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgb(6 12 26 / 0.38), transparent 34%, transparent 42%, rgb(6 12 26 / 0.55) 68%, rgb(6 12 26 / 0.88));
+    content: "";
+    pointer-events: none;
+}
+
+.quest-cover-top {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px 0 8px;
+}
+
+.quest-cover-top .followed-star {
+    background: rgb(6 12 26 / 0.62);
+    color: #f3f4fa;
+    backdrop-filter: blur(4px);
+}
+
+.quest-cover-top .followed-star.on {
+    color: var(--gold);
+}
+
+.quest-cover-top :focus-visible {
+    outline-color: #f3f4fa;
+}
+
+.quest-cover-top .quest-deadline {
+    margin-left: auto;
+    background: rgb(6 12 26 / 0.62);
+    color: #f3f4fa;
+    backdrop-filter: blur(4px);
+}
+
+.quest-cover-top .quest-deadline.near {
+    background: #b3261e;
+    color: #fff;
+}
+
+.quest-cover-top > .quest-badge:first-child,
+.quest-cover-top > .followed-star + .quest-badge {
+    margin-left: auto;
+}
+
+.quest-cover .quest-name {
+    position: relative;
+    z-index: 2;
+    display: -webkit-box;
+    grid-row: 3;
+    margin: 0;
+    padding: 0 16px 12px;
+    overflow: hidden;
+    color: #f3f4fa;
+    font-size: 1.3rem;
+    line-height: 1.15;
+    text-wrap: balance;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.quest-card.failed .quest-cover > img,
+.quest-card.failed .quest-cover-mark {
     filter: grayscale(1);
 }
 
@@ -1306,47 +1411,38 @@ a {
     flex: none;
     width: 40px;
     height: 40px;
+    overflow: hidden;
     border-radius: var(--radius-m);
     box-shadow: 0 0 0 1px var(--rule);
     object-fit: cover;
 }
 
-/* On a phone the banner is a little taller, the thumbnail smaller, and the quest's name takes its line, its deadline and badge under it. */
+.followed-picture.quest-cover-mark {
+    display: grid;
+    place-items: center;
+    background: #1d2b4a;
+}
+
+.followed-picture.quest-cover-mark svg {
+    height: 24px;
+    opacity: 0.8;
+}
+
 @media (max-width: 600px) {
-    .quest-picture {
-        aspect-ratio: 16 / 7;
+    .quest-cover .quest-name {
+        padding: 0 14px 10px;
+        font-size: 1.15rem;
     }
 
     .followed-picture {
         width: 36px;
         height: 36px;
     }
-
-    .quest-head {
-        flex-wrap: wrap;
-    }
-
-    .quest-head > .quest-name {
-        flex: 1 1 calc(100% - 40px);
-    }
-}
-
-.quest-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.quest-head > :not(.quest-name) {
-    flex: none;
 }
 
 .quest-name {
-    flex: 1;
     min-width: 0;
-    margin: 0;
     font-family: var(--serif);
-    font-size: 1.15rem;
     overflow-wrap: anywhere;
 }
 

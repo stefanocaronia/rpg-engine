@@ -26,6 +26,9 @@ export interface ShownQuest
     deadline?: { date: string; minutes?: number; };
     /** Its picture, as the character knows the quest (D-388). */
     picture?: { file: string; version: number; };
+    /** Its place's picture and kind, as the character knows the place, which its card shows when the quest has no picture (D-389). */
+    placePicture?: { file: string; version: number; };
+    placeKind?: string;
 }
 
 /** A scene as a chapter of the story (VIEW-9); without a title, what happened between scenes. */
@@ -98,6 +101,7 @@ function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDat
     const giver = shownLink(page.fields.giver, named);
     const place = shownLink(page.fields.place, named);
     const picture = look(page.name).picture;
+    const where = page.fields.place === undefined ? {} : look(textsIn(page.fields.place)[0]);
     return {
         name: page.name,
         status: page.fields.status as ShownQuest["status"],
@@ -105,6 +109,8 @@ function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDat
         ...(giver === undefined ? {} : { giver }),
         ...(place === undefined ? {} : { place }),
         ...(picture === undefined ? {} : { picture }),
+        ...(where.picture === undefined ? {} : { placePicture: where.picture }),
+        ...(where.kind === undefined ? {} : { placeKind: where.kind }),
         text: rest,
         goals,
     };
