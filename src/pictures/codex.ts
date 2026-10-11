@@ -5,7 +5,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import type { MadePicture, PictureMaker, PicturesReady } from "../core/context.ts";
+import type { MadePicture, PictureMaker, PicturesReady, PictureSubject } from "../core/context.ts";
+import { paintedBrief } from "./briefs.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
 const longest = 3 * 60 * 1000;
@@ -58,7 +59,7 @@ function codexReady(): PicturesReady
         };
     }
 
-    return /chatgpt/i.test(said) ? { ready: true } : {
+    return /chatgpt/i.test(said) ? { ready: true, maker: "Codex" } : {
         ready: false,
         why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login",
         fix: "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n"
@@ -67,8 +68,8 @@ function codexReady(): PicturesReady
     };
 }
 
-/** One picture from a brief: Codex in an empty folder of its own, the brief on its input, its events read for its thread; the picture from its own folder. */
-function make(brief: string): Promise<MadePicture | { refused: string; }>
+/** One picture: Codex in an empty folder of its own, the painted brief on its input, its events read for its thread; the picture from its own folder. */
+function make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-picture-"));
     const last = join(folder, "last.txt");
@@ -113,7 +114,7 @@ function make(brief: string): Promise<MadePicture | { refused: string; }>
             clean();
             done({ refused: refusal(errors, failed, said) });
         });
-        child.stdin.end(brief);
+        child.stdin.end(paintedBrief(subject));
     });
 }
 

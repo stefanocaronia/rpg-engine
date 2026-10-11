@@ -47,7 +47,16 @@ export interface Context
  * Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with the steps to have them, one a line,
  * numbered, with the commands between backticks (D-341).
  */
-export type PicturesReady = { ready: true; } | { ready: false; why: string; fix?: string; };
+export type PicturesReady = { ready: true; maker?: "Codex" | "Claude"; } | { ready: false; why: string; fix?: string; };
+
+/** What a picture shows (D-308, D-388): a place as the party sees it arriving, or a quest as the character knows it; never what the table keeps out. */
+export interface PictureSubject
+{
+    kind: "place" | "quest";
+    name: string;
+    seen: string;
+    unseen: string[];
+}
 
 /** A picture made: its file, and what to call once it is copied, which clears the maker's own copy. */
 export interface MadePicture
@@ -61,7 +70,7 @@ export interface PictureMaker
 {
     /** Asked once; with again, a no a minute old or more is asked once more, as after the player logs in. */
     ready(again?: boolean): PicturesReady;
-    make(brief: string): Promise<MadePicture | { refused: string; }>;
+    make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>;
 }
 
 /**

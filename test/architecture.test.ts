@@ -42,6 +42,7 @@ describe("architecture", () => {
             "instructions/index.ts",
             "systems/game-system.ts",
             "campaign/create-campaign.ts",
+            "pictures/claude.ts",
             "pictures/codex.ts",
         ];
         const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));

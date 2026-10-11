@@ -4,7 +4,7 @@ import { commands } from "./commands/index.ts";
 import { type Context, defaultContext } from "./core/context.ts";
 import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
 import { getVersion } from "./core/version.ts";
-import { codexPictures } from "./pictures/index.ts";
+import { hostPictures } from "./pictures/index.ts";
 
 export interface CommandLineResult
 {
@@ -18,7 +18,7 @@ type AnyCommand = Command<any, any>;
 const mcpDescription = "Start the MCP server for an AI host. Through it the host uses these commands as tools; the host starts it, with no options.";
 
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
-export async function runCommandLine(argv: string[], context: Context = { ...defaultContext(), pictures: codexPictures() }): Promise<CommandLineResult>
+export async function runCommandLine(argv: string[], context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined) }): Promise<CommandLineResult>
 {
     const [commandName, ...args] = argv;
 

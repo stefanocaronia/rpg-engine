@@ -7,7 +7,6 @@ import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
 import { baseChain, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
-import { placeBrief, questBrief } from "../pictures/index.ts";
 import { imageFile, ownImage } from "./game-images.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
@@ -140,8 +139,7 @@ function madePicture(root: string, context: Context, page: Page, seen: string): 
     }
 
     const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
-    const brief = page.type === "quest" ? questBrief(page.name, seen, unseen) : placeBrief(page.name, seen, unseen);
-    const making = context.pictures.make(brief).then((made) => {
+    const making = context.pictures.make({ kind: page.type === "quest" ? "quest" : "place", name: page.name, seen, unseen }).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));
             throw new Error(`No picture of ${page.name}: ${made.refused}. Go on without, or give one with file.`);

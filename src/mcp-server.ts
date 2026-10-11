@@ -15,7 +15,7 @@ import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
-import { codexPictures } from "./pictures/index.ts";
+import { hostPictures } from "./pictures/index.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -101,11 +101,22 @@ export async function startMcpServer(): Promise<void>
     const leave = (): never => process.exit(0);
     process.stdin.on("end", leave);
     process.stdin.on("close", leave);
-    // Codex makes the places' pictures where the player is logged in with it (D-308).
-    const context: Context = { ...defaultContext(), pictures: codexPictures() };
+    // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
+    let host: string | undefined;
+    const context: Context = { ...defaultContext(), pictures: hostPictures(() => host) };
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
-    await createMcpServer(served, process.env, dashboardOpener(served, session).open).connect(new StdioServerTransport());
+    const server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
+
+    // After the server's own start, which offers the player's forms.
+    const started = server.server.oninitialized;
+
+    server.server.oninitialized = () => {
+        started?.();
+        host = server.server.getClientVersion()?.name;
+    };
+
+    await server.connect(new StdioServerTransport());
 }
 
 /**
