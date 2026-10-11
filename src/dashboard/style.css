@@ -3374,17 +3374,6 @@ svg.icon {
         color: var(--accent);
     }
 
-    /* The player's turn in the bar: the gold on Combat's picture. */
-    .top .main-nav a.your-turn {
-        background: none;
-        color: var(--ink);
-    }
-
-    .top .main-nav a.your-turn .section-mark {
-        background: var(--gold);
-        color: var(--on-gold);
-    }
-
     .page {
         padding-bottom: 160px;
     }
@@ -4241,11 +4230,34 @@ svg.icon {
     font-weight: 500;
 }
 
-/* The player's turn from another section (D-315): the Combat link a gold chip, and a notice on top that leads there. */
-.sections a.your-turn {
-    border-radius: var(--radius-m);
+/* The player's turn from another section (D-315, D-349): a gold dot on Combat's picture, as a notice, which never looks like the section chosen; and a
+   notice on top that leads there. */
+.section-mark {
+    position: relative;
+}
+
+.turn-dot {
+    position: absolute;
+    top: -3px;
+    right: -4px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
     background: var(--gold);
-    color: var(--on-gold);
+    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--gold), var(--ink) 45%);
+    animation: turn-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes turn-dot {
+    50% {
+        transform: scale(1.3);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .turn-dot {
+        animation: none;
+    }
 }
 
 .turn-notice {

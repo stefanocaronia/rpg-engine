@@ -326,7 +326,6 @@ function App()
                 )}
                 <DiceTray
                     requested={thrown}
-                    away={["settings", "saves", "about"].includes(address.section)}
                     sheetThrow={sheetThrow}
                     party={shown.party}
                     onShown={(id) => {
