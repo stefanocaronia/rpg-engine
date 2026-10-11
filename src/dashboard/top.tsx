@@ -107,7 +107,7 @@ export function Top(top: TopOf)
  */
 function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hidden?: boolean; fight?: boolean; yourTurn?: boolean; })
 {
-    // Combat only while a fight is open; on the player's turn, from another section, a gold dot on its picture, as a notice, its name the same (D-315, D-349).
+    // Combat only while a fight is open; on the player's turn, from another section, its name pulses in gold, the same name (D-315, D-349, D-351).
     const shown = sections.filter((section) => section !== "combat" || fight === true);
     const turn = yourTurn === true && current !== "combat";
     const row = useRef<HTMLDivElement>(null);
@@ -118,7 +118,7 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
             <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : "Sections"}>
                 {[...shown, ...menuPages].map((section, index) => {
                     const gone = away.includes(section);
-                    const kinds = [index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link" : "", gone ? "away" : ""];
+                    const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link" : "", gone ? "away" : ""];
                     return (
                         <a
                             key={section}
@@ -130,7 +130,6 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
                         >
                             <span class="section-mark">
                                 <Icon name={section} />
-                                {section === "combat" && turn && <span class="turn-dot" aria-hidden="true" />}
                             </span>
                             {sectionLabel(section)}
                             {section === "combat" && turn && <span class="visually-hidden">, your turn</span>}
