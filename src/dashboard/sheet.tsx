@@ -1,11 +1,13 @@
 // Someone's sheet (D-273, D-276, D-284): a band with their line and effects, then the system's groups as cards, those of a few short numbers in a rail beside
-// the others, and the page's text as a card of its own, where the player writes their own character's story (D-373); a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
+// the others in columns that stay as the player opens and closes them (D-383), and the page's text the whole width, in two columns where there is room, the
+// player character's story in a card of its own, where the player writes their own character's story (D-373); a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
 // (FOR-8). While the master asks a roll, the number its check names lights up and answers it (D-330, ASK-12). A companion who keeps no sheet shows the stat
 // block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
+import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
 import { cardIcons, DieIcon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownNotation, shownText } from "./labels.ts";
@@ -16,8 +18,9 @@ import { requestedRow, useRequested } from "./requested.ts";
 import { StoryBox } from "./story.tsx";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
-// The card of the page's text, after the system's groups.
+// The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
 const descriptionCard = "Description";
+const backstoryCard = "Backstory";
 
 /** What rolls a number of the sheet for fun: its roll, the number's label, and whose sheet it is. */
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
@@ -42,6 +45,8 @@ export function MemberSheet(
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
     const dying = new Set(member.dying?.map((counter) => counter.field));
+    // The player character's story has its own card: the rest of the page's text is its description (D-386).
+    const described = story !== undefined && story.trim() !== "" && text.startsWith(story) ? text.slice(story.length).trimStart() : text;
     return (
         <section class="sheet" aria-label={member.name}>
             <header class="band">
@@ -59,14 +64,21 @@ export function MemberSheet(
             </header>
             <div class="sheet-body">
                 {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
-                <div class="groups">
-                    {others.map(group)}
-                    {(text.trim() !== "" || story !== undefined) && (
-                        <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(text)}>
-                            {text.trim() !== "" && <Markdown text={text} />}
-                            {story !== undefined && <StoryBox story={story} />}
-                        </Card>
-                    )}
+                <div class="sheet-main">
+                    <FixedColumns cards={others.map((shown) => ({ key: shown.name, node: group(shown) }))} />
+                    <div class="wide-cards">
+                        {story !== undefined && (
+                            <Card name={backstoryCard} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? "Not written yet"}>
+                                {story.trim() !== "" && <Markdown text={story} />}
+                                <StoryBox story={story} />
+                            </Card>
+                        )}
+                        {described.trim() !== "" && (
+                            <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
+                                <Markdown text={described} />
+                            </Card>
+                        )}
+                    </div>
                 </div>
             </div>
         </section>

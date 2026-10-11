@@ -15,7 +15,7 @@ import { readAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { arrangedGroups, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { arrangedGroups, columnsByHeight, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -648,6 +648,13 @@ describe("the session's notices (D-193, D-272)", () => {
 });
 
 describe("the page's reading of a sheet (D-273)", () => {
+    it("places the sheet's cards once, each in its order into the shortest column, the first of the shortest when two are even (D-383)", () => {
+        expect(columnsByHeight([300, 100, 100, 250, 50], 2)).toEqual([0, 1, 1, 1, 0]);
+        expect(columnsByHeight([100, 100, 100], 3)).toEqual([0, 1, 2]);
+        expect(columnsByHeight([100, 100], 1)).toEqual([0, 0]);
+        expect(columnsByHeight([100], 0)).toEqual([0]);
+    });
+
     // The types are checked by npm run lint, which compiles the tests: what runs here only uses them.
     it("reads what view gives with types of its own, which view's result fits", () => {
         const fits = (result: ViewResult): View => result;

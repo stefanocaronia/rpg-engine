@@ -70,6 +70,17 @@ export function arrangedGroups(groups: SheetGroup[], cards?: SheetCards): { rail
     return { rail, others: others.sort((first, second) => rank(first.group) - rank(second.group) || first.index - second.index).map(({ group }) => group) };
 }
 
+/** The column of each card, by its height, in its order into the shortest column, the first of the shortest when two are even (D-383). */
+export function columnsByHeight(heights: number[], count: number): number[]
+{
+    const filled = Array.from({ length: Math.max(1, count) }, () => 0);
+    return heights.map((height) => {
+        const shortest = filled.indexOf(Math.min(...filled));
+        filled[shortest] += height;
+        return shortest;
+    });
+}
+
 /**
  * The rolls the page shows (D-302): of those read, the ones of the last half hour since the player last cleared the list, and as many older ones as they asked
  * for; how many older ones the page has read, and whether there are more, read or still in the log, unless the list was cleared before them.

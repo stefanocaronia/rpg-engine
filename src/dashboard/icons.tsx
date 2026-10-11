@@ -63,6 +63,7 @@ const iconPaths = {
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */
 export const cardIcons = {
     description: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",
+    backstory: "M20 3.5c-6.5 1-11.5 6-13.5 13.5L5.5 20.5l3.5-1C16.5 17.5 19 12.5 20 3.5Z M6.5 17 12 11.5 M4 20.5h16",
     rolls: diePaths[20],
     here: "M9 4.5a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M3 19.5c.5-3.3 2.8-5.5 6-5.5s5.5 2.2 6 5.5 M16 4.8a3 3 0 0 1 0 5.4 M17.5 14.3c2 .7 3.2 2.6 3.5 5.2",
     plain: "M5 5.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 11a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M5 16.5a1 1 0 1 1 0 2a1 1 0 1 1 0-2Z M9 6.5h10.5 M9 12h10.5 M9 17.5h10.5",
