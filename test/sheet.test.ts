@@ -188,8 +188,8 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         const joined = await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "level=1");
         expect(joined).toContain("Mira's sheet of the system 5e still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.");
         expect(joined).toContain(
-            "Personality: a player character's personality traits, ideal, bond and flaw are the player's, in their words, with links to what they name: propose some if they ask, "
-                + "never write one they did not choose. A companion's are yours to write in the companion's voice, from what the story has shown; ask the player only for a "
+            "Personality: a player character's personality traits, ideal, bond and flaw are the player's, in their words, with links to what they name: offer their background's tables, "
+                + "rolled or chosen, or propose some; never write one they did not choose. A companion's are yours to write in the companion's voice, from what the story has shown; ask the player only for a "
                 + "companion they made.",
         );
         expect(joined).toContain("Combat: hp-base is the hit points the class's hit dice gave at each level, without Constitution:");
