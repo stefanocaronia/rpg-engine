@@ -1275,6 +1275,8 @@ a {
 /* The quest's picture, a banner on its card's top (D-388), as Joseph drew it; its margins follow the card's padding. */
 .quest-picture {
     display: block;
+    /* The width given, so that the height's cap crops the picture rather than narrowing it. */
+    width: calc(100% + 32px);
     max-height: 168px;
     margin: -14px -16px 2px;
     overflow: hidden;
