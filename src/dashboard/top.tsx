@@ -284,18 +284,19 @@ function PlacePath({ path }: { path: string[]; })
 /** The game's time and whether the game is live, each a chip. */
 function StatusChips({ now, live }: { now?: string; live: boolean; })
 {
+    // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355).
     return (
         <div class="status-chips">
+            <span class={live ? "status-chip live on" : "status-chip live"}>
+                <span class="dot" />
+                {live ? "live" : "waiting for the game"}
+            </span>
             {now && (
                 <span class="status-chip">
                     <Icon name="clock" />
                     {now}
                 </span>
             )}
-            <span class={live ? "status-chip live on" : "status-chip live"}>
-                <span class="dot" />
-                {live ? "live" : "waiting for the game"}
-            </span>
         </div>
     );
 }

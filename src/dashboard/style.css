@@ -166,9 +166,10 @@ a {
 
 /* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the time and whether the game is live
    as chips, clear of the theme's corner; under the name the sections and the pages, the menu at the row's end (D-309); under them all, where the party is. */
+/* The title first, never wrapped; the chips in what is left of its line (D-355). */
 .top {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
     grid-template-areas: "robot titles chips" "robot nav nav" "place place place";
     align-items: center;
     column-gap: 20px;
@@ -182,11 +183,12 @@ a {
 
 .top > .titles {
     grid-area: titles;
+    min-width: 0;
 }
 
 .top > .status-chips {
     grid-area: chips;
-    margin-right: 30px;
+    margin: 0 30px 0 0;
 }
 
 .top > .nav-row {
@@ -309,8 +311,10 @@ a {
 }
 
 /* The menu (D-309): the saves, the settings, About; the theme only on a phone, which has no switch of its own. */
+/* The menu always at the row's end, whatever the sections leave (D-355). */
 .menu {
     position: relative;
+    margin-left: auto;
 }
 
 .icon-button.tonal.menu-button {
@@ -761,14 +765,18 @@ a {
 }
 
 .titles h1 {
+    overflow: hidden;
     font-size: 2.4rem;
     line-height: 1.05;
     letter-spacing: 0.04em;
     font-variant: small-caps;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .product {
     margin: 4px 0 0;
+    white-space: nowrap;
     color: var(--muted);
     font-size: 0.8rem;
     font-variant: small-caps;
@@ -776,12 +784,18 @@ a {
     text-transform: lowercase;
 }
 
+/* The chips on one line, from the right: one that does not fit goes to a second line, which is never seen, the time before live (D-355). */
 .status-chips {
     display: flex;
+    flex-direction: row-reverse;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    align-content: flex-start;
     gap: 8px;
+    min-width: 0;
+    height: 34px;
     margin-left: auto;
+    overflow: clip;
+    overflow-clip-margin: 6px;
 }
 
 .status-chip {
@@ -858,7 +872,7 @@ a {
     inset: 0 0 auto;
     z-index: 18;
     display: grid;
-    grid-template-columns: auto auto 1fr auto;
+    grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
     grid-template-rows: auto auto;
     align-content: center;
     column-gap: 14px;
@@ -902,10 +916,12 @@ a {
     font-size: 0.9rem;
 }
 
+/* As on top: the title, then the chips in what is left of its line; the sections under them, the whole width (D-355). */
 .top-bar > .status-chips {
-    grid-column: 4;
-    grid-row: 1 / span 2;
-    margin-right: 40px;
+    grid-column: 3;
+    grid-row: 1;
+    height: 30px;
+    margin: 0 40px 0 0;
 }
 
 .top-bar-title {
@@ -3279,6 +3295,7 @@ svg.icon {
 
     .titles h1 {
         font-size: 1.6rem;
+        letter-spacing: 0.01em;
     }
 
     .top {
@@ -3348,6 +3365,8 @@ svg.icon {
 
     .top-bar > .status-chips {
         grid-column: 3;
+        grid-row: 1 / span 2;
+        align-self: center;
         margin-right: 0;
     }
 
