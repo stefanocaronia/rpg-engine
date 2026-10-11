@@ -296,6 +296,7 @@ export type View =
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
+    | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
     | { kind: "unknown"; text: string; };
 
 /**

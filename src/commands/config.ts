@@ -9,6 +9,7 @@ import {
     changeOtherSetting,
     changeSetting,
     checkSettingName,
+    companionWays,
     diceWays,
     difficulties,
     lethalities,
@@ -17,6 +18,7 @@ import {
     mentorWays,
     missingSettings,
     pictureWays,
+    preparations,
     readCampaignData,
     readSettings,
     readTextSetting,
@@ -216,6 +218,65 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     veils: { about: "what happens only off screen, without details" },
     language: { about: "the game's language, as a code such as it or en" },
 };
+
+// What the setup asks besides the player's settings (D-370): how the companions come, how far ahead a world is made, the campaign's name.
+const setupWords: Record<string, { about: string; values?: readonly string[]; means?: Record<string, string>; }> = {
+    companions: {
+        about: "how companions come to your side",
+        values: companionWays,
+        means: {
+            none: "you play alone",
+            "made with the player": "you make them with the master in session zero",
+            "made by the master": "the master makes them in session zero",
+            "met in play": "you meet them in the story",
+        },
+    },
+    preparation: {
+        about: "how far ahead the master makes the world",
+        values: preparations,
+        means: { "on the fly": "just before it is needed, so the story can go anywhere", "all at the start": "all of it before the first scene" },
+    },
+    name: { about: "the campaign's name" },
+};
+
+// The setup's questions, in the order the player meets them on the dashboard: how the game plays, how it is learned and rolled, who comes along, then the limits.
+const setupOrder = ["difficulty", "lethality", "saves", "rigor", "mentor", "dice", "units", "companions", "preparation"];
+
+/**
+ * The setup's questions as the dashboard asks them (D-370), each with its value or items, if answered, and its values with what each means: the player's
+ * settings of the setup, how companions come, the preparation of a world not written, those the game system adds, then the lines and veils.
+ */
+export function setupQuestions(root: string, context: Context, writtenWorld: boolean): PlayerSetting[]
+{
+    const own = playerSettings(root, context);
+
+    const named = (name: string): PlayerSetting[] => {
+        const setting = own.find((one) => one.name === name) ?? setupSettingNamed(root, name);
+        return setting === undefined ? [] : [setting];
+    };
+
+    const system = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
+    return [...setupOrder.filter((name) => name !== "preparation" || !writtenWorld), ...system, "lines", "veils"].flatMap(named);
+}
+
+/** A setting only the setup lets the dashboard change (D-370): how companions come, the preparation, the name; undefined for any other. */
+export function setupSettingNamed(root: string, name: string): PlayerSetting | undefined
+{
+    const key = Object.keys(setupWords).find((one) => comparableText(one) === comparableText(name));
+
+    if (key === undefined) {
+        return undefined;
+    }
+
+    const words = setupWords[key];
+    const value = (readSettings(root) as Record<string, unknown>)[key];
+    return {
+        name: key,
+        about: words.about,
+        ...(typeof value === "string" ? { value } : {}),
+        ...(words.values === undefined ? {} : { choices: words.values.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) })) }),
+    };
+}
 
 /** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
 export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]

@@ -8,9 +8,11 @@ import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { findCampaign, readSettings, requireCampaign, settingNames } from "./campaign/index.ts";
-import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings } from "./commands/config.ts";
+import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
+import { campaignMode } from "./commands/game-mode.ts";
 import { resetPoints } from "./commands/game-saves.ts";
+import { campaignWorld } from "./commands/game-world.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -292,6 +294,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (request.method === "POST" && path === "/api/setup" && origin !== undefined) {
+        await setupWord(request, response, served);
+        return;
+    }
+
     if (request.method === "POST" && path === "/api/saves" && origin !== undefined) {
         await changeSaves(request, response, served);
         return;
@@ -485,7 +492,9 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
         const change = parsed.data;
         const refused = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
-            const before = playerSettingNamed(root, served.context, change.setting);
+            // In the setup, how companions come, the preparation and the name are the player's too (D-370).
+            const setup = campaignMode(root, campaignWorld(root, served.context)) === "setup";
+            const before = playerSettingNamed(root, served.context, change.setting) ?? (setup ? setupSettingNamed(root, change.setting) : undefined);
 
             if (before === undefined) {
                 return (settingNames as string[]).includes(change.setting.trim())
@@ -566,6 +575,27 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
     }
 }
 
+/**
+ * The player's word in the setup (D-370): a choice they leave to the master, or that they made their choices and are ready; the master hears it at their next
+ * call, and nothing is written.
+ */
+async function setupWord(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.union([z.object({ leave: z.string().trim().min(1).max(mostSaid) }).strict(), z.object({ ready: z.literal(true) }).strict()]).safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send { leave } with a setting of the setup the player leaves to the master, or { ready: true } once they made their choices." });
+        return;
+    }
+
+    served.events.push(
+        "leave" in parsed.data
+            ? `The player leaves ${parsed.data.leave} to you, on the dashboard: choose it, set it with config, and tell them what you chose.`
+            : "The player made their choices on the dashboard and is ready: ask what status says is still missing, then session zero once they confirm.",
+    );
+    sendJson(response, 202, {});
+}
+
 /** What the master hears of what the player did on the page since their last call: the saves, in order, then the settings; all given back when the call never answers. */
 function pageNews(served: Served): { lines: string[]; restore(): void; }
 {
@@ -598,7 +628,7 @@ function settingNews(served: Served): { lines: string[]; restore(): void; }
             const root = requireCampaign(served.context.folder);
             const now = playerSettings(root, served.context);
             return changed.flatMap(([name, before]) => {
-                const after = now.find((setting) => setting.name === name);
+                const after = now.find((setting) => setting.name === name) ?? setupSettingNamed(root, name);
                 return after === undefined ? [] : playerChangeNews(root, served.context, before, after);
             });
         });

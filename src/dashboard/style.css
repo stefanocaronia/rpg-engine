@@ -1683,6 +1683,308 @@ a {
     }
 }
 
+/* The Setup view (D-370): a portal's first configuration, centred: the robot as the host, the name, the steps, one question at a time. */
+.setup {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 0 96px;
+}
+
+.setup-host .master {
+    width: 120px;
+    height: 120px;
+}
+
+.setup-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-variant: small-caps;
+    letter-spacing: 0.04em;
+}
+
+.setup-name.editing {
+    font-size: 1rem;
+}
+
+.setup-name input {
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.setup-steps {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 22px;
+    margin: 0;
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    list-style: none;
+}
+
+.setup-steps li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.setup-step-dot {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--muted);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.setup-steps li.now {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.setup-steps li.now .setup-step-dot,
+.setup-steps li.done .setup-step-dot {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.setup-card {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    padding: 20px 22px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-xl);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.setup-card h2 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 1.5rem;
+}
+
+.setup-count {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.setup-about {
+    margin: -4px 0 4px;
+    color: var(--muted);
+}
+
+.setup-choices {
+    display: grid;
+    gap: 8px;
+}
+
+.setup-choice {
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.setup-choice span {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.setup-choice:hover {
+    border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+}
+
+.setup-choice[aria-checked="true"] {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, var(--panel));
+    box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.setup-choice[aria-checked="true"] span {
+    color: var(--ink);
+}
+
+.setup-left {
+    margin: 0;
+    color: var(--muted);
+    font-style: italic;
+}
+
+.setup-list {
+    display: grid;
+    gap: 8px;
+}
+
+.setup-list ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.setup-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+}
+
+.setup-list li .icon-button {
+    width: 32px;
+    height: 32px;
+}
+
+.setup-list form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.setup-list input {
+    flex: 1;
+    min-width: 140px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.setup-moves {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.setup-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.setup-button svg.icon {
+    width: 18px;
+    height: 18px;
+}
+
+.setup-button.gold {
+    border-color: transparent;
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.setup-button.quiet {
+    border-color: transparent;
+    background: transparent;
+    color: var(--accent);
+}
+
+.setup-button:disabled {
+    color: var(--muted);
+    cursor: default;
+}
+
+.setup-dots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.setup-dots button {
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    border: 1.5px solid var(--muted);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.setup-dots button.answered {
+    border-color: var(--gold);
+    background: var(--gold);
+}
+
+.setup-dots button.here {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.setup-chat,
+.setup-problem {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.setup-problem {
+    color: var(--low);
+}
+
+@media (pointer: coarse) {
+    .setup-dots button {
+        width: 18px;
+        height: 18px;
+    }
+
+    .setup-button,
+    .setup-list input {
+        min-height: var(--target);
+    }
+}
+
 .upcoming {
     padding: 20px;
     border: 1px solid var(--rule);

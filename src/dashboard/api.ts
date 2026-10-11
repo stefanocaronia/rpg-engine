@@ -48,6 +48,37 @@ export async function readSettings(): Promise<PlayerSetting[]>
     return body.kind === "settings" ? body.settings : [];
 }
 
+/** The setup as the Setup view shows it (D-370). */
+export type SetupView = Extract<View, { kind: "setup"; }>;
+
+/** The campaign's setup: its mode and name, what the next mode needs, and the setup's questions (D-370). */
+export async function readSetup(): Promise<SetupView>
+{
+    const response = await fetch("/api/view?setup=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    if (body.kind !== "setup") {
+        throw new Error("The game gave no setup: reload the page.");
+    }
+
+    return body;
+}
+
+/** The player's word in the setup (D-370): a choice left to the master, or ready; undefined when it reached the game, else what went wrong. */
+export async function sendSetupWord(word: { leave: string; } | { ready: true; }): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(word) });
+        return response.status === 202 ? undefined : ((await response.json() as { error?: string; }).error ?? "It did not reach the game: try again.");
+    } catch {
+        return "It did not reach the game: try again.";
+    }
+}
+
 /** The journal as the Journal section shows it (D-367). */
 export type JournalView = Extract<View, { kind: "journal"; }>;
 

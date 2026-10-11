@@ -43,7 +43,7 @@ try {
     page.on("pageerror", (error) => said.push(`error: ${error.message}`));
     await page.goto(values.url ?? demo?.url ?? "");
     // The page has read view when it shows a sheet, or says why not.
-    await page.waitForSelector(".band, .notice", { timeout: 10_000 });
+    await page.waitForSelector(".band, .notice, .setup", { timeout: 10_000 });
 
     // The demo asks on the page, and the call waits for the click of the steps: what it said comes at the end.
     const question = values.ask === undefined ? undefined : demoQuestions[(Number(values.ask) - 1) % demoQuestions.length];

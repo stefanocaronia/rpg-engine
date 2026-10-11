@@ -21,6 +21,7 @@ import { RollLog } from "./rolls.tsx";
 import { SavesView } from "./saves.tsx";
 import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
+import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
@@ -223,112 +224,122 @@ function App()
         document.title = shown.asked !== undefined ? `🎲 ${title}` : yourTurn ? `⚔ ${title}` : title;
     }, [shown.campaign, shown.asked === undefined, yourTurn]);
 
+    const setup = useSetup(shown.version);
+    // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
+    const inSetup = setup?.mode === "setup";
+
     // The page's own messages, over it (D-298): a problem, the game away, a word to know.
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
         ...(!live && shown.readAt !== undefined
             ? [{ kind: "away" as const, text: `Not connected: the sheet as of ${shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.` }]
             : []),
-        ...(shown.noCharacter ? [{ kind: "info" as const, text: "There is no player character yet: the sheet comes when the master writes one." }] : []),
+        ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: "There is no player character yet: the sheet comes when the master writes one." }] : []),
     ];
     return (
         <RequestedRoll.Provider value={requested}>
             <div class={live ? "page" : "page stale"}>
-                <Top
-                    campaign={shown.campaign}
-                    product={productName}
-                    system={shown.system?.name}
-                    now={shown.now}
-                    path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
-                    live={live}
-                    mood={shown.masterMood}
-                    moment={moment}
-                    asleep={!live && shown.readAt !== undefined}
-                    section={address.section}
-                    fight={fight}
-                    yourTurn={yourTurn}
-                />
+                {!inSetup && (
+                    <Top
+                        campaign={shown.campaign}
+                        product={productName}
+                        system={shown.system?.name}
+                        now={shown.now}
+                        path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
+                        live={live}
+                        mood={shown.masterMood}
+                        moment={moment}
+                        asleep={!live && shown.readAt !== undefined}
+                        section={address.section}
+                        fight={fight}
+                        yourTurn={yourTurn}
+                    />
+                )}
                 <Notices notices={notices} />
                 {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
-                {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
-                {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
-                    <a class="turn-notice" href={sectionAddress("combat")}>
-                        <Icon name="combat" />
-                        <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
-                        <span class="turn-notice-go">Combat</span>
-                    </a>
-                )}
-                {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-                {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
-                <div class="body">
-                    <main>
-                        {address.section === "about" && <About product={productName} system={shown.system} />}
-                        {/* The quest the player follows, small, where the story goes on (D-367). */}
-                        {(address.section === "scene" || address.section === "combat") && <FollowedQuest version={shown.version} campaign={shown.campaign} />}
-                        {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
-                        {address.section === "combat" && (
-                            <CombatView
-                                scene={shown.openScene}
-                                map={shown.place?.map}
-                                place={shown.place?.name}
-                                lead={lead}
-                                own={{
-                                    sheet: shown.chosen === lead?.name ? shown.sheet : [],
-                                    cards: shown.cards,
-                                    version: shown.version,
-                                    onRoll: throwFromSheet,
+                {inSetup ? <SetupView setup={setup} /> : (
+                    <>
+                        {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
+                        {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
+                            <a class="turn-notice" href={sectionAddress("combat")}>
+                                <Icon name="combat" />
+                                <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
+                                <span class="turn-notice-go">Combat</span>
+                            </a>
+                        )}
+                        {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
+                        {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
+                        <div class="body">
+                            <main>
+                                {address.section === "about" && <About product={productName} system={shown.system} />}
+                                {/* The quest the player follows, small, where the story goes on (D-367). */}
+                                {(address.section === "scene" || address.section === "combat") && <FollowedQuest version={shown.version} campaign={shown.campaign} />}
+                                {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
+                                {address.section === "combat" && (
+                                    <CombatView
+                                        scene={shown.openScene}
+                                        map={shown.place?.map}
+                                        place={shown.place?.name}
+                                        lead={lead}
+                                        own={{
+                                            sheet: shown.chosen === lead?.name ? shown.sheet : [],
+                                            cards: shown.cards,
+                                            version: shown.version,
+                                            onRoll: throwFromSheet,
+                                        }}
+                                    />
+                                )}
+                                {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
+                                {address.section === "settings" && <SettingsView version={shown.version} />}
+                                {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
+                                {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
+                                {!["party", "scene", "combat", "journal", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
+                                {address.section === "party" && member && (
+                                    <MemberSheet
+                                        key={member.name}
+                                        member={member}
+                                        headline={shown.headline}
+                                        sheet={shown.sheet}
+                                        cards={shown.cards}
+                                        text={shown.text}
+                                        version={shown.version}
+                                        onRoll={throwFromSheet}
+                                    />
+                                )}
+                            </main>
+                            {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
+                            <RollLog
+                                key={shown.campaign}
+                                rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
+                                free={free}
+                                unread={shown.rollsTotal > shown.rolls.length}
+                                campaign={shown.campaign}
+                                party={shown.party}
+                                fresh={fresh}
+                                onMore={() => {
+                                    rollsAsked.current += firstRolls;
+                                    void read();
+                                }}
+                                onClearFree={() => {
+                                    setFree([]);
+                                    writeFree(shown.campaign, []);
                                 }}
                             />
+                        </div>
+                        {shown.system && (
+                            <footer class="credits">
+                                <span>
+                                    {shown.system.name} · {phraseLabel(shown.system.title)}
+                                </span>
+                                {shown.system.attribution && (
+                                    <details>
+                                        <summary>Credits</summary>
+                                        <p>{shown.system.attribution}</p>
+                                    </details>
+                                )}
+                            </footer>
                         )}
-                        {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
-                        {address.section === "settings" && <SettingsView version={shown.version} />}
-                        {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
-                        {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                        {!["party", "scene", "combat", "journal", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
-                        {address.section === "party" && member && (
-                            <MemberSheet
-                                key={member.name}
-                                member={member}
-                                headline={shown.headline}
-                                sheet={shown.sheet}
-                                cards={shown.cards}
-                                text={shown.text}
-                                version={shown.version}
-                                onRoll={throwFromSheet}
-                            />
-                        )}
-                    </main>
-                    {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
-                    <RollLog
-                        key={shown.campaign}
-                        rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
-                        free={free}
-                        unread={shown.rollsTotal > shown.rolls.length}
-                        campaign={shown.campaign}
-                        party={shown.party}
-                        fresh={fresh}
-                        onMore={() => {
-                            rollsAsked.current += firstRolls;
-                            void read();
-                        }}
-                        onClearFree={() => {
-                            setFree([]);
-                            writeFree(shown.campaign, []);
-                        }}
-                    />
-                </div>
-                {shown.system && (
-                    <footer class="credits">
-                        <span>
-                            {shown.system.name} · {phraseLabel(shown.system.title)}
-                        </span>
-                        {shown.system.attribution && (
-                            <details>
-                                <summary>Credits</summary>
-                                <p>{shown.system.attribution}</p>
-                            </details>
-                        )}
-                    </footer>
+                    </>
                 )}
                 <DiceTray
                     requested={thrown}

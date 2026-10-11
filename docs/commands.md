@@ -129,6 +129,7 @@ Read-only: yes. Positional parameters: `page`.
 - `map` (`boolean`, optional): the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions
 - `settings` (`boolean`, optional): for the dashboard: the player's settings, with their values and what each means
 - `saves` (`boolean`, optional): for the dashboard: the saves, with what the campaign's saves setting lets the player do with each
+- `setup` (`boolean`, optional): for the dashboard: the setup, with the campaign's mode and name, what the next mode needs, and the setup's questions
 - `journal` (`boolean`, optional): for the dashboard: the quests the character knows, with their goals, counters, clock and deadline, and the story by scenes
 
 ### find

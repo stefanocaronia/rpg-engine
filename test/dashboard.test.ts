@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
@@ -206,6 +206,79 @@ describe("view as data (VIEW-1, D-272)", () => {
         } finally {
             removeFolder(ironsworn);
             removeFolder(systems);
+        }
+    });
+});
+
+describe("the setup as the dashboard shows it (D-370)", () => {
+    it("gives the setup's questions in order, what the next mode needs, and the name; the page sets them, leaves them to the master, says it is ready", async () => {
+        const campaign = join(makeTempFolder(), "nuova-campagna");
+        mkdirSync(campaign);
+        const there = { ...context, folder: campaign };
+
+        const run = async (...args: string[]): Promise<string> => {
+            const result = await runCommandLine(args, there);
+            expect(result.exitCode, result.output).toBe(0);
+            return result.output;
+        };
+
+        await run("init", "--language", "it", "--system", "5e");
+        await run("config", "difficulty", "normal");
+        const setup = JSON.parse(await run("view", "--setup", "--json"));
+        expect(setup).toMatchObject({ kind: "setup", mode: "setup", name: "nuova-campagna", folderName: true });
+        expect(setup.questions.map((question: { name: string; }) => question.name)).toEqual([
+            "difficulty",
+            "lethality",
+            "saves",
+            "rigor",
+            "mentor",
+            "dice",
+            "units",
+            "companions",
+            "preparation",
+            "advancement",
+            "lines",
+            "veils",
+        ]);
+        expect(setup.questions[0]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
+        expect(setup.questions[7]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
+        expect(setup.missing).toContain("companions (none, made with the player, made by the master, met in play)");
+        // Once the premise is set, a campaign named after its folder: status asks the master to propose a name.
+        await run("config", "premise", "Fantasy cupo");
+        expect(await run("status")).toContain("The campaign is still named after its folder, nuova-campagna: propose a name that fits the premise");
+
+        const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const started = await startDashboard({ ...there, files: session }, session, { ports: [0], page: campaign });
+        const port = Number(new URL(started?.url ?? "http://127.0.0.1:0").port);
+        const post = (path: string, body: unknown): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const headers = { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+                const sent = request({ host: "127.0.0.1", port, path, method: "POST", headers }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                });
+                sent.on("error", fail).end(JSON.stringify(body));
+            });
+
+        try {
+            // In the setup the page sets how companions come and the name too, which the master hears.
+            expect((await post("/api/config", { setting: "companions", value: "met in play" })).status).toBe(202);
+            expect((await post("/api/config", { setting: "name", value: "La valle delle miniere" })).status).toBe(202);
+            expect((await post("/api/setup", { leave: "rigor" })).status).toBe(202);
+            expect((await post("/api/setup", { ready: true })).status).toBe(202);
+            expect((await post("/api/setup", { other: 1 })).status).toBe(400);
+            const news = started?.news().lines ?? [];
+            expect(news[0]).toBe("The player leaves rigor to you, on the dashboard: choose it, set it with config, and tell them what you chose.");
+            expect(news[1]).toMatch(/^The player made their choices on the dashboard and is ready/);
+            expect(news.join("\n")).toContain("The player set companions to met in play on the dashboard");
+            expect(news.join("\n")).toContain("The player set name to La valle delle miniere on the dashboard");
+            expect(readFileSync(join(campaign, "campaign.yaml"), "utf8")).toContain("name: La valle delle miniere");
+        } finally {
+            await started?.close();
+            session.close();
+            removeFolder(dirname(campaign));
         }
     });
 });
@@ -788,6 +861,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(JSON.parse(nonsense.body).error).toMatch(/^There is no setting "nonsense": the player's are difficulty, lethality, /);
 
         // The master's own settings stay in the chat; a value the setting does not take, or anything else sent, changes nothing.
+        expect((await send("POST", "/api/config", { setting: "companions", value: "none" })).status).toBe(403);
         const precedents = await send("POST", "/api/config", { setting: "precedents", add: "Avvelenato: svantaggio" });
         expect(precedents.status).toBe(403);
         expect(JSON.parse(precedents.body)).toEqual({ error: "precedents is the master's to change, in the chat." });

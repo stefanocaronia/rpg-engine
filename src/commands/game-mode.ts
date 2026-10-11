@@ -1,4 +1,5 @@
 // The mode of the campaign, the main state of the game (D-77): setup, session zero or play, each opened by the checklist of the one before (D-221, D-241; MOD-1–MOD-7).
+import { basename } from "node:path";
 import { companionWays, diceWays, difficulties, lethalities, missingSettings, preparations, readSettings, readStateValues, rigors, saveModes, type SettingName, unansweredSettings, unitSystems } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { readLog } from "../core/log.ts";
@@ -115,7 +116,10 @@ export function checklistLine(mode: Mode, root: string, context: Context, world:
     const next = mode === "setup" ? "session zero" : "play";
     const blocked = blockingMode(next, root, context, world);
     const missing = blocked === undefined ? "nothing is missing" : missingText(blocked);
-    return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}. When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.`;
+    const settings = readSettings(root);
+    const unnamed = mode === "setup" && settings.premise !== undefined && comparableText(settings.name) === comparableText(basename(root));
+    const name = unnamed ? ` The campaign is still named after its folder, ${settings.name}: propose a name that fits the premise, and set it with config name once the player likes it.` : "";
+    return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}. When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.${name}`;
 }
 
 /** The call that enters a mode, as outputs give it: mode, to "session zero". */

@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
@@ -11,12 +12,13 @@ import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
-import { type PlayerSetting, shownPlayerSettings } from "./config.ts";
+import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
+import { blockingMode, campaignMode, type Mode, modes } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
@@ -121,6 +123,8 @@ export type ViewResult =
     | ({ kind: "map"; } & ShownMap)
     /** The player's settings, which the dashboard changes (D-341). */
     | { kind: "settings"; settings: PlayerSetting[]; }
+    /** The setup (D-370): the mode, the campaign's name and whether it is still its folder's, what the next mode still needs, and the setup's questions. */
+    | { kind: "setup"; mode: Mode; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
     /** The journal (D-367): the quests the player character knows, and the story by scenes. */
     | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
@@ -144,6 +148,7 @@ export const view = defineCommand({
         map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
         settings: z.boolean().optional().describe("for the dashboard: the player's settings, with their values and what each means"),
         saves: z.boolean().optional().describe("for the dashboard: the saves, with what the campaign's saves setting lets the player do with each"),
+        setup: z.boolean().optional().describe("for the dashboard: the setup, with the campaign's mode and name, what the next mode needs, and the setup's questions"),
         journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with their goals, counters, clock and deadline, and the story by scenes"),
     }),
 
@@ -158,6 +163,27 @@ export const view = defineCommand({
             }
 
             return { kind: "settings", settings: shownPlayerSettings(root, context) };
+        }
+
+        // The setup, with or without a player character (D-370).
+        if (input.setup === true) {
+            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.saves, input.journal].some((given) => given !== undefined)) {
+                throw new Error("Give setup alone: it is the campaign's setup, apart from the page, the diary, the rolls, the map, the settings, the saves and the journal.");
+            }
+
+            const world = campaignWorld(root, context);
+            const mode = campaignMode(root, world);
+            const next = modes[modes.indexOf(mode) + 1];
+            const blocked = next === undefined ? undefined : blockingMode(next, root, context, world);
+            const name = readSettings(root).name;
+            return {
+                kind: "setup",
+                mode,
+                name,
+                folderName: comparableText(name) === comparableText(basename(root)),
+                missing: blocked?.missing ?? [],
+                questions: setupQuestions(root, context, world.pages.length > 0),
+            };
         }
 
         if (input.saves === true) {
@@ -319,6 +345,11 @@ export const view = defineCommand({
                 return mapText(result);
             case "settings":
                 return result.settings.map((setting) => `${setting.name}: ${settingText(setting)}`).join("\n");
+            case "setup":
+                return [
+                    `${result.name}: ${result.mode}${result.missing.length === 0 ? "" : `; still missing: ${result.missing.join(", ")}`}`,
+                    ...result.questions.map((question) => `${question.name}: ${question.items === undefined ? (question.value ?? "(not chosen)") : question.items.length === 0 ? "(none)" : question.items.join(", ")}`),
+                ].join("\n");
             case "journal":
                 return [
                     ...(result.quests.length === 0 ? ["No quests yet."] : result.quests.map(questText)),
