@@ -35,7 +35,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run format`: format the code (ESLint fixes, then dprint).
 - `npm run lint`: check the formatting, and the types of the tests too, as CI does.
 - `npm run docs`: write `docs/commands.md` from the commands' definitions.
-- `npm run demo`: build, then serve the dashboard of the demo campaign at `http://127.0.0.1:4760`, asking checks in turn: what the browser pane's play button starts (`.claude/launch.json`).
+- `npm run demo`: build, then serve the dashboard of the demo campaign at `http://127.0.0.1:5760`, asking checks in turn: what the browser pane's play button starts (`.claude/launch.json`).
 - `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code, `/mcp refresh` in Gemini CLI) or open a new chat.
 
 ## Development vs game

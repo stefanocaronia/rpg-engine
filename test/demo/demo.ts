@@ -44,7 +44,11 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
     const dashboard = await startDashboard({ ...context, files: session }, session, { ports });
 
     if (dashboard === undefined) {
-        throw new Error("No port is free for the dashboard: close a chat that serves one, or the demo.");
+        throw new Error(
+            ports === undefined
+                ? "No port is free for the dashboard: close a chat that serves one, or the demo."
+                : `The demo cannot have port ${ports.join(", ")}: another program has it, or Windows keeps it (netsh int ipv4 show excludedportrange protocol=tcp). Give another with --port.`,
+        );
     }
 
     return {

@@ -26,7 +26,7 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\"",
     "dev": "tsc --watch",
-    "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 4760",
+    "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
     "lint": "eslint . && dprint check && tsc -p tsconfig.test.json && tsc -p src/dashboard --noEmit",

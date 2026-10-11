@@ -10,7 +10,7 @@ import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
 import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
-import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
 import { readAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
@@ -300,6 +300,12 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect((await get("/images/wolf-head.svg")).headers["content-type"]).toBe("image/svg+xml");
         expect((await get("/images/..%2Fcampaign.yaml")).status).toBe(404);
         expect((await get("/images/%E0%A4%A")).status).toBe(404);
+    });
+
+    it("tries 4747 to 4756 first, then the other ranges, and at last any free port, as Windows may keep a range from boot to boot (D-338)", () => {
+        expect(dashboardPorts.slice(0, 10)).toEqual(Array.from({ length: 10 }, (_, index) => 4747 + index));
+        expect(dashboardPorts).toContain(5747);
+        expect(dashboardPorts.at(-1)).toBe(0);
     });
 
     it("takes the next port when another program answers at one, even on ::1 only, and gives its link on 127.0.0.1 (D-277)", async () => {

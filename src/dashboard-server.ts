@@ -17,8 +17,11 @@ import { files, isInside, withFiles } from "./core/store.ts";
 import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
 
-/** The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). */
-export const dashboardPorts = Array.from({ length: 10 }, (_, index) => 4747 + index);
+/**
+ * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
+ * from boot to boot (netsh int ipv4 show excludedportrange): then the next range, and at last any free port, whose link status gives all the same (D-338).
+ */
+export const dashboardPorts = [...[4747, 5747, 6747, 7747, 8747].flatMap((first) => Array.from({ length: 10 }, (_, index) => first + index)), 0];
 
 /** A dashboard that is running: its link, and how to stop it. */
 export interface Dashboard
