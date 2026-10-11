@@ -135,17 +135,20 @@ export const config = defineCommand({
         const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
         const listed = input.setting === undefined ? shown.filter((name) => !added(name) || settings[name] !== undefined) : shown;
         const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
+        // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
+        const part = input.setting?.trim() === "mentor" && input.value !== undefined && context.actor !== "player" ? mentorPart(root, context, settings.mentor) : "";
         return {
             settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
             note: campaignNote(root, context),
             replaced,
+            part,
         };
     },
 
     format(result)
     {
         const lines = Object.entries(result.settings).map(([name, value]) => `${name}: ${formatValue(value)}`);
-        return [[...lines, ...result.replaced].join("\n"), result.note].filter((block) => block !== "").join("\n\n");
+        return [[...lines, ...result.replaced].join("\n"), result.note, result.part ?? ""].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -288,13 +291,13 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
 /** What an item the player added to a list means to the master: what the list holds, or what to do, as for learned. */
 function addedText(setting: PlayerSetting): string
 {
-    return (playerWords as Record<string, { added?: string; } | undefined>)[setting.name]?.added ?? setting.about;
+    return wordsOf(setting.name)?.added ?? setting.about;
 }
 
 /** What the master does when the player takes an item off a list, as for learned: explain it again. */
 function takenOffText(name: string): string
 {
-    const taken = (playerWords as Record<string, { takenOff?: string; } | undefined>)[name]?.takenOff;
+    const taken = wordsOf(name)?.takenOff;
     return taken === undefined ? "" : `: ${taken}`;
 }
 
@@ -310,7 +313,7 @@ function systemSettingResult(
     context: Context,
     setting: SystemSetting,
     input: { value?: string; add?: string[]; remove?: string[]; },
-): { settings: Record<string, unknown>; note: string; replaced: string[]; }
+): { settings: Record<string, unknown>; note: string; replaced: string[]; part?: string; }
 {
     if (input.add !== undefined || input.remove !== undefined) {
         throw new Error(`${setting.name} takes one value, ${valuesText(setting)}, such as setting ${setting.name}, value ${setting.values[0].value}. Nothing changed.`);
@@ -482,4 +485,10 @@ function checkAdditions(root: string, context: Context, setting: string, change:
     if (problem !== undefined) {
         throw new Error(`With this, the system ${system} would not read: ${problem} Nothing changed.`);
     }
+}
+
+/** What a setting of the player's is to them and to the master, by its name; undefined for one of the game system. */
+function wordsOf(name: string): (typeof playerWords)[keyof typeof playerWords] | undefined
+{
+    return Object.hasOwn(playerWords, name) ? playerWords[name as keyof typeof playerWords] : undefined;
 }

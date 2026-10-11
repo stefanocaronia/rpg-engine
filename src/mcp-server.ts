@@ -157,6 +157,8 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
+    // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
+    const told = new Set(context.told);
 
     try {
         // In a session, the files that changed since the last call are read again; instructions starts a chat, or follows a summary: everything is checked (D-193).
@@ -176,9 +178,11 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
     } finally {
         clearInterval(keepAlive);
 
-        // An answer that never goes, as for a call the user stopped, gives what the player changed back to the next one.
+        // An answer that never goes, as for a call the user stopped, gives what the player changed back to the next one, and its parts.
         if (extra.signal.aborted) {
             news?.restore();
+            context.told?.clear();
+            told.forEach((name) => context.told?.add(name));
         }
     }
 }

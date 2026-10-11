@@ -28,7 +28,7 @@ export const mode = defineCommand({
             return { to: input.to, changed: false, dateless: false, part: "" };
         }
 
-        // Forward only with the checklists before the mode complete; back always (MOD-2).
+        // Into the setup always; into session zero and play, even back from play, only with the checklists before them complete (MOD-2).
         const blocked = blockingMode(input.to, root, context, world);
 
         if (blocked !== undefined) {

@@ -72,6 +72,17 @@ describe("the parts of the instructions (D-121)", () => {
         expect(await ok("status")).toMatch(/ · mentor hints · /);
     });
 
+    it("give the mentor's part when the master sets it with config, once in a chat, as in the setup; the player's change comes with the news instead (D-347)", async () => {
+        await ok("init", "--name", "Rocca", "--system", "5e");
+        const chat = { ...context, told: new Set<string>() };
+        const set = async (value: string) => (await runCommandLine(["config", "mentor", value], chat)).output;
+        expect(await set("tutorial")).toMatch(/^mentor: tutorial: each mechanic explained[\s\S]*\n\nThe player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings:/);
+        expect(await set("tutorial")).not.toContain("(mentor tutorial)");
+        expect(await set("hints")).toContain("The player wants a hint now and then (mentor hints).");
+        expect(await set("off")).not.toContain("mentor hints");
+        expect((await runCommandLine(["config", "mentor", "tutorial"], { ...chat, told: new Set<string>(), actor: "player" })).output).not.toContain("(mentor tutorial)");
+    });
+
     it("come from the system of the campaign too: a game without turns tells a fight its own way (D-111)", async () => {
         await ok("init", "--name", "Ferro", "--system", "ironsworn");
         inPlay(folder);

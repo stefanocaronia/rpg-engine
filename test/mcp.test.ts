@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
-import type { Player } from "../src/core/context.ts";
+import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
@@ -185,11 +185,18 @@ describe("what the player changed on the dashboard (D-341)", () => {
 
         const taken = () => {
             const lines = news.splice(0);
+
+            // A part the news brings, as the mentor's, counts as told in the chat.
+            if (lines.length > 0) {
+                served.told?.add("told in the stopped call");
+            }
+
             return { lines, restore: () => news.unshift(...lines) };
         };
 
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-        await createMcpServer({ ...testContext(folder), page, news: taken }, {}).connect(serverTransport);
+        const served: Context = { ...testContext(folder), page, news: taken };
+        await createMcpServer(served, {}).connect(serverTransport);
         const plain = new Client({ name: "plain", version: "1.0.0" });
         await plain.connect(clientTransport);
         await plain.callTool({ name: "status", arguments: {} });
@@ -202,6 +209,8 @@ describe("what the player changed on the dashboard (D-341)", () => {
         stop.abort();
         await expect(asking).rejects.toThrow();
         await vi.waitFor(() => expect(news).toHaveLength(1));
+        // What the stopped call told the chat is told again: its answer never went (D-97).
+        expect(served.told?.has("told in the stopped call")).toBe(false);
         const after = ((await plain.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
         expect(after).toMatch(/^The player set difficulty to hard on the dashboard\. Play by it from now on\.\n\n\S/);
         await plain.close();
