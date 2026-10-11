@@ -89,8 +89,8 @@ export interface SwatchLook
 }
 
 /**
- * A die of a set, by its sides, a d20 by default: its body filled with its colour or the picture of its grain, its edges in the ink of its numbers; as Settings
- * shows the sets (D-348), and the plate and the tray the dice the player rolls (D-368). Nothing for a die the page does not draw.
+ * A die of a set, by its sides, a d20 by default: its body filled with its colour or the picture of its grain, its edges in the ink of its numbers, as Settings
+ * shows the sets (D-348); every other picture of a die is in the page's accent (D-374). Nothing for a die the page does not draw.
  */
 export function DieSwatch({ sides = 20, body, ink, picture }: SwatchLook & { sides?: number | "F"; })
 {

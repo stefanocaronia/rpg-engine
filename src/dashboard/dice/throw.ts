@@ -40,6 +40,8 @@ const softest = 1.5;
 const knockGap = 3;
 // More than the farthest corner of any die from its centre.
 const startClearance = 1.3;
+// How far left of the middle the dice leave the hand at most: in a common window's tray, three quarters of its half width.
+const farthestStart = 6.5;
 // Dice that went less than this in the last frames are at rest: some, as a d12 on a face or two dice leaning on each other, tremble forever for the physics.
 const restingMove = 0.02;
 const restingFrames = 12;
@@ -98,8 +100,9 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
         });
         const spin = (): number => (random() - 0.5) * 40;
         const across = shapes.length === 1 ? (random() - 0.5) * tray.depth : ((index + 0.5) / shapes.length - 0.5) * tray.depth * 0.8;
-        // Clear of the left wall: a die that starts in it is pushed out with a knock, in the air, before it ever falls.
-        die.position.set(Math.max(-tray.width * 0.75 - random(), -tray.width + startClearance), 2.5 + random() + index * 0.3, across);
+        // From the tray's left, as far as a common window's, so that in a wide one the dice still come to its middle; clear of the left wall, where a die
+        // would be pushed out with a knock, in the air, before it ever falls.
+        die.position.set(Math.max(-Math.min(tray.width * 0.75, farthestStart) - random(), -tray.width + startClearance), 2.5 + random() + index * 0.3, across);
         die.quaternion.setFromEuler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2);
         die.velocity.set(11 + random() * 6, 2 + random() * 4, (random() - 0.5) * 10);
         die.angularVelocity.set(spin(), spin(), spin());

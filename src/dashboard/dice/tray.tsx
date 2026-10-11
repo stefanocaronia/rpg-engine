@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
 import { DiceFaces } from "../faces.tsx";
 import type { PageRoll } from "../free-rolls.ts";
-import { DieIcon, DieSwatch, Icon, type SwatchLook } from "../icons.tsx";
+import { DieIcon, Icon } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
@@ -15,7 +15,7 @@ import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
-import { diceEdgesPref, diceLook, diceSetPref, texturePath } from "./sets.ts";
+import { diceEdgesPref, diceSetPref } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
@@ -92,8 +92,6 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     const [sound, setSound] = usePref(soundPref);
     const [diceSet] = useChoice(diceSetPref);
     const [edges] = useChoice(diceEdgesPref);
-    // The dice the player rolls, as the plate and the tray draw them: in their set (D-368).
-    const look = swatchOf(diceSet);
     const shownSet = useRef(`${diceSet} ${edges}`);
 
     useEffect(() => {
@@ -360,7 +358,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                 role="status"
                 aria-live="polite"
             >
-                {plate?.shown && <PlateContent plate={plate} look={look} />}
+                {plate?.shown && <PlateContent plate={plate} />}
             </div>
             {open && <div class="tray-scrim" aria-hidden="true" />}
             <div ref={controls} class="dice-controls">
@@ -411,7 +409,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                                 {count > 0 && <span class="tray-count">{count}</span>}
                                                 {dieName(sides)}
                                             </span>
-                                            <DieSwatch sides={sides} {...look} />
+                                            <DieIcon sides={sides} />
                                         </button>
                                     </li>
                                 );
@@ -469,7 +467,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
 }
 
 /** What the plate says: whose roll and which, the dice one by one with the modifier, the total large, a rare face's words, and for a screen reader the chat's text. */
-function PlateContent({ plate, look }: { plate: Plate; look: SwatchLook; })
+function PlateContent({ plate }: { plate: Plate; })
 {
     return (
         <>
@@ -485,7 +483,7 @@ function PlateContent({ plate, look }: { plate: Plate; look: SwatchLook; })
                     )}
                 </span>
             </div>
-            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" look={look} />
+            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" />
             <span class="plate-total num">{shownText(String(plate.total))}</span>
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
             <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
@@ -527,7 +525,11 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     const to = row.getBoundingClientRect();
     const across = to.left + to.width / 2 - (from.left + from.width / 2);
     const down = to.top + to.height / 2 - (from.top + from.height / 2);
-    plate.style.transition = "transform var(--flight) var(--ease), opacity var(--flight) var(--ease-in)";
+    // On its way it closes the side it came out of, a card again: its border all round, its corners rounded below (D-374).
+    const drawn = getComputedStyle(plate);
+    plate.style.transition = ["transform", "border-radius", "border-bottom-width"].map((property) => `${property} var(--flight) var(--ease)`).concat("opacity var(--flight) var(--ease-in)").join(", ");
+    plate.style.borderBottom = `${drawn.borderTopWidth} ${drawn.borderTopStyle} ${drawn.borderTopColor}`;
+    plate.style.borderRadius = drawn.borderTopLeftRadius;
     plate.style.transform = `translate(calc(var(--plate-x) + ${across}px), ${down}px) scale(${Math.min(1, to.height / from.height)})`;
     plate.style.opacity = "0.25";
     window.setTimeout(() => {
@@ -538,6 +540,8 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
             plate.style.transition = "";
             plate.style.transform = "";
             plate.style.opacity = "";
+            plate.style.borderBottom = "";
+            plate.style.borderRadius = "";
             plate.style.visibility = "";
         });
     }, flight);
@@ -573,11 +577,4 @@ function fairDie(sides: number): number
     } while (draw[0] >= limit);
 
     return 1 + (draw[0] % sides);
-}
-
-/** A set's look as its pictures draw it: the theme's follows the theme. */
-function swatchOf(set: string): SwatchLook
-{
-    const look = diceLook(set);
-    return { body: look.body, ink: look.ink, ...(look.finish.texture === undefined ? {} : { picture: texturePath(look.finish.texture) }) };
 }

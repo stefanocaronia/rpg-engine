@@ -2,27 +2,26 @@
 // added, a dF as −, 0 or +, a rare face in its colour; then the number added. The plate shows them large, the rolls small.
 import type { ThrownDie } from "./data.ts";
 import { rareFace } from "./dice/models.ts";
-import { DieIcon, DieSwatch, type SwatchLook } from "./icons.tsx";
+import { DieIcon } from "./icons.tsx";
 import { signed } from "./labels.ts";
 
-/** The dice of a roll as chips; with a look, the dice that count drawn as the player's set (D-368). */
-export function DiceFaces({ dice, modifier, className, look }: { dice: ThrownDie[]; modifier: number; className?: string; look?: SwatchLook; })
+export function DiceFaces({ dice, modifier, className }: { dice: ThrownDie[]; modifier: number; className?: string; })
 {
     return (
         <ol class={className === undefined ? "dice-faces" : `dice-faces ${className}`} aria-hidden="true">
-            {dice.map((die, index) => <DieChip key={index} die={die} look={look} />)}
+            {dice.map((die, index) => <DieChip key={index} die={die} />)}
             {modifier !== 0 && <li class="die-modifier">{signed(modifier)}</li>}
         </ol>
     );
 }
 
-function DieChip({ die, look }: { die: ThrownDie; look: SwatchLook | undefined; })
+function DieChip({ die }: { die: ThrownDie; })
 {
     const rare = rareFace(die);
     const faces = die.faces !== undefined && die.faces.length > 1 ? die.faces.map((value) => faceText(die.sides, value)).join("+") : faceText(die.sides, die.value);
     return (
         <li class={["die-chip", die.dropped === true ? "dropped" : "", rare === undefined ? "" : `rare-${rare}`].filter((name) => name !== "").join(" ")}>
-            {look === undefined || die.dropped === true ? <DieIcon sides={die.sides} /> : <DieSwatch sides={die.sides} {...look} />}
+            <DieIcon sides={die.sides} />
             <span>
                 {die.rerolledFrom !== undefined && (
                     <>

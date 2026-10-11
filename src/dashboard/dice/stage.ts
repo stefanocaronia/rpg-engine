@@ -15,6 +15,8 @@ const dimmedBody = 0.8;
 // How much of the window's foot the plate of the result covers, in pixels: from the window's edge to the plate's top, on a wide screen and on a phone,
 // where it comes out of the bar of the sections.
 const plateOnWide = 150;
+// The window's height up to which the dice grow with it, in pixels: a laptop's or a desktop's; past it they keep their size.
+const commonHeight = 900;
 const plateOnPhone = 220;
 const dimmedInk = 0.5;
 
@@ -49,8 +51,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
 
     // From high above, a little tilted, with a narrow view: the face that lands up is the one the player reads, even at the window's edges.
     const camera = new THREE.PerspectiveCamera(18, 1, 0.1, 200);
-    camera.position.set(0, 45, 9);
-    camera.lookAt(0, 0, 0);
+    const above = new THREE.Vector3(0, 45, 9);
 
     const scene = new THREE.Scene();
     scene.add(new THREE.HemisphereLight(0xffffff, 0x334466, 1.4));
@@ -58,10 +59,9 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     sun.position.set(-6, 14, 6);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
-    Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 });
     scene.add(sun);
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.35 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.35 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
@@ -137,16 +137,24 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         const width = window.innerWidth;
         const height = window.innerHeight;
         renderer.setSize(width, height, false);
+        // The dice keep their size on the page in a taller window: past a common height the camera goes back, seeing more of the floor (D-375).
+        const back = Math.max(1, height / commonHeight);
+        camera.position.copy(above).multiplyScalar(back);
+        camera.lookAt(0, 0, 0);
+        camera.far = 200 * back;
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+        // The sun's shadows cover all that is seen.
+        Object.assign(sun.shadow.camera, { left: -12 * back, right: 12 * back, top: 12 * back, bottom: -12 * back });
+        sun.shadow.camera.updateProjectionMatrix();
         // The tray fills what the camera sees on the floor, but for the window's foot the plate covers: no die lies under it (D-366).
         const seen = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
-        const back = Math.max(3, seen / 2 - 1.2);
+        const far = Math.max(3, seen / 2 - 1.2);
         const covered = (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide) / height * seen;
-        const front = Math.max(6 - back, back - covered);
-        tray.depth = (front + back) / 2;
-        tray.width = Math.max(3, back * camera.aspect);
-        table.position.z = (front - back) / 2;
+        const front = Math.max(6 - far, far - covered);
+        tray.depth = (front + far) / 2;
+        tray.width = Math.max(3, far * camera.aspect);
+        table.position.z = (front - far) / 2;
     };
 
     const clear = (): void => {

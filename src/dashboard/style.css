@@ -3902,6 +3902,11 @@ summary.fixed {
         overflow: hidden;
         animation: roll-open var(--flight) var(--ease), roll-show var(--medium) linear var(--flight) backwards;
     }
+
+    /* The player's, whose plate flies into it once its place is open, appears as the plate lands: the plate becomes the line (D-376). */
+    .roll.entering.by-player {
+        animation: roll-open var(--flight) var(--ease), roll-show 200ms linear calc(var(--flight) * 2 - 100ms) backwards;
+    }
 }
 
 /* From nothing to the card's own height: the browser grows it to its height, whatever it is. */
