@@ -64,7 +64,7 @@ describe("the parts of the instructions (D-121)", () => {
         await ok("config", "mentor", "tutorial");
         await ok("config", "learned", "--add", "Advantage", "--add", "Saving throw");
         const tutorial = await ok("instructions");
-        expect(tutorial).toMatch(/The player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings:[^\n]*\n\nAlready explained: Advantage, Saving throw\./);
+        expect(tutorial).toMatch(/The player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings,[^\n]*\n\nAlready explained: Advantage, Saving throw\./);
         await ok("config", "mentor", "off");
         expect(await ok("instructions")).not.toContain("mentor");
         expect(await ok("status")).not.toContain("mentor");
@@ -76,7 +76,7 @@ describe("the parts of the instructions (D-121)", () => {
         await ok("init", "--name", "Rocca", "--system", "5e");
         const chat = { ...context, told: new Set<string>() };
         const set = async (value: string) => (await runCommandLine(["config", "mentor", value], chat)).output;
-        expect(await set("tutorial")).toMatch(/^mentor: tutorial: each mechanic explained[\s\S]*\n\nThe player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings:/);
+        expect(await set("tutorial")).toMatch(/^mentor: tutorial: each mechanic explained[\s\S]*\n\nThe player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings,/);
         expect(await set("tutorial")).not.toContain("(mentor tutorial)");
         expect(await set("hints")).toContain("The player wants a hint now and then (mentor hints).");
         expect(await set("off")).not.toContain("mentor hints");
