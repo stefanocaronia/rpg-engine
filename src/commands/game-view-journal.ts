@@ -30,8 +30,13 @@ export interface ShownQuest
 export interface ShownChapter
 {
     title?: string;
+    /** Its number among the scenes, from the first (D-384). */
+    number?: number;
     type?: string;
     place?: string;
+    /** The place's kind and picture, as the player character knows the place, else that of the nearest place that holds it (D-384). */
+    kind?: string;
+    picture?: { file: string; version: number; };
     date?: string;
     summary?: string;
     open: boolean;
@@ -42,9 +47,13 @@ const statuses = ["open", "done", "failed"] as const;
 // Lines of the game, not of the story: the saves made have their own section, the mode is the setup's, the rolls have their column (D-369).
 const outOfStory = new Set(["saved", "mode-changed", "roll", "roll-revealed"]);
 
+/** A place as a chapter shows it: its kind and picture, as the player character knows it. */
+export type PlaceLook = (name: unknown) => Pick<ShownChapter, "kind" | "picture">;
+
 /**
  * The journal (VIEW-8, VIEW-9): the quests the character knows, open ones first, the main ones first among them, then those changed last; and the chapters, the
- * last first. `fact` tells a public line of the log as the diary does; `named` names a page as the character knows it.
+ * last first, numbered from the first. `fact` tells a public line of the log as the diary does; `named` names a page as the character knows it; `look` gives a
+ * place's kind and picture.
  */
 export function shownJournal(
     root: string,
@@ -53,6 +62,7 @@ export function shownJournal(
     now: GameDate | undefined,
     fact: (entry: LogEntry) => string[],
     named: (name: unknown) => string | undefined,
+    look: PlaceLook,
 ): { quests: ShownQuest[]; chapters: ShownChapter[]; }
 {
     // Changed last, as the player saw it: by the public lines alone, never by what the master wrote unseen.
@@ -64,7 +74,7 @@ export function shownJournal(
         .filter((page) => page.type === "quest" && (statuses as readonly string[]).includes(String(page.fields.status)))
         .map((page) => shownQuest(world, knowledge, page, now, named))
         .sort((one, other) => compareOrders(order(one), order(other)) || one.name.localeCompare(other.name));
-    return { quests, chapters: chaptersOf(log, fact, named) };
+    return { quests, chapters: chaptersOf(log, fact, named, look) };
 }
 
 /** "Ritrovare gli scomparsi: open, main, 1/2 goals, clues 3/5, I rapitori 2/6, deadline day 5, 18:00 (in 2d 4h)": a quest in the chat's words. */
@@ -122,22 +132,23 @@ function shownLink(value: unknown, named: (name: unknown) => string | undefined)
  * The story as chapters (VIEW-9): each scene, from its opening to its close, with its summary and the facts the diary tells of it; the facts between scenes in
  * chapters of their own, the saves and the modes left out. The last first.
  */
-function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], named: (name: unknown) => string | undefined): ShownChapter[]
+function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], named: (name: unknown) => string | undefined, look: PlaceLook): ShownChapter[]
 {
     const chapters: ShownChapter[] = [];
     let scene: ShownChapter | undefined;
+    let scenes = 0;
 
     for (const entry of entries) {
         const data = entry.data;
 
         if (entry.type === "scene-opened") {
-            scene = chapter(String(data.title ?? ""), data, entry, named);
+            scene = chapter(String(data.title ?? ""), ++scenes, data, entry, named, look);
             chapters.push(scene);
             continue;
         }
 
         if (entry.type === "scene-closed") {
-            const closed = scene ?? chapter(String(data.title ?? ""), data, entry, named);
+            const closed = scene ?? chapter(String(data.title ?? ""), ++scenes, data, entry, named, look);
 
             if (scene === undefined) {
                 chapters.push(closed);
@@ -168,13 +179,14 @@ function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], na
     return chapters.toReversed();
 }
 
-function chapter(title: string, data: Record<string, unknown>, entry: LogEntry, named: (name: unknown) => string | undefined): ShownChapter
+function chapter(title: string, number: number, data: Record<string, unknown>, entry: LogEntry, named: (name: unknown) => string | undefined, look: PlaceLook): ShownChapter
 {
     const place = named(data.place);
     return {
         title,
+        number,
         ...(typeof data.type === "string" ? { type: data.type } : {}),
-        ...(place === undefined ? {} : { place }),
+        ...(place === undefined ? {} : { place, ...look(data.place) }),
         ...(entry.date === undefined ? {} : { date: entry.date }),
         open: true,
         facts: [],

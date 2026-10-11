@@ -216,7 +216,7 @@ export const view = defineCommand({
             return {
                 kind: "journal",
                 ...(present === undefined ? {} : { now: formatGameDate(present) }),
-                ...shownJournal(root, world, knowledge, present, (entry) => diaryLine(world, entry, known), known),
+                ...shownJournal(root, world, knowledge, present, (entry) => diaryLine(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
             };
         }
 
@@ -674,6 +674,21 @@ function shownSaves(root: string, context: Context): Extract<ViewResult, { kind:
         // Until the player confirms a new chat with the master (D-362).
         ...(wentBackTo(root) === undefined ? {} : { wentBack: wentBackTo(root) }),
     };
+}
+
+/** A place as a chapter of the story shows it (D-384): its kind and its picture, else that of the nearest place that holds it, as the player character knows them. */
+function placeLook(root: string, context: Context, world: World, knowledge: Knowledge, name: unknown): { kind?: string; picture?: { file: string; version: number; }; }
+{
+    const page = knownNamedPage(world, knowledge, name);
+
+    if (page === undefined) {
+        return {};
+    }
+
+    const known = (base: Page): boolean => knowsPage(knowledge, base);
+    const kind = page.fields.kind;
+    const picture = [page, ...locate(world, page).chain.filter(known)].map((holder) => shownImage(root, context, world, holder, known)).find((image) => image !== undefined);
+    return { ...(typeof kind === "string" ? { kind } : {}), ...(picture === undefined ? {} : { picture }) };
 }
 
 /** The place a save was made in, with its picture, else that of the nearest place that holds it, as a room of the inn shows the inn. */

@@ -332,12 +332,15 @@ export interface ShownQuest
     deadline?: { date: string; minutes?: number; };
 }
 
-/** A scene as a chapter of the story (D-367); without a title, what happened between scenes. */
+/** A scene as a chapter of the story (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */
 export interface ShownChapter
 {
     title?: string;
+    number?: number;
     type?: string;
     place?: string;
+    kind?: string;
+    picture?: { file: string; version: number; };
     date?: string;
     summary?: string;
     open: boolean;

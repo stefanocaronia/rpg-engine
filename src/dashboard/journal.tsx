@@ -1,4 +1,4 @@
-// The Journal section (D-367, D-369, D-371): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
+// The Journal section (D-367, D-369, D-371, D-384): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the one the player follows, the main one until they choose, shown
 // small in Scene and Combat too; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -7,6 +7,7 @@ import { type JournalView as Journal, readJournal } from "./api.ts";
 import type { ShownChapter, ShownQuest } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { fieldLabel, phraseLabel } from "./labels.ts";
+import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
@@ -58,7 +59,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
             <div id="journal-panel" role="tabpanel" aria-labelledby={`journal-tab-${tab}`}>
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
-                {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} />}
+                {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} now={journal.read.now} />}
                 {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">The journal starts with the player character.</p>}
             </div>
@@ -263,7 +264,7 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 }
 
 /** The story by its scenes, the last first: each with its place and date, its summary, and what the diary tells of it, folded. */
-function Story({ chapters }: { chapters: ShownChapter[]; })
+function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
 {
     if (chapters.length === 0) {
         return <p class="journal-none">The story starts with the first scene.</p>;
@@ -271,28 +272,63 @@ function Story({ chapters }: { chapters: ShownChapter[]; })
 
     return (
         <ol class="story">
+            <li class="story-mark now">
+                <b>Now</b>
+                {now !== undefined && <span>{phraseLabel(now)}</span>}
+            </li>
             {chapters.map((chapter, index) =>
-                chapter.title === undefined ? <Between key={index} chapter={chapter} /> : (
-                    <li key={index} class={chapter.open ? "chapter now" : "chapter"}>
-                        <header class="chapter-head">
-                            <h3>{chapter.title}</h3>
-                            {chapter.open && <span class="chapter-now">Now</span>}
-                            {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(chapter.type)}</span>}
-                        </header>
-                        {(chapter.place !== undefined || chapter.date !== undefined) && (
-                            <p class="chapter-when">{[chapter.place, chapter.date === undefined ? undefined : phraseLabel(chapter.date)].filter((part) => part !== undefined).join(" · ")}</p>
-                        )}
-                        {chapter.summary !== undefined && <p class="chapter-summary">{chapter.summary}</p>}
-                        {chapter.facts.length > 0 && (
-                            <details class="chapter-facts">
-                                <summary>{chapter.facts.length === 1 ? "1 thing that happened" : `${chapter.facts.length} things that happened`}</summary>
-                                <Facts facts={chapter.facts} />
-                            </details>
-                        )}
-                    </li>
-                )
+                chapter.title === undefined
+                    ? <Between key={index} chapter={chapter} />
+                    : (
+                        <li key={index} class={["chapter", chapter.open ? "now" : "", chapter.picture === undefined && placeKinds[chapter.kind ?? ""] === undefined ? "bare" : ""].join(" ").trim()}>
+                            <ChapterPicture chapter={chapter} />
+                            <div class="chapter-body">
+                                <header class="chapter-head">
+                                    {chapter.number !== undefined && <span class="chapter-number">Chapter {chapter.number}</span>}
+                                    <h3>{chapter.title}</h3>
+                                    {chapter.open && <span class="chapter-now">Now</span>}
+                                    {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(chapter.type)}</span>}
+                                </header>
+                                {(chapter.place !== undefined || chapter.date !== undefined) && (
+                                    <p class="chapter-when">{[chapter.place, chapter.date === undefined ? undefined : phraseLabel(chapter.date)].filter((part) => part !== undefined).join(" · ")}</p>
+                                )}
+                                {chapter.summary !== undefined && <p class="chapter-summary">{chapter.summary}</p>}
+                                {chapter.facts.length > 0 && (
+                                    <details class="chapter-facts">
+                                        <summary>{chapter.facts.length === 1 ? "1 thing that happened" : `${chapter.facts.length} things that happened`}</summary>
+                                        <Facts facts={chapter.facts} />
+                                    </details>
+                                )}
+                            </div>
+                        </li>
+                    )
             )}
+            <li class="story-mark start">
+                <b>The start</b>
+            </li>
         </ol>
+    );
+}
+
+/** The picture of a chapter's place, or the mark of its kind on the map's paper, as Saves has them; nothing for a place with neither (D-384). */
+function ChapterPicture({ chapter }: { chapter: ShownChapter; })
+{
+    const kind = placeKinds[chapter.kind ?? ""];
+
+    if (chapter.picture !== undefined) {
+        return (
+            <div class="chapter-picture" aria-hidden="true">
+                <img src={`/images/${encodeURIComponent(chapter.picture.file)}?v=${chapter.picture.version}`} alt="" loading="lazy" />
+            </div>
+        );
+    }
+
+    return kind === undefined ? null : (
+        <div class="chapter-picture kind" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+                <path d={kind.glyph} />
+            </svg>
+        </div>
     );
 }
 

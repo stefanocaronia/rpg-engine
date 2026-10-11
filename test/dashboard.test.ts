@@ -362,6 +362,7 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
     });
 
     it("tells the story by scenes, the last first, each with its summary and what happened in it; what came between apart, the saves and rolls left out", async () => {
+        await ok("write", "Locanda", "--set", "kind=inn");
         await ok("scene", "open", "--title", "Al guado", "--type", "social");
         await ok("change", "Ettore", "hp", "--by=-2");
         await ok("roll", "1d20", "--who", "Ettore", "--why", "guado");
@@ -377,9 +378,13 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             ["Al guado", false],
             ["between", false],
         ]);
+        // Numbered from the first, each with its place's kind, and its picture when the place has one (D-384).
+        expect(chapters.map((chapter: { number?: number; }) => chapter.number)).toEqual([2, undefined, 1, undefined]);
+        expect(chapters[2].picture).toBeUndefined();
         expect(chapters[2]).toMatchObject({
             type: "social",
             place: "Locanda",
+            kind: "inn",
             date: "day 1, 18:00",
             summary: "Ettore attraversa il guado, ferito.",
             facts: ["day 1, 18:00 · Ettore: hp 20/24 → 18/24", "day 1, 18:00 · Quest taken: Il guado"],
