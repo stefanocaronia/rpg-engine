@@ -9,6 +9,7 @@ import { menuPages, type Section, sectionAddress, sectionLabel, sections } from 
 import type { Moment, Mood } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
+import { usePrefChange } from "./prefs.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
@@ -261,13 +262,9 @@ function ThemeCorner()
 /** The theme the switch goes to, with its name, and what switches to it; read again at each drawing, as the menu and the switch both change it. */
 function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
 {
-    const [, setFlips] = useState(0);
+    usePrefChange();
     const next = shownTheme() === "dark" ? "light" : "dark";
-
-    const flip = (): void => {
-        pickTheme(next);
-        setFlips((flips) => flips + 1);
-    };
+    const flip = (): void => pickTheme(next);
 
     return [{ next, name: next === "dark" ? "Dark theme" : "Light theme" }, flip];
 }

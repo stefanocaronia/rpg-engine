@@ -9,17 +9,24 @@ import {
     changeOtherSetting,
     changeSetting,
     checkSettingName,
+    diceWays,
+    difficulties,
+    lethalities,
     listSettingNames,
     mapSettingNames,
     missingSettings,
+    pictureWays,
     readCampaignData,
     readSettings,
     readTextSetting,
     requireCampaign,
+    rigors,
+    saveModes,
     settingMeaning,
     type SettingName,
     settingNames,
     setupSettingNames,
+    unitSystems,
 } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
@@ -136,6 +143,124 @@ export const config = defineCommand({
         return [[...lines, ...result.replaced].join("\n"), result.note].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
+export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "dice", "units", "pictures", "lines", "veils", "language"] as const;
+
+/** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
+export interface PlayerSetting
+{
+    name: string;
+    about: string;
+    value?: string;
+    items?: string[];
+    choices?: { value: string; means?: string; }[];
+    /** What the player should know of it on this computer, as whether pictures can be made here. */
+    note?: string;
+}
+
+// What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
+const playerWords: Record<(typeof playerSettingNames)[number], { about: string; means?: Record<string, string>; values?: readonly string[]; }> = {
+    difficulty: {
+        about: "how hard the world plays",
+        values: difficulties,
+        means: {
+            story: "fights low, foes naive, clues obvious, resources plentiful",
+            easy: "fights low to moderate, simple foes, resources generous",
+            normal: "fights moderate to high, sensible foes, resources standard",
+            hard: "fights high, smart and tenacious foes, resources scarce",
+            brutal: "fights far beyond, optimized and fanatical foes, resources very scarce",
+        },
+    },
+    lethality: { about: "what a fall means", values: lethalities, means: { narrative: "your character never dies", epic: "your character dies only when it matters", dice: "the dice decide" } },
+    saves: {
+        about: "when the game may go back",
+        values: saveModes,
+        means: { permadeath: "never", checkpoint: "to the last end of a scene, once your character dies", free: "to any save, and saves when you ask" },
+    },
+    rigor: {
+        about: "how closely food, light, fatigue, spell components and the like follow the rules",
+        values: rigors,
+        means: {
+            smooth: "only when the story turns on them",
+            rules: "as written: food and water each day, light as it burns, fatigue and encumbrance",
+            simulation: "as written, and beyond: wear, spoilage, weather",
+        },
+    },
+    dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
+    units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
+    pictures: { about: "the pictures of places, made on this computer", values: pictureWays, means: { none: "no pictures", "on request": "those you ask for", "new places": "one for each new place" } },
+    lines: { about: "what never appears in the game" },
+    veils: { about: "what happens only off screen, without details" },
+    language: { about: "the game's language, as a code such as it or en" },
+};
+
+/** The player's settings with their values, then those the game system adds, as the dashboard shows them (D-341). */
+export function playerSettings(root: string, context: Context): PlayerSetting[]
+{
+    const settings = readSettings(root);
+    const own = (campaignSystem(root, context)?.settings ?? []).map((setting): PlayerSetting => {
+        const value = systemSettingValue(root, setting);
+        return { name: setting.name, about: "a setting of the game system", ...(value === undefined ? {} : { value }), choices: setting.values.map((one) => ({ value: one.value })) };
+    });
+    return [
+        ...playerSettingNames.map((name): PlayerSetting => {
+            const words = playerWords[name];
+            const value = settings[name];
+            const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
+            return {
+                name,
+                about: words.about,
+                ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
+                ...(choices === undefined ? {} : { choices }),
+                ...(name === "pictures" ? picturesReadyNote(context) : {}),
+            };
+        }),
+        ...own,
+    ];
+}
+
+/** Whether this computer makes pictures, in the player's words (D-308): Codex logged in, or why not and how to have them; nothing where no maker is asked. */
+function picturesReadyNote(context: Context): { note?: string; }
+{
+    const ready = context.pictures?.ready();
+    return ready === undefined ? {} : { note: ready.ready ? "Codex makes them on this computer, from your ChatGPT plan." : (ready.fix ?? `${ready.why}.`) };
+}
+
+/** Whether the player may change a setting on the dashboard: one of theirs, or one the game system adds (D-341). */
+export function isPlayerSetting(root: string, context: Context, name: string): boolean
+{
+    return (playerSettingNames as readonly string[]).includes(name) || systemSetting(root, context, name) !== undefined;
+}
+
+/**
+ * What the master hears, at the head of their next call, of a setting the player changed on the dashboard (D-341): how it is now against how it was before the
+ * player's first change since their last call, a value with what it means to the master; nothing for one that came back as it was.
+ */
+export function playerChangeNews(root: string, context: Context, before: PlayerSetting, after: PlayerSetting): string[]
+{
+    if (before.items !== undefined || after.items !== undefined) {
+        const added = (after.items ?? []).filter((item) => !(before.items ?? []).includes(item));
+        const removed = (before.items ?? []).filter((item) => !(after.items ?? []).includes(item));
+        return [
+            ...(added.length === 0 ? [] : [`The player added ${quotedItems(added)} to ${after.name} on the dashboard: ${after.about}.`]),
+            ...(removed.length === 0 ? [] : [`The player took ${quotedItems(removed)} off ${after.name} on the dashboard.`]),
+        ];
+    }
+
+    if (after.value === before.value || after.value === undefined) {
+        return [];
+    }
+
+    const meaning = settingMeaning(after.name, after.value) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
+    return [`The player set ${after.name} to ${after.value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.`];
+}
+
+/** Items in quotes, one after another: "spiders", "drowning". */
+function quotedItems(items: string[]): string
+{
+    return items.map((item) => `"${item}"`).join(", ");
+}
 
 /** A setting the game system adds, shown, or changed to one of its values (DAT-10); refused with them for any other. */
 function systemSettingResult(

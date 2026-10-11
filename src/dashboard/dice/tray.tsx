@@ -10,6 +10,7 @@ import type { PageRoll } from "../free-rolls.ts";
 import { DieIcon, Icon } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
+import { soundPref, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
@@ -26,9 +27,6 @@ const flight = 450;
 // nearest to the button. At most so many at once, which the page throws in a moment.
 const freeDice = [100, 4, 6, 8, 10, 12, 20];
 const mostDice = 20;
-
-// Where the page remembers whether the dice make a sound, in this browser alone.
-const soundKey = "rpg-engine.dice-sound";
 
 // The choices of what counts, as the tray says them.
 const keepWords: Record<"sum" | Keep, string> = { sum: "Sum", highest: "Highest", lowest: "Lowest" };
@@ -86,7 +84,7 @@ export function DiceTray(
     const [pool, setPool] = useState<number[]>([]);
     const [keeps, setKeeps] = useState<Partial<Record<number, Keep>>>({});
     const [modifier, setModifier] = useState(0);
-    const [sound, setSound] = useState(readSound);
+    const [sound, setSound] = usePref(soundPref);
 
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
@@ -272,7 +270,6 @@ export function DiceTray(
 
     const toggleSound = (): void => {
         setSound(!sound);
-        writeSound(!sound);
     };
 
     // One die of a kind less; when none is left, the focus goes to the die itself, as its minus goes away.
@@ -548,22 +545,4 @@ function fairDie(sides: number): number
     } while (draw[0] >= limit);
 
     return 1 + (draw[0] % sides);
-}
-
-function readSound(): boolean
-{
-    try {
-        return localStorage.getItem(soundKey) !== "off";
-    } catch {
-        return true;
-    }
-}
-
-function writeSound(on: boolean): void
-{
-    try {
-        localStorage.setItem(soundKey, on ? "on" : "off");
-    } catch {
-        // The page forgets it at the next reload.
-    }
 }

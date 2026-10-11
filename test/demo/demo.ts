@@ -7,6 +7,7 @@ import { type Context, defaultContext } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
 import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
+import { codexPictures } from "../../src/pictures/index.ts";
 import { inPlay } from "../support.ts";
 
 export const demoFolder = join(import.meta.dirname, "..", "..", "tmp", "dashboard-demo");
@@ -34,7 +35,8 @@ export interface DemoDashboard extends Dashboard
 /** Serves the built dashboard of the demo campaign, making the campaign first when it is not there; on the dashboard's ports unless others are given. */
 export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 {
-    const context = defaultContext(demoFolder);
+    // Codex as the chat has it, for Settings to say whether pictures can be made here (D-341); the demo never has one made.
+    const context: Context = { ...defaultContext(demoFolder), pictures: codexPictures() };
 
     if (!existsSync(join(demoFolder, "campaign.yaml"))) {
         await makeDemo(context);

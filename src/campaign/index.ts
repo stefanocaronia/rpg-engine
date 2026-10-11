@@ -18,6 +18,7 @@ export {
     listSettingNames,
     mapSettingNames,
     missingSettings,
+    pictureWays,
     preparations,
     readCampaignData,
     readCoinsSetting,

@@ -18,6 +18,7 @@ import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
 import { SceneView } from "./scene.tsx";
+import { SettingsView } from "./settings.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
 import { Top } from "./top.tsx";
@@ -276,7 +277,8 @@ function App()
                             />
                         )}
                         {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
-                        {!["party", "scene", "combat", "world", "about"].includes(address.section) && <Upcoming section={address.section} />}
+                        {address.section === "settings" && <SettingsView version={shown.version} />}
+                        {!["party", "scene", "combat", "world", "about", "settings"].includes(address.section) && <Upcoming section={address.section} />}
                         {address.section === "party" && member && (
                             <MemberSheet
                                 key={member.name}

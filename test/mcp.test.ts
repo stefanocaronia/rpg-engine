@@ -129,6 +129,25 @@ async function formClient(answer: ElicitResult, shown: unknown[], capabilities: 
     return forms;
 }
 
+describe("what the player changed on the dashboard (D-341)", () => {
+    it("comes at the head of the master's next answer, once, even when the call fails", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        const news = ["The player set difficulty to hard on the dashboard. Play by it from now on."];
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), news: () => news.splice(0) }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        const answer = async (name: string, args: Record<string, unknown>) => ((await plain.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
+        expect(await answer("status", {})).toMatch(/^The player set difficulty to hard on the dashboard\. Play by it from now on\.\n\n\S/);
+        expect(await answer("status", {})).not.toContain("The player set");
+        news.push('The player took "ragni" off lines on the dashboard.');
+        const failed = await plain.callTool({ name: "show", arguments: { page: "Nessuno" } });
+        expect(failed.isError).toBe(true);
+        expect((failed.content as { text: string; }[])[0].text).toMatch(/^The player took "ragni" off lines on the dashboard\.\n\n\S/);
+        await plain.close();
+    });
+});
+
 describe("a host that shows forms (D-148, ASK-1)", () => {
     const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+5", "Acrobazia 1d20+3"], who: "Bruna" };
 

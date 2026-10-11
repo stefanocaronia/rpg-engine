@@ -1,4 +1,5 @@
 // The page's theme (D-300): the system's, until the player picks light or dark at the top of the page, which this browser remembers; the dice follow it.
+import { announcePref } from "./prefs.ts";
 
 /** The page's light or dark look. */
 export type Theme = "light" | "dark";
@@ -13,10 +14,11 @@ export function shownTheme(): Theme
     return picked === "light" || picked === "dark" ? picked : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-/** Shows the theme the player picked, and remembers it in this browser. */
+/** Shows the theme the player picked, and remembers it in this browser; every part of the page that shows it hears of it. */
 export function pickTheme(theme: Theme): void
 {
     document.documentElement.dataset.theme = theme;
+    announcePref();
 
     try {
         localStorage.setItem(themeKey, theme);

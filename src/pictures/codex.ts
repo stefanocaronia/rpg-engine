@@ -13,29 +13,49 @@ const longest = 3 * 60 * 1000;
 /** Codex on this computer, as the player's ChatGPT login lets it make pictures. */
 export function codexPictures(): PictureMaker
 {
-    let known: PicturesReady | undefined;
+    let known: { said: PicturesReady; at: number; } | undefined;
     return {
-        ready: () => (known ??= codexReady()),
+        // Asked once; a no again after a minute, as after the player logs in.
+        ready: () => {
+            if (known === undefined || (!known.said.ready && Date.now() - known.at > 60_000)) {
+                known = { said: codexReady(), at: Date.now() };
+            }
+
+            return known.said;
+        },
         make,
     };
 }
 
-/** Whether Codex is there and logged in with ChatGPT: asked once, in half a second, without spending anything. */
+/** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
 function codexReady(): PicturesReady
 {
-    // One line for the shell, which finds codex as npm installed it, a script on Windows.
-    const status = spawnSync("codex login status", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true });
-    const said = `${status.stdout ?? ""}${status.stderr ?? ""}`;
+    // One line for the shell, which finds codex as npm installed it, a script on Windows; its version answers only where it is, in any language of the shell.
+    const version = spawnSync("codex --version", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true });
+    const status = version.error === undefined && version.status === 0 ? spawnSync("codex login status", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true }) : undefined;
+    const said = `${status?.stdout ?? ""}${status?.stderr ?? ""}`;
 
-    if (status.error !== undefined || /not recognized|not found/i.test(said)) {
-        return { ready: false, why: "Codex is not installed on this computer" };
+    if (status === undefined) {
+        return {
+            ready: false,
+            why: "Codex is not installed on this computer",
+            fix: "Codex is not on this computer: to have pictures, install it (npm install -g @openai/codex), then run codex login in a terminal with your ChatGPT account.",
+        };
     }
 
-    if (status.status !== 0 || /not logged in/i.test(said)) {
-        return { ready: false, why: "Codex is not logged in on this computer: the player logs in with codex login" };
+    if (status.error !== undefined || status.status !== 0 || /not logged in/i.test(said)) {
+        return {
+            ready: false,
+            why: "Codex is not logged in on this computer: the player logs in with codex login",
+            fix: "Codex is not logged in on this computer: to have pictures, run codex login in a terminal with your ChatGPT account.",
+        };
     }
 
-    return /chatgpt/i.test(said) ? { ready: true } : { ready: false, why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login" };
+    return /chatgpt/i.test(said) ? { ready: true } : {
+        ready: false,
+        why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login",
+        fix: "Codex here uses an API key, which pays by the picture: to have pictures, run codex login in a terminal with your ChatGPT account.",
+    };
 }
 
 /** One picture from a brief: Codex in an empty folder of its own, the brief on its input, its events read for its thread; the picture from its own folder. */

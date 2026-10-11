@@ -10,6 +10,7 @@ import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
+import { type PlayerSetting, playerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
@@ -115,6 +116,8 @@ export type ViewResult =
     | { kind: "section"; title: string; lines: string[]; text: string; }
     /** The world map as the player character knows it (VIEW-7). */
     | ({ kind: "map"; } & ShownMap)
+    /** The player's settings, which the dashboard changes (D-341). */
+    | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "unknown"; text: string; };
 
 export const view = defineCommand({
@@ -132,11 +135,22 @@ export const view = defineCommand({
         diary: z.string().optional().describe(`how many lines of the diary, from the last; ${diaryLines} if left out; all only when the player asks for the whole story`),
         rolls: z.string().optional().describe(`for the dashboard: how many of the last public rolls; ${rollsShown} if left out`),
         map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
+        settings: z.boolean().optional().describe("for the dashboard: the player's settings, with their values and what each means"),
     }),
 
     run(input, context): ViewResult
     {
         const root = requireCampaign(context.folder);
+
+        // The player's settings, with or without a player character (D-341).
+        if (input.settings === true) {
+            if ([input.page, input.diary, input.rolls, input.map].some((given) => given !== undefined)) {
+                throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls and the map.");
+            }
+
+            return { kind: "settings", settings: playerSettings(root, context) };
+        }
+
         const world = campaignWorld(root, context);
         const pc = playerCharacter(world);
 
@@ -271,6 +285,8 @@ export const view = defineCommand({
                 return [result.title, result.lines.join("\n"), result.text].filter((block) => block !== "").join("\n\n");
             case "map":
                 return mapText(result);
+            case "settings":
+                return result.settings.map((setting) => `${setting.name}: ${setting.items?.join(", ") ?? setting.value ?? "(not chosen)"}`).join("\n");
 
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";

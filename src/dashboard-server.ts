@@ -7,7 +7,8 @@ import { connect } from "node:net";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { findCampaign } from "./campaign/index.ts";
+import { findCampaign, requireCampaign } from "./campaign/index.ts";
+import { config, isPlayerSetting, playerChangeNews, type PlayerSetting, playerSettings } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -29,6 +30,8 @@ export interface Dashboard
     url: string;
     /** The player through the page: ask's buttons, while a page is open (D-279). */
     player: Player;
+    /** What the player changed on the page since it was last taken, each setting as it is now against how it was, for the master's next call (D-341). */
+    news(): string[];
     close(): Promise<void>;
 }
 
@@ -123,7 +126,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn };
+            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn, changed: new Map<string, PlayerSetting>() };
             return serve(server, { ...served, notify: () => undefined });
         }
     }
@@ -175,6 +178,8 @@ interface Served
     asked?: Asked;
     /** How long a question waits for a page to come back, after the last one closed. */
     pageReturn: number;
+    /** Each setting the player changed on the page since the master's last call, as it was before the first of those changes (D-341). */
+    changed: Map<string, PlayerSetting>;
     /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
     returning?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
@@ -227,6 +232,7 @@ function serve(server: Server, served: Served): Dashboard
     return {
         url: `http://127.0.0.1:${served.port}`,
         player: pagePlayer(served),
+        news: () => settingNews(served),
         close: () =>
             new Promise((done) => {
                 stopListening();
@@ -252,9 +258,14 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     const url = new URL(request.url ?? "/", own[0]);
     const path = url.pathname;
 
-    // The page answers the master's question with a click: the one thing it sends, and only from itself (D-279).
+    // The page answers the master's question with a click, and changes the player's settings: what it sends, and only from itself (D-279, D-341).
     if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
         await answerAsked(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/config" && origin !== undefined) {
+        await changeSetting(request, response, served);
         return;
     }
 
@@ -420,6 +431,80 @@ async function answerAsked(request: IncomingMessage, response: ServerResponse, s
     } else {
         asked.settle("choice" in parsed.data ? parsed.data.choice : "square" in parsed.data ? { square: parsed.data.square.toUpperCase() } : { said: parsed.data.text });
         sendJson(response, 202, {});
+    }
+}
+
+/**
+ * One of the player's settings changed on the page (D-341): a value, or an item added to or taken off a list, as config takes it, with the player as who
+ * changed it; the master hears of it at the head of their next call. A setting of the master's is refused.
+ */
+async function changeSetting(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const body = await readBody(request);
+    const parsed = z.union([
+        z.object({ setting: z.string(), value: z.string().trim().min(1).max(mostSaid) }).strict(),
+        z.object({ setting: z.string(), add: z.string().trim().min(1).max(mostSaid) }).strict(),
+        z.object({ setting: z.string(), remove: z.string().min(1).max(mostSaid) }).strict(),
+    ]).safeParse(body);
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send a setting of the player's with its value, { setting, value }, or an item to add to a list or take off it, { setting, add } or { setting, remove }." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const change = parsed.data;
+        const refused = withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+
+            if (!isPlayerSetting(root, served.context, change.setting)) {
+                return `${change.setting} is the master's to change, in the chat.`;
+            }
+
+            const before = playerSettings(root, served.context).find((setting) => setting.name === change.setting);
+            const input = "value" in change ? { value: change.value } : "add" in change ? { add: [change.add] } : { remove: [change.remove] };
+            config.run(config.input.parse({ setting: change.setting, ...input }), { ...served.context, actor: "player" });
+
+            if (before !== undefined && !served.changed.has(change.setting)) {
+                served.changed.set(change.setting, before);
+            }
+
+            return undefined;
+        });
+
+        if (refused === undefined) {
+            sendJson(response, 202, {});
+        } else {
+            sendJson(response, 403, { error: refused });
+        }
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/** What the master hears of the settings the player changed since their last call: each as it is now against how it was, once (D-341). */
+function settingNews(served: Served): string[]
+{
+    const changed = [...served.changed];
+    served.changed.clear();
+
+    if (changed.length === 0) {
+        return [];
+    }
+
+    try {
+        return withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+            const now = playerSettings(root, served.context);
+            return changed.flatMap(([name, before]) => {
+                const after = now.find((setting) => setting.name === name);
+                return after === undefined ? [] : playerChangeNews(root, served.context, before, after);
+            });
+        });
+    } catch {
+        // A campaign that does not read now says nothing of them: the log keeps every change.
+        return [];
     }
 }
 

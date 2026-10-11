@@ -116,6 +116,7 @@ export function dashboardOpener(context: Context, session: SessionStore, ports?:
             const dashboard = await opening;
             context.dashboard = dashboard?.url;
             context.page = dashboard?.player;
+            context.news = dashboard?.news;
         },
         close: async () => {
             await (await opening)?.close();
@@ -155,6 +156,7 @@ function toolConfig(command: AnyCommand)
 async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
+    let news: string[] = [];
 
     try {
         // In a session, the files that changed since the last call are read again; instructions starts a chat, or follows a summary: everything is checked (D-193).
@@ -163,11 +165,13 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         }
 
         await prepare();
+        // What the player changed on the dashboard comes first, once (D-341).
+        news = context.news?.() ?? [];
 
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
-        return { content: [{ type: "text", text: command.format(await command.run(input, { ...context, signal: extra.signal })) }] };
+        return { content: [{ type: "text", text: [...news, command.format(await command.run(input, { ...context, signal: extra.signal }))].join("\n\n") }] };
     } catch (error) {
-        return { content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }], isError: true };
+        return { content: [{ type: "text", text: [...news, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
     } finally {
         clearInterval(keepAlive);
     }

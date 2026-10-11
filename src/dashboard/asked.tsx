@@ -9,20 +9,18 @@ import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
 import { sheetAddress } from "./party.tsx";
+import { byHandPref, usePref } from "./prefs.ts";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 8;
 const mostWords = 500;
-
-// Where the browser remembers that the player rolls by hand.
-const handKey = "rpg-engine.rolls-by-hand";
 
 export function AskedBanner(
     { asked, yourTurn, map, place, answered, onAnswered }: { asked: Asked; yourTurn?: boolean; map?: ShownGrid; place?: string; answered?: boolean; onAnswered(): void; },
 )
 {
     const [sent, setSent] = useState<number | "words" | "square">();
-    const [byHand, setByHand] = useState(readByHand);
+    const [byHand, setByHand] = usePref(byHandPref);
     const [picking, setPicking] = useState(false);
     const [problem, setProblem] = useState<string>();
     const [words, setWords] = useState("");
@@ -167,10 +165,7 @@ export function AskedBanner(
                                 type="checkbox"
                                 role="switch"
                                 checked={byHand}
-                                onChange={(event) => {
-                                    setByHand(event.currentTarget.checked);
-                                    writeByHand(event.currentTarget.checked);
-                                }}
+                                onChange={(event) => setByHand(event.currentTarget.checked)}
                             />
                             <Icon name="hand" />
                             By hand
@@ -218,24 +213,6 @@ function showRow(field: string | null | undefined): void
     };
 
     requestAnimationFrame(find);
-}
-
-function readByHand(): boolean
-{
-    try {
-        return localStorage.getItem(handKey) === "on";
-    } catch {
-        return false;
-    }
-}
-
-function writeByHand(on: boolean): void
-{
-    try {
-        localStorage.setItem(handKey, on ? "on" : "off");
-    } catch {
-        // The page forgets it at the next reload.
-    }
 }
 
 /** A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name and the number added; the notation is in the tooltip. */

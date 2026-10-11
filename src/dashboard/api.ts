@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { Asked, View, WorldMap } from "./data.ts";
+import type { Asked, PlayerSetting, View, WorldMap } from "./data.ts";
 
 /** What view gives: the party, with the last rolls, as many as asked; or a page. */
 export async function readView(page?: string, rolls?: number): Promise<View>
@@ -30,6 +30,39 @@ export async function readMap(): Promise<WorldMap>
     }
 
     return body;
+}
+
+/** The player's settings, with their values and what each means (D-341). */
+export async function readSettings(): Promise<PlayerSetting[]>
+{
+    const response = await fetch("/api/view?settings=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.kind === "settings" ? body.settings : [];
+}
+
+/** A change of one of the player's settings: a value, or an item added to a list or taken off it. */
+export type SettingChange = { setting: string; value: string; } | { setting: string; add: string; } | { setting: string; remove: string; };
+
+/** Changes one of the player's settings (D-341): undefined when done, else what went wrong, as the engine says it. */
+export async function changeSetting(change: SettingChange): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });
+
+        if (response.status === 202) {
+            return undefined;
+        }
+
+        const body = await response.json() as { error?: string; };
+        return body.error ?? "The change did not reach the game: try again.";
+    } catch {
+        return "The change did not reach the game: try again.";
+    }
 }
 
 /** What the master asks the player now; undefined when nothing. */

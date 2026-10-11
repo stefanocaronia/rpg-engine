@@ -368,6 +368,221 @@ a {
     display: none;
 }
 
+/* The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, the chosen one in gold; the page's own
+   last. */
+.settings {
+    display: grid;
+    gap: 14px;
+}
+
+.settings-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+}
+
+.settings-head h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.settings-said {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.settings-said.problem {
+    color: var(--low);
+}
+
+.settings-group {
+    display: grid;
+    padding: 14px 16px 6px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.settings-group h3 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+}
+
+.setting {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+}
+
+.settings-group h3 + .setting,
+.settings-group .setting-about + .setting {
+    border-top: 0;
+}
+
+.setting-what {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.setting-name {
+    font-weight: 650;
+}
+
+.setting-about,
+.setting-means {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* What the chosen value means, in ink: what the game does now. */
+.setting-means {
+    grid-column: 1 / -1;
+    color: var(--ink);
+}
+
+/* What the player should know of a setting on this computer, as whether pictures can be made here. */
+.setting-note {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 2px 0 0;
+    padding: 8px 10px;
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.setting-note svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+}
+
+/* Values to choose one of, the chosen one in gold. */
+.segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+}
+
+.segmented button {
+    min-height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.segmented button[aria-checked="true"] {
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+/* A list's items as chips to take off, and a field to add one. */
+.setting-list {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: 8px;
+}
+
+.setting-list ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.setting-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+}
+
+.setting-list li .icon-button {
+    width: 32px;
+    height: 32px;
+}
+
+.setting-list form,
+.setting-text {
+    display: flex;
+    gap: 6px;
+    max-width: 420px;
+}
+
+.setting-list input,
+.setting-text input {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.setting-button {
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.setting-button:disabled {
+    color: var(--muted);
+    cursor: default;
+}
+
+@media (max-width: 600px) {
+    .setting {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* On a phone the values share the row's width. */
+    .segmented {
+        display: flex;
+    }
+
+    .segmented button {
+        flex: 1 1 auto;
+        padding: 0 8px;
+    }
+}
+
 /* A section still to come: what it will hold. */
 .upcoming {
     padding: 20px;

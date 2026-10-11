@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
-import type { Context, Player } from "../src/core/context.ts";
+import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
 import { readAddress } from "../src/dashboard/address.ts";
@@ -131,6 +131,35 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "dwarf-face.svg", "wolf-head.svg"]);
     });
 
+    it("gives the player's settings with their values and what each value means to the player, then the game system's, and only alone (D-341)", async () => {
+        await ok("config", "lines", "--add", "ragni");
+        const data = JSON.parse(await ok("view", "--settings", "--json")) as { kind: string; settings: { name: string; }[]; };
+        expect(data.kind).toBe("settings");
+        expect(data.settings.map((setting) => setting.name)).toEqual(["difficulty", "lethality", "saves", "rigor", "dice", "units", "pictures", "lines", "veils", "language", "advancement"]);
+        const named = (name: string) => data.settings.find((setting) => setting.name === name);
+        expect(named("difficulty")).toMatchObject({ about: "how hard the world plays", value: "normal" });
+        expect(named("difficulty")).toHaveProperty("choices", expect.arrayContaining([{ value: "hard", means: "fights high, smart and tenacious foes, resources scarce" }]));
+        expect(named("lines")).toEqual({ name: "lines", about: "what never appears in the game", items: ["ragni"] });
+        expect(named("veils")).toEqual({ name: "veils", about: "what happens only off screen, without details" });
+        expect(named("language")).toMatchObject({ value: "it" });
+        // A setting the game system adds, with its values but not what they mean to the master.
+        expect(named("advancement")).toEqual({ name: "advancement", about: "a setting of the game system", choices: [{ value: "xp" }, { value: "milestones" }] });
+        expect(await ok("view", "--settings")).toContain("lines: ragni");
+
+        // Whether this computer makes pictures, and how to have them where it does not (D-308).
+        const pictures = async (ready: PicturesReady) => {
+            const shown = await runCommandLine(["view", "--settings", "--json"], { ...context, pictures: { ready: () => ready, make: () => Promise.resolve({ refused: "no" }) } });
+            return (JSON.parse(shown.output) as { settings: { name: string; note?: string; }[]; }).settings.find((setting) => setting.name === "pictures")?.note;
+        };
+
+        expect(await pictures({ ready: true })).toBe("Codex makes them on this computer, from your ChatGPT plan.");
+        expect(await pictures({ ready: false, why: "Codex is not logged in", fix: "Run codex login in a terminal." })).toBe("Run codex login in a terminal.");
+        expect(named("pictures")).not.toHaveProperty("note");
+        const refused = await runCommandLine(["view", "--settings", "--map"], context);
+        expect(refused.exitCode).not.toBe(0);
+        expect(refused.output).toContain("Give settings alone");
+    });
+
     it("works the same for another game: momentum from -6, with the maximum the debilities leave", async () => {
         // The test system based on Ironsworn, with a sheet and a line of its own.
         const systems = makeTempFolder();
@@ -223,8 +252,9 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(shown.body).not.toContain("fratello");
         expect(JSON.parse(shown.body).error).toBe("The dashboard has no command show: it has view.");
         expect((await get("/api/view?pagina=Varro")).status).toBe(400);
-        // A flag comes in the address as true (VIEW-7).
+        // A flag comes in the address as true (VIEW-7, D-341).
         expect(JSON.parse((await get("/api/view?map=true")).body)).toEqual(JSON.parse(await ok("view", "--map", "--json")));
+        expect(JSON.parse((await get("/api/view?settings=true")).body)).toEqual(JSON.parse(await ok("view", "--settings", "--json")));
     });
 
     it("serves the page, which runs only its own scripts and the import map written in it, its dice, and Preact and three.js from their packages", async () => {
@@ -564,6 +594,38 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
 
         throw new Error("Nothing was asked on the page.");
     }
+
+    it("changes the player's settings from the page as config does, logged as the player's, and gives the master each change once (D-341)", async () => {
+        expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy" })).status).toBe(202);
+        expect(await ok("config", "difficulty")).toContain("difficulty: easy");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "player", data: { setting: "difficulty", value: "easy" } });
+        expect((await send("POST", "/api/config", { setting: "lines", add: " ragni " })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "lines", remove: "ragni" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "advancement", value: "milestones" })).status).toBe(202);
+        // The master hears each setting as it is now against how it was: once, the last value; nothing of a list's item added and taken off again.
+        expect((await send("POST", "/api/config", { setting: "difficulty", value: "hard" })).status).toBe(202);
+        const news = dashboard.news();
+        expect(news).toHaveLength(2);
+        expect(news[0]).toMatch(/^The player set difficulty to hard on the dashboard: fights .+\. Play by it from now on\.$/);
+        expect(news[1]).toMatch(/^The player set advancement to milestones on the dashboard: the characters rise when the story reaches a milestone.+\. Play by it from now on\.$/);
+        expect(dashboard.news()).toEqual([]);
+        // A value that came back as it was says nothing.
+        expect((await send("POST", "/api/config", { setting: "lethality", value: "epic" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "lethality", value: "dice" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "veils", add: "annegare" })).status).toBe(202);
+        expect(dashboard.news()).toEqual(['The player added "annegare" to veils on the dashboard: what happens only off screen, without details.']);
+
+        // The master's own settings stay in the chat; a value the setting does not take, or anything else sent, changes nothing.
+        const precedents = await send("POST", "/api/config", { setting: "precedents", add: "Avvelenato: svantaggio" });
+        expect(precedents.status).toBe(403);
+        expect(JSON.parse(precedents.body)).toEqual({ error: "precedents is the master's to change, in the chat." });
+        expect((await send("POST", "/api/config", { setting: "difficulty", value: "impossibile" })).status).toBe(400);
+        expect((await send("POST", "/api/config", { setting: "advancement", add: "xp" })).status).toBe(400);
+        expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy", add: "ragni" })).status).toBe(400);
+        expect((await send("POST", "/api/config", { setting: "lines", add: "   " })).status).toBe(400);
+        expect(dashboard.news()).toEqual([]);
+        expect(await ok("config", "difficulty")).toContain("difficulty: hard");
+    });
 
     it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {
         const page = await openPage();

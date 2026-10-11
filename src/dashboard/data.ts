@@ -293,4 +293,17 @@ export type View =
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
+    | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "unknown"; text: string; };
+
+/** A setting of the player's, as the Settings section shows it (D-341): what it is, its value or a list's items, and its values with what each means. */
+export interface PlayerSetting
+{
+    name: string;
+    about: string;
+    value?: string;
+    items?: string[];
+    choices?: { value: string; means?: string; }[];
+    /** What the player should know of it on this computer, as whether pictures can be made here. */
+    note?: string;
+}

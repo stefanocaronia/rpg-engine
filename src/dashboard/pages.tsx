@@ -9,7 +9,6 @@ const upcoming: Partial<Record<Section, string>> = {
     world: "What your character knows, the documents found and the calendar; the world map later.",
     rules: "The rules of the game, to look up.",
     saves: "The saves of the campaign.",
-    settings: "The settings of the campaign.",
 };
 
 /** A section the page does not have yet: what it will hold. */
