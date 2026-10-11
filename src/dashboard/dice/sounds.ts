@@ -1,11 +1,17 @@
-// The sound of the dice (D-278, D-283): one touch of a die in a felt-lined tray, recorded by the maintainer and equalized low, played at every knock of the physics, so the bounces of each
-// throw make its pattern; as loud as the die hit, duller when softly, barely higher or lower each time. Until it loads, the browser makes a knock of its
-// own. Browsers let a page make sounds only after the player's first click or key.
+// The sound of the dice (D-278, D-283, D-357): one touch of a die in a felt-lined tray, recorded by the maintainer and equalized low, and the click of two dice
+// hitting each other, recorded too, played at every knock of the physics, so the bounces of each throw make its pattern; as loud as the die hit, duller when
+// softly, barely higher or lower each time. Until they load, the browser makes a knock of its own. Browsers let a page make sounds only after the player's
+// first click or key.
 let audio: AudioContext | undefined;
 let output: AudioNode | undefined;
 let touch: AudioBuffer | undefined;
+let click: AudioBuffer | undefined;
+// How loud the click is beside the touch: all of it where the ear hears best, it would cover the felt's thud. Dice clicking span less than they thud, some
+// 18 dB from the softest to the hardest in a recording of five real dice, where their gain alone would make 37.
+const clickLevel = 0.07;
+const clickSpan = 0.75;
 
-/** Lets the page make sounds, from a click or a key of the player's; the first time, it loads the touch. */
+/** Lets the page make sounds, from a click or a key of the player's; the first time, it loads the samples. */
 export function wakeSound(): void
 {
     try {
@@ -15,7 +21,12 @@ export function wakeSound(): void
             const compressor = audio.createDynamicsCompressor();
             compressor.connect(audio.destination);
             output = compressor;
-            void loadTouch(audio);
+            void loadSample(audio, "dice-touch.wav").then((loaded) => {
+                touch = loaded;
+            });
+            void loadSample(audio, "dice-collision.wav").then((loaded) => {
+                click = loaded;
+            });
         }
 
         void audio.resume();
@@ -25,32 +36,35 @@ export function wakeSound(): void
 }
 
 /** A die's knock on the floor or on another die, as hard as given. */
-export function knock(strength: number): void
+export function knock(strength: number, onDie: boolean): void
 {
     if (audio === undefined || output === undefined || audio.state !== "running") {
         return;
     }
 
-    const loudness = Math.min(1, strength / 25);
+    // Two dice meet each at half the speed between them, as two equal bodies do.
+    const loudness = Math.min(1, (onDie ? strength / 2 : strength) / 25);
 
     if (touch === undefined) {
         madeKnock(audio, output, loudness);
         return;
     }
 
+    // Two dice click, resin on resin, where the felt muffles a die's touch.
+    const hard = onDie && click !== undefined;
     const source = audio.createBufferSource();
-    source.buffer = touch;
+    source.buffer = (hard ? click : undefined) ?? touch;
     // The same die rings at the same pitch: a few hundredths up or down, only so that the same touch never sounds twice alike.
     source.playbackRate.value = 0.97 + Math.random() * 0.06;
     // A soft knock is a duller one: the felt lets less of the click through, from 300 Hz for the softest to some 12 kHz for the hardest, the touch's body
-    // being all below 1 kHz.
+    // being all below 1 kHz; two dice, from 5 kHz to 16 kHz, a click being all above 1 kHz.
     const filter = audio.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.value = 300 * 40 ** loudness;
+    filter.frequency.value = hard ? 5000 * 3.2 ** loudness : 300 * 40 ** loudness;
     filter.Q.value = Math.SQRT1_2;
     // Each bounce, slower, is much softer than the one before, as a real die's on felt.
     const gain = audio.createGain();
-    gain.gain.value = Math.max(0.02, loudness ** 1.5);
+    gain.gain.value = hard ? clickLevel * Math.max(0.05, loudness) ** clickSpan : Math.max(0.02, loudness ** 1.5);
     source.connect(filter).connect(gain).connect(output);
     source.start();
 }
@@ -89,13 +103,13 @@ function madeKnock(audio: AudioContext, output: AudioNode, loudness: number): vo
     tone.stop(now + 0.1);
 }
 
-/** Loads and decodes the touch; when it cannot, the browser's own knock stays. */
-async function loadTouch(context: AudioContext): Promise<void>
+/** Loads and decodes a sample; undefined when it cannot, and the browser's own knock stays. */
+async function loadSample(context: AudioContext, file: string): Promise<AudioBuffer | undefined>
 {
     try {
-        const response = await fetch("/assets/sounds/dice-touch.wav");
-        touch = await context.decodeAudioData(await response.arrayBuffer());
+        const response = await fetch(`/assets/sounds/${file}`);
+        return await context.decodeAudioData(await response.arrayBuffer());
     } catch {
-        touch = undefined;
+        return undefined;
     }
 }

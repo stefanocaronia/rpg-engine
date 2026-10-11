@@ -79,11 +79,12 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
                 }
             }
 
-            dice.forEach((die, index) => die.dropped && stage.dim(index));
+            const instant = showing.instant || showing.skipping();
+            // A die that does not count burns away, or fades with reduced motion (D-358).
+            dice.forEach((die, index) => die.dropped && stage.dim(index, showing.instant));
             // A rare face is celebrated, still when the throw was shown at once or cut short; at most 80 sparks or puffs in all, fewer on a phone.
             const rares = dice.filter((die) => die.rare !== undefined).length;
             const particles = Math.min(matchMedia("(max-width: 600px)").matches ? 24 : 40, Math.floor(80 / Math.max(1, rares)));
-            const instant = showing.instant || showing.skipping();
             dice.forEach((die, index) => die.rare !== undefined && stage.celebrate(index, die.rare, { instant, particles }));
             return true;
         },
@@ -113,7 +114,7 @@ function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): 
             // The knocks up to this frame: none when the throw is shown at once or cut short.
             while (heard < thrown.knocks.length && thrown.knocks[heard].frame <= at) {
                 if (showing.sound && !showing.instant && !showing.skipping()) {
-                    knock(thrown.knocks[heard].strength);
+                    knock(thrown.knocks[heard].strength, thrown.knocks[heard].onDie);
                 }
 
                 heard++;

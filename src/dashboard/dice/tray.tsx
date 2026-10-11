@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
 import { DiceFaces } from "../faces.tsx";
 import type { PageRoll } from "../free-rolls.ts";
-import { DieIcon, Icon } from "../icons.tsx";
+import { DieIcon, DieSwatch, Icon, type SwatchLook } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
@@ -15,7 +15,7 @@ import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
-import { diceEdgesPref, diceSetPref } from "./sets.ts";
+import { diceEdgesPref, diceLook, diceSetPref, texturePath } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
@@ -92,6 +92,8 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     const [sound, setSound] = usePref(soundPref);
     const [diceSet] = useChoice(diceSetPref);
     const [edges] = useChoice(diceEdgesPref);
+    // The dice the player rolls, as the plate and the tray draw them: in their set (D-368).
+    const look = swatchOf(diceSet);
     const shownSet = useRef(`${diceSet} ${edges}`);
 
     useEffect(() => {
@@ -191,28 +193,32 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                 return;
             }
 
-            // The roll's line comes into the rolls only now, as its dice go (D-300); on a wide screen the plate of a roll the master asked waits for its place
-            // to open, then flies into it (D-281, D-303); elsewhere it fades.
+            // The roll's line comes into the rolls only now, as its dice go (D-300); a free throw's into this browser's rolls (D-330 (4)). The plate waits for
+            // its place to open, then flies into it, wherever the rolls are, out of the window on a phone; into the rolls' title when their card is closed, or
+            // their tab when they are put away (D-281, D-303, D-366). It fades with reduced motion.
             if (shown.roll !== undefined) {
                 onShown?.(shown.roll);
             }
 
-            // A free throw's line comes into this browser's rolls as its dice go (D-330 (4)).
-            if (shown.free) {
-                onFree?.(pageRoll(shown, number));
+            const free = shown.free ? pageRoll(shown, number) : undefined;
+
+            if (free !== undefined) {
+                onFree?.(free);
             }
 
-            const flies = shown.roll !== undefined && matchMedia("(min-width: 900px) and (prefers-reduced-motion: no-preference)").matches;
+            const line = shown.roll ?? free?.id;
+            const flies = line !== undefined && matchMedia("(prefers-reduced-motion: no-preference)").matches;
 
             window.setTimeout(() => {
                 if (!current()) {
                     return;
                 }
 
-                const row = shown.roll === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(shown.roll)}"]`);
+                const row = [line === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(line)}"]`), document.querySelector(".rolls-card > summary"), document.querySelector(".rolls-tab")]
+                    .find((target) => target !== null && target.getBoundingClientRect().height > 0);
                 setFading(true);
 
-                if (flies && row !== null && shownPlate.current !== null && inSight(row)) {
+                if (flies && row !== undefined && row !== null && shownPlate.current !== null) {
                     flyInto(shownPlate.current, row, done);
                 } else {
                     window.setTimeout(done, fadeLength);
@@ -350,11 +356,11 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
             <canvas ref={canvas} class={fading ? "dice-stage fading" : "dice-stage"} aria-hidden="true" />
             <div
                 ref={shownPlate}
-                class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : "", plate?.rare === undefined ? "" : plate.rare.face].filter((name) => name !== "").join(" ")}
+                class={["dice-result", plate?.free ? "free" : "", plate?.shown && !fading ? "shown" : "", plate?.shown && fading ? "going" : "", plate?.rare === undefined ? "" : plate.rare.face].filter((name) => name !== "").join(" ")}
                 role="status"
                 aria-live="polite"
             >
-                {plate?.shown && <PlateContent plate={plate} />}
+                {plate?.shown && <PlateContent plate={plate} look={look} />}
             </div>
             {open && <div class="tray-scrim" aria-hidden="true" />}
             <div ref={controls} class="dice-controls">
@@ -405,7 +411,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                                 {count > 0 && <span class="tray-count">{count}</span>}
                                                 {dieName(sides)}
                                             </span>
-                                            <DieIcon sides={sides} />
+                                            <DieSwatch sides={sides} {...look} />
                                         </button>
                                     </li>
                                 );
@@ -463,7 +469,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
 }
 
 /** What the plate says: whose roll and which, the dice one by one with the modifier, the total large, a rare face's words, and for a screen reader the chat's text. */
-function PlateContent({ plate }: { plate: Plate; })
+function PlateContent({ plate, look }: { plate: Plate; look: SwatchLook; })
 {
     return (
         <>
@@ -479,7 +485,7 @@ function PlateContent({ plate }: { plate: Plate; })
                     )}
                 </span>
             </div>
-            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" />
+            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" look={look} />
             <span class="plate-total num">{shownText(String(plate.total))}</span>
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
             <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
@@ -514,13 +520,6 @@ function rareOf(dice: ThrownDie[]): Pick<Plate, "rare">
     return rare === undefined ? {} : { rare };
 }
 
-/** Whether an element is in sight in the window: drawn, as it is not in a closed card, and all of it within the window. */
-function inSight(element: Element): boolean
-{
-    const box = element.getBoundingClientRect();
-    return box.height > 0 && box.top >= 0 && box.bottom <= window.innerHeight;
-}
-
 /** Flies the plate into a line of the rolls, small, as the line appears; then what comes after. */
 function flyInto(plate: HTMLElement, row: Element, then: () => void): void
 {
@@ -529,7 +528,7 @@ function flyInto(plate: HTMLElement, row: Element, then: () => void): void
     const across = to.left + to.width / 2 - (from.left + from.width / 2);
     const down = to.top + to.height / 2 - (from.top + from.height / 2);
     plate.style.transition = "transform var(--flight) var(--ease), opacity var(--flight) var(--ease-in)";
-    plate.style.transform = `translate(calc(-50% + ${across}px), ${down}px) scale(${Math.min(1, to.height / from.height)})`;
+    plate.style.transform = `translate(calc(var(--plate-x) + ${across}px), ${down}px) scale(${Math.min(1, to.height / from.height)})`;
     plate.style.opacity = "0.25";
     window.setTimeout(() => {
         plate.style.visibility = "hidden";
@@ -574,4 +573,11 @@ function fairDie(sides: number): number
     } while (draw[0] >= limit);
 
     return 1 + (draw[0] % sides);
+}
+
+/** A set's look as its pictures draw it: the theme's follows the theme. */
+function swatchOf(set: string): SwatchLook
+{
+    const look = diceLook(set);
+    return { body: look.body, ink: look.ink, ...(look.finish.texture === undefined ? {} : { picture: texturePath(look.finish.texture) }) };
 }

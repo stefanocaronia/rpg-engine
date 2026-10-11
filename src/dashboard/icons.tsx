@@ -29,6 +29,7 @@ const iconPaths = {
     river: "M3 8c3 2 6-2 9 0s6-2 9 0 M3 14c3 2 6-2 9 0s6-2 9 0",
     close: "M6 6l12 12 M18 6 6 18",
     clock: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 7.5V12l3 2",
+    hourglass: "M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9",
     place: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z",
     aside: "M6 6l6 6-6 6 M12 6l6 6-6 6",
     send: "M5 12h13 M13 6l6 6-6 6",
@@ -78,13 +79,30 @@ export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean
     );
 }
 
-/** A d20 of a set, its body filled with its colour or the picture of its grain and its edges in the ink of its numbers, as Settings shows the sets (D-348). */
-export function DieSwatch({ body, ink, picture }: { body: string; ink: string; picture?: string; })
+/** The colours of a set of dice, as a picture draws them: its body, or the picture of its grain, and the ink of its numbers. */
+export interface SwatchLook
 {
-    const outline = diePaths[20].split(" M")[0];
+    body: string;
+    ink: string;
+    picture?: string;
+}
+
+/**
+ * A die of a set, by its sides, a d20 by default: its body filled with its colour or the picture of its grain, its edges in the ink of its numbers; as Settings
+ * shows the sets (D-348), and the plate and the tray the dice the player rolls (D-368). Nothing for a die the page does not draw.
+ */
+export function DieSwatch({ sides = 20, body, ink, picture }: SwatchLook & { sides?: number | "F"; })
+{
+    const drawn = drawnDie(sides);
+
+    if (drawn === undefined) {
+        return null;
+    }
+
+    const outline = diePaths[drawn].split(" M")[0];
     const pattern = picture === undefined ? undefined : `grain-${picture.replace(/[^a-z0-9]+/gi, "-")}`;
     return (
-        <svg class={pattern === undefined ? "die-swatch" : "die-swatch grained"} viewBox="0 0 24 24" aria-hidden="true">
+        <svg class={pattern === undefined ? "die die-swatch" : "die die-swatch grained"} viewBox="0 0 24 24" aria-hidden="true">
             {pattern !== undefined && (
                 <defs>
                     <pattern id={pattern} patternUnits="userSpaceOnUse" width="24" height="24">
@@ -93,7 +111,7 @@ export function DieSwatch({ body, ink, picture }: { body: string; ink: string; p
                 </defs>
             )}
             <path d={outline} fill={pattern === undefined ? body : `url(#${pattern})`} stroke="none" />
-            <path d={diePaths[20]} fill="none" stroke={ink} />
+            <path d={diePaths[drawn]} fill="none" stroke={ink} />
         </svg>
     );
 }

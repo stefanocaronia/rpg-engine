@@ -3,7 +3,8 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { shownTheme } from "../theme.ts";
-import { celebrate, type Effect, type Glow, makePictures, type Pictures, type Showing } from "./celebration.ts";
+import { burnAway, crack } from "./burn.ts";
+import { celebrate, type Effect, type Glow, lightInk, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
 import { diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
@@ -11,6 +12,10 @@ import type { Tray } from "./throw.ts";
 // A die that does not count, as the lower of two d20 with advantage, turns grey as its chip in the plate, whatever its set: its body mostly, its ink half way;
 // set aside, not made of glass (D-348).
 const dimmedBody = 0.8;
+// How much of the window's foot the plate of the result covers, in pixels: from the window's edge to the plate's top, on a wide screen and on a phone,
+// where it comes out of the bar of the sections.
+const plateOnWide = 150;
+const plateOnPhone = 220;
 const dimmedInk = 0.5;
 
 /** Where a die is shown, and how it is turned. */
@@ -27,7 +32,8 @@ export interface Stage
     /** Puts dice of these kinds, by the meshes given for each kind. */
     place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
     show(poses: (Pose | undefined)[]): void;
-    dim(die: number): void;
+    /** Sets a die that does not count aside: grey a moment, then burnt away, or faded at once when shown instant (D-358). */
+    dim(die: number, instant: boolean): void;
     celebrate(die: number, rare: RareFace, showing: Showing): void;
     hide(): void;
     resize(): void;
@@ -123,6 +129,9 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     };
 
     const tray: Tray = { width: 7, depth: 4.5 };
+    // The dice lie on a table that moves up the window as the tray ends above the plate.
+    const table = new THREE.Group();
+    scene.add(table);
 
     const resize = (): void => {
         const width = window.innerWidth;
@@ -130,15 +139,19 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        // The tray fills what the camera sees on the floor.
+        // The tray fills what the camera sees on the floor, but for the window's foot the plate covers: no die lies under it (D-366).
         const seen = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
-        tray.depth = Math.max(3, seen / 2 - 1.2);
-        tray.width = Math.max(3, tray.depth * camera.aspect);
+        const back = Math.max(3, seen / 2 - 1.2);
+        const covered = (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide) / height * seen;
+        const front = Math.max(6 - back, back - covered);
+        tray.depth = (front + back) / 2;
+        tray.width = Math.max(3, back * camera.aspect);
+        table.position.z = (front - back) / 2;
     };
 
     const clear = (): void => {
         dice.forEach((die) => {
-            scene.remove(die.object);
+            table.remove(die.object);
             die.materials.forEach((material) => {
                 // A grain's picture laid for this die alone goes with it.
                 if (material.map !== null && ![...grains.values()].includes(material.map)) {
@@ -175,7 +188,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                     }
                 });
                 object.visible = false;
-                scene.add(object);
+                table.add(object);
                 return { object, materials };
             });
         },
@@ -192,35 +205,61 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
             });
             renderer.render(scene, camera);
         },
-        dim(die)
+        dim(die, instant)
         {
             const grey = new THREE.Color(themeColours().dropped);
-            dice[die]?.materials.forEach((material) => {
-                material.color.lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody);
-                // A metal set aside mirrors little: grey, not silver; a wood or a stone loses its grain, which its colour only tinted.
-                material.envMapIntensity *= 0.3;
+            const turning = (dice[die]?.materials ?? []).map((material) => ({
+                material,
+                from: material.color.clone(),
+                to: material.color.clone().lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody),
+                shine: material.envMapIntensity,
+            }));
 
-                if (material.map !== null) {
-                    if (![...grains.values()].includes(material.map)) {
-                        material.map.dispose();
+            // Grey in a blink, not at a stroke (D-358): a metal set aside mirrors little, grey and not silver; a wood or a stone loses its grain, which its colour
+            // only tinted, once grey.
+            const greying = (amount: number): void => {
+                turning.forEach(({ material, from, to, shine }) => {
+                    material.color.lerpColors(from, to, amount);
+                    material.envMapIntensity = shine * (1 - 0.7 * amount);
+
+                    if (amount === 1 && material.map !== null) {
+                        if (![...grains.values()].includes(material.map)) {
+                            material.map.dispose();
+                        }
+
+                        material.map = null;
+                        material.needsUpdate = true;
                     }
+                });
+            };
 
-                    material.map = null;
-                    material.needsUpdate = true;
+            const dropped = dice[die];
+
+            if (dropped !== undefined) {
+                effects.push(burnAway(dropped.object, dropped.materials, instant, greying));
+
+                if (!moving) {
+                    moving = true;
+                    requestAnimationFrame(draw);
                 }
-            });
-            dice[die]?.object.traverse((part) => {
-                part.castShadow = false;
-            });
+            }
+
             renderer.render(scene, camera);
         },
         celebrate(die, rare, showing)
         {
-            const object = dice[die]?.object;
+            const shown = dice[die];
 
-            if (object !== undefined) {
+            if (shown !== undefined) {
                 pictures ??= makePictures();
-                effects.push(celebrate(scene, object.position.clone(), rare, themeColours().glow, pictures, showing));
+                const glow = themeColours().glow;
+                effects.push(celebrate(scene, shown.object.getWorldPosition(new THREE.Vector3()), rare, glow, pictures, showing));
+                // The highest face's numbers lit gold; the lowest's die cracked, embers in its cracks (D-363).
+                effects.push(
+                    rare === "highest"
+                        ? lightInk(shown.materials.filter((material) => material.name === "ink"), glow.highest.sparks[0], showing.instant)
+                        : crack(shown.materials, showing.instant),
+                );
 
                 if (!moving) {
                     moving = true;

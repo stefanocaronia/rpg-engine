@@ -10,11 +10,11 @@ export interface Frame
     quaternion: Turn;
 }
 
-/** A throw: its frames, sixty to a second, each with where every die is; and its knocks, by frame, each as hard as the die hit. */
+/** A throw: its frames, sixty to a second, each with where every die is; and its knocks, by frame, each as hard as the die hit, and whether on another die. */
 export interface Throw
 {
     frames: Frame[][];
-    knocks: { frame: number; strength: number; }[];
+    knocks: { frame: number; strength: number; onDie: boolean; }[];
 }
 
 /** The floor the dice roll on, between walls this far from the centre, sideways and in depth. */
@@ -34,7 +34,8 @@ export interface Lying
 const step = 1 / 60;
 // A throw stops by itself well before this; past it, the dice are taken as they lie.
 const longest = 8 / step;
-// A knock softer than this makes no sound, as a die settling; a die knocks at most once in so many frames, as one that rattles.
+// A knock softer than this makes no sound, as a die settling; a die knocks on the floor, and two dice on each other, at most once in so many frames, as one
+// that rattles.
 const softest = 1.5;
 const knockGap = 3;
 // More than the farthest corner of any die from its centre.
@@ -80,6 +81,8 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
 
     const frames: Frame[][] = [];
     const knocks: Throw["knocks"] = [];
+    // When two dice last knocked each other, by the pair: they knock once for both, and their knocks on the floor do not hush them.
+    const pairs = new Map<string, number>();
 
     // The dice leave the hand one beside the other, across the tray's depth.
     const dice = shapes.map((shape, index) => {
@@ -100,14 +103,25 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
         die.quaternion.setFromEuler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2);
         die.velocity.set(11 + random() * 6, 2 + random() * 4, (random() - 0.5) * 10);
         die.angularVelocity.set(spin(), spin(), spin());
-        let lastKnock = -knockGap;
+        let lastOnFloor = -knockGap;
         die.addEventListener("collide", (event: { body: Body; contact: { getImpactVelocityAlongNormal(): number; }; }) => {
             const strength = Math.abs(event.contact.getImpactVelocityAlongNormal());
+            const onDie = event.body.material === dieMaterial;
 
-            // Two dice that hit each other hear it both: the one first made says it.
-            if (strength > softest && frames.length - lastKnock >= knockGap && (event.body.mass === 0 || die.id < event.body.id)) {
-                knocks.push({ frame: frames.length, strength });
-                lastKnock = frames.length;
+            if (strength <= softest) {
+                return;
+            }
+
+            if (!onDie && frames.length - lastOnFloor >= knockGap) {
+                knocks.push({ frame: frames.length, strength, onDie });
+                lastOnFloor = frames.length;
+            } else if (onDie) {
+                const pair = [die.id, event.body.id].sort((first, second) => first - second).join(" ");
+
+                if (frames.length - (pairs.get(pair) ?? -knockGap) >= knockGap) {
+                    knocks.push({ frame: frames.length, strength, onDie });
+                    pairs.set(pair, frames.length);
+                }
             }
         });
         world.addBody(die);

@@ -99,8 +99,10 @@ describe("the dice of the dashboard (D-278)", () => {
             expect(Math.hypot((again?.position[0] ?? 0) - first.position[0], (again?.position[2] ?? 0) - first.position[2])).toBeGreaterThan(1.2);
         }
 
-        // The dice knock on the floor and on each other: what the page plays.
-        expect(throwDice([d20, d20], tray, random).knocks.length).toBeGreaterThan(0);
+        // The dice knock on the floor and on each other, each its own sound: what the page plays.
+        const knocks = Array.from({ length: 20 }, () => throwDice([d20, d20, d20, d20], tray, random).knocks).flat();
+        expect(knocks.some((knock) => knock.onDie)).toBe(true);
+        expect(knocks.some((knock) => !knock.onDie)).toBe(true);
     });
 
     it("knocks first when a die falls on the floor, never in the air as it leaves the hand, in a narrow tray too", () => {

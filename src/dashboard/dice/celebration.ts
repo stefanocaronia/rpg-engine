@@ -1,6 +1,7 @@
 // The celebration of a rare face (D-281, D-282), all on the floor, since the camera far above sees no rise: for the highest face a gold halo that grows and
-// breathes once, and sparks that fly out from the die and twinkle out; for the lowest a red halo that flares and sinks, and puffs of smoke. With reduced
-// motion, or a throw cut short, the halo alone in its last form. Everything moves for about a second, then the halo stays until the dice go.
+// breathes once, sparks that fly out from the die and twinkle out, and its numbers lit gold a moment (D-363); for the lowest a red halo that flares and sinks,
+// and puffs of smoke. With reduced motion, or a throw cut short, the halo alone in its last form. Everything moves for about a second, then the halo stays
+// until the dice go.
 import * as THREE from "three";
 import type { RareFace } from "./models.ts";
 
@@ -36,7 +37,7 @@ export interface Showing
 
 // The halos' radii on the floor; how long the highest's grows and breathes, and the lowest's flares and sinks, and how long a still halo takes to appear, in seconds.
 const highestRadius = 2.6;
-const lowestRadius = 2;
+const lowestRadius = 2.3;
 const growth = 0.25;
 const breathEnd = 1.2;
 const flare = 0.15;
@@ -50,7 +51,7 @@ export function celebrate(scene: THREE.Scene, at: THREE.Vector3, rare: RareFace,
 {
     const blending = glow.lights ? THREE.AdditiveBlending : THREE.NormalBlending;
     const highest = rare === "highest";
-    const resting = highest ? glow.highest.resting : 0.5;
+    const resting = highest ? glow.highest.resting : 0.75;
     const radius = highest ? highestRadius : lowestRadius;
     const halo = new THREE.Mesh(
         new THREE.PlaneGeometry(radius * 2, radius * 2),
@@ -104,6 +105,42 @@ export function celebrate(scene: THREE.Scene, at: THREE.Vector3, rare: RareFace,
             halo.geometry.dispose();
             halo.material.dispose();
             particles.forEach((particle) => particle.dispose());
+        },
+    };
+}
+
+// How long the numbers of a highest face take to light, stay lit and go out, in milliseconds; and how bright they shine.
+const inkRise = 150;
+const inkHold = 450;
+const inkFall = 700;
+const inkShine = 2.2;
+
+/** Lights a die's numbers in this colour a moment, as its highest face lands: they flare, hold and go out; lit low and still with reduced motion. */
+export function lightInk(inks: THREE.MeshStandardMaterial[], colour: string, instant: boolean): Effect
+{
+    const started = performance.now();
+    inks.forEach((ink) => {
+        ink.emissive.set(colour);
+        ink.emissiveIntensity = instant ? inkShine / 3 : 0;
+    });
+
+    return {
+        update(now)
+        {
+            if (instant) {
+                return false;
+            }
+
+            const elapsed = now - started;
+            const shine = elapsed < inkRise ? elapsed / inkRise : elapsed < inkRise + inkHold ? 1 : Math.max(0, 1 - (elapsed - inkRise - inkHold) / inkFall);
+            inks.forEach((ink) => {
+                ink.emissiveIntensity = inkShine * shine;
+            });
+            return shine > 0;
+        },
+        dispose()
+        {
+            // The numbers go with their die.
         },
     };
 }
