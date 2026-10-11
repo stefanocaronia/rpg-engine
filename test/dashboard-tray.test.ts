@@ -1,6 +1,6 @@
 // The dice the tray throws by itself (D-284, D-337): which of a kind count, as a notation and as the chat writes them, and the checks they answer (D-330).
 import { describe, expect, it } from "vitest";
-import { diceText, keptOf, notation, withDropped } from "../src/dashboard/dice/pool.ts";
+import { diceText, keptOf, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
 import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
 import { sameDice } from "../src/dashboard/labels.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
@@ -35,6 +35,13 @@ describe("which dice of a kind count in the tray (D-337)", () => {
         expect(trayCheck(asked, notation([20, 20], 5, { 20: "highest" }))).toBe(0);
         expect(trayCheck(asked, notation([20, 20], 5, {}))).toBeUndefined();
         expect(sameDice("2d20dl1+5", "2d20kh1+5")).toBe(true);
+    });
+});
+
+describe("the checks the tray can answer by hand (D-339, D-380)", () => {
+    it("throws its own kinds, all counting or with the highest or the lowest kept or dropped, and a number; never a reroll, an explosion or a die taken away", () => {
+        expect(["1d20+5", "2d20kh1+3", "4d6dl1", "1d20+1d4+2", "1d%", "2d6 + 2"].map(trayThrows)).toEqual([true, true, true, true, true, true]);
+        expect(["2d6ro<=2+2", "1d6!", "1d20-1d4", "1d3", "4dF", "+3"].map(trayThrows)).toEqual([false, false, false, false, false, false]);
     });
 });
 

@@ -1,6 +1,6 @@
 // A die that does not count burns away (D-358): turning grey in a blink, it stays a moment where it fell, then consumed as paper by a fire, holes opening through it with a glowing,
-// charred edge, until nothing is left; with reduced motion it fades instead. A die that shows its lowest face cracks instead, embers glowing red in its cracks
-// until the dice go (D-363). Its materials, body and ink, burn together, by its own shape.
+// charred edge, until nothing is left; with reduced motion it fades instead. A die that shows its lowest face cracks, dark lines spreading from a point, no
+// fire (D-363, D-382). Its materials, body and ink, burn or crack together, by its own shape.
 import * as THREE from "three";
 import type { Effect } from "./celebration.ts";
 
@@ -13,11 +13,14 @@ const fading = 400;
 const fire = new THREE.Color("#ff8a3d");
 const edge = 0.06;
 const charred = 0.16;
-// How long the cracks take to open, in milliseconds; their embers, and how wide a crack and the soot around it are, in the noise's measure.
-const cracking = 450;
-const embers = new THREE.Color("#ff3d1f");
-const crackWidth = 0.022;
-const sootWidth = 0.09;
+// How long the cracks take to spread, in milliseconds, and how far from where they start, in the die's measure; how big the cells between them are, how much
+// their edges zigzag, how many of them crack, and how wide a crack is at most, tapering, in the cells' measure.
+const cracking = 260;
+const crackReach = 2.6;
+const crackCellScale = "1.1";
+const crackJagging = "0.12";
+const crackSparseness = "0.42";
+const crackWidth = "0.024";
 
 /** Burns a die away from now: its object and its materials, turned grey by the amount given first; its update says whether it still moves. */
 export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMaterial[], instant: boolean, grey: (amount: number) => void): Effect
@@ -70,31 +73,40 @@ export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMa
     };
 }
 
-/** Cracks a die from now, by the same noise as the fire: dark lines open across it with red embers in them, which flare, then glow low and breathe until
- * the dice go; at once, still, with reduced motion. */
+/** Cracks a die from now, as resin breaks, not as paper burns: a few long dark fractures, zigzag and tapering, with a lighter chipped rim, spread from a point
+ * of the die until the dice go; no fire, which says a die goes away (D-382). At once with reduced motion. */
 export function crack(materials: THREE.MeshStandardMaterial[], instant: boolean): Effect
 {
     const started = performance.now();
-    const opened = { value: instant ? 1 : 0 };
-    const glow = { value: instant ? 1.2 : 0 };
+    const reach = { value: instant ? crackReach : 0 };
     const offset = new THREE.Vector3(Math.random(), Math.random(), Math.random()).multiplyScalar(50);
+    const origin = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
     materials.forEach((material) => {
         material.onBeforeCompile = (shader) => {
-            shader.uniforms.crackOpened = opened;
-            shader.uniforms.crackGlow = glow;
-            shader.uniforms.crackEmbers = { value: embers };
+            shader.uniforms.crackReach = reach;
+            shader.uniforms.crackOrigin = { value: origin };
             shader.uniforms.burnOffset = { value: offset };
             shader.vertexShader = withPlace(shader.vertexShader);
             shader.fragmentShader = shader.fragmentShader
-                .replace("#include <common>", `#include <common>\nvarying vec3 burnPlace;\nuniform float crackOpened;\nuniform float crackGlow;\nuniform vec3 crackEmbers;\nuniform vec3 burnOffset;\n${noise}`)
+                .replace(
+                    "#include <common>",
+                    `#include <common>
+varying vec3 burnPlace;
+uniform float crackReach;
+uniform vec3 crackOrigin;
+uniform vec3 burnOffset;
+${noise}${cells}`,
+                )
                 .replace(
                     "#include <emissivemap_fragment>",
                     `#include <emissivemap_fragment>
-                    float crackLine = abs(burnNoise(burnPlace * 2.0 + burnOffset) - 0.5);
-                    float crackIn = (1.0 - smoothstep(0.0, ${crackWidth} * crackOpened, crackLine)) * step(0.001, crackOpened);
-                    float crackSoot = (1.0 - smoothstep(0.0, ${sootWidth} * crackOpened, crackLine)) * step(0.001, crackOpened);
-                    diffuseColor.rgb *= (1.0 - 0.45 * crackSoot) * (1.0 - 0.9 * crackIn);
-                    totalEmissiveRadiance += crackEmbers * crackGlow * crackIn;`,
+                    vec3 crackJag = vec3(burnNoise(burnPlace * 11.0), burnNoise(burnPlace * 11.0 + 17.0), burnNoise(burnPlace * 11.0 + 31.0)) - 0.5;
+                    float crackEdge = crackCells(burnPlace * ${crackCellScale} + burnOffset + crackJag * ${crackJagging});
+                    float crackHere = step(distance(burnPlace, crackOrigin), crackReach) * step(${crackSparseness}, burnNoise(burnPlace * 1.1 + burnOffset));
+                    float crackWide = ${crackWidth} * (0.35 + 1.1 * burnNoise(burnPlace * 2.5 + burnOffset + 5.0));
+                    float crackLine = (1.0 - smoothstep(crackWide, crackWide * 1.5, crackEdge)) * crackHere;
+                    float crackChip = (smoothstep(crackWide * 1.5, crackWide * 2.0, crackEdge) - smoothstep(crackWide * 2.0, crackWide * 3.0, crackEdge)) * crackHere;
+                    diffuseColor.rgb *= (1.0 - 0.9 * crackLine) * (1.0 + 0.35 * crackChip);`,
                 );
         };
 
@@ -104,16 +116,9 @@ export function crack(materials: THREE.MeshStandardMaterial[], instant: boolean)
     return {
         update(now)
         {
-            if (instant) {
-                return false;
-            }
-
-            const elapsed = now - started;
-            const done = Math.min(1, elapsed / cracking);
-            opened.value = 1 - (1 - done) ** 3;
-            // A flare as they open, then embers that breathe.
-            glow.value = done < 1 ? 4 * done : 1.2 + 0.5 * Math.sin((elapsed - cracking) / 250);
-            return true;
+            const done = instant ? 1 : Math.min(1, (now - started) / cracking);
+            reach.value = crackReach * (1 - (1 - done) ** 3);
+            return done < 1;
         },
         dispose()
         {
@@ -171,5 +176,50 @@ float burnValue(vec3 point) {
 
 float burnNoise(vec3 point) {
     return 0.55 * burnValue(point) + 0.3 * burnValue(point * 2.1) + 0.15 * burnValue(point * 4.3);
+}
+`;
+
+// The cells of a crack, as resin breaks into: how far a point is from the edge between the cell it is in and the nearest other one, 0 on the edge, the same
+// along an edge and where edges meet.
+const cells = `
+vec3 crackPoint(vec3 cell) {
+    return cell + fract(sin(vec3(dot(cell, vec3(127.1, 311.7, 74.7)), dot(cell, vec3(269.5, 183.3, 246.1)), dot(cell, vec3(113.5, 271.9, 124.6)))) * 43758.5453);
+}
+
+float crackCells(vec3 point) {
+    vec3 home = floor(point);
+    vec3 nearest = vec3(0.0);
+    float least = 8.0;
+
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            for (int z = -1; z <= 1; z++) {
+                vec3 seed = crackPoint(home + vec3(x, y, z));
+                float away = distance(point, seed);
+
+                if (away < least) {
+                    least = away;
+                    nearest = seed;
+                }
+            }
+        }
+    }
+
+    float edge = 8.0;
+
+    for (int x = -2; x <= 2; x++) {
+        for (int y = -2; y <= 2; y++) {
+            for (int z = -2; z <= 2; z++) {
+                vec3 seed = crackPoint(home + vec3(x, y, z));
+                vec3 between = seed - nearest;
+
+                if (dot(between, between) > 1e-5) {
+                    edge = min(edge, dot(0.5 * (nearest + seed) - point, normalize(between)));
+                }
+            }
+        }
+    }
+
+    return edge;
 }
 `;

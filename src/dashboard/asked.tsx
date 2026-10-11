@@ -5,6 +5,7 @@ import { Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked, ShownGrid } from "./data.ts";
+import { trayThrows } from "./dice/pool.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
@@ -27,7 +28,8 @@ export function AskedBanner(
     const banner = useRef<HTMLElement>(null);
     const checks = asked.labels.map((label) => checkOf(label, asked.title));
     const roll = checks.some((check) => check !== undefined);
-    const named = checks.filter((check) => check !== undefined);
+    // By hand, the note names the checks the sheet or the tray answer; the others keep their buttons (D-380).
+    const named = checks.flatMap((check, index) => (check !== undefined && byHandAnswers(asked, index) ? [check] : []));
     // Answered from the sheet or the tray, the banner folds away as after a click.
     const gone = sent !== undefined || answered === true;
 
@@ -92,7 +94,7 @@ export function AskedBanner(
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 {/* By hand, as a master says it: which check, with its dice as pictures; its number the player finds on the sheet. */}
-                {roll && byHand && (
+                {named.length > 0 && byHand && (
                     <p class="asked-hand-note">
                         <Icon name="hand" />
                         <span>
@@ -179,13 +181,13 @@ export function AskedBanner(
     );
 }
 
-/** Whether a check can be answered by hand: a field of the sheet it alone names, whose row lights, or dice the tray tells from the other checks'. */
+/** Whether a check can be answered by hand: a field of the sheet it alone names, whose row lights, or dice the tray can throw and tells from the other checks'. */
 function byHandAnswers(asked: Asked, index: number): boolean
 {
     const field = asked.fields?.[index] ?? null;
     const ownRow = field !== null && asked.fields?.filter((other) => other === field).length === 1;
     const dice = checkOf(asked.labels[index], asked.title)?.dice;
-    const ownDice = dice !== undefined && asked.labels.filter((label) => {
+    const ownDice = dice !== undefined && trayThrows(dice) && asked.labels.filter((label) => {
                 const other = checkOf(label, asked.title)?.dice;
                 return other !== undefined && sameDice(other, dice);
             }).length === 1;

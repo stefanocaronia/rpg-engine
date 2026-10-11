@@ -4,6 +4,21 @@ import type { ThrownDie } from "../data.ts";
 /** Which dice of a kind count (D-337): with two, the higher or the lower one; with more, all but the lowest or all but the highest. */
 export type Keep = "highest" | "lowest";
 
+// The dice of the tray, by their sides, from the top of its column: 100 is the d%, thrown as its tens and its units; the d20, the most thrown, is the nearest
+// to the button.
+export const trayDice = [100, 4, 6, 8, 10, 12, 20];
+
+/** Whether the tray can throw these dice by itself: kinds it has, all counting or with the highest or the lowest kept or dropped, and a number; never a
+ * reroll or an explosion, which the engine alone makes, so that a check asking one keeps its button when rolled by hand (D-339, D-380). */
+export function trayThrows(dice: string): boolean
+{
+    const terms = dice.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").match(/[+-]?[^+-]+/g) ?? [];
+    return terms.some((term) => term.includes("d")) && terms.every((term) => {
+        const die = /^\+?\d*d(\d+|%)(?:[kd][hl]1?)?$/.exec(term);
+        return /^[+-]?\d+$/.test(term) || (die !== null && trayDice.includes(die[1] === "%" ? 100 : Number(die[1])));
+    });
+}
+
 /** A die's name, as the tray shows it: d20, and d% for the percentile. */
 export function dieName(sides: number): string
 {

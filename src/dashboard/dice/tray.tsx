@@ -13,7 +13,7 @@ import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
-import { diceText, dieName, type Keep, keptOf, notation, withDropped } from "./pool.ts";
+import { diceText, dieName, type Keep, keptOf, notation, trayDice, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
 import { diceEdgesPref, diceSetPref } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
@@ -24,9 +24,7 @@ const lingers = { free: 3200, asked: 4200 };
 const fadeLength = 600;
 const flight = 450;
 
-// The dice of the free tray, by their sides, from the top of the column: 100 is the d%, thrown as its tens and its units; the d20, the most thrown, is the
-// nearest to the button. At most so many at once, which the page throws in a moment.
-const freeDice = [100, 4, 6, 8, 10, 12, 20];
+// At most so many dice at once, which the page throws in a moment.
 const mostDice = 20;
 
 // The choices of what counts, as the tray says them.
@@ -370,7 +368,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                             </button>
                         </p>
                         <ul class="tray-dice">
-                            {freeDice.map((sides) => {
+                            {trayDice.map((sides) => {
                                 const count = pool.filter((one) => one === sides).length;
                                 return (
                                     <li key={sides} class={count > 0 ? "chosen" : undefined}>
