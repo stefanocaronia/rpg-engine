@@ -24,6 +24,17 @@ import { findImage } from "./images/index.ts";
  */
 export const dashboardPorts = [...[4747, 5747, 6747, 7747, 8747].flatMap((first) => Array.from({ length: 10 }, (_, index) => first + index)), 0];
 
+/**
+ * The ports for a campaign's dashboard: its own in each range first, worked out from its folder, then the others (D-353). Its link stays the same from one
+ * chat to the next, as long as no other program holds that port, so that the player can keep it, and a page left open comes back by itself.
+ */
+export function campaignPorts(root: string): number[]
+{
+    const offset = [...root.replaceAll("\\", "/").toLowerCase()].reduce((sum, letter) => (sum * 31 + letter.charCodeAt(0)) % 100003, 0) % 10;
+    const own = [4747, 5747, 6747, 7747, 8747].map((first) => first + offset);
+    return [...own, ...dashboardPorts.filter((port) => !own.includes(port))];
+}
+
 /** A dashboard that is running: its link, and how to stop it. */
 export interface Dashboard
 {
@@ -119,7 +130,9 @@ const pageHtml = [
 /** Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free; undefined when none is. */
 export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
-    for (const port of options.ports ?? dashboardPorts) {
+    const root = withFiles(session, () => findCampaign(context.folder)) ?? context.folder;
+
+    for (const port of options.ports ?? campaignPorts(root)) {
         // A port another program answers at, even on ::1 or on every address, is its: a browser asking localhost could reach it instead (D-277).
         if (port !== 0 && await answers(port)) {
             continue;

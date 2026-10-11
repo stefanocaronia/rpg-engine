@@ -32,6 +32,8 @@ export interface Context
     told?: Set<string>;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
+    /** Whether status has already had the master offer the dashboard in this chat, as its first status does (D-353). */
+    dashboardOffered?: boolean;
     /**
      * What the player changed on the dashboard since the master's last call, taken for the head of the next call's answer, and given back when that answer
      * never goes, as for a call the user stopped (D-341).

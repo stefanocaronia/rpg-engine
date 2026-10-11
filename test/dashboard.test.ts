@@ -10,7 +10,7 @@ import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
-import { type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
+import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
 import { readAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
@@ -362,6 +362,14 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(dashboardPorts.at(-1)).toBe(0);
     });
 
+    it("gives each campaign its own port first in each range, the same from one chat to the next, then every other (D-353)", () => {
+        const ports = campaignPorts("C:\\Giochi\\Guadoscuro");
+        expect(campaignPorts("c:/giochi/guadoscuro")).toEqual(ports);
+        expect(ports.slice(0, 5).map((port) => port % 1000)).toEqual(Array.from({ length: 5 }, () => ports[0] % 1000));
+        expect(ports.toSorted((one, other) => one - other)).toEqual(dashboardPorts.toSorted((one, other) => one - other));
+        expect(new Set(["A", "B", "C", "D", "E", "F", "G", "H"].map((name) => campaignPorts(`/giochi/${name}`)[0])).size).toBeGreaterThan(1);
+    });
+
     it("takes the next port when another program answers at one, even on ::1 only, and gives its link on 127.0.0.1 (D-277)", async () => {
         for (const host of ["127.0.0.1", "::1"]) {
             const taken = createServer();
@@ -378,8 +386,10 @@ describe("the dashboard's server (D-270, D-272)", () => {
             }
         }
 
-        const status = await runCommandLine(["status"], { ...context, dashboard: "http://localhost:4747" });
-        expect(status.output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live: give the player the link when the session starts.");
+        const dashboarded = { ...context, dashboard: "http://localhost:4747" };
+        const status = await runCommandLine(["status"], dashboarded);
+        expect(status.output).toMatch(/^Offer the player their dashboard in your first answer, with its link: http:\/\/localhost:4747\. /);
+        expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live.");
     });
 });
 
@@ -411,7 +421,7 @@ describe("the session's notices (D-193, D-272)", () => {
             await runCommandLine(["init", "--name", "Nuova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], served);
             await opener.open();
             expect(served.dashboard).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
-            expect((await runCommandLine(["status"], served)).output).toContain(`Dashboard: ${served.dashboard}`);
+            expect((await runCommandLine(["status"], served)).output).toContain(`Offer the player their dashboard in your first answer, with its link: ${served.dashboard}.`);
         } finally {
             await opener.close();
             session.close();

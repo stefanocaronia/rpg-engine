@@ -124,6 +124,8 @@ export const status = defineCommand({
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
             dashboard: context.dashboard,
+            // The chat's first status opens with the dashboard, for the master to offer it in their first answer (D-353).
+            offerDashboard: offerDashboard(context),
             // Whether to ask for the places' pictures, or to have this one made (D-308).
             pictures: picturesNote(root, context, world, players[0] === undefined ? undefined : locate(world, players[0]).chain.find((holder) => holder.type === "place")),
             mood: masterMood(root),
@@ -160,6 +162,10 @@ export const status = defineCommand({
         const lead = result.players[0]?.name;
         const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${memberCounters(member)}`;
         const state = [
+            result.offerDashboard && result.dashboard !== undefined
+                ? `Offer the player their dashboard in your first answer, with its link: ${result.dashboard}. Their sheet, their settings and the dice of the checks you ask `
+                    + "follow the game there, live; the link stays the same, and a page they keep open comes back by itself next time."
+                : "",
             result.campaign.join(" Â· "),
             ...result.meanings,
             result.note,
@@ -172,7 +178,7 @@ export const status = defineCommand({
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             result.around === "" ? "" : `Around ${lead}: ${result.around}`,
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
-            result.dashboard === undefined ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live: give the player the link when the session starts.`,
+            result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live.`,
             result.pictures ?? "",
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
@@ -326,4 +332,12 @@ function namesLine(label: string, names: string[], more: string, separator = " Â
 
     const shown = names.slice(0, shownNames).join(separator);
     return names.length > shownNames ? `${label}: ${shown}, and ${names.length - shownNames} more: ${more}` : `${label}: ${shown}`;
+}
+
+/** Whether this status is the chat's first with a dashboard, which has the master offer it; the next ones only give its link (D-353). */
+function offerDashboard(context: Context): boolean
+{
+    const first = context.dashboard !== undefined && context.dashboardOffered !== true;
+    context.dashboardOffered ||= first;
+    return first;
 }
