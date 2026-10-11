@@ -4,7 +4,7 @@
 import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { foldersIn } from "./files.ts";
+import { filesIn, foldersIn } from "./files.ts";
 import { FileStore, isInside, readText } from "./store.ts";
 
 /** Tells which names change in one folder, not in the folders inside it, and when it can no longer tell: Node's fs.watch, or a fake one in the tests. */
@@ -16,6 +16,16 @@ const watchedTrees = ["world", "rules", "images"];
 
 // More changes than this between two calls, and a watcher on Linux may have lost some without a word: inotify keeps 16384 by default, then drops the rest.
 const tooManyChanges = 10_000;
+
+/** A file of a campaign changed outside the session's own writes: by hand, by another chat or by the command line (OUT-1). */
+export interface OutsideChange
+{
+    path: string;
+    /** Its text as the session kept it; undefined for a new file. */
+    before?: string;
+    /** Its text now; undefined for a file gone. */
+    after?: string;
+}
 
 /** The files of a session of the MCP server, kept between calls and watched (D-193). */
 export class SessionStore extends FileStore
@@ -32,6 +42,9 @@ export class SessionStore extends FileStore
     private unwatchable = false;
     private changes = 0;
     private wrote = false;
+    // The files changed outside the session since they were last taken, each with its text before; and who reads the world before they are let in (OUT-1).
+    private readonly outside = new Map<string, string | undefined>();
+    private beforeOutside: (() => void) | undefined;
 
     /** `systemFolders` hold the game systems, kept for the whole session; `watchFolder` is Node's watcher, unless a test gives its own. */
     constructor(options: { systemFolders?: string[]; watchFolder?: WatchFolder; } = {})
@@ -62,6 +75,20 @@ export class SessionStore extends FileStore
         return () => this.changeListeners.delete(listener);
     }
 
+    /** Calls `hook` before the session lets in changes made outside it, while what it kept is still as it was: the world before them can be read (OUT-3). */
+    beforeOutsideChanges(hook: () => void): void
+    {
+        this.beforeOutside = hook;
+    }
+
+    /** The files of the campaigns changed outside the session since this was last asked, with their text before and now; those back as they were are left out. */
+    takeOutsideChanges(): OutsideChange[]
+    {
+        const taken = [...this.outside].map(([path, before]) => ({ path, before, after: this.text(path) }));
+        this.outside.clear();
+        return taken.filter((change) => change.before !== change.after);
+    }
+
     /**
      * Makes the store right for a call: forgets what lasts only for a call, lets the watchers' last events in and reads again the files they named; first it
      * compares every file kept with the disk when `everything` is asked, as at instructions, when a watcher failed or could not start, or after too many
@@ -78,12 +105,13 @@ export class SessionStore extends FileStore
         }
 
         await this.checking;
-        const reported = [...this.reported];
+        const reported = [...this.reported].map((path) => ({ path, now: readNow(path) }));
         this.reported.clear();
         this.changes = 0;
+        this.noteOutside(reported.filter(({ path, now }) => this.isOutside(path, now)).map(({ path }) => path));
 
-        for (const path of reported) {
-            this.recheck(path);
+        for (const { path, now } of reported) {
+            this.recheck(path, now);
         }
     }
 
@@ -214,19 +242,48 @@ export class SessionStore extends FileStore
         this.changeListeners.forEach((listener) => listener());
     }
 
-    /** What a watcher named: a file kept with another text, a new file or one gone; or a folder that came or went, read again and watched whole. */
-    private recheck(path: string): void
+    /**
+     * Whether what a watcher named changed outside the session (OUT-1): a file of a campaign kept with another text, or gone; or a new one, missing from the
+     * listing of a folder that holds it. The session's own writes are kept as they are written, so they never differ.
+     */
+    private isOutside(path: string, now: { text: string | undefined; } | undefined): boolean
     {
-        let now: string | undefined;
+        if (now === undefined || ![...this.roots].some((root) => isInside(root, path))) {
+            return false;
+        }
 
-        try {
-            now = readText(path);
-        } catch {
+        const kept = this.kept.get(path);
+
+        if (kept !== undefined) {
+            return kept.text !== now.text;
+        }
+
+        return now.text !== undefined && [...this.listings].some(([folder, listing]) => isInside(folder, path) && !listing.includes(path));
+    }
+
+    /** Notes the files changed outside the session, with their text as it kept them; first who reads the world as it was, once for those that come together. */
+    private noteOutside(paths: string[]): void
+    {
+        if (paths.length > 0) {
+            this.beforeOutside?.();
+        }
+
+        for (const path of paths.filter((one) => !this.outside.has(one))) {
+            this.outside.set(path, this.kept.get(path)?.text);
+        }
+    }
+
+    /** What a watcher named: a file kept with another text, a new file or one gone; or a folder that came or went, read again and watched whole. */
+    private recheck(path: string, read: { text: string | undefined; } | undefined): void
+    {
+        if (read === undefined) {
             // A folder, or a file being written: what is under it is read again, and a new folder is watched.
             this.forgetUnder(path);
             this.roots.forEach((root) => this.watchFolders(root));
             return;
         }
+
+        const now = read.text;
 
         // Only a name that is gone may be a folder watched, or one that held what is kept: looked for only then.
         const under = `${path}${sep}`;
@@ -253,6 +310,10 @@ export class SessionStore extends FileStore
         this.changes = 0;
         const paths = [...this.kept.keys()].filter((path) => [...this.roots].some((root) => isInside(root, path)));
         const texts = await Promise.all(paths.map((path) => readFile(path, "utf8").catch(() => undefined)));
+        // The files that came into a folder listed, which the session did not write: new, outside it (OUT-1).
+        const listed = [...this.listings].filter(([folder]) => [...this.roots].some((root) => folder === root || isInside(root, folder)));
+        const added = listed.flatMap(([folder, listing]) => filesIn(folder, () => true).filter((path) => !listing.includes(path) && !this.kept.has(path)));
+        this.noteOutside([...paths.filter((path, index) => this.kept.get(path)?.text !== texts[index]), ...new Set(added)]);
 
         paths.forEach((path, index) => {
             if (this.kept.get(path)?.text !== texts[index]) {
@@ -297,4 +358,14 @@ function watchWithNode(folder: string, changed: (name: string | undefined) => vo
     const watcher = watch(folder, { persistent: false }, (_event, name) => changed(name === null ? undefined : String(name)));
     watcher.on("error", failed);
     return watcher;
+}
+
+/** A file's text as it is now, none for a file gone; undefined for a folder, or a file being written, which cannot be read. */
+function readNow(path: string): { text: string | undefined; } | undefined
+{
+    try {
+        return { text: readText(path) };
+    } catch {
+        return undefined;
+    }
 }

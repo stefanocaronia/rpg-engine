@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
+import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
@@ -13,6 +14,7 @@ import { withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { startInstructions } from "./instructions/index.ts";
+import type { World } from "./pages/index.ts";
 import { codexPictures } from "./pictures/index.ts";
 
 type AnyCommand = Command<any, any>;
@@ -46,6 +48,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     const askingTools: RegisteredTool[] = [];
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
+    // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
+    const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : () => [];
 
     // Before each call, once the files are read again: the dashboard opens, and its page asks the player too, so the asking tools are there, forms or not (ASK-1, D-279).
     const prepare = async (): Promise<void> => {
@@ -57,7 +61,7 @@ export function createMcpServer(context: Context = defaultContext(), environment
     };
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare));
+        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside));
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -154,10 +158,11 @@ function toolConfig(command: AnyCommand)
     return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
 }
 
-async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>): Promise<CallToolResult>
+async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>, outside: () => string[]): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
+    let changedOutside: string[] = [];
     // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
     const told = new Set(context.told);
 
@@ -176,14 +181,16 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
             return { content: [{ type: "text", text: [...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
         }
 
+        // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
+        changedOutside = outside();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
         const text = command.format(await command.run(input, { ...context, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.();
-        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...back.begun, text].join("\n\n") }] };
+        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };
     } catch (error) {
         news ??= context.news?.();
-        return { content: [{ type: "text", text: [...(news?.lines ?? []), error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
+        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
     } finally {
         clearInterval(keepAlive);
 
@@ -194,6 +201,39 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
             told.forEach((name) => context.told?.add(name));
         }
     }
+}
+
+/**
+ * What changed outside the chat's commands since its last call (OUT-1–OUT-4): the world as it was is read before the session lets the changes in, so that the
+ * events they set off fire; at the server's first call, the files changed while no chat was open.
+ */
+function watchOutside(context: Context, session: SessionStore): () => string[]
+{
+    let before: World | undefined;
+    let first = true;
+
+    const inCampaign = <T>(work: (root: string) => T, none: T): T => {
+        try {
+            return withFiles(session, () => {
+                const root = findCampaign(context.folder);
+                return root === undefined ? none : work(root);
+            });
+        } catch {
+            // A campaign that does not read now: the command says why.
+            return none;
+        }
+    };
+
+    session.beforeOutsideChanges(() => {
+        before ??= inCampaign((root) => campaignWorld(root, context), undefined);
+    });
+
+    return () => {
+        const lines = inCampaign((root) => [...(first ? whileClosedNews(root, context) : []), ...outsideNews(root, context, session.takeOutsideChanges(), before)], []);
+        first = false;
+        before = undefined;
+        return lines;
+    };
 }
 
 /**

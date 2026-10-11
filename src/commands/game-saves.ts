@@ -256,7 +256,8 @@ function gameFiles(root: string): string[]
     });
 }
 
-function isGameFile(root: string, path: string): boolean
+/** Whether a path is one of the game's files: in the campaign, not the host's nor under a name with a dot at its top (SAV-2). */
+export function isGameFile(root: string, path: string): boolean
 {
     return isInside(root, path) && isGameName(relative(root, path).split(sep)[0]);
 }

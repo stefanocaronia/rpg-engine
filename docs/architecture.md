@@ -109,6 +109,7 @@ Many derived values are cached in `WeakMap`s keyed by the frozen `World` or `Pag
 - Game systems are read once per session; the server does not see changes to them until it restarts.
 - 250 ms after the host initializes, the server preloads the world of the campaign in its folder, and brings its host files up to date (`refreshHostFiles`): the start lines in `AGENTS.md`, `CLAUDE.md`, Claude Code's, Codex's and Gemini CLI's settings.
 - `onChange(listener)` calls back whenever a watcher names a change or loses track of a folder, for the dashboard's notices.
+- What changed outside the session's own writes, by hand, by another chat or by the command line, is noted with its text before: a file kept with another text, gone, or new in a folder listed (`OUT-1`). `beforeOutsideChanges(hook)` lets the MCP server read the world before such changes are let in; `takeOutsideChanges()` gives them once. [commands/game-outside.ts](../src/commands/game-outside.ts) makes of them what the master hears at the head of the next call, each page's fields before and after and whether its text changed, campaign.yaml's and state.yaml's keys, new and gone files, at most ten; logs a hidden `changed-outside` line by `outside`; and fires the planned events they set off (`OUT-2`, `OUT-3`). At a server's first call, the files of world, rules and campaign.yaml written after the log's last line are named, as changed while no chat was open (`whileClosedNews`, `OUT-4`, D-364).
 
 ### Logging and output
 

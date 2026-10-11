@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { type ChildProcessByStdio, spawn } from "node:child_process";
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ import { SessionStore } from "../src/core/session-store.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
-import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let client: Client;
@@ -334,6 +334,86 @@ describe("MCP server, with the files of a session (D-193)", () => {
     });
 });
 
+describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () => {
+    it("tells the master at the next call what changed by hand, each page's fields and text, logs it hidden and fires the events it set off", async () => {
+        // The real clock: what changed while no chat was open is told by the time of the log's last line (OUT-4).
+        const context = { ...testContext(folder), now: () => new Date() };
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        inPlay(folder);
+        const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...context, files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+        const tool = async (name: string, args: Record<string, unknown>): Promise<string> => ((await host.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
+
+        try {
+            await tool("instructions", {});
+            await tool("write", { page: "Bruna", type: "character", set: { role: "pc", hp: "12/12" }, text: "Una guerriera." });
+            await tool("write", { page: "Varro", type: "character", set: { role: "npc" } });
+            await tool("write", { page: "La vendetta del fratello", type: "event", set: { when: "[[Varro]] dead" } });
+            expect(await tool("status", {})).not.toContain("Changed outside");
+
+            // By hand, as in Obsidian: a number and the text of a page, a death, a new page, a setting.
+            const bruna = join(folder, "world", "characters", "Bruna.md");
+            writeFileSync(bruna, readFileSync(bruna, "utf8").replace("hp: 12/12", "hp: 7/12").replace("Una guerriera.", "Una guerriera ferita."));
+            const varro = join(folder, "world", "characters", "Varro.md");
+            writeFileSync(varro, readFileSync(varro, "utf8").replace("role: npc", "role: npc\nstatus: dead"));
+            writeFileSync(join(folder, "world", "places", "Cortile.md"), "---\ntype: place\n---\n");
+            writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("difficulty: normal", "difficulty: hard"));
+
+            // The next call checks everything, as instructions does: what changed comes first, with the events it set off.
+            const told = await tool("instructions", {});
+            expect(told).toMatch(/^Changed outside this chat since your last call, by hand or elsewhere \(the log keeps it, hidden\): /);
+            expect(told).toContain("Bruna: hp 12/12 → 7/12, and its text");
+            expect(told).toContain("Varro: status — → dead");
+            expect(told).toContain("campaign.yaml: difficulty normal → hard");
+            expect(told).toContain("new: Cortile");
+            expect(told).toMatch(/Take it as the game's truth, and go on from it\.\n\nNow due: La vendetta del fratello/);
+            const log = readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line));
+            expect(log.filter((entry) => entry.type === "changed-outside").at(-1)).toMatchObject({
+                by: "outside",
+                visibility: "hidden",
+                data: { files: expect.arrayContaining([{ file: "world/characters/Bruna.md", fields: { hp: ["12/12", "7/12"] }, text: true }]) },
+            });
+            expect(log.at(-1)).toMatchObject({ type: "event-due", visibility: "hidden", data: { event: "La vendetta del fratello" } });
+            // Once: the next call says nothing of it, and what rpg writes itself is never outside.
+            await tool("write", { page: "Bruna", set: { hp: "9/12" } });
+            expect(await tool("status", {})).not.toContain("Changed outside");
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+
+    it("names at a chat's first call the files changed while no chat was open (OUT-4)", async () => {
+        // The real clock: what changed while no chat was open is told by the time of the log's last line (OUT-4).
+        const context = { ...testContext(folder), now: () => new Date() };
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], context);
+        const bruna = join(folder, "world", "characters", "Bruna.md");
+        writeFileSync(bruna, `${readFileSync(bruna, "utf8")}\nScritto a mano.\n`);
+        const later = new Date(Date.now() + 60_000);
+        utimesSync(bruna, later, later);
+        const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...context, files: session }).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+        const tool = async (name: string, args: Record<string, unknown>): Promise<string> => ((await host.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
+
+        try {
+            expect(await tool("instructions", {})).toMatch(
+                /^Changed outside rpg while no chat was open \(the log keeps it, hidden\): world\/characters\/Bruna\.md\. Read those that matter with show\./,
+            );
+            expect(await tool("status", {})).not.toContain("Changed outside");
+        } finally {
+            await host.close();
+            session.close();
+        }
+    });
+});
+
 describe("MCP server, loading a save in a session (SAV-5)", () => {
     it("reads the campaign as the save gave it back, at the very next call", async () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
@@ -361,7 +441,10 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
             expect(await tool("save", { action: "new chat" })).toBe("The game goes on in this chat, from save 1 - save, as status gives it: tell nothing of what came after.");
             expect(await tool("instructions", {})).not.toContain("The game went back");
             expect(await tool("save", { action: "new chat" })).toBe("The game did not go back since the last chat began: there is nothing to confirm. Go on with the story.");
-            expect(await tool("status", {})).toContain("hp 12/12");
+            // What the load wrote is rpg's own: never told as changed outside (OUT-1).
+            const after = await tool("status", {});
+            expect(after).toContain("hp 12/12");
+            expect(after).not.toContain("Changed outside");
             expect(await tool("show", { page: "Lia" })).toContain("There is no page named Lia");
             expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
 
