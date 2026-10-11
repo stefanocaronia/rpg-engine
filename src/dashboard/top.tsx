@@ -249,6 +249,20 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
     );
 }
 
+/** In the setup, which has no sections (D-379): whether the game is live and the switch of the theme, small at the top right. */
+export function SetupCorner({ live }: { live: boolean; })
+{
+    const [theme, flip] = useTheme();
+    return (
+        <div class="setup-corner">
+            <StatusChips live={live} />
+            <button type="button" class="icon-button tonal tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
+                <Icon name={theme.next === "dark" ? "moon" : "sun"} />
+            </button>
+        </div>
+    );
+}
+
 /** The switch between the light and the dark theme (D-300, D-310): the window's corner, with the theme it goes to. */
 function ThemeCorner()
 {

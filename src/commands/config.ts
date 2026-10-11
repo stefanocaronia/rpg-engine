@@ -164,7 +164,12 @@ export interface PlayerSetting
     about: string;
     value?: string;
     items?: string[];
-    choices?: { value: string; means?: string; }[];
+    /** Its values, each with what it means to the player, and in the setup the words that answer its question, as a little for hints (D-370). */
+    choices?: { value: string; means?: string; label?: string; }[];
+    /** In the setup, the value the game suggests, never chosen for the player (D-370). */
+    suggested?: string;
+    /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
+    question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
 }
@@ -239,8 +244,17 @@ const setupWords: Record<string, { about: string; values?: readonly string[]; me
     name: { about: "the campaign's name" },
 };
 
-// The setup's questions, in the order the player meets them on the dashboard: how the game plays, how it is learned and rolled, who comes along, then the limits.
-const setupOrder = ["difficulty", "lethality", "saves", "rigor", "mentor", "dice", "units", "companions", "preparation"];
+// The setup's questions, in the order the player meets them on the dashboard: how well they know the game, how it plays, how it is rolled, who comes along,
+// then the limits.
+const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "units", "companions", "preparation"];
+
+// The mentor as the setup asks it (D-347): how well the player knows the game, each answer a way of the mentor, from the newest player's.
+const mentorAnswers: Record<string, string> = { tutorial: "never played it", hints: "a little", off: "I know it" };
+
+// The values the game suggests in the setup, as the design has them by default (D-370): never chosen for the player.
+const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", preparation: "on the fly" };
+// The lethality the difficulty suggests (D-141).
+const suggestedLethality: Record<string, string> = { story: "narrative", easy: "epic" };
 
 /**
  * The setup's questions as the dashboard asks them (D-370), each with its value or items, if answered, and its values with what each means: the player's
@@ -256,7 +270,20 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     };
 
     const system = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
-    return [...setupOrder.filter((name) => name !== "preparation" || !writtenWorld), ...system, "lines", "veils"].flatMap(named);
+    const difficulty = readSettings(root).difficulty;
+    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }) };
+    return [...setupOrder.filter((name) => name !== "preparation" || !writtenWorld), ...system, "lines", "veils"].flatMap(named).map((question) => ({
+        ...(question.name === "mentor" ? mentorQuestion(question) : question),
+        ...(suggested[question.name] === undefined ? {} : { suggested: suggested[question.name] }),
+    }));
+}
+
+/** The mentor as the setup asks it (D-347): how well the player knows the game, never played it first. */
+function mentorQuestion(question: PlayerSetting): PlayerSetting
+{
+    const order = Object.keys(mentorAnswers);
+    const choices = (question.choices ?? []).map((choice) => ({ ...choice, label: mentorAnswers[choice.value] })).sort((one, other) => order.indexOf(one.value) - order.indexOf(other.value));
+    return { ...question, question: "How well do you know this game?", about: "the master teaches it as much as you need", choices };
 }
 
 /** A setting only the setup lets the dashboard change (D-370): how companions come, the preparation, the name; undefined for any other. */
@@ -291,7 +318,7 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
     const own = (campaignSystem(root, context)?.settings ?? []).map((setting): PlayerSetting => {
         const value = systemSettingValue(root, setting);
         const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
-        return { name: setting.name, about: "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
+        return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
     });
     return [
         ...playerSettingNames.map((name): PlayerSetting => {

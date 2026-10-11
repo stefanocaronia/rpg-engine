@@ -1,5 +1,5 @@
 // The player's notes (D-371), a tab of the Journal: free notes, a title and a text each, saved by themselves as the player writes, kept outside the game; one may
-// be shared with the master, who hears it at their next call.
+// be shared with the master, who hears it at their next call, and taken back until then (D-381).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Note, readNotes, sendNote } from "./api.ts";
 import { Icon } from "./icons.tsx";
@@ -8,20 +8,58 @@ import { realTimeLabel } from "./labels.ts";
 // How long the page waits after the last key before it saves a note, in milliseconds.
 const savePause = 800;
 
-export function Notes()
+export function Notes({ version }: { version: number; })
 {
     const [notes, setNotes] = useState<Note[]>();
+    // The notes shared that the master has not heard yet, as the game says them: read again whenever the campaign changes.
+    const [pending, setPending] = useState<Set<string>>(new Set());
     const [problem, setProblem] = useState<string>();
-    const [made, setMade] = useState<string>();
+    // The note whose title takes the focus, a new one or the one after a note taken away, each time anew.
+    const [focus, setFocus] = useState<{ id: string; }>();
+    // The notes just made here and still empty: New note goes back to one rather than making another.
+    const empty = useRef(new Set<string>());
+    const newNote = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
-        void readNotes().then(setNotes, (error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
-    }, []);
+        void readNotes().then(
+            (read) => {
+                setNotes((before) => before ?? read.notes);
+                setPending(new Set(read.pending));
+            },
+            (error: unknown) => setProblem(error instanceof Error ? error.message : String(error)),
+        );
+    }, [version]);
 
     const add = (): void => {
+        const waiting = notes?.find((note) => empty.current.has(note.id));
+
+        if (waiting !== undefined) {
+            setFocus({ id: waiting.id });
+            return;
+        }
+
         const note = { id: newNoteId(), title: "", text: "", at: new Date().toISOString() };
+        empty.current.add(note.id);
         setNotes((all) => [note, ...(all ?? [])]);
-        setMade(note.id);
+        setFocus({ id: note.id });
+    };
+
+    const removed = (id: string): void => {
+        const at = notes?.findIndex((note) => note.id === id) ?? -1;
+        const rest = notes?.filter((note) => note.id !== id) ?? [];
+        const next = rest[Math.min(at, rest.length - 1)];
+        empty.current.delete(id);
+        setNotes(rest);
+
+        if (next === undefined) {
+            newNote.current?.focus();
+        } else {
+            setFocus({ id: next.id });
+        }
+    };
+
+    const waiting = (id: string, still: boolean): void => {
+        setPending((before) => new Set(still ? [...before, id] : [...before].filter((one) => one !== id)));
     };
 
     if (problem !== undefined) {
@@ -29,10 +67,10 @@ export function Notes()
     }
 
     return (
-        <div class="notes">
-            <div class="notes-head">
-                <p class="notes-about">Names, clues, what you suspect. The master does not read them: share one when you want them to know.</p>
-                <button type="button" class="save-button gold" onClick={add} disabled={notes === undefined}>
+        <div class="player-notes">
+            <div class="player-notes-head">
+                <p class="player-notes-about">Names, clues, what you suspect. The master does not read them: share one when you want them to know.</p>
+                <button ref={newNote} type="button" class="save-button gold" onClick={add} disabled={notes === undefined}>
                     <Icon name="plus" /> New note
                 </button>
             </div>
@@ -43,8 +81,11 @@ export function Notes()
                         <NoteCard
                             key={note.id}
                             note={note}
-                            fresh={note.id === made}
-                            onRemoved={() => setNotes((all) => all?.filter((one) => one.id !== note.id))}
+                            pending={pending.has(note.id)}
+                            focus={focus?.id === note.id ? focus : undefined}
+                            onWritten={() => empty.current.delete(note.id)}
+                            onPending={(still) => waiting(note.id, still)}
+                            onRemoved={() => removed(note.id)}
                         />
                     ))}
                 </div>
@@ -53,33 +94,67 @@ export function Notes()
     );
 }
 
-/** A note as its card shows it, to write in: its title and text saved a moment after the last key, when the card is left, and before it is shared. */
-function NoteCard({ note, fresh, onRemoved }: { note: Note; fresh: boolean; onRemoved(): void; })
+/**
+ * A note as its card shows it, to write in: its title and text saved a moment after the last key, when the card is left, before it is shared, and when the page
+ * is hidden or closed; when it was written; Share, then Shared with Undo until the master hears it, then Read.
+ */
+function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
+    note: Note;
+    pending: boolean;
+    focus?: { id: string; };
+    onWritten(): void;
+    onPending(still: boolean): void;
+    onRemoved(): void;
+})
 {
     const [title, setTitle] = useState(note.title);
     const [text, setText] = useState(note.text);
     const [at, setAt] = useState(note.at);
-    const [status, setStatus] = useState<string>();
+    const [shared, setShared] = useState(note.shared);
+    const [saved, setSaved] = useState(false);
+    // Told to a screen reader too: what went wrong.
+    const [said, setSaid] = useState<string>();
     const [removing, setRemoving] = useState(false);
     const titleField = useRef<HTMLInputElement>(null);
+    const trash = useRef<HTMLButtonElement>(null);
+    const keepButton = useRef<HTMLButtonElement>(null);
     // What is written and not saved yet, and whether the note was ever sent to be saved: an empty new note is never written, and one sent is taken away there too.
-    const pending = useRef<{ title: string; text: string; } | undefined>(undefined);
-    const saved = useRef(note.title !== "" || note.text !== "");
+    const unsaved = useRef<{ title: string; text: string; } | undefined>(undefined);
+    const sent = useRef(note.title !== "" || note.text !== "");
     const timer = useRef<number | undefined>(undefined);
 
-    const save = async (): Promise<boolean> => {
+    // What is waiting to be saved, as it goes; undefined when nothing needs to go.
+    const take = (): { id: string; title: string; text: string; } | undefined => {
         window.clearTimeout(timer.current);
-        const written = pending.current;
-        pending.current = undefined;
+        const written = unsaved.current;
+        unsaved.current = undefined;
 
-        if (written === undefined || (!saved.current && written.title.trim() === "" && written.text.trim() === "")) {
+        if (written === undefined || (!sent.current && written.title.trim() === "" && written.text.trim() === "")) {
+            return undefined;
+        }
+
+        sent.current = true;
+        return { id: note.id, ...written };
+    };
+
+    const save = async (): Promise<boolean> => {
+        const change = take();
+
+        if (change === undefined) {
             return true;
         }
 
-        saved.current = true;
-        const problem = await sendNote({ id: note.id, title: written.title, text: written.text });
+        const problem = await sendNote(change);
         setAt(new Date().toISOString());
-        setStatus(problem ?? "Saved");
+
+        // Written again, a note is no longer shared: the master would hear the words before.
+        if (problem === undefined) {
+            setShared(undefined);
+            onPending(false);
+        }
+
+        setSaved(problem === undefined);
+        setSaid(problem);
         return problem === undefined;
     };
 
@@ -87,8 +162,9 @@ function NoteCard({ note, fresh, onRemoved }: { note: Note; fresh: boolean; onRe
         const next = { title: change.title ?? title, text: change.text ?? text };
         setTitle(next.title);
         setText(next.text);
-        pending.current = next;
-        setStatus(undefined);
+        unsaved.current = next;
+        setSaved(false);
+        onWritten();
         window.clearTimeout(timer.current);
         timer.current = window.setTimeout(() => void save(), savePause);
     };
@@ -99,33 +175,86 @@ function NoteCard({ note, fresh, onRemoved }: { note: Note; fresh: boolean; onRe
         }
 
         const problem = await sendNote({ share: note.id });
-        setStatus(problem ?? "Shared: the master hears it at their next call.");
+        setSaid(problem);
+
+        if (problem === undefined) {
+            setShared(new Date().toISOString());
+            onPending(true);
+        }
+    };
+
+    const unshare = async (): Promise<void> => {
+        const problem = await sendNote({ unshare: note.id });
+        setSaid(problem);
+        onPending(false);
+
+        if (problem === undefined) {
+            setShared(undefined);
+        }
+    };
+
+    const keep = (): void => {
+        setRemoving(false);
+        // The trash comes back after the question: the focus goes to it once it is drawn.
+        window.setTimeout(() => trash.current?.focus());
     };
 
     const remove = async (): Promise<void> => {
         window.clearTimeout(timer.current);
-        pending.current = undefined;
-        const problem = saved.current ? await sendNote({ remove: note.id }) : undefined;
+        unsaved.current = undefined;
+        const problem = sent.current ? await sendNote({ remove: note.id }) : undefined;
 
         if (problem === undefined) {
+            onPending(false);
             onRemoved();
         } else {
-            setStatus(problem);
-            setRemoving(false);
+            setSaid(problem);
+            keep();
         }
     };
 
     useEffect(() => {
-        if (fresh) {
+        if (focus !== undefined) {
             titleField.current?.focus();
         }
+    }, [focus]);
 
-        // Leaving the tab or the page saves what is still pending.
-        return () => void save();
+    // Asked whether to delete it, Keep takes the focus.
+    useEffect(() => {
+        if (removing) {
+            keepButton.current?.focus();
+        }
+    }, [removing]);
+
+    // A page hidden or closed saves what is waiting at once, the request outliving the page; leaving the tab saves it too.
+    useEffect(() => {
+        const leave = (): void => {
+            const change = take();
+
+            if (change !== undefined) {
+                void sendNote(change, true);
+            }
+        };
+
+        const hidden = (): void => {
+            if (document.visibilityState === "hidden") {
+                leave();
+            }
+        };
+
+        window.addEventListener("pagehide", leave);
+        document.addEventListener("visibilitychange", hidden);
+
+        return () => {
+            window.removeEventListener("pagehide", leave);
+            document.removeEventListener("visibilitychange", hidden);
+            void save();
+        };
     }, []);
 
-    const when = realTimeLabel(at);
+    const written = realTimeLabel(at);
     const empty = title.trim() === "" && text.trim() === "";
+    const waiting = shared !== undefined && pending;
     return (
         <article class="note-card" aria-label={title.trim() === "" ? "Note" : title.trim()} onFocusOut={(event) => !event.currentTarget.contains(event.relatedTarget as Node | null) && void save()}>
             <input
@@ -147,23 +276,59 @@ function NoteCard({ note, fresh, onRemoved }: { note: Note; fresh: boolean; onRe
                 aria-label={title.trim() === "" ? "The note" : `The note ${title.trim()}`}
                 onInput={(event) => write({ text: event.currentTarget.value })}
             />
+            <p class="note-said" role="alert">{said}</p>
             <footer class="note-foot">
-                {when !== undefined && saved.current && <time class="note-when" dateTime={at} data-tip={when.full}>{when.short}</time>}
-                <span class="note-status" role="status">{status}</span>
+                <span class="note-when">
+                    {written !== undefined && sent.current ? written.short : ""}
+                    {saved && <span aria-hidden="true">· Saved</span>}
+                </span>
                 {removing
                     ? (
-                        <span class="note-remove">
+                        <span
+                            class="note-remove"
+                            onKeyDown={(event) => {
+                                if (event.key === "Escape") {
+                                    keep();
+                                }
+                            }}
+                        >
                             Delete it?
-                            <button type="button" class="save-button" autoFocus onClick={() => setRemoving(false)}>Keep</button>
+                            <button ref={keepButton} type="button" class="save-button" onClick={keep}>Keep</button>
                             <button type="button" class="save-button danger" onClick={() => void remove()}>Delete</button>
                         </span>
                     )
                     : (
                         <>
-                            <button type="button" class="save-button" disabled={empty} onClick={() => void share()}>
-                                <Icon name="send" /> Share with the master
-                            </button>
-                            <button type="button" class="icon-button tip-left" aria-label="Delete the note" data-tip="Delete" onClick={() => setRemoving(true)}>
+                            <span class="note-state" role="status">
+                                {waiting && (
+                                    <span class="note-chip" data-tip="The master hears it at their next call">
+                                        <Icon name="send" /> Shared
+                                    </span>
+                                )}
+                                {shared !== undefined && !pending && (
+                                    <span class="note-chip read" data-tip="The master has read it">
+                                        <Icon name="check" /> Read
+                                    </span>
+                                )}
+                            </span>
+                            {waiting
+                                ? (
+                                    <button type="button" class="icon-button" aria-label="Take it back from the master" data-tip="Take it back" onClick={() => void unshare()}>
+                                        <Icon name="undo" />
+                                    </button>
+                                )
+                                : shared !== undefined
+                                ? (
+                                    <button type="button" class="icon-button" aria-label="Share it again with the master" data-tip="Share again" disabled={empty} onClick={() => void share()}>
+                                        <Icon name="send" />
+                                    </button>
+                                )
+                                : (
+                                    <button type="button" class="save-button note-share" aria-label="Share with the master" data-tip="Share with the master" disabled={empty} onClick={() => void share()}>
+                                        <Icon name="send" /> Share
+                                    </button>
+                                )}
+                            <button ref={trash} type="button" class="icon-button note-trash tip-left" aria-label="Delete the note" data-tip="Delete" onClick={() => setRemoving(true)}>
                                 <Icon name="clear" />
                             </button>
                         </>

@@ -1,5 +1,5 @@
 // Someone's sheet (D-273, D-276, D-284): a band with their line and effects, then the system's groups as cards, those of a few short numbers in a rail beside
-// the others, and the page's text as a card of its own; a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
+// the others, and the page's text as a card of its own, where the player writes their own character's story (D-373); a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
 // (FOR-8). While the master asks a roll, the number its check names lights up and answers it (D-330, ASK-12). A companion who keeps no sheet shows the stat
 // block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
@@ -13,6 +13,7 @@ import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.t
 import { Markdown, plainLine } from "./markdown.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
+import { StoryBox } from "./story.tsx";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The card of the page's text, after the system's groups.
@@ -22,7 +23,16 @@ const descriptionCard = "Description";
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
 
 export function MemberSheet(
-    { member, headline, sheet, cards, text, version, onRoll }: { member: Member; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; version: number; onRoll: FreeRoll; },
+    { member, headline, sheet, cards, text, story, version, onRoll }: {
+        member: Member;
+        headline?: string;
+        sheet: SheetGroup[];
+        cards?: SheetCards;
+        text: string;
+        story?: string;
+        version: number;
+        onRoll: FreeRoll;
+    },
 )
 {
     const { rail, others } = arrangedGroups(sheet, cards);
@@ -51,9 +61,10 @@ export function MemberSheet(
                 {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
                 <div class="groups">
                     {others.map(group)}
-                    {text.trim() !== "" && (
+                    {(text.trim() !== "" || story !== undefined) && (
                         <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(text)}>
-                            <Markdown text={text} />
+                            {text.trim() !== "" && <Markdown text={text} />}
+                            {story !== undefined && <StoryBox story={story} />}
                         </Card>
                     )}
                 </div>

@@ -16,23 +16,35 @@ export interface Note
     text: string;
     /** When it was last written, in real time. */
     at: string;
+    /** When it was last shared with the master, if it was since it was written. */
+    shared?: string;
 }
 
-/** The player's notes, the last written first; none when there are none, or when the file does not read. */
+/**
+ * The player's notes, the last written first, as the disk has them, which another chat may have written; none when there is no file. A file that does not read
+ * stops here, so that no note is ever written over it.
+ */
 export function readNotes(root: string): Note[]
 {
-    const text = files().fresh(notesPath(root));
+    const bytes = files().bytes(notesPath(root));
 
-    if (text === undefined) {
+    if (bytes === undefined) {
         return [];
     }
+
+    let read: unknown;
 
     try {
-        const read: unknown = JSON.parse(text);
-        return (Array.isArray(read) ? read : []).filter(isNote).toSorted((one, other) => other.at.localeCompare(one.at));
+        read = JSON.parse(new TextDecoder().decode(bytes));
     } catch {
-        return [];
+        read = undefined;
     }
+
+    if (!Array.isArray(read) || !read.every(isNote)) {
+        throw new Error(`Your notes in ${join(playerFolderName, notesFileName)} do not read: fix the file by hand, or move it away to start again. Nothing changed.`);
+    }
+
+    return read.toSorted((one, other) => other.at.localeCompare(one.at));
 }
 
 /** Writes a note, new or changed, by its id. */
@@ -63,5 +75,6 @@ function notesPath(root: string): string
 function isNote(value: unknown): value is Note
 {
     const note = value as Partial<Note> | null;
-    return note !== null && typeof note === "object" && typeof note.id === "string" && typeof note.title === "string" && typeof note.text === "string" && typeof note.at === "string";
+    return note !== null && typeof note === "object" && typeof note.id === "string" && typeof note.title === "string" && typeof note.text === "string" && typeof note.at === "string"
+        && (note.shared === undefined || typeof note.shared === "string");
 }

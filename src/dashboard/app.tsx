@@ -24,7 +24,7 @@ import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { restoreTheme } from "./theme.ts";
-import { Top } from "./top.tsx";
+import { SetupCorner, Top } from "./top.tsx";
 import { WorldView } from "./world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
@@ -46,6 +46,8 @@ interface Shown
     sheet: SheetGroup[];
     cards?: SheetCards;
     text: string;
+    /** The player character's opening text, when the player may write it (D-373). */
+    story?: string;
     rolls: ShownRoll[];
     /** How many public rolls the log has, past those read. */
     rollsTotal: number;
@@ -135,6 +137,7 @@ function App()
                     sheet: page?.kind === "page" ? page.sheet : [],
                     cards: page?.kind === "page" ? page.cards : undefined,
                     text: page?.kind === "page" ? page.text : "",
+                    story: page?.kind === "page" ? page.story : undefined,
                     rolls,
                     rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
                     masterMood: overview.kind === "overview" ? overview.master?.mood : undefined,
@@ -255,6 +258,7 @@ function App()
                         yourTurn={yourTurn}
                     />
                 )}
+                {inSetup && <SetupCorner live={live} />}
                 <Notices notices={notices} />
                 {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
                 {inSetup ? <SetupView setup={setup} /> : (
@@ -302,6 +306,7 @@ function App()
                                         sheet={shown.sheet}
                                         cards={shown.cards}
                                         text={shown.text}
+                                        story={shown.story}
                                         version={shown.version}
                                         onRoll={throwFromSheet}
                                     />

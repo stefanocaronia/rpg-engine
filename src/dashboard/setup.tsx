@@ -1,6 +1,6 @@
 // The Setup view (D-343, D-370): while the campaign is in its setup, the page is its first configuration, as a portal's: the robot as the host, the campaign's
-// name to change, the three steps, and one question at a time, its choices large with what each means, as Settings has them; a choice can be left to the
-// master. The master hears each choice at their next call (D-341), and the premise and the world stay in the chat.
+// name to change, the three steps, and one question at a time, its choices large with what each means and the one the game suggests, as Settings has them; a
+// choice can be left to the master. The master hears each choice at their next call (D-341), and the premise and the world stay in the chat.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { changeSetting, readSetup, sendSetupWord, type SetupView as Setup } from "./api.ts";
 import type { PlayerSetting } from "./data.ts";
@@ -10,9 +10,11 @@ import { Master } from "./master.tsx";
 
 // The steps of a campaign before play (MOD-1).
 const steps = [{ mode: "setup", name: "Settings" }, { mode: "session zero", name: "Session zero" }, { mode: "play", name: "Play" }];
-// The lists of the setup, answered with items or with none.
+// The lists of the setup, answered with items or with none: limits are the player's alone, never left to the master.
 const lists = new Set(["lines", "veils"]);
 const examples: Record<string, string> = { lines: "e.g. spiders", veils: "e.g. torture" };
+// How long the arrows rest on a choice before it goes to the game, in milliseconds: the game is changed once.
+const keyRest = 700;
 
 /** The setup, read again whenever the campaign changes; undefined until read, or when it cannot be. */
 export function useSetup(version: number): Setup | undefined
@@ -31,21 +33,33 @@ export function useSetup(version: number): Setup | undefined
 export function SetupView({ setup }: { setup: Setup; })
 {
     const questions = setup.questions;
-    // The first question without an answer, once: the player moves on from there.
-    const [at, setAt] = useState(() => Math.max(0, questions.findIndex((question) => !answered(question))));
-    const [left, setLeft] = useState<Set<string>>(new Set());
+    // The choices left to the master, as the game keeps them until the master makes them, and those just left here.
+    const [leftHere, setLeftHere] = useState<Set<string>>(new Set());
+    const left = new Set([...(setup.left ?? []), ...leftHere].filter((name) => questions.some((question) => question.name === name && !answered(question))));
+    // The first question still open, once: the player moves on from there; with none, the last card.
+    const [at, setAt] = useState(() => {
+        const first = questions.findIndex((question) => !answered(question) && !(setup.left ?? []).includes(question.name));
+        return first < 0 ? questions.length : first;
+    });
+    // Whether the player moved among the cards: then the new card's title takes the focus, never at the first reading.
+    const [moved, setMoved] = useState(false);
     const [said, setSaid] = useState<string>();
     const done = at >= questions.length;
     const question = questions[Math.min(at, questions.length - 1)];
     const step = steps.findIndex((one) => one.mode === setup.mode);
+
+    const go = (index: number): void => {
+        setMoved(true);
+        setAt(index);
+    };
 
     const leave = async (name: string): Promise<void> => {
         const refused = await sendSetupWord({ leave: name });
         setSaid(refused);
 
         if (refused === undefined) {
-            setLeft((before) => new Set([...before, name]));
-            setAt(at + 1);
+            setLeftHere((before) => new Set([...before, name]));
+            go(at + 1);
         }
     };
 
@@ -71,22 +85,23 @@ export function SetupView({ setup }: { setup: Setup; })
                     question={question}
                     count={`${at + 1} of ${questions.length}`}
                     left={left.has(question.name)}
-                    onBack={at > 0 ? () => setAt(at - 1) : undefined}
-                    onNext={() => setAt(at + 1)}
+                    focus={moved}
+                    onBack={at > 0 ? () => go(at - 1) : undefined}
+                    onNext={() => go(at + 1)}
                     onLeave={() => void leave(question.name)}
                     onProblem={setSaid}
                 />
             )}
-            {done && <Ready setup={setup} onBack={() => setAt(questions.length - 1)} onProblem={setSaid} />}
+            {done && <Ready setup={setup} left={left} focus={moved} onGo={go} onProblem={setSaid} />}
             <ol class="setup-dots" aria-label="Questions">
                 {questions.map((one, index) => (
                     <li key={one.name}>
                         <button
                             type="button"
-                            class={[answered(one) || left.has(one.name) ? "answered" : "", index === at ? "here" : ""].filter((name) => name !== "").join(" ")}
+                            class={[answered(one) ? "answered" : left.has(one.name) ? "left" : "", index === at ? "here" : ""].filter((name) => name !== "").join(" ")}
                             aria-label={`${phraseLabel(fieldLabel(one.name))}${answered(one) ? ": answered" : left.has(one.name) ? ": left to the master" : ""}`}
                             aria-current={index === at ? "step" : undefined}
-                            onClick={() => setAt(index)}
+                            onClick={() => go(index)}
                         />
                     </li>
                 ))}
@@ -96,11 +111,15 @@ export function SetupView({ setup }: { setup: Setup; })
     );
 }
 
-/** One question as its card shows it: what it is, its choices large with what the chosen one means, or a list's items; back, next, or left to the master. */
-function Question({ question, count, left, onBack, onNext, onLeave, onProblem }: {
+/**
+ * One question as its card shows it: what it is, its choices large with what each means and the one the game suggests, or a list's items; back, next, or left
+ * to the master. Its title takes the focus when the player moved to it.
+ */
+function Question({ question, count, left, focus, onBack, onNext, onLeave, onProblem }: {
     question: PlayerSetting;
     count: string;
     left: boolean;
+    focus: boolean;
     onBack?: () => void;
     onNext(): void;
     onLeave(): void;
@@ -108,40 +127,107 @@ function Question({ question, count, left, onBack, onNext, onLeave, onProblem }:
 })
 {
     const [picked, setPicked] = useState<string>();
+    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; }>();
+    const heading = useRef<HTMLHeadingElement>(null);
     const value = picked ?? question.value;
-    const title = phraseLabel(fieldLabel(question.name));
+    const title = question.question ?? phraseLabel(fieldLabel(question.name));
     const id = `setup-${question.name.replace(/[^a-z0-9]+/gi, "-")}`;
+    const isList = lists.has(question.name);
+    const open = value === undefined && question.items === undefined && !left;
 
-    const pick = (choice: string): void => {
+    useEffect(() => {
+        if (focus) {
+            heading.current?.focus();
+        }
+
+        // A choice the arrows left resting goes when the card closes.
+        return () => {
+            if (resting.current !== undefined) {
+                clearTimeout(resting.current.timer);
+                void changeSetting({ setting: question.name, value: resting.current.choice }).then(onProblem);
+            }
+        };
+    }, []);
+
+    // A click chooses at once; the arrows show each choice and send the one they rest on.
+    const pick = (choice: string, byKey: boolean): void => {
         setPicked(choice);
-        void changeSetting({ setting: question.name, value: choice }).then(onProblem);
+        clearTimeout(resting.current?.timer);
+        resting.current = undefined;
+
+        if (!byKey) {
+            void changeSetting({ setting: question.name, value: choice }).then(onProblem);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            resting.current = undefined;
+            void changeSetting({ setting: question.name, value: choice }).then(onProblem);
+        }, keyRest);
+        resting.current = { choice, timer };
     };
 
     return (
         <article class="setup-card" aria-labelledby={id}>
             <p class="setup-count">{count}</p>
-            <h2 id={id}>{title}</h2>
+            <h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
             <p class="setup-about">{phraseLabel(question.about)}</p>
-            {question.choices !== undefined && (
-                <div class="setup-choices" role="radiogroup" aria-labelledby={id}>
-                    {question.choices.map((choice) => (
-                        <button key={choice.value} type="button" role="radio" aria-checked={value === choice.value} class="setup-choice" onClick={() => pick(choice.value)}>
-                            <strong>{phraseLabel(choice.value)}</strong>
-                            {choice.means !== undefined && <span>{phraseLabel(choice.means)}</span>}
-                        </button>
-                    ))}
-                </div>
-            )}
-            {lists.has(question.name) && <ListQuestion question={question} onProblem={onProblem} />}
+            {question.choices !== undefined && <Choices question={question} value={value} labelledBy={id} onPick={pick} />}
+            {isList && <ListQuestion question={question} onProblem={onProblem} />}
             {left && value === undefined && <p class="setup-left">Left to the master: they choose, and tell you.</p>}
             <div class="setup-moves">
-                {onBack !== undefined && <button type="button" class="setup-button" onClick={onBack}>Back</button>}
-                {value === undefined && question.items === undefined && !left && <button type="button" class="setup-button quiet" onClick={onLeave}>You decide</button>}
-                <button type="button" class="setup-button gold" onClick={onNext}>
-                    Next <Icon name="send" />
+                {onBack !== undefined && <button type="button" class="setup-button setup-back" onClick={onBack}>Back</button>}
+                {open && !isList && <button type="button" class="setup-button quiet" onClick={onLeave}>You decide</button>}
+                <button type="button" class={open ? "setup-button quiet" : "setup-button gold"} onClick={onNext}>
+                    {open ? "Skip" : "Next"} <Icon name="send" />
                 </button>
             </div>
         </article>
+    );
+}
+
+/** A question's choices as a radio group: one stop of Tab, the arrows move among them and choose; each with what it means, the suggested one marked. */
+function Choices({ question, value, labelledBy, onPick }: { question: PlayerSetting; value?: string; labelledBy: string; onPick(choice: string, byKey: boolean): void; })
+{
+    const choices = question.choices ?? [];
+    const at = choices.findIndex((choice) => choice.value === value);
+    const stop = at >= 0 ? at : Math.max(0, choices.findIndex((choice) => choice.value === question.suggested));
+
+    const move = (event: KeyboardEvent): void => {
+        const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+
+        if (step === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        const buttons = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("button")];
+        const from = buttons.indexOf(event.target as HTMLElement);
+        const next = ((from >= 0 ? from : stop) + step + choices.length) % choices.length;
+        onPick(choices[next].value, true);
+        buttons[next]?.focus();
+    };
+
+    return (
+        <div class="setup-choices" role="radiogroup" aria-labelledby={labelledBy} onKeyDown={move}>
+            {choices.map((choice, index) => (
+                <button
+                    key={choice.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={value === choice.value}
+                    tabIndex={index === stop ? 0 : -1}
+                    class="setup-choice"
+                    onClick={() => onPick(choice.value, false)}
+                >
+                    <strong>
+                        {phraseLabel(choice.label ?? choice.value)}
+                        {choice.value === question.suggested && <span class="setup-suggested">Suggested</span>}
+                    </strong>
+                    {choice.means !== undefined && <span>{phraseLabel(choice.means)}</span>}
+                </button>
+            ))}
+        </div>
     );
 }
 
@@ -149,6 +235,7 @@ function Question({ question, count, left, onBack, onNext, onLeave, onProblem }:
 function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProblem(problem: string | undefined): void; })
 {
     const [item, setItem] = useState("");
+    const field = useRef<HTMLInputElement>(null);
     const send = (change: Parameters<typeof changeSetting>[0]): void => void changeSetting(change).then(onProblem);
     return (
         <div class="setup-list">
@@ -157,7 +244,15 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                     {(question.items ?? []).map((one) => (
                         <li key={one}>
                             {one}
-                            <button type="button" class="icon-button" aria-label={`Take ${one} off`} onClick={() => send({ setting: question.name, remove: one })}>
+                            <button
+                                type="button"
+                                class="icon-button"
+                                aria-label={`Take ${one} off`}
+                                onClick={() => {
+                                    send({ setting: question.name, remove: one });
+                                    field.current?.focus();
+                                }}
+                            >
                                 <Icon name="close" />
                             </button>
                         </li>
@@ -175,7 +270,15 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                     }
                 }}
             >
-                <input type="text" value={item} maxLength={80} placeholder={`Add, ${examples[question.name] ?? "e.g. …"}`} aria-label={`Add to ${question.name}`} onInput={(event) => setItem(event.currentTarget.value)} />
+                <input
+                    ref={field}
+                    type="text"
+                    value={item}
+                    maxLength={80}
+                    placeholder={`Add, ${examples[question.name] ?? "e.g. …"}`}
+                    aria-label={`Add to ${question.name}`}
+                    onInput={(event) => setItem(event.currentTarget.value)}
+                />
                 <button type="submit" class="setup-button" disabled={item.trim() === ""}>Add</button>
                 {question.items === undefined && <button type="button" class="setup-button quiet" onClick={() => send({ setting: question.name, value: "none" })}>None</button>}
             </form>
@@ -183,19 +286,38 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
     );
 }
 
-/** The last card: the choices made, what the chat still has to settle, and the word that the player is ready. */
-function Ready({ setup, onBack, onProblem }: { setup: Setup; onBack(): void; onProblem(problem: string | undefined): void; })
+/**
+ * The last card: the questions still open, each a chip back to its card; those left to the master; what only the chat settles, as the premise; and the word that
+ * the player is ready.
+ */
+function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Set<string>; focus: boolean; onGo(index: number): void; onProblem(problem: string | undefined): void; })
 {
     const [sent, setSent] = useState(false);
-    const open = setup.questions.filter((question) => !answered(question));
+    const heading = useRef<HTMLHeadingElement>(null);
+    const open = setup.questions.flatMap((question, index) => (answered(question) || left.has(question.name) ? [] : [{ question, index }]));
+    const asked = new Set(setup.questions.map((question) => question.name));
+    const inChat = setup.missing.map((item) => item.split(" (")[0]).filter((name) => !asked.has(name));
+
+    useEffect(() => {
+        if (focus) {
+            heading.current?.focus();
+        }
+    }, []);
+
     return (
         <article class="setup-card" aria-labelledby="setup-ready">
-            <h2 id="setup-ready">{open.length === 0 ? "All set" : "Almost there"}</h2>
-            {open.length > 0 && <p class="setup-about">Still to choose, here or in the chat: {open.map((question) => fieldLabel(question.name)).join(", ")}.</p>}
-            {setup.missing.length > 0 && <p class="setup-about">The master still settles with you in the chat: {setup.missing.map((item) => item.split(" (")[0]).join(", ")}.</p>}
+            <h2 id="setup-ready" ref={heading} tabIndex={-1}>{open.length === 0 ? "All set" : "Almost there"}</h2>
+            {open.length > 0 && (
+                <div class="setup-open">
+                    <span class="setup-open-label">Still open</span>
+                    {open.map(({ question, index }) => <button key={question.name} type="button" class="setup-chip" onClick={() => onGo(index)}>{phraseLabel(fieldLabel(question.name))}</button>)}
+                </div>
+            )}
+            {left.size > 0 && <p class="setup-about">Left to the master: {[...left].map((name) => fieldLabel(name)).join(", ")}.</p>}
+            {inChat.length > 0 && <p class="setup-about">In the chat, with the master: {inChat.map((name) => fieldLabel(name)).join(" · ")}.</p>}
             {sent ? <p class="setup-left">The master knows: write to them in the chat, and the story begins.</p> : (
                 <div class="setup-moves">
-                    <button type="button" class="setup-button" onClick={onBack}>Back</button>
+                    <button type="button" class="setup-button setup-back" onClick={() => onGo(setup.questions.length - 1)}>Back</button>
                     <button
                         type="button"
                         class="setup-button gold"
@@ -213,19 +335,33 @@ function Ready({ setup, onBack, onProblem }: { setup: Setup; onBack(): void; onP
     );
 }
 
-/** The campaign's name, with a pencil to change it, as the master hears (D-370). */
+/** The campaign's name, with a pencil to change it, as the master hears (D-370); Esc leaves it as it was. */
 function CampaignName({ name }: { name: string; })
 {
     const [editing, setEditing] = useState(false);
     const [text, setText] = useState(name);
+    const pencil = useRef<HTMLButtonElement>(null);
+    const field = useRef<HTMLInputElement>(null);
+    const wasEditing = useRef(false);
 
     useEffect(() => setText(name), [name]);
+
+    // The field takes the focus; back from it, the pencil.
+    useEffect(() => {
+        if (editing) {
+            field.current?.focus();
+        } else if (wasEditing.current) {
+            pencil.current?.focus();
+        }
+
+        wasEditing.current = editing;
+    }, [editing]);
 
     if (!editing) {
         return (
             <p class="setup-name">
                 <span>{name}</span>
-                <button type="button" class="icon-button" aria-label="Change the campaign's name" onClick={() => setEditing(true)}>
+                <button ref={pencil} type="button" class="icon-button" aria-label="Change the campaign's name" onClick={() => setEditing(true)}>
                     <Icon name="pencil" />
                 </button>
             </p>
@@ -245,7 +381,20 @@ function CampaignName({ name }: { name: string; })
                 setEditing(false);
             }}
         >
-            <input type="text" value={text} maxLength={80} aria-label="The campaign's name" autoFocus onInput={(event) => setText(event.currentTarget.value)} />
+            <input
+                ref={field}
+                type="text"
+                value={text}
+                maxLength={80}
+                aria-label="The campaign's name"
+                onInput={(event) => setText(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                        setText(name);
+                        setEditing(false);
+                    }
+                }}
+            />
             <button type="submit" class="setup-button gold">Save</button>
         </form>
     );

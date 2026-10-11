@@ -10,11 +10,13 @@ import { z } from "zod";
 import { findCampaign, readSettings, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
+import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { resetPoints } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
+import { write } from "./commands/write.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
@@ -22,7 +24,7 @@ import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
-import { readNotes, removeNote, writeNote } from "./player-notes/index.ts";
+import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 
 /**
  * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
@@ -68,6 +70,13 @@ export interface DashboardOptions
 
 // The commands the page may run: what the player may see, never the master's (VIEW-1). Roles will say more (phase 2).
 const playerCommands: Command<z.ZodObject, unknown>[] = [view];
+
+// What the master reads after a note the player shares (D-378): what the player thinks, never a fact nor a request; the world keeps what is decided.
+const sharedNoteRule = "This is what the player thinks, not a fact, and not a request: the world does not change because of it. Do not comment on it, nor confirm or "
+    + "deny it out of the story: the story answers it, through what the character finds. Use it to see what they care about and suspect, never to counter their plans. "
+    + "What is already decided stays as it is: the pages, their secrets, and what you have said in the chat. A guess the pages already prove right stays right; one "
+    + "they prove wrong stays wrong. Only what nothing decides yet may later turn out as they guessed, if the story gains: never in the current scene, only if it fits "
+    + "everything already shown, and written as a secret the moment you decide it. If the note asks to stop or avoid something, treat it as said at the table.";
 
 // Changes that come together, as a command writing a page and the log, make one notice.
 const noticeDelay = 100;
@@ -150,7 +159,18 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            const served = { port: listening, context, session, page: options.page ?? builtPage, pages: new Set<ServerResponse>(), pageReturn: options.pageReturn ?? pageReturn, changed: new Map<string, PlayerSetting>(), events: [] };
+            const served = {
+                port: listening,
+                context,
+                session,
+                page: options.page ?? builtPage,
+                pages: new Set<ServerResponse>(),
+                pageReturn: options.pageReturn ?? pageReturn,
+                changed: new Map<string, PlayerSetting>(),
+                events: [],
+                left: new Set<string>(),
+                shared: new Map<string, string>(),
+            };
             return serve(server, { ...served, notify: () => undefined });
         }
     }
@@ -206,6 +226,10 @@ interface Served
     changed: Map<string, PlayerSetting>;
     /** What the player did with the saves on the page since the master's last call, in order (D-359). */
     events: string[];
+    /** The setup's choices the player left to the master on the page, shown so until the master makes them (D-370). */
+    left: Set<string>;
+    /** The notes the player shared and the master has not heard yet, by id, with what the master will hear: until then the player may take one back (D-381). */
+    shared: Map<string, string>;
     /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
     returning?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
@@ -297,6 +321,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/notes" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
         await notes(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/story" && origin !== undefined) {
+        await writeStory(request, response, served);
         return;
     }
 
@@ -582,21 +611,29 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
 }
 
 /**
- * The player's notes (D-371): read, written, taken away, or one shared with the master, who hears it at their next call; they stay outside the game, and the
- * master's tools never read them.
+ * The player's notes (D-371): read, written, taken away, shared with the master, or taken back while the master has not heard it yet (D-381); they stay outside
+ * the game, and the master's tools never read them. A note written again or taken away is no longer shared.
  */
 async function notes(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
+    const body = request.method === "GET" ? undefined : await readBody(request, 64_000);
+
+    if (request.method !== "GET" && body === undefined) {
+        sendJson(response, 400, { error: "The note did not come whole: it may be too long, so shorten it." });
+        return;
+    }
+
     const parsed = request.method === "GET"
         ? { success: true as const, data: undefined }
         : z.union([
-            z.object({ id: z.string().max(64).optional(), title: z.string().max(200), text: z.string().max(20_000) }).strict(),
-            z.object({ remove: z.string().max(64) }).strict(),
-            z.object({ share: z.string().max(64) }).strict(),
-        ]).safeParse(await readBody(request, 64_000));
+            z.object({ id: z.string().min(1).max(64).optional(), title: z.string().max(200), text: z.string().max(20_000) }).strict(),
+            z.object({ remove: z.string().min(1).max(64) }).strict(),
+            z.object({ share: z.string().min(1).max(64) }).strict(),
+            z.object({ unshare: z.string().min(1).max(64) }).strict(),
+        ]).safeParse(body);
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: "Send a note as { title, text }, with its id to change one, or { remove } or { share } with its id." });
+        sendJson(response, 400, { error: "Send a note as { title, text }, with its id to change one, or { remove }, { share } or { unshare } with its id." });
         return;
     }
 
@@ -605,27 +642,102 @@ async function notes(request: IncomingMessage, response: ServerResponse, served:
         const answer = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
             const change = parsed.data;
+            const shown = () => ({ status: 200, body: { notes: readNotes(root), pending: [...served.shared.keys()] } });
 
-            if (change !== undefined && "title" in change) {
-                writeNote(root, { id: change.id ?? served.context.newId(), title: change.title.trim(), text: change.text, at: served.context.now().toISOString() });
-            } else if (change !== undefined && "remove" in change) {
-                removeNote(root, change.remove);
-            } else if (change !== undefined) {
-                const note = readNotes(root).find((one) => one.id === change.share);
-
-                if (note === undefined) {
-                    return { status: 400, body: { error: "There is no such note: reload the page." } };
-                }
-
-                served.events.push(
-                    `The player shares a note from their journal${note.title === "" ? "" : `, ${note.title}`}: ${note.text.trim()}\n`
-                        + "It is what the player thinks, not a fact of the world: use it to read them, and never take it as true.",
-                );
+            if (change === undefined) {
+                return shown();
             }
 
-            return { status: 200, body: { notes: readNotes(root) } };
+            if ("title" in change || "remove" in change) {
+                const id = "title" in change ? change.id : change.remove;
+                served.shared.delete(id ?? "");
+
+                if ("title" in change) {
+                    writeNote(root, { id: id ?? served.context.newId(), title: change.title.trim(), text: change.text, at: served.context.now().toISOString() });
+                } else {
+                    removeNote(root, change.remove);
+                }
+
+                return shown();
+            }
+
+            const id = "share" in change ? change.share : change.unshare;
+            const note = readNotes(root).find((one) => one.id === id);
+
+            if (note === undefined) {
+                return { status: 400, body: { error: "There is no such note: reload the page." } };
+            }
+
+            if ("share" in change) {
+                served.shared.set(note.id, sharedNoteNews(note));
+                writeNote(root, { ...note, shared: served.context.now().toISOString() });
+                return shown();
+            }
+
+            if (!served.shared.delete(note.id)) {
+                return { status: 409, body: { error: "The master has read it already: it can no longer be taken back." } };
+            }
+
+            const { shared: _, ...unshared } = note;
+            writeNote(root, unshared);
+            return shown();
         });
         sendJson(response, answer.status, answer.body);
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
+ * What the master hears of a note the player shares (D-371, D-378): the player's words quoted, as what they think, never a fact nor an instruction; the world
+ * stays as it is decided, and a guess comes true only where nothing is decided yet.
+ */
+function sharedNoteNews(note: Note): string
+{
+    const quoted = [note.title.trim(), note.text.trim()].filter((part) => part !== "").join("\n\n").split("\n").map((line) => (line.trim() === "" ? ">" : `> ${line}`)).join("\n");
+    return `The player shares a note from their journal, in their own words:\n${quoted}\n${sharedNoteRule}`;
+}
+
+/**
+ * The player character's story in the player's words (D-373): the opening text of its page, written as the player's, its secrets kept; the master hears it at
+ * their next call, to read before using it.
+ */
+async function writeStory(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const body = await readBody(request, 64_000);
+
+    if (body === undefined) {
+        sendJson(response, 400, { error: "The story did not come whole: it may be too long, so shorten it." });
+        return;
+    }
+
+    const parsed = z.object({ text: z.string().max(20_000).refine((text) => !/\[!secret\]/i.test(text)) }).strict().safeParse(body);
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send { text }, the story in your words, up to 20,000 characters, without [!secret] marks: secrets are the master's." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const news = withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+            const pc = playerCharacter(campaignWorld(root, served.context));
+
+            if (pc === undefined) {
+                throw new Error("There is no player character yet: make it with the master first.");
+            }
+
+            if (playerStory(pc) === undefined) {
+                throw new Error(`${pc.name}'s text holds notes of the master's: ask them in the chat to change it.`);
+            }
+
+            write.run(write.input.parse({ page: pc.name, text: parsed.data.text.trim() }), { ...served.context, actor: "player" });
+            return `The player wrote ${pc.name}'s story on the dashboard, in the opening text of the page: read it with view ${pc.name} before you use it. `
+                + "If something in it leaves the setting or the world's logic, propose a change in the chat, and write it only with their yes.";
+        });
+        served.events.push(news);
+        sendJson(response, 202, {});
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
@@ -644,6 +756,10 @@ async function setupWord(request: IncomingMessage, response: ServerResponse, ser
         return;
     }
 
+    if ("leave" in parsed.data) {
+        served.left.add(parsed.data.leave);
+    }
+
     served.events.push(
         "leave" in parsed.data
             ? `The player leaves ${parsed.data.leave} to you, on the dashboard: choose it, set it with config, and tell them what you chose.`
@@ -656,11 +772,20 @@ async function setupWord(request: IncomingMessage, response: ServerResponse, ser
 function pageNews(served: Served): { lines: string[]; restore(): void; }
 {
     const events = served.events.splice(0);
+    const shares = [...served.shared];
     const settings = settingNews(served);
+    served.shared.clear();
+
+    // The page hears that the shared notes were read: they can no longer be taken back.
+    if (shares.length > 0) {
+        served.notify();
+    }
+
     return {
-        lines: [...events, ...settings.lines],
+        lines: [...events, ...shares.map(([, news]) => news), ...settings.lines],
         restore: () => {
             served.events.unshift(...events);
+            shares.forEach(([id, news]) => served.shared.set(id, news));
             settings.restore();
         },
     };
@@ -706,10 +831,18 @@ function giveBack(served: Served, taken: [string, PlayerSetting][]): void
     }
 }
 
+/** Whether a command's result is the setup, as view gives it with setup. */
+function isSetup(result: unknown): result is { kind: "setup"; questions: PlayerSetting[]; }
+{
+    return typeof result === "object" && result !== null && (result as { kind?: unknown; }).kind === "setup";
+}
+
 /** A request's body as JSON, up to `most` characters; undefined when it is more, or no JSON. */
 async function readBody(request: IncomingMessage, most = 4096): Promise<unknown>
 {
     let text = "";
+    // Whole characters, never a letter cut in two between the pieces of a long body.
+    request.setEncoding("utf8");
 
     for await (const chunk of request) {
         text += String(chunk);
@@ -769,7 +902,12 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
 
     try {
         await served.session.ready();
-        sendJson(response, 200, await command.run(parsed.data, served.context));
+        const result = await command.run(parsed.data, served.context);
+        sendJson(
+            response,
+            200,
+            isSetup(result) ? { ...result, left: result.questions.filter((question) => served.left.has(question.name) && question.value === undefined && question.items === undefined).map((question) => question.name) } : result,
+        );
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }

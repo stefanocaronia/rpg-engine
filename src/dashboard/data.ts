@@ -290,13 +290,13 @@ export type View =
         /** How many public rolls the log has. */
         rollsTotal?: number;
     }
-    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; }
+    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; story?: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
-    | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
+    | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; left?: string[]; }
     | { kind: "unknown"; text: string; };
 
 /**
@@ -354,7 +354,12 @@ export interface PlayerSetting
     about: string;
     value?: string;
     items?: string[];
-    choices?: { value: string; means?: string; }[];
+    /** Its values, each with what it means to the player, and in the setup the words that answer its question, as a little for hints (D-370). */
+    choices?: { value: string; means?: string; label?: string; }[];
+    /** In the setup, the value the game suggests, never chosen for the player (D-370). */
+    suggested?: string;
+    /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
+    question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
 }

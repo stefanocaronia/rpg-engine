@@ -161,11 +161,13 @@ What the setup asks for the system, with the campaign's own settings (`DAT-10`):
 ```yaml
 settings:
   advancement:
+    about: how your character levels up
     xp: {means: "experience points, as the SRD: …", player: "your character levels up with experience points …"}
     milestones: {means: "the characters rise when the story reaches a milestone …", player: "your character levels up at the big moments of the story", without: [xp]}
 ```
 
 - Each setting has two values or more, each with what it means. `status`, `init` and `config` say it among the settings still missing, and `status` shows its value on the campaign's line at every session; `config` shows what each value means, writes the value given into campaign.yaml and refuses one the system does not have; `validate` reports one written by hand.
+- `about`: what the setting is to the player, in a few words, which the dashboard's Setup and Settings show under its name (D-370); without it, "a setting of the game system". It is the only key that is not a value.
 - `player`: what the value means in the player's words, which the dashboard's Settings shows under it when it is chosen (D-341); without it, the value alone.
 - `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, the experience and rewards of that field say nothing, and `write` says so when one is written. Without a value, nothing is left out.
 

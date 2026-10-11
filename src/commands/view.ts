@@ -17,7 +17,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
-import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter } from "./game-knowledge.ts";
+import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter, playerStory } from "./game-knowledge.ts";
 import { blockingMode, campaignMode, type Mode, modes } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
@@ -117,6 +117,8 @@ export type ViewResult =
         /** Where the dashboard puts the groups of the sheet, as the system says (D-295), and those at hand in a fight (D-315). */
         cards?: { rail: string[]; order: string[]; atHand: string[]; };
         text: string;
+        /** The player character's opening text, which the player may write on the dashboard; left out on other pages, or when the player may not (D-373). */
+        story?: string;
     }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     /** The world map as the player character knows it (VIEW-7). */
@@ -253,6 +255,7 @@ export const view = defineCommand({
             const sheet = speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system));
             const headline = party ? sheetHeadline(world, system, page) : undefined;
             const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
+            const story = page === pc ? playerStory(page) : undefined;
             return {
                 kind: "page",
                 title: `${page.name} (${page.type ?? "page"})`,
@@ -260,6 +263,7 @@ export const view = defineCommand({
                 sheet,
                 ...(cards === undefined ? {} : { cards }),
                 text: knownText(world, knowledge, page),
+                ...(story === undefined ? {} : { story }),
             };
         }
 

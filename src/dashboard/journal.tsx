@@ -59,7 +59,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
                 {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} />}
-                {tab === "notes" && <Notes />}
+                {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">The journal starts with the player character.</p>}
             </div>
         </section>

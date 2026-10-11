@@ -160,7 +160,7 @@ describe("view as data (VIEW-1, D-272)", () => {
         // A setting the game system adds, with its values but not what they mean to the master.
         expect(named("advancement")).toEqual({
             name: "advancement",
-            about: "a setting of the game system",
+            about: "how your character levels up",
             choices: [
                 { value: "xp", means: "your character levels up with experience points, for the foes overcome and what the story rewards" },
                 { value: "milestones", means: "your character levels up at the big moments of the story" },
@@ -228,11 +228,11 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         const setup = JSON.parse(await run("view", "--setup", "--json"));
         expect(setup).toMatchObject({ kind: "setup", mode: "setup", name: "nuova-campagna", folderName: true });
         expect(setup.questions.map((question: { name: string; }) => question.name)).toEqual([
+            "mentor",
             "difficulty",
             "lethality",
             "saves",
             "rigor",
-            "mentor",
             "dice",
             "units",
             "companions",
@@ -241,16 +241,42 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "lines",
             "veils",
         ]);
-        expect(setup.questions[0]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
+        expect(setup.questions[0]).toMatchObject({
+            name: "mentor",
+            question: "How well do you know this game?",
+            about: "the master teaches it as much as you need",
+            choices: [expect.objectContaining({ value: "tutorial", label: "never played it" }), expect.objectContaining({ value: "hints", label: "a little" }), expect.objectContaining({ value: "off", label: "I know it" })],
+        });
+        expect(setup.questions[1]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
+        // The values the game suggests, never chosen for the player; the lethality as the difficulty has it.
+        const suggested = Object.fromEntries(setup.questions.filter((question: { suggested?: string; }) => question.suggested !== undefined).map((question: { name: string; suggested: string; }) => [question.name, question.suggested]));
+        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", preparation: "on the fly" });
+        expect(setup.questions.find((question: { name: string; }) => question.name === "advancement")).toMatchObject({ about: "how your character levels up" });
         expect(setup.questions[7]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
         expect(setup.missing).toContain("companions (none, made with the player, made by the master, met in play)");
         // Once the premise is set, a campaign named after its folder: status asks the master to propose a name.
         await run("config", "premise", "Fantasy cupo");
         expect(await run("status")).toContain("The campaign is still named after its folder, nuova-campagna: propose a name that fits the premise");
+        // With the dashboard open, the master offers the Setup page and asks in the chat only what the page does not.
+        expect(await run("status")).not.toContain("on the dashboard, one at a time");
+        expect((await runCommandLine(["status"], { ...there, dashboard: "http://localhost:5760" })).output).toContain(
+            "The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the premise and the language. "
+                + "Ask the rest only when they leave it to you, or once they say they are ready.",
+        );
 
         const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
         const started = await startDashboard({ ...there, files: session }, session, { ports: [0], page: campaign });
         const port = Number(new URL(started?.url ?? "http://127.0.0.1:0").port);
+        const get = (path: string): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const sent = request({ host: "127.0.0.1", port, path }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                });
+                sent.on("error", fail).end();
+            });
         const post = (path: string, body: unknown): Promise<{ status: number; body: string; }> =>
             new Promise((done, fail) => {
                 const headers = { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
@@ -268,6 +294,8 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             expect((await post("/api/config", { setting: "companions", value: "met in play" })).status).toBe(202);
             expect((await post("/api/config", { setting: "name", value: "La valle delle miniere" })).status).toBe(202);
             expect((await post("/api/setup", { leave: "rigor" })).status).toBe(202);
+            // A choice left to the master stays so on the page until the master makes it.
+            expect(JSON.parse((await get("/api/view?setup=true")).body).left).toEqual(["rigor"]);
             expect((await post("/api/setup", { ready: true })).status).toBe(202);
             expect((await post("/api/setup", { other: 1 })).status).toBe(400);
             const news = started?.news().lines ?? [];
@@ -787,6 +815,43 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         });
     }
 
+    /** A request with a body but no origin, as another program would send it. */
+    function sendWithout(method: string, path: string, body: unknown): Promise<{ status: number; }>
+    {
+        return new Promise((done, fail) => {
+            const sent = request({ host: "127.0.0.1", port, path, method, headers: { "content-type": "application/json" } }, (response) => {
+                response.resume();
+                response.on("end", () => done({ status: response.statusCode ?? 0 }));
+            });
+            sent.on("error", fail).end(JSON.stringify(body));
+        });
+    }
+
+    /** A POST from the page whose body goes in pieces of `size` bytes, a moment apart. */
+    async function sendInPieces(path: string, body: unknown, size: number): Promise<{ status: number; body: string; }>
+    {
+        const bytes = Buffer.from(JSON.stringify(body));
+        let sent: ReturnType<typeof request> | undefined;
+        const answer = new Promise<{ status: number; body: string; }>((done, fail) => {
+            const headers = { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+            sent = request({ host: "127.0.0.1", port, path, method: "POST", headers }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+            });
+            sent.on("error", fail);
+        });
+
+        for (let at = 0; at < bytes.length; at += size) {
+            sent?.write(bytes.subarray(at, at + size));
+            await new Promise((done) => setTimeout(done, 5));
+        }
+
+        sent?.end();
+        return answer;
+    }
+
     /** A page open on the dashboard, waiting for notices. */
     function openPage(): Promise<{ close(): void; }>
     {
@@ -941,10 +1006,10 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     });
 
     it("keeps the player's notes outside the game: written, changed, taken away and shared with the master, never logged nor saved (D-371)", async () => {
-        const notes = async (method: string, body?: unknown): Promise<{ id: string; title: string; text: string; }[]> => {
+        const notes = async (method: string, body?: unknown): Promise<{ id: string; title: string; text: string; shared?: string; }[]> => {
             const answer = await send(method, "/api/notes", body);
             expect(answer.status).toBe(200);
-            return (JSON.parse(answer.body) as { notes: { id: string; title: string; text: string; }[]; }).notes;
+            return (JSON.parse(answer.body) as { notes: { id: string; title: string; text: string; shared?: string; }[]; }).notes;
         };
 
         const logged = readLogFile(folder).length;
@@ -953,15 +1018,40 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const two = await notes("POST", { title: "", text: "La cripta sotto il mulino?" });
         expect(two.map((note) => note.text)).toEqual(["La cripta sotto il mulino?", "Mente sul vino."]);
         expect((await notes("POST", { id: "varro", title: "Varro", text: "Mente sul vino e sul carro." })).find((note) => note.id === "varro")?.text).toBe("Mente sul vino e sul carro.");
-        // Shared, the master hears it at their next call as the player's thought, never as a fact.
-        expect(await notes("POST", { share: "varro" })).toHaveLength(2);
-        expect(dashboard.news().lines).toEqual([
-            "The player shares a note from their journal, Varro: Mente sul vino e sul carro.\n"
-            + "It is what the player thinks, not a fact of the world: use it to read them, and never take it as true.",
-        ]);
+        // Shared, it may be taken back until the master hears it; written again, it is no longer shared.
+        const pending = async (): Promise<string[]> => (JSON.parse((await send("GET", "/api/notes")).body) as { pending: string[]; }).pending;
+        expect((await notes("POST", { share: "varro" })).find((note) => note.id === "varro")).toMatchObject({ shared: expect.any(String) });
+        expect(await pending()).toEqual(["varro"]);
+        expect((await notes("POST", { unshare: "varro" })).find((note) => note.id === "varro")?.shared).toBeUndefined();
+        expect(await pending()).toEqual([]);
+        await notes("POST", { share: "varro" });
+        await notes("POST", { id: "varro", title: "Varro", text: "Mente sul vino e sul carro." });
+        expect(await pending()).toEqual([]);
+        expect(dashboard.news().lines).toEqual([]);
+        // The master hears it at their next call: the player's words quoted, what they think, never a fact nor a request; then it is theirs to keep.
+        await notes("POST", { share: "varro" });
+        const heard = dashboard.news().lines;
+        expect(heard).toHaveLength(1);
+        expect(heard[0]).toMatch(/^The player shares a note from their journal, in their own words:\n> Varro\n>\n> Mente sul vino e sul carro\.\nThis is what the player thinks, not a fact, and not a request:/);
+        expect(heard[0]).toContain("What is already decided stays as it is: the pages, their secrets, and what you have said in the chat.");
+        const late = await send("POST", "/api/notes", { unshare: "varro" });
+        expect(late.status).toBe(409);
+        expect(JSON.parse(late.body)).toEqual({ error: "The master has read it already: it can no longer be taken back." });
         expect(await notes("POST", { remove: two[0].id })).toEqual([expect.objectContaining({ id: "varro" })]);
         expect((await send("POST", "/api/notes", { share: "nessuna" })).status).toBe(400);
         expect((await send("POST", "/api/notes", { title: "Senza testo" })).status).toBe(400);
+        expect((await send("POST", "/api/notes", { id: "", title: "", text: "Vuota" })).status).toBe(400);
+        const long = await send("POST", "/api/notes", { title: "", text: "\u0001".repeat(11_000) });
+        expect(long.status).toBe(400);
+        expect(JSON.parse(long.body)).toEqual({ error: "The note did not come whole: it may be too long, so shorten it." });
+        // Only the page writes them: a request with no origin is refused.
+        expect((await send("GET", "/api/notes", undefined)).status).toBe(200);
+        expect((await sendWithout("POST", "/api/notes", { title: "", text: "Da fuori" })).status).toBe(405);
+        // A long body that comes in pieces keeps each letter whole, even one cut between two pieces.
+        const accents = "è".repeat(3000);
+        expect((await sendInPieces("/api/notes", { id: "accenti", title: "", text: accents }, 1001)).status).toBe(200);
+        expect((await notes("GET")).find((note) => note.id === "accenti")?.text).toBe(accents);
+        await notes("POST", { remove: "accenti" });
         expect(readLogFile(folder)).toHaveLength(logged);
         // A save leaves them out, and going back leaves them as they are.
         expect((await send("POST", "/api/config", { setting: "saves", value: "free" })).status).toBe(202);
@@ -971,6 +1061,27 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await notes("POST", { id: "dopo", title: "Dopo il salvataggio", text: "Resta." });
         expect((await send("POST", "/api/saves", { action: "load", save: 1 })).status).toBe(202);
         expect((await notes("GET")).map((note) => note.id)).toEqual(["dopo", "varro"]);
+    });
+
+    it("writes the player character's story in its opening text as the player's, its secrets kept, and the master hears it (D-373)", async () => {
+        const page = join(folder, "world", "characters", "Ettore.md");
+        await runCommandLine(["write", "Ettore", "--text", "Chierico.\n\n> [!secret] Debito\n> Suo padre deve soldi a Varro."], served);
+        expect(JSON.parse(await ok("view", "Ettore", "--json")).story).toBe("Chierico.");
+        expect(JSON.parse(await ok("view", "Lupa", "--json")).story).toBeUndefined();
+        expect((await send("POST", "/api/story", { text: " Cresciuto al Guado, figlio del traghettatore. " })).status).toBe(202);
+        expect(readFileSync(page, "utf8")).toMatch(/\nCresciuto al Guado, figlio del traghettatore\.\n\n> \[!secret\] Debito\n> Suo padre deve soldi a Varro\.\n?$/);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", by: "player", data: { page: "Ettore" } });
+        expect(dashboard.news().lines).toEqual([
+            "The player wrote Ettore's story on the dashboard, in the opening text of the page: read it with view Ettore before you use it. "
+            + "If something in it leaves the setting or the world's logic, propose a change in the chat, and write it only with their yes.",
+        ]);
+        // Secrets are the master's; an opening with the master's comments is theirs to change, in the chat.
+        expect((await send("POST", "/api/story", { text: "> [!secret] Mio\n> Nascosto." })).status).toBe(400);
+        await runCommandLine(["write", "Ettore", "--text", "Chierico. %%da legare a Varro%%"], served);
+        expect(JSON.parse(await ok("view", "Ettore", "--json")).story).toBeUndefined();
+        const kept = await send("POST", "/api/story", { text: "Altro." });
+        expect(kept.status).toBe(400);
+        expect(JSON.parse(kept.body)).toEqual({ error: "Ettore's text holds notes of the master's: ask them in the chat to change it." });
     });
 
     it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {

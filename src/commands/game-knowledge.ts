@@ -73,6 +73,16 @@ export function knownText(world: World, knowledge: Knowledge, page: Page): strin
 }
 
 /**
+ * The player character's story as the player writes it on the dashboard (D-373): the opening text of its page, without its secrets, which stay the master's;
+ * undefined when it holds comments, the master's notes, which a rewrite would lose.
+ */
+export function playerStory(page: Page): string | undefined
+{
+    const opening = introductionText(page.body);
+    return /%%|<!--/.test(opening) ? undefined : opening;
+}
+
+/**
  * The section or secret of a page the player character knows by this name (VIEW-3): a section whole, with its subsections and the secrets in it it discovered;
  * from a base, only one it knows, or a secret it discovered. Undefined when it knows none.
  */

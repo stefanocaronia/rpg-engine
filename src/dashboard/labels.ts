@@ -167,7 +167,7 @@ export function realTimeLabel(at: string, now = new Date()): { short: string; fu
     }
 
     const language = document.documentElement.lang || undefined;
-    const time = new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date);
+    const time = new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(date);
     const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
     const daysAgo = date.toDateString() === now.toDateString() ? 0 : date.toDateString() === yesterday.toDateString() ? -1 : undefined;
     const day = daysAgo === undefined

@@ -102,40 +102,63 @@ export interface Note
     title: string;
     text: string;
     at: string;
+    shared?: string;
 }
 
-/** A note written, new or changed, by its id; one taken away; or one shared with the master. */
-export type NoteChange = { id: string; title: string; text: string; } | { remove: string; } | { share: string; };
+/** A note written, new or changed, by its id; one taken away; one shared with the master, or taken back before the master hears it. */
+export type NoteChange = { id: string; title: string; text: string; } | { remove: string; } | { share: string; } | { unshare: string; };
 
-/** The player's notes, the last written first (D-371). */
-export async function readNotes(): Promise<Note[]>
+/** The player's notes, the last written first (D-371), and those shared that the master has not heard yet, which may be taken back (D-381). */
+export async function readNotes(): Promise<{ notes: Note[]; pending: string[]; }>
 {
     const response = await fetch("/api/notes");
-    const body = await response.json() as { notes: Note[]; } | { error: string; };
+    const body = await response.json().catch(() => ({ error: `The notes did not come (${response.status}): reload the page.` })) as { notes: Note[]; pending?: string[]; } | {
+        error: string;
+    };
 
     if ("error" in body) {
         throw new Error(body.error);
     }
 
-    return body.notes;
+    return { notes: body.notes, pending: body.pending ?? [] };
 }
 
 // The notes reach the game one after another, in the order they were written.
 let noting: Promise<unknown> = Promise.resolve();
 
-/** Writes, takes away or shares a note (D-371), after those sent before: undefined when done, else what went wrong. */
-export async function sendNote(change: NoteChange): Promise<string | undefined>
+/**
+ * Writes, takes away or shares a note (D-371), after those sent before: undefined when done, else what went wrong. `leaving`, as the page closes, sends it at once,
+ * the request outliving the page.
+ */
+export async function sendNote(change: NoteChange, leaving = false): Promise<string | undefined>
 {
-    const sent = noting.then(async () => {
+    const post = async (): Promise<string | undefined> => {
         try {
-            const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });
-            return response.ok ? undefined : ((await response.json() as { error?: string; }).error ?? "The note was not saved: try again.");
+            const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change), keepalive: leaving });
+            return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The note was not saved: try again.");
         } catch {
             return "The note was not saved: the game is not connected.";
         }
-    });
+    };
+
+    if (leaving) {
+        return post();
+    }
+
+    const sent = noting.then(post);
     noting = sent;
     return sent;
+}
+
+/** Writes the player character's story, the opening text of its page (D-373): undefined when done, else what went wrong. */
+export async function sendStory(text: string): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        return response.status === 202 ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The story was not saved: try again.");
+    } catch {
+        return "The story was not saved: the game is not connected.";
+    }
 }
 
 /** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */

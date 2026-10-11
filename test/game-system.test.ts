@@ -54,6 +54,16 @@ describe("installed systems", () => {
         system(near, "rotto", "title: a broken one\nlanguage: it-\n");
         expect(() => installedSystems([near])).toThrow("cannot be read");
     });
+
+    it("reads what a setting is to the player, its about, apart from its values; a value is never a bare text (D-370, DAT-10)", () => {
+        const settings = "settings:\n  pace:\n    about: how fast the story runs\n    slow: {means: one scene a day}\n    fast: {means: a scene an hour}\n";
+        system(near, "lenta", `title: one of our own\nlanguage: it\n${settings}`);
+        expect(installedSystems([near])[0].settings).toEqual([
+            { name: "pace", about: "how fast the story runs", values: [{ value: "slow", means: "one scene a day", without: [] }, { value: "fast", means: "a scene an hour", without: [] }] },
+        ]);
+        system(near, "lenta", "title: one of our own\nlanguage: it\nsettings:\n  pace:\n    slow: one scene a day\n    fast: {means: a scene an hour}\n");
+        expect(() => installedSystems([near])).toThrow("give about as what the setting is to the player");
+    });
 });
 
 describe("what a fight follows on the dashboard (D-314)", () => {

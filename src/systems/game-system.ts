@@ -114,8 +114,14 @@ const systemSchema = z.object({
     }).strict().optional(),
     settings: z.record(
         z.string().min(1),
-        z.record(z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()).refine(
-            (values) => Object.keys(values).length >= 2,
+        z.record(
+            z.string().min(1),
+            z.union([z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()]),
+        ).refine(
+            (values) => Object.entries(values).every(([key, value]) => (key === "about") === (typeof value === "string")),
+            "give about as what the setting is to the player, in a few words, and each value with what it means, such as {about: how your character levels up, xp: {means: ...}}",
+        ).refine(
+            (values) => Object.keys(values).filter((key) => key !== "about").length >= 2,
             "give at least two values, each with what it means, such as {xp: {means: ...}, milestones: {means: ...}}",
         ),
     ).optional(),
@@ -200,6 +206,8 @@ export interface SheetEntry
 export interface SystemSetting
 {
     name: string;
+    /** What it is to the player, in a few words, as the setup asks it (D-370). */
+    about?: string;
     /** Each value with what it means to the master, and to the player when the system says it, as the dashboard shows it (D-341). */
     values: { value: string; means: string; player?: string; without: string[]; }[];
 }
@@ -575,12 +583,15 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         uses: usesOf(data),
         settings: Object.entries(data.settings ?? {}).map(([setting, values]) => ({
             name: setting,
-            values: Object.entries(values).map(([value, meaning]) => ({
-                value,
-                means: meaning.means,
-                ...(meaning.player === undefined ? {} : { player: meaning.player }),
-                without: meaning.without ?? [],
-            })),
+            ...(typeof values.about === "string" ? { about: values.about } : {}),
+            values: Object.entries(values).flatMap(([value, meaning]) =>
+                typeof meaning === "string" ? [] : [{
+                    value,
+                    means: meaning.means,
+                    ...(meaning.player === undefined ? {} : { player: meaning.player }),
+                    without: meaning.without ?? [],
+                }]
+            ),
         })),
         leftOut: [],
         rewards: Object.entries(data.rewards ?? {}).map(([field, reward]) => {
