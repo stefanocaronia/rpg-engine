@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { Asked, PlayerSetting, View, WorldMap } from "./data.ts";
+import type { Asked, PlayerSetting, ResetPoint, View, WorldMap } from "./data.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
 export type SavesView = Extract<View, { kind: "saves"; }>;
@@ -66,7 +66,7 @@ export async function readSaves(): Promise<SavesView>
 }
 
 /** What the player does with the saves: save now, go back to a save, or start the campaign over, with its name written. */
-export type SavesChange = { action: "make"; label?: string; } | { action: "load"; save: number; } | { action: "reset"; campaign: string; };
+export type SavesChange = { action: "make"; label?: string; } | { action: "load"; save: number; } | { action: "reset"; campaign: string; to?: ResetPoint; };
 
 /** Saves, goes back to a save or starts the campaign over (D-359): undefined when done, else what went wrong, as the engine says it. */
 export async function changeSaves(change: SavesChange): Promise<string | undefined>

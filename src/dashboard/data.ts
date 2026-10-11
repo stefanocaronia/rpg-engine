@@ -294,12 +294,12 @@ export type View =
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
-    | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: boolean; }
+    | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; }
     | { kind: "unknown"; text: string; };
 
 /**
- * A save as the Saves section shows it (D-359): the words that name it and the game date, when it was made in real time, the place the party was in and its
- * picture, whether it is the start, and whether the player may go back to it.
+ * A save as the Saves section shows it (D-359): the words that name it and the game date, when it was made in real time, the place the party was in with its
+ * kind and picture, the point of a reset it is, and whether the player may go back to it (D-361).
  */
 export interface ShownSave
 {
@@ -309,10 +309,14 @@ export interface ShownSave
     date?: string;
     at?: string;
     place?: string;
+    kind?: string;
     picture?: { file: string; version: number; };
-    start: boolean;
+    point?: ResetPoint;
     load: boolean;
 }
+
+/** Where the campaign starts over from (D-361): the start of play, with the same character, or before session zero, to make one again. */
+export type ResetPoint = "start" | "session zero";
 
 /** A setting of the player's, as the Settings section shows it (D-341): what it is, its value or a list's items, and its values with what each means. */
 export interface PlayerSetting

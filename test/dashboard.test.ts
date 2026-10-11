@@ -228,20 +228,20 @@ describe("the saves as the dashboard shows them (D-359)", () => {
             mode: "checkpoint",
             rule: expect.stringMatching(/^With saves checkpoint, load goes back to the last one/),
             saves: [
-                { number: 2, label: "day 1, 18.00 - Due", name: "Due", date: "day 1, 18:00", at: expect.any(String), place: "Cortile", picture, start: false, load: false },
-                { number: 1, label: "day 1, 18.00 - Uno", name: "Uno", date: "day 1, 18:00", at: expect.any(String), place: "Locanda", picture, start: true, load: false },
+                { number: 2, label: "day 1, 18.00 - Due", name: "Due", date: "day 1, 18:00", at: expect.any(String), place: "Cortile", picture, load: false },
+                { number: 1, label: "day 1, 18.00 - Uno", name: "Uno", date: "day 1, 18:00", at: expect.any(String), place: "Locanda", picture, point: "start", load: false },
             ],
             make: false,
-            reset: true,
+            reset: ["start"],
         });
         expect(new Date(saves.saves[0].at).getTime()).not.toBeNaN();
         expect(await ok("view", "--saves")).toBe(
             "2 - day 1, 18.00 - Due, in Cortile (not to go back to)\n1 - day 1, 18.00 - Uno, in Locanda (start) (not to go back to)\n"
                 + "With saves checkpoint, load goes back to the last one, and only once the player character is dead, if the player wants.",
         );
-        // With saves free, every save is one to go back to, and the player may save.
+        // With saves free, every save is one to go back to but the point to start over from, which only a reset goes back to (D-361); and the player may save.
         await ok("config", "saves", "free");
-        expect(JSON.parse(await ok("view", "--saves", "--json"))).toMatchObject({ make: true, reset: true, saves: [{ load: true }, { load: true }] });
+        expect(JSON.parse(await ok("view", "--saves", "--json"))).toMatchObject({ make: true, reset: ["start"], saves: [{ load: true }, { point: "start", load: false }] });
         expect((await runCommandLine(["view", "--saves", "--map"], context)).output).toBe(
             "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map and the settings.",
         );
@@ -723,6 +723,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     });
 
     it("saves, goes back and starts over from the page as save does, as the mode allows, logged as the player's, and the master hears of each (D-359)", async () => {
+        const newChat = "This chat remembers what is gone: ask the player to open a new chat (/clear in Claude Code, a new conversation elsewhere) and to write continua there. Nothing goes on in this one.";
         const refused = await send("POST", "/api/saves", { action: "make" });
         expect(refused.status).toBe(400);
         expect(JSON.parse(refused.body).error).toMatch(/^With saves checkpoint, a save is made by itself at the end of each scene/);
@@ -741,7 +742,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", by: "player", data: { save: 1, removed: [2] } });
         expect(dashboard.news().lines).toEqual([
             "The player went back on the dashboard to save 1 - day 1, 18.00 - Prima del muro: the campaign's files are as they were then, and what happened since is gone from "
-            + "the game, the later saves too. Forget it: call status, and tell the story again from there.",
+            + `the game, the later saves too. ${newChat}`,
         ]);
         // With saves permadeath the game never goes back, but starting over, once the campaign's name is written.
         expect((await send("POST", "/api/config", { setting: "saves", value: "permadeath" })).status).toBe(202);
@@ -753,11 +754,24 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(unnamed.status).toBe(400);
         expect(JSON.parse(unnamed.body)).toEqual({ error: "Write the campaign's name, Guadoscuro, to start it over. Nothing changed." });
         expect(dashboard.news().lines).toEqual([]);
+        const unsaved = await send("POST", "/api/saves", { action: "reset", campaign: "Guadoscuro", to: "session zero" });
+        expect(unsaved.status).toBe(400);
+        expect(JSON.parse(unsaved.body).error).toMatch(/^There is no save before session zero/);
         expect((await send("POST", "/api/saves", { action: "reset", campaign: " guadoscuro " })).status).toBe(202);
         expect(dashboard.news().lines).toEqual([
-            "The player started the campaign over on the dashboard, back to its start, save 1 - day 1, 18.00 - Prima del muro: what happened since is gone from the game, "
-            + "every later save too. Forget it: call status, and start the story again from there.",
+            "The player started the campaign over on the dashboard. Back to the start, 1 - day 1, 18.00 - Prima del muro: the campaign starts over from there with the same "
+            + `character, what happened since gone from the game, every later save too. ${newChat}`,
         ]);
+        // While the master asks the player something, going back waits for the answer (D-361).
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        const waiting = await send("POST", "/api/saves", { action: "reset", campaign: "Guadoscuro" });
+        expect(waiting.status).toBe(409);
+        expect(JSON.parse(waiting.body)).toEqual({ error: "The master is asking you something: answer it first, then go back." });
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 2 })).status).toBe(202);
+        await asking;
+        page.close();
         // Anything else sent changes nothing.
         expect((await send("POST", "/api/saves", { action: "load", save: "last" })).status).toBe(400);
         expect((await send("POST", "/api/saves", { action: "reset" })).status).toBe(400);

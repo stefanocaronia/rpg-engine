@@ -10,6 +10,7 @@ import { z } from "zod";
 import { findCampaign, readSettings, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
+import { resetPoints } from "./commands/game-saves.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -297,7 +298,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") {
-        send(response, 405, "text/plain; charset=utf-8", "The dashboard only gives what the player may see, and takes a click on what the master asks.");
+        send(response, 405, "text/plain; charset=utf-8", "The dashboard only gives what the player may see, and takes a click on what the master asks, the player's settings and their saves.");
         return;
     }
 
@@ -521,13 +522,20 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
     const parsed = z.union([
         z.object({ action: z.literal("make"), label: z.string().trim().max(80).optional() }).strict(),
         z.object({ action: z.literal("load"), save: z.number().int().positive() }).strict(),
-        z.object({ action: z.literal("reset"), campaign: z.string().trim().max(mostSaid) }).strict(),
+        z.object({ action: z.literal("reset"), campaign: z.string().trim().max(mostSaid), to: z.enum(resetPoints).optional() }).strict(),
     ]).safeParse(await readBody(request));
 
     if (!parsed.success) {
         sendJson(response, 400, {
-            error: "Send { action: make } with a label if you like, { action: load, save } with its number, or { action: reset, campaign } with the campaign's name, to start it over.",
+            error: "Send { action: make } with a label if you like, { action: load, save } with its number, or { action: reset, campaign } with the campaign's name, "
+                + "to start it over, and to: start or session zero.",
         });
+        return;
+    }
+
+    // Going back while the master waits for the player's answer would answer it in the game started over (D-361).
+    if (parsed.data.action !== "make" && served.asked !== undefined) {
+        sendJson(response, 409, { error: "The master is asking you something: answer it first, then go back." });
         return;
     }
 
@@ -545,7 +553,7 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
                 ? { action: "make", ...(change.label === undefined || change.label === "" ? {} : { label: change.label }) }
                 : change.action === "load"
                 ? { action: "load", save: String(change.save) }
-                : { action: "reset" };
+                : { action: "reset", ...(change.to === undefined ? {} : { to: change.to }) };
             return playerSaveNews(await save.run(save.input.parse(input), { ...served.context, actor: "player" }));
         });
         served.events.push(news);

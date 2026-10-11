@@ -3,7 +3,7 @@ import { join, relative, resolve, sep } from "node:path";
 import { campaignFileName, hostFileNames, readSettings, saveModes } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { filesIn } from "../core/files.ts";
-import { appendLogEntry, logFileName, logLine } from "../core/log.ts";
+import { appendLogEntry, logFileName, logLine, readLog } from "../core/log.ts";
 import { files, isInside } from "../core/store.ts";
 import { locate, type World } from "../pages/index.ts";
 import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../saves/index.ts";
@@ -19,6 +19,17 @@ export type SaveMode = (typeof saveModes)[number];
 
 // The mark of a load under way, with the number of its save: while it is there, save load finishes it (SAV-5).
 const loadingMarkName = "loading.txt";
+// The mark of a load done, with its save: the chat that was going on remembers what is gone, and only a new chat goes on (SAV-5, D-361).
+const newChatMarkName = "new chat.txt";
+
+/** The points the campaign starts over from (D-361): the start of play, with the same character, or before session zero, to make one again. */
+export const resetPoints = ["start", "session zero"] as const;
+
+export type ResetPoint = (typeof resetPoints)[number];
+
+/** What the master does once the game went back: this chat remembers what is gone, so a new one goes on (D-361). */
+export const newChatText = "This chat remembers what is gone: ask the player to open a new chat (/clear in Claude Code, a new conversation elsewhere) and to write continua "
+    + "there. Nothing goes on in this one.";
 const hostNames = new Set(hostFileNames.map((name) => name.toLowerCase()));
 
 /** The campaign's mode of saves (SAV-1); checkpoint until the setup asks it. A campaign.yaml that cannot be read stops the command, with how to fix it. */
@@ -67,21 +78,23 @@ export function makeSave(root: string, context: Context, label: string | undefin
 }
 
 /**
- * Gives the campaign back as a save holds it (SAV-5): its game files as they were, those made since removed, and the later saves removed; then a public line in
- * the log. What it removes or rewrites goes first into `before load NNN.zip`, never in place of an older one, so that a load can be undone by hand. A save that
+ * Gives the campaign back as a save holds it (SAV-5): its game files as they were, but campaign.yaml, its settings, as it is now (D-360), those made since
+ * removed, and the later saves removed; then a public line in the log, and the mark that the chat going on must give way to a new one (D-361). What it removes or rewrites goes first into `before load NNN.zip`, never in place of an older one, so that a load can be undone by hand. A save that
  * cannot be read, holds a file outside the game's or no campaign.yaml is refused before anything is written; a load that stops halfway leaves its mark, and save
  * load finishes it. Returns the saves removed and the copy made, none when it finishes a load.
  */
 export function loadSave(root: string, context: Context, save: Save): { removed: Save[]; copy?: string; }
 {
-    const targets = Object.entries(readSave(root, save)).map(([path, bytes]) => ({ path: resolve(root, ...path.split("/")), bytes }));
+    const settings = resolve(root, campaignFileName);
+    const targets = Object.entries(readSave(root, save)).map(([path, bytes]) => ({ path: resolve(root, ...path.split("/")), bytes }))
+        .map((target) => (target.path === settings ? { ...target, bytes: files().bytes(settings) ?? target.bytes } : target));
     const stranger = targets.find((target) => !isGameFile(root, target.path));
 
     if (stranger !== undefined) {
         throw new Error(`${save.file} holds ${relative(root, stranger.path)}, which is not one of the game's files: it was not made by rpg. Nothing changed; load another save.`);
     }
 
-    if (!targets.some((target) => target.path === resolve(root, campaignFileName))) {
+    if (!targets.some((target) => target.path === settings)) {
         throw new Error(`${save.file} holds no ${campaignFileName}: it is not a whole save made by rpg. Nothing changed; load another save.`);
     }
 
@@ -121,7 +134,43 @@ export function loadSave(root: string, context: Context, save: Save): { removed:
 
     appendLogEntry(root, newDatedLogEntry(root, context, "save-loaded", "public", { save: save.number, label: save.label, removed: later.length === 0 ? undefined : later.map((other) => other.number) }));
     files().remove(join(folder, loadingMarkName));
+    files().writeBytes(join(folder, newChatMarkName), new TextEncoder().encode(saveText(save)));
     return { removed: later, copy };
+}
+
+/** The save the game went back to since the chat going on began, when it did: that chat remembers what is gone (D-361). */
+export function wentBackTo(root: string): string | undefined
+{
+    const mark = files().bytes(join(root, savesFolderName, newChatMarkName));
+    return mark === undefined ? undefined : new TextDecoder().decode(mark).trim();
+}
+
+/** A new chat begins: the game goes on in it. */
+export function newChatBegun(root: string): void
+{
+    files().remove(join(root, savesFolderName, newChatMarkName));
+}
+
+/** Why each save was made, by its number, as its line in the log says: start, session zero, scene closed or asked. */
+export function savesWhy(root: string): Map<number, string>
+{
+    return new Map(
+        readLog(root).filter((entry) => entry.type === "saved").map((entry) => {
+            const data = entry.data as { save?: unknown; why?: unknown; };
+            return [Number(data.save), String(data.why ?? "")];
+        }),
+    );
+}
+
+/**
+ * The save a reset goes back to (D-361): the one before session zero, or the start of play, else, in a campaign older than the start's save, the first one
+ * made after session zero; undefined when there is none.
+ */
+export function resetSave(saves: Save[], why: Map<number, string>, to: ResetPoint): Save | undefined
+{
+    return to === "session zero"
+        ? saves.find((save) => why.get(save.number) === "session zero")
+        : (saves.find((save) => why.get(save.number) === "start") ?? saves.find((save) => why.get(save.number) !== "session zero"));
 }
 
 /** "before load 003.zip", or "before load 003 (2).zip" when that one is there: a copy before a load never takes the place of another. */
@@ -161,11 +210,14 @@ export function deathNotes(root: string, name: string): string[]
 
     const last = campaignSaves(root).at(-1);
 
+    // Under permadeath, starting over is there once a start was saved (D-359).
     if (mode === "permadeath") {
-        return [
-            `${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, or the campaign started over from its start, `
-            + "if they want to go on; save reset only once they choose it.",
-        ];
+        return resetSave(campaignSaves(root), savesWhy(root), "start") === undefined
+            ? [`${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.`]
+            : [
+                `${name} is dead, and with saves permadeath the game never goes back: offer the player a new character, or the campaign started over from its start, `
+                + "if they want to go on; save reset only once they choose it.",
+            ];
     }
 
     if (last === undefined) {

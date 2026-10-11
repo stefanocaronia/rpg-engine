@@ -353,7 +353,13 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
             await tool("write", { page: "Varro", type: "character", set: { role: "npc" } });
             expect(await tool("status", {})).toContain("hp 7/12");
             await tool("save", { action: "load", save: "1" });
+            // The chat that went on remembers what is gone: nothing runs in it, until a new chat begins with instructions, told once where it starts (D-361).
+            expect(await tool("status", {})).toMatch(/^The game went back to save 1 - save\. This chat remembers what is gone: ask the player to open a new chat /);
+            expect(await tool("write", { page: "Lia", type: "character" })).toContain("Nothing goes on in this one.");
+            expect(await tool("instructions", {})).toMatch(/^The game went back to save 1 - save before this chat: start the story again from there, as status gives it/);
+            expect(await tool("instructions", {})).not.toContain("The game went back");
             expect(await tool("status", {})).toContain("hp 12/12");
+            expect(await tool("show", { page: "Lia" })).toContain("There is no page named Lia");
             expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
 
             // A save holds the files as the disk has them, also those the session read before they were changed by hand, outside world and rules.

@@ -764,10 +764,17 @@ a {
     font-size: 1.4rem;
 }
 
-.saves-lead,
 .saves-none {
     margin: -6px 0 0;
     color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* What the mode allows, tied to it by the gold mark, as Settings says what a value means. */
+.saves-lead {
+    margin: -6px 0 0;
+    padding-left: 8px;
+    border-left: 3px solid var(--gold);
     font-size: 0.9rem;
 }
 
@@ -786,6 +793,10 @@ a {
 .saves-said.problem {
     border-left-color: var(--low);
     background: color-mix(in srgb, var(--low) 10%, var(--panel));
+}
+
+.saves-said:focus {
+    outline: none;
 }
 
 .saves-make {
@@ -848,6 +859,21 @@ a {
     height: 40px;
 }
 
+/* A place without a picture: the mark of its kind, as the world map draws it, on the map's paper, which stays light in both themes. */
+.save-picture.kind {
+    background: #f1e6cc;
+}
+
+.save-kind {
+    width: 56px;
+    height: 56px;
+    fill: none;
+    stroke: #3f2f1f;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .save-badge {
     position: absolute;
     top: 8px;
@@ -860,6 +886,7 @@ a {
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .save-what {
@@ -871,14 +898,32 @@ a {
 }
 
 .save-title {
+    margin: 0;
     overflow-wrap: anywhere;
+    font-size: 1rem;
     font-weight: 650;
 }
 
-.save-place,
-.save-at {
+.save-place {
     color: var(--muted);
     font-size: 0.85rem;
+}
+
+/* A line breaks only between the place and the date, never inside either. */
+.save-place > span {
+    white-space: nowrap;
+}
+
+.save-at {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.save-note {
+    margin: 0 14px 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-style: italic;
 }
 
 .save-card > .save-button {
@@ -998,10 +1043,68 @@ a {
     font-size: 0.85rem;
 }
 
+/* The last step of a question that loses something: the button full, apart from Cancel. */
+.confirm .save-button.danger.final:not(:disabled) {
+    border-color: var(--low);
+    background: var(--low);
+    color: light-dark(#ffffff, var(--on-gold));
+}
+
+/* Starting over with the same character or a new one. */
+.over-choice {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 0;
+    border: 0;
+}
+
+.over-choice legend {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.over-choice label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    cursor: pointer;
+}
+
+.over-choice label:has(input:checked) {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 10%, var(--panel));
+}
+
+.over-choice input {
+    margin-top: 3px;
+    accent-color: var(--gold);
+}
+
+.over-choice label > span {
+    display: grid;
+    gap: 2px;
+}
+
+.over-choice label > span > span {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
 .confirm .save-card.shown {
     grid-template-columns: 112px minmax(0, 1fr);
     grid-template-rows: auto;
     box-shadow: none;
+}
+
+.confirm .save-card.shown .save-badge {
+    top: 6px;
+    left: 6px;
+    font-size: 0.65rem;
 }
 
 .confirm .save-card.shown .save-picture {

@@ -137,7 +137,8 @@ describe("the table of cases of the saves", () => {
         expect(await scene("La caduta")).toMatch(/\nNo save: the player character is dead\. If the player wants to go back, save load, as the campaign's saves setting allows\.$/);
         expect(await ok("save", "load")).toBe(
             "Back to 2 - day 1, 18.00 - Alla locanda: the campaign's files are as they were then, and what happened since is gone from the game. "
-                + "What the load replaced is in .saves/before load 002.zip, to undo it by hand. Call status, and go on from there.",
+                + "What the load replaced is in .saves/before load 002.zip, to undo it by hand. This chat remembers what is gone: ask the player to open a new chat "
+                + "(/clear in Claude Code, a new conversation elsewhere) and to write continua there. Nothing goes on in this one.",
         );
         expect(readFileSync(join(folder, "world", "characters", "Kira.md"), "utf8")).not.toContain("dead");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", visibility: "public", data: { save: 2 } });
@@ -156,28 +157,55 @@ describe("the table of cases of the saves", () => {
         expect(existsSync(join(folder, "world", "characters", "Bran.md"))).toBe(false);
         expect(readFileSync(join(folder, "AGENTS.md"), "utf8")).toBe("il mio testo");
         expect(readFileSync(join(folder, ".obsidian", "app.json"), "utf8")).toBe("{}");
-        // What the load replaced waits in a zip of its own, to undo it by hand.
-        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip"]);
+        // What the load replaced waits in a zip of its own, to undo it by hand; the mark says the chat going on must give way to a new one (D-361).
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip", "new chat.txt"]);
         expect((await rpg("save", "load", "7")).output).toBe('There is no save "7": give its number or last. Saves: 1 - Uno.');
         expect((await rpg("save", "list", "1")).output).toBe("save list does not take save: only load does.");
     });
 
-    it("SAV-5 (D-359): reset goes back to the first save in every mode, the later ones gone; with none it says when the start is saved", async () => {
+    it("SAV-5 (D-359, D-361): reset goes back to the start of play in every mode, or to before session zero; with none it says when they are saved", async () => {
         expect((await rpg("save", "reset")).output).toBe(
             "There are no saves yet: the start is saved when the campaign enters play, and the end of each scene makes one. Nothing changed.",
         );
+        // A campaign in play before the start was saved: its first save is where it starts over.
         await scene("Uno");
         await ok("write", "Bran", "--type", "character", "--set", "role=npc");
         await scene("Due");
         await ok("config", "saves", "permadeath");
         expect(await ok("save", "reset")).toBe(
-            "Back to the start, 1 - Uno: the campaign starts over from there, what happened since gone from the game, every later save too. "
-                + "What the reset replaced is in .saves/before load 001.zip, to undo it by hand. Call status, and start the story again from there.",
+            "Back to the start, 1 - Uno: the campaign starts over from there with the same character, what happened since gone from the game, every later save too. "
+                + `What the reset replaced is in .saves/before load 001.zip, to undo it by hand. This chat remembers what is gone: ask the player to open a new chat (/clear in Claude Code, a new conversation elsewhere) and to write continua there. Nothing goes on in this one.`,
         );
         expect(existsSync(join(folder, "world", "characters", "Bran.md"))).toBe(false);
-        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip"]);
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - Uno.zip", "before load 001.zip", "new chat.txt"]);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "save-loaded", data: { save: 1, removed: [2] } });
+        expect((await rpg("save", "reset", "--to", "session zero")).output).toBe(
+            "There is no save before session zero: this campaign was first saved after it. Start over with reset, to start. Nothing changed.",
+        );
         expect((await rpg("save", "reset", "1")).output).toBe("save reset does not take save: only load does.");
+        expect((await rpg("save", "load", "1", "--to", "start")).output).toBe("save load does not take to: only reset does.");
+    });
+
+    it("SAV-5 (D-360): going back leaves campaign.yaml as it is now: the settings, the player's and the master's", async () => {
+        await ok("config", "saves", "free");
+        await scene("Uno");
+        await ok("config", "difficulty", "hard");
+        await ok("config", "lines", "--add", "ragni");
+        await ok("config", "precedents", "--add", "Nebbia: svantaggio");
+        const settings = readFileSync(join(folder, "campaign.yaml"), "utf8");
+        await ok("save", "load", "1");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(settings);
+        // Starting over too, under any mode the player has now.
+        await ok("config", "saves", "permadeath");
+        await ok("save", "reset");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toMatch(/^saves: permadeath$/m);
+    });
+
+    it("SAV-5 (D-361): a reset never takes the place of a load that stopped halfway", async () => {
+        await scene("Uno");
+        await scene("Due");
+        writeFileSync(join(folder, ".saves", "loading.txt"), "2");
+        expect((await rpg("save", "reset")).output).toBe("A load to 2 - Due stopped halfway: save load finishes it first, then reset. Nothing changed.");
     });
 
     it("SAV-3 (D-359): a save keeps the place the player character was in, the nearest that holds them", async () => {
@@ -208,6 +236,8 @@ describe("the death of the player character (SAV-7)", () => {
         };
 
         expect(await dies("checkpoint")).toContain("Kira is dead, and there is no save to go back to yet: offer the player a new character, if they want to go on.");
+        // Under permadeath, starting over only once a start was saved.
+        expect(await dies("permadeath")).toContain("Kira is dead, and with saves permadeath the game never goes back: offer the player a new character, if they want to go on.");
         await ok("write", "Kira", "--set", "status=alive");
         await scene("Al guado");
         expect(await dies("checkpoint")).toContain("Kira is dead. With saves checkpoint, offer the player to go back to the last save, 1 - Al guado, or a new character; save load only once they choose it.");

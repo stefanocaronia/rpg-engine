@@ -1,6 +1,6 @@
 // The mode of the campaign and the checklists that open each (MECCANICHE, MOD-1–MOD-7; D-77, D-221, D-241): a table of cases, then laws on campaigns made at random.
 import fc from "fast-check";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -95,9 +95,13 @@ describe("the mode (MOD-1–MOD-7)", () => {
         expect(await ok("config", "veils", "none")).toBe('veils: (none)\n\nNothing is missing. When the player confirms: mode, to "session zero".');
         expect(file("campaign.yaml")).toContain("veils: []\n");
         const entered = await ok("mode", "session zero");
-        expect(entered).toMatch(/^The campaign is now in session zero\.\n\n## Session zero\n\nPlay, as with a human game master/);
+        // The first time in session zero, with no save, the state before it is saved: to start over with a new character (SAV-3, D-361).
+        expect(entered).toMatch(
+            /^The campaign is now in session zero\. Its state before session zero is saved, 1 - session zero: the save reset to session zero goes back to, if the player wants to start over with a new character\.\n\n## Session zero\n\nPlay, as with a human game master/,
+        );
         expect(file("state.yaml")).toContain("mode: session zero\n");
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "mode-changed", visibility: "public", data: { from: "setup", to: "session zero" } });
+        expect(readLogFile(folder).at(-2)).toMatchObject({ type: "mode-changed", visibility: "public", data: { from: "setup", to: "session zero" } });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "saved", data: { save: 1, why: "session zero" } });
         expect(await ok("mode", "session zero")).toBe("The campaign is already in session zero.");
     });
 
@@ -125,9 +129,27 @@ describe("the mode (MOD-1–MOD-7)", () => {
         // The part of play comes with it, the core's: this test system adds none (MOD-5).
         // The first time in play, the start is saved: the save reset goes back to (SAV-3, D-359).
         expect(await ok("mode", "play")).toMatch(
-            /^The campaign is now in play\. Its start is saved, 1 - start: the save reset goes back to, if the player wants to start over\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./,
+            /^The campaign is now in play\. Its start is saved, 2 - start: the save reset goes back to, if the player wants to start over\. Open the first scene, and set the game date with advance to, at its hour, such as day 1, 18:00\.\n\n## Play\n\nThe story is on\./,
         );
-        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - start.zip"]);
+        expect(readdirSync(join(folder, ".saves"))).toEqual(["001 - session zero.zip", "002 - start.zip"]);
+        // Starting over with the same character, then with a new one (SAV-5, D-361).
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc");
+        expect(await ok("save", "reset")).toMatch(/^Back to the start, 2 - start: the campaign starts over from there with the same character,/);
+        expect(existsSync(join(folder, "world", "characters", "Kira.md"))).toBe(true);
+        expect(existsSync(join(folder, "world", "characters", "Varro.md"))).toBe(false);
+        expect(await ok("save", "reset", "--to", "session zero")).toMatch(
+            /^Back to before session zero, 1 - session zero: the campaign starts over, the player character to make again in session zero,/,
+        );
+        expect(existsSync(join(folder, "world", "characters", "Kira.md"))).toBe(false);
+        expect(file("state.yaml")).toContain("mode: session zero\n");
+    });
+
+    it("SAV-3 (D-361): a start that cannot be saved never stops the mode, and says so", async () => {
+        await setUp();
+        await ok("write", "Kira", "--type", "character", "--set", "role=pc");
+        mkdirSync(join(folder, ".saves", "001 - start.zip"), { recursive: true });
+        expect(await ok("mode", "play")).toMatch(/^The campaign is now in play\. Its start could not be saved \(.+\): make \.saves a folder that can be written,/);
+        expect(file("state.yaml")).toContain("mode: play\n");
     });
 
     it("MOD-2: the setup is always open, play is not without its checklists, and session zero again makes a new character", async () => {

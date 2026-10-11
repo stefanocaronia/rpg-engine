@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
+import { newChatBegun, newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
 import { type Context, defaultContext, type Player } from "./core/context.ts";
@@ -167,11 +168,19 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
         }
 
         await prepare();
+        // After a load the chat going on remembers what is gone: nothing runs in it, until a new chat begins with instructions (D-361).
+        const back = chatAfterLoad(context, command.name);
+
+        if (back.refused !== undefined) {
+            news = context.news?.();
+            return { content: [{ type: "text", text: [...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
+        }
+
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
         const text = command.format(await command.run(input, { ...context, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.();
-        return { content: [{ type: "text", text: [...(news?.lines ?? []), text].join("\n\n") }] };
+        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...back.begun, text].join("\n\n") }] };
     } catch (error) {
         news ??= context.news?.();
         return { content: [{ type: "text", text: [...(news?.lines ?? []), error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
@@ -185,6 +194,30 @@ async function runTool(command: AnyCommand, input: unknown, context: Context, ex
             told.forEach((name) => context.told?.add(name));
         }
     }
+}
+
+/**
+ * The chat after a load (SAV-5, D-361): one going on when the game went back remembers what is gone, so every call of it is refused; instructions begins a new
+ * chat, which goes on from the save, told so once.
+ */
+function chatAfterLoad(context: Context, command: string): { refused?: string; begun: string[]; }
+{
+    const run = <T>(work: () => T): T => (context.files === undefined ? work() : withFiles(context.files, work));
+    return run(() => {
+        const root = findCampaign(context.folder);
+        const save = root === undefined ? undefined : wentBackTo(root);
+
+        if (root === undefined || save === undefined) {
+            return { begun: [] };
+        }
+
+        if (command !== "instructions") {
+            return { refused: `The game went back to save ${save}. ${newChatText} Do not call instructions here: a new chat begins with it.`, begun: [] };
+        }
+
+        newChatBegun(root);
+        return { begun: [`The game went back to save ${save} before this chat: start the story again from there, as status gives it, and tell nothing of what came after.`] };
+    });
 }
 
 /** Whether the host shows forms (MCP elicitation): before the url mode existed, a capability without modes meant forms. */

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { lengthsInUnits } from "../core/length.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import type { Mood } from "../core/mood.ts";
@@ -19,7 +20,7 @@ import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCha
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
-import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type SaveMode, saveMode } from "./game-saves.ts";
+import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
@@ -120,7 +121,7 @@ export type ViewResult =
     /** The player's settings, which the dashboard changes (D-341). */
     | { kind: "settings"; settings: PlayerSetting[]; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
-    | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: boolean; }
+    | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; }
     | { kind: "unknown"; text: string; };
 
 export const view = defineCommand({
@@ -301,7 +302,7 @@ export const view = defineCommand({
                 return result.settings.map((setting) => `${setting.name}: ${settingText(setting)}`).join("\n");
             case "saves":
                 return [
-                    ...result.saves.map((save) => `${save.number} - ${save.label}${save.place === undefined ? "" : `, in ${save.place}`}${save.start ? " (start)" : ""}${save.load ? "" : " (not to go back to)"}`),
+                    ...result.saves.map((save) => `${save.number} - ${save.label}${save.place === undefined ? "" : `, in ${save.place}`}${save.point === undefined ? "" : ` (${save.point})`}${save.load ? "" : " (not to go back to)"}`),
                     result.rule,
                 ].join("\n");
 
@@ -555,7 +556,7 @@ function settingText(setting: PlayerSetting): string
 
 /**
  * A save as the dashboard shows it (D-359): its number and label, the words that name it and the game date, when it was made in real time, the place the party
- * was in with its picture, whether it is the start, and whether the player may go back to it.
+ * was in with its kind and picture, the point of a reset it is, and whether the player may go back to it, never to such a point, which is a reset's (D-361).
  */
 export interface ShownSave
 {
@@ -565,16 +566,22 @@ export interface ShownSave
     date?: string;
     at?: string;
     place?: string;
+    kind?: string;
     picture?: { file: string; version: number; };
-    start: boolean;
+    point?: ResetPoint;
     load: boolean;
 }
 
-/** The saves, newest first, each with whether the mode lets the player go back to it; whether they may make one, and start over from the first (D-359). */
-function shownSaves(root: string, context: Parameters<typeof campaignWorld>[1]): Extract<ViewResult, { kind: "saves"; }>
+/** The saves, newest first, each with whether the mode lets the player go back to it; whether they may make one, and the points they may start over from (D-359). */
+function shownSaves(root: string, context: Context): Extract<ViewResult, { kind: "saves"; }>
 {
     const mode = saveMode(root);
     const saves = campaignSaves(root);
+    const why = savesWhy(root);
+    const points = new Map(resetPoints.flatMap((point) => {
+        const save = resetSave(saves, why, point);
+        return save === undefined ? [] : [[save.number, point] as const];
+    }));
     const world = campaignWorld(root, context);
     const dead = isPlayerDead(world);
     const made = new Map(readLog(root).filter((entry) => entry.type === "saved").map((entry) => [Number((entry.data as { save?: unknown; }).save), entry]));
@@ -594,24 +601,25 @@ function shownSaves(root: string, context: Parameters<typeof campaignWorld>[1]):
         kind: "saves",
         mode,
         rule: loadRule(mode),
-        saves: saves.map((save, index) => ({
+        saves: saves.map((save) => ({
             number: save.number,
             label: save.label,
             ...madeOf(save.number),
-            start: index === 0,
-            load: loadRefusal(mode, saves, save, dead) === undefined,
+            ...(points.has(save.number) ? { point: points.get(save.number) } : {}),
+            load: !points.has(save.number) && loadRefusal(mode, saves, save, dead) === undefined,
         })).toReversed(),
         make: mode === "free",
-        reset: saves.length > 0,
+        reset: resetPoints.filter((point) => [...points.values()].includes(point)),
     };
 }
 
 /** The place a save was made in, with its picture, else that of the nearest place that holds it, as a room of the inn shows the inn. */
-function savedPlace(root: string, context: Parameters<typeof campaignWorld>[1], world: World, name: string): { place: string; picture?: { file: string; version: number; }; }
+function savedPlace(root: string, context: Context, world: World, name: string): { place: string; kind?: string; picture?: { file: string; version: number; }; }
 {
     const page = pagesWithName(world, name)[0];
+    const kind = page?.fields.kind;
     const picture = page === undefined
         ? undefined
         : [page, ...locate(world, page).chain].map((holder) => shownImage(root, context, world, holder)).find((image) => image !== undefined);
-    return { place: name, ...(picture === undefined ? {} : { picture }) };
+    return { place: name, ...(typeof kind === "string" ? { kind } : {}), ...(picture === undefined ? {} : { picture }) };
 }

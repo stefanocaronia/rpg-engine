@@ -2,7 +2,7 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import type { Save } from "../saves/index.ts";
-import { campaignSaves, interruptedLoad, isPlayerDead, loadRefusal, loadRule, loadSave, makeSave, type SaveMode, saveMode, saveText } from "./game-saves.ts";
+import { campaignSaves, interruptedLoad, isPlayerDead, loadRefusal, loadRule, loadSave, makeSave, newChatText, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, saveText } from "./game-saves.ts";
 import { campaignWorld } from "./game-world.ts";
 
 const actions = ["list", "make", "load", "reset"] as const;
@@ -12,14 +12,15 @@ export type SaveResult =
     | { action: "list"; mode: SaveMode; saves: Save[]; }
     | { action: "make"; save: Save; }
     | { action: "load"; save: Save; removed: Save[]; copy?: string; finished: boolean; }
-    | { action: "reset"; save: Save; removed: Save[]; copy?: string; finished: boolean; };
+    | { action: "reset"; to: ResetPoint; save: Save; removed: Save[]; copy?: string; finished: boolean; };
 
 export const save = defineCommand({
     name: "save",
     description: "The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. "
         + "list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; "
         + "load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. "
-        + "reset goes back to the first save, the campaign's start after session zero, in every mode, permadeath too: the campaign starting over. "
+        + "reset starts the campaign over, in every mode, permadeath too: to start, the start of play with the same character, or to session zero, before it, "
+        + "the character to make again. "
         + "Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. "
         + "Example: action load, save last.",
     group: "game",
@@ -28,6 +29,7 @@ export const save = defineCommand({
         action: z.enum(actions).default("list").describe("list, make, load or reset"),
         label: z.string().optional().describe("make: a few words that name the save, such as before the duel"),
         save: z.string().optional().describe("load: the number of a save, or last"),
+        to: z.enum(resetPoints).optional().describe("reset: start, the start of play with the same character (if left out), or session zero, to make the character again"),
     }),
 
     run(input, context): SaveResult
@@ -49,22 +51,31 @@ export const save = defineCommand({
             return { action: "make", save: makeSave(root, context, input.label?.trim() === "" ? undefined : input.label?.trim(), "asked") };
         }
 
-        // A load that stopped halfway is finished first, whatever the mode: it was allowed when it began (SAV-5).
+        // A load that stopped halfway is finished first, whatever the mode: it was allowed when it began (SAV-5); never in the place of a reset.
         const interrupted = interruptedLoad(root);
+
+        if (interrupted !== undefined && input.action === "reset") {
+            throw new Error(`A load to ${saveText(interrupted)} stopped halfway: save load finishes it first, then reset. Nothing changed.`);
+        }
 
         if (interrupted !== undefined) {
             return { action: "load", save: interrupted, ...loadSave(root, context, interrupted), finished: true };
         }
 
-        // The campaign starting over, from the first save, its start (SAV-5, D-359).
+        // The campaign starting over, from the start of play or from before session zero (SAV-5, D-359, D-361).
         if (input.action === "reset") {
-            const start = saves.at(0);
+            const to = input.to ?? "start";
+            const start = resetSave(saves, savesWhy(root), to);
 
             if (start === undefined) {
-                throw new Error("There are no saves yet: the start is saved when the campaign enters play, and the end of each scene makes one. Nothing changed.");
+                throw new Error(
+                    to === "start"
+                        ? "There are no saves yet: the start is saved when the campaign enters play, and the end of each scene makes one. Nothing changed."
+                        : "There is no save before session zero: this campaign was first saved after it. Start over with reset, to start. Nothing changed.",
+                );
             }
 
-            return { action: "reset", save: start, ...loadSave(root, context, start), finished: false };
+            return { action: "reset", to, save: start, ...loadSave(root, context, start), finished: false };
         }
 
         const chosen = chosenSave(saves, input.save);
@@ -85,15 +96,14 @@ export const save = defineCommand({
 
         if (result.action === "reset") {
             const copy = result.copy === undefined ? "" : ` What the reset replaced is in .saves/${result.copy}, to undo it by hand.`;
-            return `Back to the start, ${saveText(result.save)}: the campaign starts over from there, what happened since gone from the game, every later save too.${copy} `
-                + "Call status, and start the story again from there.";
+            return `${resetText(result.to, result.save)}, what happened since gone from the game, every later save too.${copy} ${newChatText}`;
         }
 
         if (result.action === "load") {
             const removed = result.removed.length === 0 ? "" : ` The later saves are gone: ${result.removed.map((removed) => removed.number).join(", ")}.`;
             const finished = result.finished ? "The load that had stopped halfway is finished. " : "";
             const copy = result.copy === undefined ? "" : ` What the load replaced is in .saves/${result.copy}, to undo it by hand.`;
-            return `${finished}Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed}${copy} Call status, and go on from there.`;
+            return `${finished}Back to ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game.${removed}${copy} ${newChatText}`;
         }
 
         const listed = result.saves.length === 0 ? "No saves yet: one is made at the end of each scene." : `Saves: ${result.saves.map(saveText).join(" · ")}.`;
@@ -122,7 +132,7 @@ function chosenSave(saves: Save[], asked: string | undefined): Save
     return wanted;
 }
 
-function checkParameters(input: { action: (typeof actions)[number]; label?: string; save?: string; }): void
+function checkParameters(input: { action: (typeof actions)[number]; label?: string; save?: string; to?: ResetPoint; }): void
 {
     if (input.label !== undefined && input.action !== "make") {
         throw new Error(`save ${input.action} does not take label: only make does.`);
@@ -130,6 +140,10 @@ function checkParameters(input: { action: (typeof actions)[number]; label?: stri
 
     if (input.save !== undefined && input.action !== "load") {
         throw new Error(`save ${input.action} does not take save: only load does.`);
+    }
+
+    if (input.to !== undefined && input.action !== "reset") {
+        throw new Error(`save ${input.action} does not take to: only reset does.`);
     }
 }
 
@@ -141,11 +155,18 @@ export function playerSaveNews(result: SaveResult): string
             return `The player saved on the dashboard: ${saveText(result.save)}.`;
         case "load":
             return `The player went back on the dashboard to save ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game, `
-                + "the later saves too. Forget it: call status, and tell the story again from there.";
+                + `the later saves too. ${newChatText}`;
         case "reset":
-            return `The player started the campaign over on the dashboard, back to its start, save ${saveText(result.save)}: what happened since is gone from the game, `
-                + "every later save too. Forget it: call status, and start the story again from there.";
+            return `The player started the campaign over on the dashboard. ${resetText(result.to, result.save)}, what happened since gone from the game, every later save too. ${newChatText}`;
         default:
             return "";
     }
+}
+
+/** "Back to the start, 1 - start: the campaign starts over from there with the same character": where a reset went. */
+function resetText(to: ResetPoint, save: Save): string
+{
+    return to === "start"
+        ? `Back to the start, ${saveText(save)}: the campaign starts over from there with the same character`
+        : `Back to before session zero, ${saveText(save)}: the campaign starts over, the player character to make again in session zero`;
 }

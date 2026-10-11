@@ -200,6 +200,8 @@ async function makeDemo(context: Context): Promise<void>
     mkdirSync(join(demoFolder, "images"), { recursive: true });
     copyFileSync(join(import.meta.dirname, "locanda-del-guado.webp"), join(demoFolder, "images", "Locanda del Guado.webp"));
     await rpg("write", "Locanda del Guado", "--set", "image=[[Locanda del Guado.webp]]");
+    // Before session zero, the point to start over from with a new character (D-361).
+    makeSave(demoFolder, context, "session zero", "session zero");
     const ettore = [
         "role=pc",
         "creature=[[Hill Dwarf]]",
