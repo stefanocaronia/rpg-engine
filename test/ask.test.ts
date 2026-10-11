@@ -208,8 +208,20 @@ describe("checks that name the numbers of the sheet (ASK-12)", () => {
         await ask.run(ask.input.parse({ ...named, options: ["Atletica 1d20+5", "Acrobazia 1d20+dex-mod+acrobatics"] }), { ...context, page });
         expect(rows?.fields).toEqual([null, null, null]);
         expect(await refused({ ...named, options: ["Atletica 1d20+athletix"] })).toContain("Bruna has no athletix.");
+        expect(await refused({ ...named, options: ["Furtività 1d20+furtività"] })).toContain("Bruna has no furtività.");
         await rpg("config", "dice", "physical");
         expect(await asked(named, 0)).toContain("Atletica 1d20+2, Acrobazia 1d20+1");
+    });
+});
+
+describe("checks whose dice are written with spaces or a minus, as roll's own advice says (ASK-12)", () => {
+    beforeEach(async () => {
+        await rpg("write", "Bruna", "--set", "str=14");
+    });
+
+    it("takes the dice from the first word that is a die, spaces and a minus included", async () => {
+        await asked({ question: "Il muro", options: ["Atletica 1d20+athletics - 1", "Forza 1d20 + str-mod"], who: "Bruna" }, undefined);
+        expect(shown[0].labels).toEqual(["Tiro: Atletica (1d20+2-1)", "Tiro: Forza (1d20+2)", "Cambio idea"]);
     });
 });
 
@@ -239,7 +251,22 @@ describe("where the player's character moves on the map (ASK-11)", () => {
     it("leaves the character where it is when the player changes their mind, and has the master ask in words without a page", async () => {
         expect(await moved(0)).toBe("The player changed their mind: their character does not move. Ask what they do instead, and stop.");
         const inWords = ask.format(await ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), { ...context, player: playerClicking(0) }));
-        expect(inWords).toContain("ask them in words this time what the call held, which they have not seen: Dove ti sposti? (a square of the map of Sala, such as E4)");
+        expect(inWords).toContain("which they have not seen: Dove ti sposti? (where their character goes in Sala, in the story's words; then move them with move and at to the square that fits)");
+    });
+
+    it("moves no one and logs nothing when the character is no longer on the map the player chose on", async () => {
+        await rpg("write", "Cortile", "--type", "place", "--text", "```map\n#####\n#...#\n#####\n```");
+        const page: Player = {
+            choose: async () => undefined,
+            chooseSquare: async () => {
+                // While the player chooses, the master moves Bruna elsewhere.
+                await rpg("move", "Bruna", "--to", "Cortile", "--at", "B2");
+                return { square: "D2" };
+            },
+        };
+        const asked = readLogFile(folder).filter((entry) => entry.type === "asked").length;
+        await expect(ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), { ...context, page })).rejects.toThrow("Bruna is no longer in Sala, on whose map the player chose D2");
+        expect(readLogFile(folder).filter((entry) => entry.type === "asked")).toHaveLength(asked);
     });
 
     it("is refused with options, and when the character stands in no place with a map", async () => {

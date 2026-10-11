@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
-import { findPage, loadWorld, locate, type World } from "../pages/index.ts";
+import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -46,7 +46,7 @@ export const ask = defineCommand({
     description: "Ask the player with buttons: every roll of the player's character, and every choice that is truly theirs to make. "
         + "The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. "
         + "For a roll: put in the question what is at stake either way, in one line of about 100 characters (apps may cut it), and give the checks that fit, each with its dice, "
-        + "a number of the sheet by its field's name as in roll, which the engine works out and the player can also roll from that row of their sheet; "
+        + "naming the sheet's numbers by their fields as roll does: the engine works them out, and only then the player's sheet lights that row; "
         + "the player may also change their mind. In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "For where the player's character moves on the map of its place: square, without options; the engine moves them to the square the player touches and gives you the way. "
@@ -184,15 +184,14 @@ async function squareChosen(root: string, context: Context, question: string, gi
 {
     const world = loadWorld(root);
     const who = playerCharacter(world, given);
-    const page = findPage(world, who);
-    const place = page === undefined ? undefined : locate(world, page).chain[0];
-    const map = place === undefined ? undefined : placeGrid(place);
+    const { place, map } = standingOn(world, who);
 
     if (place === undefined || map === undefined) {
         throw new Error(`${who} stands in no place with a map: ask in words where they go, and stop.`);
     }
 
-    const asked = `${question} (a square of the map of ${place.name}, such as E4)`;
+    // Without a page no map is in sight: the master asks where in the story's words, and puts them on the square that fits.
+    const asked = `${question} (where their character goes in ${place.name}, in the story's words; then move them with move and at to the square that fits)`;
     const chosen = context.page?.chooseSquare === undefined ? "absent" : await context.page.chooseSquare(question, words.square, words.change, context.signal);
 
     // A call the user stopped logs nothing (ASK-9).
@@ -209,8 +208,15 @@ async function squareChosen(root: string, context: Context, question: string, gi
         return chosen === 0 ? { kind: "stays" } : { kind: "unanswered", asked };
     }
 
+    // The world may have changed while the player chose: the square counts only on the map they were shown, as it is now.
+    const now = standingOn(loadWorld(root), who);
+
+    if (now.place?.name !== place.name || now.map === undefined) {
+        throw new Error(`${who} is no longer in ${place.name}, on whose map the player chose ${chosen.square}: nothing moved. Ask again where they go, and stop.`);
+    }
+
     const square = readSquare(chosen.square);
-    const closed = square === undefined ? `${chosen.square} is no square of the map` : closedSquare(map.grid, square);
+    const closed = square === undefined ? `${chosen.square} is no square of the map` : closedSquare(now.map.grid, square);
 
     // A square no one stands on, as one a hidden thing blocks, moves no one and logs nothing.
     if (closed !== undefined) {
@@ -219,6 +225,14 @@ async function squareChosen(root: string, context: Context, question: string, gi
 
     logAnswer(root, context, question, [words.change], chosen.square);
     return { kind: "moved", text: placeOnMap(root, context, who, chosen.square) };
+}
+
+/** The place the character is right in, with its map, as the world is. */
+function standingOn(world: World, who: string): { place?: Page; map?: ReturnType<typeof placeGrid>; }
+{
+    const page = findPage(world, who);
+    const place = page === undefined ? undefined : locate(world, page).chain[0];
+    return place === undefined ? {} : { place, map: placeGrid(place) };
 }
 
 /** The buttons of a forced choice: the answers as given (ASK-5). */
@@ -306,8 +320,11 @@ function readOptions(given: string | string[]): Option[]
 
 function readOption(text: string): Option
 {
-    const match = /^(.+?)\s+(\S+)$/.exec(text);
-    return match !== null && isDice(namesAsZero(match[2])) ? { label: match[1].trim(), notation: match[2] } : { label: text };
+    // The dice from the first word that is a die, so that 1d20+athletics - 1 and 1d20 + athletics are dice too; else the last word.
+    const spaced = /^(.+?)\s+(\d*d(?:\d+|%|F)\S*(?:\s*[+-]\s*\S+)*)$/i.exec(text);
+    const last = /^(.+?)\s+(\S+)$/.exec(text);
+    const match = [spaced, last].find((candidate) => candidate !== null && isDice(namesAsZero(candidate[2])));
+    return match === undefined || match === null ? { label: text } : { label: match[1].trim(), notation: match[2] };
 }
 
 /**
@@ -326,7 +343,7 @@ function sheetChecks(root: string, context: Context, checks: Option[], who: stri
 
         const { notation, taken } = withSheetValues(check.notation, roller, who, system);
         const fields = Object.keys(taken);
-        return { ...check, notation, ...(fields.length === 1 ? { field: fields[0] } : {}) };
+        return { ...check, notation: notation.replace(/\s+/g, ""), ...(fields.length === 1 ? { field: fields[0] } : {}) };
     });
 }
 

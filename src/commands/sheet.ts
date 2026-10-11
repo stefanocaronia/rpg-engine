@@ -96,6 +96,8 @@ export interface SheetValue
     marks: number;
     /** What the sheet shows beside it, such as +2 by str, or how many points the next level needs (PRO-6). */
     beside?: string;
+    /** The field shown beside it, such as str-mod by str: a check that names it is rolled from this value too (ASK-12). */
+    besideField?: string;
     /** The free roll the dashboard offers in its explanation, when the system rolls it, or what is beside it, with dice (D-280). */
     roll?: SheetRoll;
     /** How far it has come from one mark to the next, as the experience between its level's points and the next level's (PRO-6): a bar on the dashboard. */
@@ -168,6 +170,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 ...sheetValue(world, fields, entry.field, value),
                 marks: marks.get(comparableText(entry.field)) ?? 0,
                 ...(beside === undefined ? {} : { beside }),
+                ...(beside === undefined || entry.beside === undefined ? {} : { besideField: entry.beside }),
                 ...(roll === undefined ? {} : { roll }),
                 ...(progress === undefined ? {} : { progress }),
             }];

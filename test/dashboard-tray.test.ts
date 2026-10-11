@@ -1,6 +1,7 @@
 // The dice the tray throws by itself (D-284, D-337): which of a kind count, as a notation and as the chat writes them, and the checks they answer (D-330).
 import { describe, expect, it } from "vitest";
 import { diceText, keptOf, notation, withDropped } from "../src/dashboard/dice/pool.ts";
+import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
 import { sameDice } from "../src/dashboard/labels.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
 
@@ -34,5 +35,24 @@ describe("which dice of a kind count in the tray (D-337)", () => {
         expect(trayCheck(asked, notation([20, 20], 5, { 20: "highest" }))).toBe(0);
         expect(trayCheck(asked, notation([20, 20], 5, {}))).toBeUndefined();
         expect(sameDice("2d20dl1+5", "2d20kh1+5")).toBe(true);
+    });
+});
+
+describe("the free rolls this browser keeps (D-330 (4))", () => {
+    it("takes back only whole free rolls, as the page writes them, and keeps the last ones", () => {
+        const kept = new Map<string, string>();
+        const storage = { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => kept.set(key, value), removeItem: (key: string) => kept.delete(key) };
+        Object.assign(globalThis, { localStorage: storage });
+
+        try {
+            const roll: PageRoll = { id: "free-1", at: "2026-10-11T10:00:00.000Z", by: "player", notation: "1d20+3", total: 18, text: "[15] + 3", dice: [{ sides: 20, value: 15 }], free: true };
+            withFree("Prova", [], roll);
+            expect(readFree("Prova")).toEqual([roll]);
+            const key = [...kept.keys()][0];
+            kept.set(key, JSON.stringify([roll, { ...roll, id: "free-2", dice: "oops" }, { ...roll, id: "free-3", notation: 5 }, { ...roll, id: "free-4", at: "never" }, null]));
+            expect(readFree("Prova").map((one) => one.id)).toEqual(["free-1"]);
+        } finally {
+            Reflect.deleteProperty(globalThis, "localStorage");
+        }
     });
 });

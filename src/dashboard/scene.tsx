@@ -107,7 +107,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
             <header>
                 <p class="eyebrow">Scene</p>
                 <h3 id="scene-title">{scene.title}</h3>
-                <span class={`scene-type ${scene.type}`}>{scene.type}</span>
+                <span class="scene-type" data-type={scene.type}>{scene.type}</span>
                 {scene.since && <span class="scene-since">{`since ${scene.since}`}</span>}
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
@@ -134,8 +134,9 @@ function People({ people }: { people: ShownPerson[]; })
                 <li key={`${person.name} ${index}`} class={person.role === "other" && index > 0 && people[index - 1].role !== "other" ? "after-party" : undefined}>
                     {person.stranger
                         ? (
-                            <span class="token stranger" aria-hidden="true">
-                                <Icon name="stranger" />
+                            // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
+                            <span class={letterOf(person.name) === undefined ? "token stranger" : "token stranger numbered"} aria-hidden="true">
+                                {letterOf(person.name) ?? <Icon name="stranger" />}
                             </span>
                         )
                         : <Token member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }) }} />}
@@ -152,4 +153,10 @@ function People({ people }: { people: ShownPerson[]; })
 function capitalized(text: string): string
 {
     return `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
+}
+
+/** The letter of a kind of creature the character does not know, as "creature B" has: none for one kind alone, or for someone. */
+function letterOf(name: string): string | undefined
+{
+    return /^creature ([A-Z])$/.exec(name)?.[1];
 }

@@ -32,6 +32,7 @@ const soundKey = "rpg-engine.dice-sound";
 
 // The choices of what counts, as the tray says them.
 const keepWords: Record<"sum" | Keep, string> = { sum: "Sum", highest: "Highest", lowest: "Lowest" };
+const keepModes = ["sum", "highest", "lowest"] as const;
 
 /** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, whose sheet it is, and which throw it is. */
 export interface SheetThrow
@@ -284,6 +285,21 @@ export function DiceTray(
         }
     };
 
+    // The arrows choose among what counts, the focus going with the choice, as in a radio group.
+    const moveKeep = (event: KeyboardEvent, sides: number): void => {
+        const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+
+        if (step === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        const next = keepModes[(keepModes.indexOf(shownKeeps[sides] ?? "sum") + step + keepModes.length) % keepModes.length];
+        setKeeps({ ...keeps, [sides]: next === "sum" ? undefined : next });
+        const buttons = (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("button");
+        buttons[keepModes.indexOf(next)]?.focus();
+    };
+
     const clear = (): void => {
         setPool([]);
         setKeeps({});
@@ -330,13 +346,14 @@ export function DiceTray(
                                     <li key={sides} class={count > 0 ? "chosen" : undefined}>
                                         {/* With two dice or more of a kind, which count (D-337), left of its minus. */}
                                         {count >= 2 && sides !== 100 && (
-                                            <span class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`}>
-                                                {(["sum", "highest", "lowest"] as const).map((mode) => (
+                                            <span class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`} onKeyDown={(event) => moveKeep(event, sides)}>
+                                                {keepModes.map((mode) => (
                                                     <button
                                                         key={mode}
                                                         type="button"
                                                         role="radio"
                                                         aria-checked={(shownKeeps[sides] ?? "sum") === mode}
+                                                        tabIndex={(shownKeeps[sides] ?? "sum") === mode ? 0 : -1}
                                                         onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
                                                     >
                                                         {keepWords[mode]}

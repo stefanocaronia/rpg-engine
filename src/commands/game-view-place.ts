@@ -269,7 +269,10 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
     const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
         const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
         const page = knownPage(sight, creature);
-        return page === undefined ? { name: "creature", role: "other" as const, stranger: true as const, count } : { ...person(sight, page), count };
+        // A kind the character does not know by the letter its copies have in the scene, as creature B, with more kinds (D-331).
+        const first = Object.keys(scene.copies).find((copy) => scene.copies[copy].creature === creature);
+        const name = first === undefined ? "creature" : strangerName(scene, first).replace(/\s*\d+$/, "");
+        return page === undefined ? { name, role: "other" as const, stranger: true as const, count } : { ...person(sight, page), count };
     });
     const turnName = (name: string): string => shownTurn(sight, scene, name);
     return {

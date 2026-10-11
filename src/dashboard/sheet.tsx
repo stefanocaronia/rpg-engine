@@ -127,7 +127,7 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 
     // The check the master asks that a number answers, on the sheet of whom it is asked of (ASK-12).
     const answersOf = (value: SheetValue): Line["answers"] => {
-        const index = requestedRow(requested, member, value.field);
+        const index = requestedRow(requested, member, value.field) ?? (value.besideField === undefined ? undefined : requestedRow(requested, member, value.besideField));
         const check = requested?.checks.find((one) => one.index === index);
         return requested === undefined || index === undefined || check === undefined ? undefined : { check: check.check, dice: check.dice, answer: () => requested.answer(index) };
     };
@@ -254,6 +254,7 @@ function NumberBox({ value, label, tip, tabIndex, onRoll, answers, kind, said, c
     const described = useId();
     const shared = {
         class: [kind, tip === undefined ? "" : "tip-wide", answers === undefined ? "" : "requested"].filter((name) => name !== "").join(" "),
+        "data-field": value.field,
         "data-tip": tip,
         "data-stop": tabIndex === undefined ? undefined : "",
         tabIndex,

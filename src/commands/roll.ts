@@ -23,7 +23,7 @@ const faceValues = z.preprocess(
 
 // A name in a notation, at the start of a term: a field of the sheet of who rolls, such as athletics or sleight-of-hand (DAT-8). A hyphen inside a name is the
 // name's, as in formulas (FOR-2); a die such as d20 or dF is no name.
-const namePattern = /(^|[+-])(\s*)([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)/g;
+const namePattern = /(^|[+-])(\s*)(\p{L}[\p{L}0-9]*(?:-[\p{L}0-9]+)*)/gu;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =

@@ -28,7 +28,9 @@ export function requestedOf(asked: Asked | undefined, answer: (index: number) =>
         return undefined;
     }
 
-    const rows = new Map(asked.fields?.flatMap((field, index): [string, number][] => (field === null ? [] : [[field.toLowerCase(), index]])) ?? []);
+    // A field two checks name answers neither, as the tray's dice do not.
+    const fields = asked.fields?.map((field) => field?.toLowerCase() ?? null) ?? [];
+    const rows = new Map(fields.flatMap((field, index): [string, number][] => (field === null || fields.indexOf(field) !== fields.lastIndexOf(field) ? [] : [[field, index]])));
     return { ...(asked.who === undefined ? {} : { who: asked.who }), rows, checks, answer };
 }
 

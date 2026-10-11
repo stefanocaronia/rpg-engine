@@ -83,9 +83,7 @@ export function checkOf(label: string, title: string): { check: string; dice: st
 /** Whether two notations are the same dice and number, as the tray and a check write them: 1d20+2 and 1d20 + 2, 1d20−1 and 1d20-1, 1d20+0 and 1d20. */
 export function sameDice(first: string, second: string): boolean
 {
-    // Of two dice, dropping the lowest is keeping the highest: 2d20dl1 is 2d20kh1, as advantage writes it.
-    const plain = (notation: string): string => notation.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").replace(/[+-]0$/, "").replace(/\b2d(\d+)dl1/g, "2d$1kh1").replace(/\b2d(\d+)dh1/g, "2d$1kl1");
-    return plain(first) === plain(second);
+    return plainDice(first) === plainDice(second);
 }
 
 /** The labels of a group's values by field: a last word they all share, such as save in str-save and dex-save, is left out. */
@@ -147,4 +145,14 @@ function words(field: string): string[]
 function isShortName(word: string, fields: ReadonlySet<string>): boolean
 {
     return (/^[a-z]{2,3}$/.test(word) && fields.has(word)) || /^[b-df-hj-np-tv-z]{2}$/.test(word);
+}
+
+/** Dice written one way: of two dice dropping the lowest as keeping the highest, k as kh, 1d100 as 1d%, and the numbers added summed, as 1d20+2+1 is 1d20+3. */
+function plainDice(notation: string): string
+{
+    const text = notation.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").replace(/\b2d(\d+)dl1/g, "2d$1kh1").replace(/\b2d(\d+)dh1/g, "2d$1kl1").replace(/(d(?:\d+|%))k(?=\d)/g, "$1kh")
+        .replace(/d100\b/g, "d%");
+    const terms = text.match(/[+-]?[^+-]+/g) ?? [];
+    const sum = terms.filter((term) => !term.includes("d")).reduce((total, term) => total + Number(term), 0);
+    return `${terms.filter((term) => term.includes("d")).join("")}${sum === 0 ? "" : sum > 0 ? `+${sum}` : String(sum)}`;
 }

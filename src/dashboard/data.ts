@@ -19,6 +19,8 @@ export interface SheetValue
     always?: { from: string[]; items: string[]; };
     marks: number;
     beside?: string;
+    /** The field shown beside it, such as str-mod by str, which a check may name (ASK-12). */
+    besideField?: string;
     /** The free roll its explanation offers (D-280). */
     roll?: SheetRoll;
     /** Where it is between two marks, as the experience between its level and the next. */

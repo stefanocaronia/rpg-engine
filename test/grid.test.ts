@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import type { ShownGrid } from "../src/dashboard/data.ts";
-import { drawnKinds, isStandable } from "../src/dashboard/place-map.ts";
+import { drawnKinds, floorLoops, isStandable } from "../src/dashboard/place-map.ts";
 import { closedSquare, mapBlock, readGrid, readSquare, squareName, withoutMapBlock } from "../src/grid/index.ts";
 import { squareKinds } from "../src/map/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
@@ -37,6 +37,22 @@ describe("the grid as the master writes it (GRD-1, GRD-2)", () => {
         expect(withoutMapBlock(`Una locanda.\n\n${inn}\n\nCon le stanze sopra.`)).toBe("Una locanda.\n\nCon le stanze sopra.");
         // A section that held only the map goes with it.
         expect(withoutMapBlock(`Una locanda.\n\n## Pianta\n\n${inn}\n\n## Storia\n\nAntica.`)).toBe("Una locanda.\n\n## Storia\n\nAntica.");
+    });
+
+    it("draws a door's sides along the wall with the wall's line, leaving open only its side toward the outside (D-334)", () => {
+        const map: ShownGrid = {
+            columns: 3,
+            rows: 3,
+            lines: ["###", "#.#", "#+#"],
+            legend: [{ symbol: "#", name: "wall", kind: "wall", blocks: true }, { symbol: ".", name: "floor", kind: "floor" }, { symbol: "+", name: "door", kind: "door" }],
+            ground: "floor",
+            exits: [],
+            at: [],
+        };
+        const edges = floorLoops(map, (column) => column, (row) => row).flat();
+        // The door's left and right sides face walls and are drawn; its bottom side faces the outside and is left open.
+        expect(edges.filter((edge) => edge.gap).map((edge) => [edge.x1, edge.y1, edge.x2, edge.y2])).toEqual([[2, 3, 1, 3]]);
+        expect(edges.filter((edge) => !edge.gap && edge.y1 >= 2 && edge.y2 >= 2 && edge.x1 === edge.x2)).toHaveLength(2);
     });
 
     it("lets the legend rename and redraw the symbols every map has, never unblock them; the page draws every kind the engine names (D-325)", () => {

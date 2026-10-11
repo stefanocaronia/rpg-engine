@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked, ShownGrid } from "./data.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
-import { checkOf, notationModifier, signed } from "./labels.ts";
+import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
 import { sheetAddress } from "./party.tsx";
 
@@ -102,10 +102,10 @@ export function AskedBanner(
                             {named.map((check, index) => (
                                 <Fragment key={check.check}>
                                     {index > 0 && (index === named.length - 1 ? " or " : ", ")}
-                                    <span class="asked-hand-check">
+                                    <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(asked.fields?.[asked.labels.findIndex((label) => checkOf(label, asked.title)?.check === check.check)])}>
                                         <NotationIcons notation={check.dice} />
                                         {check.check}
-                                    </span>
+                                    </a>
                                 </Fragment>
                             ))}
                             {" yourself, on "}
@@ -126,8 +126,8 @@ export function AskedBanner(
                         const check = checks[index];
                         const kind = check !== undefined ? "asked-check" : roll ? "asked-other" : "asked-answer";
 
-                        // By hand a check has no button: its row of the sheet and the tray's dice answer it.
-                        if (check !== undefined && byHand) {
+                        // By hand a check has no button: its row of the sheet and the tray's dice answer it; one that neither answers keeps it.
+                        if (check !== undefined && byHand && byHandAnswers(asked, index)) {
                             return null;
                         }
 
@@ -137,7 +137,7 @@ export function AskedBanner(
                                 type="button"
                                 class={sent === index ? `${kind} sent` : kind}
                                 disabled={gone}
-                                title={check === undefined ? undefined : [asked.words?.[index], check.dice].filter((part) => part !== undefined && part !== null).join(" · ")}
+                                title={asked.words?.[index] ?? undefined}
                                 onClick={() => void reply(index)}
                             >
                                 {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} />}
@@ -182,6 +182,42 @@ export function AskedBanner(
             {picking && map !== undefined && <MapSheet map={map} place={place ?? ""} question={asked.question} onPick={(square) => void reply({ square })} onClose={() => setPicking(false)} />}
         </section>
     );
+}
+
+/** Whether a check can be answered by hand: a field of the sheet it alone names, whose row lights, or dice the tray tells from the other checks'. */
+function byHandAnswers(asked: Asked, index: number): boolean
+{
+    const field = asked.fields?.[index] ?? null;
+    const ownRow = field !== null && asked.fields?.filter((other) => other === field).length === 1;
+    const dice = checkOf(asked.labels[index], asked.title)?.dice;
+    const ownDice = dice !== undefined && asked.labels.filter((label) => {
+                const other = checkOf(label, asked.title)?.dice;
+                return other !== undefined && sameDice(other, dice);
+            }).length === 1;
+    return ownRow || ownDice;
+}
+
+/** Sets the row of the sheet a check names in the middle of the window, with the focus on it, once the sheet the link leads to is drawn. */
+function showRow(field: string | null | undefined): void
+{
+    if (field === null || field === undefined) {
+        return;
+    }
+
+    const started = Date.now();
+
+    const find = (): void => {
+        const row = document.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+
+        if (row !== null) {
+            row.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+            row.focus({ preventScroll: true });
+        } else if (Date.now() - started < 2000) {
+            requestAnimationFrame(find);
+        }
+    };
+
+    requestAnimationFrame(find);
 }
 
 function readByHand(): boolean

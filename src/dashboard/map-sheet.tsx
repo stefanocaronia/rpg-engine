@@ -38,7 +38,7 @@ export function MapSheet({ map, place, question, onPick, onClose }: { map: Shown
         <dialog ref={dialog} class="map-sheet" aria-labelledby="map-sheet-title" onClose={onClose}>
             <header class="map-sheet-head">
                 <h2 id="map-sheet-title">{question}</h2>
-                <button type="button" class="icon-button" aria-label="Close" data-tip="Close" onClick={() => dialog.current?.close()}>
+                <button type="button" class="icon-button tip-left" aria-label="Close" data-tip="Close" onClick={() => dialog.current?.close()}>
                     <Icon name="close" />
                 </button>
             </header>

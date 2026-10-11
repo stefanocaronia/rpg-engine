@@ -33,8 +33,14 @@ describe("a roll the master asks, on the sheet and in the tray (D-330, ASK-12)",
         expect(requestedOf(undefined, () => undefined)).toBeUndefined();
     });
 
+    it("lights no row for a field two checks name, as the tray answers neither", () => {
+        const two = requestedOf({ ...asked, labels: ["Tiro: Scalare (1d20+2)", "Tiro: Saltare (1d20+2)", "Cambio idea"], fields: ["athletics", "athletics", null] }, () => undefined);
+        expect(requestedRow(two, "Ettore", "athletics")).toBeUndefined();
+    });
+
     it("tells dice apart as the tray and a check write them", () => {
         expect([sameDice("1d20 + 2", "1d20+2"), sameDice("1d20−1", "1d20-1"), sameDice("1d20+0", "1d20"), sameDice("1D20", "1d20"), sameDice("1d20+1", "1d20-1")]).toEqual([true, true, true, true, false]);
+        expect([sameDice("1d20+2+1", "1d20+3"), sameDice("2d20k1+5", "2d20kh1+5"), sameDice("1d100", "1d%"), sameDice("1d20+2-1", "1d20+1")]).toEqual([true, true, true, true]);
         expect(shownNotation("2d20kh1-1")).toBe("2d20kh1−1");
     });
 });
