@@ -1,19 +1,25 @@
-// The player character's story in the player's words (D-373): the opening text of its page, in the sheet's Description, written here and saved with Save;
-// the master's secrets stay as they are, and the master hears it at their next call.
+// The player character's story in the player's words (D-373, D-386): a proposal from the sheet's Description, which the master hears quoted and writes in the
+// page in their own words, with the player's yes; until then the box says it was sent.
 import { useEffect, useId, useRef, useState } from "preact/hooks";
-import { sendStory } from "./api.ts";
+import { readStory, sendStory } from "./api.ts";
 import { Icon } from "./icons.tsx";
 
 export function StoryBox({ story }: { story: string; })
 {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(story);
-    const [status, setStatus] = useState<string>();
+    // The proposal the master has not written yet, as the game keeps it: read again whenever the page's story changes.
+    const [proposed, setProposed] = useState<string>();
+    const [problem, setProblem] = useState<string>();
     const [busy, setBusy] = useState(false);
     const id = useId();
     const field = useRef<HTMLTextAreaElement>(null);
     const pencil = useRef<HTMLButtonElement>(null);
     const wasEditing = useRef(false);
+
+    useEffect(() => {
+        void readStory().then(setProposed, () => setProposed(undefined));
+    }, [story]);
 
     // Opened, the field takes the focus; closed, the button that opens it.
     useEffect(() => {
@@ -26,43 +32,53 @@ export function StoryBox({ story }: { story: string; })
         wasEditing.current = editing;
     }, [editing]);
 
-    const save = async (event: Event): Promise<void> => {
+    const send = async (event: Event): Promise<void> => {
         event.preventDefault();
         setBusy(true);
-        const problem = await sendStory(draft);
+        const refused = await sendStory(draft);
         setBusy(false);
-        setStatus(problem ?? "Saved: the master reads it at their next call.");
-        setEditing(problem !== undefined);
+        setProblem(refused);
+
+        if (refused === undefined) {
+            setProposed(draft.trim());
+            setEditing(false);
+        }
     };
 
     if (!editing) {
         return (
             <div class="story-box">
+                {proposed !== undefined && (
+                    <p class="story-sent">
+                        <Icon name="send" /> Sent to the master: they write it in your page once you agree in the chat.
+                    </p>
+                )}
                 <button
                     ref={pencil}
                     type="button"
                     class="save-button"
                     onClick={() => {
-                        setDraft(story);
-                        setStatus(undefined);
+                        setDraft(proposed ?? story);
+                        setProblem(undefined);
                         setEditing(true);
                     }}
                 >
-                    <Icon name="pencil" /> {story === "" ? "Write your character's story" : "Edit your story"}
+                    <Icon name="pencil" /> {proposed !== undefined ? "Change what you sent" : story === "" ? "Write your character's story" : "Propose changes to your story"}
                 </button>
-                <span class="story-status" role="status">{status}</span>
             </div>
         );
     }
 
     return (
-        <form class="story-box editing" onSubmit={(event) => void save(event)}>
-            <label for={id}>Your character's story and look, in your words. The master reads it, and may propose changes in the chat if it leaves the world.</label>
+        <form class="story-box editing" onSubmit={(event) => void send(event)}>
+            <label for={id}>Your character's story and look, in your words. It goes to the master, who writes it in your page with you.</label>
             <textarea ref={field} id={id} value={draft} rows={10} maxLength={20_000} onInput={(event) => setDraft(event.currentTarget.value)} />
             <div class="story-buttons">
-                <span class="story-status" role="status">{status}</span>
+                <span class="story-status" role="alert">{problem}</span>
                 <button type="button" class="save-button" onClick={() => setEditing(false)}>Cancel</button>
-                <button type="submit" class="save-button gold" disabled={busy || draft.trim() === story.trim()}>Save</button>
+                <button type="submit" class="save-button gold" disabled={busy || draft.trim() === "" || draft.trim() === (proposed ?? story).trim()}>
+                    <Icon name="send" /> Send to the master
+                </button>
             </div>
         </form>
     );

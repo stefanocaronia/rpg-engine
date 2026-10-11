@@ -150,15 +150,22 @@ export async function sendNote(change: NoteChange, leaving = false): Promise<str
     return sent;
 }
 
-/** Writes the player character's story, the opening text of its page (D-373): undefined when done, else what went wrong. */
+/** Sends the master a story for the player character, which they write in its page with the player (D-386): undefined when it reached the game, else what went wrong. */
 export async function sendStory(text: string): Promise<string | undefined>
 {
     try {
         const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-        return response.status === 202 ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The story was not saved: try again.");
+        return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The story did not reach the master: try again.");
     } catch {
-        return "The story was not saved: the game is not connected.";
+        return "The story did not reach the master: the game is not connected.";
     }
+}
+
+/** The story the player sent that the master has not written yet; undefined when none (D-386). */
+export async function readStory(): Promise<string | undefined>
+{
+    const response = await fetch("/api/story");
+    return response.ok ? ((await response.json()) as { proposed?: string; }).proposed : undefined;
 }
 
 /** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */

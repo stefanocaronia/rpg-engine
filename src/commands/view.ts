@@ -117,7 +117,7 @@ export type ViewResult =
         /** Where the dashboard puts the groups of the sheet, as the system says (D-295), and those at hand in a fight (D-315). */
         cards?: { rail: string[]; order: string[]; atHand: string[]; };
         text: string;
-        /** The player character's opening text, which the player may write on the dashboard; left out on other pages, or when the player may not (D-373). */
+        /** The player character's opening text, which the player may propose on the dashboard (D-373, D-386); left out on other pages. */
         story?: string;
     }
     | { kind: "section"; title: string; lines: string[]; text: string; }

@@ -72,14 +72,10 @@ export function knownText(world: World, knowledge: Knowledge, page: Page): strin
     return withoutComments([introduction, ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n"));
 }
 
-/**
- * The player character's story as the player writes it on the dashboard (D-373): the opening text of its page, without its secrets, which stay the master's;
- * undefined when it holds comments, the master's notes, which a rewrite would lose.
- */
-export function playerStory(page: Page): string | undefined
+/** The player character's story as the player sees it on the dashboard (D-373): the opening text of its page, without its secrets and comments, the master's. */
+export function playerStory(page: Page): string
 {
-    const opening = introductionText(page.body);
-    return /%%|<!--/.test(opening) ? undefined : opening;
+    return withoutComments(introductionText(page.body));
 }
 
 /**
