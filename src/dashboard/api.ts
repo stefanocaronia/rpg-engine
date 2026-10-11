@@ -48,8 +48,18 @@ export async function readSettings(): Promise<PlayerSetting[]>
 /** A change of one of the player's settings: a value, or an item added to a list or taken off it. */
 export type SettingChange = { setting: string; value: string; } | { setting: string; add: string; } | { setting: string; remove: string; };
 
-/** Changes one of the player's settings (D-341): undefined when done, else what went wrong, as the engine says it. */
+// The player's changes reach the game one after another, in the order they were made.
+let changing: Promise<unknown> = Promise.resolve();
+
+/** Changes one of the player's settings (D-341), after those sent before: undefined when done, else what went wrong, as the engine says it. */
 export async function changeSetting(change: SettingChange): Promise<string | undefined>
+{
+    const sent = changing.then(() => sendChange(change));
+    changing = sent;
+    return sent;
+}
+
+async function sendChange(change: SettingChange): Promise<string | undefined>
 {
     try {
         const response = await fetch("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });

@@ -114,7 +114,7 @@ const systemSchema = z.object({
     }).strict().optional(),
     settings: z.record(
         z.string().min(1),
-        z.record(z.string().min(1), z.object({ means: z.string().min(1), without: z.array(z.string().min(1)).optional() }).strict()).refine(
+        z.record(z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()).refine(
             (values) => Object.keys(values).length >= 2,
             "give at least two values, each with what it means, such as {xp: {means: ...}, milestones: {means: ...}}",
         ),
@@ -200,7 +200,8 @@ export interface SheetEntry
 export interface SystemSetting
 {
     name: string;
-    values: { value: string; means: string; without: string[]; }[];
+    /** Each value with what it means to the master, and to the player when the system says it, as the dashboard shows it (D-341). */
+    values: { value: string; means: string; player?: string; without: string[]; }[];
 }
 
 /** What the creatures overcome in a scene give the party (DAT-11): the field of the party, the creatures' field that gives it, and the counter at which one is overcome. */
@@ -574,7 +575,12 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         uses: usesOf(data),
         settings: Object.entries(data.settings ?? {}).map(([setting, values]) => ({
             name: setting,
-            values: Object.entries(values).map(([value, meaning]) => ({ value, means: meaning.means, without: meaning.without ?? [] })),
+            values: Object.entries(values).map(([value, meaning]) => ({
+                value,
+                means: meaning.means,
+                ...(meaning.player === undefined ? {} : { player: meaning.player }),
+                without: meaning.without ?? [],
+            })),
         })),
         leftOut: [],
         rewards: Object.entries(data.rewards ?? {}).map(([field, reward]) => {

@@ -51,8 +51,17 @@ export function usePrefChange(): void
     }, []);
 }
 
+// What the page keeps of each preference while it is open, for a browser that keeps nothing.
+const kept = new Map<string, boolean>();
+
 function readPref(pref: Pref): boolean
 {
+    const known = kept.get(pref.key);
+
+    if (known !== undefined) {
+        return known;
+    }
+
     try {
         const kept = localStorage.getItem(pref.key);
         return kept === null ? pref.on : kept === "on";
@@ -63,10 +72,12 @@ function readPref(pref: Pref): boolean
 
 function writePref(pref: Pref, on: boolean): void
 {
+    kept.set(pref.key, on);
+
     try {
         localStorage.setItem(pref.key, on ? "on" : "off");
     } catch {
-        // The page forgets it at the next reload, and keeps it until then.
+        // The page keeps it until it is closed.
     }
 
     announcePref();

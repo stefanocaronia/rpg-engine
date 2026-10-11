@@ -134,7 +134,7 @@ describe("what the player changed on the dashboard (D-341)", () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         const news = ["The player set difficulty to hard on the dashboard. Play by it from now on."];
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-        await createMcpServer({ ...testContext(folder), news: () => news.splice(0) }, {}).connect(serverTransport);
+        await createMcpServer({ ...testContext(folder), news: () => ({ lines: news.splice(0), restore: () => undefined }) }, {}).connect(serverTransport);
         const plain = new Client({ name: "plain", version: "1.0.0" });
         await plain.connect(clientTransport);
         const answer = async (name: string, args: Record<string, unknown>) => ((await plain.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
@@ -144,6 +144,66 @@ describe("what the player changed on the dashboard (D-341)", () => {
         const failed = await plain.callTool({ name: "show", arguments: { page: "Nessuno" } });
         expect(failed.isError).toBe(true);
         expect((failed.content as { text: string; }[])[0].text).toMatch(/^The player took "ragni" off lines on the dashboard\.\n\n\S/);
+        await plain.close();
+    });
+
+    it("takes in what the player changed while the call waited for them", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
+        const news: string[] = [];
+        // A page where the player changes a setting before answering.
+        const page: Player = {
+            choose: async () => {
+                news.push("The player set dice to physical on the dashboard: you roll your own and tell the values. Play by it from now on.");
+                return 0;
+            },
+        };
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), page, news: () => ({ lines: news.splice(0), restore: () => undefined }) }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        await plain.callTool({ name: "status", arguments: {} });
+        const answer = await plain.callTool({ name: "ask", arguments: { question: "Scavalcare il muro?", options: ["Avanti", "Indietro"], who: "Bruna" } });
+        expect((answer.content as { text: string; }[])[0].text).toMatch(/^The player set dice to physical on the dashboard: .+\n\n\S/);
+        await plain.close();
+    });
+
+    it("comes back for the next call when the user stops the one it was taken for, whose answer never goes", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
+        const news: string[] = [];
+        let reached: () => void = () => undefined;
+        const asked = new Promise<void>((done) => (reached = done));
+        // A page that waits for the player until the call is stopped.
+        const page: Player = {
+            choose: (...given: Parameters<Player["choose"]>) =>
+                new Promise((done) => {
+                    reached();
+                    given[3]?.addEventListener("abort", () => done(undefined));
+                }),
+        };
+
+        const taken = () => {
+            const lines = news.splice(0);
+            return { lines, restore: () => news.unshift(...lines) };
+        };
+
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), page, news: taken }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        await plain.callTool({ name: "status", arguments: {} });
+        news.push("The player set difficulty to hard on the dashboard. Play by it from now on.");
+        const stop = new AbortController();
+        const asking = plain.callTool({ name: "ask", arguments: { question: "Scavalcare il muro?", options: ["Atletica 1d20+5", "Acrobazia 1d20+3"], who: "Bruna" } }, undefined, {
+            signal: stop.signal,
+        });
+        await asked;
+        stop.abort();
+        await expect(asking).rejects.toThrow();
+        await vi.waitFor(() => expect(news).toHaveLength(1));
+        const after = ((await plain.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
+        expect(after).toMatch(/^The player set difficulty to hard on the dashboard\. Play by it from now on\.\n\n\S/);
         await plain.close();
     });
 });

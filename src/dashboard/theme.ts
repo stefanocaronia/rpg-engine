@@ -18,13 +18,14 @@ export function shownTheme(): Theme
 export function pickTheme(theme: Theme): void
 {
     document.documentElement.dataset.theme = theme;
-    announcePref();
 
     try {
         localStorage.setItem(themeKey, theme);
     } catch {
         // The page forgets it at the next reload.
     }
+
+    announcePref();
 }
 
 /** At the page's start, the theme the player picked before, if any. */

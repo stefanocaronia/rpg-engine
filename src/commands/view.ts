@@ -10,7 +10,7 @@ import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
-import { type PlayerSetting, playerSettings } from "./config.ts";
+import { type PlayerSetting, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
@@ -148,7 +148,7 @@ export const view = defineCommand({
                 throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls and the map.");
             }
 
-            return { kind: "settings", settings: playerSettings(root, context) };
+            return { kind: "settings", settings: shownPlayerSettings(root, context) };
         }
 
         const world = campaignWorld(root, context);
@@ -286,7 +286,7 @@ export const view = defineCommand({
             case "map":
                 return mapText(result);
             case "settings":
-                return result.settings.map((setting) => `${setting.name}: ${setting.items?.join(", ") ?? setting.value ?? "(not chosen)"}`).join("\n");
+                return result.settings.map((setting) => `${setting.name}: ${settingText(setting)}`).join("\n");
 
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";
@@ -528,4 +528,10 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const field = system?.grid?.speed;
     const told = (value: SheetValue): SheetValue => (field !== undefined && comparableText(value.field) === comparableText(field) ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) } : value);
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
+}
+
+/** A setting of the player's in the chat: a list's items, none for an empty one, or its value; not chosen while it has none. */
+function settingText(setting: PlayerSetting): string
+{
+    return setting.items === undefined ? (setting.value ?? "(not chosen)") : setting.items.length === 0 ? "(none)" : setting.items.join(", ");
 }

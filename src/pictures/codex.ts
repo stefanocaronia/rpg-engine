@@ -15,9 +15,9 @@ export function codexPictures(): PictureMaker
 {
     let known: { said: PicturesReady; at: number; } | undefined;
     return {
-        // Asked once; a no again after a minute, as after the player logs in.
-        ready: () => {
-            if (known === undefined || (!known.said.ready && Date.now() - known.at > 60_000)) {
+        // Asked once; a no again after a minute, only where the player may be waiting for it, as Settings and image: never on every call of the master.
+        ready: (again) => {
+            if (known === undefined || (again === true && !known.said.ready && Date.now() - known.at > 60_000)) {
                 known = { said: codexReady(), at: Date.now() };
             }
 
@@ -39,7 +39,11 @@ function codexReady(): PicturesReady
         return {
             ready: false,
             why: "Codex is not installed on this computer",
-            fix: "Codex is not on this computer: to have pictures, install it (npm install -g @openai/codex), then run codex login in a terminal with your ChatGPT account.",
+            fix: "Pictures need Codex, which is not on this computer yet. To have them:\n"
+                + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+                + "2. Paste `npm install -g @openai/codex` and press Enter.\n"
+                + "3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
+                + "Codex makes them with your ChatGPT plan, never paying by the picture.",
         };
     }
 
@@ -47,14 +51,19 @@ function codexReady(): PicturesReady
         return {
             ready: false,
             why: "Codex is not logged in on this computer: the player logs in with codex login",
-            fix: "Codex is not logged in on this computer: to have pictures, run codex login in a terminal with your ChatGPT account.",
+            fix: "Codex is on this computer but not logged in. To have pictures:\n"
+                + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+                + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
+                + "Codex makes them with your ChatGPT plan, never paying by the picture.",
         };
     }
 
     return /chatgpt/i.test(said) ? { ready: true } : {
         ready: false,
         why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login",
-        fix: "Codex here uses an API key, which pays by the picture: to have pictures, run codex login in a terminal with your ChatGPT account.",
+        fix: "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n"
+            + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+            + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.",
     };
 }
 

@@ -32,13 +32,19 @@ export interface Context
     told?: Set<string>;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
-    /** What the player changed on the dashboard since the master's last call, taken once: the MCP server puts it at the head of the next call's answer (D-341). */
-    news?: () => string[];
+    /**
+     * What the player changed on the dashboard since the master's last call, taken for the head of the next call's answer, and given back when that answer
+     * never goes, as for a call the user stopped (D-341).
+     */
+    news?: () => { lines: string[]; restore(): void; };
     /** What makes pictures from words on this computer (D-308), as Codex with the player's login; missing where none can, as in tests. */
     pictures?: PictureMaker;
 }
 
-/** Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with how to have them (D-341). */
+/**
+ * Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with the steps to have them, one a line,
+ * numbered, with the commands between backticks (D-341).
+ */
 export type PicturesReady = { ready: true; } | { ready: false; why: string; fix?: string; };
 
 /** A picture made: its file, and what to call once it is copied, which clears the maker's own copy. */
@@ -51,7 +57,8 @@ export interface MadePicture
 /** What makes a picture from a brief: whether it can, and the picture, or why none came. */
 export interface PictureMaker
 {
-    ready(): PicturesReady;
+    /** Asked once; with again, a no a minute old or more is asked once more, as after the player logs in. */
+    ready(again?: boolean): PicturesReady;
     make(brief: string): Promise<MadePicture | { refused: string; }>;
 }
 

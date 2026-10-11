@@ -130,7 +130,7 @@ function madePicture(root: string, context: Context, page: Page, seen: string): 
         );
     }
 
-    const ready = context.pictures?.ready() ?? { ready: false as const, why: "Nothing on this computer makes pictures" };
+    const ready = context.pictures?.ready(true) ?? { ready: false as const, why: "Nothing on this computer makes pictures" };
 
     if (!ready.ready || context.pictures === undefined) {
         throw new Error(`${ready.ready ? "Nothing on this computer makes pictures" : ready.why}. If your own tools make pictures, make one and give it with file; else go on without. Nothing changed.`);

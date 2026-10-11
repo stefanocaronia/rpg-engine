@@ -368,33 +368,26 @@ a {
     display: none;
 }
 
-/* The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, the chosen one in gold; the page's own
-   last. */
+/* The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, the chosen one in gold and what it
+   means under it; the page's own last. */
 .settings {
     display: grid;
     gap: 14px;
 }
 
-.settings-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 4px 16px;
-}
-
-.settings-head h2 {
+.settings > h2 {
     margin: 0;
     font-size: 1.4rem;
 }
 
-.settings-said {
-    margin: 0;
+.settings-lead,
+.settings-problem {
+    margin: -6px 0 0;
     color: var(--muted);
     font-size: 0.9rem;
 }
 
-.settings-said.problem {
+.settings-problem {
     color: var(--low);
 }
 
@@ -436,41 +429,123 @@ a {
     font-weight: 650;
 }
 
-.setting-about,
-.setting-means {
+.setting-about {
     margin: 0;
     color: var(--muted);
     font-size: 0.85rem;
 }
 
-/* What the chosen value means, in ink: what the game does now. */
-.setting-means {
+/* Under the row: what the chosen value means, tied to it by the gold mark; what is not chosen yet; a note; what a change said. */
+.setting-after {
+    display: grid;
     grid-column: 1 / -1;
-    color: var(--ink);
-}
-
-/* What the player should know of a setting on this computer, as whether pictures can be made here. */
-.setting-note {
-    display: flex;
-    grid-column: 1 / -1;
-    align-items: flex-start;
-    gap: 8px;
-    margin: 2px 0 0;
-    padding: 8px 10px;
-    border-radius: var(--radius-m);
-    background: var(--float);
-    color: var(--muted);
+    min-width: 0;
     font-size: 0.85rem;
 }
 
-.setting-note svg {
+.setting-after > * {
+    margin: 0;
+}
+
+.setting-after > * + * {
+    margin-top: 6px;
+}
+
+.setting-after > .setting-said:empty {
+    margin-top: 0;
+}
+
+.setting-means {
+    padding-left: 8px;
+    border-left: 3px solid var(--gold);
+    color: var(--ink);
+}
+
+.setting-unset {
+    color: var(--muted);
+    font-style: italic;
+}
+
+.setting-said {
+    color: var(--ally);
+    font-weight: 650;
+}
+
+.setting-said.problem {
+    color: var(--low);
+    font-weight: 400;
+}
+
+/* What the player should know of a setting on this computer; in ink, with its edge, when it says how to have what is missing. */
+.setting-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--muted);
+}
+
+.setting-note.fix {
+    border-color: var(--rule);
+    color: var(--ink);
+}
+
+.setting-note > svg {
     flex: none;
     width: 16px;
     height: 16px;
     margin-top: 1px;
 }
 
-/* Values to choose one of, the chosen one in gold. */
+.setting-note-text {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.setting-note-text p,
+.setting-note-text ol {
+    margin: 0;
+}
+
+.setting-note-text ol {
+    display: grid;
+    gap: 4px;
+    padding-left: 20px;
+}
+
+.setting-command {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.setting-command code {
+    padding: 1px 6px;
+    border-radius: var(--radius-s);
+    background: var(--cell);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+.setting-copy {
+    min-height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-s);
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+/* Values to choose one of, the chosen one in gold, edged so that it stands out on light paper too. */
 .segmented {
     display: inline-flex;
     flex-wrap: wrap;
@@ -496,6 +571,7 @@ a {
 
 .segmented button[aria-checked="true"] {
     background: var(--gold);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold), var(--ink) 35%);
     color: var(--on-gold);
 }
 
@@ -515,6 +591,10 @@ a {
     list-style: none;
 }
 
+.setting-list ul:empty {
+    display: none;
+}
+
 .setting-list li {
     display: inline-flex;
     align-items: center;
@@ -530,8 +610,7 @@ a {
     height: 32px;
 }
 
-.setting-list form,
-.setting-text {
+.setting-list form {
     display: flex;
     gap: 6px;
     max-width: 420px;
@@ -548,6 +627,31 @@ a {
     background: var(--panel-2);
     color: var(--ink);
     font: inherit;
+}
+
+/* The language: a short field for its code, its name under it as it is written. */
+.setting-text {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+}
+
+.setting-text-row {
+    display: flex;
+    gap: 6px;
+}
+
+.setting-text input {
+    flex: none;
+    width: 9ch;
+}
+
+.setting-text-name {
+    font-size: 0.85rem;
+}
+
+.setting-text-name.problem {
+    color: var(--low);
 }
 
 .setting-button {
@@ -567,12 +671,34 @@ a {
     cursor: default;
 }
 
+/* Where fingers touch, every control as tall as a finger. */
+@media (pointer: coarse) {
+    .segmented button {
+        min-height: var(--target);
+    }
+
+    .setting-list li .icon-button {
+        width: var(--target);
+        height: var(--target);
+    }
+
+    .setting-list input,
+    .setting-text input,
+    .setting-button {
+        height: var(--target);
+    }
+}
+
 @media (max-width: 600px) {
     .setting {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    /* On a phone the values share the row's width. */
+    .setting-text {
+        justify-items: start;
+    }
+
+    /* On a phone the values share the row. */
     .segmented {
         display: flex;
     }

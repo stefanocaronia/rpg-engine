@@ -7,8 +7,8 @@ import { connect } from "node:net";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { findCampaign, requireCampaign } from "./campaign/index.ts";
-import { config, isPlayerSetting, playerChangeNews, type PlayerSetting, playerSettings } from "./commands/config.ts";
+import { findCampaign, requireCampaign, settingNames } from "./campaign/index.ts";
+import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -30,8 +30,11 @@ export interface Dashboard
     url: string;
     /** The player through the page: ask's buttons, while a page is open (D-279). */
     player: Player;
-    /** What the player changed on the page since it was last taken, each setting as it is now against how it was, for the master's next call (D-341). */
-    news(): string[];
+    /**
+     * What the player changed on the page since it was last taken, each setting as it is now against how it was, for the master's next call, and what gives it
+     * back when that call never answers (D-341).
+     */
+    news(): { lines: string[]; restore(): void; };
     close(): Promise<void>;
 }
 
@@ -457,17 +460,19 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
         const change = parsed.data;
         const refused = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
+            const before = playerSettingNamed(root, served.context, change.setting);
 
-            if (!isPlayerSetting(root, served.context, change.setting)) {
-                return `${change.setting} is the master's to change, in the chat.`;
+            if (before === undefined) {
+                return (settingNames as string[]).includes(change.setting.trim())
+                    ? { status: 403, error: `${change.setting} is the master's to change, in the chat.` }
+                    : { status: 400, error: `There is no setting "${change.setting}": the player's are ${playerSettings(root, served.context).map((one) => one.name).join(", ")}.` };
             }
 
-            const before = playerSettings(root, served.context).find((setting) => setting.name === change.setting);
             const input = "value" in change ? { value: change.value } : "add" in change ? { add: [change.add] } : { remove: [change.remove] };
-            config.run(config.input.parse({ setting: change.setting, ...input }), { ...served.context, actor: "player" });
+            config.run(config.input.parse({ setting: before.name, ...input }), { ...served.context, actor: "player" });
 
-            if (before !== undefined && !served.changed.has(change.setting)) {
-                served.changed.set(change.setting, before);
+            if (!served.changed.has(before.name)) {
+                served.changed.set(before.name, before);
             }
 
             return undefined;
@@ -476,25 +481,28 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
         if (refused === undefined) {
             sendJson(response, 202, {});
         } else {
-            sendJson(response, 403, { error: refused });
+            sendJson(response, refused.status, { error: refused.error });
         }
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
 }
 
-/** What the master hears of the settings the player changed since their last call: each as it is now against how it was, once (D-341). */
-function settingNews(served: Served): string[]
+/**
+ * What the master hears of the settings the player changed since their last call: each as it is now against how it was, once (D-341); given back for the
+ * next call when this one never answers. A campaign that does not read now keeps them for a call when it does.
+ */
+function settingNews(served: Served): { lines: string[]; restore(): void; }
 {
     const changed = [...served.changed];
-    served.changed.clear();
+    const nothing = { lines: [], restore: () => undefined };
 
     if (changed.length === 0) {
-        return [];
+        return nothing;
     }
 
     try {
-        return withFiles(served.session, () => {
+        const lines = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
             const now = playerSettings(root, served.context);
             return changed.flatMap(([name, before]) => {
@@ -502,9 +510,21 @@ function settingNews(served: Served): string[]
                 return after === undefined ? [] : playerChangeNews(root, served.context, before, after);
             });
         });
+        served.changed.clear();
+        return { lines, restore: () => giveBack(served, changed) };
     } catch {
-        // A campaign that does not read now says nothing of them: the log keeps every change.
-        return [];
+        return nothing;
+    }
+}
+
+/** Gives back changes the master never heard: first, each as it was before any change since, then those made meanwhile. */
+function giveBack(served: Served, taken: [string, PlayerSetting][]): void
+{
+    const since = [...served.changed].filter(([name]) => !taken.some(([other]) => other === name));
+    served.changed.clear();
+
+    for (const [name, before] of [...taken, ...since]) {
+        served.changed.set(name, before);
     }
 }
 

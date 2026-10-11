@@ -155,8 +155,8 @@ export interface PlayerSetting
     value?: string;
     items?: string[];
     choices?: { value: string; means?: string; }[];
-    /** What the player should know of it on this computer, as whether pictures can be made here. */
-    note?: string;
+    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
+    note?: { text: string; fix?: true; };
 }
 
 // What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
@@ -176,7 +176,7 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     saves: {
         about: "when the game may go back",
         values: saveModes,
-        means: { permadeath: "never", checkpoint: "to the last end of a scene, once your character dies", free: "to any save, and saves when you ask" },
+        means: { permadeath: "never: what happens stays", checkpoint: "if your character dies: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
     },
     rigor: {
         about: "how closely food, light, fatigue, spell components and the like follow the rules",
@@ -195,13 +195,20 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     language: { about: "the game's language, as a code such as it or en" },
 };
 
-/** The player's settings with their values, then those the game system adds, as the dashboard shows them (D-341). */
+/** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
+export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]
+{
+    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...picturesReadyNote(context) } : setting));
+}
+
+/** The player's settings with their values, then those the game system adds (D-341). */
 export function playerSettings(root: string, context: Context): PlayerSetting[]
 {
     const settings = readSettings(root);
     const own = (campaignSystem(root, context)?.settings ?? []).map((setting): PlayerSetting => {
         const value = systemSettingValue(root, setting);
-        return { name: setting.name, about: "a setting of the game system", ...(value === undefined ? {} : { value }), choices: setting.values.map((one) => ({ value: one.value })) };
+        const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
+        return { name: setting.name, about: "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
     });
     return [
         ...playerSettingNames.map((name): PlayerSetting => {
@@ -213,7 +220,6 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
                 about: words.about,
                 ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
                 ...(choices === undefined ? {} : { choices }),
-                ...(name === "pictures" ? picturesReadyNote(context) : {}),
             };
         }),
         ...own,
@@ -221,16 +227,18 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
 }
 
 /** Whether this computer makes pictures, in the player's words (D-308): Codex logged in, or why not and how to have them; nothing where no maker is asked. */
-function picturesReadyNote(context: Context): { note?: string; }
+function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 {
-    const ready = context.pictures?.ready();
-    return ready === undefined ? {} : { note: ready.ready ? "Codex makes them on this computer, from your ChatGPT plan." : (ready.fix ?? `${ready.why}.`) };
+    const ready = context.pictures?.ready(true);
+    return ready === undefined
+        ? {}
+        : { note: ready.ready ? { text: "Codex makes them on this computer, from your ChatGPT plan." } : { text: ready.fix ?? `${ready.why}.`, fix: true } };
 }
 
-/** Whether the player may change a setting on the dashboard: one of theirs, or one the game system adds (D-341). */
-export function isPlayerSetting(root: string, context: Context, name: string): boolean
+/** One of the player's settings by its name, in any case, as the dashboard changes them (D-341); undefined for a setting of the master's or none. */
+export function playerSettingNamed(root: string, context: Context, name: string): PlayerSetting | undefined
 {
-    return (playerSettingNames as readonly string[]).includes(name) || systemSetting(root, context, name) !== undefined;
+    return playerSettings(root, context).find((setting) => comparableText(setting.name) === comparableText(name));
 }
 
 /**

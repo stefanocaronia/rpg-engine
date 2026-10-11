@@ -304,6 +304,6 @@ export interface PlayerSetting
     value?: string;
     items?: string[];
     choices?: { value: string; means?: string; }[];
-    /** What the player should know of it on this computer, as whether pictures can be made here. */
-    note?: string;
+    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
+    note?: { text: string; fix?: true; };
 }

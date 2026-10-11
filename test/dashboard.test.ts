@@ -143,17 +143,27 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(named("veils")).toEqual({ name: "veils", about: "what happens only off screen, without details" });
         expect(named("language")).toMatchObject({ value: "it" });
         // A setting the game system adds, with its values but not what they mean to the master.
-        expect(named("advancement")).toEqual({ name: "advancement", about: "a setting of the game system", choices: [{ value: "xp" }, { value: "milestones" }] });
+        expect(named("advancement")).toEqual({
+            name: "advancement",
+            about: "a setting of the game system",
+            choices: [
+                { value: "xp", means: "your character levels up with experience points, for the foes overcome and what the story rewards" },
+                { value: "milestones", means: "your character levels up at the big moments of the story" },
+            ],
+        });
         expect(await ok("view", "--settings")).toContain("lines: ragni");
+        await ok("config", "veils", "none");
+        expect(await ok("view", "--settings")).toContain("veils: (none)");
 
         // Whether this computer makes pictures, and how to have them where it does not (D-308).
         const pictures = async (ready: PicturesReady) => {
             const shown = await runCommandLine(["view", "--settings", "--json"], { ...context, pictures: { ready: () => ready, make: () => Promise.resolve({ refused: "no" }) } });
-            return (JSON.parse(shown.output) as { settings: { name: string; note?: string; }[]; }).settings.find((setting) => setting.name === "pictures")?.note;
+            return (JSON.parse(shown.output) as { settings: { name: string; note?: { text: string; fix?: true; }; }[]; }).settings.find((setting) => setting.name === "pictures")?.note;
         };
 
-        expect(await pictures({ ready: true })).toBe("Codex makes them on this computer, from your ChatGPT plan.");
-        expect(await pictures({ ready: false, why: "Codex is not logged in", fix: "Run codex login in a terminal." })).toBe("Run codex login in a terminal.");
+        expect(await pictures({ ready: true })).toEqual({ text: "Codex makes them on this computer, from your ChatGPT plan." });
+        expect(await pictures({ ready: false, why: "Codex is not logged in", fix: "1. Paste `codex login` in a terminal." })).toEqual({ text: "1. Paste `codex login` in a terminal.", fix: true });
+        expect(await pictures({ ready: false, why: "Nothing makes pictures here" })).toEqual({ text: "Nothing makes pictures here.", fix: true });
         expect(named("pictures")).not.toHaveProperty("note");
         const refused = await runCommandLine(["view", "--settings", "--map"], context);
         expect(refused.exitCode).not.toBe(0);
@@ -355,7 +365,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         }
 
         const status = await runCommandLine(["status"], { ...context, dashboard: "http://localhost:4747" });
-        expect(status.output).toContain("Dashboard: http://localhost:4747, the player's sheet and the dice of the checks you ask, live: give the player the link when the session starts.");
+        expect(status.output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live: give the player the link when the session starts.");
     });
 });
 
@@ -604,16 +614,26 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "advancement", value: "milestones" })).status).toBe(202);
         // The master hears each setting as it is now against how it was: once, the last value; nothing of a list's item added and taken off again.
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "hard" })).status).toBe(202);
-        const news = dashboard.news();
+        const news = dashboard.news().lines;
         expect(news).toHaveLength(2);
         expect(news[0]).toMatch(/^The player set difficulty to hard on the dashboard: fights .+\. Play by it from now on\.$/);
         expect(news[1]).toMatch(/^The player set advancement to milestones on the dashboard: the characters rise when the story reaches a milestone.+\. Play by it from now on\.$/);
-        expect(dashboard.news()).toEqual([]);
+        expect(dashboard.news().lines).toEqual([]);
         // A value that came back as it was says nothing.
         expect((await send("POST", "/api/config", { setting: "lethality", value: "epic" })).status).toBe(202);
         expect((await send("POST", "/api/config", { setting: "lethality", value: "dice" })).status).toBe(202);
         expect((await send("POST", "/api/config", { setting: "veils", add: "annegare" })).status).toBe(202);
-        expect(dashboard.news()).toEqual(['The player added "annegare" to veils on the dashboard: what happens only off screen, without details.']);
+        const veils = dashboard.news();
+        expect(veils.lines).toEqual(['The player added "annegare" to veils on the dashboard: what happens only off screen, without details.']);
+        // Given back when the master's call never answered, then taken again.
+        veils.restore();
+        expect(dashboard.news().lines).toEqual(veils.lines);
+        // A setting's name in any case is the player's; one that does not exist is no one's.
+        expect((await send("POST", "/api/config", { setting: "Advancement", value: "xp" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set advancement to xp on the dashboard: experience points/)]);
+        const nonsense = await send("POST", "/api/config", { setting: "nonsense", value: "x" });
+        expect(nonsense.status).toBe(400);
+        expect(JSON.parse(nonsense.body).error).toMatch(/^There is no setting "nonsense": the player's are difficulty, lethality, /);
 
         // The master's own settings stay in the chat; a value the setting does not take, or anything else sent, changes nothing.
         const precedents = await send("POST", "/api/config", { setting: "precedents", add: "Avvelenato: svantaggio" });
@@ -623,7 +643,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "advancement", add: "xp" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy", add: "ragni" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "lines", add: "   " })).status).toBe(400);
-        expect(dashboard.news()).toEqual([]);
+        expect(dashboard.news().lines).toEqual([]);
         expect(await ok("config", "difficulty")).toContain("difficulty: hard");
     });
 
