@@ -63,9 +63,15 @@ interface Plate
     who?: string;
 }
 
-export function DiceTray(
-    { requested, sheetThrow, party, onShown, onFree }: { requested?: ShownRoll; sheetThrow?: SheetThrow; party: Member[]; onShown?: (roll: string) => void; onFree?: (roll: PageRoll) => void; },
-)
+export function DiceTray({ requested, sheetThrow, party, away, onShown, onFree }: {
+    requested?: ShownRoll;
+    sheetThrow?: SheetThrow;
+    party: Member[];
+    /** Where the page is not played, as Settings, Saves and About: no button, while the dice of a check still roll (D-344). */
+    away?: boolean;
+    onShown?: (roll: string) => void;
+    onFree?: (roll: PageRoll) => void;
+})
 {
     const asked = useRequested();
     const canvas = useRef<HTMLCanvasElement>(null);
@@ -85,6 +91,13 @@ export function DiceTray(
     const [keeps, setKeeps] = useState<Partial<Record<number, Keep>>>({});
     const [modifier, setModifier] = useState(0);
     const [sound, setSound] = usePref(soundPref);
+
+    // A section where the page is not played closes the tray (D-344).
+    useEffect(() => {
+        if (away === true) {
+            setOpen(false);
+        }
+    }, [away]);
 
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
@@ -328,7 +341,7 @@ export function DiceTray(
                 {plate?.shown && <PlateContent plate={plate} />}
             </div>
             {open && <div class="tray-scrim" aria-hidden="true" />}
-            <div ref={controls} class="dice-controls">
+            <div ref={controls} class="dice-controls" hidden={away}>
                 {open && (
                     <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? "Free roll: it counts for nothing" : "Dice: a check the master asks, or a free roll"}>
                         <p class="tray-note">
