@@ -17,6 +17,7 @@ export {
     lethalities,
     listSettingNames,
     mapSettingNames,
+    mentorWays,
     missingSettings,
     pictureWays,
     preparations,

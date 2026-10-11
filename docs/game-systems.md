@@ -543,6 +543,7 @@ The parts the engine gives today, and when:
 | `combat`, and any scene type | `scene open` | a scene of that type opens; the core has `combat`, how a fight is told (D-139) |
 | `new-day` | `advance` | the time reaches a new day with clocks to move; the core says how to move them (D-134) |
 | `quest-ends` | `write` | a quest becomes done or failed, such as the experience the story gives |
+| `mentor-hints`, `mentor-tutorial` | `instructions`, and the news of a change on the dashboard | the player wants the game taught (D-347): the 5e's `mentor-tutorial` says what to teach first and how a roll's whole sum reads |
 | `level-up` | `write`, `change` | the character's levels rise, or the points reach a new level (`PRO-6`) |
 
 In a chat with the MCP server a part comes once, the first time its situation opens, and again after `instructions`, which a chat calls at its start and after a summary (D-97); on the command line it comes every time. The 5e's parts are `session-zero` (what the table agrees first, the steps in order and what a character who starts above 1st level has), `play` (fights from medium to hard at difficulty normal, conditions rolled in, a roll in brackets), `quest-ends` and `level-up`; the core's text and the system's are joined by a blank line. The part of a mode comes with every `instructions`, not once a chat. The engine knows nothing of what a part says, and the frontmatter takes nothing but `replace`.

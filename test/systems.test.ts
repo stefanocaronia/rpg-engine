@@ -56,7 +56,9 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
             const result = await runCommandLine(["init", "--system", "Quinta edizione"], testContext(other));
             expect(result.output).toBe(`"Quinta edizione" is not an installed system. ${installed} Give one of them, such as system 5e. Nothing changed.`);
             expect(existsSync(join(other, "campaign.yaml"))).toBe(false);
-            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain("Still to agree with the player: language (a code, such as it), premise (");
+            expect((await runCommandLine(["init", "--system", "IRONSWORN"], testContext(other))).output).toContain(
+                "Still to agree with the player: language (a code, such as it), mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (",
+            );
             expect(readFileSync(join(other, "campaign.yaml"), "utf8")).toContain("system: ironsworn");
         } finally {
             removeFolder(other);
@@ -410,7 +412,9 @@ describe("the messages, case by case (SYS-1, SYS-3, SYS-4, SYS-6)", () => {
 
         try {
             const none = { ...testContext(other), systemFolders: [] };
-            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain("Still to agree with the player: system, premise (");
+            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain(
+                "Still to agree with the player: system, mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (",
+            );
             expect((await runCommandLine(["config", "system", "5e"], none)).output).toBe('"5e" is not an installed system. No system is installed. Nothing changed.');
             writeFileSync(join(other, "campaign.yaml"), "name: Nuda\nlanguage: it\nsystem: 5e\n");
             expect((await runCommandLine(["validate"], none)).output).toContain("Fix: install the game system.");

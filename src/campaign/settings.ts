@@ -41,10 +41,21 @@ export const rigorMeanings: Record<(typeof rigors)[number], string> = {
     simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
 };
 
-/** What the chosen difficulty or rigor means, as status and config give it; undefined for another setting or a value it does not take. */
+/** How much the master teaches the game, out of the story (D-347): the story alone, a hint now and then, or each rule as it first comes up. */
+export const mentorWays = ["off", "hints", "tutorial"] as const;
+
+/** What each way of the mentor means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-347). */
+export const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
+    off: "the story alone: no tips or explanations of yours, only your answers to what the player asks between brackets",
+    hints: "a tip of a sentence or two, in brackets, before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
+    tutorial: "each mechanic explained the first time it comes up, the whole sum of a roll shown, a debrief after fights and at the end of a session, "
+        + "as the mentor's part of your instructions says",
+};
+
+/** What the chosen difficulty, rigor or mentor means, as status and config give it; undefined for another setting or a value it does not take. */
 export function settingMeaning(name: string, value: unknown): string | undefined
 {
-    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings };
+    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
 }
@@ -74,6 +85,9 @@ export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
     system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
+    mentor: z.enum(mentorWays).optional().describe(
+        "how much the master teaches the game, out of the story: off, hints or tutorial; asked as how well the player knows the game: never played (tutorial), a little (hints), well (off)",
+    ),
     premise: z.string().min(1).optional().describe("without a written campaign: the genre, the tone and a few elements of the world, in the player's words"),
     preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
@@ -92,6 +106,7 @@ export const settingsSchema = z.object({
     veils: listSetting.describe("what happens only off screen, without details"),
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
     precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
+    learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
     // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
@@ -112,13 +127,13 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "status-line"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel"];
 
-/** What only the setup asks (D-241, MOD-3): how the companions come, and the lines and veils, which "none" answers too. */
-export const setupSettingNames: SettingName[] = ["companions", "lines", "veils"];
+/** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, and the lines and veils, which "none" answers too. */
+export const setupSettingNames: SettingName[] = ["mentor", "companions", "lines", "veils"];
 
 /** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
 export const premiseSettingNames: SettingName[] = ["premise", "preparation"];

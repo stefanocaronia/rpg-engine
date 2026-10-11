@@ -53,6 +53,25 @@ describe("the parts of the instructions (D-121)", () => {
         expect(given).not.toContain("## Setup");
     });
 
+    it("give the mentor's part for the way the player wants the game taught, with the system's and what was already explained; none when off (D-347)", async () => {
+        await ok("init", "--name", "Rocca", "--system", "5e");
+        inPlay(folder);
+        expect(await ok("instructions")).not.toContain("mentor");
+        await ok("config", "mentor", "hints");
+        const hints = await ok("instructions");
+        expect(hints).toContain("The player wants a hint now and then (mentor hints).");
+        expect(hints).not.toContain("mentor tutorial");
+        await ok("config", "mentor", "tutorial");
+        await ok("config", "learned", "--add", "Advantage", "--add", "Saving throw");
+        const tutorial = await ok("instructions");
+        expect(tutorial).toMatch(/The player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings:[^\n]*\n\nAlready explained: Advantage, Saving throw\./);
+        await ok("config", "mentor", "off");
+        expect(await ok("instructions")).not.toContain("mentor");
+        expect(await ok("status")).not.toContain("mentor");
+        await ok("config", "mentor", "hints");
+        expect(await ok("status")).toMatch(/ · mentor hints · /);
+    });
+
     it("come from the system of the campaign too: a game without turns tells a fight its own way (D-111)", async () => {
         await ok("init", "--name", "Ferro", "--system", "ironsworn");
         inPlay(folder);

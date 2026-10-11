@@ -11,13 +11,14 @@ import { pickTheme, shownTheme } from "./theme.ts";
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice.
 const groups: { title: string; names: string[]; system?: true; }[] = [
     { title: "The game", names: ["difficulty", "lethality", "saves", "rigor"] },
+    { title: "Learning the game", names: ["mentor", "learned"] },
     { title: "Dice and measures", names: ["dice", "units"], system: true },
     { title: "Limits", names: ["lines", "veils"] },
     { title: "Pictures and language", names: ["pictures", "language"] },
 ];
 
 // What a list's field suggests, as an example.
-const examples: Record<string, string> = { lines: "Add, e.g. spiders", veils: "Add, e.g. torture" };
+const examples: Record<string, string> = { lines: "Add, e.g. spiders", veils: "Add, e.g. torture", learned: "Add what you know, e.g. Advantage" };
 
 export function SettingsView({ version }: { version: number; })
 {

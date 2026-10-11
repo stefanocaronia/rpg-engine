@@ -102,6 +102,8 @@ export const status = defineCommand({
                 named("rigor", settings.rigor),
                 named("dice", settings.dice),
                 named("units", settings.units),
+                // How much the master teaches, only when they do (D-347).
+                named("mentor", settings.mentor === "off" ? undefined : settings.mentor),
                 // What the system adds to the setup, as advancement xp (DAT-10).
                 ...(system?.settings ?? []).map((setting) => named(setting.name, systemSettingValue(root, setting))),
                 named("mode", mode),

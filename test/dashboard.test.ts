@@ -135,7 +135,21 @@ describe("view as data (VIEW-1, D-272)", () => {
         await ok("config", "lines", "--add", "ragni");
         const data = JSON.parse(await ok("view", "--settings", "--json")) as { kind: string; settings: { name: string; }[]; };
         expect(data.kind).toBe("settings");
-        expect(data.settings.map((setting) => setting.name)).toEqual(["difficulty", "lethality", "saves", "rigor", "dice", "units", "pictures", "lines", "veils", "language", "advancement"]);
+        expect(data.settings.map((setting) => setting.name)).toEqual([
+            "difficulty",
+            "lethality",
+            "saves",
+            "rigor",
+            "mentor",
+            "learned",
+            "dice",
+            "units",
+            "pictures",
+            "lines",
+            "veils",
+            "language",
+            "advancement",
+        ]);
         const named = (name: string) => data.settings.find((setting) => setting.name === name);
         expect(named("difficulty")).toMatchObject({ about: "how hard the world plays", value: "normal" });
         expect(named("difficulty")).toHaveProperty("choices", expect.arrayContaining([{ value: "hard", means: "fights high, smart and tenacious foes, resources scarce" }]));
@@ -628,6 +642,19 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         // Given back when the master's call never answered, then taken again.
         veils.restore();
         expect(dashboard.news().lines).toEqual(veils.lines);
+        // The mentor's new part comes with the change, once in the chat; a mechanic taken off learned is explained again (D-347).
+        served.told = new Set();
+        expect((await send("POST", "/api/config", { setting: "mentor", value: "tutorial" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set mentor to tutorial on the dashboard: each mechanic explained .+\. Play by it from now on\.\n\nThe player is learning the game \(mentor tutorial\)\./)]);
+        expect((await send("POST", "/api/config", { setting: "mentor", value: "hints" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "mentor", value: "tutorial" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([]);
+        expect((await send("POST", "/api/config", { setting: "mentor", value: "off" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set mentor to off on the dashboard: the story alone: no tips or explanations of yours, .+\. Play by it from now on\.$/)]);
+        expect((await send("POST", "/api/config", { setting: "learned", add: "Advantage" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual(['The player added "Advantage" to learned on the dashboard: they know it already: no need to explain it.']);
+        expect((await send("POST", "/api/config", { setting: "learned", remove: "Advantage" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual(['The player took "Advantage" off learned on the dashboard: explain it again the next time it comes up.']);
         // A setting's name in any case is the player's; one that does not exist is no one's.
         expect((await send("POST", "/api/config", { setting: "Advancement", value: "xp" })).status).toBe(202);
         expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set advancement to xp on the dashboard: experience points/)]);

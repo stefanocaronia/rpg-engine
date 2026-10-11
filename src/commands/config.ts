@@ -14,6 +14,7 @@ import {
     lethalities,
     listSettingNames,
     mapSettingNames,
+    mentorWays,
     missingSettings,
     pictureWays,
     readCampaignData,
@@ -43,6 +44,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
+import { mentorPart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
 const counterExample = 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}';
@@ -60,6 +62,9 @@ export const config = defineCommand({
         + "companions how they come: none, made with the player or made by you in session zero, or met in play. "
         + "premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start) are for a campaign without a written world. "
         + "lines (what never appears in the game) and veils (what happens only off screen) are lists, changed with add and remove, and value none when the player wants none: when the player signals stop, add that content to lines. "
+        + "mentor is how much you teach the game, out of the story: off (the story alone, answering what the player asks between brackets), hints (a tip before choices "
+        + "that matter and when a rule slips by) or tutorial (each mechanic explained the first time, a roll's whole sum, a debrief after fights); "
+        + "learned is a list: the mechanics you explained, by their names in the system's language. "
         + "table is a list too: what you promise the player about how you play, in the words you said. "
         + "precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. "
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
@@ -145,7 +150,7 @@ export const config = defineCommand({
 });
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
-export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "dice", "units", "pictures", "lines", "veils", "language"] as const;
+export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "dice", "units", "pictures", "lines", "veils", "language"] as const;
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -160,7 +165,7 @@ export interface PlayerSetting
 }
 
 // What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
-const playerWords: Record<(typeof playerSettingNames)[number], { about: string; means?: Record<string, string>; values?: readonly string[]; }> = {
+const playerWords: Record<(typeof playerSettingNames)[number], { about: string; means?: Record<string, string>; values?: readonly string[]; added?: string; takenOff?: string; }> = {
     difficulty: {
         about: "how hard the world plays",
         values: difficulties,
@@ -186,6 +191,20 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
             rules: "as written: food and water each day, light as it burns, fatigue and encumbrance",
             simulation: "as written, and beyond: wear, spoilage, weather",
         },
+    },
+    mentor: {
+        about: "how much the master teaches the game, out of the story",
+        values: mentorWays,
+        means: {
+            off: "only the story; ask in brackets whenever you want",
+            hints: "a short note before big choices and when a rule slips by",
+            tutorial: "each rule explained the first time, the numbers shown, a short review after fights",
+        },
+    },
+    learned: {
+        about: "what the master has explained: take one off to have it explained again",
+        added: "they know it already: no need to explain it",
+        takenOff: "explain it again the next time it comes up",
     },
     dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
     units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
@@ -251,8 +270,8 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
         const added = (after.items ?? []).filter((item) => !(before.items ?? []).includes(item));
         const removed = (before.items ?? []).filter((item) => !(after.items ?? []).includes(item));
         return [
-            ...(added.length === 0 ? [] : [`The player added ${quotedItems(added)} to ${after.name} on the dashboard: ${after.about}.`]),
-            ...(removed.length === 0 ? [] : [`The player took ${quotedItems(removed)} off ${after.name} on the dashboard.`]),
+            ...(added.length === 0 ? [] : [`The player added ${quotedItems(added)} to ${after.name} on the dashboard: ${addedText(after)}.`]),
+            ...(removed.length === 0 ? [] : [`The player took ${quotedItems(removed)} off ${after.name} on the dashboard${takenOffText(after.name)}.`]),
         ];
     }
 
@@ -261,7 +280,22 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
     }
 
     const meaning = settingMeaning(after.name, after.value) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
-    return [`The player set ${after.name} to ${after.value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.`];
+    // The mentor's new part comes with it, once in the chat (D-347).
+    const part = after.name === "mentor" ? mentorPart(root, context, after.value) : "";
+    return [`The player set ${after.name} to ${after.value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${part === "" ? "" : `\n\n${part}`}`];
+}
+
+/** What an item the player added to a list means to the master: what the list holds, or what to do, as for learned. */
+function addedText(setting: PlayerSetting): string
+{
+    return (playerWords as Record<string, { added?: string; } | undefined>)[setting.name]?.added ?? setting.about;
+}
+
+/** What the master does when the player takes an item off a list, as for learned: explain it again. */
+function takenOffText(name: string): string
+{
+    const taken = (playerWords as Record<string, { takenOff?: string; } | undefined>)[name]?.takenOff;
+    return taken === undefined ? "" : `: ${taken}`;
 }
 
 /** Items in quotes, one after another: "spiders", "drowning". */

@@ -6,7 +6,7 @@ import { buttonsInstructions, masterInstructions } from "../instructions/index.t
 import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { situationPart } from "./parts.ts";
+import { mentorPart, situationPart } from "./parts.ts";
 
 export const instructions = defineCommand({
     name: "instructions",
@@ -23,7 +23,13 @@ export const instructions = defineCommand({
         context.told?.clear();
         // Where the host shows the player forms, or the dashboard shows its buttons, they take the place of the stop in words (D-148, D-279).
         const buttons = context.player !== undefined || context.page !== undefined;
-        const parts = [masterInstructions(), modeText(context.folder, context), sceneText(context.folder, context), buttons ? buttonsInstructions(physicalDice(context.folder)) : ""];
+        const parts = [
+            masterInstructions(),
+            modeText(context.folder, context),
+            mentorText(context.folder, context),
+            sceneText(context.folder, context),
+            buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
+        ];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },
 
@@ -53,7 +59,18 @@ function sceneText(folder: string, context: Context): string
     }
 }
 
-/** The part of the mode the campaign is in, with its layers (MOD-5); none outside a campaign, or in one that does not read, where status says why. */
+/** The mentor's part, for the way the player wants the game taught (D-347); none when off, outside a campaign, or in one that does not read. */
+function mentorText(folder: string, context: Context): string
+{
+    const root = findCampaign(folder);
+
+    try {
+        return root === undefined ? "" : mentorPart(root, context, readSettings(root).mentor);
+    } catch {
+        return "";
+    }
+}
+
 /** Whether the player rolls their own dice (ASK-8): then the buttons are for choices alone. */
 function physicalDice(folder: string): boolean
 {
@@ -66,6 +83,7 @@ function physicalDice(folder: string): boolean
     }
 }
 
+/** The part of the mode the campaign is in, with its layers (MOD-5); none outside a campaign, or in one that does not read, where status says why. */
 function modeText(folder: string, context: Context): string
 {
     const root = findCampaign(folder);

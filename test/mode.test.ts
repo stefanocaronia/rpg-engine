@@ -48,6 +48,7 @@ async function setUp(left: string[] = []): Promise<void>
     await ok("write", "Guado", "--type", "place");
     const answers: [string, string][] = [
         ["language", "it"],
+        ["mentor", "off"],
         ["difficulty", "normal"],
         ["lethality", "dice"],
         ["saves", "checkpoint"],
@@ -199,6 +200,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
 // The settings of the setup, the answer each takes here, and the model of MOD-3 and MOD-4.
 const answers: Record<string, string> = {
     language: "language: it",
+    mentor: "mentor: off",
     difficulty: "difficulty: normal",
     lethality: "lethality: dice",
     saves: "saves: checkpoint",
@@ -240,7 +242,7 @@ describe("the laws of the mode, on campaigns made at random", () => {
                     page(root, "characters", "Bran", made.companion, "companion");
                     page(root, "places", "Guado", made.place ? "alive" : "none");
                     const written = made.player !== "none" || made.companion !== "none" || made.place;
-                    const setup = ["language", "difficulty", "lethality", "saves", "rigor", "dice", "units", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) => setting !== made.unanswered)
+                    const setup = ["language", "mentor", "difficulty", "lethality", "saves", "rigor", "dice", "units", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) => setting !== made.unanswered)
                         && made.companions !== undefined;
                     const made0 = made.companions === "made with the player" || made.companions === "made by the master";
                     const zero = made.player === "alive" && (!made0 || made.companion === "alive");
