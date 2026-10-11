@@ -1,6 +1,6 @@
-// The Journal section (D-367, D-369): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
+// The Journal section (D-367, D-369, D-371): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the one the player follows, the main one until they choose, shown
-// small in Scene and Combat too; and the story by its scenes, as chapters, the last first, each with what the diary tells of it.
+// small in Scene and Combat too; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
@@ -8,11 +8,12 @@ import type { ShownChapter, ShownQuest } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { fieldLabel, phraseLabel } from "./labels.ts";
 import { Markdown } from "./markdown.tsx";
+import { Notes } from "./notes.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
 
 // The tab the player last chose, kept in this browser.
-const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story"] } as const;
-const tabNames: Record<string, string> = { quests: "Quests", story: "Story" };
+const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "notes"] } as const;
+const tabNames: Record<string, string> = { quests: "Quests", story: "Story", notes: "Notes" };
 
 export function JournalView({ version, campaign }: { version: number; campaign?: string; })
 {
@@ -58,7 +59,8 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
                 {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} />}
-                {journal.read === undefined && journal.problem === undefined && journal.done && <p class="journal-none">The journal starts with the player character.</p>}
+                {tab === "notes" && <Notes />}
+                {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">The journal starts with the player character.</p>}
             </div>
         </section>
     );

@@ -1503,6 +1503,124 @@ a {
     color: var(--low);
 }
 
+/* The player's notes (D-371): cards to write in, saved by themselves. */
+.notes {
+    display: grid;
+    gap: 12px;
+}
+
+.notes-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+}
+
+.notes-about {
+    flex: 1 1 280px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.notes-head .save-button,
+.note-foot .save-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.notes-head svg.icon,
+.note-foot .save-button svg.icon {
+    width: 18px;
+    height: 18px;
+}
+
+.note-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-items: start;
+    gap: 12px;
+}
+
+.note-card {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px 8px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.note-card:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--rule));
+}
+
+.note-title,
+.note-text {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+}
+
+.note-title {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 650;
+}
+
+.note-text {
+    min-height: 6lh;
+    resize: vertical;
+    field-sizing: content;
+    line-height: 1.45;
+}
+
+.note-title:hover,
+.note-text:hover {
+    border-color: var(--rule);
+}
+
+.note-title:focus-visible,
+.note-text:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+    background: var(--float);
+}
+
+.note-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding-top: 6px;
+    border-top: 1px solid var(--rule);
+    font-size: 0.85rem;
+}
+
+.note-when,
+.note-status {
+    color: var(--muted);
+}
+
+.note-status {
+    flex: 1;
+    min-width: 0;
+}
+
+.note-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 650;
+}
+
 /* The followed quest, small, at the top of Scene and Combat. */
 .followed {
     display: flex;

@@ -22,6 +22,7 @@ import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
+import { readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 
 /**
  * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
@@ -291,6 +292,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (request.method === "POST" && path === "/api/config" && origin !== undefined) {
         await changeSetting(request, response, served);
+        return;
+    }
+
+    if (path === "/api/notes" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
+        await notes(request, response, served);
         return;
     }
 
@@ -576,6 +582,56 @@ async function changeSaves(request: IncomingMessage, response: ServerResponse, s
 }
 
 /**
+ * The player's notes (D-371): read, written, taken away, or one shared with the master, who hears it at their next call; they stay outside the game, and the
+ * master's tools never read them.
+ */
+async function notes(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = request.method === "GET"
+        ? { success: true as const, data: undefined }
+        : z.union([
+            z.object({ id: z.string().max(64).optional(), title: z.string().max(200), text: z.string().max(20_000) }).strict(),
+            z.object({ remove: z.string().max(64) }).strict(),
+            z.object({ share: z.string().max(64) }).strict(),
+        ]).safeParse(await readBody(request, 64_000));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send a note as { title, text }, with its id to change one, or { remove } or { share } with its id." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const answer = withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+            const change = parsed.data;
+
+            if (change !== undefined && "title" in change) {
+                writeNote(root, { id: change.id ?? served.context.newId(), title: change.title.trim(), text: change.text, at: served.context.now().toISOString() });
+            } else if (change !== undefined && "remove" in change) {
+                removeNote(root, change.remove);
+            } else if (change !== undefined) {
+                const note = readNotes(root).find((one) => one.id === change.share);
+
+                if (note === undefined) {
+                    return { status: 400, body: { error: "There is no such note: reload the page." } };
+                }
+
+                served.events.push(
+                    `The player shares a note from their journal${note.title === "" ? "" : `, ${note.title}`}: ${note.text.trim()}\n`
+                        + "It is what the player thinks, not a fact of the world: use it to read them, and never take it as true.",
+                );
+            }
+
+            return { status: 200, body: { notes: readNotes(root) } };
+        });
+        sendJson(response, answer.status, answer.body);
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
  * The player's word in the setup (D-370): a choice they leave to the master, or that they made their choices and are ready; the master hears it at their next
  * call, and nothing is written.
  */
@@ -650,15 +706,15 @@ function giveBack(served: Served, taken: [string, PlayerSetting][]): void
     }
 }
 
-/** A request's body as JSON, up to a few kilobytes; undefined when it is more, or no JSON. */
-async function readBody(request: IncomingMessage): Promise<unknown>
+/** A request's body as JSON, up to `most` characters; undefined when it is more, or no JSON. */
+async function readBody(request: IncomingMessage, most = 4096): Promise<unknown>
 {
     let text = "";
 
     for await (const chunk of request) {
         text += String(chunk);
 
-        if (text.length > 4096) {
+        if (text.length > most) {
             return undefined;
         }
     }

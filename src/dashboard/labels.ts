@@ -156,3 +156,22 @@ function plainDice(notation: string): string
     const sum = terms.filter((term) => !term.includes("d")).reduce((total, term) => total + Number(term), 0);
     return `${terms.filter((term) => term.includes("d")).join("")}${sum === 0 ? "" : sum > 0 ? `+${sum}` : String(sum)}`;
 }
+
+/** A moment in real time, as a save or a note was written, as a game says it: today or yesterday, else the day, with the year only when it is not this one; whole in full. */
+export function realTimeLabel(at: string, now = new Date()): { short: string; full: string; } | undefined
+{
+    const date = new Date(at);
+
+    if (Number.isNaN(date.getTime())) {
+        return undefined;
+    }
+
+    const language = document.documentElement.lang || undefined;
+    const time = new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date);
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const daysAgo = date.toDateString() === now.toDateString() ? 0 : date.toDateString() === yesterday.toDateString() ? -1 : undefined;
+    const day = daysAgo === undefined
+        ? new Intl.DateTimeFormat(language, { month: "short", day: "numeric", ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) }).format(date)
+        : new Intl.RelativeTimeFormat(language, { numeric: "auto" }).format(daysAgo, "day");
+    return { short: `${day}, ${time}`, full: new Intl.DateTimeFormat(language, { dateStyle: "full", timeStyle: "short" }).format(date) };
+}

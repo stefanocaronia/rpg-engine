@@ -1,7 +1,7 @@
 // The player's dashboard (D-270, D-272): view gives the party and the sheet as data, with the chat's text unchanged; the server gives only what view gives, only
 // to its own page, tells the page when a file changes, and serves the pictures.
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -17,6 +17,7 @@ import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/d
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
+import { unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
@@ -937,6 +938,39 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/saves", { action: "load", save: "last" })).status).toBe(400);
         expect((await send("POST", "/api/saves", { action: "reset" })).status).toBe(400);
         expect((await send("POST", "/api/saves", { action: "delete" })).status).toBe(400);
+    });
+
+    it("keeps the player's notes outside the game: written, changed, taken away and shared with the master, never logged nor saved (D-371)", async () => {
+        const notes = async (method: string, body?: unknown): Promise<{ id: string; title: string; text: string; }[]> => {
+            const answer = await send(method, "/api/notes", body);
+            expect(answer.status).toBe(200);
+            return (JSON.parse(answer.body) as { notes: { id: string; title: string; text: string; }[]; }).notes;
+        };
+
+        const logged = readLogFile(folder).length;
+        expect(await notes("GET")).toEqual([]);
+        expect(await notes("POST", { id: "varro", title: " Varro ", text: "Mente sul vino." })).toEqual([{ id: "varro", title: "Varro", text: "Mente sul vino.", at: expect.any(String) }]);
+        const two = await notes("POST", { title: "", text: "La cripta sotto il mulino?" });
+        expect(two.map((note) => note.text)).toEqual(["La cripta sotto il mulino?", "Mente sul vino."]);
+        expect((await notes("POST", { id: "varro", title: "Varro", text: "Mente sul vino e sul carro." })).find((note) => note.id === "varro")?.text).toBe("Mente sul vino e sul carro.");
+        // Shared, the master hears it at their next call as the player's thought, never as a fact.
+        expect(await notes("POST", { share: "varro" })).toHaveLength(2);
+        expect(dashboard.news().lines).toEqual([
+            "The player shares a note from their journal, Varro: Mente sul vino e sul carro.\n"
+            + "It is what the player thinks, not a fact of the world: use it to read them, and never take it as true.",
+        ]);
+        expect(await notes("POST", { remove: two[0].id })).toEqual([expect.objectContaining({ id: "varro" })]);
+        expect((await send("POST", "/api/notes", { share: "nessuna" })).status).toBe(400);
+        expect((await send("POST", "/api/notes", { title: "Senza testo" })).status).toBe(400);
+        expect(readLogFile(folder)).toHaveLength(logged);
+        // A save leaves them out, and going back leaves them as they are.
+        expect((await send("POST", "/api/config", { setting: "saves", value: "free" })).status).toBe(202);
+        expect((await send("POST", "/api/saves", { action: "make" })).status).toBe(202);
+        const zip = readdirSync(join(folder, ".saves")).find((name) => name.endsWith(".zip")) ?? "";
+        expect(Object.keys(unpackFiles(readFileSync(join(folder, ".saves", zip)))).filter((path) => path.startsWith(".player"))).toEqual([]);
+        await notes("POST", { id: "dopo", title: "Dopo il salvataggio", text: "Resta." });
+        expect((await send("POST", "/api/saves", { action: "load", save: 1 })).status).toBe(202);
+        expect((await notes("GET")).map((note) => note.id)).toEqual(["dopo", "varro"]);
     });
 
     it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {

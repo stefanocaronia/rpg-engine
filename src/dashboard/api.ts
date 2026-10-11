@@ -95,6 +95,49 @@ export async function readJournal(): Promise<JournalView | undefined>
     return body.kind === "journal" ? body : undefined;
 }
 
+/** One of the player's notes (D-371), as the server keeps it. */
+export interface Note
+{
+    id: string;
+    title: string;
+    text: string;
+    at: string;
+}
+
+/** A note written, new or changed, by its id; one taken away; or one shared with the master. */
+export type NoteChange = { id: string; title: string; text: string; } | { remove: string; } | { share: string; };
+
+/** The player's notes, the last written first (D-371). */
+export async function readNotes(): Promise<Note[]>
+{
+    const response = await fetch("/api/notes");
+    const body = await response.json() as { notes: Note[]; } | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.notes;
+}
+
+// The notes reach the game one after another, in the order they were written.
+let noting: Promise<unknown> = Promise.resolve();
+
+/** Writes, takes away or shares a note (D-371), after those sent before: undefined when done, else what went wrong. */
+export async function sendNote(change: NoteChange): Promise<string | undefined>
+{
+    const sent = noting.then(async () => {
+        try {
+            const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });
+            return response.ok ? undefined : ((await response.json() as { error?: string; }).error ?? "The note was not saved: try again.");
+        } catch {
+            return "The note was not saved: the game is not connected.";
+        }
+    });
+    noting = sent;
+    return sent;
+}
+
 /** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */
 export async function readSaves(): Promise<SavesView>
 {

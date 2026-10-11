@@ -7,7 +7,7 @@ import { sectionAddress } from "./address.ts";
 import { changeSaves, readSaves, type SavesChange, type SavesView as Saves } from "./api.ts";
 import type { ResetPoint, ShownSave } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { phraseLabel } from "./labels.ts";
+import { phraseLabel, realTimeLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
 
 // What each mode of saves lets the player do, in their words.
@@ -139,7 +139,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
 function SaveFace({ save }: { save: ShownSave; })
 {
     const kind = save.kind === undefined ? undefined : placeKinds[save.kind];
-    const when = save.at === undefined ? undefined : madeAt(save.at);
+    const when = save.at === undefined ? undefined : realTimeLabel(save.at);
     return (
         <>
             <div class={save.picture === undefined && kind !== undefined ? "save-picture kind" : "save-picture"}>
@@ -345,25 +345,6 @@ function saveTitle(save: ShownSave): string
     }
 
     return phraseLabel(save.name ?? save.label);
-}
-
-/** When a save was made, in real time, as a game says it: today or yesterday, else the day, with the year only when it is not this one; whole in full. */
-function madeAt(at: string, now = new Date()): { short: string; full: string; } | undefined
-{
-    const date = new Date(at);
-
-    if (Number.isNaN(date.getTime())) {
-        return undefined;
-    }
-
-    const language = document.documentElement.lang || undefined;
-    const time = new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date);
-    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    const daysAgo = date.toDateString() === now.toDateString() ? 0 : date.toDateString() === yesterday.toDateString() ? -1 : undefined;
-    const day = daysAgo === undefined
-        ? new Intl.DateTimeFormat(language, { month: "short", day: "numeric", ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) }).format(date)
-        : new Intl.RelativeTimeFormat(language, { numeric: "auto" }).format(daysAgo, "day");
-    return { short: `${day}, ${time}`, full: new Intl.DateTimeFormat(language, { dateStyle: "full", timeStyle: "short" }).format(date) };
 }
 
 /** A name as the game compares it: its case and its curly quotes aside. */
