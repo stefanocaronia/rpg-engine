@@ -103,6 +103,20 @@ describe("the dice of the dashboard (D-278)", () => {
         expect(throwDice([d20, d20], tray, random).knocks.length).toBeGreaterThan(0);
     });
 
+    it("knocks first when a die falls on the floor, never in the air as it leaves the hand, in a narrow tray too", () => {
+        const random = seeded(13);
+
+        for (const [kind, model] of Object.entries(models)) {
+            for (const width of [3, 7]) {
+                for (let throwNumber = 0; throwNumber < 20; throwNumber++) {
+                    const knocks = throwDice([model.shape], { width, depth: 4.5 }, random).knocks;
+                    // A die let go at least 2.5 above the floor needs more than ten frames to reach it.
+                    expect(knocks[0]?.frame, kind).toBeGreaterThan(10);
+                }
+            }
+        }
+    });
+
     it("marks a rare face, as one throw in ten or rarer, on a die that counts: the highest or the lowest of a d10 or bigger, a d% on its tens (D-281)", () => {
         expect([{ sides: 20, value: 20 }, { sides: 20, value: 1 }, { sides: 20, value: 19 }].map(rareFace)).toEqual(["highest", "lowest", undefined]);
         // A d8's 8 is one throw in eight: not rare. A dropped die, or one that exploded, counts for no celebration.

@@ -1,11 +1,13 @@
 // The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, which the page changes as config does,
-// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, rolling by hand.
+// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound and colours, rolling by hand.
+import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { changeSetting, readSettings, type SettingChange } from "./api.ts";
 import type { PlayerSetting } from "./data.ts";
-import { Icon } from "./icons.tsx";
+import { diceColours, diceSetPref, diceSets } from "./dice/colours.ts";
+import { DieSwatch, Icon } from "./icons.tsx";
 import { itemLabel, phraseLabel } from "./labels.ts";
-import { byHandPref, soundPref, usePref, usePrefChange } from "./prefs.ts";
+import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice.
@@ -349,15 +351,25 @@ function idOf(name: string): string
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/** The page's own settings, in this browser alone: the theme, the dice's sound, rolling by hand. */
+/** The page's own settings, in this browser alone: the theme, the dice's sound and colours, rolling by hand. */
 function PageSettings()
 {
     usePrefChange();
     const [sound, setSound] = usePref(soundPref);
+    const [diceSet, setDiceSet] = useChoice(diceSetPref);
     const [byHand, setByHand] = usePref(byHandPref);
-    const rows: { name: string; about: string; options: { value: string; label: string; means?: string; }[]; value: string; pick(value: string): void; }[] = [
+    // A row with many values has them under its name.
+    const rows: { name: string; about: string; options: Option[]; value: string; pick(value: string): void; under?: boolean; }[] = [
         { name: "Theme", about: "the page's look", options: [{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], value: shownTheme(), pick: (value) => pickTheme(value === "dark" ? "dark" : "light") },
         { name: "Dice sound", about: "the dice as they roll", options: [{ value: "on", label: "On" }, { value: "off", label: "Off" }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
+        {
+            name: "Dice colours",
+            about: "the dice you roll",
+            options: diceSets.map((set) => ({ value: set.value, label: set.label, picture: <DieSwatch {...diceColours(set.value)} /> })),
+            value: diceSet,
+            pick: setDiceSet,
+            under: true,
+        },
         {
             name: "Checks",
             about: "what the master asks you to roll",
@@ -377,7 +389,7 @@ function PageSettings()
                 const id = `page-${idOf(row.name)}`;
                 const chosen = row.options.find((option) => option.value === row.value);
                 return (
-                    <div key={row.name} class="setting">
+                    <div key={row.name} class={row.under === true ? "setting under" : "setting"}>
                         <div class="setting-what">
                             <span class="setting-name" id={id}>{row.name}</span>
                             <span class="setting-about" id={`${id}-about`}>{row.about}</span>
@@ -397,11 +409,20 @@ function PageSettings()
     );
 }
 
+/** A value to choose, with what it means when chosen, and a picture before its name. */
+interface Option
+{
+    value: string;
+    label: string;
+    means?: string;
+    picture?: ComponentChildren;
+}
+
 /** Values to choose one of, as a radio group: the arrows move among them and choose, one stop of Tab; the chosen one in gold. */
 function Segmented({ label, described, options, value, onPick }: {
     label: string;
     described: string;
-    options: { value: string; label: string; }[];
+    options: Option[];
     value?: string;
     onPick(value: string, byKey: boolean): void;
 })
@@ -435,6 +456,7 @@ function Segmented({ label, described, options, value, onPick }: {
                     tabIndex={index === Math.max(at, 0) ? 0 : -1}
                     onClick={() => option.value !== value && onPick(option.value, false)}
                 >
+                    {option.picture}
                     {option.label}
                 </button>
             ))}

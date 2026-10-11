@@ -1,13 +1,16 @@
 // Where the dice are shown (D-278): a three.js scene over the page, with a light, the dice's shadows on an invisible floor, and the dice of make-dice.py in the
-// theme's colours (D-279): yellow with navy numbers on the dark page, navy with yellow numbers on the light one.
+// colours chosen in Settings, by default the theme's (D-279, D-348).
 import * as THREE from "three";
 import { shownTheme } from "../theme.ts";
 import { celebrate, type Effect, type Glow, makePictures, type Pictures, type Showing } from "./celebration.ts";
+import { diceColours } from "./colours.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
 import type { Tray } from "./throw.ts";
 
-// How far a die that does not count fades toward the page, as the lower of two d20 with advantage: set aside, not made of glass.
-const dimmed = 0.6;
+// A die that does not count, as the lower of two d20 with advantage, turns grey as its chip in the plate, whatever its set: its body mostly, its ink half way;
+// set aside, not made of glass (D-348).
+const dimmedBody = 0.8;
+const dimmedInk = 0.5;
 
 /** Where a die is shown, and how it is turned. */
 export interface Pose
@@ -109,7 +112,7 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
                 object.traverse((part) => {
                     if (part instanceof THREE.Mesh) {
                         const ink = (part.material as THREE.Material).name === "ink";
-                        const material = new THREE.MeshStandardMaterial({ color: ink ? colours.ink : colours.body, roughness: ink ? 0.6 : 0.35, metalness: 0.05 });
+                        const material = new THREE.MeshStandardMaterial({ name: ink ? "ink" : "body", color: ink ? colours.ink : colours.body, roughness: ink ? 0.6 : 0.35, metalness: 0.05 });
                         part.material = material;
                         part.castShadow = true;
                         materials.push(material);
@@ -135,8 +138,8 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
         },
         dim(die)
         {
-            const page = new THREE.Color(diceColours().page);
-            dice[die]?.materials.forEach((material) => material.color.lerp(page, dimmed));
+            const grey = new THREE.Color(themeColours().dropped);
+            dice[die]?.materials.forEach((material) => material.color.lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody));
             dice[die]?.object.traverse((part) => {
                 part.castShadow = false;
             });
@@ -148,7 +151,7 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
 
             if (object !== undefined) {
                 pictures ??= makePictures();
-                effects.push(celebrate(scene, object.position.clone(), rare, diceColours().glow, pictures, showing));
+                effects.push(celebrate(scene, object.position.clone(), rare, themeColours().glow, pictures, showing));
 
                 if (!moving) {
                     moving = true;
@@ -165,20 +168,16 @@ export function makeStage(canvas: HTMLCanvasElement, looks: Map<string, THREE.Ob
     };
 }
 
-/** The dice's colours by the theme (D-279, D-282), the colour of the page's panels beneath them, and the glow of the rare faces. */
-function diceColours(): { body: string; ink: string; page: string; glow: Glow; }
+/** By the theme (D-279, D-282): the grey of a die that does not count, and the glow of the rare faces. */
+function themeColours(): { dropped: string; glow: Glow; }
 {
     return shownTheme() === "dark"
         ? {
-            body: "#f5c63e",
-            ink: "#182c4c",
-            page: "#131f38",
+            dropped: "#59606f",
             glow: { lights: true, highest: { halo: "#f5c63e", resting: 0.6, sparks: ["#f5c63e", "#ffefcf"] }, lowest: { halo: "#ff9381", smoke: ["#ff9381", "#7f848f"] } },
         }
         : {
-            body: "#182c4c",
-            ink: "#f5c63e",
-            page: "#fef9f2",
+            dropped: "#b4b8c0",
             glow: { lights: false, highest: { halo: "#d1a61b", resting: 0.85, sparks: ["#c29803", "#254b83"] }, lowest: { halo: "#a73929", smoke: ["#a73929", "#8c919c"] } },
         };
 }

@@ -1,5 +1,5 @@
-// The page's own preferences, kept in this browser alone (D-341): the dice's sound and rolling by hand, and the theme's change. A change, from Settings or
-// from where the switch is, reaches every part of the page that shows it at once.
+// The page's own preferences, kept in this browser alone (D-341): the dice's sound, their colours and rolling by hand, and the theme's change. A change,
+// from Settings or from where the switch is, reaches every part of the page that shows it at once.
 import { useEffect, useState } from "preact/hooks";
 
 /** A preference of the page, on or off, by where the browser keeps it. */
@@ -8,6 +8,15 @@ export interface Pref
     key: string;
     /** Its value when the browser keeps none. */
     on: boolean;
+}
+
+/** A preference of the page that is one of some names, by where the browser keeps it. */
+export interface Choice
+{
+    key: string;
+    /** Its value when the browser keeps none, or one the page no longer offers. */
+    initial: string;
+    values: readonly string[];
 }
 
 /** Whether the dice make a sound (D-284). */
@@ -33,6 +42,27 @@ export function usePref(pref: Pref): [boolean, (on: boolean) => void]
     return [value, (on) => writePref(pref, on)];
 }
 
+/** A choice's value, and what changes it, on every part of the page that uses it. */
+export function useChoice(choice: Choice): [string, (value: string) => void]
+{
+    const [value, setValue] = useState(() => readChoice(choice));
+
+    useEffect(() => {
+        const follow = (): void => setValue(readChoice(choice));
+        window.addEventListener(changed, follow);
+        return () => window.removeEventListener(changed, follow);
+    }, [choice.key]);
+
+    return [value, (picked) => writeKept(choice.key, picked)];
+}
+
+/** A choice's value now, for what reads it once, as the dice when they are thrown. */
+export function readChoice(choice: Choice): string
+{
+    const value = readKept(choice.key);
+    return value !== undefined && choice.values.includes(value) ? value : choice.initial;
+}
+
 /** Tells every part of the page that a preference changed, as the theme does. */
 export function announcePref(): void
 {
@@ -52,30 +82,40 @@ export function usePrefChange(): void
 }
 
 // What the page keeps of each preference while it is open, for a browser that keeps nothing.
-const kept = new Map<string, boolean>();
+const kept = new Map<string, string>();
 
 function readPref(pref: Pref): boolean
 {
-    const known = kept.get(pref.key);
+    const value = readKept(pref.key);
+    return value === undefined ? pref.on : value === "on";
+}
+
+function writePref(pref: Pref, on: boolean): void
+{
+    writeKept(pref.key, on ? "on" : "off");
+}
+
+function readKept(key: string): string | undefined
+{
+    const known = kept.get(key);
 
     if (known !== undefined) {
         return known;
     }
 
     try {
-        const kept = localStorage.getItem(pref.key);
-        return kept === null ? pref.on : kept === "on";
+        return localStorage.getItem(key) ?? undefined;
     } catch {
-        return pref.on;
+        return undefined;
     }
 }
 
-function writePref(pref: Pref, on: boolean): void
+function writeKept(key: string, value: string): void
 {
-    kept.set(pref.key, on);
+    kept.set(key, value);
 
     try {
-        localStorage.setItem(pref.key, on ? "on" : "off");
+        localStorage.setItem(key, value);
     } catch {
         // The page keeps it until it is closed.
     }

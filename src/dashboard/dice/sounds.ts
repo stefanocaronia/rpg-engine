@@ -1,5 +1,5 @@
-// The sound of the dice (D-278, D-283): one touch of a resin die on felt, made with ElevenLabs, played at every knock of the physics, so the bounces of each
-// throw make its pattern; as loud as the die hit, duller when softly, a little higher or lower each time. Until it loads, the browser makes a knock of its
+// The sound of the dice (D-278, D-283): one touch of a die in a felt-lined tray, recorded by the maintainer and equalized low, played at every knock of the physics, so the bounces of each
+// throw make its pattern; as loud as the die hit, duller when softly, barely higher or lower each time. Until it loads, the browser makes a knock of its
 // own. Browsers let a page make sounds only after the player's first click or key.
 let audio: AudioContext | undefined;
 let output: AudioNode | undefined;
@@ -40,13 +40,17 @@ export function knock(strength: number): void
 
     const source = audio.createBufferSource();
     source.buffer = touch;
-    source.playbackRate.value = 0.9 + Math.random() * 0.22;
-    // A soft knock is a duller one.
+    // The same die rings at the same pitch: a few hundredths up or down, only so that the same touch never sounds twice alike.
+    source.playbackRate.value = 0.97 + Math.random() * 0.06;
+    // A soft knock is a duller one: the felt lets less of the click through, from 300 Hz for the softest to some 12 kHz for the hardest, the touch's body
+    // being all below 1 kHz.
     const filter = audio.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.value = 2500 + loudness * 9000;
+    filter.frequency.value = 300 * 40 ** loudness;
+    filter.Q.value = Math.SQRT1_2;
+    // Each bounce, slower, is much softer than the one before, as a real die's on felt.
     const gain = audio.createGain();
-    gain.gain.value = 0.2 + loudness * 0.8;
+    gain.gain.value = Math.max(0.02, loudness ** 1.5);
     source.connect(filter).connect(gain).connect(output);
     source.start();
 }

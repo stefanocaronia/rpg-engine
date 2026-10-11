@@ -78,6 +78,18 @@ export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean
     );
 }
 
+/** A d20 in a set's colours, its body filled and its edges in the ink of its numbers, as Settings shows the sets of dice (D-348). */
+export function DieSwatch({ body, ink }: { body: string; ink: string; })
+{
+    const outline = diePaths[20].split(" M")[0];
+    return (
+        <svg class="die-swatch" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={outline} fill={body} stroke="none" />
+            <path d={diePaths[20]} fill="none" stroke={ink} />
+        </svg>
+    );
+}
+
 /** The dice of a notation as pictures, two at most, one in front of the other, with how many past two of one kind. */
 export function NotationIcons({ notation }: { notation: string; })
 {
