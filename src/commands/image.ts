@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
 import { baseChain, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
-import { placeBrief } from "../pictures/index.ts";
+import { placeBrief, questBrief } from "../pictures/index.ts";
 import { imageFile, ownImage } from "./game-images.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
@@ -32,14 +32,17 @@ export const image = defineCommand({
         + "It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; "
         + "a page without one shows the picture of the page it derives from, such as a goblin's icon. "
         + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. "
-        + "For a place, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows (D-308): what the party sees arriving, never what they cannot see. "
+        + "For a place or a quest, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows (D-308, D-388): for a place what the party sees arriving, "
+        + "for a quest what the character knows of it, never what they do not know. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
     group: "game",
     positionals: ["page", "file"],
     input: z.object({
         page: z.string().describe("the page that gets the picture"),
         file: z.string().optional().describe("the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
-        describe: z.string().optional().describe("instead of file, for a place: what the party sees arriving, in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself"),
+        describe: z.string().optional().describe(
+            "instead of file, for a place: what the party sees arriving; for a quest: what the character knows of it; in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
+        ),
     }),
 
     run(input, context): ImageResult | Promise<ImageResult>
@@ -113,20 +116,20 @@ function setImage(root: string, context: Context, world: World, page: Page, from
 }
 
 /**
- * A place's picture made from what the party sees (D-308, PIC-1–PIC-3), where the campaign's setting allows it and this computer can: in the MCP server it comes
+ * A place's picture made from what the party sees, or a quest's from what the character knows of it (D-308, D-388, PIC-1–PIC-3), where the campaign's setting allows it and this computer can: in the MCP server it comes
  * by itself while the story goes on; on the command line the command waits for it. A refusal is never tried again.
  */
 function madePicture(root: string, context: Context, page: Page, seen: string): ImageResult | Promise<ImageResult>
 {
-    if (page.type !== "place") {
-        throw new Error(`describe makes pictures of places, and ${page.name} is a ${page.type ?? "page"}: give a picture of it with file. Nothing changed.`);
+    if (page.type !== "place" && page.type !== "quest") {
+        throw new Error(`describe makes pictures of places and quests, and ${page.name} is a ${page.type ?? "page"}: give a picture of it with file. Nothing changed.`);
     }
 
     const setting = readSettings(root).pictures;
 
     if (setting === undefined || setting === "none") {
         throw new Error(
-            `The campaign makes no pictures (pictures: ${setting ?? "not chosen"}): ask the player whether they want them, then config pictures: new places, on request or none. Nothing changed.`,
+            `The campaign makes no pictures (pictures: ${setting ?? "not chosen"}): ask the player whether they want them, then config pictures: new places and quests, on request or none. Nothing changed.`,
         );
     }
 
@@ -136,7 +139,8 @@ function madePicture(root: string, context: Context, page: Page, seen: string): 
         throw new Error(`${ready.ready ? "Nothing on this computer makes pictures" : ready.why}. If your own tools make pictures, make one and give it with file; else go on without. Nothing changed.`);
     }
 
-    const brief = placeBrief(page.name, seen, [...readListSetting(root, "lines"), ...readListSetting(root, "veils")]);
+    const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
+    const brief = page.type === "quest" ? questBrief(page.name, seen, unseen) : placeBrief(page.name, seen, unseen);
     const making = context.pictures.make(brief).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));

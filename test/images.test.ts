@@ -158,7 +158,7 @@ describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
         context = { ...context, pictures: made };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("makes no pictures (pictures: not chosen)");
         await ok("config", "pictures", "new places");
-        expect(await refused("image", "Ennio", "--describe", "Un uomo")).toContain("describe makes pictures of places");
+        expect(await refused("image", "Ennio", "--describe", "Un uomo")).toContain("describe makes pictures of places and quests");
         context = { ...context, pictures: maker("Codex is not logged in on this computer") };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("Codex is not logged in on this computer. If your own tools make pictures");
         context = { ...context, pictures: made };
@@ -168,6 +168,12 @@ describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
         expect(made.briefs[0]).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre sotto la pioggia");
         expect(made.briefs[0]).toContain("Never show: ragni");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-set", visibility: "public", data: { page: "Guado" } });
+        // A quest's picture: what the character knows of it, as the banner of its card (D-388).
+        await ok("write", "Il guado", "--type", "quest", "--set", "status=open");
+        expect(await ok("image", "Il guado", "--describe", "Pellegrini spariti al guado")).toContain("Il guado's picture is now images/Il guado.png");
+        expect(made.briefs[1]).toContain("Asset type: wide low banner for a quest card of a tabletop role-playing game, landscape, 16:6");
+        expect(made.briefs[1]).toContain("Primary request: the quest Il guado, as an emblem of what it is about: Pellegrini spariti al guado");
+        expect(made.briefs[1]).toContain("Never show: ragni");
     });
 
     it("goes on without a picture the generator refuses, and never tries again by itself", async () => {
@@ -189,13 +195,26 @@ describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
 
     it("asks the master to ask the player once where pictures can be made, then for the place the party is in without one", async () => {
         context = { ...context, pictures: maker(true) };
-        expect(await ok("status")).toContain("Pictures: this computer can make the places' pictures");
+        expect(await ok("status")).toContain("Pictures: this computer can make the pictures of places and quests");
+        // new places, as campaigns wrote it before quests had pictures, is the value that took its place (D-388).
         await ok("config", "pictures", "new places");
+        expect(await ok("config", "pictures")).toContain("pictures: new places and quests");
+        // Written by hand, as campaigns had it, it reads the same, and validate finds nothing wrong with it.
+        const settings = join(folder, "campaign.yaml");
+        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^pictures: .*$/m, "pictures: new places"));
+        expect(await ok("config", "pictures")).toContain("pictures: new places and quests");
+        expect(await ok("validate")).not.toContain("pictures");
         expect(await ok("status")).toContain("Guado has no picture: once you have told it, have one made with image, page Guado, describe");
         expect(await ok("move", "Ennio", "--to", "Mulino")).toContain("Mulino has no picture");
+        // A quest that opens without a picture asks for one too, once (D-388).
+        expect(await ok("write", "Il guado", "--type", "quest", "--set", "status=open")).toContain(
+            "Il guado has no picture: have one made with image, page Il guado, describe the quest as the character knows it, never what they do not know.",
+        );
+        expect(await ok("write", "Il guado", "--set", "giver=Ennio")).not.toContain("has no picture");
         context = { ...context, pictures: maker("Codex is not installed on this computer") };
         await ok("config", "pictures", "none");
         expect(await ok("status")).not.toContain("picture");
+        expect(await ok("write", "La torre", "--type", "quest", "--set", "status=open")).not.toContain("has no picture");
     });
 });
 

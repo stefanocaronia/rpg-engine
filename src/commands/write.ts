@@ -75,6 +75,7 @@ import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, held
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { gridNotes } from "./game-grids.ts";
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
+import { questPictureNote } from "./game-images.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
 import { logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
@@ -289,7 +290,9 @@ export const write = defineCommand({
         const levelUp = (): string => situationPart("level-up", context, system);
         const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, levelUp), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
-        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page), ...newQuestNotes(existing, page)] : [];
+        const opened = newQuestNotes(existing, page);
+        const picture = opened.length === 0 ? undefined : questPictureNote(root, context, now, page);
+        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])] : [];
 
         // The story tells a quest taken, done or failed (D-369).
         if (changed) {

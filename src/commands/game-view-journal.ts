@@ -24,6 +24,8 @@ export interface ShownQuest
     clock?: { value: number; max: number; name?: string; };
     /** Its deadline, a game date, with the minutes still to come, below zero once passed; none before the game has a date. */
     deadline?: { date: string; minutes?: number; };
+    /** Its picture, as the character knows the quest (D-388). */
+    picture?: { file: string; version: number; };
 }
 
 /** A scene as a chapter of the story (VIEW-9); without a title, what happened between scenes. */
@@ -47,7 +49,7 @@ const statuses = ["open", "done", "failed"] as const;
 // Lines of the game, not of the story: the saves made have their own section, the mode is the setup's, the rolls have their column (D-369).
 const outOfStory = new Set(["saved", "mode-changed", "roll", "roll-revealed"]);
 
-/** A place as a chapter shows it: its kind and picture, as the player character knows it. */
+/** A page as the journal shows it: its kind and picture, as the player character knows it; a place's, else that of the nearest place that holds it. */
 export type PlaceLook = (name: unknown) => Pick<ShownChapter, "kind" | "picture">;
 
 /**
@@ -72,7 +74,7 @@ export function shownJournal(
     const order = (quest: ShownQuest): number[] => [statuses.indexOf(quest.status), quest.status === "open" && quest.main ? 0 : 1, -(changed.get(comparableText(quest.name)) ?? -1)];
     const quests = [...knowledge.pages]
         .filter((page) => page.type === "quest" && (statuses as readonly string[]).includes(String(page.fields.status)))
-        .map((page) => shownQuest(world, knowledge, page, now, named))
+        .map((page) => shownQuest(world, knowledge, page, now, named, look))
         .sort((one, other) => compareOrders(order(one), order(other)) || one.name.localeCompare(other.name));
     return { quests, chapters: chaptersOf(log, fact, named, look) };
 }
@@ -90,17 +92,19 @@ export function questText(quest: ShownQuest): string
     ].join(", ");
 }
 
-function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDate | undefined, named: (name: unknown) => string | undefined): ShownQuest
+function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDate | undefined, named: (name: unknown) => string | undefined, look: PlaceLook): ShownQuest
 {
     const { goals, rest } = goalsIn(knownText(world, knowledge, page));
     const giver = shownLink(page.fields.giver, named);
     const place = shownLink(page.fields.place, named);
+    const picture = look(page.name).picture;
     return {
         name: page.name,
         status: page.fields.status as ShownQuest["status"],
         ...questMeasures(page, now),
         ...(giver === undefined ? {} : { giver }),
         ...(place === undefined ? {} : { place }),
+        ...(picture === undefined ? {} : { picture }),
         text: rest,
         goals,
     };

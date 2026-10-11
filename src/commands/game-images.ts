@@ -17,15 +17,23 @@ export function picturesNote(root: string, context: Context, world: World, place
 
     if (setting === undefined) {
         return context.pictures?.ready().ready === true
-            ? "Pictures: this computer can make the places' pictures with the player's Codex, which spends their plan: ask them once whether they want one for each new place, only those they ask for, or none; then config pictures (new places, on request or none)."
+            ? "Pictures: this computer can make the pictures of places and quests with the player's Codex, which spends their plan: ask them once whether they want one for each new place and quest, only those they ask for, or none; then config pictures (new places and quests, on request or none)."
             : undefined;
     }
 
-    if (setting !== "new places" || place === undefined || place.type !== "place" || shownImage(root, context, world, place) !== undefined) {
+    if (setting !== "new places and quests" || place === undefined || place.type !== "place" || shownImage(root, context, world, place) !== undefined) {
         return undefined;
     }
 
     return `${place.name} has no picture: once you have told it, have one made with image, page ${place.name}, describe what the party sees arriving, never what they cannot see.`;
+}
+
+/** What the master hears as a quest opens without a picture, where the campaign wants one for each new quest (D-388); undefined otherwise. */
+export function questPictureNote(root: string, context: Context, world: World, quest: Page): string | undefined
+{
+    return readSettings(root).pictures === "new places and quests" && shownImage(root, context, world, quest) === undefined
+        ? `${quest.name} has no picture: have one made with image, page ${quest.name}, describe the quest as the character knows it, never what they do not know.`
+        : undefined;
 }
 
 /** The folders whose images folder holds the pictures pages link: the campaign's first, then its game system's (D-267). */

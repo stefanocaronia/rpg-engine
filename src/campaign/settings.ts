@@ -65,8 +65,8 @@ export const diceWays = ["digital", "physical"] as const;
 
 export { unitSystems };
 
-/** Which pictures of places the engine has made, where it can (D-308): none, only those the player asks for, or one for each new place. */
-export const pictureWays = ["none", "on request", "new places"] as const;
+/** Which pictures the engine has made, where it can (D-308, D-388): none, only those the player asks for, or one for each new place and quest. */
+export const pictureWays = ["none", "on request", "new places and quests"] as const;
 
 /** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
 export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
@@ -99,8 +99,9 @@ export const settingsSchema = z.object({
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
-    pictures: z.enum(pictureWays).optional().describe(
-        "the pictures of places the engine has made on this computer, which spend the player's Codex: none, on request (those the player asks for) or new places (one for each new place)",
+    // new places, as campaigns wrote it before quests had pictures, is read as the value that took its place (D-388).
+    pictures: z.preprocess((value) => (value === "new places" ? "new places and quests" : value), z.enum(pictureWays)).optional().describe(
+        "the pictures of places and quests the engine has made on this computer, which spend the player's Codex: none, on request (those the player asks for) or new places and quests (one for each new place and quest)",
     ),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),

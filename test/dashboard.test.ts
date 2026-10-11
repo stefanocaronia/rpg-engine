@@ -339,6 +339,9 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             clock: { value: 2, max: 6, name: "I rapitori partono" },
             deadline: { date: "day 2, 06:00", minutes: 720 },
         });
+        // With its picture, the quest brings it, for the banner of its card (D-388).
+        await ok("image", "Il vino", join(folder, "ritratto.png"));
+        expect(JSON.parse(await ok("view", "--journal", "--json")).quests[1]).toMatchObject({ name: "Il vino", picture: { file: "Il vino.png", version: expect.any(Number) } });
         expect(await ok("view", "--journal")).toContain(
             "Ritrovare i pellegrini: open, main, 1/2 goals, sigilli 2/3, I rapitori partono 2/6, deadline day 2, 06:00 (in 12h)\nIl vino: open, 0/1 goals\nLa scorta: done",
         );

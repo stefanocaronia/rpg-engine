@@ -1,4 +1,4 @@
-// The Journal section (D-367, D-369, D-371, D-384): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
+// The Journal section (D-367, D-369, D-371, D-384, D-388): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the one the player follows, the main one until they choose, shown
 // small in Scene and Combat too; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -84,6 +84,7 @@ export function FollowedQuest({ version, campaign }: { version: number; campaign
             <button type="button" class="followed-star on" aria-label={`Follow ${quest.name}`} aria-pressed={true} onClick={() => setFollowed(undefined)}>
                 <Star />
             </button>
+            {quest.picture !== undefined && <img class="followed-picture" src={pictureAddress(quest.picture)} alt="" />}
             <a class="followed-what" href={sectionAddress("journal")}>
                 <span class="followed-name">{quest.name}</span>
                 {next !== undefined && <span class="followed-next">{plainText(next.text)}</span>}
@@ -144,6 +145,12 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     ].filter((part) => part !== undefined);
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
+            {/* The quest's picture as a banner on its card's top, as a video game's quest log has it (D-388); nothing without one. */}
+            {quest.picture !== undefined && (
+                <div class="quest-picture" aria-hidden="true">
+                    <img src={pictureAddress(quest.picture)} alt="" loading="lazy" />
+                </div>
+            )}
             <header class="quest-head">
                 {open && (
                     <button
@@ -318,7 +325,7 @@ function ChapterPicture({ chapter }: { chapter: ShownChapter; })
     if (chapter.picture !== undefined) {
         return (
             <div class="chapter-picture" aria-hidden="true">
-                <img src={`/images/${encodeURIComponent(chapter.picture.file)}?v=${chapter.picture.version}`} alt="" loading="lazy" />
+                <img src={pictureAddress(chapter.picture)} alt="" loading="lazy" />
             </div>
         );
     }
@@ -397,6 +404,12 @@ function useFollowed(campaign: string | undefined, quests: ShownQuest[] | undefi
     const open = (quests ?? []).filter((quest) => quest.status === "open");
     const usual = open.find((quest) => quest.main)?.name ?? (open.length === 1 ? open[0].name : undefined);
     return [kept === undefined ? usual : kept === "" ? undefined : kept, (name) => keep(name ?? "")];
+}
+
+/** A picture's address, with when its file last changed, so that it comes again only when it changes. */
+function pictureAddress(picture: { file: string; version: number; }): string
+{
+    return `/images/${encodeURIComponent(picture.file)}?v=${picture.version}`;
 }
 
 /** "1d 12h", "3h 20m", "45m": time in the game's days, hours and minutes. */

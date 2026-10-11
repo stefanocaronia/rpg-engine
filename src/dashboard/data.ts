@@ -330,6 +330,8 @@ export interface ShownQuest
     counters: { field: string; value: number; max: number; }[];
     clock?: { value: number; max: number; name?: string; };
     deadline?: { date: string; minutes?: number; };
+    /** Its picture (D-388). */
+    picture?: { file: string; version: number; };
 }
 
 /** A scene as a chapter of the story (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */
