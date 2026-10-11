@@ -31,9 +31,24 @@ export function testContext(folder: string): Context
     };
 }
 
+// The temporary folders this test file made, which test/setup.ts removes when its tests end.
+const made = new Set<string>();
+
 export function makeTempFolder(): string
 {
-    return mkdtempSync(join(tmpdir(), "rpg-test-"));
+    const folder = mkdtempSync(join(tmpdir(), "rpg-test-"));
+    made.add(folder);
+    return folder;
+}
+
+/** Removes every temporary folder the test file made and has not removed, even after a test that failed half way. */
+export function removeMadeFolders(): void
+{
+    for (const folder of made) {
+        removeFolder(folder);
+    }
+
+    made.clear();
 }
 
 export function removeFolder(folder: string): void

@@ -38,41 +38,45 @@ const calls: { args: string[]; once?: boolean; }[] = [
 const scratch = mkdtempSync(join(tmpdir(), "rpg-bench-"));
 const systems = join(scratch, "systems");
 const cli = existsSync(join(engine, "dist", "cli.js")) ? join(engine, "dist", "cli.js") : join(engine, "src", "cli.ts");
-enlargeSystem(join(engine, "systems", "5e"), join(systems, "5e"), big ? 45 : 1);
-console.log(`| pages | command | first call | then (median of ${warmRuns}) |\n|---|---|---|---|`);
 
-for (const size of sizes) {
-    const folder = join(scratch, `campaign-${size}`);
-    const session = new SessionStore({ systemFolders: [systems] });
-    const context = { ...benchContext(folder, [systems]), files: session };
-    await must(context, ["init", "--name", "Banco", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"]);
-    await must(context, ["advance", "--to", "day 1, 18:00"]);
-    generateWorld(folder, size);
-    // In play, as after the setup and session zero, so that scenes open (MOD-6); written by hand like the world, which the session reads next.
-    writeFileSync(join(folder, "state.yaml"), readFileSync(join(folder, "state.yaml"), "utf8").replace(/^mode: setup$/m, "mode: play"));
-    // The world was written by hand: the server's first call reads it all, as after a chat starts.
-    await session.ready(true);
+// The scratch folder goes even when a command fails half way.
+try {
+    enlargeSystem(join(engine, "systems", "5e"), join(systems, "5e"), big ? 45 : 1);
+    console.log(`| pages | command | first call | then (median of ${warmRuns}) |\n|---|---|---|---|`);
 
-    for (const { args, once } of calls) {
-        const first = await timed(context, args);
-        const then = [];
+    for (const size of sizes) {
+        const folder = join(scratch, `campaign-${size}`);
+        const session = new SessionStore({ systemFolders: [systems] });
+        const context = { ...benchContext(folder, [systems]), files: session };
+        await must(context, ["init", "--name", "Banco", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"]);
+        await must(context, ["advance", "--to", "day 1, 18:00"]);
+        generateWorld(folder, size);
+        // In play, as after the setup and session zero, so that scenes open (MOD-6); written by hand like the world, which the session reads next.
+        writeFileSync(join(folder, "state.yaml"), readFileSync(join(folder, "state.yaml"), "utf8").replace(/^mode: setup$/m, "mode: play"));
+        // The world was written by hand: the server's first call reads it all, as after a chat starts.
+        await session.ready(true);
 
-        for (let run = 0; !once && run < warmRuns; run++) {
-            then.push(await timed(context, args));
+        for (const { args, once } of calls) {
+            const first = await timed(context, args);
+            const then = [];
+
+            for (let run = 0; !once && run < warmRuns; run++) {
+                then.push(await timed(context, args));
+            }
+
+            then.sort((one, other) => one - other);
+            console.log(`| ${size} | ${args.join(" ")} | ${first} ms | ${once ? "once" : `${then[Math.floor(warmRuns / 2)]} ms`} |`);
         }
 
-        then.sort((one, other) => one - other);
-        console.log(`| ${size} | ${args.join(" ")} | ${first} ms | ${once ? "once" : `${then[Math.floor(warmRuns / 2)]} ms`} |`);
+        const started = performance.now();
+        // The command line reads the systems of the package: the game system is the 5e as it ships.
+        const run = spawnSync(process.execPath, [cli, "status"], { cwd: folder });
+        console.log(`| ${size} | status from the command line (${cli.endsWith(".js") ? "dist" : "src"}), with the 5e as it ships | ${Math.round(performance.now() - started)} ms (exit ${run.status}) | |`);
+        session.close();
     }
-
-    const started = performance.now();
-    // The command line reads the systems of the package: the game system is the 5e as it ships.
-    const run = spawnSync(process.execPath, [cli, "status"], { cwd: folder });
-    console.log(`| ${size} | status from the command line (${cli.endsWith(".js") ? "dist" : "src"}), with the 5e as it ships | ${Math.round(performance.now() - started)} ms (exit ${run.status}) | |`);
-    session.close();
+} finally {
+    rmSync(scratch, { recursive: true, force: true });
 }
-
-rmSync(scratch, { recursive: true, force: true });
 
 /** A context like the tests': fixed dice, time and ids, in `folder`, with these game systems. */
 function benchContext(folder: string, systemFolders: string[]): Context
