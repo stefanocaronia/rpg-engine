@@ -3,10 +3,10 @@
 
 /** The sections, in the order the page shows them. */
 // Combat is there only while a fight is open (D-314).
-export const sections = ["party", "scene", "combat", "journal", "world", "rules"] as const;
+export const sections = ["party", "scene", "combat", "journal", "world"] as const;
 
-/** The pages of the menu. */
-export const menuPages = ["saves", "settings", "about"] as const;
+/** The pages at the row's end, in the menu on a phone: Rules is looked up, as the settings are, not played in (D-356). */
+export const menuPages = ["rules", "saves", "settings", "about"] as const;
 
 export type Section = (typeof sections)[number] | (typeof menuPages)[number];
 
