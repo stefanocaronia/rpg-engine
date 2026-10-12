@@ -2,7 +2,7 @@
 // not in the list can be written whole, as pt-PT. A choice is saved at once, as the other settings'.
 import { useEffect, useId, useMemo, useRef, useState } from "preact/hooks";
 import { languageName, languageOf, languages, matches } from "./languages.ts";
-import { t } from "./text.ts";
+import { pageTranslation, t } from "./text.ts";
 
 export function LanguageChoice({ value, labelledBy, describedBy, onPick }: { value?: string; labelledBy: string; describedBy: string; onPick(code: string): void; })
 {
@@ -121,7 +121,18 @@ export function languageLine(code: string): string
     const pageLanguage = document.documentElement.lang || "en";
     const language = languageOf(code, pageLanguage);
     const name = languageName(code, pageLanguage) ?? code;
-    return language?.page === true
+    const flying = pageTranslation();
+    const state = language?.page === true ? "ready" : flying?.language === code.toLowerCase() ? flying.state : undefined;
+
+    if (state === "translating") {
+        return t("The master plays in {language}; this computer is translating the page into it, in English meanwhile.", { language: name });
+    }
+
+    if (state === "unable") {
+        return t("The master plays in {language}; the page stays in English: Codex or Claude Code would translate it on this computer.", { language: name });
+    }
+
+    return state === "ready"
         ? t("The master plays in {language}, and the page is written in it too.", { language: name })
         : t("The master plays in {language}; the page stays in English.", { language: name });
 }

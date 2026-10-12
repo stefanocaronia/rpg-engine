@@ -9,6 +9,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
+import { homeSystemWords } from "../page-words.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -259,7 +260,7 @@ export const view = defineCommand({
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
             const sheet = speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system));
             const language = readSettings(root).language;
-            const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWords(system.folder, language)) : undefined;
+            const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : wordsOf(system, language, context)) : undefined;
             const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
             const story = page === pc ? playerStory(page) : undefined;
             return {
@@ -323,7 +324,7 @@ export const view = defineCommand({
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
         const settings = readSettings(root);
-        const words = system === undefined || settings.language === undefined ? undefined : systemWords(system.folder, settings.language);
+        const words = system === undefined || settings.language === undefined ? undefined : wordsOf(system, settings.language, context);
         return {
             kind: "overview",
             campaign: settings.name,
@@ -387,6 +388,12 @@ export const view = defineCommand({
         }
     },
 });
+
+/** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
+function wordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
+{
+    return systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
+}
 
 /** A public roll of the log as the player sees it: who rolled, for whom as the character knows them, the check, the dice; never the master's why (VIEW-4). */
 function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined, picture: (name: unknown) => ShownRoll["image"]): ShownRoll

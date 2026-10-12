@@ -5,7 +5,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import type { MadePicture, PictureMaker, PicturesReady, PictureSubject } from "../core/context.ts";
+import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { paintedBrief } from "./briefs.ts";
 import { stopTree } from "./stop.ts";
 
@@ -52,6 +52,12 @@ export function codexPictures(): PictureMaker
         },
         make,
     };
+}
+
+/** Codex on this computer as a writer of text (D-406): ready where its ChatGPT login makes pictures too. */
+export function codexWriter(maker: PictureMaker = codexPictures()): TextWriter
+{
+    return { ready: () => maker.ready().ready, write };
 }
 
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
@@ -121,6 +127,28 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
             done({ refused: refusal(errors, failed, said) });
         });
         child.stdin.end(paintedBrief(subject));
+    });
+}
+
+/** Codex's answer to a brief, in an empty folder of its own, as its last message; none when it gave none in time. */
+function write(brief: string): Promise<string | undefined>
+{
+    const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
+    const last = join(folder, "last.txt");
+    const line = `codex exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+
+    return new Promise((done) => {
+        const child = spawn(line, { shell: true, windowsHide: true, stdio: ["pipe", "ignore", "ignore"] });
+        const timer = setTimeout(() => stopTree(child), longest);
+        child.stdin.on("error", () => undefined);
+        child.on("error", () => undefined);
+        child.on("close", () => {
+            clearTimeout(timer);
+            const said = existsSync(last) ? readFileSync(last, "utf8").trim() : "";
+            rmSync(folder, { recursive: true, force: true });
+            done(said === "" ? undefined : said);
+        });
+        child.stdin.end(brief);
     });
 }
 

@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { itemLabel, settingLabel } from "../src/dashboard/labels.ts";
-import { arrowStep, pageDirection, pageLanguageOf, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
+import { arrowStep, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world-map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -94,6 +94,18 @@ describe("the page's words (D-394)", () => {
         expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "1200 al livello 4"]);
         expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight")]).toEqual([-1, 1]);
         await setLanguage("en");
+    });
+
+    it("writes a language the package does not ship as this computer has translated it so far, English where it lacks a phrase (D-406)", async () => {
+        const words = { phrases: { "Your turn": "Đến lượt bạn" }, translating: true, can: true, missing: 600 };
+        await setLanguage("vi", () => Promise.resolve({}), () => Promise.resolve(words));
+        expect([t("Your turn"), t("Settings"), pageTranslation()]).toEqual(["Đến lượt bạn", "Settings", { language: "vi", state: "translating" }]);
+        await setLanguage("vi", () => Promise.resolve({}), () => Promise.resolve({ ...words, translating: false, missing: 0 }));
+        expect(pageTranslation()).toEqual({ language: "vi", state: "ready" });
+        await setLanguage("vi", () => Promise.resolve({}), () => Promise.resolve({ phrases: {}, translating: false, can: false, missing: 600 }));
+        expect([t("Your turn"), pageTranslation()]).toEqual(["Your turn", { language: "vi", state: "unable" }]);
+        await setLanguage("en");
+        expect(pageTranslation()).toBeUndefined();
     });
 
     it("writes a game system's words where it has them, as they are, and in capitals only the short names of fields it lacks (D-403)", () => {

@@ -1,4 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FileStore } from "./store.ts";
 
@@ -41,6 +43,17 @@ export interface Context
     news?: () => { lines: string[]; restore(): void; };
     /** What makes pictures from words on this computer (D-308), as Codex with the player's login; missing where none can, as in tests. */
     pictures?: PictureMaker;
+    /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */
+    writer?: TextWriter;
+    /** The folder of this player's data on this computer, apart from any campaign: the page's words translated on the fly (D-406). */
+    home?: string;
+}
+
+/** What writes text from a brief outside the chat (D-406): whether it can now, and its answer, none when it gave none. */
+export interface TextWriter
+{
+    ready(): boolean;
+    write(brief: string): Promise<string | undefined>;
 }
 
 /**
@@ -117,5 +130,18 @@ export function defaultContext(folder = process.cwd()): Context
         platform: process.platform,
         // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up.
         systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url))],
+        home: userDataFolder(),
     };
+}
+
+/** Where this player's data is kept on this computer (D-406): the folder the system gives a program's data. */
+function userDataFolder(): string
+{
+    const home = homedir();
+
+    if (process.platform === "win32") {
+        return join(process.env.APPDATA ?? join(home, "AppData", "Roaming"), "rpg-engine");
+    }
+
+    return process.platform === "darwin" ? join(home, "Library", "Application Support", "rpg-engine") : join(process.env.XDG_DATA_HOME ?? join(home, ".local", "share"), "rpg-engine");
 }

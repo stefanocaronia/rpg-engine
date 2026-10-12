@@ -23,6 +23,7 @@ import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationParts } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
+import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { rollName } from "./systems/index.ts";
 
@@ -171,7 +172,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
         const listening = await listen(server, port);
 
         if (listening !== undefined) {
-            const served = {
+            const served: Served = {
                 port: listening,
                 context,
                 session,
@@ -182,8 +183,10 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 events: [],
                 left: new Set<string>(),
                 shared: new Map<string, string>(),
+                notify: () => undefined,
+                words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
             };
-            return serve(server, { ...served, notify: () => undefined });
+            return serve(server, served);
         }
     }
 
@@ -262,6 +265,8 @@ interface Served
     returning?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
     notify(): void;
+    /** The page in a language the package does not ship, translated on the fly (D-406). */
+    words: PageTranslator;
 }
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
@@ -364,6 +369,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (request.method === "POST" && path === "/api/saves" && origin !== undefined) {
         await changeSaves(request, response, served);
+        return;
+    }
+
+    if (path === "/api/words" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
+        await pageWords(request, response, served, url);
         return;
     }
 
@@ -506,6 +516,42 @@ function pagePlayer(served: Served): Player
             return typeof chosen === "number" ? (chosen === 0 ? 0 : undefined) : chosen;
         },
     };
+}
+
+/**
+ * The page's words in a language the package does not ship (D-406): what this computer has translated so far, and whether it is translating them, with the
+ * game system's; the phrases the page lacks now, sent to go first.
+ */
+async function pageWords(request: IncomingMessage, response: ServerResponse, served: Served, url: URL): Promise<void>
+{
+    const code = /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i;
+
+    if (request.method === "POST") {
+        const parsed = z.object({ language: z.string().regex(code), first: z.array(z.string().max(500)).max(1000) }).strict().safeParse(await readBody(request, 64_000));
+
+        if (!parsed.success) {
+            sendJson(response, 400, { error: "Send the language and the phrases the page lacks now, { language, first }." });
+            return;
+        }
+
+        served.words.ask(parsed.data.language.toLowerCase(), parsed.data.first);
+        sendJson(response, 202, {});
+        return;
+    }
+
+    const language = url.searchParams.get("language") ?? "";
+
+    if (!code.test(language)) {
+        sendJson(response, 400, { error: "Give the language by its code, such as vi or pt-BR." });
+        return;
+    }
+
+    const system = withFiles(served.session, () => {
+        const root = findCampaign(served.context.folder);
+        const found = root === undefined ? undefined : campaignSystem(root, served.context);
+        return found === undefined ? undefined : { name: found.name, folder: found.folder };
+    });
+    sendJson(response, 200, served.words.read(language.toLowerCase(), system));
 }
 
 /**

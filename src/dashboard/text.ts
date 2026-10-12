@@ -35,11 +35,23 @@ export const shippedLanguages = [
 // Codes the page reads as another it ships: Norwegian as Bokmål.
 const aliases: Record<string, string> = { no: "nb" };
 
-// The languages it ships that are written from right to left: the page mirrors for them.
-const rightToLeft = ["ar", "he"];
+// The languages written from right to left, shipped or translated on the fly: the page mirrors for them.
+const rightToLeft = ["ar", "he", "fa", "ur", "ps", "sd", "ug", "yi", "dv", "ckb"];
 
 /** How the page reads a language's file: the browser fetches it from the page's own folder. */
 export type ReadPhrases = (language: string) => Promise<Record<string, string>>;
+
+/** A language the package does not ship, as this computer has translated it so far (D-406): its phrases, whether it is translating, whether it can. */
+export interface FlyingWords
+{
+    phrases: Record<string, string>;
+    translating: boolean;
+    can: boolean;
+    missing: number;
+}
+
+/** How the page reads a language the package does not ship: the dashboard gives what this computer has translated. */
+export type ReadWords = (language: string) => Promise<FlyingWords>;
 
 let phrases: Record<string, string> = {};
 // The game system's words in the campaign's language, as view gives them (D-403).
@@ -48,6 +60,11 @@ let current = "en";
 // The language asked last: a file that arrives after another was asked is kept, but not shown.
 let wanted = "en";
 const read = new Map<string, Record<string, string>>();
+// A language the package does not ship, as the dashboard last gave it (D-406); and the phrases the page lacked in it, which go to be translated first.
+let flying: (Omit<FlyingWords, "phrases"> & { language: string; }) | undefined;
+const lacked = new Set<string>();
+const asked = new Set<string>();
+let asking: ReturnType<typeof setTimeout> | undefined;
 
 /** The language the page writes in for a campaign's code: its own when shipped, else its base language's (pt-BR, pt), else English. */
 export function pageLanguageOf(code: string | undefined): string
@@ -63,10 +80,29 @@ export function pageLanguages(): string[]
     return ["en", ...shippedLanguages];
 }
 
-/** Sets the language of the page's words from the campaign's code, reading its file once; English where it is not shipped or its file does not read. */
-export async function setLanguage(code: string | undefined, readPhrases: ReadPhrases = fetchPhrases): Promise<void>
+/**
+ * Sets the language of the page's words from the campaign's code, reading a shipped language's file once; a language the package does not ship as this
+ * computer has translated it so far, read again each time (D-406); English where there is nothing.
+ */
+export async function setLanguage(code: string | undefined, readPhrases: ReadPhrases = fetchPhrases, readWords: ReadWords = fetchWords): Promise<void>
 {
     const language = pageLanguageOf(code);
+    const own = (code ?? "en").toLowerCase();
+
+    if (language === "en" && own.split("-")[0] !== "en") {
+        wanted = own;
+        const words = await readWords(own).catch(() => undefined);
+
+        if (wanted === own) {
+            flying = words === undefined ? undefined : { language: own, translating: words.translating, can: words.can, missing: words.missing };
+            phrases = words?.phrases ?? {};
+            current = Object.keys(phrases).length > 0 ? own : "en";
+        }
+
+        return;
+    }
+
+    flying = undefined;
     wanted = language;
 
     if (language !== "en" && !read.has(language)) {
@@ -97,7 +133,19 @@ export function systemWord(kind: "groups" | "fields" | "words", english: string)
  */
 export function t(phrase: string, values: Record<string, string | number> = {}): string
 {
-    return (phrases[phrase] ?? systemWord("words", phrase) ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? isolated(values[name]) : whole));
+    const own = phrases[phrase] ?? systemWord("words", phrase);
+
+    if (own === undefined) {
+        askFirst(phrase);
+    }
+
+    return (own ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? isolated(values[name]) : whole));
+}
+
+/** How the page stands in a language the package does not ship (D-406): being translated, translated, or out of reach of this computer; none for one it ships. */
+export function pageTranslation(): { language: string; state: "translating" | "ready" | "unable"; } | undefined
+{
+    return flying === undefined ? undefined : { language: flying.language, state: !flying.can && flying.missing > 0 ? "unable" : flying.missing === 0 ? "ready" : "translating" };
 }
 
 /** How far an arrow key moves along choices, the way the page reads: 1 forward, -1 back, 0 for another key; up and down too, unless `across` alone. */
@@ -138,6 +186,35 @@ export function numberText(value: number): string
 export function listText(items: string[]): string
 {
     return new Intl.ListFormat(current, { type: "conjunction" }).format(items);
+}
+
+/** Sends the phrases the page lacks in a language being translated, a moment after it lacked them, to be translated first (D-406). */
+function askFirst(phrase: string): void
+{
+    if (flying?.translating !== true || asked.has(phrase)) {
+        return;
+    }
+
+    lacked.add(phrase);
+    asking ??= setTimeout(() => {
+        asking = undefined;
+        const first = [...lacked];
+        lacked.clear();
+        first.forEach((one) => asked.add(one));
+        const body = JSON.stringify({ language: flying?.language, first });
+        fetch("/api/words", { method: "POST", headers: { "content-type": "application/json" }, body }).catch(() => undefined);
+    }, 300);
+}
+
+async function fetchWords(language: string): Promise<FlyingWords>
+{
+    const response = await fetch(`/api/words?language=${encodeURIComponent(language)}`);
+
+    if (!response.ok) {
+        throw new Error(`The dashboard gave no words for ${language}.`);
+    }
+
+    return await response.json() as FlyingWords;
 }
 
 async function fetchPhrases(language: string): Promise<Record<string, string>>

@@ -4,7 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { MadePicture, PictureMaker, PicturesReady, PictureSubject } from "../core/context.ts";
+import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { svgBrief } from "./briefs.ts";
 import { stopTree } from "./stop.ts";
 import { cleanSvg, svgIn } from "./svg.ts";
@@ -15,6 +15,16 @@ const longest = 3 * 60 * 1000;
 // Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer (Elena's probe, 12 October).
 const drawing = `claude -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
     + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You draw pictures as SVG code from a brief. You reply with the SVG alone."`;
+
+// Claude Code as a writer of text (D-406): Sonnet at low effort, with nothing but the brief.
+const writing = `claude -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
+    + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You write what a brief asks, and only that."`;
+
+/** Claude Code on this computer as a writer of text (D-406): ready where the player's Claude login lets it draw too. */
+export function claudeWriter(maker: PictureMaker = claudePictures()): TextWriter
+{
+    return { ready: () => maker.ready().ready, write };
+}
 
 /** Why Claude draws no pictures, for the master and the player (D-390). */
 export const claudeSays = {
@@ -104,6 +114,29 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
             done({ file, done: clean });
         });
         child.stdin.end(svgBrief(subject));
+    });
+}
+
+/** Claude's answer to a brief, in an empty folder of its own; none when it failed or gave none in time. */
+function write(brief: string): Promise<string | undefined>
+{
+    const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
+
+    return new Promise((done) => {
+        const child = spawn(writing, { shell: true, windowsHide: true, cwd: folder, env: childEnvironment(), stdio: ["pipe", "pipe", "ignore"] });
+        let output = "";
+        const timer = setTimeout(() => stopTree(child), longest);
+        child.stdout.setEncoding("utf8");
+        child.stdout.on("data", (chunk: string) => (output += chunk));
+        child.stdin.on("error", () => undefined);
+        child.on("error", () => undefined);
+        child.on("close", () => {
+            clearTimeout(timer);
+            rmSync(folder, { recursive: true, force: true });
+            const answer = parsed(output);
+            done(answer?.is_error === true || typeof answer?.result !== "string" ? undefined : answer.result);
+        });
+        child.stdin.end(brief);
     });
 }
 
