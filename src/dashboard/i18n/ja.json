@@ -584,7 +584,7 @@
   "what the master has explained: take one off to have it explained again": "GMが説明済みの項目：外すと、もう一度説明されます",
   "What your character knows, the documents found and the calendar; the world map later.": "キャラクターの知識、見つけた文書、カレンダー。ワールドマップは今後追加されます。",
   "what your dice are made of": "ダイスの素材",
-  "When a roll is yours, the master asks it and its buttons appear at the top of this page: a click rolls the dice. With By hand you roll your own dice and type their faces; you may also write what you do instead.": "自分のロールになると、GMが指示し、このページの上部にボタンが表示されます。クリックするとダイスを振れます。「手動」を選ぶと、手元のダイスを振って出目を入力できます。代わりに、行動を文章で書くこともできます。",
+  "When a roll is yours, the master asks it and its buttons appear at the top of this page: a click rolls the dice. With By hand you roll as at the table: from its row on your sheet, or with the tray's dice. You may also write what you do instead.": "自分のロールになると、GMがロールを求め、このページの上部にボタンが表示されます。クリックするとダイスを振ります。「手動」を選ぶと、テーブルで遊ぶときと同じように、キャラクターシートの該当する行から、またはダイストレイのダイスで振れます。代わりに、行動を文章で書くこともできます。",
   "when the game may go back": "ゲームを戻せるタイミング",
   "Where the party is": "パーティの現在地",
   "Where the party is, its map and who stands where. In a fight, Combat shows the order of the turns and whose turn it is.": "パーティの現在地、マップ、それぞれの位置を表示します。戦闘中は、「戦闘」にターンの順番と現在のターンが表示されます。",

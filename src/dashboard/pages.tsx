@@ -48,7 +48,9 @@ export function Help()
         {
             icon: "dice",
             title: t("The rolls"),
-            text: t("When a roll is yours, the master asks it and its buttons appear at the top of this page: a click rolls the dice. With By hand you roll your own dice and type their faces; you may also write what you do instead."),
+            text: t(
+                "When a roll is yours, the master asks it and its buttons appear at the top of this page: a click rolls the dice. With By hand you roll as at the table: from its row on your sheet, or with the tray's dice. You may also write what you do instead.",
+            ),
         },
         { icon: "party", title: sectionLabel("party"), text: t("Your character's sheet and the companions'. A click on a number rolls it for fun, never counted; the game's rolls are in the column beside it.") },
         {
