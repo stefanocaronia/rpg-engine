@@ -2981,12 +2981,21 @@ a {
     color: var(--accent);
 }
 
-.about-system.group {
+.about-card.group {
     margin: 0;
 }
 
-.about-system p {
-    margin: 0;
+.about-card p {
+    margin: 0 0 8px;
+}
+
+.about-card p:last-child {
+    margin-bottom: 0;
+}
+
+.about-card .about-credits {
+    color: var(--muted);
+    font-size: 0.85rem;
 }
 
 .about-system .system-chip {
@@ -3005,11 +3014,6 @@ a {
 .about-fine p {
     max-width: 90ch;
     margin: 0 0 8px;
-}
-
-.about-fine .about-made {
-    color: var(--ink);
-    font-size: 0.88rem;
 }
 
 /* On a phone the robot over the words, the links under them the whole width. */

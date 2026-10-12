@@ -67,6 +67,7 @@ const iconPaths = {
     stranger: "M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z M8.8 11.8c.8-1.7 1.9-2.6 3.2-2.6s2.4.9 3.2 2.6c-.7 1.7-1.8 2.6-3.2 2.6s-2.5-.9-3.2-2.6Z",
     // Rolling by hand, from the sheet or the tray (D-330).
     hand: "M8 12.5V5.5a1.5 1.5 0 0 1 3 0V11 M11 11V4a1.5 1.5 0 0 1 3 0v7 M14 11V5.5a1.5 1.5 0 0 1 3 0V13 M17 10.5a1.5 1.5 0 0 1 3 0V14a6.5 6.5 0 0 1-6.5 6.5H12c-2 0-3.3-.7-4.5-1.9l-3.3-3.4a1.5 1.5 0 0 1 2.1-2.1L8 14.8",
+    licence: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 14l2 2 3.5-4",
 };
 
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */

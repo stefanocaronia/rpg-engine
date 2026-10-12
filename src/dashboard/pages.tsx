@@ -108,8 +108,8 @@ export function Help()
 }
 
 /**
- * What the page is (D-409): a card of the product, with the robot and its links; a card of the game system the campaign plays; then, out of the cards and small,
- * how it was made, the licences, the system's credits and ours.
+ * What the page is (D-409): a card of the product, with the robot and its links; a card of the game system the campaign plays; a card of how it was made, with
+ * Stefano's motto, as in the READMEs; a card of the licences and the system's credits; then, out of the cards and small, the copyright.
  */
 export function About({ product, system }: { product: string; system?: { name: string; title: string; attribution?: string; }; })
 {
@@ -138,7 +138,7 @@ export function About({ product, system }: { product: string; system?: { name: s
                 </div>
             </article>
             {system && (
-                <details class="group about-system" open>
+                <details class="group about-card about-system" open>
                     <CardHeader icon={iconPath("dice")} title={<h3>{t("Game system")}</h3>} open onToggle={() => undefined} fixed />
                     <p>
                         <span class="system-chip">{system.name}</span>
@@ -146,10 +146,24 @@ export function About({ product, system }: { product: string; system?: { name: s
                     </p>
                 </details>
             )}
-            <footer class="about-fine">
-                <p class="about-made">{t("Made with the help of AI. We invite everyone to use AI to make what they need: the people should take control of the means of production.")}</p>
+            <details class="group about-card" open>
+                <CardHeader icon={iconPath("pencil")} title={<h3>{t("Development notes")}</h3>} open onToggle={() => undefined} fixed />
+                <p>{t("Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project maintainer.")}</p>
+                {/* Stefano's motto, in his words in every language, as in his READMEs. */}
+                <p class="about-motto" lang="en">
+                    <strong>We encourage everyone to use AI for their own purposes.</strong>
+                    <br />
+                    The means of production should belong to the people.
+                    <br />
+                    Fight corporate control of technology, not our right to use it.
+                </p>
+            </details>
+            <details class="group about-card" open>
+                <CardHeader icon={iconPath("licence")} title={<h3>{t("Licence")}</h3>} open onToggle={() => undefined} fixed />
                 <p>{t("The code is under the MIT licence; each game system under its own, as its credits say.")}</p>
-                {system?.attribution && <p>{system.attribution}</p>}
+                {system?.attribution && <p class="about-credits">{system.attribution}</p>}
+            </details>
+            <footer class="about-fine">
                 <p>{`© 2026 Stefano Caronia · ${product}`}</p>
             </footer>
         </section>
