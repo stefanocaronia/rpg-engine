@@ -224,8 +224,8 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
             <button
                 type="button"
                 class="icon-button tonal menu-button tip-left"
-                aria-label={t("Menu: {pages}", { pages: away.map(sectionLabel).join(", ") })}
-                data-tip={t("Menu: {pages}", { pages: away.map(sectionLabel).join(", ") })}
+                aria-label={t("Menu: {pages}", { pages: pagesList(away) })}
+                data-tip={t("Menu: {pages}", { pages: pagesList(away) })}
                 aria-expanded={open}
                 tabIndex={hidden ? -1 : undefined}
                 onClick={() => setOpen(!open)}
@@ -314,4 +314,10 @@ function StatusChips({ now, live }: { now?: string; live: boolean; })
             )}
         </div>
     );
+}
+
+/** The pages a menu holds as a list in the page's language: Rules, Saves and Settings; ルール、セーブ、設定. */
+function pagesList(pages: Section[]): string
+{
+    return new Intl.ListFormat(document.documentElement.lang || "en", { type: "conjunction" }).format(pages.map(sectionLabel));
 }
