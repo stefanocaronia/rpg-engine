@@ -273,7 +273,7 @@ function App()
                             <a class="turn-notice" href={sectionAddress("combat")}>
                                 <Icon name="combat" />
                                 <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
-                                <span class="turn-notice-go">{t("Combat")}</span>
+                                <span class="turn-notice-go">{t("Go to Combat")}</span>
                             </a>
                         )}
                         {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}

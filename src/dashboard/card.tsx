@@ -9,10 +9,13 @@ const narrow = "(max-width: 600px)";
 // The chevron: down while the card is closed, turned up once it is open.
 const chevronPath = "M6 9.5l6 6 6-6";
 
-/** Whether a card is open, and what opens and closes it: only the player's click, which the browser remembers by the card's name; the page setting it is not. */
-export function useOpen(name: string): [boolean, (event: MouseEvent) => void]
+/**
+ * Whether a card is open, and what opens and closes it: only the player's click, which the browser remembers by the card's name; the page setting it is not.
+ * Until then a card starts closed on a phone, but the one that is `first`.
+ */
+export function useOpen(name: string, first = false): [boolean, (event: MouseEvent) => void]
 {
-    const [open, setOpen] = useState(() => storedOpen(name));
+    const [open, setOpen] = useState(() => storedOpen(name, first));
 
     const toggle = (event: MouseEvent): void => {
         event.preventDefault();
@@ -60,7 +63,7 @@ export function CardHeader({ icon, title, preview, open, onToggle, fixed }: { ic
     );
 }
 
-function storedOpen(name: string): boolean
+function storedOpen(name: string, first: boolean): boolean
 {
     try {
         const stored = localStorage.getItem(`rpg-group:${name}`);
@@ -72,7 +75,7 @@ function storedOpen(name: string): boolean
         // No storage, as in a private window: the default.
     }
 
-    return !matchMedia(narrow).matches;
+    return first || !matchMedia(narrow).matches;
 }
 
 function storeOpen(name: string, open: boolean): void

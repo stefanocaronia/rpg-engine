@@ -149,6 +149,7 @@ export const italian: Record<string, string> = {
     "Go back here": "Torna qui",
     "Go back here: {save}": "Torna qui: {save}",
     "Go back to this save?": "Tornare a questo salvataggio?",
+    "Go to Combat": "Vai allo scontro",
     "Goals": "Obiettivi",
     "Granite": "Granito",
     "happy": "gioia",

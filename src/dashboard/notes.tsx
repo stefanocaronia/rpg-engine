@@ -314,14 +314,14 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                             </span>
                             {waiting
                                 ? (
-                                    <button type="button" class="icon-button" aria-label={t("Take it back from the master")} data-tip={t("Take it back")} onClick={() => void unshare()}>
-                                        <Icon name="undo" />
+                                    <button type="button" class="save-button note-share" aria-label={t("Take it back from the master")} onClick={() => void unshare()}>
+                                        <Icon name="undo" /> {t("Take it back")}
                                     </button>
                                 )
                                 : shared !== undefined
                                 ? (
-                                    <button type="button" class="icon-button" aria-label={t("Share it again with the master")} data-tip={t("Share again")} disabled={empty} onClick={() => void share()}>
-                                        <Icon name="send" />
+                                    <button type="button" class="save-button note-share" aria-label={t("Share it again with the master")} disabled={empty} onClick={() => void share()}>
+                                        <Icon name="send" /> {t("Share again")}
                                     </button>
                                 )
                                 : (

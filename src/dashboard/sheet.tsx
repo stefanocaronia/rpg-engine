@@ -44,7 +44,7 @@ export function MemberSheet(
     // The system's headline, and the mood in words, which the badge's tooltip never shows on a touch screen (D-306).
     const title = [headline, member.mood === undefined ? undefined : moodLabel(member.mood)].filter((part) => part !== undefined && part !== "").join(" · ");
     const fields = sheetFields(member, sheet);
-    const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
+    const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} first={shown === others[0]} />;
     // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
     const dying = new Set(member.dying?.map((counter) => counter.field));
     // The player character's story has its own card: the rest of the page's text is its description (D-386).
@@ -119,7 +119,8 @@ function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlyS
     );
 }
 
-function Group({ member, group, fields, version, onRoll }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; onRoll: FreeRoll; })
+/** A group of the sheet as its card; the `first` after the rail starts open on a phone too, the one play needs most as the system orders them. */
+function Group({ member, group, fields, version, onRoll, first }: { member: string; group: SheetGroup; fields: ReadonlySet<string>; version: number; onRoll: FreeRoll; first?: boolean; })
 {
     const [explanations, setExplanations] = useState<Map<string, string[]>>();
     const [current, setCurrent] = useState(0);
@@ -187,7 +188,7 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
     // A card with the number the master asks stays open while it is asked.
     const lit = values.some((value) => answersOf(value) !== undefined);
     return (
-        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit}>
+        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
             {layout === "table" && <ItemsTable group={group} fields={fields} />}
             {layout === "tiles" && (
                 <div class="tiles" onKeyDown={onKeyDown}>
@@ -205,10 +206,12 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 
 /** A card of the sheet the player opens and closes (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
 export function Card(
-    { name, title, icon, layout, preview, onReach, held, children }: {
+    { name, title, icon, layout, preview, onReach, held, first, children }: {
         name: string;
         /** Its title in the page's language, where its name, which keeps it open or closed, is English. */
         title?: string;
+        /** Whether it starts open on a phone too. */
+        first?: boolean;
         icon: string;
         layout: string;
         preview?: string;
@@ -218,7 +221,7 @@ export function Card(
     },
 )
 {
-    const [chosen, toggle] = useOpen(name);
+    const [chosen, toggle] = useOpen(name, first);
     const open = chosen || held === true;
     return (
         <details class={`group group-${layout}`} open={open} onPointerEnter={onReach} onFocusIn={onReach}>
