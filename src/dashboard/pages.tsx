@@ -149,25 +149,52 @@ export function About({ product, system }: { product: string; system?: { name: s
             <details class="group about-card" open>
                 <CardHeader icon={iconPath("pencil")} title={<h3>{t("Development notes")}</h3>} open onToggle={() => undefined} fixed />
                 <p>{t("Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project maintainer.")}</p>
-                {/* Stefano's motto, in his words in every language, as in his READMEs. */}
-                <p class="about-motto" lang="en">
-                    <strong>We encourage everyone to use AI for their own purposes.</strong>
+                {/* Stefano's motto, as in his READMEs. */}
+                <p class="about-motto">
+                    <strong>{t("We encourage everyone to use AI for their own purposes.")}</strong>
                     <br />
-                    The means of production should belong to the people.
+                    {t("The means of production should belong to the people.")}
                     <br />
-                    Fight corporate control of technology, not our right to use it.
+                    {t("Fight corporate control of technology, not our right to use it.")}
                 </p>
             </details>
             <details class="group about-card" open>
                 <CardHeader icon={iconPath("licence")} title={<h3>{t("Licence")}</h3>} open onToggle={() => undefined} fixed />
-                <p>{t("The code is under the MIT licence; each game system under its own, as its credits say.")}</p>
-                {system?.attribution && <p class="about-credits">{system.attribution}</p>}
+                <div class="about-licence">
+                    <Icon name="github" />
+                    <div>
+                        <h4>{product}</h4>
+                        <p>{t("Open source, under the MIT licence.")}</p>
+                        <a class="about-link" href={mitLicence} target="_blank" rel="noreferrer">
+                            <Icon name="licence" />
+                            {t("Read the MIT licence")}
+                        </a>
+                    </div>
+                </div>
+                {system?.attribution && (
+                    <div class="about-licence">
+                        <Icon name="dice" />
+                        <div>
+                            <h4>{`${t("Credits")} · ${system.name}`}</h4>
+                            <p class="about-credits">{withLinks(system.attribution)}</p>
+                        </div>
+                    </div>
+                )}
             </details>
             <footer class="about-fine">
                 <p>{`© 2026 Stefano Caronia · ${product}`}</p>
             </footer>
         </section>
     );
+}
+
+/** The MIT licence's text, where it is read: the repository is private. */
+const mitLicence = "https://opensource.org/license/mit";
+
+/** A credit's text with its addresses as links, the full stop after one left out of it. */
+function withLinks(text: string)
+{
+    return text.split(/(https?:\/\/[^\s]*[^\s.,;)])/).map((part, index) => (index % 2 === 1 ? <a key={index} href={part} target="_blank" rel="noreferrer">{part}</a> : part));
 }
 
 /** What a section to come will hold, as the plan says (D-269). */

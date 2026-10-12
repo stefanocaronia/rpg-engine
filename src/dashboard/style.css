@@ -2993,9 +2993,49 @@ a {
     margin-bottom: 0;
 }
 
+.about-card .about-motto strong {
+    color: var(--accent);
+}
+
+/* The licence card's rows: an icon, a title, its words and a link. */
+.about-licence {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 12px;
+    padding: 4px 0 12px;
+}
+
+.about-licence + .about-licence {
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+}
+
+.about-licence > svg.icon {
+    width: 22px;
+    height: 22px;
+    color: var(--accent);
+}
+
+.about-licence h4 {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+}
+
+.about-licence .about-link {
+    margin-top: 4px;
+}
+
 .about-card .about-credits {
     color: var(--muted);
     font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.about-credits a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    overflow-wrap: anywhere;
 }
 
 .about-system .system-chip {
