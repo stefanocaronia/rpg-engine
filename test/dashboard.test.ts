@@ -1327,8 +1327,8 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         // The master knows it from the start: the buttons are for choices alone.
         expect((await runCommandLine(["instructions"], served)).output).toContain("The player rolls their own dice: ask every roll of their character in words");
         // And the dashboard, to tell the player how to use it (D-404); none without one.
-        expect((await runCommandLine(["instructions"], { ...served, dashboard: "http://127.0.0.1:4747" })).output).toContain("The player also plays from their dashboard");
-        expect((await runCommandLine(["instructions"], { ...served, dashboard: undefined })).output).not.toContain("their dashboard");
+        expect((await runCommandLine(["instructions"], { ...served, dashboard: "http://127.0.0.1:4747" })).output).toContain("The game is played with the player's dashboard open beside the chat, at http://127.0.0.1:4747");
+        expect((await runCommandLine(["instructions"], { ...served, dashboard: undefined })).output).not.toContain("dashboard open");
         expect(await askedNow()).toBeNull();
         page.close();
     });

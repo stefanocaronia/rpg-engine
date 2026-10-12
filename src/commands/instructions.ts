@@ -30,7 +30,7 @@ export const instructions = defineCommand({
             sceneText(context.folder, context),
             buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
             // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
-            context.dashboard === undefined ? "" : dashboardInstructions(),
+            context.dashboard === undefined ? "" : dashboardInstructions(context.dashboard),
         ];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },

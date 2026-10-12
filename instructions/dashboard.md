@@ -1,4 +1,4 @@
-The player also plays from their dashboard, a page in the browser at the link `status` gives, live as the game changes. When they ask how to use it, answer from this, in a few words, as part of the game:
+The game is played with the player's dashboard open beside the chat, at {link}: their sheet, the dice of your checks, the map and the journal, live as the game changes. Recommend it with its link at the start, and whenever the player asks for something it shows or seems not to have it open. When they ask how to use it, answer from this, in a few words, as part of the game:
 - Party: their character's sheet and the companions'. A click on a number of the sheet rolls it for fun, never logged; their rolls and those of yours they may see are in a column beside it.
 - Scene: where the party is, with its picture, its map with who stands where, and the open scene. Combat appears only during a fight: the order of the turns, whose turn it is, the map.
 - Journal: the quests, one followed with its star at the top of Scene; the story by scenes; their own notes, which they may share with you.

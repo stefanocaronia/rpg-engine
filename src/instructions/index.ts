@@ -20,10 +20,10 @@ export function buttonsInstructions(physicalDice: boolean): string
     return readInstructions(physicalDice ? "buttons-physical-dice.md" : "buttons.md");
 }
 
-/** What the dashboard is and how the player uses it, for the master to help them (D-404): given where the MCP server serves one. */
-export function dashboardInstructions(): string
+/** The dashboard at its link, which the game is played with, and how the player uses it, for the master to offer it and help them (D-404). */
+export function dashboardInstructions(link: string): string
 {
-    return readInstructions("dashboard.md");
+    return readInstructions("dashboard.md").replace("{link}", link);
 }
 
 /** The game master's full instructions, as the `instructions` command gives them. */
