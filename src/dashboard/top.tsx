@@ -7,6 +7,7 @@ import type { RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
 import type { Moment, Mood } from "./data.ts";
+import { gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
 import { usePrefChange } from "./prefs.ts";
@@ -309,7 +310,7 @@ function StatusChips({ now, live }: { now?: string; live: boolean; })
             {now && (
                 <span class="status-chip">
                     <Icon name="clock" />
-                    {now}
+                    {gameDateLabel(now)}
                 </span>
             )}
         </div>

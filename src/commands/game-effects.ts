@@ -4,7 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { type Effect, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
+import { type Effect, type EffectEnd, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
 import { concernsPlayer, isDeclaredUncounted, isEmptyField, type Page, systemFirstFix, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
@@ -153,10 +153,18 @@ export function effectShown(world: World, effect: Effect): string
     return `${effect.name}${values.length === 0 ? "" : ` (${values.join(", ")})`}${end}`;
 }
 
-/** An effect as the dashboard shows it on someone of the party: its name, its end, and the line status gives (D-276, D-314). */
-export function effectParts(world: World, effect: Effect): { name: string; end?: string; text: string; }
+/** An effect as the dashboard shows it on someone of the party (D-276, D-314): its name, its end as data, which the dashboard writes in its language, and the line status gives. */
+export interface SeenEffect
 {
-    return { name: effect.name, ...(effect.end === undefined ? {} : { end: formatEnd(effect.end) }), text: effectShown(world, effect) };
+    name: string;
+    end?: EffectEnd;
+    text: string;
+}
+
+/** An effect as the dashboard shows it on someone of the party: its name, its end, and the line status gives (D-276, D-314). */
+export function effectParts(world: World, effect: Effect): SeenEffect
+{
+    return { name: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), text: effectShown(world, effect) };
 }
 
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */

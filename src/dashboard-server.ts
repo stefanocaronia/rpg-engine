@@ -21,7 +21,7 @@ import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
-import { notationWords } from "./dice/index.ts";
+import { notationParts } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { rollName } from "./systems/index.ts";
@@ -374,8 +374,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/asked") {
         const asked = served.asked;
-        // Each button's dice in words, for its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
-        const words = asked?.labels.map((label) => notationWords(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
+        // Each button's dice, for the page to say in words in its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
+        const words = asked?.labels.map((label) => notationParts(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
         // And the name the game gives its roll, in the campaign's language, as "with advantage" (D-399).
         const names = asked === undefined ? undefined : rollNamesOf(asked.labels, served);
         const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};

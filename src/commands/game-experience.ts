@@ -53,21 +53,36 @@ export function experienceOf(world: World, fields: Record<string, unknown>): Exp
     };
 }
 
+/** What the points say of the levels (PRO-6): how many the next level needs, the level they reach that is due, or the least the level needs when they are below it. */
+export type LevelNeed = { needs: number; level: number; } | { due: number; } | { least: number; level: number; };
+
+/** What the points say of the levels, as the dashboard writes it in its language (PRO-6); undefined at the last level of the table. */
+export function levelNeed(experience: Experience): LevelNeed | undefined
+{
+    if (experience.least !== undefined && experience.points < experience.least) {
+        return { least: experience.least, level: experience.level };
+    }
+
+    if (experience.due !== undefined) {
+        return { due: experience.due };
+    }
+
+    return experience.next === undefined ? undefined : { needs: experience.next.points - experience.points, level: experience.next.level };
+}
+
 /**
  * "550 to level 3", "level 3 due", or "at least 6500 at level 5" for points below what the level needs: what the line and the sheet say beside the points
  * (PRO-6); undefined at the last level of the table.
  */
 export function experienceText(experience: Experience): string | undefined
 {
-    if (experience.least !== undefined && experience.points < experience.least) {
-        return `at least ${experience.least} at level ${experience.level}`;
+    const need = levelNeed(experience);
+
+    if (need === undefined) {
+        return undefined;
     }
 
-    if (experience.due !== undefined) {
-        return `level ${experience.due} due`;
-    }
-
-    return experience.next === undefined ? undefined : `${experience.next.points - experience.points} to level ${experience.next.level}`;
+    return "least" in need ? `at least ${need.least} at level ${need.level}` : "due" in need ? `level ${need.due} due` : `${need.needs} to level ${need.level}`;
 }
 
 /**

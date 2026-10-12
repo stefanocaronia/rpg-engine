@@ -34,9 +34,9 @@ const map: WorldMap = {
     unit: { name: "km", km: 1 },
     maps: [{ name: "Valle", main: true }],
     places: [
-        { name: "Guado", kind: "village", x: 0, y: 0, within: ["Colli"], from: "here" },
+        { name: "Guado", kind: "village", x: 0, y: 0, within: ["Colli"], from: { km: 0 } },
         { name: "Colli", x: 1, y: 0, within: [], radius: 6, biome: "hills" },
-        { name: "Rocca", kind: "castle", x: 0, y: 20, within: [], from: "20 km north" },
+        { name: "Rocca", kind: "castle", x: 0, y: 20, within: [], from: { km: 20, direction: "north" } },
         { name: "Locanda", kind: "inn", within: ["Guado", "Colli"] },
     ],
     roads: [{ name: "Strada", kind: "road", points: [{ name: "Guado", x: 0, y: 0, km: 0 }, { x: 0, y: 8, km: 8 }, { name: "Rocca", x: 0, y: 20, km: 12 }], after: { x: 0, y: 23 } }],

@@ -13,7 +13,8 @@ import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
 import { readAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
-import type { SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
+import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
+import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrangedGroups, columnsByHeight, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
@@ -83,10 +84,14 @@ describe("view as data (VIEW-1, D-272)", () => {
             role: "pc",
             dead: false,
             image: { file: "Ettore.png", version: expect.any(Number) },
-            place: "in Locanda",
-            effects: [{ name: "Benedizione", end: "day 1, 19:00", text: "Benedizione until day 1, 19:00" }],
+            place: ["Locanda"],
+            effects: [{ name: "Benedizione", end: { date: "day 1, 19:00" }, text: "Benedizione until day 1, 19:00" }],
         });
         expect(data.party[0].counters).toContainEqual({ field: "hp", kind: "counter", text: "20/24", counter: { value: 20, max: 24 }, marks: 0 });
+        // The engine gives places, ends and the levels as data, which the page writes in its language (D-403); English here, as no language is set.
+        expect([memberPlaceLabel(data.party[0].place), effectLabel(data.party[0].effects[0])]).toEqual(["Locanda", "Benedizione until day 1, 19:00"]);
+        const xp = data.party[0].counters.find((value: SheetValue) => value.field === "xp");
+        expect([xp.levelNeed, levelNeedLabel(xp.levelNeed)]).toEqual([{ needs: 1800, level: 4 }, "1800 to level 4"]);
         // The game system the campaign plays, which the page names, with the credit its source asks for (D-284).
         expect(data.system).toEqual({ name: "5e", title: expect.stringContaining("SRD 5.1"), attribution: expect.stringContaining("Creative Commons Attribution 4.0") });
         // A companion shows the picture of the creature she derives from (D-267).
@@ -397,9 +402,22 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             kind: "inn",
             date: "day 1, 18:00",
             summary: "Ettore attraversa il guado, ferito.",
-            facts: ["day 1, 18:00 · Ettore: hp 20/24 → 18/24", "day 1, 18:00 · Quest taken: Il guado"],
+            facts: [
+                { kind: "counter", who: "Ettore", field: "hp", before: "20/24", after: "18/24", date: "day 1, 18:00" },
+                { kind: "quest", status: "open", quest: "Il guado", date: "day 1, 18:00" },
+            ],
         });
-        expect(chapters[1].facts).toEqual(["day 1, 19:00 · Time passes: day 1, 18:00 → day 1, 19:00", "day 1, 19:00 · Ettore: Benedizione ended"]);
+        expect(chapters[1].facts).toEqual([
+            { kind: "time", from: "day 1, 18:00", to: "day 1, 19:00", date: "day 1, 19:00" },
+            { kind: "effect-ended", who: "Ettore", effect: "Benedizione", date: "day 1, 19:00" },
+        ]);
+        // The page writes them in its language (D-403): English here.
+        expect([...chapters[2].facts, ...chapters[1].facts].map((fact: JournalFact) => factLabel(fact))).toEqual([
+            "Ettore: HP 20/24 → 18/24",
+            "Quest taken: Il guado",
+            "Time passes: day 1, 18:00 → day 1, 19:00",
+            "Ettore: Benedizione ended",
+        ]);
         expect(JSON.stringify(chapters)).not.toContain("Saved:");
     });
 });
@@ -892,7 +910,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         return (JSON.parse((await send("GET", "/api/asked")).body) as { asked: { id: string; question: string; title: string; labels: string[]; } | null; }).asked;
     }
 
-    async function waitAsked(): Promise<{ id: string; question: string; title: string; labels: string[]; words?: (string | null)[]; }>
+    async function waitAsked(): Promise<Asked>
     {
         for (let tries = 0; tries < 100; tries++) {
             const asked = await askedNow();
@@ -1162,7 +1180,8 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const page = await openPage();
         const asking = ask.run(ask.input.parse({ question: "Lo spettro ti stringe la gola", options: ["Tiro salvezza Saggezza 2d20kh1+5"] }), served);
         const asked = await waitAsked();
-        expect(asked.words).toEqual(["2d20, keep the highest, +5", null]);
+        expect(asked.words).toEqual([[{ dice: "2d20", keep: { which: "highest", count: 1 } }, { add: "+5" }], null]);
+        expect(notationLabel(asked.words?.[0] ?? undefined)).toBe("2d20, keep the highest, +5");
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 1 })).status).toBe(202);
         await asking;
         page.close();
@@ -1260,7 +1279,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         // A companion's roll carries her picture, for her token; strangers are marked so, for a question mark (D-286).
         await ok("roll", "1d20+3", "--who", "Lupa");
         const named = JSON.parse(await ok("view", "--json")).rolls;
-        expect(named.map((roll: { who?: string; }) => roll.who)).toEqual(["a creature", "someone", "Lupa"]);
+        expect(named.map((roll: { who?: string; }) => roll.who)).toEqual(["creature", "someone", "Lupa"]);
         expect(named.map((roll: { stranger?: boolean; }) => roll.stranger)).toEqual([true, true, undefined]);
         expect(named[2].image).toEqual({ file: "wolf-head.svg", version: expect.any(Number) });
 

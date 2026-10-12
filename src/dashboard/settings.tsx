@@ -237,7 +237,7 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
 /** What the player should know of a setting on this computer, as how to have pictures: its lines, its steps in order, and the commands to copy. */
 function SettingNote({ note }: { note: { text: string; fix?: true; }; })
 {
-    const blocks = noteBlocks(note.text);
+    const blocks = noteBlocks(t(note.text));
     return (
         <div class={note.fix ? "setting-note fix" : "setting-note"}>
             <Icon name="info" />

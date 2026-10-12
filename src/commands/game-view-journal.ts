@@ -4,6 +4,7 @@ import { type LogEntry, readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
 import { goalsIn, links, type Page, textsIn, type World } from "../pages/index.ts";
 import type { GameDate } from "../time/index.ts";
+import type { SeenEffect } from "./game-effects.ts";
 import { type Knowledge, knownText } from "./game-knowledge.ts";
 import { measuresText, questMeasures } from "./game-quests.ts";
 
@@ -45,12 +46,38 @@ export interface ShownChapter
     date?: string;
     summary?: string;
     open: boolean;
-    facts: string[];
+    facts: JournalFact[];
 }
 
+/**
+ * A fact of the story as the journal tells it (VIEW-9), as data the dashboard writes in its language, with its game date: who and where as the character knows
+ * them, someone, creature and somewhere for those it does not (D-254); an effect with its end, and the line status gives it.
+ */
+export type StoryFact =
+    & { date?: string; }
+    & (
+        | { kind: "scene-opened"; title: string; type: string; }
+        | { kind: "scene-closed"; title: string; type: string; summary: string; }
+        | { kind: "roll"; who?: string; result: string; }
+        | { kind: "roll-revealed"; }
+        | { kind: "counter"; who: string; field: string; before: string; after: string; }
+        | { kind: "time"; from?: string; to: string; }
+        | { kind: "moved"; who: string[]; to?: string; }
+        | { kind: "learned"; who: string; what: string[]; }
+        | ({ kind: "effect"; who: string; } & SeenEffect)
+        | { kind: "effect-ended"; who: string; effect: string; }
+        | { kind: "saved"; save: string; label?: string; }
+        | { kind: "back"; save: string; }
+        | { kind: "mode"; to: string; }
+        | { kind: "quest"; status: "open" | "done" | "failed"; quest: string; }
+    );
+
+/** A fact the journal tells: of the story, never of the game (D-369); the saves made have their own section, the mode is the setup's, the rolls have their column. */
+export type JournalFact = Extract<StoryFact, { kind: (typeof storyKinds)[number]; }>;
+
+const storyKinds = ["counter", "time", "moved", "learned", "effect", "effect-ended", "back", "quest"] as const;
+
 const statuses = ["open", "done", "failed"] as const;
-// Lines of the game, not of the story: the saves made have their own section, the mode is the setup's, the rolls have their column (D-369).
-const outOfStory = new Set(["saved", "mode-changed", "roll", "roll-revealed"]);
 
 /** A page as the journal shows it: its kind and picture, as the player character knows it; a place's, else that of the nearest place that holds it. */
 export type PlaceLook = (name: unknown) => Pick<ShownChapter, "kind" | "picture">;
@@ -65,7 +92,7 @@ export function shownJournal(
     world: World,
     knowledge: Knowledge,
     now: GameDate | undefined,
-    fact: (entry: LogEntry) => string[],
+    fact: (entry: LogEntry) => StoryFact | undefined,
     named: (name: unknown) => string | undefined,
     look: PlaceLook,
 ): { quests: ShownQuest[]; chapters: ShownChapter[]; }
@@ -142,7 +169,7 @@ function shownLink(value: unknown, named: (name: unknown) => string | undefined)
  * The story as chapters (VIEW-9): each scene, from its opening to its close, with its summary and the facts the diary tells of it; the facts between scenes in
  * chapters of their own, the saves and the modes left out. The last first.
  */
-function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], named: (name: unknown) => string | undefined, look: PlaceLook): ShownChapter[]
+function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => StoryFact | undefined, named: (name: unknown) => string | undefined, look: PlaceLook): ShownChapter[]
 {
     const chapters: ShownChapter[] = [];
     let scene: ShownChapter | undefined;
@@ -170,9 +197,9 @@ function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], na
             continue;
         }
 
-        const told = outOfStory.has(entry.type) ? [] : fact(entry);
+        const told = fact(entry);
 
-        if (told.length === 0) {
+        if (told === undefined || !isJournalFact(told)) {
             continue;
         }
 
@@ -183,7 +210,7 @@ function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => string[], na
             chapters.push(holder);
         }
 
-        holder.facts.push(...told);
+        holder.facts.push(told);
     }
 
     return chapters.toReversed();
@@ -201,6 +228,11 @@ function chapter(title: string, number: number, data: Record<string, unknown>, e
         open: true,
         facts: [],
     };
+}
+
+function isJournalFact(fact: StoryFact): fact is JournalFact
+{
+    return (storyKinds as readonly string[]).includes(fact.kind);
 }
 
 function compareOrders(one: number[], other: number[]): number

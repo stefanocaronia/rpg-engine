@@ -25,6 +25,8 @@ export interface SheetValue
     roll?: SheetRoll;
     /** Where it is between two marks, as the experience between its level and the next. */
     progress?: { value: number; from: number; to: number; };
+    /** Beside the points, what they say of the levels (PRO-6): how many the next level needs, the level that is due, or the least the level needs. */
+    levelNeed?: { needs: number; level: number; } | { due: number; } | { least: number; level: number; };
 }
 
 /** A free roll of a number of the sheet: the dice, by their sides, the number added, and both as a notation, such as 1d20+5. */
@@ -82,7 +84,8 @@ export interface ShownPlace
     name: string;
     image?: { file: string; version: number; };
     within: string[];
-    around: { text: string; place?: string; }[];
+    /** What holds there: the environment's entries, then the places' effects with their end; each with its place. */
+    around: ({ name: string; value: string; place?: string; } | { effect: string; end?: EffectEnd; place?: string; })[];
     text: string;
     here: ShownPerson[];
     /** Its map, when it has one (GRD-6). */
@@ -152,13 +155,42 @@ export interface Member
     dead: boolean;
     /** Their picture's file, and when it last changed. */
     image?: { file: string; version: number; };
-    place?: string;
+    /** Where they are: the places that hold them that the character knows, the nearest first; elsewhere, or in the open (D-254, TRV-13). */
+    place?: string[] | "elsewhere" | "open";
     counters: SheetValue[];
-    effects: { name: string; end?: string; text: string; }[];
+    effects: SeenEffect[];
     /** Their mood, none when neutral or dead (MOOD-6). */
     mood?: Mood;
     /** At the system's dying point, the counters shown large in their band (D-310 (7)). */
     dying?: DyingCounter[];
+}
+
+/** An effect on someone, with its end when it has one, and as the chat writes it. */
+export interface SeenEffect
+{
+    name: string;
+    end?: EffectEnd;
+    text: string;
+}
+
+/** When an effect ends (EFF-2): at a game date; at the start of someone's turn in a round; when the scene ends; at an occasion of the game system, as long rest. */
+export type EffectEnd = { date: string; } | { round: number; turn: string; } | { scene: true; } | { occasion: string; };
+
+/** A part of a notation, for the page to say in words (D-292): dice with what they do past rolling, or a number added, as +5. */
+export type NotationPart = {
+    dice: string;
+    keep?: { which: "highest" | "lowest"; count: number; };
+    drop?: { which: "highest" | "lowest"; count: number; };
+    rerollOnce?: DiceCondition;
+    explode?: { condition: DiceCondition; compound: boolean; };
+    success?: DiceCondition;
+} | { add: string; };
+
+/** Which faces a rule of the dice takes: those equal to a value, or below or above it. */
+export interface DiceCondition
+{
+    operator: "=" | "<" | "<=" | ">" | ">=";
+    value: number;
 }
 
 /** A die as it was thrown: its sides, the face it shows, the faces that add up on it with explosions, the face before a reroll, dropped or a success. */
@@ -181,7 +213,7 @@ export interface ShownRoll
     /** When it was rolled, in real time. */
     at: string;
     by: "player" | "master";
-    /** For whom, as the player's character knows them. */
+    /** For whom, as the player's character knows them; creature or someone for one it does not know. */
     who?: string;
     /** What the roll is: the check the master asked of the player, a roll of the dashboard's dice, or what the master names a roll of theirs. */
     check?: string;
@@ -189,8 +221,8 @@ export interface ShownRoll
     image?: { file: string; version: number; };
     /** Whom it is for is someone the character does not know by name. */
     stranger?: true;
-    /** The notation in words, when it says more than its dice. */
-    words?: string;
+    /** The notation in parts, when it says more than its dice, for the page to say in words. */
+    words?: NotationPart[];
     notation: string;
     total: number;
     text: string;
@@ -205,8 +237,8 @@ export interface Asked
     /** The word for a roll, or for a choice, in the campaign's language. */
     title: string;
     labels: string[];
-    /** By button, its dice in words when they say more than their dice, as "2d20, keep the highest, +5". */
-    words?: (string | null)[];
+    /** By button, its dice in parts when they say more than their dice, as 2d20 keeping the highest, +5, for the page to say in words. */
+    words?: (NotationPart[] | null)[];
     /** By button, the name the game gives its roll, in the campaign's language, as "with advantage" (D-399). */
     names?: (string | null)[];
     /** Whether it asks where the player's character moves on the map of its place, its one button the change of mind (ASK-11). */
@@ -236,7 +268,8 @@ export interface MapPlace
     radius?: number;
     biome?: string;
     terrain?: string;
-    from?: string;
+    /** Where it is from the party: the km and the point of the compass, none closer than 50 m. */
+    from?: { km: number; direction?: string; };
     image?: { file: string; version: number; };
 }
 
@@ -354,8 +387,22 @@ export interface ShownChapter
     date?: string;
     summary?: string;
     open: boolean;
-    facts: string[];
+    facts: JournalFact[];
 }
+
+/** A fact of the story (VIEW-9), with its game date: who and where as the character knows them, someone, creature and somewhere for those it does not. */
+export type JournalFact =
+    & { date?: string; }
+    & (
+        | { kind: "counter"; who: string; field: string; before: string; after: string; }
+        | { kind: "time"; from?: string; to: string; }
+        | { kind: "moved"; who: string[]; to?: string; }
+        | { kind: "learned"; who: string; what: string[]; }
+        | ({ kind: "effect"; who: string; } & SeenEffect)
+        | { kind: "effect-ended"; who: string; effect: string; }
+        | { kind: "back"; save: string; }
+        | { kind: "quest"; status: "open" | "done" | "failed"; quest: string; }
+    );
 
 /** Where the campaign starts over from (D-361): the start of play, with the same character, or before session zero, to make one again. */
 export type ResetPoint = "start" | "session zero";

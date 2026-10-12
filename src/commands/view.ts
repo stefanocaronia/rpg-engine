@@ -7,14 +7,14 @@ import { type LogEntry, readLog } from "../core/log.ts";
 import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
-import { notationWords, type ThrownDie } from "../dice/index.ts";
+import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { effectShown } from "./game-effects.ts";
+import { effectShown, type SeenEffect } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
 import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter, playerStory } from "./game-knowledge.ts";
@@ -25,12 +25,12 @@ import { type Measures, measuresOf } from "./game-roads.ts";
 import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
-import { questText, type ShownChapter, shownJournal, type ShownQuest } from "./game-view-journal.ts";
+import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
-import { counterOf, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
+import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
@@ -49,7 +49,7 @@ export interface ShownRoll
     at: string;
     /** Who rolled it: the player, or the master. */
     by: "player" | "master";
-    /** For whom, as the player character knows them: Ettore, Lupa, a creature. */
+    /** For whom, as the player character knows them: Ettore, Lupa; creature or someone for one it does not know. */
     who?: string;
     /** What the roll is, as the player sees it: the check the master asked, or what the master names a roll of theirs, such as Bite (D-292). */
     check?: string;
@@ -57,8 +57,8 @@ export interface ShownRoll
     image?: { file: string; version: number; };
     /** Whom it is for is someone the player character does not know by name: a creature, someone (D-286). */
     stranger?: true;
-    /** The notation in words, when it says more than its dice, as "2d20, keep the highest, +5" (D-292). */
-    words?: string;
+    /** The notation in parts, for the dashboard to say in words when it does more than add its dice, as 2d20 keeping the highest, +5 (D-292). */
+    words?: NotationPart[];
     notation: string;
     total: number;
     text: string;
@@ -73,12 +73,12 @@ export interface PartyMember
     dead: boolean;
     /** Their picture, their own or from a base the player character knows (D-267, D-277): its file, and when it last changed. */
     image?: { file: string; version: number; };
-    /** Where they are, as far as the player character knows the places: "in Ossario › Cripta", "elsewhere" or "in the open" (D-254, TRV-13). */
-    place?: string;
+    /** Where they are, as far as the player character knows the places: the places that hold them, the nearest first; elsewhere, or in the open (D-254, TRV-13). */
+    place?: string[] | "elsewhere" | "open";
     /** The numbers of their line, in its order (DAT-2). */
     counters: SheetValue[];
     /** Their effects, each with its end when it has one, and as the line writes it. */
-    effects: { name: string; end?: string; text: string; }[];
+    effects: SeenEffect[];
     /** Their mood (MOOD-6); none when neutral, or dead. */
     mood?: Mood;
     /** At the system's dying point, as hp 0, the counters the dashboard shows large in their band (D-310 (7)). */
@@ -221,7 +221,7 @@ export const view = defineCommand({
             return {
                 kind: "journal",
                 ...(present === undefined ? {} : { now: formatGameDate(present) }),
-                ...shownJournal(root, world, knowledge, present, (entry) => diaryLine(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
+                ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
             };
         }
 
@@ -289,7 +289,7 @@ export const view = defineCommand({
             const chain = locate(world, page).chain;
             const where = chain.filter((holder) => knowsPage(knowledge, holder)).map((holder) => holder.name);
             // In no place at all while a journey stopped in the open (TRV-13).
-            const place = where.length > 0 ? `in ${where.join(" › ")}` : chain.length > 0 ? "elsewhere" : open ? "in the open" : undefined;
+            const place = where.length > 0 ? where : chain.length > 0 ? "elsewhere" : open ? "open" : undefined;
             const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
             const mood = livingMood(page);
             const dying = dyingOf(world, system, page);
@@ -393,9 +393,9 @@ function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => stri
 {
     const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
-    const who = data.who === undefined ? undefined : known ?? (isCopyName(world, data.who) ? "a creature" : "someone");
+    const who = data.who === undefined ? undefined : known ?? (isCopyName(world, data.who) ? "creature" : "someone");
     const image = known === undefined ? undefined : picture(data.who);
-    const words = notationWords(String(data.notation ?? ""));
+    const words = notationParts(String(data.notation ?? ""));
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
@@ -422,7 +422,8 @@ function memberLine(member: PartyMember): string
     const role = told.length === 0 ? "" : ` (${told.join(", ")})`;
     const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.beside === undefined ? value.text : `${value.text} (${value.beside})`])));
     const shown = [counters, ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");
-    return `${member.name}${role}${member.place === undefined ? "" : `, ${member.place}`}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
+    const place = member.place === undefined ? "" : `, ${Array.isArray(member.place) ? `in ${member.place.join(" › ")}` : member.place === "open" ? "in the open" : "elsewhere"}`;
+    return `${member.name}${role}${place}${shown.length === 0 ? "" : `: ${shown.join(" · ")}`}`;
 }
 
 /** The values of someone's line as data (DAT-2): as the line writes them, with a counter's limits, and beside the experience what the next level needs (PRO-6). */
@@ -435,6 +436,7 @@ function lineValues(world: World, page: Page, counters: Record<string, unknown>)
         const counter = counterOf(world, fields, field, value);
         const progress = experienceProgress(world, fields, field);
         const beside = field === experience?.field ? experience.text : undefined;
+        const need = beside === undefined ? undefined : experienceNeed(world, fields, field);
         return {
             field,
             ...(kind === undefined ? {} : { kind }),
@@ -443,6 +445,7 @@ function lineValues(world: World, page: Page, counters: Record<string, unknown>)
             marks: 0,
             ...(beside === undefined ? {} : { beside }),
             ...(progress === undefined ? {} : { progress }),
+            ...(need === undefined ? {} : { levelNeed: need }),
         };
     });
 }
@@ -541,46 +544,99 @@ function sceneLine(root: string, named: (name: unknown) => string | undefined): 
  */
 function diaryLine(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): string[]
 {
+    const fact = storyFact(world, entry, named);
+    return fact === undefined ? [] : [fact.date === undefined ? factText(fact) : `${fact.date} · ${factText(fact)}`];
+}
+
+/**
+ * A public line of the log as a fact of the story (VIEW-4, VIEW-9), as data the dashboard writes in its language: who and where as the character knows them,
+ * someone, creature and somewhere for those it does not (D-254); undefined for a line of no story.
+ */
+function storyFact(world: World, entry: LogEntry, named: (name: unknown) => string | undefined): StoryFact | undefined
+{
     const data = entry.data as Record<string, unknown>;
     const text = (value: unknown): string => (Array.isArray(value) ? value.map(String).join(", ") : String(value ?? ""));
-    const who = (name: unknown): string => named(name) ?? (isCopyName(world, name) ? "A creature" : "Someone");
-    const where = (name: unknown): string => named(name) ?? "somewhere";
+    const who = (name: unknown): string => named(name) ?? (isCopyName(world, name) ? "creature" : "someone");
     const pages = Array.isArray(data.pages) ? data.pages.map((name) => named(name) ?? "someone") : [];
-    const fact = ((): string | undefined => {
+    const fact = ((): StoryFact | undefined => {
         switch (entry.type) {
             case "scene-opened":
-                return `Scene opened: ${text(data.title)} (${text(data.type)})`;
+                return { kind: "scene-opened", title: text(data.title), type: text(data.type) };
             case "scene-closed":
-                return `Scene: ${text(data.title)} (${text(data.type)}): ${text(data.summary)}`;
+                return { kind: "scene-closed", title: text(data.title), type: text(data.type), summary: text(data.summary) };
             case "roll":
-                return `${data.who === undefined ? "Roll" : who(data.who)}: ${text(data.result)}`;
+                return { kind: "roll", ...(data.who === undefined ? {} : { who: who(data.who) }), result: text(data.result) };
             case "roll-revealed":
-                return "A hidden roll was shown";
+                return { kind: "roll-revealed" };
             case "counter-changed":
-                return `${who(data.page)}: ${text(data.field)} ${text(data.before)} → ${text(data.after)}`;
+                return { kind: "counter", who: who(data.page), field: text(data.field), before: text(data.before), after: text(data.after) };
             case "time-advanced":
-                return data.from === undefined ? `The story starts on ${text(data.to)}` : `Time passes: ${text(data.from)} → ${text(data.to)}`;
+                return { kind: "time", ...(data.from === undefined ? {} : { from: text(data.from) }), to: text(data.to) };
             case "moved":
-                return pages.every((name) => name === "someone") && named(data.to) === undefined ? undefined : `${pages.join(", ")} to ${data.to === null ? "the open" : where(data.to)}`;
+                return pages.every((name) => name === "someone") && named(data.to) === undefined ? undefined : { kind: "moved", who: pages, ...(data.to === null ? {} : { to: named(data.to) ?? "somewhere" }) };
             case "learned":
-                return `${text(data.page)} learned: ${textsIn(data.knows).map(learnedText).join(", ")}`;
+                return { kind: "learned", who: text(data.page), what: textsIn(data.knows).map(learnedText) };
             case "effect-added":
-                return `${who(data.page)}: ${effectText(world, text(data.effect), named)}`;
+                return { kind: "effect", who: who(data.page), ...seenEffectOf(world, text(data.effect), named) };
             case "effect-ended":
-                return `${who(data.page)}: ${text(data.effect)} ended`;
+                return { kind: "effect-ended", who: who(data.page), effect: text(data.effect) };
             case "saved":
-                return `Saved: ${text(data.save)}${data.label === undefined ? "" : ` - ${text(data.label)}`}`;
+                return { kind: "saved", save: text(data.save), ...(data.label === undefined ? {} : { label: text(data.label) }) };
             case "save-loaded":
-                return `Back to save ${text(data.save)}: what came after it is gone`;
+                return { kind: "back", save: text(data.save) };
             case "mode-changed":
-                return `The campaign is now in ${text(data.to)}`;
+                return { kind: "mode", to: text(data.to) };
             case "quest-changed":
-                return `${data.status === "open" ? "Quest taken" : data.status === "done" ? "Quest completed" : "Quest failed"}: ${named(data.quest) ?? text(data.quest)}`;
+                return { kind: "quest", status: data.status === "open" ? "open" : data.status === "done" ? "done" : "failed", quest: named(data.quest) ?? text(data.quest) };
             default:
                 return undefined;
         }
     })();
-    return fact === undefined ? [] : [entry.date === undefined ? fact : `${entry.date} · ${fact}`];
+    return fact === undefined || entry.date === undefined ? fact : { ...fact, date: entry.date };
+}
+
+/** "Ettore: hp 14 → 12": a fact of the story in the chat's words. */
+function factText(fact: StoryFact): string
+{
+    const told = ((): string => {
+        switch (fact.kind) {
+            case "scene-opened":
+                return `Scene opened: ${fact.title} (${fact.type})`;
+            case "scene-closed":
+                return `Scene: ${fact.title} (${fact.type}): ${fact.summary}`;
+            case "roll":
+                return `${fact.who === undefined ? "Roll" : nameText(fact.who)}: ${fact.result}`;
+            case "roll-revealed":
+                return "A hidden roll was shown";
+            case "counter":
+                return `${nameText(fact.who)}: ${fact.field} ${fact.before} → ${fact.after}`;
+            case "time":
+                return fact.from === undefined ? `The story starts on ${fact.to}` : `Time passes: ${fact.from} → ${fact.to}`;
+            case "moved":
+                return `${fact.who.join(", ")} to ${fact.to ?? "the open"}`;
+            case "learned":
+                return `${fact.who} learned: ${fact.what.join(", ")}`;
+            case "effect":
+                return `${nameText(fact.who)}: ${fact.text}`;
+            case "effect-ended":
+                return `${nameText(fact.who)}: ${fact.effect} ended`;
+            case "saved":
+                return `Saved: ${fact.save}${fact.label === undefined ? "" : ` - ${fact.label}`}`;
+            case "back":
+                return `Back to save ${fact.save}: what came after it is gone`;
+            case "mode":
+                return `The campaign is now in ${fact.to}`;
+            case "quest":
+                return `${fact.status === "open" ? "Quest taken" : fact.status === "done" ? "Quest completed" : "Quest failed"}: ${fact.quest}`;
+        }
+    })();
+    return `${told[0]?.toUpperCase() ?? ""}${told.slice(1)}`;
+}
+
+/** A name of the story in the chat's words: a creature for creature, as the copies of one it does not know. */
+function nameText(name: string): string
+{
+    return name === "creature" ? "a creature" : name;
 }
 
 /** Whether a name is a copy's in a scene, such as Lupo mannaro 1: a creature's name and a number, with no page of its own. */
@@ -597,18 +653,22 @@ function learnedText(link: string): string
     return reference.section === undefined ? reference.name : `${reference.name}#${reference.section}`;
 }
 
-/** An effect as the player sees it: its name and its end, without who keeps it, which may be a secret; an end at someone's turn names them as the diary does. */
-function effectText(world: World, line: string, named: (name: unknown) => string | undefined): string
+/**
+ * An effect as the player sees it, as a line of the log writes it: its name and its end, without who keeps it, which may be a secret; an end at someone's turn
+ * names them as the diary does.
+ */
+function seenEffectOf(world: World, line: string, named: (name: unknown) => string | undefined): SeenEffect
 {
     const read = readEffect(line);
 
     if (!("effect" in read)) {
-        return line;
+        return { name: line, text: line };
     }
 
     const end = read.effect.end;
-    const seen = end !== undefined && "turn" in end ? { end: { ...end, turn: named(end.turn) ?? (isCopyName(world, end.turn) ? "a creature" : "someone") } } : {};
-    return effectShown(world, { ...read.effect, values: [], ...seen });
+    const seen = end !== undefined && "turn" in end ? { ...end, turn: named(end.turn) ?? (isCopyName(world, end.turn) ? "creature" : "someone") } : end;
+    const told = seen !== undefined && "turn" in seen ? { ...seen, turn: nameText(seen.turn) } : seen;
+    return { name: read.effect.name, ...(seen === undefined ? {} : { end: seen }), text: effectShown(world, { ...read.effect, values: [], end: told }) };
 }
 
 /** A sheet with the speed told in the units of the story (D-328), as the maps tell their measures: 30 ft is 9 m in metric. */

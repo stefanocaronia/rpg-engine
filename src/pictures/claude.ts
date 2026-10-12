@@ -16,6 +16,12 @@ const longest = 3 * 60 * 1000;
 const drawing = `claude -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
     + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You draw pictures as SVG code from a brief. You reply with the SVG alone."`;
 
+/** Why Claude draws no pictures, for the master and the player (D-390). */
+export const claudeSays = {
+    loggedOut: { why: "Claude Code is not logged in on this computer" },
+    apiKey: { why: "Claude Code uses an API key, which pays by the call: pictures are drawn only with the Claude login" },
+};
+
 /** Claude Code on this computer, as the player's Claude login lets it draw pictures. */
 export function claudePictures(): PictureMaker
 {
@@ -45,12 +51,10 @@ function claudeReady(): PicturesReady
     }
 
     if (status.error !== undefined || said.loggedIn !== true) {
-        return { ready: false, why: "Claude Code is not logged in on this computer" };
+        return { ready: false, ...claudeSays.loggedOut };
     }
 
-    return said.authMethod === "claude.ai"
-        ? { ready: true, maker: "Claude" }
-        : { ready: false, why: "Claude Code uses an API key, which pays by the call: pictures are drawn only with the Claude login" };
+    return said.authMethod === "claude.ai" ? { ready: true, maker: "Claude" } : { ready: false, ...claudeSays.apiKey };
 }
 
 /** One SVG picture: Claude Code in an empty folder of its own, the brief on its input, its answer read, cleaned and written there. */

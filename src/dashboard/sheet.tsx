@@ -9,7 +9,8 @@ import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
-import { cardIcons, DieIcon } from "./icons.tsx";
+import { besideLabel, memberPlaceLabel } from "./game-words.ts";
+import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
@@ -57,7 +58,12 @@ export function MemberSheet(
                     <div class="who">
                         <h2>{member.name}</h2>
                         {title !== "" && <p class="headline">{title}</p>}
-                        {member.place && <p class="place">{member.place}</p>}
+                        {member.place && (
+                            <p class="place">
+                                <Icon name="place" />
+                                {memberPlaceLabel(member.place)}
+                            </p>
+                        )}
                     </div>
                 </div>
                 {member.dying && <DeathSaves dying={member.dying} />}
@@ -247,13 +253,14 @@ interface Line
 function Tile(props: Line)
 {
     const { value, label } = props;
+    const beside = besideLabel(value);
     return (
-        <NumberBox {...props} kind="tile" said={`${label} ${shownText(value.beside ?? value.text)}`}>
+        <NumberBox {...props} kind="tile" said={`${label} ${shownText(beside ?? value.text)}`}>
             <span class="label">{label}</span>
-            <Changing text={value.beside ?? value.text}>
-                <span class="big num">{shownText(value.beside ?? value.text)}</span>
+            <Changing text={beside ?? value.text}>
+                <span class="big num">{shownText(beside ?? value.text)}</span>
             </Changing>
-            <span class="small num">{value.beside === undefined ? "" : shownText(value.text)}</span>
+            <span class="small num">{beside === undefined ? "" : shownText(value.text)}</span>
             {value.roll && <RollMark roll={value.roll} />}
         </NumberBox>
     );
@@ -265,9 +272,10 @@ function Row(props: Line)
     const { value, label } = props;
     const widget = widgetOf(value);
     const shownLabel = phraseLabel(label);
-    const marks = value.marks === 0 ? null : <span class="marks" aria-label={`${value.marks} ${value.marks === 1 ? "mark" : "marks"}`}>{"●".repeat(value.marks)}</span>;
+    const beside = besideLabel(value);
+    const marks = value.marks === 0 ? null : <span class="marks" aria-label={value.marks === 1 ? t("1 mark") : t("{count} marks", { count: value.marks })}>{"●".repeat(value.marks)}</span>;
     return (
-        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text), value.beside === undefined ? "" : shownText(value.beside)].filter((part) => part !== "").join(" ")}>
+        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text), beside === undefined ? "" : shownText(beside)].filter((part) => part !== "").join(" ")}>
             <span class="label">
                 {marks}
                 {shownLabel}
@@ -276,7 +284,7 @@ function Row(props: Line)
                 {value.roll && <RollMark roll={value.roll} />}
                 {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
             </Changing>
-            {value.beside !== undefined && <span class="beside num">{shownText(value.beside)}</span>}
+            {beside !== undefined && <span class="beside num">{shownText(beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
         </NumberBox>
     );
@@ -386,5 +394,5 @@ function preview(group: SheetGroup, label: (field: string) => string): string
         return group.items.map((item) => item.item).join(" · ");
     }
 
-    return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(value.beside ?? value.text)}`).join(" · ");
+    return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(besideLabel(value) ?? value.text)}`).join(" · ");
 }

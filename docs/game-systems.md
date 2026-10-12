@@ -546,7 +546,7 @@ A system can show its words in the campaign's language on the dashboard (D-403):
 ```yaml
 groups: {Abilities: Caratteristiche, Skills: Abilità}     # the sheet's groups, by their names in system.yaml
 fields: {str: FOR, ac: CA, passive-perception: Percezione passiva}   # the sheet's fields, by their ids: the label the page writes
-words: {Cleric: Chierico, Medium: Media}                 # any other word or text the system shows: page names as values, fixed values, setting texts
+words: {Cleric: Chierico, long rest: riposo lungo}       # any other word or text the system shows: page names as values, fixed values, setting texts, occasions, terrain
 headline: "{classes} di livello {level}"                 # sheet-headline in that language, with the same fields
 ```
 

@@ -67,7 +67,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
             {things.map((feature) =>
                 piecesOf(map, feature.symbol, feature.kind).map((piece) => (
                     <g key={`${feature.symbol} ${piece.left} ${piece.top}`} class={`lm-thing ${feature.kind}`}>
-                        <title>{[feature.name, feature.blocks ? t("blocks") : "", feature.difficult ? t("difficult") : ""].filter((part) => part !== "").join(", ")}</title>
+                        <title>{[featureName(feature), feature.blocks ? t("blocks") : "", feature.difficult ? t("difficult") : ""].filter((part) => part !== "").join(", ")}</title>
                         <Thing
                             kind={feature.kind}
                             symbol={feature.symbol}
@@ -186,7 +186,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                 {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
                     <li key={feature.symbol}>
                         <Swatch feature={feature} ground={map.ground} />
-                        <span class="lm-key-name">{feature.name}</span>
+                        <span class="lm-key-name">{featureName(feature)}</span>
                         {feature.blocks && !["wall", "rock"].includes(feature.kind) && <span class="lm-key-note">{t("blocks")}</span>}
                         {feature.difficult && <span class="lm-key-note">{t("difficult")}</span>}
                     </li>
@@ -751,4 +751,11 @@ function canopy(x: number, y: number, r: number): string
         const [px, py] = [x + Math.cos(angle) * r, y + Math.sin(angle) * r];
         return index === 0 ? `M${px} ${py}` : `A${r * 0.36} ${r * 0.36} 0 0 1 ${px} ${py}`;
     }).join("") + "z";
+}
+
+/** A symbol of the map by its name: those every map has (GRD-1), a wall, the floor, a door, in the page's language; the others as the master named them. */
+function featureName(feature: { name: string; kind: string; }): string
+{
+    const builtIn: Record<string, string> = { wall: t("wall"), floor: t("floor"), door: t("door") };
+    return feature.name === feature.kind ? builtIn[feature.kind] ?? feature.name : feature.name;
 }

@@ -7,7 +7,7 @@ import { baseChain, declaredKind, isEmptyField, isStandardField, type Page, type
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
-import { experienceOf, experienceText } from "./game-experience.ts";
+import { experienceOf, experienceText, type LevelNeed, levelNeed } from "./game-experience.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { counterLimits, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
@@ -102,6 +102,8 @@ export interface SheetValue
     roll?: SheetRoll;
     /** How far it has come from one mark to the next, as the experience between its level's points and the next level's (PRO-6): a bar on the dashboard. */
     progress?: Progress;
+    /** Beside the points, what they say of the levels, as data the dashboard writes in its language (PRO-6). */
+    levelNeed?: LevelNeed;
 }
 
 /** A number between two marks: where it is, where it started from, where it goes. */
@@ -166,6 +168,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
             const beside = besideValue(world, fields, entry);
             const roll = sheetRoll(system, fields, entry);
             const progress = experienceProgress(world, fields, entry.field);
+            const need = experienceNeed(world, fields, entry.field);
             return isEmptyField(value) ? [] : [{
                 ...sheetValue(world, fields, entry.field, value),
                 marks: marks.get(comparableText(entry.field)) ?? 0,
@@ -173,6 +176,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 ...(beside === undefined || entry.beside === undefined ? {} : { besideField: entry.beside }),
                 ...(roll === undefined ? {} : { roll }),
                 ...(progress === undefined ? {} : { progress }),
+                ...(need === undefined ? {} : { levelNeed: need }),
             }];
         });
         return values.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values }];
@@ -509,6 +513,13 @@ export function experienceProgress(world: World, fields: Record<string, unknown>
 
     const experience = experienceOf(world, fields);
     return experience?.next === undefined ? undefined : { value: experience.points, from: experience.least ?? 0, to: experience.next.points };
+}
+
+/** What the points of the field that counts the experience say of the levels (PRO-6); none for another field, or at the last level. */
+export function experienceNeed(world: World, fields: Record<string, unknown>, field: string): LevelNeed | undefined
+{
+    const experience = comparableText(field) === comparableText(world.system?.progression?.experience?.field ?? "") ? experienceOf(world, fields) : undefined;
+    return experience === undefined ? undefined : levelNeed(experience);
 }
 
 /** The free roll of an entry of the sheet (D-280): the dice the system rolls its number with, or the number beside it, as str-mod by str; none for a text. */

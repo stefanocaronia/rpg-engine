@@ -1,11 +1,11 @@
 // What every translation of the page must hold (D-394): each phrase the page's code gives t() or tParts() as a string of its own, and the words of the player's
-// settings the engine gives the page (what each is, what its values mean, the setup's questions), which it writes through t(). The test checks the files
-// against them; test/i18n/translate.ts completes them.
+// settings the engine gives the page (what each is, what its values mean, the setup's questions, the pictures' notes), which it writes through t(). The test
+// checks the files against them; test/i18n/translate.ts completes them.
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandLine } from "../../src/command-line.ts";
-import { playerSettingNames } from "../../src/commands/config.ts";
+import { picturesNotes, playerSettingNames } from "../../src/commands/config.ts";
 import type { PlayerSetting } from "../../src/dashboard/data.ts";
 import { makeTempFolder, testContext } from "../support.ts";
 
@@ -26,7 +26,10 @@ export function codePhrases(): Set<string>
     return new Set(calls.map((call) => JSON.parse(call[1]) as string));
 }
 
-/** The words of the player's settings the engine gives the page, in a campaign made for it; a game system's own come with its words (D-394, 3). */
+/**
+ * The words of the player's settings the engine gives the page, in a campaign made for it, and every note of the pictures' setting, which depends on the
+ * computer; a game system's own come with its words (D-394, 3).
+ */
 export async function settingPhrases(): Promise<Set<string>>
 {
     const campaign = join(makeTempFolder(), "campaign");
@@ -41,7 +44,8 @@ export async function settingPhrases(): Promise<Set<string>>
 
     const own = new Set<string>([...playerSettingNames, "companions", "preparation", "name"]);
     const settings = [...await read("--settings"), ...await read("--setup")].filter((setting) => own.has(setting.name));
-    return new Set(settings.flatMap((setting) => [setting.about, setting.question, ...(setting.choices ?? []).flatMap((choice) => [choice.means, choice.label])]).filter((word) => word !== undefined));
+    const words = settings.flatMap((setting) => [setting.about, setting.question, ...(setting.choices ?? []).flatMap((choice) => [choice.means, choice.label])]);
+    return new Set([...words, ...picturesNotes].filter((word) => word !== undefined));
 }
 
 /** The {names} a phrase fills, in order of their names. */

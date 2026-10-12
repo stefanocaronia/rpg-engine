@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { readMap, readView } from "./api.ts";
 import type { MapPlace, MapPoint, Member, WorldMap } from "./data.ts";
+import { fromLabel, terrainLabel } from "./game-words.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { Icon, type IconName } from "./icons.tsx";
 import { biomeLabel, biomes, placeKindLabel, placeKinds, symbolRadius } from "./map-symbols.ts";
@@ -522,7 +523,7 @@ function Drawing(
                     return placed === undefined ? null : (
                         <g key={region.name}>
                             <text class="label region-label" x={placed.x} y={placed.y} text-anchor="middle">{region.name}</text>
-                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{t("{terrain} terrain", { terrain: region.terrain })}</text>}
+                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{t("{terrain} terrain", { terrain: terrainLabel(region.terrain) })}</text>}
                         </g>
                     );
                 })}
@@ -621,7 +622,9 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
         closer.current?.focus({ preventScroll: true });
     }, [place.name]);
 
-    const eyebrow = [placeKindLabel(place.kind) ?? t("Place"), region?.name, here || place.from === undefined ? undefined : t("{distance} from you", { distance: place.from })].filter((part) => part !== undefined);
+    const eyebrow = [placeKindLabel(place.kind) ?? t("Place"), region?.name, here || place.from?.direction === undefined ? undefined : t("{distance} from you", { distance: fromLabel(place.from, (km) => lengthText(km, map.unit)) })].filter((
+        part,
+    ) => part !== undefined);
     return (
         <div class={narrow ? "place-card sheet" : "place-card"} role="dialog" aria-labelledby="place-card-title" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()}>
             {place.image !== undefined && <img class="pc-image" src={`/images/${encodeURIComponent(place.image.file)}?v=${place.image.version}`} alt="" />}
@@ -798,7 +801,7 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
                         <button type="button" class="place-row" onClick={() => choose(spot.name)}>
                             <span class="pr-name">{spot.name}</span>
                             <span class="pr-kind">{[placeKindLabel(spot.kind) ?? t("Place"), ...(layout.inside(spot.name).length > 0 ? [t("{count} inside", { count: layout.inside(spot.name).length })] : [])].join(" · ")}</span>
-                            <span class="pr-far num">{spot.from === undefined ? "" : spot.from === "here" ? t("Here") : spot.from}</span>
+                            <span class="pr-far num">{spot.from === undefined ? "" : fromLabel(spot.from, (km) => lengthText(km, map.unit))}</span>
                         </button>
                     </li>
                 ))}
@@ -826,7 +829,9 @@ function RegionRow({ region, unit }: { region: Area; unit: WorldMap["unit"]; })
         <li>
             <span class="place-row static">
                 <span class="pr-name">{region.name}</span>
-                <span class="pr-kind">{[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : t("{terrain} terrain", { terrain: region.terrain })].filter((part) => part !== undefined).join(" · ")}</span>
+                <span class="pr-kind">
+                    {[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : t("{terrain} terrain", { terrain: terrainLabel(region.terrain) })].filter((part) => part !== undefined).join(" · ")}
+                </span>
                 <span class="pr-far num">{t("{length} across", { length: lengthText(region.radius * 2, unit) })}</span>
             </span>
         </li>

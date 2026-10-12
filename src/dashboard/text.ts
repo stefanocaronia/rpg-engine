@@ -103,6 +103,18 @@ export function tParts<Part>(phrase: string, parts: Record<string, Part>): (stri
     });
 }
 
+/** A number as the page's language writes it, in Latin digits and without grouping, as the page's other numbers: 12,4 in Italian. */
+export function numberText(value: number): string
+{
+    return new Intl.NumberFormat(current, { numberingSystem: "latn", useGrouping: false, maximumFractionDigits: 2 }).format(value);
+}
+
+/** Names as the page's language lists them: Ettore e Lupa. */
+export function listText(items: string[]): string
+{
+    return new Intl.ListFormat(current, { type: "conjunction" }).format(items);
+}
+
 async function fetchPhrases(language: string): Promise<Record<string, string>>
 {
     const response = await fetch(`/i18n/${language}.json`);

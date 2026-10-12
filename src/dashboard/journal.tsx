@@ -4,7 +4,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
-import type { ShownChapter, ShownQuest } from "./data.ts";
+import type { JournalFact, ShownChapter, ShownQuest } from "./data.ts";
+import { factLabel, gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
@@ -141,7 +142,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     const from = [
         quest.giver === undefined ? undefined : t("from {who}", { who: quest.giver }),
         quest.place === undefined ? undefined : t("at {place}", { place: quest.place }),
-        quest.deadline === undefined ? undefined : t("by {date}", { date: quest.deadline.date }),
+        quest.deadline === undefined ? undefined : t("by {date}", { date: gameDateLabel(quest.deadline.date) }),
     ].filter((part) => part !== undefined);
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
@@ -283,11 +284,11 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 {
     const minutes = deadline.minutes;
     const near = minutes !== undefined && minutes < 24 * 60;
-    const text = minutes === undefined ? t("by {date}", { date: deadline.date }) : minutes <= 0 ? t("Time is up") : durationText(minutes);
+    const text = minutes === undefined ? t("by {date}", { date: gameDateLabel(deadline.date) }) : minutes <= 0 ? t("Time is up") : durationText(minutes);
     // Its word apart, which the followed quest's strip leaves to a screen reader on a phone.
     const left = minutes !== undefined && minutes > 0;
     return (
-        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={t("By {date}", { date: deadline.date })}>
+        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={t("By {date}", { date: gameDateLabel(deadline.date) })}>
             <Icon name="hourglass" />
             <span>
                 {text}
@@ -308,7 +309,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
         <ol class="story">
             <li class="story-mark now">
                 <b>{t("Now")}</b>
-                {now !== undefined && <span>{phraseLabel(now)}</span>}
+                {now !== undefined && <span>{phraseLabel(gameDateLabel(now))}</span>}
             </li>
             {chapters.map((chapter, index) =>
                 chapter.title === undefined
@@ -324,7 +325,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                                     {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(sceneTypeLabel(chapter.type))}</span>}
                                 </header>
                                 {(chapter.place !== undefined || chapter.date !== undefined) && (
-                                    <p class="chapter-when">{[chapter.place, chapter.date === undefined ? undefined : phraseLabel(chapter.date)].filter((part) => part !== undefined).join(" · ")}</p>
+                                    <p class="chapter-when">{[chapter.place, chapter.date === undefined ? undefined : phraseLabel(gameDateLabel(chapter.date))].filter((part) => part !== undefined).join(" · ")}</p>
                                 )}
                                 {chapter.summary !== undefined && <p class="chapter-summary">{chapter.summary}</p>}
                                 {chapter.facts.length > 0 && (
@@ -380,16 +381,15 @@ function Between({ chapter }: { chapter: ShownChapter; })
 }
 
 /** The facts of a chapter, the game date written once whenever it changes, as the days in a chat. */
-function Facts({ facts }: { facts: string[]; })
+function Facts({ facts }: { facts: JournalFact[]; })
 {
     let last: string | undefined;
     return (
         <ul>
             {facts.flatMap((fact, at) => {
-                const [, date, rest] = /^(day [^·]+?) · (.*)$/.exec(fact) ?? [undefined, undefined, fact];
-                const header = date !== undefined && date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(date)}</li>] : [];
-                last = date ?? last;
-                return [...header, <li key={at}>{rest}</li>];
+                const header = fact.date !== undefined && fact.date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(gameDateLabel(fact.date))}</li>] : [];
+                last = fact.date ?? last;
+                return [...header, <li key={at}>{factLabel(fact)}</li>];
             })}
         </ul>
     );

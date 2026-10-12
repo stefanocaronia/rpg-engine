@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked, ShownGrid } from "./data.ts";
 import { trayThrows } from "./dice/pool.ts";
+import { notationLabel } from "./game-words.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
@@ -137,7 +138,7 @@ export function AskedBanner(
                                 type="button"
                                 class={sent === index ? `${kind} sent` : kind}
                                 disabled={gone}
-                                title={asked.words?.[index] ?? undefined}
+                                title={notationLabel(asked.words?.[index] ?? undefined)}
                                 onClick={() => void reply(index)}
                             >
                                 {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} name={asked.names?.[index] ?? keptName(check.dice)} />}

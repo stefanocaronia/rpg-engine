@@ -285,7 +285,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
     it("gives where the character is as it knows it: the places around, what holds there, the party and whom it knows, never a stranger", async () => {
         await ok("write", "Guado", "--add", "environment=light: dim", "--add", "contains=[[Varro]]", "--add", "contains=[[Strega]]");
         let place = JSON.parse(await ok("view", "--json")).place;
-        expect(place).toMatchObject({ name: "Guado", within: ["Valle"], around: [{ text: "light: dim", place: "Guado" }], text: "Un villaggio sul fiume." });
+        expect(place).toMatchObject({ name: "Guado", within: ["Valle"], around: [{ name: "light", value: "dim", place: "Guado" }], text: "Un villaggio sul fiume." });
         // Varro and the witch are there, but Kira knows neither: none of them shows, not even as someone.
         expect(place.here.map((person: { name: string; role: string; }) => `${person.name} ${person.role}`)).toEqual(["Kira pc", "Bran companion"]);
         await ok("write", "Kira", "--add", "knows=[[Varro]]");
@@ -310,7 +310,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         // Of a foe only the conditions anyone sees, by name; a stunned one does not act. The party's effects as their line gives them, with the end, at the turn
         // of a creature the character does not know by its number (VIEW-4).
         expect(fighters[2]).toMatchObject({ health: "unhurt", effects: [{ name: "Stunned", text: "Stunned" }], inactive: true });
-        expect(fighters[3].effects).toEqual([{ name: "Benedizione", end: "round 2, creature 1", text: "Benedizione until round 2, creature 1" }]);
+        expect(fighters[3].effects).toEqual([{ name: "Benedizione", end: { round: 2, turn: "creature 1" }, text: "Benedizione until round 2, creature 1" }]);
         expect(overview.party[1].effects).toEqual(fighters[3].effects);
         expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", dying: [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 0, limit: 3 }] });
         // The same panel in the band of her sheet (D-310 (7)); none for Bran, who has no hit points at 0.

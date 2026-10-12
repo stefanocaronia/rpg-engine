@@ -2,8 +2,10 @@
 // whose turn it is; outside a scene who is there of those the character knows; then the place's text.
 import { sectionAddress } from "./address.ts";
 import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+import { effectLabel, gameDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { sceneTypeLabel, strangerLabel } from "./labels.ts";
+import { biomeLabel } from "./map-symbols.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
@@ -57,7 +59,7 @@ function PlaceBand({ place }: { place: ShownPlace; })
             <h2 id="place-name">{place.name}</h2>
             {place.around.length > 0 && (
                 <ul class="place-env" aria-label={t("Around")}>
-                    {place.around.map((item) => <Surrounding key={`${item.text} ${item.place ?? ""}`} text={item.text} place={item.place} name={place.name} />)}
+                    {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} />)}
                 </ul>
             )}
         </div>
@@ -82,17 +84,20 @@ function PlaceBand({ place }: { place: ShownPlace; })
         );
 }
 
-/** One thing that holds there: an entry of the environment as its name and value, as light dim; an effect with its end; the place it comes from, when another. */
-function Surrounding({ text, place, name }: { text: string; place?: string; name: string; })
+/**
+ * One thing that holds there: an entry of the environment as its name and value, as light dim, the biome and the terrain the engine reads in the page's language;
+ * an effect with its end; the place it comes from, when another.
+ */
+function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name: string; })
 {
-    const entry = /^([^:]+):\s*(.+)$/.exec(text);
-    const from = place === undefined || place === name ? undefined : place;
+    const from = item.place === undefined || item.place === name ? undefined : item.place;
+    const entry = "effect" in item ? undefined : environmentLabel(item.name, item.value);
     return (
         <li>
-            {entry === null ? text : (
+            {"effect" in item ? effectLabel({ name: item.effect, end: item.end }) : (
                 <>
-                    <span class="k">{entry[1]}</span>
-                    {entry[2]}
+                    <span class="k">{entry?.name}</span>
+                    {entry?.value}
                 </>
             )}
             {from && <span class="from">{` · ${from}`}</span>}
@@ -100,17 +105,26 @@ function Surrounding({ text, place, name }: { text: string; place?: string; name
     );
 }
 
+/** An entry of a place's environment: the biome and the terrain, which the engine reads, in the page's language; any other as the master wrote it. */
+function environmentLabel(name: string, value: string): { name: string; value: string; }
+{
+    const known = name.trim().toLowerCase();
+    return known === "biome" ? { name: t("biome"), value: biomeLabel(value)?.toLowerCase() ?? value } : known === "terrain" ? { name: t("terrain"), value: terrainLabel(value) } : { name, value };
+}
+
 /** The open scene (D-309): its title, type and since when, who is in it, and in a fight the round and whose turn it is. */
 function SceneCard({ scene }: { scene: ShownScene; })
 {
-    const turn = scene.turn === undefined ? undefined : [scene.round === undefined ? undefined : t("Round {round}", { round: scene.round }), t("{name}'s turn", { name: scene.turn })].filter((part) => part !== undefined).join(" · ");
+    const turn = scene.turn === undefined
+        ? undefined
+        : [scene.round === undefined ? undefined : t("Round {round}", { round: scene.round }), t("{name}'s turn", { name: strangerLabel(scene.turn) })].filter((part) => part !== undefined).join(" · ");
     return (
         <section class="scene-now" aria-labelledby="scene-title">
             <header>
                 <p class="eyebrow">{t("Scene")}</p>
                 <h3 id="scene-title">{scene.title}</h3>
                 <span class="scene-type" data-type={scene.type}>{sceneTypeLabel(scene.type)}</span>
-                {scene.since && <span class="scene-since">{t("since {when}", { when: scene.since })}</span>}
+                {scene.since && <span class="scene-since">{t("since {when}", { when: gameDateLabel(scene.since) })}</span>}
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />

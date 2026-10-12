@@ -1,6 +1,7 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
 import type { DyingCounter, Member, SheetValue } from "./data.ts";
+import { besideLabel, effectEndLabel, effectLabel } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 import { t } from "./text.ts";
@@ -61,7 +62,7 @@ export function Progress({ value, label }: { value: SheetValue; label: string; }
         <span class="progress-line">
             <span class="progress-first">
                 <span class="num">{shownText(value.text)}</span>
-                {value.beside !== undefined && <span class="progress-next">{shownText(value.beside)}</span>}
+                {besideLabel(value) !== undefined && <span class="progress-next">{shownText(besideLabel(value) ?? "")}</span>}
             </span>
             <ProgressBar value={value} label={label} />
         </span>
@@ -72,7 +73,7 @@ export function Progress({ value, label }: { value: SheetValue; label: string; }
 export function ProgressBar({ value, label }: { value: SheetValue; label: string; })
 {
     const progress = value.progress ?? { value: 0, from: 0, to: 0 };
-    const said = [value.text, value.beside].filter((part) => part !== undefined).join(", ");
+    const said = [value.text, besideLabel(value)].filter((part) => part !== undefined).join(", ");
     return (
         <span class="bar progress" role="progressbar" aria-label={label} aria-valuemin={progress.from} aria-valuemax={progress.to} aria-valuenow={progress.value} aria-valuetext={said}>
             <span class="fill" style={{ "--fill": String(progressShare(progress)) }} />
@@ -142,7 +143,7 @@ export function Effects({ effects, most }: { effects: Member["effects"]; most?: 
     const shown = most === undefined ? effects : effects.slice(0, most);
     return effects.length === 0 ? null : (
         <span class="effects">
-            {shown.map((effect) => <span key={effect.text} class="effect" title={effect.text}>{effect.name}{effect.end && most === undefined ? <span class="end">{`· ${t("until {end}", { end: effect.end })}`}</span> : null}</span>)}
+            {shown.map((effect) => <span key={effect.text} class="effect" title={effectLabel(effect)}>{effect.name}{effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}</span>)}
             {effects.length > shown.length && <span class="effect more">+{effects.length - shown.length}</span>}
         </span>
     );

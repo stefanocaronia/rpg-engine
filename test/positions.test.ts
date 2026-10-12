@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { fromLabel } from "../src/dashboard/game-words.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -244,7 +245,10 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
         await ok("write", "Ettore", "--add", "knows=[[Rocca]]", "--add", "knows=[[Strada vecchia]]", "--add", "knows=[[Brughiera]]");
         const map = JSON.parse(await ok("view", "--map", "--json"));
         expect(map.places.map((place: { name: string; }) => place.name)).toEqual(["Guadoscuro", "Brughiera", "Rocca", "Locanda"]);
-        expect(map.places[0]).toEqual({ name: "Guadoscuro", kind: "village", x: 0, y: 0, within: [], from: "here" });
+        expect(map.places[0]).toEqual({ name: "Guadoscuro", kind: "village", x: 0, y: 0, within: [], from: { km: 0 } });
+        // Where a place is from the party, as data the page writes in its language (D-403): English here.
+        expect(map.places[2].from).toEqual({ km: 20, direction: "east" });
+        expect([map.places[0], map.places[2]].map((place) => fromLabel(place.from, (km) => `${km} km`))).toEqual(["Here", "20 km east"]);
         expect(map.places[1]).toMatchObject({ name: "Brughiera", radius: 6, biome: "moor", terrain: "difficult" });
         // The Locanda has no point of its own: it is drawn in Guadoscuro.
         expect(map.places[3]).toEqual({ name: "Locanda", within: ["Guadoscuro"] });

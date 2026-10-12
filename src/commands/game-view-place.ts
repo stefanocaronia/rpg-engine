@@ -3,13 +3,13 @@ import type { Context } from "../core/context.ts";
 import { formatStep } from "../core/length.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import type { Effect } from "../effects/index.ts";
+import type { Effect, EffectEnd } from "../effects/index.ts";
 import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../grid/index.ts";
-import { environmentAt, formatEnvironmentEntry, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
+import { environmentAt, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { effectParts, effectText, keptEffects } from "./game-effects.ts";
+import { effectParts, keptEffects, type SeenEffect } from "./game-effects.ts";
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
 import { shownImage } from "./game-images.ts";
@@ -38,8 +38,8 @@ export interface ShownPlace
     image?: { file: string; version: number; };
     /** The places that hold it, the outermost first, of those the character knows. */
     within: string[];
-    /** What holds there, nearest first: the environment, then the places' effects; each with its place, when the character knows it. */
-    around: { text: string; place?: string; }[];
+    /** What holds there, nearest first: the environment's entries, then the places' effects with their end; each with its place, when the character knows it. */
+    around: ({ name: string; value: string; place?: string; } | { effect: string; end?: EffectEnd; place?: string; })[];
     /** Its text as the character knows it (VIEW-3). */
     text: string;
     /** The party and the characters the character knows who are there; never someone it does not know, who would give themselves away. */
@@ -79,7 +79,7 @@ export interface Fighter
     image?: { file: string; version: number; };
     stranger?: true;
     health?: string;
-    effects: { name: string; end?: string; text: string; }[];
+    effects: SeenEffect[];
     inactive?: true;
     keeps?: string[];
     dying?: DyingCounter[];
@@ -133,10 +133,11 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
     }
 
     const known = (holder: Page): string | undefined => (knowsPage(knowledge, holder) ? holder.name : undefined);
+    const placed = (holder: Page): { place?: string; } => (known(holder) === undefined ? {} : { place: holder.name });
     const around = [
-        ...environmentAt(world, place).map(({ entry, place: holder }) => ({ text: formatEnvironmentEntry(entry), place: known(holder) })),
-        ...placesAround(world, place).flatMap((holder) => effectsOf(holder).map((effect) => ({ text: effectText(effect), place: known(holder) }))),
-    ].map((item) => (item.place === undefined ? { text: item.text } : { text: item.text, place: item.place }));
+        ...environmentAt(world, place).map(({ entry, place: holder }) => ({ name: entry.name, value: entry.value, ...placed(holder) })),
+        ...placesAround(world, place).flatMap((holder) => effectsOf(holder).map((effect) => ({ effect: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), ...placed(holder) }))),
+    ];
     const present = world.pages.filter((page) =>
         page.type === "character" && page.fields.status !== "dead" && locate(world, page).chain[0] === place
         && (sight.party.includes(page) || knowsPage(knowledge, page))
@@ -354,7 +355,7 @@ export function dyingOf(world: World, system: GameSystem | undefined, page: Page
 }
 
 /** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
-export function seenEffect(sight: PlaceSight, effect: Effect): { name: string; end?: string; text: string; }
+export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
 {
     const end = effect.end;
 

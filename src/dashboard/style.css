@@ -3337,6 +3337,14 @@ a {
     font-size: 0.85rem;
 }
 
+/* Where someone is, after the place's pin, without a preposition that each language would bend to the name (D-403). */
+.place svg.icon {
+    width: 1em;
+    height: 1em;
+    margin-inline-end: 4px;
+    vertical-align: -0.15em;
+}
+
 .line {
     display: flex;
     flex-wrap: wrap;

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { changeSaves, readSaves, type SavesChange, type SavesView as Saves } from "./api.ts";
 import type { ResetPoint, ShownSave } from "./data.ts";
+import { gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { phraseLabel, realTimeLabel, valueLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
@@ -150,7 +151,7 @@ function SaveFace({ save }: { save: ShownSave; })
                     <span class="save-place">
                         {save.place !== undefined && <span>{save.place}</span>}
                         {save.place !== undefined && save.date !== undefined && " · "}
-                        {save.date !== undefined && <span>{phraseLabel(save.date)}</span>}
+                        {save.date !== undefined && <span>{phraseLabel(gameDateLabel(save.date))}</span>}
                     </span>
                 )}
                 {when !== undefined && <time class="save-at" dateTime={save.at} title={when.full}>{t("Saved {when}", { when: when.short })}</time>}

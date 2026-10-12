@@ -2,6 +2,6 @@
 // spend: Codex's painted ones, else Claude's SVG ones.
 export { paintedBrief, placeBrief, questBrief, svgBrief } from "./briefs.ts";
 export { hostPictures } from "./chosen.ts";
-export { claudePictures } from "./claude.ts";
-export { codexPictures } from "./codex.ts";
+export { claudePictures, claudeSays } from "./claude.ts";
+export { codexPictures, codexSays } from "./codex.ts";
 export { cleanSvg, svgIn } from "./svg.ts";

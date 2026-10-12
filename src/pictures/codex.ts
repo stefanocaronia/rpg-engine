@@ -12,6 +12,31 @@ import { stopTree } from "./stop.ts";
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
 const longest = 3 * 60 * 1000;
 
+/** Why Codex makes no pictures, for the master, and how the player has them, which the dashboard writes in its language (D-308). */
+export const codexSays = {
+    missing: {
+        why: "Codex is not installed on this computer",
+        fix: "Pictures need Codex, which is not on this computer yet. To have them:\n"
+            + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+            + "2. Paste `npm install -g @openai/codex` and press Enter.\n"
+            + "3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
+            + "Codex makes them with your ChatGPT plan, never paying by the picture.",
+    },
+    loggedOut: {
+        why: "Codex is not logged in on this computer: the player logs in with codex login",
+        fix: "Codex is on this computer but not logged in. To have pictures:\n"
+            + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+            + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
+            + "Codex makes them with your ChatGPT plan, never paying by the picture.",
+    },
+    apiKey: {
+        why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login",
+        fix: "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n"
+            + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
+            + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.",
+    },
+};
+
 /** Codex on this computer, as the player's ChatGPT login lets it make pictures. */
 export function codexPictures(): PictureMaker
 {
@@ -38,35 +63,14 @@ function codexReady(): PicturesReady
     const said = `${status?.stdout ?? ""}${status?.stderr ?? ""}`;
 
     if (status === undefined) {
-        return {
-            ready: false,
-            why: "Codex is not installed on this computer",
-            fix: "Pictures need Codex, which is not on this computer yet. To have them:\n"
-                + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
-                + "2. Paste `npm install -g @openai/codex` and press Enter.\n"
-                + "3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
-                + "Codex makes them with your ChatGPT plan, never paying by the picture.",
-        };
+        return { ready: false, ...codexSays.missing };
     }
 
     if (status.error !== undefined || status.status !== 0 || /not logged in/i.test(said)) {
-        return {
-            ready: false,
-            why: "Codex is not logged in on this computer: the player logs in with codex login",
-            fix: "Codex is on this computer but not logged in. To have pictures:\n"
-                + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
-                + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\n"
-                + "Codex makes them with your ChatGPT plan, never paying by the picture.",
-        };
+        return { ready: false, ...codexSays.loggedOut };
     }
 
-    return /chatgpt/i.test(said) ? { ready: true, maker: "Codex" } : {
-        ready: false,
-        why: "Codex uses an API key, which pays by the picture: pictures are made only with the ChatGPT login",
-        fix: "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n"
-            + "1. Open a terminal: on Windows, Start, then type Terminal.\n"
-            + "2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.",
-    };
+    return /chatgpt/i.test(said) ? { ready: true, maker: "Codex" } : { ready: false, ...codexSays.apiKey };
 }
 
 /** One picture: Codex in an empty folder of its own, the painted brief on its input, its events read for its thread; the picture from its own folder. */

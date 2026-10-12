@@ -4,7 +4,9 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { pageLanguageOf, setLanguage, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
+import { lengthText } from "../src/dashboard/world-map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 
@@ -67,5 +69,15 @@ describe("the page's words (D-394)", () => {
         await slow;
         expect(t("Your turn")).toBe("Tocca a te");
         expect(t("A phrase no language has, {name}", { name: "Ada" })).toBe("A phrase no language has, Ada");
+    });
+
+    it("writes the engine's data in the language set: game dates, ends, where a place is with the language's numbers, the levels, dice in words (D-403)", async () => {
+        await setLanguage("it", (language) => Promise.resolve(phrasesOf(language)));
+        expect([gameDateLabel("day 3, 06:00"), gameDateLabel("day 12"), gameDateLabel("tomorrow")]).toEqual(["giorno 3, 06:00", "giorno 12", "tomorrow"]);
+        expect(effectEndLabel({ date: "day 1, 18:01" })).toBe("fino al giorno 1, 18:01");
+        expect(fromLabel({ km: 12.4, direction: "north-east" }, (km) => lengthText(km, { name: "km", km: 1 }))).toBe("12,4 km a nord-est");
+        expect(levelNeedLabel({ needs: 1200, level: 4 })).toBe("1200 al livello 4");
+        expect(notationLabel([{ dice: "2d20", keep: { which: "highest", count: 1 } }, { add: "+5" }])).toBe("2d20, tieni il più alto, +5");
+        await setLanguage("en");
     });
 });

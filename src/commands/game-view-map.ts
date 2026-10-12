@@ -3,13 +3,13 @@
 // neither its name nor its point.
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
-import { distanceBetween, type Point } from "../map/index.ts";
+import { directionName, directionTo, distanceBetween, type Point } from "../map/index.ts";
 import { environmentAt, locate, type Page, pagesWithName, parsePageReference, readStops, type World } from "../pages/index.ts";
 import { shownImage } from "./game-images.ts";
 import { moversMap, moversNamed, moversPosition, readJourney } from "./game-journey.ts";
 import { knowsPage } from "./game-knowledge.ts";
 import { mapKey, mapOf } from "./game-maps.ts";
-import { placedPosition, positionOf, regionsOf, relationText } from "./game-positions.ts";
+import { placedPosition, positionOf, regionsOf } from "./game-positions.ts";
 import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "./game-roads.ts";
 import type { PlaceSight } from "./game-view-place.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -24,7 +24,8 @@ export interface MapPoint
 
 /**
  * A place the character knows: its kind, its point when it is drawn on its map (a position of its own or from its road), the places it knows that hold it,
- * the nearest first; for a region its radius in km, biome and terrain; where it is from the party, on the party's map, in the player's units.
+ * the nearest first; for a region its radius in km, biome and terrain; where it is from the party, on the party's map: the km and the point of the compass, none
+ * closer than 50 m, which the dashboard writes in its language.
  */
 export interface MapPlace
 {
@@ -37,7 +38,7 @@ export interface MapPlace
     radius?: number;
     biome?: string;
     terrain?: string;
-    from?: string;
+    from?: { km: number; direction?: string; };
     image?: { file: string; version: number; };
 }
 
@@ -95,7 +96,7 @@ export function shownMap(sight: PlaceSight, measures: Measures, campaign: string
     const partyPlace = locate(world, knowledge.pc).chain.find((holder) => isDrawn(world, roads, holder) && known(holder));
     const party = partyAt === undefined ? undefined : { at: partyAt, map: partyMap?.path ?? "" };
     const places = world.pages.filter((page) => page.type === "place" && known(page) && !roads.pages.has(page.name)).flatMap((page) => {
-        const shown = mapPlace(sight, roads, page, known, party, measures);
+        const shown = mapPlace(sight, roads, page, known, party);
         return shown === undefined ? [] : [shown];
     });
     const system = campaignSystem(sight.root, sight.context);
@@ -124,7 +125,7 @@ export function mapText(map: ShownMap): string
     const shown = points.slice(0, mostListed);
     const regions = map.places.filter((place) => place.radius !== undefined && place.map === partyMap);
     const where = map.party === undefined ? "" : `, nearest first, from where the party is${map.party.place === undefined ? "" : ` (${map.party.place})`}`;
-    const line = (place: MapPlace): string => `- ${place.name}${place.kind === undefined ? "" : ` (${place.kind})`}${place.from === undefined ? "" : `: ${place.from}`}`;
+    const line = (place: MapPlace): string => `- ${place.name}${place.kind === undefined ? "" : ` (${place.kind})`}${place.from === undefined ? "" : `: ${fromText(place.from, map.unit)}`}`;
     const others = map.maps.filter((known) => (known.main ? undefined : known.name) !== partyMap).flatMap((known) => {
         const there = drawn.filter((place) => place.map === (known.main ? undefined : known.name));
         return there.length === 0 ? [] : [`On ${known.main ? "the main map" : `the map of ${known.name}`}: ${there.map((place) => place.name).join(", ")}.`];
@@ -138,7 +139,7 @@ export function mapText(map: ShownMap): string
 }
 
 /** A place as the map shows it; none for one neither drawn nor held by a place that is. Its distance from the party only on the party's map. */
-function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Page) => boolean, party: { at: Point; map: string; } | undefined, measures: Measures): MapPlace | undefined
+function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Page) => boolean, party: { at: Point; map: string; } | undefined): MapPlace | undefined
 {
     const { world } = sight;
     const at = placedPosition(world, page);
@@ -163,7 +164,7 @@ function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Pag
         ...(region === undefined ? {} : { radius: km(region.radius) }),
         ...(region === undefined || voice("biome") === undefined ? {} : { biome: voice("biome") }),
         ...(region === undefined || voice("terrain") === undefined ? {} : { terrain: voice("terrain") }),
-        ...(near ? { from: relationText(party.at, at, measures) } : {}),
+        ...(near ? { from: relationFrom(party.at, at) } : {}),
         ...(image === undefined ? {} : { image }),
     };
 }
@@ -369,6 +370,19 @@ function stopsBetween(world: World, road: Page, from: Page, to: Page): { at: Poi
 function mapPoint(point: Point, map?: Page): MapPoint
 {
     return { x: km(point.east), y: km(point.north), ...(map === undefined ? {} : { map: map.name }) };
+}
+
+/** Where a place is from the party (D-318): the km and the point of the compass; none of them closer than 50 m. */
+function relationFrom(from: Point, to: Point): MapPlace["from"]
+{
+    const metres = distanceBetween(from, to);
+    return metres < 50 ? { km: 0 } : { km: km(metres), direction: directionName(directionTo(from, to)) };
+}
+
+/** "12 km north-east", in the player's units, or "here": where a place is from the party, in the chat's words. */
+function fromText(from: NonNullable<MapPlace["from"]>, unit: ShownMap["unit"]): string
+{
+    return from.direction === undefined ? "here" : `${Math.round(from.km / unit.km * 10) / 10} ${unit.name} ${from.direction}`;
 }
 
 /** Metres as km with two decimals. */

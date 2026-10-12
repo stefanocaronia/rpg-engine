@@ -7,8 +7,9 @@ import { CardHeader, useMedia, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
 import type { PageRoll } from "./free-rolls.ts";
+import { gameDateLabel, notationLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
-import { notationModifier } from "./labels.ts";
+import { notationModifier, strangerLabel } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
 import { t } from "./text.ts";
@@ -165,7 +166,7 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
     const player = roll.by === "player";
     const free = "free" in roll;
     // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, notationLabel(roll.words), rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
@@ -199,7 +200,7 @@ function emptyText(read: number, older: number): string
 /** Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one. */
 function nameOf(roll: ShownRoll, lead: Member | undefined): string
 {
-    return roll.who ?? (roll.by === "player" ? lead?.name ?? "" : t("The master"));
+    return roll.who === undefined ? (roll.by === "player" ? lead?.name ?? "" : t("The master")) : roll.stranger ? strangerLabel(roll.who) : roll.who;
 }
 
 /**
@@ -357,5 +358,5 @@ function rolledWhen(roll: ShownRoll): string
 {
     const real = new Date(roll.at);
     const time = Number.isNaN(real.getTime()) ? undefined : t("rolled at {time}", { time: real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
-    return [roll.date === undefined ? undefined : t("{date} in the game", { date: roll.date }), time].filter((part) => part !== undefined).join(" · ");
+    return [roll.date === undefined ? undefined : t("{date} in the game", { date: gameDateLabel(roll.date) }), time].filter((part) => part !== undefined).join(" · ");
 }

@@ -39,6 +39,7 @@ import { getVersion } from "../core/version.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
+import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
 import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
@@ -343,13 +344,20 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
 // Who makes the pictures on this computer, in the player's words (D-390).
 const madeBy = { Codex: "Codex makes them on this computer, from your ChatGPT plan.", Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan." };
 
+/** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
+export const picturesNotes = [...Object.values(madeBy), ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+
 /** Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; nothing where no maker is asked. */
 function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 {
     const ready = context.pictures?.ready(true);
-    return ready === undefined
-        ? {}
-        : { note: ready.ready ? { text: madeBy[ready.maker ?? "Codex"] } : { text: ready.fix ?? `${ready.why}.`, fix: true } };
+    return ready === undefined ? {} : { note: ready.ready ? { text: madeBy[ready.maker ?? "Codex"] } : { text: notReadyText(ready), fix: true } };
+}
+
+/** How the player has pictures, or else why there are none. */
+function notReadyText(said: { why: string; fix?: string; }): string
+{
+    return said.fix ?? `${said.why}.`;
 }
 
 /** One of the player's settings by its name, in any case, as the dashboard changes them (D-341); undefined for a setting of the master's or none. */
