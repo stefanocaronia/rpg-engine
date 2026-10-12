@@ -278,6 +278,8 @@ export type View =
         campaign: string;
         /** The campaign's language, in which the page writes its own words. */
         language?: string;
+        /** The game system's words in that language, when it has them (D-403). */
+        words?: SystemWords;
         /** The game system: its name, what it is, and what its source asks to say. */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
@@ -373,4 +375,13 @@ export interface PlayerSetting
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
+}
+
+/** A game system's words in the campaign's language (D-403): its groups by their names, its fields' labels by their ids, other words and texts by their English. */
+export interface SystemWords
+{
+    groups: Record<string, string>;
+    fields: Record<string, string>;
+    words: Record<string, string>;
+    headline?: string;
 }

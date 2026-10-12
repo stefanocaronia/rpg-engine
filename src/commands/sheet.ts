@@ -5,7 +5,7 @@ import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
 import { baseChain, declaredKind, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
-import type { GameSystem, SheetEntry, SheetGroup } from "../systems/index.ts";
+import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText } from "./game-experience.ts";
 import { givenItems, progressionOf } from "./progression.ts";
@@ -187,11 +187,11 @@ function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
 
 /**
  * The line under a character's name on the dashboard (D-288): the system's headline, each field in braces as the sheet shows it and a list as the names of its
- * items, as Level 3 Cleric; none when the system has none, or when its fields are all empty.
+ * items, as Level 3 Cleric, in the campaign's language when the system has its words (D-403); none when the system has none, or when its fields are all empty.
  */
-export function sheetHeadline(world: World, system: GameSystem | undefined, page: Page): string | undefined
+export function sheetHeadline(world: World, system: GameSystem | undefined, page: Page, words?: SystemWords): string | undefined
 {
-    const headline = system?.sheetHeadline;
+    const headline = words?.headline ?? system?.sheetHeadline;
 
     if (headline === undefined || !hasSheet(world, page)) {
         return undefined;
@@ -201,7 +201,8 @@ export function sheetHeadline(world: World, system: GameSystem | undefined, page
 
     const shown = (field: string): string => {
         const value = valueNamed(fields, field);
-        return isEmptyField(value) ? "" : declaredKind(world, field) === "list" ? listItemNames(value).join(" / ") : valueText(world, field, value);
+        const said = (name: string): string => words?.words[name] ?? name;
+        return isEmptyField(value) ? "" : declaredKind(world, field) === "list" ? listItemNames(value).map(said).join(" / ") : said(valueText(world, field, value));
     };
 
     const named = [...headline.matchAll(/\{([^{}]+)\}/g)].map((match) => shown(match[1]));

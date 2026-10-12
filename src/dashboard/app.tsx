@@ -23,7 +23,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
-import { setLanguage, t } from "./text.ts";
+import { setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { WorldView } from "./world.tsx";
@@ -102,6 +102,7 @@ function App()
             // The page's words in the campaign's language (D-394), its file read once; its dates and screen readers follow the language too.
             const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
             await setLanguage(language);
+            setSystemWords(overview.kind === "overview" ? overview.words : undefined);
 
             if (number === reading.current) {
                 document.documentElement.lang = language ?? "en";

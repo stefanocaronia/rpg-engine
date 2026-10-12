@@ -20,3 +20,4 @@ export {
     type TravelKind,
     withSettings,
 } from "./game-system.ts";
+export { type SystemWords, systemWords } from "./words.ts";

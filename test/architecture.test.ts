@@ -41,6 +41,7 @@ describe("architecture", () => {
             "core/version.ts",
             "instructions/index.ts",
             "systems/game-system.ts",
+            "systems/words.ts",
             "campaign/create-campaign.ts",
             "pictures/claude.ts",
             "pictures/codex.ts",

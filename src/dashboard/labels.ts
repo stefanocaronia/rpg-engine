@@ -1,5 +1,5 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
-import { t } from "./text.ts";
+import { systemWord, t } from "./text.ts";
 
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -7,7 +7,7 @@ const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
 /** A field's name as a label: its words apart, in capitals the short ones that name a field, such as str or ac, and those of two letters without a vowel, such as hp. */
 export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set()): string
 {
-    return words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
+    return systemWord("fields", field) ?? words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
 }
 
 /**
@@ -65,7 +65,7 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
 export function itemLabel(item: string, fields: ReadonlySet<string> = new Set()): string
 {
     const word = item.trim();
-    return isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word);
+    return systemWord("words", word) ?? systemWord("fields", word) ?? isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word);
 }
 
 /** A label of a sheet's line as a phrase, its first letter a capital: "sleight of hand" reads "Sleight of hand"; "STR save" stays as it is. */
@@ -117,7 +117,7 @@ export function notationModifier(notation: string): number
 /** A number as it reads: −1 with a minus sign rather than a hyphen. */
 export function shownText(text: string): string
 {
-    return text.replace(/(^|[\s(])-(?=\d)/g, "$1−");
+    return (systemWord("words", text) ?? text).replace(/(^|[\s(])-(?=\d)/g, "$1−");
 }
 
 /** Dice as they read: 1d20−1 with a minus sign rather than a hyphen. */

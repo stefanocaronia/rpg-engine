@@ -18,7 +18,8 @@ systems/5e/
     topics/*.md        classes, subclasses, backgrounds, feats, spells
   rules/*.md           the chapters of its rules, as markdown
   images/              the pictures its pages link in image
-  instructions/*.md    its parts of the master's instructions (section 6.6)
+  instructions/*.md    its parts of the master's instructions (section 6.7)
+  words/*.yaml         its words in other languages, a file for each (section 6.6)
   build/               the scripts that wrote some of its pages and rules from its source (not shipped)
   test/                the system's own tests (not shipped)
 ```
@@ -26,7 +27,7 @@ systems/5e/
 - `world/<folder>/` holds its pages, one markdown file per page, in the same folders a campaign uses (section 6).
 - `rules/` holds its rules as text, searched by the `rules` command and read by title (section 6.5).
 - `images/` holds the pictures its pages link in their `image` field, such as `image: "[[goblin.svg]]"`; a campaign page derived from one shows it, and a campaign's own `images/` file with the same name takes its place.
-- `instructions/` holds what it adds to the master's instructions, part by part (section 6.6).
+- `instructions/` holds what it adds to the master's instructions, part by part (section 6.7).
 - `LICENSE.md` is not read by the engine: it ships beside the system and says what the content is under and where it comes from.
 
 ## 2. How a system is found and installed
@@ -196,7 +197,7 @@ sheet-cards:
 - `field (beside)`: a field shown in parentheses beside it: `str 14 (+2)`.
 - The player character (`role: pc`) keeps the sheet, and so does a companion with a `level` or with no `creature` (a wolf with its stat block does not).
 - `show` gives a sheet one line per group, effects and formulas included: `Abilities: str 14 (+2) · dex 12 (+1) · proficiency +2`. `show Page#Group` gives one group with how each number is made (a section or secret of that name comes first).
-- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, and the system's part `session-zero` says how to make one (section 6.6). In session zero its checklist says what each sheet still lacks; in play `status` reminds it.
+- Before there is a player character, `status` lists what the sheet asks to write, what only when it applies, what the system works out and the names its lists take, and the system's part `session-zero` says how to make one (section 6.7). In session zero its checklist says what each sheet still lacks; in play `status` reminds it.
 - `sheet-notes`: what `write` says once of a group when a character joins the party. A note for a group the sheet does not have is refused when the system loads.
 - `sheet-icons`: a group's icon on the dashboard (D-284), the `d` of an SVG path on a grid of 24, drawn as a line 1.5 wide in the page's accent; a group without one gets a plain one. An icon for a group the sheet does not have, or with more than a path's letters and numbers, is refused when the system loads.
 - `sheet-headline`: the line under a character's name on the dashboard (D-288), words with fields in braces: each field as the sheet shows it, a list as the names of its items, so that `Level {level} {classes}` reads `Level 3 Cleric`. With all its fields empty there is no line. A field it names must be declared.
@@ -390,7 +391,7 @@ progression:
 - `features`: the column of the features. The rows up to the level give them, each once: one written again with a value in parentheses takes the place of the earlier (`Bardic Inspiration (d8)`). Only names that are titles of the page's sections count, also when the column has the singular (`Signature Spell` for `Signature Spells`): "Path feature" or "Wild Shape improvement" do not.
 - `parts`: the pages of another list that name their item in a field, such as a subclass with `class: [[Barbarian]]`. Each lists its features with the level at which it comes, `features: [Frenzy 3, Mindless Rage 6]`, and adds them up to the level of its class. `lists` names the character's lists a part adds to the same way, such as a cleric domain's spells, always prepared and not counted: `prepared: [Bless 1, Cure Wounds 1]` on its page; the sheet shows them apart, and `write` says when one is written by hand (PRO-7).
 - The features make the list field named after the column (`features`): the sheet shows them in the group that lists it, with the row's fields after them; `show Page#Rage` gives a feature's text from the page that tells it, and from each page when two classes give the same name (`Spellcasting`), in the order of the classes, while the list holds the name once; formulas read them (`has(features, Jack of All Trades)`). When `write` changes the classes, it says the features of the rows it reaches: new, gained again (`Ability Score Improvement again`) or with a new value (`Bardic Inspiration (d6 → d8)`), and the values that change.
-- When the character's levels rise in all, `write` gives the system's part `level-up` (section 6.6), unless the same write sets a field the part names, as `hp-base`.
+- When the character's levels rise in all, `write` gives the system's part `level-up` (section 6.7), unless the same write sets a field the part names, as `hp-base`.
 - `experience` (`PRO-6`): the field of the experience points, a table of the points each level needs (`{1: 0, 2: 300, 3: 900, …}`), and the rule to read. The level is the sum of the numbers of `list`. The line and the sheet say beside the points how many the next level needs, `xp 350 (550 to level 3)`, the highest level they reach beyond the classes', `xp 950 (level 3 due)`, or the least their level needs when they are below it, `xp 0 (at least 6500 at level 5)`; nothing at the table's last level. When `change` or `write` brings the points to a new level, the output says so with the rule and the part `level-up`, a companion's choices left to the master; `status` says it at every session until the classes rise. `write` says when the points fall short of the level, and `validate` reports points below it, written with a maximum, or as text. Only the classes change the level.
 - `validate` reports a class without a level or without a page, a class without such a table or without the row, and a part that names no class, names one the character lacks, or lists features without a level.
 
@@ -538,7 +539,20 @@ A system's page holds no secrets: `reveal` refuses it, since anyone may know wha
 
 `rules` searches the campaign's house rules (its own `rules/` folder) first, then the system's. Thresholds, recipes and conditions name a rule by its title, or by titles joined with `›`; a house rule with the same title comes first. Titles therefore hold no `›`, `>` or `/`.
 
-### 6.6 Parts of the master's instructions
+### 6.6 Words in other languages
+
+A system can show its words in the campaign's language on the dashboard (D-403): beside `system.yaml`, a file for each language it ships, `words/<code>.yaml`, as `words/it.yaml`. A campaign in a language the system has, or in its base language (it for it-CH), reads that file; a word it lacks stays in the system's own.
+
+```yaml
+groups: {Abilities: Caratteristiche, Skills: Abilità}     # the sheet's groups, by their names in system.yaml
+fields: {str: FOR, ac: CA, passive-perception: Percezione passiva}   # the sheet's fields, by their ids: the label the page writes
+words: {Cleric: Chierico, Medium: Media}                 # any other word or text the system shows: page names as values, fixed values, setting texts
+headline: "{classes} di livello {level}"                 # sheet-headline in that language, with the same fields
+```
+
+Only words, never measures. Words taken from an official translation carry its attribution in the system's `LICENSE.md`, and the note that the list is an adaptation.
+
+### 6.7 Parts of the master's instructions
 
 `instructions/<part>.md` holds what the system adds to a part of the master's instructions, as text the master reads (D-121): the part is named after the file. The engine gives a part when its situation opens, the core's text first ([instructions/](../instructions/)) and the system's after it; a part with `replace: true` in its frontmatter takes the place of the core's instead, the rare case of a game that does a thing its own way:
 

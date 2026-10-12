@@ -10,7 +10,7 @@ import { comparableText } from "../core/text.ts";
 import { notationWords, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
-import type { GameSystem } from "../systems/index.ts";
+import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -93,6 +93,8 @@ export type ViewResult =
         campaign: string;
         /** The campaign's language, in which the dashboard writes its own words (D-394). */
         language?: string;
+        /** The game system's words in the campaign's language, when it has them (D-403). */
+        words?: SystemWords;
         /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
@@ -256,7 +258,8 @@ export const view = defineCommand({
 
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
             const sheet = speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system));
-            const headline = party ? sheetHeadline(world, system, page) : undefined;
+            const language = readSettings(root).language;
+            const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWords(system.folder, language)) : undefined;
             const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
             const story = page === pc ? playerStory(page) : undefined;
             return {
@@ -320,10 +323,12 @@ export const view = defineCommand({
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
         const settings = readSettings(root);
+        const words = system === undefined || settings.language === undefined ? undefined : systemWords(system.folder, settings.language);
         return {
             kind: "overview",
             campaign: settings.name,
             ...(settings.language === undefined ? {} : { language: settings.language }),
+            ...(words === undefined ? {} : { words }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },

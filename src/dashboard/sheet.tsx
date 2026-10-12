@@ -17,7 +17,7 @@ import { moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
 import { StoryBox } from "./story.tsx";
-import { t } from "./text.ts";
+import { systemWord, t } from "./text.ts";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
@@ -188,7 +188,7 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
     // A card with the number the master asks stays open while it is asked.
     const lit = values.some((value) => answersOf(value) !== undefined);
     return (
-        <Card name={group.name} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
+        <Card name={group.name} title={systemWord("groups", group.name)} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
             {layout === "table" && <ItemsTable group={group} fields={fields} />}
             {layout === "tiles" && (
                 <div class="tiles" onKeyDown={onKeyDown}>
