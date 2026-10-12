@@ -1,21 +1,23 @@
 // The dice the tray throws by itself (D-284, D-337): as a notation, which of a kind count, and as the chat writes them. Pure, for the tray and its tests.
 import type { ThrownDie } from "../data.ts";
 
-/** Which dice of a kind count (D-337): with two, the higher or the lower one; with more, all but the lowest or all but the highest. */
+/** Which dice of a kind count (D-337, D-397): the highest one alone or the lowest one alone, however many were thrown, as advantage keeps one of two. */
 export type Keep = "highest" | "lowest";
 
 // The dice of the tray, by their sides, from the top of its column: 100 is the d%, thrown as its tens and its units; the d20, the most thrown, is the nearest
 // to the button.
 export const trayDice = [100, 4, 6, 8, 10, 12, 20];
 
-/** Whether the tray can throw these dice by itself: kinds it has, all counting or with the highest or the lowest kept or dropped, and a number; never a
- * reroll or an explosion, which the engine alone makes, so that a check asking one keeps its button when rolled by hand (D-339, D-380). */
+/** Whether the tray can throw these dice by itself: kinds it has, all counting or with the highest or the lowest one alone kept, as one of two dropped, and a
+ * number; never a reroll, an explosion or more dice kept or dropped, which the engine alone makes, so that a check asking one keeps its button by hand (D-339,
+ * D-380, D-397). */
 export function trayThrows(dice: string): boolean
 {
     const terms = dice.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-").match(/[+-]?[^+-]+/g) ?? [];
     return terms.some((term) => term.includes("d")) && terms.every((term) => {
-        const die = /^\+?\d*d(\d+|%)(?:[kd][hl]1?)?$/.exec(term);
-        return /^[+-]?\d+$/.test(term) || (die !== null && trayDice.includes(die[1] === "%" ? 100 : Number(die[1])));
+        const die = /^\+?(\d*)d(\d+|%)(k[hl]1?|d[hl]1?)?$/.exec(term);
+        const kept = die?.[3] === undefined || die[3].startsWith("k") || die[1] === "2";
+        return /^[+-]?\d+$/.test(term) || (die !== null && kept && trayDice.includes(die[2] === "%" ? 100 : Number(die[2])));
     });
 }
 
@@ -38,8 +40,7 @@ export function notation(pool: number[], modifier: number, keeps: Partial<Record
     const dice = kinds.map((sides) => {
         const count = pool.filter((chosen) => chosen === sides).length;
         const keep = keeps[sides];
-        // Of two, the one kept, as advantage writes it; of more, the one dropped.
-        const kept = keep === undefined ? "" : count === 2 ? (keep === "highest" ? "kh1" : "kl1") : keep === "highest" ? "dl1" : "dh1";
+        const kept = keep === undefined ? "" : keep === "highest" ? "kh1" : "kl1";
         return `${count}${dieName(sides)}${kept}`;
     }).join("+");
     return modifier === 0 ? dice : `${dice}${modifier > 0 ? "+" : "-"}${Math.abs(modifier)}`;
@@ -52,7 +53,8 @@ export function withDropped(dice: ThrownDie[], keeps: Partial<Record<number, Kee
         Object.entries(keeps).flatMap(([sides, keep]) => {
             const ofKind = dice.map((die, index) => ({ die, index })).filter(({ die }) => die.sides === Number(sides));
             const sorted = ofKind.toSorted((first, second) => (keep === "highest" ? first.die.value - second.die.value : second.die.value - first.die.value));
-            return sorted.length < 2 ? [] : [sorted[0].index];
+            // All but the last, the highest for the highest kept, the lowest for the lowest.
+            return sorted.length < 2 ? [] : sorted.slice(0, -1).map(({ index }) => index);
         }),
     );
     return dice.map((die, index) => (dropped.has(index) ? { ...die, dropped: true } : die));

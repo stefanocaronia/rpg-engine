@@ -6,14 +6,14 @@ import { sameDice } from "../src/dashboard/labels.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
 
 describe("which dice of a kind count in the tray (D-337)", () => {
-    it("writes two of a kind as the higher or the lower kept, more as the lowest or the highest dropped, the biggest first", () => {
+    it("writes the highest or the lowest one alone kept, however many of a kind, the biggest first (D-397)", () => {
         expect([
             notation([20, 20], 5, { 20: "highest" }),
             notation([20, 20], 0, { 20: "lowest" }),
             notation([6, 6, 6, 6], 0, { 6: "highest" }),
             notation([6, 20, 20], -1, { 20: "highest" }),
             notation([20, 20], 0, {}),
-        ]).toEqual(["2d20kh1+5", "2d20kl1", "4d6dl1", "2d20kh1+1d6-1", "2d20"]);
+        ]).toEqual(["2d20kh1+5", "2d20kl1", "4d6kh1", "2d20kh1+1d6-1", "2d20"]);
     });
 
     it("keeps a choice only for a kind of two dice or more, never for the d%", () => {
@@ -21,12 +21,13 @@ describe("which dice of a kind count in the tray (D-337)", () => {
         expect(keptOf([100, 100, 6, 6], { 100: "highest", 6: "lowest" })).toEqual({ 6: "lowest" });
     });
 
-    it("drops the lowest face for the highest, the highest for the lowest, one die a kind, and writes it in parentheses", () => {
+    it("keeps the highest face alone for the highest, the lowest alone for the lowest, however many, and writes the others in parentheses", () => {
         const two = [{ sides: 20, value: 4 }, { sides: 20, value: 17 }];
         expect(withDropped(two, { 20: "highest" }).map((die) => die.dropped === true)).toEqual([true, false]);
         expect(withDropped(two, { 20: "lowest" }).map((die) => die.dropped === true)).toEqual([false, true]);
         const four = [3, 1, 6, 4].map((value) => ({ sides: 6, value }));
-        expect(withDropped(four, { 6: "highest" }).filter((die) => die.dropped !== true).map((die) => die.value)).toEqual([3, 6, 4]);
+        expect(withDropped(four, { 6: "highest" }).filter((die) => die.dropped !== true).map((die) => die.value)).toEqual([6]);
+        expect(withDropped(four, { 6: "lowest" }).filter((die) => die.dropped !== true).map((die) => die.value)).toEqual([1]);
         expect(diceText(withDropped(two, { 20: "highest" }), 5)).toBe("[(4), 17] + 5");
     });
 
@@ -40,8 +41,8 @@ describe("which dice of a kind count in the tray (D-337)", () => {
 
 describe("the checks the tray can answer by hand (D-339, D-380)", () => {
     it("throws its own kinds, all counting or with the highest or the lowest kept or dropped, and a number; never a reroll, an explosion or a die taken away", () => {
-        expect(["1d20+5", "2d20kh1+3", "4d6dl1", "1d20+1d4+2", "1d%", "2d6 + 2"].map(trayThrows)).toEqual([true, true, true, true, true, true]);
-        expect(["2d6ro<=2+2", "1d6!", "1d20-1d4", "1d3", "4dF", "+3"].map(trayThrows)).toEqual([false, false, false, false, false, false]);
+        expect(["1d20+5", "2d20kh1+3", "3d20kh1", "2d20dl1+5", "1d20+1d4+2", "1d%", "2d6 + 2"].map(trayThrows)).toEqual([true, true, true, true, true, true, true]);
+        expect(["2d6ro<=2+2", "1d6!", "1d20-1d4", "1d3", "4dF", "+3", "4d6dl1"].map(trayThrows)).toEqual([false, false, false, false, false, false, false]);
     });
 });
 

@@ -1,7 +1,7 @@
 // The dice tray (D-278, D-279, D-284): the dice of a roll the master asked land on the numbers the engine rolled, and a plate says the check, each die and the
 // total. The player can also always throw dice from the column of dice over the button, as many as they like and a modifier: dice that make a check the master
 // asks answer it, and the engine rolls it (D-330); any other throw is free, the engine does not hear of it, the dice fade away and its line stays in this
-// browser's rolls alone. With two dice or more of a kind, which count: all, the highest or the lowest (D-337). The dice show as pictures, never as their
+// browser's rolls alone. With two dice or more of a kind, which count: all, the highest one or the lowest one (D-337, D-397). The dice show as pictures, never as their
 // notation. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
@@ -381,10 +381,12 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                                         type="button"
                                                         role="radio"
                                                         aria-checked={(shownKeeps[sides] ?? "sum") === mode}
+                                                        aria-label={keepWords(mode, dieName(sides))}
+                                                        data-tip={keepWords(mode, dieName(sides))}
                                                         tabIndex={(shownKeeps[sides] ?? "sum") === mode ? 0 : -1}
                                                         onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
                                                     >
-                                                        {mode === "sum" ? t("Sum") : mode === "highest" ? t("Highest") : t("Lowest")}
+                                                        {mode === "sum" ? t("All") : mode === "highest" ? t("High") : t("Low")}
                                                     </button>
                                                 ))}
                                             </span>
@@ -575,4 +577,10 @@ function fairDie(sides: number): number
     } while (draw[0] >= limit);
 
     return 1 + (draw[0] % sides);
+}
+
+/** Which of a kind count, in full, as a screen reader says the short choice and its tooltip shows it (D-396, D-397). */
+function keepWords(mode: Keep | "sum", die: string): string
+{
+    return mode === "sum" ? t("Every {die} counts", { die }) : mode === "highest" ? t("Only the highest {die} counts", { die }) : t("Only the lowest {die} counts", { die });
 }
