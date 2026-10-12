@@ -18,3 +18,6 @@ tmp/
 
 # The private repo: project docs and the colleagues (.claude links into it)
 /private/
+
+# betasim reports (npm run betasim)
+test/betasim/report/

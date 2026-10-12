@@ -1,0 +1,8 @@
+name: The master asks for a choice, and the player answers from the page
+covers: [asked-choice]
+setup:
+  ask: {question: "La passerella si spezza sotto di te: da che parte salti?", options: ["Verso la riva", "Verso la barca"]}
+steps:
+  - assertVisible: La passerella si spezza
+  - tapOn: Verso la riva
+  - assertState: {query: answer, contains: Verso la riva}

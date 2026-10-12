@@ -1,0 +1,8 @@
+name: The master asks for a check, and the player rolls it from the page
+covers: [asked-check, roll-plate]
+setup:
+  ask: {question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+insight"]}
+steps:
+  - assertVisible: Il mercante giura
+  - tapOn: Intuizione
+  - assertState: {query: answer, contains: Intuizione}

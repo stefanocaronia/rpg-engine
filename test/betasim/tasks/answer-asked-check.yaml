@@ -1,0 +1,6 @@
+goal: "The master asks you on the page to roll Insight: roll it."
+flow: answer-asked-check
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 5
+critical: true
+expected_seconds: 6

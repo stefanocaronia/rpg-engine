@@ -1,0 +1,9 @@
+name: Follow the side quest, and read its next goal in Scene
+covers: [quest-follow]
+setup: {}
+steps:
+  - tapOn: Journal
+  - tapOn: {label: Follow Il vino di Bertoldo}
+    concept: {name: following a quest shows it elsewhere, difficulty: 1}
+  - tapOn: Scene
+  - assertVisible: Trovare tre botti al Mulino Rosso

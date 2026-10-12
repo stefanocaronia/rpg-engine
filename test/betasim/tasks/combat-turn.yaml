@@ -1,0 +1,6 @@
+goal: "It is your turn in the fight: see how hurt the first foe is."
+flow: combat-turn
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 4
+critical: true
+expected_seconds: 8

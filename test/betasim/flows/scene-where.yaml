@@ -1,0 +1,7 @@
+name: Find where the character stands on the map of the place
+covers: [scene-where]
+setup: {}
+steps:
+  - tapOn: Scene
+  - assertVisible: Who is where
+  - assertVisible: Ettore E6

@@ -1,0 +1,5 @@
+goal: "Tell the game that spiders must never appear."
+flow: settings-lines
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+expected_seconds: 25

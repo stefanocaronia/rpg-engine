@@ -1,0 +1,11 @@
+name: In a fight, on the character's turn, see how hurt the first foe is
+covers: [combat-turn]
+setup:
+  rpg:
+    - [scene, open, --title, Agguato, --type, combat, --creatures, Bandit=2]
+    - [scene, order, --order, Ettore, --order, Bandit 1, --order, Lupa, --order, Bandit 2]
+steps:
+  - assertVisible: Your turn
+  - tapOn: Your turn
+  - assertVisible: Creature 1
+  - assertVisible: Unhurt

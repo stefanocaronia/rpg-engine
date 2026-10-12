@@ -1,0 +1,10 @@
+name: A free roll of any dice from the dice button
+covers: [free-roll-tray]
+setup: {}
+steps:
+  - tapOn: {label: Free roll}
+  - tapOn: {label: Add a d20}
+  - tapOn: Roll 1d20
+  - advance: 2s
+  - advance: 2s
+  - assertVisible: {css: ".roll-list .roll.free"}

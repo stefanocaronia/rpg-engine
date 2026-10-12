@@ -1,0 +1,6 @@
+goal: "Before the game starts, tell the master you have never played."
+flow: setup-choice
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+critical: true
+expected_seconds: 10

@@ -1,0 +1,9 @@
+name: During play, tell the game what must never appear
+covers: [settings-change]
+setup: {}
+steps:
+  - phone: {tapOn: Menu}   # on a phone Settings is in the menu
+  - tapOn: Settings
+  - inputText: {into: {label: Add to lines}, text: ragni}
+  - tapOn: {text: Add, within: Lines}
+  - assertState: {query: setting, arg: lines, contains: ragni}

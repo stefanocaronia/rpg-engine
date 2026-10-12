@@ -1,0 +1,11 @@
+name: Write a note and share it with the master
+covers: [note-write, note-share]
+setup: {}
+steps:
+  - tapOn: Journal
+  - tapOn: Notes
+  - tapOn: New note
+  - inputText: {into: {label: "The note's title"}, text: Il mercante}
+  - inputText: {into: {label: The note Il mercante}, text: "Secondo me il mercante dei sigilli lavora per i rapitori."}
+  - tapOn: {label: Share with the master}
+  - assertState: {query: news, contains: Il mercante}

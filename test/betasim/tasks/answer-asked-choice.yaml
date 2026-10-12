@@ -1,0 +1,6 @@
+goal: "The master asks on the page which way you jump: answer."
+flow: answer-asked-choice
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 4
+critical: true
+expected_seconds: 6

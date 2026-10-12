@@ -1,0 +1,9 @@
+name: Propose changes to the character's story
+covers: [story-propose]
+setup: {}
+steps:
+  - phone: {tapOn: Backstory}   # on a phone the sheet's cards start closed
+  - tapOn: Propose changes to your story
+  - inputText: {into: {text: "Your character's story"}, text: "Ettore è cresciuto al Guado; ha lasciato il fiume per un debito che non ha mai pagato."}
+  - tapOn: Send to the master
+  - assertVisible: Sent to the master

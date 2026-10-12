@@ -1,0 +1,17 @@
+# What the player's dashboard does today: every feature crossed by at least one flow (covers: in the flows).
+- {id: asked-check, area: Asked, name: "The master asks for a check: the option with its dice rolls and answers", decision: D-279}
+- {id: asked-choice, area: Asked, name: "The master asks for a choice: a button per answer", decision: D-279}
+- {id: roll-plate, area: Rolls, name: "The result's plate, and the roll in the Rolls column", decision: D-366}
+- {id: free-roll-sheet, area: Party, name: "A free roll from a line of the sheet, not logged", decision: D-330}
+- {id: free-roll-tray, area: Rolls, name: "The free roll button and its tray of dice", decision: D-349}
+- {id: sheet-read, area: Party, name: "The sheet: hit points, resources, abilities, skills", decision: D-270}
+- {id: story-propose, area: Party, name: "The character's story proposed to the master", decision: D-386}
+- {id: scene-where, area: Scene, name: "Where the party is: the place, its map, who is where", decision: D-325}
+- {id: combat-turn, area: Combat, name: "Combat: the order, whose turn, the wounds in words", decision: D-315}
+- {id: quest-follow, area: Journal, name: "Follow a quest: its next goal in Scene and Combat", decision: D-367}
+- {id: note-write, area: Journal, name: "A note of the player's, kept in their browser's campaign", decision: D-371}
+- {id: note-share, area: Journal, name: "Share a note with the master, and take it back", decision: D-378}
+- {id: save-back, area: Saves, name: "Go back to a save, with free saves", decision: D-359}
+- {id: setup-choice, area: Setup, name: "A choice of the Setup: one of the questions before play", decision: D-370}
+- {id: settings-change, area: Settings, name: "Change a setting during play; the master hears it", decision: D-341}
+- {id: rules-find, area: Rules, name: "Look up a rule (the section says it comes in a next step)", decision: D-269}

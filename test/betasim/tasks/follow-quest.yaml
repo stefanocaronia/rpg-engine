@@ -1,0 +1,5 @@
+goal: "Keep the wine quest in view while you play, and see what to do next for it."
+flow: follow-quest
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 2
+expected_seconds: 15

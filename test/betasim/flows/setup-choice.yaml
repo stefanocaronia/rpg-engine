@@ -1,0 +1,8 @@
+name: Before play, tell the master you have never played
+covers: [setup-choice]
+setup:
+  rpg: [[mode, setup]]
+steps:
+  - assertVisible: Never played it
+  - tapOn: Never played it
+  - assertState: {query: setting, arg: mentor, equals: tutorial}

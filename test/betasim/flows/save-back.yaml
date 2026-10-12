@@ -1,0 +1,10 @@
+name: Go back to an earlier save, with free saves
+covers: [save-back]
+setup:
+  rpg: [[config, saves, free]]
+steps:
+  - phone: {tapOn: Menu}   # on a phone Saves is in the menu
+  - tapOn: Saves
+  - tapOn: {label: "Go back here: La notte al campo"}
+  - tapOn: {text: Go back, exact: true}
+  - assertVisible: Back to La notte al campo

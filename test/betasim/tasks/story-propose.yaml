@@ -1,0 +1,5 @@
+goal: "Tell the master what you would change in your character's past."
+flow: story-propose
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+expected_seconds: 60

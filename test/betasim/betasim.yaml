@@ -1,0 +1,63 @@
+# The player's dashboard for betasim, beside the chat on a laptop: 1280×800. The phone is betasim-phone.yaml, the same but for the viewport and the report.
+# Usability of the page only, never the game. `npm run betasim` builds, then runs both; README.md here says the rest.
+name: rpg-engine dashboard, 1280
+target:
+  kind: web
+  url: http://127.0.0.1:5791/   # served by adapter.ts on a port of its own: never 5760, the app's browser pane
+  viewport: {width: 1280, height: 800}
+  deviceScale: 1
+  locale: en-GB
+  timezone: Europe/Rome
+  startTime: "2026-10-20T20:00:00"   # a week after the demo's saves: no roll of the master in the last half hour, and the same words every run
+  channel: chrome
+  layers: ["dialog[open]", ".map-sheet"]   # an open dialog or the map's sheet covers the page
+  root: body
+  disclosure: "[aria-expanded=false], details:not([open]) > summary"
+adapter: adapter.ts
+ui_language: native   # the page will be translated (D-311): words count for how much they are jargon, not because they are English
+suites: {flows: flows, usability: tasks}
+personas: [builtin, personas]   # the tasks pick their people with audience: four of the built-in ones and the project's two
+targets: targets.yaml
+features: features.yaml
+screens:
+  "^#/party": Party
+  "^#/scene": Scene
+  "^#/combat": Combat
+  "^#/journal": Journal
+  "^#/world": World
+  "^#/rules": Rules
+  "^#/saves": Saves
+  "^#/settings": Settings
+  "^(/|)$": Party
+# The two sizes as betasim's variants, the first the one this file runs: a step written {phone: …} runs only on the phone (betasim has no steps per viewport yet).
+variants:
+  wide: {name: "1280×800, beside the chat"}
+  phone: {name: "375×812, a phone"}
+report: report/1280
+runs: 300
+seed: 7
+familiar_icons: [Close, Free roll]
+# How much a word the player taps is jargon, from 0 to 3, as the page writes it today. The same for everybody: for a veteran AC is plain (betasim's limit).
+# Matched as a substring of the tapped control's name, so "AC" is left out: it would weigh on every "Go back" and "place".
+terms:
+  Insight: 2
+  Perception: 2
+  Religion: 2
+  Investigation: 2
+  WIS save: 3
+  Initiative: 2
+  hit dice: 3
+  slots: 3
+  channel divinity: 3
+  passive: 3
+  proficiency: 2
+  Free roll: 1
+  Follow: 1
+  Share with the master: 1
+  Take it back: 1
+  Go back here: 1
+  Checkpoint: 2
+  Mentor: 2
+  Lethality: 3
+  Difficulty: 1
+  Session zero: 3
