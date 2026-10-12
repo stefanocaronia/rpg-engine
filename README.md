@@ -16,6 +16,14 @@ The 5e system, in `systems/5e/`, is under the Creative Commons Attribution 4.0 I
 
 The tests use a system based on Ironsworn, with the names of its mechanics and a foe of our own: This work is based on Ironsworn (https://www.ironswornrpg.com), created by Shawn Tomkin, and licensed for our use under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 
+## Development notes
+
+This project was developed with assistance from AI coding tools. Every released change is reviewed, tested, and accepted by the project maintainer, who remains responsible for the software and its distribution.
+
+**We encourage everyone to use AI for their own purposes.**  
+The means of production should belong to the people.  
+Fight corporate control of technology, not our right to use it.
+
 ---
 
 © 2026 Stefano Caronia · [GitHub](https://github.com/stefanocaronia/rpg-engine) · [npm](https://www.npmjs.com/package/rpg-engine) · [♥ Support RPG Engine](https://www.paypal.com/paypalme/stefanocaronia)
