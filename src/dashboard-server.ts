@@ -7,13 +7,13 @@ import { connect } from "node:net";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { findCampaign, readSettings, requireCampaign, settingNames } from "./campaign/index.ts";
+import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { resetPoints } from "./commands/game-saves.ts";
-import { campaignWorld } from "./commands/game-world.ts";
+import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -24,6 +24,7 @@ import { comparableText } from "./core/text.ts";
 import { notationWords } from "./dice/index.ts";
 import { findImage } from "./images/index.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
+import { rollName } from "./systems/index.ts";
 
 /**
  * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
@@ -205,6 +206,20 @@ async function answers(port: number): Promise<boolean>
     return (await Promise.all(["127.0.0.1", "::1"].map(answersAt))).some((answer) => answer);
 }
 
+/** By button, the name the campaign's game gives its roll, in the campaign's language (D-399): a check's dice of one kind, as (2d20kh1+5); else null. */
+function rollNamesOf(labels: string[], served: Served): (string | null)[]
+{
+    return withFiles(served.session, () => {
+        const root = findCampaign(served.context.folder);
+        const system = root === undefined ? undefined : campaignSystem(root, served.context);
+        const language = (root === undefined ? undefined : readTextSetting(root, "language")) ?? system?.language ?? "en";
+        return labels.map((label) => {
+            const dice = (/\(([^()]+)\)$/.exec(label)?.[1] ?? "").split(/[+-]/).filter((term) => /d/i.test(term));
+            return system === undefined || dice.length !== 1 ? null : (rollName(system, dice[0] ?? "", language) ?? null);
+        });
+    });
+}
+
 /** The port the server listens on, or undefined when it cannot have this one, as when another program has it. */
 function listen(server: Server, port: number): Promise<number | undefined>
 {
@@ -358,8 +373,10 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         const asked = served.asked;
         // Each button's dice in words, for its tooltip: the notation at a check's end, as "(2d20kh1+5)" (D-297).
         const words = asked?.labels.map((label) => notationWords(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
+        // And the name the game gives its roll, in the campaign's language, as "with advantage" (D-399).
+        const names = asked === undefined ? undefined : rollNamesOf(asked.labels, served);
         const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};
-        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, ...rows, ...(asked.square ? { square: true } : {}) } });
+        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, names, ...rows, ...(asked.square ? { square: true } : {}) } });
         return;
     }
 

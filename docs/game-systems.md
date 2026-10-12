@@ -235,6 +235,18 @@ sheet-dice:
 
 The number is added to the dice: the explanation of insight +5 on the dashboard offers to roll 1d20+5, for fun. A score with a field beside it, as `str (str-mod)`, rolls the field beside it. The page shows the dice and the total, never whether the roll succeeds, and a free roll is never logged. A number not listed has no free roll, and a system without the key has none. Each field must be declared and listed once; a campaign does not change it, as it does not change the sheet.
 
+### roll-names
+
+The names the game gives some rolls, which the dashboard writes on a check's button after its number (D-399): `Saving throw Wisdom +5 · with advantage`.
+
+```yaml
+roll-names:
+  2d20kh1: {en: with advantage, it: con vantaggio}
+  2d20kl1: {en: with disadvantage, it: con svantaggio}
+```
+
+A key is dice of one kind with the highest or the lowest kept or dropped; one of two dropped reads as the other kept, so `2d20dl1` is named as `2d20kh1`. A name is given by language, in the campaign's when the system has it, else in the system's own; a bare text is in the system's language. A roll the system does not name, but that keeps one die of several, reads as `highest of 2` or `lowest of 3`, in the page's language; any other has no name.
+
 ### status-line
 
 The fields of the line that shows the player character and the companions in `status` and in scenes, in order:

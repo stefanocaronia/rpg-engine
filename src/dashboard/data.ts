@@ -207,6 +207,8 @@ export interface Asked
     labels: string[];
     /** By button, its dice in words when they say more than their dice, as "2d20, keep the highest, +5". */
     words?: (string | null)[];
+    /** By button, the name the game gives its roll, in the campaign's language, as "with advantage" (D-399). */
+    names?: (string | null)[];
     /** Whether it asks where the player's character moves on the map of its place, its one button the change of mind (ASK-11). */
     square?: true;
     /** Whose sheet the checks read, and by button the field of the sheet it rolls, whose row answers it too (ASK-12). */

@@ -10,6 +10,7 @@ export {
     type InstructionPart,
     type Recipe,
     type Reward,
+    rollName,
     type SheetEntry,
     type SheetGroup,
     systemFileName,

@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { findSystem, installedSystems } from "../src/systems/index.ts";
+import { findSystem, installedSystems, rollName } from "../src/systems/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 let near: string;
@@ -63,6 +63,22 @@ describe("installed systems", () => {
         ]);
         system(near, "lenta", "title: one of our own\nlanguage: it\nsettings:\n  pace:\n    slow: one scene a day\n    fast: {means: a scene an hour}\n");
         expect(() => installedSystems([near])).toThrow("give about as what the setting is to the player");
+    });
+});
+
+describe("the names a game gives its rolls (D-399)", () => {
+    it("names a roll in the language asked, else in the system's, however its dropping is written, and refuses dice it cannot name", () => {
+        system(near, "nostro", "title: one of our own\nlanguage: en\nroll-names:\n  2d20kh1: {en: with advantage, it: con vantaggio}\n  3d6kl: in a bad way\n");
+        const found = installedSystems([near])[0];
+        expect([rollName(found, "2d20kh1", "it"), rollName(found, "2D20dl1", "it-CH"), rollName(found, "2d20kh1", "fr"), rollName(found, "3d6kl1", "it")]).toEqual([
+            "con vantaggio",
+            "con vantaggio",
+            "with advantage",
+            "in a bad way",
+        ]);
+        expect([rollName(found, "2d20kl1", "en"), rollName(found, "1d20", "en")]).toEqual([undefined, undefined]);
+        system(near, "nostro", "title: one of our own\nlanguage: en\nroll-names:\n  1d20+5: with five\n");
+        expect(() => installedSystems([near])).toThrow("write it as dice with the highest or the lowest kept or dropped");
     });
 });
 

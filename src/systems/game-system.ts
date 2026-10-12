@@ -18,6 +18,8 @@ export const systemFileName = "system.yaml";
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
 // The dice a number of the sheet is rolled with: dice alone, as 1d20 or 2d6+1d4 (D-280).
 const sheetDicePattern = /^\d*d\d+(?:\+\d*d\d+)*$/;
+// A roll the game has a name for: dice of one kind, with the highest or the lowest kept or dropped, as 2d20kh1 (D-399).
+const rollNamePattern = /^\d*d(?:\d+|%)(?:[kd][hl]\d*)?$/i;
 // A field named in the headline under a character's name: {level} (D-288).
 const headlineFieldPattern = /\{([^{}]+)\}/g;
 // A group's icon on the dashboard: the d of an SVG path, its letters and numbers alone (D-284).
@@ -88,6 +90,9 @@ const systemSchema = z.object({
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
+    }).optional(),
+    "roll-names": z.record(z.string().regex(rollNamePattern), z.union([z.string().min(1), z.record(z.string().min(2), z.string().min(1))]), {
+        error: "write it as dice with the highest or the lowest kept or dropped, and the name the game gives such a roll, by language, such as 2d20kh1: {en: with advantage, it: con vantaggio}",
     }).optional(),
     values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     marks: z.array(z.string().min(1)).optional(),
@@ -294,6 +299,8 @@ export interface GameSystem
     sheetDice: Record<string, string>;
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
+    /** The names the game gives some rolls, by their dice as rollName reads them, and by language: 2d20kh1, with advantage (D-399). */
+    rollNames: Record<string, Record<string, string>>;
     /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, the order of the others, and the fields and groups at hand in a fight (D-315). */
     sheetCards?: { rail: string[]; order: string[]; atHand: string[]; };
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
@@ -369,6 +376,23 @@ export function withSettings(system: GameSystem, valueOf: (setting: string) => s
         rewards: system.rewards.filter((reward) => kept(reward.field)),
         leftOut,
     });
+}
+
+/**
+ * The name the game gives a roll of these dice, in the language asked, else in the system's (D-399): 2d20kh1, or 2d20dl1, is "with advantage" in 5e; undefined
+ * when the game names it not, or the dice are more than one kind.
+ */
+export function rollName(system: GameSystem, dice: string, language: string): string | undefined
+{
+    const names = system.rollNames[plainRoll(dice)];
+    return names === undefined ? undefined : (names[language] ?? names[language.split("-")[0] ?? language] ?? names[system.language]);
+}
+
+/** A roll's dice as a name reads them: in lower case, the highest or the lowest kept one when one of two is dropped, as 2d20dl1 is 2d20kh1. */
+function plainRoll(dice: string): string
+{
+    const compact = dice.toLowerCase().replace(/\s+/g, "").replace(/([kd][hl])$/, (rule: string) => `${rule}1`);
+    return /^2d/.test(compact) ? compact.replace(/dl1$/, "kh1").replace(/dh1$/, "kl1") : compact;
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
@@ -555,6 +579,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
+        rollNames: Object.fromEntries(Object.entries(data["roll-names"] ?? {}).map(([dice, names]) => [plainRoll(dice), typeof names === "string" ? { [data.language]: names } : names])),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,

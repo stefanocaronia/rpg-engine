@@ -4215,6 +4215,18 @@ button.row,
     font-weight: 700;
 }
 
+/* What kind of roll it is, in the game's words, after its number: "with advantage" (D-399). */
+.asked-roll-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.asked-roll-name::before {
+    content: "· ";
+}
+
 .asked-dice {
     font-weight: 400;
     font-variant-numeric: tabular-nums;

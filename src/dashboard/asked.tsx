@@ -140,7 +140,7 @@ export function AskedBanner(
                                 title={asked.words?.[index] ?? undefined}
                                 onClick={() => void reply(index)}
                             >
-                                {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} />}
+                                {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} name={asked.names?.[index] ?? keptName(check.dice)} />}
                             </button>
                         );
                     })}
@@ -217,8 +217,11 @@ function showRow(field: string | null | undefined): void
     requestAnimationFrame(find);
 }
 
-/** A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name and the number added; the notation is in the tooltip. */
-function CheckLabel({ check, dice }: { check: string; dice: string; })
+/**
+ * A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name, the number added and what kind of roll it is in words, as
+ * "with advantage" (D-399); the notation is in the tooltip.
+ */
+function CheckLabel({ check, dice, name }: { check: string; dice: string; name: string | undefined; })
 {
     const modifier = notationModifier(dice);
     return (
@@ -226,7 +229,19 @@ function CheckLabel({ check, dice }: { check: string; dice: string; })
             <NotationIcons notation={dice} />
             <span class="asked-check-name">{check}</span>
             {modifier !== 0 && <span class="asked-dice">{signed(modifier)}</span>}
+            {name !== undefined && <span class="asked-roll-name">{name}</span>}
             <span class="visually-hidden">{dice}</span>
         </>
     );
+}
+
+/** A roll that keeps one die of several, in words any game reads, when its game gives it no name: "highest of 2", "lowest of 3" (D-399); undefined for any other. */
+function keptName(dice: string): string | undefined
+{
+    const kept = /^(\d+)d(?:\d+|%)(kh1?|kl1?|dl1|dh1)(?:[+-]\d+)*$/.exec(dice.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-"));
+    const count = Number(kept?.[1] ?? 0);
+    const rule = kept?.[2] ?? "";
+    const highest = rule.startsWith("kh") || (rule === "dl1" && count === 2);
+    const lowest = rule.startsWith("kl") || (rule === "dh1" && count === 2);
+    return count < 2 ? undefined : highest ? t("highest of {count}", { count }) : lowest ? t("lowest of {count}", { count }) : undefined;
 }
