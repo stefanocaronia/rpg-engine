@@ -246,6 +246,7 @@ a {
     min-width: 0;
     margin-top: -4px;
     padding-top: 10px;
+    border-top: 1px solid var(--rule);
     color: var(--muted);
     font-size: 0.9rem;
     text-decoration: none;
@@ -2973,7 +2974,8 @@ a {
     display: grid;
     grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
     grid-template-rows: auto auto;
-    align-content: center;
+    /* The sections rest on the bar's line, as on top. */
+    align-content: end;
     column-gap: 14px;
     height: 88px;
     padding: 0 16px;
@@ -5702,6 +5704,7 @@ svg.icon {
     }
 
     .top-bar {
+        align-content: center;
         height: 68px;
     }
 
@@ -5714,10 +5717,22 @@ svg.icon {
         font-size: 1.2rem;
     }
 
-    /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. In the bar that stays, the campaign's name alone. */
-    .status-chip:not(.live),
-    .top-bar-title .product {
+    /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. In the bar that stays, the product under the name. */
+    .status-chip:not(.live) {
         display: none;
+    }
+
+    .top-bar > .top-bar-title {
+        grid-row: 1 / span 2;
+        align-self: center;
+    }
+
+    .top-bar-title .product {
+        display: block;
+        margin-block: 2px 0;
+        margin-inline: 0;
+        font-size: 0.7rem;
+        vertical-align: baseline;
     }
 
     :is(.top, .top-bar) .status-chip.live {
