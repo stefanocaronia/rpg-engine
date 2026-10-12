@@ -101,8 +101,8 @@ function claudeSettingsFile(root: string): HostFile | undefined
 }
 
 /**
- * Codex's settings for the campaign, read when the player trusts the folder: the rpg server, whose calls wait for the player's click as long as the server
- * does (D-412), and its memories off; a table already written is the player's, and stays.
+ * Codex's settings for the campaign, read when the player trusts the folder: the rpg server, its tools approved and its calls waiting for the player's click
+ * as long as the server does (D-412), and its memories off; a table already written is the player's, and stays.
  */
 function codexConfigFile(root: string, platform: string): HostFile | undefined
 {
@@ -110,7 +110,7 @@ function codexConfigFile(root: string, platform: string): HostFile | undefined
     const text = files().fresh(path) ?? "";
     const server = rpgServer(platform);
     const tables: [string, string][] = [
-        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800`],
+        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"`],
         ["memories", "generate_memories = false\nuse_memories = false"],
     ];
     const missing = tables.filter(([name]) => !text.split(/\r?\n/).some((line) => line.trim() === `[${name}]`));

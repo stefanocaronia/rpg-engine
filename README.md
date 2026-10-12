@@ -4,6 +4,8 @@ A toolbox that lets a high-level AI run a tabletop RPG campaign: the AI tells th
 
 Work in progress.
 
+How to install it and play: [the guide](src/dashboard/guide/en.md) ([in Italian](src/dashboard/guide/it.md)), the same the dashboard shows in Help.
+
 ## Made with AI
 
 rpg-engine was built with the help of AI. We invite everyone to use AI to make what they need: the people should take control of the means of production.

@@ -101,6 +101,7 @@ const pageTypes: Record<string, string> = {
     ".jpg": "image/jpeg",
     ".glb": "model/gltf-binary",
     ".json": "application/json; charset=utf-8",
+    ".md": "text/markdown; charset=utf-8",
     ".wav": "audio/wav",
 };
 

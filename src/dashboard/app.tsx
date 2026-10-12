@@ -10,10 +10,11 @@ import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, S
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
+import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuest, JournalView } from "./journal.tsx";
 import { gameNotices, type Notice, Notices } from "./notices.tsx";
-import { About, Help, Upcoming } from "./pages.tsx";
+import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";

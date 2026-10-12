@@ -1,0 +1,632 @@
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 b69f95b1 5738adad 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+# RPG Engine: eksiksiz kılavuz
+
+**RPG Engine**, bir **yapay zekâ oyun yöneticisiyle** masaüstü rol yapma oyunu oynamanı sağlar.
+
+Oyun yöneticisiyle bir **sohbet** içinde konuşursun: oyun yöneticisi hikâyeyi anlatır, diğer herkesi oynar ve olanlara karar verir.
+
+RPG Engine perde arkasında çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**.
+
+Sohbetin yanında tarayıcında bir sayfa açık tutarsın, yani **gösterge paneli**. Orada karakterinin kağıdı, zarlar, haritalar ve günlüğün yer alır.
+
+Bu kılavuz oyuncular içindir: programlamayı bilmen gerekmez.
+
+## Hızlı başlangıç <!-- icon: send -->
+
+1. [nodejs.org](https://nodejs.org) adresinden **Node.js** kur (LTS sürümü).
+2. Oyun yöneticisinin çalıştığı yapay zekâ uygulaması olan **Claude Code** ya da **Codex**'i kur ve giriş yap ([2.4](#24-connect-your-ai)).
+3. Bir terminal aç ve RPG Engine'i kur: `npm install -g rpg-engine`.
+4. Terminalde bir kampanya oluştur: `rpg init "The Salt Isles"`.
+5. Yeni klasörde Claude Code'u ya da Codex'i aç ve *Merhaba! Başlayalım.* yaz. Oyun yöneticisi gösterge panelinin bağlantısıyla yanıt verir. Bağlantıyı sohbetin yanında aç.
+
+Kılavuzun geri kalanı her adımı, sonra da nasıl oynanacağını anlatır.
+
+## 1. RPG Engine nedir <!-- icon: about -->
+
+### Kim ne yapar
+
+| Kim | Ne yapar |
+|---|---|
+| **Sen** | Karakterini oynarsın. Karakterinin ne yaptığını, ne söylediğini ve neyi denediğini sen belirlersin. |
+| **Oyun yöneticisi** (yapay zekâ) | Hikâyeyi anlatır, diğer tüm karakterleri oynar, olanlara karar verir, atış ister. |
+| **RPG Engine** | Her şeyi dosyalarda hatırlar, zarları atar, can puanlarını, parayı, zamanı ve mesafeleri sayar, sırları sen keşfedene kadar saklar. |
+
+Yapay zekâ hikâye anlatmada iyidir, hatırlamada kötü. Kendi başına bırakılırsa kimin sana borcu olduğunu, kaç okun kaldığını ya da köprünün iki oturum önce yandığını unutur. RPG Engine bunların hepsini tutar. Böylece dünya bir akşamdan ötekine aynı kalır. Yeni bir sohbette de, farklı bir yapay zekâyla da.
+
+### Nasıl hissettirir
+
+Sohbete, masada konuşur gibi yazarsın:
+
+> Kapıyı yavaşça iterim ve içeri bakarım.
+
+Oyun yöneticisi gördüklerini anlatır ve seçim sırası sana geldiğinde durur. Bir şey belirsizse ve önemliyse, oyun yöneticisi nelerin tehlikede olduğunu söyler ve atış ister. Atışın düğmeleri gösterge panelinde belirir. Tıklarsın, zarlar sayfaya düşer ve oyun yöneticisi ne olduğunu anlatır.
+
+### Onu farklı kılan ne
+
+- **Dünya kalıcıdır.** Söylenen her şey doğru kalır. Ölen kötü karakter ölü kalır.
+- **Zarlar gerçektir.** Oyun yöneticisi onları eğip bükemez (seçersen, en kolay zorlukta hariç).
+- **Sırlar sır kalır.** Oyun yöneticisi, karakterinin bilmediği şeyi asla söylemez. Ne kadar ısrar edersen et.
+- **Dünya sensiz de hareket eder.** Dinlenirken ya da yolculuk ederken tehditler ilerler ve izlerini görürsün.
+- **Çok akşam, tek hikâye.** Kampanya, bilgisayarındaki bir klasördür. İstediğin zaman bırakır, sonra devam edersin.
+
+### Bugün oynadığı oyun
+
+RPG Engine her masaüstü rol yapma oyunu için yapılmıştır. Bugün tek bir oyun sistemiyle gelir: **beşinci sürüm** (ücretsiz System Reference Document 5.1'den). Başka oyunlar gelecek. Bkz. [Oyun sistemleri](#5-game-systems-and-house-rules) ve [Daha sonra gelecekler](#9-coming-later).
+
+---
+
+## 2. Başlarken <!-- icon: path -->
+
+### 2.1 Neye ihtiyacın var
+
+- Windows, macOS ya da Linux çalıştıran bir bilgisayar.
+- **Node.js 22** ya da daha yenisi. [nodejs.org](https://nodejs.org) adresinden indir. "LTS" sürümü yeterli. İçinde RPG Engine'i kuran `npm` de gelir.
+- Bir **terminal**, yani komut yazdığın pencere. Windows'ta Terminal uygulaması ya da PowerShell, macOS'ta Terminal. RPG Engine'i kurarken, her kampanyayı oluştururken ve Claude Code'u ya da Codex'i başlatırken kullanırsın.
+- Bir **yapay zekâ ortamı**, yani oyun yöneticisinin çalıştığı uygulama: **Claude Code** ya da **Codex**, kendi planı ve girişiyle. Bkz. [2.4](#24-connect-your-ai).
+- Ortamının sunduğu **en büyük model**. Küçük modeller kandırılır. Testlerimizde küçük bir model, gerçek oyun yöneticisi olduğunu söyleyen bir oyuncuya sırları anlattı.
+- Gösterge paneli için bir web tarayıcısı.
+
+Ortamın için kullandığın giriş bundan fazlasını yapar. RPG Engine onu bilgisayarında kullanarak yerlerin görsellerini çizer ve gösterge panelini kendi sunmadığı dillere çevirir. Bkz. [Görseller](#311-pictures) ve [Diller](#72-languages).
+
+**Bir klasörde terminal açmak.** Pek çok adım "kampanya klasöründe" der. Windows'ta Dosya Gezgini'nde klasöre sağ tıkla ve **Terminalde Aç**'ı seç. macOS'ta Finder'da klasöre sağ tıkla ve **Hizmetler > Klasörde Yeni Terminal**'i seç. Ya da zaten açık bir terminalde `cd` yaz, ardından klasörün yolunu ekle. Örneğin `cd "C:\Users\me\Games\The Salt Isles"`.
+
+### 2.2 Kurulum
+
+Bir terminal aç ve şunu yaz:
+
+```text
+npm install -g rpg-engine
+```
+
+Bu sana `rpg` komutunu verir. Çalıştığını kontrol etmek için:
+
+```text
+rpg --version
+```
+
+`rpg`'yi kampanya başına bir kez, kampanyayı oluşturmak için kullanırsın. Sonrasında yalnızca oyun yöneticisiyle konuşursun. Yapay zekâ ortamın RPG Engine'i aynı `rpg` komutuyla kendisi başlatır.
+
+### 2.3 Kampanya oluşturma
+
+Kampanya bir klasördür. Oyunlarını tuttuğun klasörde bir terminal aç ve şunu yaz:
+
+```text
+rpg init "The Salt Isles"
+```
+
+Bu komut içinde yeni bir kampanya olan `The Salt Isles` klasörünü oluşturur ve sana sıradaki adımı söyler:
+
+```text
+Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
+To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.
+
+For the master: Still to agree with the player: ...
+```
+
+*For the master* satırından sonraki satırlar oyun yöneticisi içindir. Onları oyun yöneticisi sohbette okur, senin yapacağın bir şey yok. Klasörün nerede olduğunu aklında tut, her oynadığında oraya dönersin. Klasör adı vermezsen `rpg init`, içinde bulunduğun klasörü kampanyaya çevirir.
+
+`init`, kampanyanın ihtiyaç duyduğu her şeyi yapar: ayarlarını, dünya klasörlerini ve yapay zekâ ortamına RPG Engine'i kullanmasını ve kampanya dışında kendi hafızasını tutmamasını söyleyen küçük dosyaları.
+
+Şimdi bir şey seçmen gerekmez. Gerisini oyun yöneticisi sohbette sorar, ya da gösterge panelinde seçersin. Bazı seçimleri şimdiden biliyorsan buraya yazabilirsin:
+
+```text
+rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
+```
+
+Bu komut, içinde *The Salt Isles* kampanyası olan `salt-isles` klasörünü oluşturur. Klasör adında boşluk yok, kampanya adı ise istediğin gibi.
+
+| Seçenek | Neyi belirler | Değerler |
+|---|---|---|
+| `--name` | Kampanyanın adı | herhangi biri; boş bırakırsan klasörün adı |
+| `--language` | Oyunun dili | bir kod, örneğin `en`, `it`, `fr` |
+| `--system` | Oyun sistemi | `5e`, şimdilik tek seçenek |
+| `--difficulty` | Dünyanın ne kadar zor olduğu | `story`, `easy`, `normal`, `hard`, `brutal` |
+| `--lethality` | Çatışmada yere düşmenin anlamı | `narrative`, `epic`, `dice` |
+
+`rpg init --help` da bunları listeler. Bir kampanya, başka bir kampanyanın klasörünün içinde olamaz.
+
+Oyun yöneticisinden kampanya oluşturmasını isteyemezsin. `init`'ten önce klasörde, yapay zekâ ortamına RPG Engine'in nerede olduğunu söyleyen hiçbir şey yoktur.
+
+### 2.4 Yapay zekânı bağlama
+
+RPG Engine **Claude Code** ve **Codex** ile çalışır. MCP araçlarını kullanan başka yapay zekâ uygulamaları da çalışabilir ama bunu garanti etmeyiz.
+
+**Ortamını kurmak.** Claude Code ve Codex terminalde çalışır. Telefonundaki Claude ya da ChatGPT uygulaması değildirler. İkisinin de kendi planı ve girişi var: Claude Code için ücretli bir Claude planı, Codex için bir ChatGPT girişi. Kurmak ve giriş yapmak için kendi sayfalarını izle: [Claude Code](https://code.claude.com/docs/en/setup) ve [Codex](https://learn.chatgpt.com/docs/codex/cli). Bunu bir kez yaparsın, tüm kampanyaların için geçerli olur.
+
+**Claude Code.** Kampanya klasöründe bir terminal aç ve `claude` yaz. İlk seferde klasöre güvenip güvenmediğini sorar ve klasörün oyunun araçlarına (`mcp__rpg`) izin verdiğini söyler. **Yes, I trust this folder**'ı seç. Dikkat: önceden seçili gelen yanıt *No, exit*. Hemen Enter'a basarsan Claude Code kapanır. Hepsi bu kadar. Kampanya, Claude Code'a RPG Engine'i ve araçlarını kullanmasını, hafızasını kapalı tutmasını zaten söylemiştir.
+
+**Codex.** Kampanya klasöründe bir terminal aç ve `codex` yaz. Klasöre güvenip güvenmediğini sorduğunda evet de. Kampanyanın kendi ayarları Codex'e RPG Engine'in nerede olduğunu söyler, araçlarına izin verir ve hafızasını kapalı tutar. Codex bu ayarları yalnızca güvendiğin bir klasörde okur. Masaüstü uygulamasında, oyunun sohbetleri için hafızaların kapalı olduğunu kontrol et.
+
+**Hafıza neden önemli.** Kampanya dosyalarında yaşar. Ortam kendi başına da bir şeyler hatırlarsa, bir kayda dönmek gerçekten geri dönmek olmaz. Oyun yöneticisi geri alınanı hâlâ hatırlar.
+
+### 2.5 İlk sohbet
+
+Herhangi bir şey yaz, örneğin:
+
+> Merhaba! Başlayalım.
+
+Oyun yöneticisi oyunun nerede kaldığını okur ve yanıt verir. Her sohbetteki ilk yanıtında sana **gösterge panelinin bağlantısını** verir (şuna benzer: `http://127.0.0.1:4750`). Bağlantıyı tarayıcında aç ve tüm oyun boyunca sohbetin yanında tut. Her kampanya, bir sohbetten ötekine aynı bağlantıyı korur. Başka bir program o adresi almışsa oyun yöneticisi yeni bağlantıyı verir.
+
+Oyun yöneticisinin mesajları arasında ortamın, oyun yöneticisinin kullandığı araçları kısa satırlar halinde gösterir. Ayrıntılarını açma (Claude Code'da ctrl+o). Oyun yöneticisinin yazdıklarını, sırlar dahil, gösterebilirler.
+
+Yeni bir kampanya, insan oyun yöneticisi olan bir oyun gibi üç aşamadan geçer. Gösterge paneli bunları üstte *1 Ayarlar · 2 Sıfırıncı oturum · 3 Oyun* olarak gösterir:
+
+1. **Ayarlar**: Nasıl oynamak istediğini seçersin. Hikâyenin dışında.
+2. **Sıfırıncı oturum**: Karakterini oyunun içinde yaratırsın.
+3. **Oyun**: Hikâye.
+
+### 2.6 Ayarlar: nasıl oynayacağını seçmek
+
+Oyun yöneticisi yalnızca hâlâ eksik olanı sorar, her seferinde birkaç soru. "Sen karar ver" yazarsan oyun yöneticisi seçer ve ne seçtiğini söyler. Gösterge paneli açıkken ilk adım olan **Ayarlar**, aynı soruları kartlar olarak gösterir: her seferinde bir soru, her değer anlamıyla birlikte, olağan olan **Önerilen** diye işaretli. Orada seçersen oyun yöneticisi sohbette bir daha sormaz. **Atla** bir soruyu sonraya bırakır. Yalnızca sözcüklerle çözülebilecekleri sohbet halleder: yeni bir dünyanın temel fikri, dil ve görseller. Görselleri oyun yöneticisi, ancak bilgisayarın yapabiliyorsa sorar. Sayfanın aşağıdaki tablodan daha az soru sormasının nedeni bu.
+
+Tabloyu ezberlemen gerekmez. Bakıp bulman için burada. Bunların hepsini sonradan sohbette ya da gösterge panelinin **Ayarlar** bölümünde değiştirebilirsin. Değişiklik, oyun yöneticisinin bir sonraki yanıtından itibaren geçerli olur.
+
+| Ayar | Neyi belirler | Değerler | Önerilen |
+|---|---|---|---|
+| **Akıl hocası** ("Bu oyunu ne kadar iyi biliyorsun?" diye sorulur) | Oyun yöneticisinin sana kuralları hikâyenin dışında ne kadar öğreteceği | **off** (yalnızca hikâye; istediğinde parantez içinde sor), **hints** (önemli seçimlerden önce kısa bir ipucu ve bir kural gözden kaçtığında), **tutorial** (her kural ilk seferinde açıklanır, her atışın toplamı tam gösterilir, çatışmalardan sonra kısa bir değerlendirme yapılır) | yanıtından: hiç oynamadım → tutorial, biraz → hints, biliyorum → off |
+| **Zorluk** | Dünyanın ne kadar zor olduğu: çatışmalar, düşman taktikleri, ipuçları, hazine, tehditlerin ne kadar hızlı ilerlediği | story, easy, normal, hard, brutal | |
+| **Ölümcüllük** | Çatışmada yere düşmenin anlamı | **narrative** (karakterin asla ölmez), **epic** (yalnızca hikâye için önemliyse ölür), **dice** (zarlar karar verir) | zorluğu izler: story → narrative, easy → epic, normal ve üstü → dice |
+| **Kayıtlar** | Ne zaman geri dönebileceğin | **permadeath** (asla; yalnızca kampanyayı baştan başlatabilirsin), **checkpoint** (son sahne sonuna, yalnızca karakterin ölürse), **free** (herhangi bir kayda, istediğin zaman kaydederek) | checkpoint |
+| **Kural sıkılığı** | Yiyecek, ışık, yorgunluk, taşıma ağırlığı, büyü malzemeleri ve yolculuğun kurallara ne kadar sıkı bağlı olduğu | **smooth** (oyun yöneticisi bunları geçiştirir), **rules** (yazıldığı gibi: meşaleler söner, erzak biter), **simulation** (kuralların ötesinde: aşınma, bozulma, hava durumu) | smooth |
+| **Zarlar** | Karakterinin zarlarını kimin attığı | **digital** (RPG Engine sayfada atar), **physical** (sen kendi zarlarını atar, yüzleri söylersin) | |
+| **Birimler** | Hikâyedeki mesafeler ve ağırlıklar | metric, imperial | |
+| **Yoldaşlar** | Seninle kimin yolculuk ettiği | none, sıfırıncı oturumda seninle yaratılanlar, oyun yöneticisinin yarattıkları, oyunda tanışılanlar | |
+| **Görseller** | Yerlerin ve görevlerin görselleri | none, istek üzerine, yeni yerler ve görevler | bir kez sorulur, yalnızca bilgisayarın yapabiliyorsa |
+| **Sınırlar** | Oyunda asla yer almayanlar | bir liste ya da hiçbiri | |
+| **Perdeler** | Olabilecek ama yalnızca sahne dışında olanlar | bir liste ya da hiçbiri | |
+| **Dil** | Oyunun ve gösterge panelinin dili | herhangi biri | nasıl yazdığından alınır ve onaylanır |
+
+Oyun sistemi kendi ayarlarını ekleyebilir. Beşinci sürüm **ilerleme**yi ekler: karakterinin seviye atlaması, **deneyim puanlarıyla** ya da hikâyenin **kilometre taşlarında**.
+
+**Zorluğun oyunda anlamı.** Story: zayıf, saf düşmanlar, bariz ipuçları, her şeyden bol. Oyun yöneticisi kendi atışlarını yumuşatabilir. Easy: basit düşmanlar, cömert kaynaklar. Normal: mantıklı düşmanlar, her sonuca üç ipucu, standart fiyatlar ve hazine. Hard: akıllı düşmanlar, ince ipuçları, kıt kaynaklar, hızlı ilerleyen tehditler. Brutal: pusu kuran, geri çekilen ve yere düşenleri bitiren düşmanlar, çok kıt kaynaklar, en sert dinlenmeler. Çatışmalar her zaman grubunun o anki gücüne göre ayarlanır.
+
+**Yazılı bir dünya yoksa** kurulum iki şey daha sorar:
+
+- **Temel fikir**: türü, tonu ve dünyanın birkaç öğesi, kendi sözlerinle. Örneğin: *"Düşük fantezi, kasvetli ama umutlu. Bir nehir kasabası, perili bir geçit, tepelerde bir tarikat."*
+- **Hazırlık**: **on the fly** (oyun yöneticisi dünyanın her parçasını tam ihtiyacın olmadan önce kurar; önerilen) ya da **all at the start**.
+
+Ardından oyun yöneticisi kampanya için bir ad önerir. Eksik bir şey kalmayıp hazır olduğunu söylediğinde oyun sıfırıncı oturuma geçer.
+
+### 2.7 Sıfırıncı oturum: karakterin
+
+Sıfırıncı oturum oyunun kendisidir. Karakterini oyun yöneticisiyle, masada yapacağın gibi yaratırsın.
+
+- **Her seçim senindir**, oyun yöneticisinden yapmasını istemediğin sürece. Dolu bir fikirle gelebilirsin ("tapınağını terk etmiş bir yarı elf rahip"), belirsiz bir fikirle ("iyileştiren ama sevimsiz biri") ya da hiçbir şeyle ("beni şaşırt, sonra değiştirmeme izin ver").
+- **Yetenek puanları.** Oyun yöneticisi, hiçbir zar atılmadan önce sana yöntemi ve güvenlik ağını söyler. Beşinci sürümde: standart dizi, puan satın alma ya da 4d6'dan en düşüğü atma. Üzerinde anlaştığınız yöntem masanın anlaşmalarında kalır.
+- **Hikâyen** hiçbir zaman zorunlu değildir. Verirsen oyun yöneticisi onu senin sözlerinle yazar, sana bir kez okur ve içindeki kişileri ve yerleri dünyaya bağlar. Gösterge panelinde de yazabilirsin (bkz. [Grup](#party)).
+- **Kişilik** (beşinci sürüm): bir özellik, bir ideal, bir bağ ve bir kusur. Geçmişinin tablolarından ya da kendi yazdıklarından.
+- **Bir görsel.** Karakterin yaratıldığında oyun yöneticisi senden karakterinin bir görselini ister: bilgisayarındaki bir dosya. Yapay zekâ ortamın kendi başına görsel çizebiliyorsa oyun yöneticisi bir tane yapmayı önerebilir.
+
+Karakter kağıdının sayılarını RPG Engine seçimlerinden hesaplar. Sen hiçbir zaman toplama yapmazsın. Karakterler yaratılıp sen onayladığında hikâye başlar.
+
+---
+
+## 3. Oynamak <!-- icon: chat -->
+
+### 3.1 Oyun yöneticisiyle konuşmak
+
+Karakterinin ne yaptığını ya da söylediğini kendi sözlerinle yaz. Kısa olması yeterli.
+
+> Hancıya bu gece başka kimin geçtiğini sorarım.
+>
+> "Belaya gelmedik," derim, elim kılıcımdan uzakta.
+>
+> Çatıya tırmanır ve beklerim.
+
+**Hikâyenin dışında** konuşmak için köşeli parantez kullan:
+
+> [Yakalama nasıl işliyor?]
+>
+> [Bu turda tepkimi hâlâ kullanabilir miyim?]
+>
+> [Bu akşam burada bırakalım.]
+
+Oyun yöneticisi de parantez içinde yanıtlar, sonra hikâyeye döner.
+
+**Sen neyi denediğini söylersin, oyun yöneticisi ne olduğunu söyler.** Dünyanın mantığını ya da önceden belirlenmiş gerçekleri bozan bir şey olmaz. Oyun yöneticisi bunu sana hikâyenin içinde söyler ve mümkün olanı önerir.
+
+**Oyun yöneticisi karakterin adına asla karar vermez.** Seni konuşturmaz, bir şey hissettirmez, seçim yaptırmaz. Şüphede kalırsa sorar.
+
+**Oyun yöneticisi motor hakkında asla konuşmaz.** Her şeyi takip edip etmediğini sorarsan bir oyun yöneticisi gibi yanıtlar: "Hepsi bende. Bir dahaki sefere buradan devam ederiz."
+
+**Oyun yöneticisine gösterge panelini nasıl kullanacağını sorabilirsin.** Sayfayı bilir: "Büyülerimi nerede görürüm?", "Zarı elle nasıl atarım?"
+
+### 3.2 Atışlar
+
+**Atış ne zaman olur.** Oyun yöneticisi atışı yalnızca sonuç belirsizse ve önemliyse ister. Aksi halde evet der ya da "evet, ama" der. Atışından önce oyun yöneticisi nelerin tehlikede olduğunu ve hangi kontrollerin uygun olduğunu söyler, sonra durur. Sen atarsın ya da fikrini değiştirirsin:
+
+> **Oyun yöneticisi:** Çıkıntı dar ve ıslak. Kayarsan nehre uzun bir düşüş var. Bir Çeviklik (Akrobasi) kontrolü ya da geri dönüp merdiven arayabilirsin.
+>
+> **Sen:** Deneyeceğim.
+
+**Gösterge panelinde atmak.** Oyun yöneticisi isteyince sayfanın üstünde, her kontrol için bir düğme olan bir başlık belirir. Örneğin *Akrobasi +4 · avantajla*. Tıkla: zarlar sayfaya düşer ve oyun yöneticisi sonucu duyar. Ayrıca şunları yapabilirsin:
+
+- karakter kağıdının altın renkle yanan ilgili satırına tıklamak;
+- zar tepsisinden doğru zarları atmak;
+- başka bir şey yapmak istiyorsan başlığa kendi sözlerini yazmak.
+
+**Elle atmak.** Zarları kendin seçmeyi tercih ediyorsan başlığın köşesindeki **Elle**'yi aç (ya da **Ayarlar**'da). Kontrolün düğmesi kaybolur ve başlık neyi atacağını bir oyun yöneticisi gibi söyler: *Akrobasiyi karakter kağıdından ya da zarlarla kendin at.* Karakter kağıdında yanan satıra tıkla ya da zar tepsisinden doğru zarları at. RPG Engine onları atar, bonusunu ekler ve oyun yöneticisi sonucu duyar. Ne karakter kağıdının ne de zar tepsisinin yapamadığı bir kontrol, örneğin 1'leri yeniden atılan hasar, düğmesini korur. Elle, kapatana kadar bu tarayıcıda açık kalır.
+
+**Tüm oyun için fiziksel zarlar.** **Zarlar** ayarı physical iken oyun yöneticisi atışlarını sözlerle ister ve sen attığın yüzleri yazarsın:
+
+> [14 attım.]
+
+RPG Engine değiştiricilerini ekler ve zarlarının gösteremeyeceği bir yüzü reddeder.
+
+**Serbest atışlar.** Eğlence için atmak üzere karakter kağıdındaki herhangi bir sayıya tıkla ya da zar tepsisini aç. Serbest atışlar hiçbir şey saymaz, kaydedilmez ve oyun yöneticisi onları asla görmez. Serbest bir 20, sonradan gerçek bir 20'ye dönüşmez.
+
+**Oyun yöneticisinin atışları.** Oyun yöneticisi düşmanlar ve diğerleri için de RPG Engine ile atar. Çoğu atış atış sütununda gösterilir. Bir sonucu görmemen gerektiğinde oyun yöneticisi gizlice atar. Her zaman sorabilirsin:
+
+> [O atış gerçek miydi?]
+
+Gösterilen bir atış için oyun yöneticisi sayılarını ve nedenini söyler. Gizli bir atış için, sen sormadan önce atıldığını kanıtlayan bir parmak izi verir.
+
+**Sohbetteki atışlar** karar verdikleri anın hemen ardından parantez içinde görünür: *[İkna 14 + 3 = 17]*. Sonra hikâye sonucu anlatır.
+
+### 3.3 Sahneler ve çatışmalar
+
+Oyun yöneticisi hikâyeyi **sahneler** halinde yürütür: bir çatışma, bir konuşma, keşif, yolculuk, bir dinlenme, bir sınav (kovalamaca, yarış, bulmaca). Bunları yönetmek zorunda değilsin. RPG Engine hikâyenin bölümlerini böyle tutar. Her sahnenin sonunda oyun kendiliğinden kaydedilir ve sahne günlüğünün hikâyesine girer.
+
+**Bir çatışmada** oyun yöneticisi senin olmayan tüm sıraları, her atışla birlikte, art arda anlatır ve **karar verebileceğin yerde durur**: sıran, bir tepki, bir seçim. Sıran geldiğinde ne yaptığını söyle:
+
+> Kapının yanındakine Sacred Flame atarım.
+
+Gösterge panelinin **Çatışma** bölümü sıraların düzenini, kimin sırası olduğunu, grubunun can puanlarını ve düşmanların ne kadar yaralı göründüğünü gösterir (yarasız, yaralı, kanlar içinde, yere düşmüş: sayıyla değil, sözcüklerle). Karakterin yere düşerse ölüm kurtarma atışları sayfada büyük görünür.
+
+**Çatışma zaten belli olduysa** oyun yöneticisi geri kalanı tek mesajda anlatmayı önerebilir.
+
+### 3.4 Zaman, yolculuk ve hareket eden dünya
+
+**Zaman.** Hikâyede her eylem zaman alır ve RPG Engine tarihi tutar: 3. gün, sabahın erken saati. Oyun yöneticisi zamanı dünyanın ölçtüğü gibi söyler: şafak, üçüncü çan, akşam çökerken. Oturumlar arasında zaman geçmez, bıraktığın yerden devam edersin.
+
+**Dinlenme.** Dinlendiğini söylersin ve oyun yöneticisi dinlenmenin geri getirdiklerini uygular, örneğin can puanlarını ve büyü yuvalarını:
+
+> Kamp kurup uzun bir dinlenme yaparız.
+
+**Yolculuk.** Nereye gitmek istediğini söyle:
+
+> Kuzeydeki yoldan Rocca'ya gideriz.
+
+RPG Engine yolu, mesafeyi ve gün sayısını yürüyüş hızına göre hesaplar ve seni oraya taşır. Bir yolculuk, yolda planlanmış bir şey olduğunda, her günlük yolculuğun sonunda ve varışta durur. Yola çıkmadan önce bir yerin ne kadar uzak olduğunu sorabilirsin:
+
+> [Rocca ne kadar uzak, yürüyerek ne kadar sürer?]
+
+**Dünya sensiz de hareket eder.** Kötü karakterlerin son tarihli planları ve saatleri vardır. Her yeni günde oyun yöneticisi, zamanın ilerlettiği tehditleri hareket ettirir ve sen onların izlerini görürsün: bir söylenti, bir iz, kasabada bir değişiklik. Saatin kendisini hiçbir zaman görmezsin, yalnızca geride bıraktıklarını.
+
+**Para** oyunun madeni paralarıyla sayılır. Öde, sat, ödeme al: para üstünü RPG Engine verir.
+
+### 3.5 Haritalar
+
+**Dünya haritası** (gösterge paneli: **Dünya**) yalnızca karakterinin bildiği yerleri, aralarındaki yolları, yürüdüğün izi ve geri kalan her şeyin üstündeki sisi gösterir. Bir yere tıkla, onun hakkında ne bildiğini ve ne kadar uzak olduğunu gör.
+
+**Bir yerin haritası** (gösterge paneli: **Sahne**, çatışmada **Çatışma**) oyun yöneticisi bulunduğun yer için bir tane çizdiğinde belirir: duvarlar, kapılar, zemin ve kimin nerede durduğu, jetonlar olarak. Bir çatışmada, sıran geldiğinde ulaşamayacağın kareler örtülür, böylece nereye gidebileceğini bir bakışta görürsün. Oyun yöneticisi karakterin nereye hareket ettiğini sorduğunda sayfa haritayı açar ve sen bir kareye dokunursun ya da *E4* gibi yazarsın.
+
+### 3.6 Görevler, günlük ve notlar
+
+**Görevler.** Karakterin bir iş üstlendiğinde bu, **Günlük**'ünde bir görev olur: kimin verdiği, nerede, ne zamana kadar, hedefleri bir liste olarak ve neyi ölçtüğü (kalan süresiyle bir son tarih, bir saat, bir sayaç). Bir görevi izlemek için yıldızıyla işaretle. Sahne'nin üstünde, bir sonraki hedefiyle küçük olarak kalır. Görev, hikâye bitirdiğinde biter, asla kendi kendine bitmez.
+
+**Hikâye.** Günlük'ün Hikâye sekmesi, kampanyan bir zaman çizelgesi olarak: her sahne bir bölüm, yeri, tarihi ve kısa bir özetiyle, en son olan en üstte.
+
+**Notların.** Günlük'ün Notlar sekmesinde kendi notlarını yazarsın: kuramlar, adlar, planlar. Bunlar bilgisayarında kalır ve oyun yöneticisi onları okumaz, sen birini **Paylaş**mazsan. Paylaşılan not oyun yöneticisine bir sonraki yanıtında ne düşündüğün olarak ulaşır, asla bir gerçek olarak değil. Kuramın, sen yazdın diye doğru olmaz. Bir içeriği durdurmayı ya da kaçınmayı isteyen bir not, masada söylemişsin gibi sayılır.
+
+### 3.7 Karakterinin hikâyesi ve görseli
+
+Karakterinin karakter kağıdında **Açıklama** kartında karakterinin hikâyesini yazmak için bir kutu var. Gönder, oyun yöneticisi sen evet dedikten sonra onu karaktere kendi sözleriyle yazar.
+
+Karakterinin görseli için oyun yöneticisine sohbette bir görsel dosyası ver ve bilgisayarında nerede olduğunu belirt (PNG, JPEG, WebP ya da SVG, en fazla 5 MB):
+
+> [İşte karakterimin portresi: C:\Users\me\Pictures\mira.png]
+
+Oyun yöneticisi onu kampanyaya kopyalar ve gösterge panelinde karakterinin jetonunda görünür. İstediğin zaman aynı şekilde değiştirebilirsin. RPG Engine'in kendisi yalnızca yerleri ve görevleri çizer (bkz. [Görseller](#311-pictures)).
+
+### 3.8 Kayıtlar ve geri dönmek
+
+RPG Engine tüm kampanyayı **her sahnenin sonunda** kendiliğinden kaydeder. Bu kayıtlarla ne yapabileceğin **kayıtlar** ayarına bağlıdır:
+
+| Kayıtlar | İstediğinde kaydet | Geri dön |
+|---|---|---|
+| **permadeath** | hayır | asla; yalnızca kampanyayı baştan başlatabilirsin |
+| **checkpoint** | hayır | son kayda, yalnızca karakterin öldüğünde |
+| **free** | evet | herhangi bir kayda, istediğin zaman |
+
+Her modda **baştan başlayabilirsin**: aynı karakterle oyunun başından ya da yeni bir karakterle sıfırıncı oturumdan.
+
+Bunların hepsini sohbette ("[Düellodan önceye dönelim.]") ya da gösterge panelinin **Kayıtlar** bölümünde yapabilirsin.
+
+**Geri döndükten sonra yeni bir sohbet aç.** Oynadığın sohbet geri alınanı hatırlar. Oyun yöneticisiyle yeni bir sohbet aç (Claude Code'da `/clear`, Codex'te `/new`), *devam* yaz, sonra Kayıtlar'da **Yeni sohbet açtım**'a bas ya da yeni sohbette oyun yöneticisine söyle. Eski sohbeti asla sürdürme. Sen onaylayana kadar oyun yöneticisi devam etmez.
+
+### 3.9 Oturumlar: durmak ve geri dönmek
+
+**Oturumu istediğin zaman bitirirsin:**
+
+> [Bu akşam burada bırakalım.]
+
+"Kaydet ve çık" diye bir şey yok. Her şey zaten dosyalarda.
+
+**Sohbeti kapatmak için** Claude Code'da `/exit`, Codex'te `/quit` yaz. Gösterge paneli bir sonraki sohbete kadar sessizleşir.
+
+**Geri dönmek için** kampanya klasöründe (`init`'in yazdırdığı klasör) bir terminal aç, ortamını orada başlat ve *devam* yaz. Oyun yöneticisi oyunun nerede kaldığını okur, sana kısa bir özet verir ve bir şeylerin olmasıyla başlar. Yeni bir sohbet hiçbir şeyi kaybettirmez. Kampanya sohbette değil, dosyalarında yaşar.
+
+Oyun yöneticisi sonunda rutin sorular sormaz. Yalnızca bir şeyin işe yaramadığını fark ettiyse kısaca sorar.
+
+### 3.10 Oyun yöneticisinin ruh hâli
+
+Gösterge panelinin üstünde oyun yöneticisinin avatarı, küçük bir robot durur. Yüzü hikâyenin tonunu izler: tehlike büyüdüğünde endişeli, cesur bir fikirde sevinçli, bir sürprizde şaşkın. Doğal bir 20'ye ya da doğal bir 1'e bir an için tepki verir. Henüz bilmediğin şeyi asla göstermez: tuzak kurulmadan önce sırıtmaz. Grubunun jetonları da ruh hâllerini gösterir. Sohbet kapalıyken robot uyur.
+
+### 3.11 Görseller
+
+RPG Engine, **görseller** ayarının dediği gibi, ulaştığın her yer ve üstlendiğin her görev için bir görsel yaptırabilir. Bilgisayarında zaten olanı kullanır:
+
+- **Codex**, ChatGPT girişinle: boyanmış bir görsel.
+- Aksi halde **Claude Code**, Claude girişinle: bir çizim.
+
+Görsel bizim değil, senin kendi planını kullanır. **Ayarlar** bölümü, bilgisayarında görsel yapılıp yapılamayacağını ve yapılamıyorsa kurulum adımlarını söyler. Görsel yoksa sayfa, her yer türünün işaretini gösterir. Oyun yöneticisine herhangi bir yer ya da karakter için kendi görselini de verebilirsin.
+
+### 3.12 Güvenlik: sınırlar, perdeler ve dur
+
+- **Sınırlar**: oyunda asla yer almayanlar.
+- **Perdeler**: olabilecek ama yalnızca sahne dışında olanlar.
+- **Dur**: istediğin an, açıklama yapmadan bir içeriği durdurabilirsin. Hikâyenin dışında yaz:
+
+> [dur]
+
+Oyun yöneticisi onu hemen bırakır ve gelecek her oturum için sınırlarına ekler. Sınırlarını ve perdelerini **Ayarlar**'da görebilir ve değiştirebilirsin.
+
+### 3.13 Fikrini değiştirmek
+
+Her ayar kampanya sırasında değişebilir: sohbette ("[Daha zor yapalım.]") ya da **Ayarlar**'da. Oyun yöneticisi değişikliği bir sonraki yanıtında öğrenir. Oyun yöneticisinin kitapta olmayan bir kararı **emsal** olur ve saklanır, böylece aynı soru bir dahaki sefere aynı yanıtı alır.
+
+---
+
+## 4. Gösterge paneli, bölüm bölüm <!-- icon: party -->
+
+Gösterge paneli, kendi bilgisayarındaki bir sayfadır. Oyun yöneticisi bağlantısını her sohbetin başında verir. Oyunu canlı izler: oyun yöneticisi bir şeyi değiştirdiğinde sayfa da değişir.
+
+Yalnızca oynadığın bilgisayarın tarayıcısı onu açabilir. Aynı Wi-Fi'da bile telefon ya da tablet açamaz. Sayfa dar bir pencereye de uyar: o zaman bölümler alttaki bir çubuğa, simgeler bir menüye taşınır.
+
+Sayfa sohbet kadar yaşar. Sohbeti kapatırsan açık kalan bir sayfa karakter kağıdı olduğu gibi *Not connected* gösterir ve oyun yöneticisinin robotu uyur. Kampanyada yeniden bir sohbet açarsan ve oyun yöneticisi yanıt verdikten sonra sayfa kendiliğinden geri gelir.
+
+### Üstte
+
+- **Oyun yöneticisinin avatarı**, ruh hâliyle.
+- Kampanyanın adı, oyun sistemi, **oyun zamanı** ve oyunun **bağlı** olup olmadığı (sohbetin bağlı olması).
+- Bölümler: **Grup**, **Sahne**, **Çatışma** (yalnızca bir çatışma sırasında), **Günlük**, **Dünya**. Satırın sonunda simgeler olarak: **Kayıtlar**, **Yardım**, **Ayarlar**, **Hakkında**.
+- Açık ve koyu tema, sağ üst köşede.
+
+Oyun yöneticisi sana bir şey sorduğunda, hangi bölümde olursan ol, başlığı sayfanın üstünde kalır.
+
+### Grup
+
+Karakterinin ve yoldaşlarının karakter kağıdı. Karakter kağıdının her bölümü açıp kapatabileceğin bir karttır.
+
+- Eğlence için atmak üzere **bir sayıya tıkla**. Nasıl oluştuğunu görmek için bir sayının üstüne gel ("+5: Bilgelik +3, ustalık +2").
+- **Can puanları, yuvalar ve kullanımlar** çubuklar ve noktalar olarak görünür.
+- **Durumlar ve etkiler**, ne kadar süreceğiyle birlikte görünür.
+- **Açıklama**, karakterinin metnini ve oyun yöneticisine karakterinin hikâyesini göndereceğin kutuyu içerir.
+- 0 can puanında **ölüm kurtarma atışları** adın altında büyük görünür.
+- Karakter kağıdının yanında (dar ekranda altında): **atışlar**, en yeni en üstte; seninkiler ve oyun yöneticisinin görmene izin verdikleri. **Kaldır** listeyi boşaltır, **Geri getir** onu geri getirir. Serbest atışlar kesik çizgili ve soluk görünür.
+
+Bir kurt gibi istatistik bloğu olan bir yoldaş, tam bir karakter kağıdı yerine istatistik bloğunu gösterir.
+
+### Sahne
+
+Grubunun bulunduğu yer: yerin görseli ve adı, çevresindeki yerler, varsa yerin haritası, orada kimlerin olduğu ve şu anda olanlarla açık sahne. İzlediğin görev en üstte durur.
+
+### Çatışma
+
+Yalnızca bir çatışma sırasında. Üstte: tur, kimin hareket ettiği, sırada kimin olduğu. Altta: sıraların düzeni, her savaşçı durumuyla birlikte, grubun sayılarla ve düşmanlar sözcüklerle; karakterinin elinin altındakiler (zırh sınıfı, can puanları, saldırılar); yerin haritası, hareket eden çevrelenmiş olarak. Sıran geldiğinde, hangi bölümde olursan ol, Çatışma bağlantısı altın renkle atar.
+
+### Günlük
+
+Üç sekme:
+
+- **Görevler**: etkin, tamamlanmış ve başarısız olanlar, her biri hedefleriyle, zamanlayıcı olarak son tarihiyle ve saatleriyle bir kart. Yıldız bir görevi izler.
+- **Hikâye**: kampanyanın bölümleri, sahne sahne, en son olan ilk.
+- **Notlar**: kendi notların, birini paylaşana kadar özel.
+
+### Dünya
+
+Karakterinin bildiği haliyle dünya haritası, geri kalanın üstünde sisle. Taşımak için sürükle, yakınlaştırmak için tekerleği kullan ya da çimdikle. Bir yerin kartı için ona tıkla. Yerlerin listesi, en yakın olan ilk, yanında durur. Birden fazla harita varsa (bir şehir, bir kıta, başka bir boyut) sekmeler aralarında geçiş yapar.
+
+### Zar tepsisi
+
+Zar düğmesi tepsiyi açar: zarları ve bir değiştirici seç, at. Aynı türden iki ya da daha fazla zarda hangilerinin sayılacağını seç: **Hepsi**, **Yüksek** (yalnızca en yüksek) ya da **Düşük** (yalnızca en düşük). Seçtiğin zarlar **Kaldır**'a basana kadar kalır, böylece aynı hasar atışı her turda tek tıktır. Oyun yöneticisi bir atış isterken tepsi hangi zarların ona yanıt olduğunu söyler.
+
+### Kayıtlar
+
+Kayıtların, en yeni en üstte; her biri yeriyle, oyun tarihiyle ve ne zaman yapıldığıyla. **Şimdi kaydet** (serbest kayıtlarla), **Buraya dön** ve kırmızı olan **Baştan başla**, iki adımda. Bkz. [Kayıtlar ve geri dönmek](#38-saves-and-going-back).
+
+### Ayarlar
+
+Ayarların gruplar halinde: oyun, oyunu öğrenmek (akıl hocası ve sana zaten açıklanmış kurallar), zarlar ve ölçüler, kısıtlamalar (sınırlar ve perdeler), görseller, dil. Seçmek için bir değere tıkla, altında ne anlama geldiği yazar. Sonra yalnızca bu tarayıcıda tutulan sayfanın kendi tercihleri: tema, zarların sesi, **zar seti** (reçine, metal, ahşap, taş), yuvarlak ya da keskin kenarlar, elle atmak.
+
+Oyun yöneticisinin kendi ayarları, örneğin ev kuralları ve emsaller burada değil. Onlar sohbette kalır.
+
+### Yardım ve Hakkında
+
+**Yardım**: bu kılavuz. **Hakkında**: RPG Engine nedir, bağlantıları, lisansları ve oyun sisteminin emeği geçenleri.
+
+### Oyundan önce: Ayarlar ve sıfırıncı oturum
+
+Yeni bir kampanya ilk adımı olan **Ayarlar**'dayken sayfanın tamamı sorularını sorar: her seferinde bir soru, her biri değerlerinin anlamıyla ve önerilenle. **Sen karar ver** bir soruyu oyun yöneticisine bırakır, sınırlar ve perdeler hariç. Onlar her zaman senindir. **Atla** soruyu sonraya bırakır. En sonda **Hazırım**.
+
+### Sayfadan mesajlar
+
+Bazen sayfa üstünde bir bildirim gösterir: kampanyanın dosyalarında bir sorun (oyun yöneticisi düzeltir), oyunun uzakta olması (sohbet kapalı), sayfanın çevrilmesi.
+
+---
+
+## 5. Oyun sistemleri ve ev kuralları <!-- icon: dice -->
+
+### 5.1 Oyun sistemi nedir
+
+Oyun sistemi, tek bir oyunun verisidir: karakter kağıdı, sayıları, yaratıkları, eşyaları, büyüleri ve kural metni. Her kampanya tek bir sistem oynar.
+
+RPG Engine, dijital bir karakter kağıdının yaptığı gibi karakter kağıdını ve harcananı ve geri geleni, örneğin can puanlarını ve büyü yuvalarını hesaplar. Bir özelliğin ya da büyünün nasıl çalıştığını oyun yöneticisi kurallardan okur ve masadaki gibi karar verir.
+
+### 5.2 Beşinci sürüm, dahil
+
+RPG Engine, System Reference Document 5.1'den (2014 kuralları, Creative Commons altında ücretsiz) **5e** ile gelir. İçinde şunlar var:
+
+- SRD'nin ırkları, sınıfları, alt sınıfları, bir geçmişi ve bir yeteneği;
+- 319 büyü, silahlar, zırhlar ve ekipman, büyülü eşyalar ve SRD'nin canavarları;
+- oyun yöneticisinin tam metinleriyle aradığı kural bölümleri;
+- hesaplanmış tam karakter kağıdı: yetenek değiştiricileri, kayıt atışları, beceriler, zırh sınıfı, saldırılar, büyü kurtarma zorluk sınıfı, yuvalar, vuruş zarları, seviyeye göre özellikler, deneyim ve seviye atlama;
+- geri getirmesi gerekeni geri getiren dinlenmeler; kural metinleriyle durumlar; konsantrasyon hatırlatmaları.
+
+**SRD'nin ötesindeki içerik.** Beşinci sürümü, SRD'de olmayan içerikle oynayabilirsin, örneğin sahip olduğun bir kitaptan bir sınıf ya da bir canavar. Oyun yöneticisi oyunu bilir, kitaplarını okuyabilir ve webde arama yapabilir. İhtiyacı olanı kampanyanın sayfaları olarak yazar ve RPG Engine onlarla aynı şekilde çalışır. Bizim sunduğumuz, lisansıyla sınırlıdır. Oyun yöneticisinin bildiği sınırlı değildir.
+
+RPG Engine beşinci sürümle uyumludur.
+
+### 5.3 Ev kuralları ve kendi eklemelerin
+
+Hiçbir dosyaya dokunman gerekmez. Oyun yöneticisine sor:
+
+> [Ev kuralı: saldırıda doğal 1, silahını düşürmen demek.]
+>
+> [Bir Blood Hunter oynamak istiyorum. Kitap bende: sınıf özellikleri şunlar.]
+>
+> [Bu kampanyada kısa bir dinlenme 10 dakika sürüyor.]
+
+Oyun yöneticisi bunları kampanyana şu yollardan biriyle kaydeder:
+
+- **Masanın bir anlaşması**, sözcüklerle. Yukarıdaki düşen silah ya da kısa dinlenme gibi. Oyun yöneticisi onu kampanyanın ayarlarıyla birlikte tutar ve bundan sonra ona göre oynar. Oyun yöneticisinin kitapta olmayan bir kararı da aynı şekilde **emsal** olarak saklanır.
+- **Yeni bir sayfa**, örneğin bir sınıf, bir ırk ya da bir eşya. Yeni bir sınıf sistemin sınıfı gibi çalışır: seviyen, vuruş zarların ve özelliklerin onu sayar. Yeni bir ırk var olan birinin üstüne kurulabilir ("Elf gibi, artı…"). Adı olan bir kılıç Uzun Kılıç'ın üstüne kurulabilir.
+- **Karakter kağıdı için yeni sayılar**: bir alan, bir tablo, bir formül, dinlenmenin geri getirdiği bir sayaç. Örneğin kısa dinlenmede geri dönen bir Battle Master'ın üstünlük zarları. Bir ev kuralı sistemin formüllerinden birinin yerini de alabilir.
+
+Önceden yazılmış ev kuralların varsa onları kampanyanın `rules` klasörüne metin dosyaları olarak da koyabilirsin (bkz. [kampanya klasörü](#8-for-the-curious-the-campaign-folder)). Oyun yöneticisi onları, kitabın aynı adlı kuralından önce okur.
+
+### 5.4 Kendi oyun sistemini eklemek ya da içe aktarmak
+
+Bugün RPG Engine yalnızca beşinci sürümü oynar. Başka oyun sistemleri gelecek. Kendi sistemini eklemenin ya da sahip olduğun bir oyunu kılavuzlarından bir sisteme çevirmenin yolu da gelecek. Bkz. [Daha sonra gelecekler](#9-coming-later).
+
+---
+
+## 6. Uzantılar <!-- icon: plus -->
+
+**Uzantılar henüz mevcut değil.** Bir uzantı, bir kampanyaya oyun sisteminin üstüne bir şey ekler: bir dünya, bir macera, hava durumu ya da tarot destesi gibi bir özellik, paylaşılacak ev kuralları. Her kampanyanın hangilerini kullanacağını sen seçeceksin. Beşinci sürüm için planlanan ilk uzantılar hava durumu ve kilit açma.
+
+---
+
+## 7. Bir kampanya nereden gelir ve dili <!-- icon: world -->
+
+### 7.1 Dünya edinmenin üç yolu
+
+**Anında yapılan.** Kurulumda bir temel fikir verirsin ve oyun yöneticisi dünyayı ilerledikçe kurar: her yeri, kişiyi ve olay örgüsünü tam ihtiyacın olmadan önce, ve o andan sonra saklanır. Oynamanın en hızlı yolu budur: kur, oluştur ve birkaç dakika içinde karakterini yaratıyorsun. Uydurulan hiçbir şey kaybolmaz: söylendi mi yazılır ve doğru kalır.
+
+**Başta hazırlanan.** Aynı temel fikir, ama **hazırlık: all at the start** ile. Oyun yöneticisi oyun başlamadan önce dünyanın yerlerini, hizip­lerini, tehditlerini ve planlarını kurar. İlk oturum daha geç başlar, ama perde arkasında daha fazlası hazırdır.
+
+**Var olan bir kampanyadan ya da maceradan.** Bugün içe aktarma düğmesi yok. Oyun yöneticisine macerani ver (yapay zekâ ortamının okuyabileceği bir metin ya da PDF) ve kurmasını iste:
+
+> [Bu maceraya PDF olarak sahibim. Bunu kampanyamız olarak kur: oku, yerlerini, karakterlerini ve sırlarını yaz. İçindeki hiçbir şeyi bana söyleme.]
+
+Oyun yöneticisi bunu yapay zekâ ortamının araçlarıyla okur ve sırlar dahil kampanyanın sayfaları olarak yazar. Sırları oyunda keşfedeceksin. Claude Code PDF okur. Codex ile bir metin ya da markdown dosyası daha güvenli bir seçimdir. Bunu kurulum sırasında, sıfırıncı oturumdan önce yap.
+
+Oyun yöneticisi çalışırken okuduğunun ya da yazdığının ayrıntılarını açma (Claude Code'da ctrl+o). Macera metnini, sırlarıyla birlikte gösterirler. Oyun yöneticisinin kendisi sırları, her zamanki gibi, saklar.
+
+Kampanyanın kendi sayfaları olur olmaz kurulum temel fikir ve hazırlık sormayı bırakır. Yazılı bir kampanyada bile, metnin kapsamadığı bir yere gittiğinde oyun yöneticisi gerekeni yaratır ve kaydeder.
+
+**Bir kampanya bir kez oynanır.** Aynı macerayı yeniden oynamak için yeni bir kampanya oluştur. Bir kampanya içinde, kayıtlar ayarının izin verdiği ölçüde yine de bir kayda dönebilir ya da baştan başlayabilirsin.
+
+### 7.2 Diller
+
+**Kampanya başına tek dil**: oyun yöneticisininki. Oyun yöneticisi o dilde yazar ve gösterge paneli onu izler. Oyun yöneticisi dili nasıl yazdığından alır ve onaylar.
+
+**Gösterge paneli** İngilizce ve İtalyanca (özenle hazırlanmış) ve 24 dille daha gelir: Fransızca, Almanca, İspanyolca, Portekizce (Brezilya), Felemenkçe, İsveççe, Norveççe, Danca, Fince, İzlandaca, Rusça, Ukraynaca, Lehçe, Çekçe, Rumence, Macarca, Yunanca, Türkçe, Arapça, İbranice, Hintçe, Çince, Japonca, Korece. Arapça ve İbranice sağdan sola okunur: sayfa aynalanır, haritalar ve zarlar çizildiği gibi kalır.
+
+**Ayarlar'da seçtiğin başka herhangi bir dil**, bilgisayarında, arka planda, Codex ya da Claude Code tarafından kendi girişinle çevrilir, açık olan bölümden başlayarak. Her dil için bir kez yapılır ve tüm kampanyaların için geçerlidir. Hazır olana kadar sayfa İngilizcedir. Ayarlar sana çevirinin sürüp sürmediğini, hazır olup olmadığını ya da bilgisayarında mümkün olup olmadığını söyler.
+
+**Oyunun sözcükleri.** Beşinci sürüm kendi terimlerini resmî İtalyanca SRD'den İtalyanca getirir. Böylece İtalyan oyuncular *Classe Armatura*, *tiro salvezza*, *vantaggio* okur. Diğer dillere sistemin terimleri çevrilerek verilir.
+
+**Oyun sisteminin kendi metni** (büyüler, canavarlar, kural bölümleri) İngilizce kalır. Oyun yöneticisi onu okur ve sana kendi dilinde anlatır.
+
+**Kampanya ortasında dil değiştirmek**, yazılmış sayfaları olduğu gibi bırakır. Oyun yöneticisi yenilerini yeni dilde yazar.
+
+---
+
+## 8. Meraklısına: kampanya klasörü <!-- icon: list -->
+
+Hiçbir zaman açman gerekmez. Açarsan **kampanyanın sırlarını içerdiğini** bil: okumak oyunu bozar.
+
+Bir kampanya klasörünün içinde şunlar var:
+
+- `campaign.yaml`: ayarların;
+- `state.yaml`: oyunun şimdi nerede olduğu: aşaması, tarih, açık sahne;
+- `world/`: her karakter, yer, hizip, görev, eşya, olay, konu ya da yaratık için markdown dosyası olarak bir sayfa;
+- `rules/`: eklersen ev kuralların metin dosyaları olarak (`init` bunu oluşturmaz);
+- `images/`: görseller, varsa;
+- `log.jsonl`: her değişiklik, sırayla;
+- `.saves/`: kayıtlar, ilkinden başlayarak;
+- `.player/`: Günlük'teki kendi notların, oyun yöneticisi bunları okumaz;
+- `sessions/`: RPG Engine tarafından tutulur;
+- `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.claude/`, `.codex/`, `.gemini/`: yapay zekâ ortamlarına RPG Engine'in nerede olduğunu söyleyen ve hafızalarını kapalı tutan küçük dosyalar. RPG Engine bunları güncel tutar. Olduğu gibi bırak.
+
+Sayfalar, `[[Rocca]]` gibi bağlantılarla düz markdowndır, Obsidian'ın biçimi. Oyun yöneticisinin defteri orada açılabilir. **Bir sayfayı elle değiştirirsen** oyun yöneticisi neyin değiştiğini bir sonraki yanıtında öğrenir.
+
+**Komut satırı.** Oyun yöneticisinin yaptığı her şey, senin de kampanya klasöründe çalıştırabileceğin komutlardan geçer. Oynamak için onlara hiç ihtiyacın yok, ve çoğu, `rpg status` ve `rpg show` gibi, kampanyanın sırlarını yazdırır. `rpg --help` hepsini listeler, `rpg roll --help` birini açıklar. Bir sohbet açıkken bir şeyi değiştiren komut sorun değil: oyun yöneticisi, elle değiştirilen bir sayfada olduğu gibi, bir sonraki yanıtında öğrenir.
+
+---
+
+## 9. Daha sonra gelecekler <!-- icon: hourglass -->
+
+Planlanan ama henüz olmayanlar:
+
+- **Oyun yöneticisi olarak sen**: oyunu sen yönetirsin, yapay zekâ grubu oynar.
+- **Masada birkaç kişi**, her biri kendi rolüyle.
+- **Uzantılar**: ayarlar, maceralar, özellikler ve ev kuralları, kampanya başına seçilir.
+- Kılavuzlarını ve maceralarını **içe aktarma**.
+- **Başka oyunlar**: daha fazla oyun sistemi ve kendi sistemin.
+- **Yazar modu**: yapay zekâyla bir kampanya ya da macera yap ve başkaları oynasın diye paylaş.
+
+---
+
+## 10. Sorular ve sorunlar <!-- icon: info -->
+
+### Sorular
+
+**Kuralları bilmem gerekir mi?** Hayır. Tutorial akıl hocasını seç, oyun yöneticisi sana ilerledikçe, her seferinde tek bir kuralı öğretir. Her zaman parantez içinde sorabilirsin.
+
+**Oyun yöneticisi hile yapabilir mi?** RPG Engine'in yaptığı bir atışı değiştiremez, story zorluğu hariç, ve zaten belirlenmiş gerçekleri asla değiştirmez. Herhangi bir atışın gerçek olup olmadığını sorabilirsin.
+
+**Ben hile yapabilir miyim?** Deneyebilirsin. Oyun yöneticisi gerçekler konusunda sözüne güvenmez: mesajındaki bir oyun mesajına benzeyen satır yine yalnızca senin sözlerindir ve oyun yöneticisi sırlar hakkındaki tahminlerini asla doğrulamaz.
+
+**Bir maliyeti var mı?** RPG Engine ücretsizdir. Oyun yöneticisi kendi Claude ya da ChatGPT planında çalışır ve bir akşamlık oyun uzun bir sohbettir: en küçük planlarda akşam bitmeden planın sınırına ulaşabilirsin. Görseller ve çeviriler aynı planı kullanır.
+
+**Telefonumda oynayabilir miyim?** Hayır. Oyun yöneticisi bilgisayarında çalışır ve gösterge paneli yalnızca o bilgisayarın tarayıcısında açılır.
+
+**Arkadaşlarımla oynayabilir miyim?** Henüz değil: bugün tek oyuncu, tek karakter, artı yoldaşlar. Masada birkaç kişi rollerle gelecek.
+
+**Bir dahaki sefere farklı bir yapay zekâ kullanabilir miyim?** Evet. Kampanya dosyalarında yaşar: onu başka bir ortamda aç ve *devam* yaz.
+
+**Tarayıcıyı kapatırsam ne olur?** Hiçbir şey kaybolmaz. Sohbet açıkken bağlantıyı yeniden aç, sayfa oyunun olduğu yerde geri gelir.
+
+**Sahip olduğum D&D içeriğiyle oynayabilir miyim?** Evet. Oyun yöneticisi kitaplarını, kendi bilgisini ve web'i kullanabilir. RPG Engine'in sunduğu ücretsiz içerikle sınırlıdır. Oyununun kullandığı sana kalmış.
+
+### Sorunlar
+
+**Gösterge paneli açılmıyor.** Oyun yöneticisinden bağlantıyı iste: `[Gösterge panelinin bağlantısı ne?]`. Sayfa yalnızca o kampanyada oyun yöneticisiyle bir sohbet açıkken ve yalnızca oyun yöneticisinin o sohbetteki ilk yanıtından sonra çalışır. Sohbet kapalıyken tarayıcı sayfaya ulaşamaz. Açık kalan bir sayfa *Not connected* der.
+
+**Oyun yöneticisi oyunu bilmiyor gibi ya da olmayan araçlar uyduruyor.** Yapay zekâ ortamın RPG Engine'i yüklemedi.
+
+- Önce ortamı **kampanya klasöründe** başlattığını ve ona güvendiğini söylediğini kontrol et.
+- **Claude Code**: `/mcp` yaz. `rpg` oradaysa ama başarısız olduysa onu seç, sonra **Reconnect**'i seç. Yoksa Claude Code'u kapat, kampanya klasöründe `claude mcp reset-project-choices` yaz ve yeniden başlat.
+- **Codex**: kampanya klasöründe bir terminalde `codex mcp list` yaz. `rpg` yoksa Codex klasöre güvenmiyor demektir: onu orada yeniden başlat ve sorduğunda evet de.
+- İkisinde de: terminalde `rpg --version` komutun bulunamadığını söylüyorsa RPG Engine'i yeniden kur ([2.2](#22-install)) ve yeni bir terminal aç.
+
+**Güncellemeden sonra hiçbir şey değişmedi.** Çalışan bir oyun yöneticisi başladığı sürümü korur. Yeni bir sohbet aç ya da Claude Code'da sunucuyu yeniden bağla (`/mcp`, sonra `rpg`, sonra **Reconnect**).
+
+**Oyun yöneticisi geri aldığım bir şeyi hatırlıyor.** Bir kayda döndün ama aynı sohbette oynamaya devam ettin. Yeni bir sohbet aç ve Kayıtlar'da **Yeni sohbet açtım**'a bas.
+
+**Oyun yöneticisi sayfada zaten yanıtladığım kurulum sorularını soruyor.** Ona söyle: `[Onları gösterge panelinde seçtim.]`
+
+**Hiç görsel çıkmıyor.** Ayarlar > Görseller'i aç: bu bilgisayarın görsel yapıp yapamadığını ve yapamıyorsa adımları söyler, her komut kopyalamak için bir düğmeyle.
+
+**Sayfa İngilizce ama başka bir dil seçtim.** Arka planda çevriliyor. Ayarlar nasıl gittiğini söyler. Bu bilgisayarda Codex ya da Claude Code yoksa İngilizce kalır.
+
+**Oyun yöneticisi kampanyada sorunlar olduğunu söylüyor.** Onları kendisi düzeltir. Dosyaları elle düzenlediysen ne demek istediğini sana sorabilir.
+
+**Windows: `npm` klasörümde başarısız oluyor.** Kampanyayı ya da RPG Engine'i `&` içeren bir yolun altında tutma.
+
+**Kurulum başarısız oluyor ya da `rpg` başlamıyor.** Node.js sürümünü `node --version` ile kontrol et: 22 ya da daha yeni olmalı. Daha eskiyse [nodejs.org](https://nodejs.org) adresinden LTS sürümünü kur, sonra RPG Engine'i yeniden kur.
+
+**Gösterge paneli bağlantısı değişti.** Başka bir program kampanyanın olağan adresini kullanıyordu ya da Windows onu ayırmıştı. RPG Engine başka bir adres aldı. Oyun yöneticisi sana yeni bağlantıyı verir. Başka hiçbir şey değişmez.

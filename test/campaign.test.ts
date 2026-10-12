@@ -109,7 +109,9 @@ describe("rpg init", () => {
         // Codex: the rpg server, waiting for the player's click, and its memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself.
         const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
         expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
-            `[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${rpg.args.map((arg) => `"${arg}"`).join(", ")}]\ntool_timeout_sec = 1800\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
+            `[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
+                rpg.args.map((arg) => `"${arg}"`).join(", ")
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(JSON.parse(readFileSync(join(folder, "nuova", ".gemini", "settings.json"), "utf8"))).toEqual({
             mcpServers: { rpg },

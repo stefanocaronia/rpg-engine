@@ -31,7 +31,7 @@ export const image = defineCommand({
         + "It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; "
         + "a page without one shows the picture of the page it derives from, such as a goblin's icon. "
         + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. "
-        + "For a place or a quest, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows (D-308, D-388): for a place what the party sees arriving, "
+        + "For a place or a quest, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
         + "for a quest what the character knows of it, never what they do not know. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
     group: "game",

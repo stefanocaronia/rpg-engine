@@ -151,6 +151,12 @@ export function iconPath(name: IconName): string
     return iconPaths[name];
 }
 
+/** Whether a name, as a text names it, is one of the page's pictures. */
+export function isIconName(name: string): name is IconName
+{
+    return Object.hasOwn(iconPaths, name);
+}
+
 /** A control's picture, such as the bin that clears the dice. */
 export function Icon({ name }: { name: IconName; })
 {

@@ -1,4 +1,6 @@
-// Completes the page's words in every language the package ships (D-394), and the words of each game system that has them in Italian (D-403): each phrase of
+// Completes the page's words in every language the package ships (D-394), the words of each game system that has them in Italian (D-403), and the guide
+// (D-413), translated from the English part by part where a language lacks a part or has one from an older English, kept only when it keeps the English's
+// headings, links and code (test/i18n/guide.ts). Each phrase of
 // the page, or word of a system, that a language's file lacks is translated by Claude Code (Sonnet at medium effort, with the developer's own login, without
 // tools, settings or a session kept), kept only when it keeps its {names}, and written to src/dashboard/i18n/<code>.json or systems/<name>/words/<code>.yaml;
 // what the page or the Italian list no longer has goes. The Italian, curated, shows what each phrase or word means; the glossary (test/i18n/glossary.json)
@@ -17,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import { parse, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/labels.ts";
 import { shippedLanguages } from "../../src/dashboard/text.ts";
+import { englishGuide, guideFolder, guideIn, guideParts, guideShape, marksOf, partMarks, translationHead } from "./guide.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./phrases.ts";
 
 /** A game term of the glossary: what it means on the page, the other English forms it takes, and its word in each language by code. */
@@ -97,6 +100,8 @@ for (const target of targets) {
         console.log(`${target.name} ${language}: ${Object.keys(written).length} written${left > 0 ? `, ${left} still missing: run it again` : ""}`);
     }
 }
+
+await translateGuides();
 
 /** The page's phrases (D-394): a JSON file for each shipped language, the phrases in order. */
 async function pageTarget(): Promise<Target>
@@ -218,6 +223,85 @@ function termLines(language: string, name: string, batch: Entry[]): string[]
     });
 }
 
+/**
+ * The guide in each language, part by part (D-413): the parts whose English changed, or that a language lacks, in one request for the language, with the
+ * page's words they name and the game's terms; the others kept as they are, by the mark of their English. Written only when every part translated keeps
+ * the English's headings, links and code.
+ */
+async function translateGuides(): Promise<void>
+{
+    const english = englishGuide();
+    const parts = guideParts(english);
+    const marks = partMarks(english);
+    const jobs = languages.flatMap((language) => {
+        const own = guideIn(language) ?? "";
+        const ownMarks = marksOf(own);
+        const ownParts = guideParts(own);
+        const known = new Map(ownMarks.length === ownParts.length ? ownMarks.map((mark, index) => [mark, ownParts[index]]) : []);
+        const stale = marks.flatMap((mark, index) => (known.has(mark) ? [] : [index]));
+        return stale.length === 0 && ownMarks.join() === marks.join() ? [] : [{ language, known, stale }];
+    });
+    console.log(`guide: ${jobs.length === 0 ? "every language up to date" : `${jobs.length} languages to bring up to date`}`);
+    await inTurn(jobs, async ({ language, known, stale }) => {
+        const translated = stale.length === 0 ? [] : await translatedParts(language, stale.map((index) => parts[index] ?? ""));
+
+        if (translated === undefined) {
+            console.log(`guide ${language}: not kept, its headings, links or code are not the English's: run it again`);
+            return;
+        }
+
+        const text = marks.map((mark, index) => known.get(mark) ?? translated[stale.indexOf(index)] ?? "");
+        writeFileSync(join(guideFolder, `${language}.md`), `${translationHead(marks)}\n${text.join("\n\n")}\n`);
+        console.log(`guide ${language}: ${stale.length} of ${parts.length} parts translated`);
+    });
+}
+
+/** Parts of the English guide in a language, in their order; undefined when the answer has not as many, or one loses its headings, links or code. */
+async function translatedParts(language: string, englishParts: string[]): Promise<string[] | undefined>
+{
+    const answer = markdownOf(await claudeSays(guideBrief(language, englishParts.join("\n\n")), "You translate a user guide written in markdown. You reply with the translated markdown alone."));
+    // The lead comes first when it is asked, and is empty when it is not.
+    const answered = guideParts(answer);
+    const own = englishParts[0]?.startsWith("## ") === true ? answered.slice(1) : answered;
+    return own.length === englishParts.length && own.every((part, index) => guideShape(part) === guideShape(englishParts[index] ?? "")) ? own : undefined;
+}
+
+/** What a request for the guide in a language says: how to translate it, the page's words and the game's terms it holds, then the English. */
+function guideBrief(language: string, english: string): string
+{
+    const name = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
+    const phrases = readPhrases(language);
+    const marked = new Set([...english.matchAll(/\*\*([^*]+)\*\*|\*([^*]+)\*/g)].map((match) => (match[1] ?? match[2] ?? "").replace(/[.:,]$/, "")));
+    const pageWords = [...marked].flatMap((words) => (phrases[words] === undefined ? [] : [`  - ${words}: ${phrases[words]}`]));
+    const terms = termLines(language, name, [{ id: "guide", english }]);
+    return [
+        `Translate this user guide of RPG Engine, or these parts of it, into ${name} (${language}). RPG Engine lets a player play a tabletop role-playing game`,
+        "with an AI game master in a chat (Claude Code or Codex), with a page in the browser beside it, the dashboard. The reader is a player who does not program.",
+        `- Write natural, clear ${name}, in short sentences, as the manual of a well-made game would.`,
+        `- How it speaks: ${glossary.voice[language] ?? "address the player informally, where the language has an informal you."}`,
+        "- Keep the markdown as it is: the same headings, in the same order and levels, each with its <!-- icon: ... --> comment untouched; the same lists,",
+        "  tables, quotes and blank lines.",
+        "- Keep each link's target in parentheses exactly, such as (#24-connect-your-ai) or a web address; translate the link's words.",
+        "- Keep each block of code between ``` exactly: commands, and what a command prints. In `inline code`, keep commands, file names, keys and paths as",
+        "  they are; translate a line the player writes to the master, such as `[What's the dashboard link?]`.",
+        "- Keep the names of products and programs: RPG Engine, Claude Code, Codex, ChatGPT, Node.js, npm, Obsidian. What Claude Code and Codex show stays in",
+        `  English, as they show it (Yes, I trust this folder; No, exit). Menu items of Windows and macOS as those systems name them in ${name}.`,
+        "- The Italian terms the guide gives as examples (Classe Armatura, tiro salvezza, vantaggio) stay as they are.",
+        "- Where it speaks of the player or a character, prefer words that do not mark gender.",
+        ...(pageWords.length === 0 ? [] : [`- The dashboard's own words, in bold or italic in the guide, exactly as the page shows them in ${name}:`, ...pageWords]),
+        ...(terms.length === 0 ? [] : [`- The game's terms, as players of tabletop role-playing games say them in ${name}: use these words, the same everywhere.`, ...terms]),
+        "Answer with the translation alone, in markdown, from its first line to its end, its parts in the same order.",
+        "",
+        english,
+    ].join("\n");
+}
+
+/** The markdown of Claude's answer, without a fence around the whole of it. */
+function markdownOf(answer: string): string
+{
+    return answer.trim().replace(/^```(?:markdown|md)?\n([\s\S]*)\n```$/, "$1").trim();
+}
+
 /** A language's phrases from its file; none when it has no file yet. */
 function readPhrases(language: string): Record<string, string>
 {
@@ -255,9 +339,15 @@ function translated(target: Target, language: string, batch: Entry[]): Promise<R
         "",
         JSON.stringify(batch, null, 1),
     ].join("\n");
+    return claudeSays(brief, "You translate the words of software interfaces. You reply with a JSON object alone.").then(answerOf);
+}
+
+/** What Claude Code answers a brief, with the system prompt given: the text of its result, empty when it gave none. */
+function claudeSays(brief: string, system: string): Promise<string>
+{
     const folder = mkdtempSync(join(tmpdir(), "rpg-translate-"));
     const command = `claude -p --model sonnet --effort medium --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
-        + `--disable-slash-commands --system-prompt "You translate the words of software interfaces. You reply with a JSON object alone."`;
+        + `--disable-slash-commands --system-prompt "${system}"`;
 
     return new Promise((done) => {
         const child = spawn(command, { shell: true, windowsHide: true, cwd: folder, env: ownEnvironment(), stdio: ["pipe", "pipe", "pipe"] });
@@ -267,18 +357,27 @@ function translated(target: Target, language: string, batch: Entry[]): Promise<R
         child.stderr.on("data", () => undefined);
         child.on("close", () => {
             rmSync(folder, { recursive: true, force: true });
-            done(answerOf(output));
+            done(resultOf(output));
         });
         child.stdin.end(brief);
     });
 }
 
-/** The translations in Claude Code's answer: the JSON object in its result, whatever came around it. */
-function answerOf(output: string): Record<string, unknown>
+/** The text of Claude Code's result, from its JSON output; empty when it has none. */
+function resultOf(output: string): string
 {
     try {
         const result = (JSON.parse(output) as { result?: unknown; }).result;
-        const text = typeof result === "string" ? result : "";
+        return typeof result === "string" ? result : "";
+    } catch {
+        return "";
+    }
+}
+
+/** The translations in Claude's answer: the JSON object in it, whatever came around it. */
+function answerOf(text: string): Record<string, unknown>
+{
+    try {
         return JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as Record<string, unknown>;
     } catch {
         return {};
