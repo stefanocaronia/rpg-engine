@@ -26,6 +26,8 @@ export interface Roller
 {
     kinds: ReadonlySet<string>;
     roll(dice: DieThrow[], showing: Showing): Promise<boolean>;
+    /** Leaves the window's foot, this many pixels tall, to the plate of the next throws: no die lies under it (D-366). */
+    cover(pixels: number): void;
     hide(): void;
     resize(): void;
 }
@@ -88,6 +90,7 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
             dice.forEach((die, index) => die.rare !== undefined && stage.celebrate(index, die.rare, { instant, particles }));
             return true;
         },
+        cover: (pixels) => stage.cover(pixels),
         hide: () => stage.hide(),
         resize: () => stage.resize(),
     };

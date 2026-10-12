@@ -12,8 +12,8 @@ import type { Tray } from "./throw.ts";
 // A die that does not count, as the lower of two d20 with advantage, turns grey as its chip in the plate, whatever its set: its body mostly, its ink half way;
 // set aside, not made of glass (D-348).
 const dimmedBody = 0.8;
-// How much of the window's foot the plate of the result covers, in pixels: from the window's edge to the plate's top, on a wide screen and on a phone,
-// where it comes out of the bar of the sections.
+// How much of the window's foot the plate of the result covers, in pixels, until the plate of a throw is measured: from the window's edge to the plate's
+// top, on a wide screen and on a phone, where it comes out of the bar of the sections.
 const plateOnWide = 150;
 // The window's height up to which the dice grow with it, in pixels: a laptop's or a desktop's; past it they keep their size.
 const commonHeight = 900;
@@ -33,6 +33,8 @@ export interface Stage
     tray: Tray;
     /** Puts dice of these kinds, by the meshes given for each kind. */
     place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
+    /** Leaves the window's foot, this many pixels tall, to the plate of the throw: no die lies under it (D-366). */
+    cover(pixels: number): void;
     show(poses: (Pose | undefined)[]): void;
     /** Sets a die that does not count aside: grey a moment, then burnt away, or faded at once when shown instant (D-358). */
     dim(die: number, instant: boolean): void;
@@ -129,6 +131,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     };
 
     const tray: Tray = { width: 7, depth: 4.5 };
+    let covering: number | undefined;
     // The dice lie on a table that moves up the window as the tray ends above the plate.
     const table = new THREE.Group();
     scene.add(table);
@@ -150,11 +153,58 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         // The tray fills what the camera sees on the floor, but for the window's foot the plate covers: no die lies under it (D-366).
         const seen = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
         const far = Math.max(3, seen / 2 - 1.2);
-        const covered = (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide) / height * seen;
+        const covered = (covering ?? (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide)) / height * seen;
         const front = Math.max(6 - far, far - covered);
         tray.depth = (front + far) / 2;
         tray.width = Math.max(3, far * camera.aspect);
         table.position.z = (front - far) / 2;
+    };
+
+    // The crack of a natural 1 and the burn of a die set aside change the dice's shaders, and a rare face's halo and sparks have their own: made at the chosen
+    // set's first throw, while the dice fly, they cost no pause when a die cracks, burns or shines. The materials that keep them made, for that set's finish;
+    // the halo's and the sparks', and their pictures, for the page's life.
+    let primed: { finish: string; materials: THREE.Material[]; } | undefined;
+
+    const prime = (die: THREE.Object3D, finish: Finish): void => {
+        const key = `${finish.texture ?? ""} ${finish.shine > 0}`;
+
+        if (primed?.finish === key) {
+            return;
+        }
+
+        primed?.materials.forEach((material) => material.dispose());
+        const copies = new THREE.Group();
+
+        // A copy of the die with materials of its own; its grain the set's picture, or none, as a die set aside loses it once grey.
+        const copy = (grainless: boolean): THREE.MeshStandardMaterial[] => {
+            const object = die.clone();
+            const materials: THREE.MeshStandardMaterial[] = [];
+            object.traverse((part) => {
+                if (part instanceof THREE.Mesh) {
+                    const material = (part.material as THREE.MeshStandardMaterial).clone();
+                    material.map = material.map === null || grainless || finish.texture === undefined ? null : grain(finish.texture);
+                    part.material = material;
+                    materials.push(material);
+                }
+            });
+            copies.add(object);
+            return materials;
+        };
+
+        const cracked = copy(false);
+        crack(cracked, true);
+        const burnt = [copy(false), ...(finish.texture === undefined ? [] : [copy(true)])];
+        burnt.forEach((materials) => burnAway(new THREE.Group(), materials, false, () => undefined));
+        primed = { finish: key, materials: [cracked, ...burnt].flat() };
+
+        if (pictures === undefined) {
+            pictures = makePictures();
+            Object.values(pictures).forEach((texture: THREE.Texture) => renderer.initTexture(texture));
+            copies.add(new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshBasicMaterial({ map: pictures.halo, transparent: true, depthWrite: false })));
+            copies.add(new THREE.Sprite(new THREE.SpriteMaterial({ map: pictures.star, transparent: true, depthWrite: false })));
+        }
+
+        void renderer.compileAsync(copies, camera, scene);
     };
 
     const clear = (): void => {
@@ -170,8 +220,6 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
             });
         });
         effects.forEach((effect) => effect.dispose());
-        Object.values(pictures ?? {}).forEach((texture: THREE.Texture) => texture.dispose());
-        pictures = undefined;
         dice = [];
         effects = [];
     };
@@ -199,6 +247,16 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                 table.add(object);
                 return { object, materials };
             });
+            const first = dice[0];
+
+            if (first !== undefined) {
+                prime(first.object, look.finish);
+            }
+        },
+        cover(pixels)
+        {
+            covering = pixels;
+            resize();
         },
         show(poses)
         {

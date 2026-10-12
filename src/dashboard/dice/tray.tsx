@@ -73,6 +73,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     const asked = useRequested();
     const canvas = useRef<HTMLCanvasElement>(null);
     const shownPlate = useRef<HTMLDivElement>(null);
+    const measuredPlate = useRef<HTMLDivElement>(null);
     const button = useRef<HTMLButtonElement>(null);
     const controls = useRef<HTMLDivElement>(null);
     const tray = useRef<HTMLDivElement>(null);
@@ -155,6 +156,13 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
         setRolling(true);
         setPlate({ ...shown, shown: false });
         const loaded = await loadRoller();
+        // The plate is measured, unseen, before the dice fly: they land above it, however many rows its dice take (D-366).
+        await new Promise((painted) => requestAnimationFrame(painted));
+        const plateTop = measuredPlate.current?.getBoundingClientRect().top;
+
+        if (plateTop !== undefined && plateTop > 0) {
+            loaded?.cover(window.innerHeight - plateTop);
+        }
 
         try {
             const toThrow = loaded === undefined ? [] : diceToThrow(given.dice, loaded.kinds);
@@ -357,6 +365,9 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                 aria-live="polite"
             >
                 {plate?.shown && <PlateContent plate={plate} />}
+            </div>
+            <div ref={measuredPlate} class={["dice-result", "measured", plate?.free ? "free" : "", plate?.rare === undefined ? "" : plate.rare.face].filter((name) => name !== "").join(" ")} aria-hidden="true">
+                {plate !== undefined && !plate.shown && <PlateContent plate={plate} />}
             </div>
             {open && <div class="tray-scrim" aria-hidden="true" />}
             <div ref={controls} class="dice-controls">
