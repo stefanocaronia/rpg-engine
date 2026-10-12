@@ -1387,8 +1387,8 @@ a {
     z-index: 2;
     display: -webkit-box;
     grid-row: 3;
-    margin: 0;
-    padding: 0 16px 12px;
+    margin: 0 0 12px;
+    padding: 0 16px;
     overflow: hidden;
     color: #f3f4fa;
     font-size: 1.3rem;
@@ -1426,7 +1426,8 @@ a {
 
 @media (max-width: 600px) {
     .quest-cover .quest-name {
-        padding: 0 14px 10px;
+        margin-bottom: 10px;
+        padding: 0 14px;
         font-size: 1.15rem;
     }
 
@@ -1966,11 +1967,11 @@ a {
     color: var(--gold);
 }
 
-/* On a phone the followed quest takes two lines: its name, its clock and its time, then its next goal the whole width. */
+/* On a phone the followed quest takes two lines: the star and its picture on the left of both, its name, its clock and its time, then its next goal. */
 @media (max-width: 600px) {
     .followed {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        grid-template-columns: auto auto minmax(0, 1fr) auto auto;
         row-gap: 2px;
     }
 
@@ -1978,25 +1979,35 @@ a {
         display: contents;
     }
 
-    .followed-name {
-        grid-row: 1;
+    .followed > .followed-star {
+        grid-row: 1 / span 2;
+        grid-column: 1;
+    }
+
+    .followed > .followed-picture {
+        grid-row: 1 / span 2;
         grid-column: 2;
     }
 
-    .followed > .clock-face {
+    .followed-name {
         grid-row: 1;
         grid-column: 3;
     }
 
-    .followed > .quest-deadline {
+    .followed > .clock-face {
         grid-row: 1;
         grid-column: 4;
     }
 
+    .followed > .quest-deadline {
+        grid-row: 1;
+        grid-column: 5;
+    }
+
     .followed-next {
         grid-row: 2;
-        grid-column: 1 / -1;
-        padding-left: 6px;
+        grid-column: 3 / -1;
+        padding-left: 0;
     }
 }
 
@@ -3293,6 +3304,24 @@ a {
 .groups {
     columns: 300px;
     column-gap: 14px;
+}
+
+/* A narrow sheet, as beside the rolls under a thousand pixels: the rail goes above the cards, in a row, so that the cards keep their width. */
+.sheet {
+    container-type: inline-size;
+}
+
+@container (max-width: 640px) {
+    .sheet-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sheet-body > .rail {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        align-items: start;
+        gap: 0 14px;
+    }
 }
 
 /* The sheet's cards in columns that stay (D-383): each card in its column, whatever opens or closes. */

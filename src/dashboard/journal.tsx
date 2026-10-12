@@ -164,7 +164,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                     {open && quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
                     {quest.main && <span class="quest-badge">Main</span>}
                 </div>
-                <h4 class="quest-name" id={id}>{quest.name}</h4>
+                <h4 class="quest-name" id={id} title={quest.name}>{quest.name}</h4>
             </header>
             {from.length > 0 && <p class="quest-from">{from.join(" · ")}</p>}
             {quest.text !== "" && (
