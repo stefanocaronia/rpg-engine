@@ -148,7 +148,7 @@ export function About({ product, system }: { product: string; system?: { name: s
             )}
             <details class="group about-card" open>
                 <CardHeader icon={iconPath("pencil")} title={<h3>{t("Development notes")}</h3>} open onToggle={() => undefined} fixed />
-                <p>{t("Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project maintainer.")}</p>
+                <p>{t("Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project's human maintainer.")}</p>
                 {/* Stefano's motto, as in his READMEs. */}
                 <p class="about-motto">
                     <strong>{t("We encourage everyone to use AI for their own purposes.")}</strong>

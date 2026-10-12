@@ -155,7 +155,7 @@
   "Description": "Leírás",
   "Desert": "Sivatag",
   "determined": "elszánt",
-  "Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project maintainer.": "MI-alapú kódoló ágensek segítségével fejlesztve. Mindent a projekt karbantartója tervez meg, ellenőriz és tesztel.",
+  "Developed with the help of AI coding agents. Everything is designed, reviewed and tested by the project's human maintainer.": "MI-alapú kódoló ágensek segítségével fejlesztve. Mindent a projekt emberi karbantartója tervez meg, ellenőriz és tesztel.",
   "Development notes": "Fejlesztési megjegyzések",
   "Dice": "Kockák",
   "Dice and measures": "Kockák és mértékegységek",
