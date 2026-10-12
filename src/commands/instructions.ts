@@ -2,7 +2,7 @@ import { z } from "zod";
 import { findCampaign, readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
-import { buttonsInstructions, masterInstructions } from "../instructions/index.ts";
+import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
 import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -29,6 +29,8 @@ export const instructions = defineCommand({
             mentorText(context.folder, context),
             sceneText(context.folder, context),
             buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
+            // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
+            context.dashboard === undefined ? "" : dashboardInstructions(),
         ];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },
