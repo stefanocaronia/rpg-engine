@@ -105,6 +105,24 @@ describe("the dice of the dashboard (D-278)", () => {
         expect(knocks.some((knock) => !knock.onDie)).toBe(true);
     });
 
+    it("ends a throw of one or two dice with each lying flat on the floor: never on an edge, leaning on a wall or a die, nor on top of one (D-400)", () => {
+        const random = seeded(17);
+
+        for (const [kind, model] of Object.entries(models)) {
+            for (const [width, depth, count] of [[7, 4.5, 1], [3, 4.1, 2]] as const) {
+                for (let throwNumber = 0; throwNumber < 15; throwNumber++) {
+                    const last = throwDice(Array.from({ length: count }, () => model.shape), { width, depth }, random).frames.at(-1) ?? [];
+
+                    for (const die of last) {
+                        const up = rotate(die.quaternion, landedValue(model, die.quaternion).up);
+                        expect(up[1] / Math.hypot(...up), kind).toBeGreaterThan(Math.cos((3.5 * Math.PI) / 180));
+                        expect(Math.min(...model.shape.vertices.map((corner) => rotate(die.quaternion, corner)[1] + die.position[1])), kind).toBeLessThan(0.1);
+                    }
+                }
+            }
+        }
+    });
+
     it("knocks first when a die falls on the floor, never in the air as it leaves the hand, in a narrow tray too", () => {
         const random = seeded(13);
 
