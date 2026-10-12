@@ -1,12 +1,14 @@
 // The dashboard's dice (D-278): the seven dice of dice.json, which make-dice.py writes with Blender, their symmetries, a throw simulated and recorded, and the
 // number decided before the throw brought up by turning the die by one of its symmetries.
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { combine, diceToThrow, type DieModel, landedValue, landingTurn, rareFace, rotate, symmetries, type Vector } from "../src/dashboard/dice/models.ts";
-import { throwDice } from "../src/dashboard/dice/throw.ts";
+import { loadPhysics, throwDice } from "../src/dashboard/dice/throw.ts";
 
 const models = JSON.parse(readFileSync(new URL("../src/dashboard/assets/dice/dice.json", import.meta.url), "utf8")) as Record<string, DieModel>;
 const tray = { width: 7, depth: 4.5 };
+
+beforeAll(() => loadPhysics());
 
 /** A random source that repeats, from a seed: the same throws at every run. */
 function seeded(seed: number): () => number
@@ -105,13 +107,15 @@ describe("the dice of the dashboard (D-278)", () => {
         expect(knocks.some((knock) => !knock.onDie)).toBe(true);
     });
 
-    it("ends a throw of one or two dice with each lying flat on the floor: never on an edge, leaning on a wall or a die, nor on top of one (D-400)", () => {
+    it("ends a throw with each die lying flat on the floor: never on an edge, leaning on a wall or a die, nor on top of one, six dice on a computer's tray too (D-400)", () => {
         const random = seeded(17);
+        // A clock that stands still: the throw is taken again as often as it needs.
+        const still = (): number => 0;
 
         for (const [kind, model] of Object.entries(models)) {
-            for (const [width, depth, count] of [[7, 4.5, 1], [3, 4.1, 2]] as const) {
-                for (let throwNumber = 0; throwNumber < 15; throwNumber++) {
-                    const last = throwDice(Array.from({ length: count }, () => model.shape), { width, depth }, random).frames.at(-1) ?? [];
+            for (const [width, depth, count, throws] of [[7, 4.5, 1, 15], [3, 4.1, 2, 15], [9.7, 4.5, 6, 3]] as const) {
+                for (let throwNumber = 0; throwNumber < throws; throwNumber++) {
+                    const last = throwDice(Array.from({ length: count }, () => model.shape), { width, depth }, random, [], still).frames.at(-1) ?? [];
 
                     for (const die of last) {
                         const up = rotate(die.quaternion, landedValue(model, die.quaternion).up);
@@ -121,6 +125,24 @@ describe("the dice of the dashboard (D-278)", () => {
                 }
             }
         }
+    });
+
+    it("throws the same with the same randomness, a throw taken again included, its knocks within its frames (D-400)", () => {
+        const sixDice = Array.from({ length: 6 }, () => models.d6.shape);
+        const phone = { width: 3, depth: 4.1 };
+        const first = throwDice(sixDice, phone, seeded(23), [], () => 0);
+        const second = throwDice(sixDice, phone, seeded(23), [], () => 0);
+        expect(second).toEqual(first);
+        expect(first.knocks.every((knock, index) => knock.frame < first.frames.length && knock.frame >= (first.knocks[index - 1]?.frame ?? 0))).toBe(true);
+    });
+
+    it("takes the throw that leaned least once its time is spent: twenty dice crowd a phone's tray, and the throw ends with all of them (D-400)", () => {
+        let now = 0;
+        // A clock that runs a tenth of a second at each look: the budget is spent in a few tries.
+        const thrown = throwDice(Array.from({ length: 20 }, () => models.d6.shape), { width: 3, depth: 4.1 }, seeded(29), [], () => (now += 100));
+        expect(thrown.frames.length).toBeGreaterThan(0);
+        expect(thrown.frames.length).toBeLessThanOrEqual(8 * 60);
+        expect(thrown.frames.every((frame) => frame.length === 20)).toBe(true);
     });
 
     it("knocks first when a die falls on the floor, never in the air as it leaves the hand, in a narrow tray too", () => {

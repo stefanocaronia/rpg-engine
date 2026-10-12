@@ -512,7 +512,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(JSON.parse((await get("/api/view?settings=true")).body)).toEqual(JSON.parse(await ok("view", "--settings", "--json")));
     });
 
-    it("serves the page, which runs only its own scripts and the import map written in it, its dice, and Preact and three.js from their packages", async () => {
+    it("serves the page, which runs only its own scripts and the import map written in it, its dice, and Preact, three.js and Rapier from their packages, whose WebAssembly it compiles", async () => {
         const html = await get("/");
         expect(html.status).toBe(200);
         expect(html.headers["content-type"]).toBe("text/html; charset=utf-8");
@@ -523,9 +523,9 @@ describe("the dashboard's server (D-270, D-272)", () => {
             "preact/jsx-runtime": "/vendor/jsx-runtime.js",
             "three": "/vendor/three.module.js",
             "three/addons/": "/vendor/three/addons/",
-            "cannon-es": "/vendor/cannon-es.js",
+            "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
         });
-        expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
+        expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
         expect(await get("/app.js")).toMatchObject({ status: 200, body: "export {};\n", headers: { "content-type": "text/javascript; charset=utf-8" } });
         expect((await get("/style.css")).headers["content-type"]).toBe("text/css; charset=utf-8");
         expect((await get("/assets/logo.svg")).headers).toMatchObject({ "content-type": "image/svg+xml", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" });
@@ -545,6 +545,8 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect((await get("/vendor/three/addons/utils/SkeletonUtils.js")).status).toBe(200);
         expect((await get("/vendor/three/addons/loaders/OBJLoader.js")).status).toBe(404);
         expect((await get("/vendor/compat.js")).status).toBe(404);
+        // Rapier's module, with the physics of the dice in it.
+        expect((await get("/vendor/rapier.mjs")).headers["content-type"]).toBe("text/javascript; charset=utf-8");
     });
 
     it("answers only its own page: another site, or a name that leads elsewhere, gets nothing", async () => {

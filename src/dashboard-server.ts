@@ -93,6 +93,7 @@ const noticeDelay = 100;
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
 const pageTypes: Record<string, string> = {
     ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
     ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml",
     ".png": "image/png",
@@ -109,7 +110,8 @@ const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
 
 // The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
-// beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too.
+// beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too; Rapier's module
+// moves the dice.
 const vendorModules: Record<string, [string, string]> = {
     "preact.js": ["preact", "dist/preact.module.js"],
     "hooks.js": ["preact", "hooks/dist/hooks.module.js"],
@@ -120,7 +122,7 @@ const vendorModules: Record<string, [string, string]> = {
     "three/addons/utils/BufferGeometryUtils.js": ["three", "examples/jsm/utils/BufferGeometryUtils.js"],
     "three/addons/utils/SkeletonUtils.js": ["three", "examples/jsm/utils/SkeletonUtils.js"],
     "three/addons/environments/RoomEnvironment.js": ["three", "examples/jsm/environments/RoomEnvironment.js"],
-    "cannon-es.js": ["cannon-es", "dist/cannon-es.js"],
+    "rapier.mjs": ["@dimforge/rapier3d-compat", "dist/rapier.mjs"],
 };
 const importMap = JSON.stringify({
     imports: {
@@ -129,12 +131,13 @@ const importMap = JSON.stringify({
         "preact/jsx-runtime": "/vendor/jsx-runtime.js",
         "three": "/vendor/three.module.js",
         "three/addons/": "/vendor/three/addons/",
-        "cannon-es": "/vendor/cannon-es.js",
+        "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
     },
 });
 
-// The page runs only its own files and the import map written in it, known by its hash.
-const pagePolicy = `default-src 'self'; script-src 'self' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`;
+// The page runs only its own files and the import map written in it, known by its hash; and the physics of the dice, which Rapier's module carries as
+// WebAssembly and compiles.
+const pagePolicy = `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`;
 
 const pageHtml = [
     "<!doctype html>",
