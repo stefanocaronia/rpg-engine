@@ -3041,9 +3041,14 @@ a {
     vertical-align: 0.35em;
 }
 
-.credits {
-    margin: 32px 0 0;
-    padding-top: 14px;
+/* The page's foot, under a line across the whole page as the head's: who made it and where it lives, support, and the system's credits. */
+.page-foot {
+    display: grid;
+    gap: 6px;
+    margin-block: 32px 0;
+    margin-inline: -16px;
+    padding-block: 14px 0;
+    padding-inline: 16px;
     border-top: 1px solid var(--rule);
     color: var(--muted);
     font-size: 0.75rem;
@@ -3051,12 +3056,46 @@ a {
     text-align: center;
 }
 
-.credits details {
+.page-foot p {
+    margin: 0;
+}
+
+.foot-own {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 14px;
+}
+
+.foot-own a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.foot-own a:hover,
+.foot-own a:focus-visible {
+    color: var(--ink);
+}
+
+.foot-own svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.foot-support svg.icon {
+    color: var(--low);
+}
+
+.foot-system details {
     display: inline;
     margin-inline-start: 12px;
 }
 
-.credits summary {
+.foot-system summary {
     display: inline;
     cursor: pointer;
     list-style: none;
@@ -3064,11 +3103,11 @@ a {
     text-underline-offset: 3px;
 }
 
-.credits summary::-webkit-details-marker {
+.foot-system summary::-webkit-details-marker {
     display: none;
 }
 
-.credits details p {
+.foot-system details p {
     max-width: 90ch;
     margin: 8px auto 0;
 }

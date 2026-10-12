@@ -8,10 +8,10 @@ import { AskedBanner } from "./asked.tsx";
 import { CombatView } from "./combat.tsx";
 import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
+import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Icon } from "./icons.tsx";
 import { FollowedQuest, JournalView } from "./journal.tsx";
-import { systemTitleLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
@@ -337,19 +337,7 @@ function App()
                                 }}
                             />
                         </div>
-                        {shown.system && (
-                            <footer class="credits">
-                                <span>
-                                    {shown.system.name} · {systemTitleLabel(shown.system.title)}
-                                </span>
-                                {shown.system.attribution && (
-                                    <details>
-                                        <summary>{t("Credits")}</summary>
-                                        <p>{shown.system.attribution}</p>
-                                    </details>
-                                )}
-                            </footer>
-                        )}
+                        <PageFoot product={productName} system={shown.system} />
                     </>
                 )}
                 <DiceTray
