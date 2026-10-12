@@ -48,6 +48,7 @@ export function Top(top: TopOf)
     const [past, setPast] = useState(false);
     // The robot's face when the robot or the campaign's name leads back to the party.
     const [poke, setPoke] = useState<Moment>();
+
     const home = (): void => {
         window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
         setPoke({ id: String(Date.now()), mood: pokedMoods[Date.now() % pokedMoods.length] ?? "happy" });
@@ -111,7 +112,7 @@ export function Top(top: TopOf)
 }
 
 /**
- * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, the settings and About at the row's end (D-333): what does not
+ * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, Help, the settings and About as icons at the row's end (D-333, D-409): what does not
  * fit goes into the menu, those three first, then the sections from the last. In the bar that stays a copy out of the keyboard's way, as the bar is hidden
  * from a screen reader.
  */
@@ -128,12 +129,14 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
             <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : t("Sections")}>
                 {[...shown, ...menuPages].map((section, index) => {
                     const gone = away.includes(section);
-                    const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link" : "", gone ? "away" : ""];
+                    const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link tip-below" : "", gone ? "away" : ""];
                     return (
                         <a
                             key={section}
                             href={sectionAddress(section)}
                             class={kinds.filter((kind) => kind !== "").join(" ") || undefined}
+                            aria-label={index >= shown.length ? sectionLabel(section) : undefined}
+                            data-tip={index >= shown.length ? sectionLabel(section) : undefined}
                             aria-current={section === current ? "page" : undefined}
                             aria-hidden={gone ? true : undefined}
                             tabIndex={hidden || gone ? -1 : undefined}
@@ -141,7 +144,8 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
                             <span class="section-mark">
                                 <Icon name={section} />
                             </span>
-                            {sectionLabel(section)}
+                            {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
+                            {index < shown.length && sectionLabel(section)}
                             {section === "combat" && turn && <span class="visually-hidden">{`, ${t("your turn")}`}</span>}
                         </a>
                     );

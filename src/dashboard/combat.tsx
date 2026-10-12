@@ -6,6 +6,7 @@ import { sectionAddress } from "./address.ts";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { shownText, strangerLabel } from "./labels.ts";
+import { PageHead } from "./pages.tsx";
 import { Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
@@ -27,12 +28,14 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
 
     if (scene === undefined || fighters === undefined) {
         return (
-            <section class="upcoming" aria-labelledby="combat-title">
-                <h2 id="combat-title">{t("Combat")}</h2>
-                <p>{t("There is no fight now.")}</p>
-                <p class="upcoming-note">
-                    <a href={sectionAddress("scene")}>{t("Where the party is")}</a>
-                </p>
+            <section class="page-stack" aria-labelledby="combat-title">
+                <PageHead section="combat" id="combat-title" />
+                <div class="upcoming">
+                    <p>{t("There is no fight now.")}</p>
+                    <p class="upcoming-note">
+                        <a href={sectionAddress("scene")}>{t("Where the party is")}</a>
+                    </p>
+                </div>
             </section>
         );
     }
@@ -89,7 +92,7 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
                             {order}
                             {atHand}
                         </div>
-                        <PlaceMap map={map} place={place ?? scene.title} acting={scene.turn} />
+                        <PlaceMap map={map} place={place ?? scene.title} acting={scene.turn} fight />
                     </div>
                 )}
         </section>
@@ -138,17 +141,18 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
     );
 }
 
+/** A fighter's token; one not of the party glows red a little, as a foe (D-409). */
 function FighterToken({ fighter }: { fighter: Fighter; })
 {
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
     return fighter.stranger
         ? (
-            <span class={number === undefined ? "token stranger" : "token stranger numbered"} aria-hidden="true">
+            <span class={["token stranger", number === undefined ? "" : "numbered", fighter.role === "other" ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {number ?? <Icon name="stranger" />}
             </span>
         )
-        : <Token member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }) }} />;
+        : <Token member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }) }} hostile={fighter.role === "other"} />;
 }
 
 /** A fighter's name as the page writes it: Creature 2 for "creature 2", Someone for "someone". */

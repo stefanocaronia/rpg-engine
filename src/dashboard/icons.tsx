@@ -55,9 +55,13 @@ const iconPaths = {
     help: "M12 7c-1.8-1.5-4.8-2.2-8.5-2v13c3.7-.2 6.7.5 8.5 2c1.8-1.5 4.8-2.2 8.5-2V5c-3.7-.2-6.7.5-8.5 2Z M12 7v13",
     menu: "M4 6.5h16 M4 12h16 M4 17.5h16",
     saves: "M5 3.5h11l3 3V20.5H5Z M8 3.5v5h7v-5 M8 20.5v-6h8v6",
+    // A gear standing straight, a tooth at the top (D-409).
     settings:
-        "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z M19.4 13.5l1.6 1.2-1.8 3.1-1.9-.7a7 7 0 0 1-2 1.2L15 20.5h-3.6l-.3-2.2a7 7 0 0 1-2-1.2l-1.9.7-1.8-3.1 1.6-1.2a7 7 0 0 1 0-2.3L5.4 9.8l1.8-3.1 1.9.7a7 7 0 0 1 2-1.2l.3-2.2H15l.3 2.2a7 7 0 0 1 2 1.2l1.9-.7 1.8 3.1-1.6 1.2a7 7 0 0 1 0 2.3Z",
+        "M10.33 5.3L10.42 2.53L13.58 2.53L13.67 5.3A6.9 6.9 0 0 1 15.55 6.09L17.57 4.18L19.82 6.43L17.91 8.45A6.9 6.9 0 0 1 18.7 10.33L21.47 10.42L21.47 13.58L18.7 13.67A6.9 6.9 0 0 1 17.91 15.55L19.82 17.57L17.57 19.82L15.55 17.91A6.9 6.9 0 0 1 13.67 18.7L13.58 21.47L10.42 21.47L10.33 18.7A6.9 6.9 0 0 1 8.45 17.91L6.43 19.82L4.18 17.57L6.09 15.55A6.9 6.9 0 0 1 5.3 13.67L2.53 13.58L2.53 10.42L5.3 10.33A6.9 6.9 0 0 1 6.09 8.45L4.18 6.43L6.43 4.18L8.45 6.09A6.9 6.9 0 0 1 10.33 5.3Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z",
     about: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 11v6 M12 7.6v.3",
+    // Help's parts (D-409): the chat with the master, and the dice.
+    chat: "M4.5 5h15v10.5H10l-4.5 3.5v-3.5h-1Z M8 9h8 M8 12h5",
+    dice: diePaths[20],
     // A place without a picture, and someone the character does not know (D-309).
     house: "M3 20.5h18 M5 20.5V10.5l7-6 7 6v10 M10 20.5v-5a2 2 0 0 1 4 0v5",
     stranger: "M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z M8.8 11.8c.8-1.7 1.9-2.6 3.2-2.6s2.4.9 3.2 2.6c-.7 1.7-1.8 2.6-3.2 2.6s-2.5-.9-3.2-2.6Z",
@@ -138,6 +142,12 @@ export function NotationIcons({ notation }: { notation: string; })
             {drawn.count !== undefined && <span class="die-more">×{drawn.count}</span>}
         </span>
     );
+}
+
+/** A picture's drawing, for a card's header. */
+export function iconPath(name: IconName): string
+{
+    return iconPaths[name];
 }
 
 /** A control's picture, such as the bin that clears the dice. */

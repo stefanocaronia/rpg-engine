@@ -8,6 +8,7 @@ import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./d
 import { DieSwatch, Icon } from "./icons.tsx";
 import { settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
+import { PageHead } from "./pages.tsx";
 import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
 import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
@@ -56,7 +57,7 @@ export function SettingsView({ version }: { version: number; })
     const known = new Set(groups.flatMap((group) => group.names));
     return (
         <section class="settings" aria-labelledby="settings-title">
-            <h2 id="settings-title">{t("Settings")}</h2>
+            <PageHead section="settings" id="settings-title" />
             <p class="settings-lead">{t("A change counts at once, from now on: what is already in play stays as it is. The master hears of it at their next move, and of nothing you put back as it was.")}</p>
             {problem !== undefined && <p class="settings-problem" role="alert">{problem}</p>}
             {settings !== undefined && groups.map((group, index) => {

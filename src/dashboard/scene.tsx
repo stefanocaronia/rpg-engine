@@ -28,7 +28,7 @@ export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownS
         <section class={scene === undefined && place?.map === undefined ? "place-view" : "place-view with-scene"} aria-labelledby="place-name">
             {place && <PlaceBand place={place} />}
             {scene && <SceneCard scene={scene} />}
-            {place?.map && <PlaceMap map={place.map} place={place.name} />}
+            {place?.map && <PlaceMap map={place.map} place={place.name} fight={scene?.type === "combat"} />}
             <div class="groups">
                 {/* Who is here: under the map, who is where says it (D-325). */}
                 {scene === undefined && place && place.here.length > 0 && place.map === undefined && (
@@ -127,7 +127,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
                 {scene.since && <span class="scene-since">{sinceDateLabel(scene.since)}</span>}
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
-            <People people={scene.who} />
+            <People people={scene.who} fight={scene.type === "combat"} />
             {/* In a fight, the line leads to Combat, where the turns are (D-314). */}
             {scene.type === "combat"
                 ? (
@@ -141,8 +141,11 @@ function SceneCard({ scene }: { scene: ShownScene; })
     );
 }
 
-/** Who is there: their tokens with their names under them, the party first; someone the character does not know as a hood, the copies with how many. */
-function People({ people }: { people: ShownPerson[]; })
+/**
+ * Who is there: their tokens with their names under them, the party first; someone the character does not know as a hood, the copies with how many; in a fight
+ * the others glow red a little, as foes (D-409).
+ */
+function People({ people, fight }: { people: ShownPerson[]; fight?: boolean; })
 {
     return (
         <ul class="present">
@@ -151,11 +154,11 @@ function People({ people }: { people: ShownPerson[]; })
                     {person.stranger
                         ? (
                             // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
-                            <span class={letterOf(person.name) === undefined ? "token stranger" : "token stranger numbered"} aria-hidden="true">
+                            <span class={["token stranger", letterOf(person.name) === undefined ? "" : "numbered", fight === true && person.role === "other" ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                                 {letterOf(person.name) ?? <Icon name="stranger" />}
                             </span>
                         )
-                        : <Token member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }) }} />}
+                        : <Token member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }) }} hostile={fight === true && person.role === "other"} />}
                     <span>
                         {person.stranger ? strangerLabel(person.name) : person.name}
                         {person.count !== undefined && person.count > 1 && <span class="count">{` ×${person.count}`}</span>}

@@ -10,6 +10,7 @@ import { Glass, GlassDefs } from "./glass.tsx";
 import { Icon, type IconName } from "./icons.tsx";
 import { biomeLabel, biomes, placeKindLabel, placeKinds, symbolRadius } from "./map-symbols.ts";
 import { plainLine } from "./markdown.tsx";
+import { PageHead } from "./pages.tsx";
 import { t } from "./text.ts";
 import {
     type Area,
@@ -80,9 +81,11 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
 
     if (map === undefined || drawn === undefined || part === undefined || layout === undefined || (layout.spots.length === 0 && layout.regions.length === 0)) {
         return (
-            <section class="upcoming" aria-labelledby="world-title">
-                <h2 id="world-title">{t("World")}</h2>
-                <p>{problem ?? (map === undefined ? t("Reading the map…") : t("Your character knows no place on the map yet: it grows as the master writes where places are."))}</p>
+            <section class="page-stack" aria-labelledby="world-title">
+                <PageHead section="world" id="world-title" />
+                <div class="upcoming">
+                    <p>{problem ?? (map === undefined ? t("Reading the map…") : t("Your character knows no place on the map yet: it grows as the master writes where places are."))}</p>
+                </div>
             </section>
         );
     }
@@ -107,7 +110,7 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
 
     return (
         <section class="world" aria-labelledby="world-title">
-            <h2 id="world-title" class="visually-hidden">{t("World")}</h2>
+            <PageHead section="world" id="world-title" />
             <MapCard key={part.name} map={drawn} full={map} part={part} layout={layout} lead={lead} chosen={chosen} focus={focus} onChoose={choose} onGo={goTo} />
             <PlacesList map={drawn} layout={layout} onChoose={choose} />
         </section>

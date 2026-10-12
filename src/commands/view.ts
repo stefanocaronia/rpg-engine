@@ -83,6 +83,8 @@ export interface PartyMember
     effects: SeenEffect[];
     /** Their mood (MOOD-6); none when neutral, or dead. */
     mood?: Mood;
+    /** What they are, as the line under a sheet's name says it in the campaign's language: Level 3 Cleric (D-288, D-409). */
+    headline?: string;
     /** At the system's dying point, as hp 0, the counters the dashboard shows large in their band (D-310 (7)). */
     dying?: DyingCounter[];
 }
@@ -288,6 +290,9 @@ export const view = defineCommand({
             return { kind: "map", ...shownMap(sight, measuresOf(root, system), readSettings(root).name) };
         }
 
+        const language = readSettings(root).language;
+        const memberWords = system === undefined || language === undefined ? undefined : wordsOf(system, language, context);
+
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
             const chain = locate(world, page).chain;
@@ -297,6 +302,7 @@ export const view = defineCommand({
             const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
             const mood = livingMood(page);
             const dying = dyingOf(world, system, page);
+            const headline = sheetHeadline(world, system, page, memberWords);
             return {
                 name: page.name,
                 role: page === pc ? "pc" : "companion",
@@ -307,6 +313,7 @@ export const view = defineCommand({
                 effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
                 ...(mood === "neutral" ? {} : { mood }),
                 ...(dying === undefined ? {} : { dying }),
+                ...(headline === undefined ? {} : { headline }),
             };
         };
 

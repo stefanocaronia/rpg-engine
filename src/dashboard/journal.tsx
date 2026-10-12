@@ -11,6 +11,7 @@ import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
+import { PageHead } from "./pages.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
 import { arrowStep, t } from "./text.ts";
 
@@ -40,7 +41,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
 
     return (
         <section class="journal" aria-labelledby="journal-title">
-            <h2 id="journal-title">{t("Journal")}</h2>
+            <PageHead section="journal" id="journal-title" />
             <div class="journal-tabs" role="tablist" aria-label={t("Journal")} ref={tabs} onKeyDown={move}>
                 {tabChoice.values.map((value) => (
                     <button

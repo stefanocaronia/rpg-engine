@@ -10,6 +10,7 @@ import { gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { phraseLabel, realTimeLabel, valueLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
+import { PageHead } from "./pages.tsx";
 import { t } from "./text.ts";
 
 export function SavesView({ version, campaign }: { version: number; campaign?: string; })
@@ -59,7 +60,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
     const points = saves?.reset ?? [];
     return (
         <section class="saves" aria-labelledby="saves-title">
-            <h2 id="saves-title">{t("Saves")}</h2>
+            <PageHead section="saves" id="saves-title" />
             {saves !== undefined && (
                 <p class="saves-lead">
                     <strong>{valueLabel(saves.mode)}:</strong> {modeText(saves.mode) ?? saves.rule} <a href={sectionAddress("settings")}>{t("Change it in Settings.")}</a>

@@ -51,7 +51,7 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
 export function MemberToken({ member, large }: { member: Member; large?: boolean; })
 {
     return (
-        <span class="token-holder">
+        <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
             <Token member={member} large={large} />
             <MoodBadge mood={member.mood} large={large} />
         </span>
@@ -61,10 +61,10 @@ export function MemberToken({ member, large }: { member: Member; large?: boolean
 /** Whom a token shows: someone of the party, or anyone else a roll is for (D-286). */
 export type Tokened = Pick<Member, "name" | "image"> & { role: Member["role"] | "other"; dead?: boolean; };
 
-/** Someone's round token: their picture, or their initials on a colour of their own; the ring tells the role by its shape too (D-267, D-273). */
-export function Token({ member, large }: { member: Tokened; large?: boolean; })
+/** Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe's glows red a little. */
+export function Token({ member, large, hostile }: { member: Tokened; large?: boolean; hostile?: boolean; })
 {
-    const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : ""].filter((name) => name !== "").join(" ");
+    const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
     return (
         <span class={classes} aria-hidden="true">
             {member.image === undefined

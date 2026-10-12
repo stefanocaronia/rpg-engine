@@ -163,6 +163,8 @@ export interface Member
     mood?: Mood;
     /** At the system's dying point, the counters shown large in their band (D-310 (7)). */
     dying?: DyingCounter[];
+    /** What they are: Level 3 Cleric (D-409). */
+    headline?: string;
 }
 
 /** An effect on someone, with its end when it has one, and as the chat writes it. */
