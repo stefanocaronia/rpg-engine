@@ -69,7 +69,7 @@ export function Top(top: TopOf)
     return (
         <>
             <header ref={header} class="top">
-                <Master mood={top.mood} moment={top.moment} asleep={top.asleep} />
+                <MasterHome top={top} />
                 <div class="titles">
                     <h1>{title}</h1>
                     {top.campaign !== undefined && (
@@ -85,7 +85,7 @@ export function Top(top: TopOf)
             </header>
             <ThemeCorner />
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
-                <Master mood={top.mood} moment={top.moment} asleep={top.asleep} />
+                <MasterHome top={top} />
                 <span class="top-bar-title">
                     {title}
                     {top.campaign !== undefined && (
@@ -286,13 +286,37 @@ function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
     return [{ next, name: next === "dark" ? t("Dark theme") : t("Light theme") }, flip];
 }
 
-/** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; it leads to the scene (D-309). */
+/** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; its own leads to the scene (D-309). */
 function PlacePath({ path }: { path: string[]; })
 {
     return (
-        <a class="top-place" href={sectionAddress("scene")} aria-label={t("Where the party is: {path}", { path: path.toReversed().join(", ") })}>
+        <nav class="top-place" aria-label={t("Where the party is")}>
             <Icon name="place" />
-            <ol>{path.map((name, index) => <li key={index}>{name}</li>)}</ol>
+            <ol>
+                {path.map((name, index) => <li key={index}>{index === path.length - 1 ? <a href={sectionAddress("scene")}>{name}</a> : name}</li>)}
+            </ol>
+        </nav>
+    );
+}
+
+// The faces the robot makes when it is clicked.
+const pokedMoods: Mood[] = ["happy", "surprised", "mischievous", "delighted"];
+
+/** The robot, which leads back to the party at the top of the page, and makes a face as it does. */
+function MasterHome({ top }: { top: Pick<TopOf, "mood" | "moment" | "asleep">; })
+{
+    const [poke, setPoke] = useState<Moment>();
+    return (
+        <a
+            class="master-home"
+            href={sectionAddress("party")}
+            aria-label={t("Back to the party")}
+            onClick={() => {
+                window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+                setPoke({ id: String(Date.now()), mood: pokedMoods[Date.now() % pokedMoods.length] ?? "happy" });
+            }}
+        >
+            <Master mood={top.mood} moment={top.moment} poke={poke} asleep={top.asleep} />
         </a>
     );
 }

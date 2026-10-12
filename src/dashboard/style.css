@@ -182,8 +182,18 @@ a {
     margin-bottom: 18px;
 }
 
-.top > .master {
+.top > .master-home {
     grid-area: robot;
+}
+
+/* The robot leads back to the party: no layer over it, it answers with a face. */
+.master-home {
+    display: block;
+    border-radius: 50%;
+}
+
+.master-home::after {
+    display: none;
 }
 
 .top > .titles {
@@ -278,8 +288,17 @@ a {
     font-weight: 650;
 }
 
-.top-place:hover li:last-child {
+.top-place a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.top-place a:hover {
     text-decoration: underline;
+}
+
+.top-place a::after {
+    display: none;
 }
 
 /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer. */
@@ -2969,8 +2988,11 @@ a {
 }
 
 /* The master whole, a little smaller, still moving: its moods are seen there too; the name over the sections, the chips at the right. */
-.top-bar .master {
+.top-bar > .master-home {
     grid-row: 1 / span 2;
+}
+
+.top-bar .master {
     width: 72px;
     height: 72px;
 }

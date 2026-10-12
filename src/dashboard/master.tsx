@@ -14,12 +14,14 @@ const momentLength = 2200;
 const momentFreshness = 10_000;
 
 /** The robot: the master's mood; a moment, shown once when its id is new; asleep, with its eyes closed, while the game is away. */
-export function Master({ mood = "neutral", moment, asleep = false }: { mood?: Mood; moment?: Moment; asleep?: boolean; })
+export function Master({ mood = "neutral", moment, poke, asleep = false }: { mood?: Mood; moment?: Moment; poke?: Moment; asleep?: boolean; })
 {
     const holder = useRef<HTMLSpanElement>(null);
     const [markup, setMarkup] = useState<string>();
     const flash = useMoment(moment, asleep);
-    const shown = asleep ? "neutral" : flash ?? mood;
+    // A face for a click on the robot, which wakes it for a moment too.
+    const poked = useMoment(poke, false);
+    const shown = poked ?? (asleep ? "neutral" : flash ?? mood);
 
     useEffect(() => {
         fetch("/assets/master.svg").then((response) => (response.ok ? response.text() : undefined)).then(setMarkup, () => undefined);

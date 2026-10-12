@@ -4,6 +4,10 @@ A toolbox that lets a high-level AI run a tabletop RPG campaign: the AI tells th
 
 Work in progress.
 
+## Made with AI
+
+rpg-engine was built with the help of AI. We invite everyone to use AI to make what they need: the people should take control of the means of production.
+
 ## License
 
 The code is under the [MIT](LICENSE) license.
