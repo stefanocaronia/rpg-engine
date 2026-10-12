@@ -265,7 +265,7 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                 value={title}
                 maxLength={200}
                 placeholder={t("Title")}
-                aria-label={t("The note's title")}
+                aria-label={title.trim() === "" ? t("The note's title") : t("The title of the note {title}", { title: title.trim() })}
                 onInput={(event) => write({ title: event.currentTarget.value })}
             />
             <textarea

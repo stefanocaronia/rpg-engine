@@ -7,6 +7,7 @@ import type { PlayerSetting } from "./data.ts";
 import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { DieSwatch, Icon } from "./icons.tsx";
 import { settingLabel, valueLabel } from "./labels.ts";
+import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
 import { t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
@@ -136,7 +137,7 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
                     />
                 )
                 : setting.name === "language"
-                ? <LanguageSetting setting={setting} label={id} onChange={send} />
+                ? <LanguageChoice value={value} labelledBy={id} describedBy={`${id}-about`} onPick={(code) => choose(code, false)} />
                 : <ListSetting setting={setting} label={id} onChange={send} />}
             <div class="setting-after">
                 {chosen?.means !== undefined && (
@@ -144,6 +145,7 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
                         <strong>{valueLabel(chosen.value)}:</strong> {t(chosen.means)}
                     </p>
                 )}
+                {setting.name === "language" && value !== undefined && <p class="setting-means">{languageLine(value)}</p>}
                 {unset && <p class="setting-unset">{setting.choices === undefined ? t("Not answered yet: add them here, or the master asks you.") : t("Not chosen yet: choose here, or the master asks you.")}</p>}
                 {setting.note !== undefined && <SettingNote note={setting.note} />}
                 <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
@@ -232,37 +234,6 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
     );
 }
 
-/** The language as its code, with its name as it is written, and Save only for a code a language has. */
-function LanguageSetting({ setting, label, onChange }: { setting: PlayerSetting; label: string; onChange(change: SettingChange): void; })
-{
-    const [text, setText] = useState(setting.value ?? "");
-    const typed = text.trim();
-    const name = languageName(typed);
-
-    useEffect(() => setText(setting.value ?? ""), [setting.value]);
-
-    return (
-        <form
-            class="setting-text"
-            onSubmit={(event) => {
-                event.preventDefault();
-
-                if (name !== undefined && typed !== setting.value) {
-                    onChange({ setting: setting.name, value: typed });
-                }
-            }}
-        >
-            <span class="setting-text-row">
-                <input type="text" value={text} maxLength={20} aria-labelledby={label} aria-describedby={`${label}-name`} onInput={(event) => setText(event.currentTarget.value)} />
-                <button type="submit" class="setting-button" disabled={name === undefined || typed === setting.value}>{t("Save")}</button>
-            </span>
-            <span id={`${label}-name`} class={name === undefined && typed !== "" ? "setting-text-name problem" : "setting-text-name"}>
-                {typed === "" ? "" : name ?? t("No language has this code: try it, en or pt-BR.")}
-            </span>
-        </form>
-    );
-}
-
 /** What the player should know of a setting on this computer, as how to have pictures: its lines, its steps in order, and the commands to copy. */
 function SettingNote({ note }: { note: { text: string; fix?: true; }; })
 {
@@ -331,16 +302,6 @@ function Command({ text }: { text: string; })
             <button type="button" class="setting-copy" aria-label={t("Copy {command}", { command: text })} onClick={() => void copy()}>{copied ? t("Copied") : t("Copy")}</button>
         </span>
     );
-}
-
-/** A language's name in the page's language, as Italian for it; undefined for a code no language has. */
-function languageName(code: string): string | undefined
-{
-    try {
-        return code === "" ? undefined : new Intl.DisplayNames([document.documentElement.lang || "en"], { type: "language", fallback: "none" }).of(code);
-    } catch {
-        return undefined;
-    }
 }
 
 /** A name as a part of an element's id, without spaces: "dice sound" is dice-sound. */

@@ -662,7 +662,7 @@ a {
 }
 
 .setting-list input,
-.setting-text input {
+.language-choice input {
     flex: 1;
     min-width: 0;
     height: 38px;
@@ -674,29 +674,113 @@ a {
     font: inherit;
 }
 
-/* The language: a short field for its code, its name under it as it is written. */
-.setting-text {
+/* The language (D-394): a field that searches every language, the chosen one in its own words, and under it the list, those the page is written in first. */
+.language-choice {
+    position: relative;
+    width: 280px;
+}
+
+.language-choice input {
+    width: 100%;
+    padding-right: 34px;
+    cursor: pointer;
+}
+
+.language-choice.open input {
+    cursor: text;
+}
+
+.language-chevron {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.language-choice.open .language-chevron {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.language-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    z-index: 20;
+    max-height: 320px;
+    margin: 0;
+    padding: 4px;
+    overflow-y: auto;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    box-shadow: var(--lift), var(--raise);
+    list-style: none;
+}
+
+.language-list li {
     display: grid;
-    justify-items: end;
-    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius-s);
+    cursor: pointer;
 }
 
-.setting-text-row {
-    display: flex;
-    gap: 6px;
+.language-list li.active {
+    background: var(--panel-2);
+    box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.setting-text input {
-    flex: none;
-    width: 9ch;
+.language-list li[aria-selected="true"] .language-own {
+    font-weight: 700;
 }
 
-.setting-text-name {
-    font-size: 0.85rem;
+.language-list li.page-last {
+    margin-bottom: 4px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    border-radius: var(--radius-s) var(--radius-s) 0 0;
 }
 
-.setting-text-name.problem {
-    color: var(--low);
+.language-own {
+    grid-column: 1;
+    font-weight: 600;
+}
+
+.language-here,
+.language-page {
+    grid-column: 1;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.language-page {
+    color: var(--accent);
+    font-weight: 650;
+}
+
+.language-code {
+    grid-row: 1;
+    grid-column: 2;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.language-list .language-none {
+    display: block;
+    color: var(--muted);
+    cursor: default;
 }
 
 .setting-button {
@@ -728,7 +812,7 @@ a {
     }
 
     .setting-list input,
-    .setting-text input,
+    .language-choice input,
     .setting-button {
         height: var(--target);
     }
@@ -739,8 +823,8 @@ a {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .setting-text {
-        justify-items: start;
+    .language-choice {
+        width: 100%;
     }
 
     /* On a phone the values share the row. */

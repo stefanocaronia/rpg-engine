@@ -225,7 +225,7 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     },
     lines: { about: "what never appears in the game" },
     veils: { about: "what happens only off screen, without details" },
-    language: { about: "the game's language, as a code such as it or en" },
+    language: { about: "the language the master plays in, and the page's too when it is translated" },
 };
 
 // What the setup asks besides the player's settings (D-370): how the companions come, how far ahead a world is made, the campaign's name.

@@ -14,6 +14,12 @@ export function setLanguage(code: string | undefined): void
     phrases = curated[asked] ?? curated[asked.split("-")[0]] ?? {};
 }
 
+/** The languages the page is written in: English, and the curated ones. */
+export function pageLanguages(): string[]
+{
+    return ["en", ...Object.keys(curated)];
+}
+
 /** A phrase of the page in its language, each {name} in it filled from values; the English phrase where it has no translation. */
 export function t(phrase: string, values: Record<string, string | number> = {}): string
 {

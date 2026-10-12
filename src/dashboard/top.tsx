@@ -224,8 +224,8 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
             <button
                 type="button"
                 class="icon-button tonal menu-button tip-left"
-                aria-label={t("Menu")}
-                data-tip={t("Menu")}
+                aria-label={t("Menu: {pages}", { pages: away.map(sectionLabel).join(", ") })}
+                data-tip={t("Menu: {pages}", { pages: away.map(sectionLabel).join(", ") })}
                 aria-expanded={open}
                 tabIndex={hidden ? -1 : undefined}
                 onClick={() => setOpen(!open)}
