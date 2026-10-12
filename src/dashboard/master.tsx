@@ -2,6 +2,8 @@
 // when one comes, its eyes closed while the master is away; unless the player asked for less motion, it blinks now and then and breathes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Moment, Mood } from "./data.ts";
+import { moodLabel } from "./mood.tsx";
+import { t } from "./text.ts";
 
 // A blink lasts this long, every few seconds.
 const blinkLength = 140;
@@ -56,7 +58,7 @@ export function Master({ mood = "neutral", moment, asleep = false }: { mood?: Mo
     }, [asleep, markup]);
 
     const classes = ["master", asleep ? "asleep" : "", flash === undefined ? "" : "moment"].filter((name) => name !== "").join(" ");
-    const label = asleep ? "The game master, away" : mood === "neutral" ? "The game master" : `The game master, ${mood}`;
+    const label = asleep ? t("The game master, away") : mood === "neutral" ? t("The game master") : t("The game master, {mood}", { mood: moodLabel(mood) });
     return markup === undefined
         ? <span class="master" aria-hidden="true" />
         : <span ref={holder} class={classes} role="img" aria-label={label} dangerouslySetInnerHTML={{ __html: markup }} />;

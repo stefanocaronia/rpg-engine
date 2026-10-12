@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { type Note, readNotes, sendNote } from "./api.ts";
 import { Icon } from "./icons.tsx";
 import { realTimeLabel } from "./labels.ts";
+import { t } from "./text.ts";
 
 // How long the page waits after the last key before it saves a note, in milliseconds.
 const savePause = 800;
@@ -69,12 +70,12 @@ export function Notes({ version }: { version: number; })
     return (
         <div class="player-notes">
             <div class="player-notes-head">
-                <p class="player-notes-about">Names, clues, what you suspect. The master does not read them: share one when you want them to know.</p>
+                <p class="player-notes-about">{t("Names, clues, what you suspect. The master does not read them: share one when you want them to know.")}</p>
                 <button ref={newNote} type="button" class="save-button gold" onClick={add} disabled={notes === undefined}>
-                    <Icon name="plus" /> New note
+                    <Icon name="plus" /> {t("New note")}
                 </button>
             </div>
-            {notes?.length === 0 && <p class="journal-none">No notes yet.</p>}
+            {notes?.length === 0 && <p class="journal-none">{t("No notes yet.")}</p>}
             {notes !== undefined && notes.length > 0 && (
                 <div class="note-cards">
                     {notes.map((note) => (
@@ -256,15 +257,15 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
     const empty = title.trim() === "" && text.trim() === "";
     const waiting = shared !== undefined && pending;
     return (
-        <article class="note-card" aria-label={title.trim() === "" ? "Note" : title.trim()} onFocusOut={(event) => !event.currentTarget.contains(event.relatedTarget as Node | null) && void save()}>
+        <article class="note-card" aria-label={title.trim() === "" ? t("Note") : title.trim()} onFocusOut={(event) => !event.currentTarget.contains(event.relatedTarget as Node | null) && void save()}>
             <input
                 ref={titleField}
                 class="note-title"
                 type="text"
                 value={title}
                 maxLength={200}
-                placeholder="Title"
-                aria-label="The note's title"
+                placeholder={t("Title")}
+                aria-label={t("The note's title")}
                 onInput={(event) => write({ title: event.currentTarget.value })}
             />
             <textarea
@@ -272,15 +273,15 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                 value={text}
                 maxLength={20_000}
                 rows={4}
-                placeholder="Write here…"
-                aria-label={title.trim() === "" ? "The note" : `The note ${title.trim()}`}
+                placeholder={t("Write here…")}
+                aria-label={title.trim() === "" ? t("The note") : t("The note {title}", { title: title.trim() })}
                 onInput={(event) => write({ text: event.currentTarget.value })}
             />
             <p class="note-said" role="alert">{said}</p>
             <footer class="note-foot">
                 <span class="note-when">
                     {written !== undefined && sent.current ? written.short : ""}
-                    {saved && <span aria-hidden="true">· Saved</span>}
+                    {saved && <span aria-hidden="true">{`· ${t("Saved")}`}</span>}
                 </span>
                 {removing
                     ? (
@@ -292,43 +293,43 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                                 }
                             }}
                         >
-                            Delete it?
-                            <button ref={keepButton} type="button" class="save-button" onClick={keep}>Keep</button>
-                            <button type="button" class="save-button danger" onClick={() => void remove()}>Delete</button>
+                            {t("Delete it?")}
+                            <button ref={keepButton} type="button" class="save-button" onClick={keep}>{t("Keep")}</button>
+                            <button type="button" class="save-button danger" onClick={() => void remove()}>{t("Delete")}</button>
                         </span>
                     )
                     : (
                         <>
                             <span class="note-state" role="status">
                                 {waiting && (
-                                    <span class="note-chip" data-tip="The master hears it at their next call">
-                                        <Icon name="send" /> Shared
+                                    <span class="note-chip" data-tip={t("The master hears it at their next call")}>
+                                        <Icon name="send" /> {t("Shared")}
                                     </span>
                                 )}
                                 {shared !== undefined && !pending && (
-                                    <span class="note-chip read" data-tip="The master has read it">
-                                        <Icon name="check" /> Read
+                                    <span class="note-chip read" data-tip={t("The master has read it")}>
+                                        <Icon name="check" /> {t("Read")}
                                     </span>
                                 )}
                             </span>
                             {waiting
                                 ? (
-                                    <button type="button" class="icon-button" aria-label="Take it back from the master" data-tip="Take it back" onClick={() => void unshare()}>
+                                    <button type="button" class="icon-button" aria-label={t("Take it back from the master")} data-tip={t("Take it back")} onClick={() => void unshare()}>
                                         <Icon name="undo" />
                                     </button>
                                 )
                                 : shared !== undefined
                                 ? (
-                                    <button type="button" class="icon-button" aria-label="Share it again with the master" data-tip="Share again" disabled={empty} onClick={() => void share()}>
+                                    <button type="button" class="icon-button" aria-label={t("Share it again with the master")} data-tip={t("Share again")} disabled={empty} onClick={() => void share()}>
                                         <Icon name="send" />
                                     </button>
                                 )
                                 : (
-                                    <button type="button" class="save-button note-share" aria-label="Share with the master" data-tip="Share with the master" disabled={empty} onClick={() => void share()}>
-                                        <Icon name="send" /> Share
+                                    <button type="button" class="save-button note-share" aria-label={t("Share with the master")} data-tip={t("Share with the master")} disabled={empty} onClick={() => void share()}>
+                                        <Icon name="send" /> {t("Share")}
                                     </button>
                                 )}
-                            <button ref={trash} type="button" class="icon-button note-trash tip-left" aria-label="Delete the note" data-tip="Delete" onClick={() => setRemoving(true)}>
+                            <button ref={trash} type="button" class="icon-button note-trash tip-left" aria-label={t("Delete the note")} data-tip={t("Delete")} onClick={() => setRemoving(true)}>
                                 <Icon name="clear" />
                             </button>
                         </>

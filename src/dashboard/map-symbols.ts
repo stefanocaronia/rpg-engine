@@ -1,6 +1,7 @@
 // What the world map draws (D-318, POS-7): a symbol for each kind of place, in four sizes, and for each biome of a region a colour, from the style sheet, and a
 // mark; the same names as the engine's map/looks.ts, which a test checks. A kind or a biome the page does not know is drawn neutral. Drawn by Joseph for
 // rpg-engine: lines on a grid of 24, a biome's marks around 0.
+import { t } from "./text.ts";
 
 /** A kind of place: its name in the key, its size from 0 (a shrine) to 3 (a city), and its picture. */
 export interface PlaceKind
@@ -47,3 +48,47 @@ export const biomes: Record<string, { label: string; mark: string; }> = {
 
 /** The radius of a symbol's disc, by its size, in pixels. */
 export const symbolRadius = [9, 11.5, 13.5, 15.5];
+
+/** A kind of place by its name in the page's language; undefined for one the page does not know. */
+export function placeKindLabel(kind: string | undefined): string | undefined
+{
+    const labels: Record<string, string> = {
+        city: t("City"),
+        town: t("Town"),
+        village: t("Village"),
+        castle: t("Castle"),
+        tower: t("Tower"),
+        ruin: t("Ruin"),
+        temple: t("Temple"),
+        shrine: t("Shrine"),
+        inn: t("Inn"),
+        farm: t("Farm"),
+        mill: t("Mill"),
+        port: t("Port"),
+        bridge: t("Bridge"),
+        ford: t("Ford"),
+        crossroads: t("Crossroads"),
+        cave: t("Cave"),
+        mine: t("Mine"),
+        peak: t("Peak"),
+        camp: t("Camp"),
+    };
+    return kind === undefined ? undefined : labels[kind];
+}
+
+/** A biome by its name in the page's language; undefined for one the page does not know. */
+export function biomeLabel(biome: string | undefined): string | undefined
+{
+    const labels: Record<string, string> = {
+        forest: t("Forest"),
+        swamp: t("Swamp"),
+        moor: t("Moor"),
+        hills: t("Hills"),
+        mountains: t("Mountains"),
+        plains: t("Plains"),
+        desert: t("Desert"),
+        snow: t("Snow"),
+        water: t("Water"),
+    };
+    return biome === undefined ? undefined : labels[biome];
+}

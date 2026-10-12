@@ -23,6 +23,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
+import { setLanguage, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { WorldView } from "./world.tsx";
@@ -100,6 +101,10 @@ function App()
             const page = member === undefined ? undefined : await readView(member.name);
 
             if (number === reading.current) {
+                // The page's words in the campaign's language (D-394), as its dates and screen readers.
+                const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
+                setLanguage(language);
+                document.documentElement.lang = language ?? "en";
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
@@ -235,9 +240,9 @@ function App()
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
         ...(!live && shown.readAt !== undefined
-            ? [{ kind: "away" as const, text: `Not connected: the sheet as of ${shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. It comes back when the game does.` }]
+            ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) }]
             : []),
-        ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: "There is no player character yet: the sheet comes when the master writes one." }] : []),
+        ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
     ];
     return (
         <RequestedRoll.Provider value={requested}>
@@ -267,8 +272,8 @@ function App()
                         {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
                             <a class="turn-notice" href={sectionAddress("combat")}>
                                 <Icon name="combat" />
-                                <span>{`Your turn${shown.openScene?.round === undefined ? "" : ` · Round ${shown.openScene.round}`}`}</span>
-                                <span class="turn-notice-go">Combat</span>
+                                <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
+                                <span class="turn-notice-go">{t("Combat")}</span>
                             </a>
                         )}
                         {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
@@ -338,7 +343,7 @@ function App()
                                 </span>
                                 {shown.system.attribution && (
                                     <details>
-                                        <summary>Credits</summary>
+                                        <summary>{t("Credits")}</summary>
                                         <p>{shown.system.attribution}</p>
                                     </details>
                                 )}

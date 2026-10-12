@@ -87,10 +87,12 @@ export interface PartyMember
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
-    | { kind: "none"; }
+    | { kind: "none"; language?: string; }
     | {
         kind: "overview";
         campaign: string;
+        /** The campaign's language, in which the dashboard writes its own words (D-394). */
+        language?: string;
         /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
@@ -200,7 +202,8 @@ export const view = defineCommand({
         const pc = playerCharacter(world);
 
         if (pc === undefined) {
-            return { kind: "none" };
+            const language = readSettings(root).language;
+            return { kind: "none", ...(language === undefined ? {} : { language }) };
         }
 
         const knowledge = knowledgeOf(root, world, pc);
@@ -316,9 +319,11 @@ export const view = defineCommand({
         const shownRolls = shownLines.filter((entry) => entry.type === "roll");
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
+        const settings = readSettings(root);
         return {
             kind: "overview",
-            campaign: readSettings(root).name,
+            campaign: settings.name,
+            ...(settings.language === undefined ? {} : { language: settings.language }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },

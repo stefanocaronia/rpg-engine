@@ -3,18 +3,20 @@
 import { sectionAddress } from "./address.ts";
 import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { cardIcons, Icon } from "./icons.tsx";
+import { sceneTypeLabel, strangerLabel } from "./labels.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
+import { t } from "./text.ts";
 
 export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownScene; })
 {
     if (place === undefined && scene === undefined) {
         return (
             <section class="upcoming" aria-labelledby="place-name">
-                <h2 id="place-name">In the open</h2>
-                <p>The party is in no place the character knows, as on a road between two.</p>
+                <h2 id="place-name">{t("In the open")}</h2>
+                <p>{t("The party is in no place the character knows, as on a road between two.")}</p>
             </section>
         );
     }
@@ -28,12 +30,12 @@ export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownS
             <div class="groups">
                 {/* Who is here: under the map, who is where says it (D-325). */}
                 {scene === undefined && place && place.here.length > 0 && place.map === undefined && (
-                    <Card name="Here" icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>
+                    <Card name="Here" title={t("Here")} icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>
                         <People people={place.here} />
                     </Card>
                 )}
                 {place && place.text.trim() !== "" && (
-                    <Card name="Description" icon={cardIcons.description} layout="lore" preview={plainLine(place.text)}>
+                    <Card name="Description" title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(place.text)}>
                         <Markdown text={place.text} />
                     </Card>
                 )}
@@ -48,13 +50,13 @@ function PlaceBand({ place }: { place: ShownPlace; })
     const caption = (
         <div class="place-caption">
             {place.within.length > 0 && (
-                <ol class="place-path" aria-label="Within">
+                <ol class="place-path" aria-label={t("Within")}>
                     {place.within.map((name) => <li key={name}>{name}</li>)}
                 </ol>
             )}
             <h2 id="place-name">{place.name}</h2>
             {place.around.length > 0 && (
-                <ul class="place-env" aria-label="Around">
+                <ul class="place-env" aria-label={t("Around")}>
                     {place.around.map((item) => <Surrounding key={`${item.text} ${item.place ?? ""}`} text={item.text} place={item.place} name={place.name} />)}
                 </ul>
             )}
@@ -101,14 +103,14 @@ function Surrounding({ text, place, name }: { text: string; place?: string; name
 /** The open scene (D-309): its title, type and since when, who is in it, and in a fight the round and whose turn it is. */
 function SceneCard({ scene }: { scene: ShownScene; })
 {
-    const turn = scene.turn === undefined ? undefined : [scene.round === undefined ? undefined : `Round ${scene.round}`, `${scene.turn}'s turn`].filter((part) => part !== undefined).join(" · ");
+    const turn = scene.turn === undefined ? undefined : [scene.round === undefined ? undefined : t("Round {round}", { round: scene.round }), t("{name}'s turn", { name: scene.turn })].filter((part) => part !== undefined).join(" · ");
     return (
         <section class="scene-now" aria-labelledby="scene-title">
             <header>
-                <p class="eyebrow">Scene</p>
+                <p class="eyebrow">{t("Scene")}</p>
                 <h3 id="scene-title">{scene.title}</h3>
-                <span class="scene-type" data-type={scene.type}>{scene.type}</span>
-                {scene.since && <span class="scene-since">{`since ${scene.since}`}</span>}
+                <span class="scene-type" data-type={scene.type}>{sceneTypeLabel(scene.type)}</span>
+                {scene.since && <span class="scene-since">{t("since {when}", { when: scene.since })}</span>}
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />
@@ -117,7 +119,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
                 ? (
                     <p class="scene-turn">
                         {turn && `${turn} · `}
-                        <a href={sectionAddress("combat")}>Turn order</a>
+                        <a href={sectionAddress("combat")}>{t("Turn order")}</a>
                     </p>
                 )
                 : turn && <p class="scene-turn">{turn}</p>}
@@ -141,18 +143,13 @@ function People({ people }: { people: ShownPerson[]; })
                         )
                         : <Token member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }) }} />}
                     <span>
-                        {person.stranger ? capitalized(person.name) : person.name}
+                        {person.stranger ? strangerLabel(person.name) : person.name}
                         {person.count !== undefined && person.count > 1 && <span class="count">{` ×${person.count}`}</span>}
                     </span>
                 </li>
             ))}
         </ul>
     );
-}
-
-function capitalized(text: string): string
-{
-    return `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
 }
 
 /** The letter of a kind of creature the character does not know, as "creature B" has: none for one kind alone, or for someone. */

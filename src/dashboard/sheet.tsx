@@ -13,9 +13,11 @@ import { cardIcons, DieIcon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
+import { moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
 import { StoryBox } from "./story.tsx";
+import { t } from "./text.ts";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
@@ -40,7 +42,7 @@ export function MemberSheet(
 {
     const { rail, others } = arrangedGroups(sheet, cards);
     // The system's headline, and the mood in words, which the badge's tooltip never shows on a touch screen (D-306).
-    const title = [headline, member.mood].filter((part) => part !== undefined && part !== "").join(" · ");
+    const title = [headline, member.mood === undefined ? undefined : moodLabel(member.mood)].filter((part) => part !== undefined && part !== "").join(" · ");
     const fields = sheetFields(member, sheet);
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} />;
     // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
@@ -68,13 +70,13 @@ export function MemberSheet(
                     <FixedColumns cards={others.map((shown) => ({ key: shown.name, node: group(shown) }))} />
                     <div class="wide-cards">
                         {story !== undefined && (
-                            <Card name={backstoryCard} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? "Not written yet"}>
+                            <Card name={backstoryCard} title={t("Backstory")} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? t("Not written yet")}>
                                 {story.trim() !== "" && <Markdown text={story} />}
                                 <StoryBox story={story} />
                             </Card>
                         )}
                         {described.trim() !== "" && (
-                            <Card name={descriptionCard} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
+                            <Card name={descriptionCard} title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
                                 <Markdown text={described} />
                             </Card>
                         )}
@@ -159,8 +161,8 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
     const tip = (value: SheetValue): string | undefined => {
         const parts = explanations?.get(value.field)?.map((part) => shownText(readableIds(part, fields)));
         const answers = answersOf(value);
-        const free = value.roll === undefined || answers !== undefined ? undefined : `Free roll ${shownNotation(value.roll.notation)} · not logged`;
-        const lines = [answers === undefined ? undefined : `Answers the master: ${answers.check}`, parts?.join(" · "), free].filter((line) => line !== undefined);
+        const free = value.roll === undefined || answers !== undefined ? undefined : t("Free roll {dice} · not logged", { dice: shownNotation(value.roll.notation) });
+        const lines = [answers === undefined ? undefined : t("Answers the master: {check}", { check: answers.check }), parts?.join(" · "), free].filter((line) => line !== undefined);
         return lines.length === 0 ? undefined : lines.join("\n");
     };
 
@@ -203,14 +205,24 @@ function Group({ member, group, fields, version, onRoll }: { member: string; gro
 
 /** A card of the sheet the player opens and closes (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
 export function Card(
-    { name, icon, layout, preview, onReach, held, children }: { name: string; icon: string; layout: string; preview?: string; onReach?: () => void; held?: boolean; children: ComponentChildren; },
+    { name, title, icon, layout, preview, onReach, held, children }: {
+        name: string;
+        /** Its title in the page's language, where its name, which keeps it open or closed, is English. */
+        title?: string;
+        icon: string;
+        layout: string;
+        preview?: string;
+        onReach?: () => void;
+        held?: boolean;
+        children: ComponentChildren;
+    },
 )
 {
     const [chosen, toggle] = useOpen(name);
     const open = chosen || held === true;
     return (
         <details class={`group group-${layout}`} open={open} onPointerEnter={onReach} onFocusIn={onReach}>
-            <CardHeader icon={icon} title={<h3>{name}</h3>} preview={preview} open={open} onToggle={toggle} />
+            <CardHeader icon={icon} title={<h3>{title ?? name}</h3>} preview={preview} open={open} onToggle={toggle} />
             {children}
         </details>
     );
@@ -295,7 +307,7 @@ function NumberBox({ value, label, tip, tabIndex, onRoll, answers, kind, said, c
             <button
                 type="button"
                 {...shared}
-                aria-label={answers === undefined ? said : `${said}: answer the master`}
+                aria-label={answers === undefined ? said : t("{said}: answer the master", { said })}
                 onClick={() => (answers === undefined ? value.roll && onRoll(value.roll, label) : answers.answer())}
             >
                 {children}
@@ -325,7 +337,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
             <thead>
                 <tr>
                     <th scope="col">
-                        <span class="visually-hidden">Name</span>
+                        <span class="visually-hidden">{t("Name")}</span>
                     </th>
                     {columns.map((field) => <th key={field} scope="col">{phraseLabel(labels.get(field) ?? fieldLabel(field, fields))}</th>)}
                 </tr>

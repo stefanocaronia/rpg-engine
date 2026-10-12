@@ -7,21 +7,9 @@ import { sectionAddress } from "./address.ts";
 import { changeSaves, readSaves, type SavesChange, type SavesView as Saves } from "./api.ts";
 import type { ResetPoint, ShownSave } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { phraseLabel, realTimeLabel } from "./labels.ts";
+import { phraseLabel, realTimeLabel, valueLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
-
-// What each mode of saves lets the player do, in their words.
-const modeTexts: Record<string, string> = {
-    free: "save when you like, and go back to any save.",
-    checkpoint: "the game saves at the end of each scene, and goes back to the last save only if your character dies.",
-    permadeath: "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.",
-};
-
-// The two ways to start over, when the campaign has both.
-const pointTexts: Record<ResetPoint, { title: string; about: string; }> = {
-    start: { title: "With the same character", about: "Back to the start of play, after session zero." },
-    "session zero": { title: "With a new character", about: "Back to before session zero: the world and your settings stay, your character is made again." },
-};
+import { t } from "./text.ts";
 
 export function SavesView({ version, campaign }: { version: number; campaign?: string; })
 {
@@ -70,10 +58,10 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
     const points = saves?.reset ?? [];
     return (
         <section class="saves" aria-labelledby="saves-title">
-            <h2 id="saves-title">Saves</h2>
+            <h2 id="saves-title">{t("Saves")}</h2>
             {saves !== undefined && (
                 <p class="saves-lead">
-                    <strong>{phraseLabel(saves.mode)}:</strong> {modeTexts[saves.mode] ?? saves.rule} <a href={sectionAddress("settings")}>Change it in Settings.</a>
+                    <strong>{valueLabel(saves.mode)}:</strong> {modeText(saves.mode) ?? saves.rule} <a href={sectionAddress("settings")}>{t("Change it in Settings.")}</a>
                 </p>
             )}
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
@@ -82,34 +70,36 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                 <NewChat
                     back={wentBackTitle(saves.wentBack, saves.saves)}
                     busy={busy}
-                    onConfirm={() => void send({ action: "new chat" }, "✓ The game goes on in the new chat: write «continua» there.")}
+                    onConfirm={() => void send({ action: "new chat" }, `✓ ${t("The game goes on in the new chat: write «continua» there.")}`)}
                 />
             )}
-            {saves?.make === true && <SaveNow busy={busy} onSave={(label) => void send({ action: "make", ...(label === "" ? {} : { label }) }, "✓ Saved.")} />}
-            {saves !== undefined && saves.saves.length === 0 && <p class="saves-none">No saves yet: the game saves its start when play begins, then at the end of each scene.</p>}
+            {saves?.make === true && <SaveNow busy={busy} onSave={(label) => void send({ action: "make", ...(label === "" ? {} : { label }) }, `✓ ${t("Saved.")}`)} />}
+            {saves !== undefined && saves.saves.length === 0 && <p class="saves-none">{t("No saves yet: the game saves its start when play begins, then at the end of each scene.")}</p>}
             {saves !== undefined && saves.saves.length > 0 && (
                 <ol class="save-cards">
                     {saves.saves.map((save, index) => (
                         <li key={save.number} class="save-card">
                             <SaveFace save={save} />
                             {save.load && (
-                                <button type="button" class="save-button" aria-label={`Go back here: ${saveTitle(save)}`} disabled={busy} onClick={() => setAsking(save)}>
-                                    Go back here
+                                <button type="button" class="save-button" aria-label={t("Go back here: {save}", { save: saveTitle(save) })} disabled={busy} onClick={() => setAsking(save)}>
+                                    {t("Go back here")}
                                 </button>
                             )}
                             {/* Under checkpoint, where the death of the character would take the game (D-361). */}
-                            {saves.mode === "checkpoint" && index === 0 && !save.load && save.point === undefined && <p class="save-note">Back here if your character dies</p>}
+                            {saves.mode === "checkpoint" && index === 0 && !save.load && save.point === undefined && <p class="save-note">{t("Back here if your character dies")}</p>}
                         </li>
                     ))}
                 </ol>
             )}
             {points.length > 0 && (
                 <section class="saves-over" aria-labelledby="saves-over-title">
-                    <h3 id="saves-over-title">Start over</h3>
+                    <h3 id="saves-over-title">{t("Start over")}</h3>
                     <p>
-                        Back to the campaign's start: everything that happened since is gone from the story{points.length > 1 ? ", with the same character or a new one" : ""}.
+                        {points.length > 1
+                            ? t("Back to the campaign's start: everything that happened since is gone from the story, with the same character or a new one.")
+                            : t("Back to the campaign's start: everything that happened since is gone from the story.")}
                     </p>
-                    <button type="button" class="save-button danger" disabled={busy} onClick={() => setAsking("reset")}>Start the campaign over…</button>
+                    <button type="button" class="save-button danger" disabled={busy} onClick={() => setAsking("reset")}>{t("Start the campaign over…")}</button>
                 </section>
             )}
             {asking !== undefined && asking !== "reset" && saves !== undefined && (
@@ -118,7 +108,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                     later={saves.saves.filter((save) => save.number > asking.number).length}
                     busy={busy}
                     onClose={() => setAsking(undefined)}
-                    onConfirm={() => void send({ action: "load", save: asking.number }, `Back to ${saveTitle(asking)}.`)}
+                    onConfirm={() => void send({ action: "load", save: asking.number }, t("Back to {save}.", { save: saveTitle(asking) }))}
                 />
             )}
             {asking === "reset" && saves !== undefined && points.length > 0 && (
@@ -128,7 +118,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                     campaign={campaign}
                     busy={busy}
                     onClose={() => setAsking(undefined)}
-                    onConfirm={(name, to) => void send({ action: "reset", campaign: name, to }, `The campaign starts over${to === "session zero" ? ", your character to make again" : ""}.`)}
+                    onConfirm={(name, to) => void send({ action: "reset", campaign: name, to }, to === "session zero" ? t("The campaign starts over, your character to make again.") : t("The campaign starts over."))}
                 />
             )}
         </section>
@@ -152,7 +142,7 @@ function SaveFace({ save }: { save: ShownSave; })
                         </svg>
                     )
                     : <Icon name="place" />}
-                {save.point !== undefined && <span class="save-badge" aria-hidden={save.name === save.point ? "true" : undefined}>{phraseLabel(save.point)}</span>}
+                {save.point !== undefined && <span class="save-badge" aria-hidden={save.name === save.point ? "true" : undefined}>{pointLabel(save.point)}</span>}
             </div>
             <div class="save-what">
                 <h3 class="save-title">{saveTitle(save)}</h3>
@@ -163,7 +153,7 @@ function SaveFace({ save }: { save: ShownSave; })
                         {save.date !== undefined && <span>{phraseLabel(save.date)}</span>}
                     </span>
                 )}
-                {when !== undefined && <time class="save-at" dateTime={save.at} title={when.full}>Saved {when.short}</time>}
+                {when !== undefined && <time class="save-at" dateTime={save.at} title={when.full}>{t("Saved {when}", { when: when.short })}</time>}
             </div>
         </>
     );
@@ -178,10 +168,12 @@ function NewChat({ back, busy, onConfirm }: { back: string; busy: boolean; onCon
     return (
         <div class="saves-chat">
             <p>
-                <strong>Open a new chat with the master.</strong> The game went back to{" "}
-                {back}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.
+                <strong>{t("Open a new chat with the master.")}</strong> {t(
+                    "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.",
+                    { save: back },
+                )}
             </p>
-            <button type="button" class="save-button gold" disabled={busy} onClick={onConfirm}>I opened a new chat</button>
+            <button type="button" class="save-button gold" disabled={busy} onClick={onConfirm}>{t("I opened a new chat")}</button>
         </div>
     );
 }
@@ -206,8 +198,8 @@ function SaveNow({ busy, onSave }: { busy: boolean; onSave(label: string): void;
                 setLabel("");
             }}
         >
-            <input type="text" value={label} maxLength={80} placeholder="Name (optional)" aria-label="The save's name, if you like" onInput={(event) => setLabel(event.currentTarget.value)} />
-            <button type="submit" class="save-button gold" disabled={busy}>Save now</button>
+            <input type="text" value={label} maxLength={80} placeholder={t("Name (optional)")} aria-label={t("The save's name, if you like")} onInput={(event) => setLabel(event.currentTarget.value)} />
+            <button type="submit" class="save-button gold" disabled={busy}>{t("Save now")}</button>
         </form>
     );
 }
@@ -215,17 +207,21 @@ function SaveNow({ busy, onSave }: { busy: boolean; onSave(label: string): void;
 /** Going back to a save, once confirmed: what is lost said first. */
 function GoBack({ save, later, busy, onClose, onConfirm }: { save: ShownSave; later: number; busy: boolean; onClose(): void; onConfirm(): void; })
 {
-    const lost = later === 0 ? "" : later === 1 ? ", and so is the save after it" : `, and so are the ${later} saves after it`;
+    const lost = later === 0
+        ? t("The game goes back to how it was then. What happened after it is gone from the story.")
+        : later === 1
+        ? t("The game goes back to how it was then. What happened after it is gone from the story, and so is the save after it.")
+        : t("The game goes back to how it was then. What happened after it is gone from the story, and so are the {count} saves after it.", { count: later });
     return (
-        <Confirm title="Go back to this save?" onClose={onClose}>
+        <Confirm title={t("Go back to this save?")} onClose={onClose}>
             <div class="save-card shown">
                 <SaveFace save={save} />
             </div>
-            <p>The game goes back to how it was then. What happened after it is gone from the story{lost}.</p>
-            <p class="confirm-note">Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.</p>
+            <p>{lost}</p>
+            <p class="confirm-note">{t("Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.")}</p>
             <div class="confirm-buttons">
-                <button type="button" class="save-button" autoFocus onClick={onClose}>Cancel</button>
-                <button type="button" class="save-button danger final" disabled={busy} onClick={onConfirm}>Go back</button>
+                <button type="button" class="save-button" autoFocus onClick={onClose}>{t("Cancel")}</button>
+                <button type="button" class="save-button danger final" disabled={busy} onClick={onConfirm}>{t("Go back")}</button>
             </div>
         </Confirm>
     );
@@ -259,18 +255,18 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
     }, [sure]);
 
     return (
-        <Confirm title="Start the campaign over?" onClose={onClose}>
+        <Confirm title={t("Start the campaign over?")} onClose={onClose}>
             {!sure && (
                 <>
                     {points.length > 1 && (
                         <fieldset class="over-choice">
-                            <legend>From where</legend>
+                            <legend>{t("From where")}</legend>
                             {points.map((point) => (
                                 <label key={point}>
                                     <input type="radio" name="start-over-from" checked={to === point} onChange={() => setTo(point)} />
                                     <span>
-                                        <strong>{pointTexts[point].title}</strong>
-                                        <span>{pointTexts[point].about}</span>
+                                        <strong>{pointTexts(point).title}</strong>
+                                        <span>{pointTexts(point).about}</span>
                                     </span>
                                 </label>
                             ))}
@@ -282,12 +278,14 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                         </div>
                     )}
                     <p>
-                        <strong>Everything that happened since is gone from the story</strong>, and so is every save after it{to === "session zero" ? ", your character too" : ""}.
+                        {to === "session zero"
+                            ? t("Everything that happened since is gone from the story, and so is every save after it, your character too.")
+                            : t("Everything that happened since is gone from the story, and so is every save after it.")}
                     </p>
-                    <p class="confirm-note">Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.</p>
+                    <p class="confirm-note">{t("Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.")}</p>
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" autoFocus onClick={onClose}>Cancel</button>
-                        <button type="button" class="save-button danger" onClick={() => setSure(true)}>Continue</button>
+                        <button type="button" class="save-button" autoFocus onClick={onClose}>{t("Cancel")}</button>
+                        <button type="button" class="save-button danger" onClick={() => setSure(true)}>{t("Continue")}</button>
                     </div>
                 </>
             )}
@@ -303,7 +301,8 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                     }}
                 >
                     <label for="start-over-name">
-                        To start it over, write the campaign's name{campaign === undefined ? "" : (
+                        {t("To start it over, write the campaign's name")}
+                        {campaign === undefined ? "" : (
                             <>
                                 : <strong>{campaign}</strong>
                             </>
@@ -311,8 +310,8 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                     </label>
                     <input ref={field} id="start-over-name" type="text" value={name} autoComplete="off" spellcheck={false} onInput={(event) => setName(event.currentTarget.value)} />
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" onClick={onClose}>Cancel</button>
-                        <button type="submit" class="save-button danger final" disabled={!matches || busy}>Start over</button>
+                        <button type="button" class="save-button" onClick={onClose}>{t("Cancel")}</button>
+                        <button type="submit" class="save-button danger final" disabled={!matches || busy}>{t("Start over")}</button>
                     </div>
                 </form>
             )}
@@ -341,7 +340,7 @@ function Confirm({ title, onClose, children }: { title: string; onClose(): void;
 function saveTitle(save: ShownSave): string
 {
     if (save.point !== undefined && save.name === save.point) {
-        return save.point === "start" ? "The start" : "Before session zero";
+        return pointLabel(save.point);
     }
 
     return phraseLabel(save.name ?? save.label);
@@ -351,4 +350,29 @@ function saveTitle(save: ShownSave): string
 function comparable(text: string): string
 {
     return text.trim().normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
+}
+
+/** What a mode of saves lets the player do, in their words; undefined for one the page does not know. */
+function modeText(mode: string): string | undefined
+{
+    const texts: Record<string, string> = {
+        free: t("save when you like, and go back to any save."),
+        checkpoint: t("the game saves at the end of each scene, and goes back to the last save only if your character dies."),
+        permadeath: t("the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over."),
+    };
+    return texts[mode];
+}
+
+/** A point the campaign starts over from, by name: the start, or before session zero. */
+function pointLabel(point: ResetPoint): string
+{
+    return point === "start" ? t("The start") : t("Before session zero");
+}
+
+/** The two ways to start over, when the campaign has both. */
+function pointTexts(point: ResetPoint): { title: string; about: string; }
+{
+    return point === "start"
+        ? { title: t("With the same character"), about: t("Back to the start of play, after session zero.") }
+        : { title: t("With a new character"), about: t("Back to before session zero: the world and your settings stay, your character is made again.") };
 }

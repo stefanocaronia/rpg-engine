@@ -12,6 +12,7 @@ import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
+import { t } from "../text.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, trayDice, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
@@ -28,7 +29,6 @@ const flight = 450;
 const mostDice = 20;
 
 // The choices of what counts, as the tray says them.
-const keepWords: Record<"sum" | Keep, string> = { sum: "Sum", highest: "Highest", lowest: "Lowest" };
 const keepModes = ["sum", "highest", "lowest"] as const;
 
 /** A number of the sheet rolled for fun from its explanation (D-280): the roll, the number's label, whose sheet it is, and which throw it is. */
@@ -296,7 +296,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
         // A free throw: the page decides it, as fairly as the browser can, leaving the dice in sight.
         const dice = withDropped(pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), shownKeeps);
         const total = dice.reduce((sum, die) => sum + (die.dropped === true ? 0 : die.value), modifier);
-        void throwAndShow({ free: true, title: "Dice", notation: notation(pool, modifier, shownKeeps), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
+        void throwAndShow({ free: true, title: t("Dice"), notation: notation(pool, modifier, shownKeeps), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };
 
     const toggleSound = (): void => {
@@ -361,9 +361,9 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
             {open && <div class="tray-scrim" aria-hidden="true" />}
             <div ref={controls} class="dice-controls">
                 {open && (
-                    <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? "Free roll: it counts for nothing" : "Dice: a check the master asks, or a free roll"}>
+                    <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? t("Free roll: it counts for nothing") : t("Dice: a check the master asks, or a free roll")}>
                         <p class="tray-note">
-                            <button type="button" class="icon-button" aria-label="Dice sound" aria-pressed={sound} data-tip={sound ? "Sound: on" : "Sound: off"} onClick={toggleSound}>
+                            <button type="button" class="icon-button" aria-label={t("Dice sound")} aria-pressed={sound} data-tip={sound ? t("Sound: on") : t("Sound: off")} onClick={toggleSound}>
                                 <Icon name={sound ? "soundOn" : "soundOff"} />
                             </button>
                         </p>
@@ -374,7 +374,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                     <li key={sides} class={count > 0 ? "chosen" : undefined}>
                                         {/* With two dice or more of a kind, which count (D-337), left of its minus. */}
                                         {count >= 2 && sides !== 100 && (
-                                            <span class="tray-keep" role="radiogroup" aria-label={`Of the ${dieName(sides)}, which count`} onKeyDown={(event) => moveKeep(event, sides)}>
+                                            <span class="tray-keep" role="radiogroup" aria-label={t("Of the {die}, which count", { die: dieName(sides) })} onKeyDown={(event) => moveKeep(event, sides)}>
                                                 {keepModes.map((mode) => (
                                                     <button
                                                         key={mode}
@@ -384,13 +384,13 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                                         tabIndex={(shownKeeps[sides] ?? "sum") === mode ? 0 : -1}
                                                         onClick={() => setKeeps({ ...keeps, [sides]: mode === "sum" ? undefined : mode })}
                                                     >
-                                                        {keepWords[mode]}
+                                                        {mode === "sum" ? t("Sum") : mode === "highest" ? t("Highest") : t("Lowest")}
                                                     </button>
                                                 ))}
                                             </span>
                                         )}
                                         {count > 0 && (
-                                            <button key="less" type="button" class="tray-less" aria-label={`One ${dieName(sides)} less`} data-tip="One less" onClick={() => less(sides)}>
+                                            <button key="less" type="button" class="tray-less" aria-label={t("One {die} less", { die: dieName(sides) })} data-tip={t("One less")} onClick={() => less(sides)}>
                                                 <Icon name="minus" />
                                             </button>
                                         )}
@@ -400,7 +400,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                             class="tray-die"
                                             data-sides={sides}
                                             disabled={pool.length >= mostDice}
-                                            aria-label={`Add a ${dieName(sides)}${count > 0 ? `: ${count} chosen` : ""}`}
+                                            aria-label={count > 0 ? t("Add a {die}: {count} chosen", { die: dieName(sides), count }) : t("Add a {die}", { die: dieName(sides) })}
                                             onClick={() => setPool([...pool, sides])}
                                         >
                                             <span class="tray-die-name">
@@ -414,14 +414,14 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                             })}
                         </ul>
                         <div class="tray-modifier">
-                            <button type="button" aria-label="Modifier: one less" data-tip="−1" onClick={() => setModifier(modifier - 1)}>
+                            <button type="button" aria-label={t("Modifier: one less")} data-tip="−1" onClick={() => setModifier(modifier - 1)}>
                                 <Icon name="minus" />
                             </button>
                             <span class="tray-modifier-value">
-                                <span class="tray-modifier-label">Mod</span>
+                                <span class="tray-modifier-label">{t("Mod")}</span>
                                 <output aria-live="polite">{signed(modifier)}</output>
                             </span>
-                            <button type="button" aria-label="Modifier: one more" data-tip="+1" onClick={() => setModifier(modifier + 1)}>
+                            <button type="button" aria-label={t("Modifier: one more")} data-tip="+1" onClick={() => setModifier(modifier + 1)}>
                                 <Icon name="plus" />
                             </button>
                         </div>
@@ -429,7 +429,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                 )}
                 <div class="dice-fab">
                     {open && (pool.length > 0 || modifier !== 0) && (
-                        <button type="button" class="icon-button tonal" aria-label="Clear the dice" data-tip="Clear" onClick={clear}>
+                        <button type="button" class="icon-button tonal" aria-label={t("Clear the dice")} data-tip={t("Clear")} onClick={clear}>
                             <Icon name="clear" />
                         </button>
                     )}
@@ -439,7 +439,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                         class={chosen ? "dice-button extended" : "dice-button tip-left"}
                         aria-expanded={open}
                         aria-disabled={chosen && rolling}
-                        {...(chosen ? {} : { "aria-label": open ? "Close the free roll" : "Free roll", "data-tip": open ? "Close" : "Free roll" })}
+                        {...(chosen ? {} : { "aria-label": open ? t("Close the free roll") : t("Free roll"), "data-tip": open ? t("Close") : t("Free roll") })}
                         onClick={press}
                     >
                         {open && !chosen ? <Icon name="close" /> : <DieIcon sides={20} />}
@@ -448,13 +448,13 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                                 {answering === undefined
                                     ? (
                                         <span class="tray-roll">
-                                            Roll
+                                            {t("Roll")}
                                             <PoolIcons pool={pool} keeps={shownKeeps} />
                                             {modifier !== 0 && <span class="notation">{signed(modifier)}</span>}
                                             <span class="visually-hidden">{notation(pool, modifier, shownKeeps)}</span>
                                         </span>
                                     )
-                                    : `Answer: ${answering.check}`}
+                                    : t("Answer: {check}", { check: answering.check })}
                             </span>
                         )}
                     </button>
@@ -484,7 +484,7 @@ function PlateContent({ plate }: { plate: Plate; })
             <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" />
             <span class="plate-total num">{shownText(String(plate.total))}</span>
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
-            <span class="visually-hidden">{plate.free ? `${plate.text}, free roll, not logged` : plate.text}</span>
+            <span class="visually-hidden">{plate.free ? t("{dice}, free roll, not logged", { dice: plate.text }) : plate.text}</span>
         </>
     );
 }
@@ -511,7 +511,7 @@ function rareOf(dice: ThrownDie[]): Pick<Plate, "rare">
 {
     const rare = dice.flatMap((die) => {
         const face = rareFace(die);
-        return face === undefined ? [] : [{ face, words: `natural ${face === "highest" ? die.value : 1}` }];
+        return face === undefined ? [] : [{ face, words: t("natural {value}", { value: face === "highest" ? die.value : 1 }) }];
     }).sort((first, second) => (first.face === second.face ? 0 : first.face === "highest" ? -1 : 1))[0];
     return rare === undefined ? {} : { rare };
 }

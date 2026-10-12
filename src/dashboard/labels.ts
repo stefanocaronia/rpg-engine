@@ -1,4 +1,5 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
+import { t } from "./text.ts";
 
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -174,4 +175,93 @@ export function realTimeLabel(at: string, now = new Date()): { short: string; fu
         ? new Intl.DateTimeFormat(language, { month: "short", day: "numeric", ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) }).format(date)
         : new Intl.RelativeTimeFormat(language, { numeric: "auto" }).format(daysAgo, "day");
     return { short: `${day}, ${time}`, full: new Intl.DateTimeFormat(language, { dateStyle: "full", timeStyle: "short" }).format(date) };
+}
+
+/** The name the page writes for someone the character does not know (D-331): Creature B2 for "creature B2", Someone for "someone", in the page's language. */
+export function strangerLabel(name: string): string
+{
+    const creature = /^creature(?: (\w+))?$/.exec(name);
+
+    if (creature !== null) {
+        return creature[1] === undefined ? t("Creature") : t("Creature {mark}", { mark: creature[1] });
+    }
+
+    return name === "someone" ? t("Someone") : `${name[0]?.toUpperCase() ?? ""}${name.slice(1)}`;
+}
+
+/** A type of scene in the page's language: combat, social, exploration… */
+export function sceneTypeLabel(type: string): string
+{
+    const labels: Record<string, string> = {
+        combat: t("combat"),
+        social: t("social"),
+        exploration: t("exploration"),
+        travel: t("travel"),
+        rest: t("rest"),
+        challenge: t("challenge"),
+        other: t("other"),
+    };
+    return labels[type] ?? type;
+}
+
+/** A setting by its name, in the page's language: Difficulty; a game system's own from its name. */
+export function settingLabel(name: string): string
+{
+    const labels: Record<string, string> = {
+        difficulty: t("Difficulty"),
+        lethality: t("Lethality"),
+        saves: t("Saves"),
+        rigor: t("Rigor"),
+        mentor: t("Mentor"),
+        learned: t("Learned"),
+        dice: t("Dice"),
+        units: t("Units"),
+        pictures: t("Pictures"),
+        lines: t("Lines"),
+        veils: t("Veils"),
+        language: t("Language"),
+        companions: t("Companions"),
+        preparation: t("Preparation"),
+        name: t("Name"),
+        premise: t("Premise"),
+        system: t("Game system"),
+    };
+    return labels[name] ?? phraseLabel(fieldLabel(name));
+}
+
+/** A value of a setting, in the page's language: Normal, On request; a game system's own from its words. */
+export function valueLabel(value: string): string
+{
+    const labels: Record<string, string> = {
+        story: t("Story"),
+        easy: t("Easy"),
+        normal: t("Normal"),
+        hard: t("Hard"),
+        brutal: t("Brutal"),
+        narrative: t("Narrative"),
+        epic: t("Epic"),
+        dice: t("Dice"),
+        permadeath: t("Permadeath"),
+        checkpoint: t("Checkpoint"),
+        free: t("Free"),
+        smooth: t("Smooth"),
+        rules: t("Rules"),
+        simulation: t("Simulation"),
+        off: t("Off"),
+        hints: t("Hints"),
+        tutorial: t("Tutorial"),
+        digital: t("Digital"),
+        physical: t("Physical"),
+        metric: t("Metric"),
+        imperial: t("Imperial"),
+        none: t("None"),
+        "on request": t("On request"),
+        "new places and quests": t("New places and quests"),
+        "made with the player": t("Made with the player"),
+        "made by the master": t("Made by the master"),
+        "met in play": t("Met in play"),
+        "on the fly": t("On the fly"),
+        "all at the start": t("All at the start"),
+    };
+    return labels[value] ?? itemLabel(value);
 }

@@ -3,6 +3,7 @@
 import type { DyingCounter, Member, SheetValue } from "./data.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
+import { t } from "./text.ts";
 
 // Below this share of its maximum a bar is low: hatched, not only red.
 const low = 0.25;
@@ -33,7 +34,7 @@ export function Pips({ value, label }: { value: SheetValue; label: string; })
 {
     const { value: current, max = 0 } = value.counter ?? { value: 0 };
     return (
-        <span class="pips" role="img" aria-label={`${label}: ${current} of ${max}`}>
+        <span class="pips" role="img" aria-label={`${label}: ${t("{value} of {max}", { value: current, max })}`}>
             {Array.from({ length: Math.min(max, 10) }, (_, index) => <span key={index} class={index < current ? "pip on" : "pip"} />)}
         </span>
     );
@@ -105,7 +106,7 @@ export function Chips({ value, fields }: { value: SheetValue; fields?: ReadonlyS
             <Items items={value.items ?? []} fields={fields} />
             {value.always && (
                 <span class="always">
-                    <span class="always-from">Always, from {value.always.from.join(" and ")}</span>
+                    <span class="always-from">{t("Always, from {sources}", { sources: value.always.from.join(` ${t("and")} `) })}</span>
                     <Items items={value.always.items} fields={fields} />
                 </span>
             )}
@@ -128,7 +129,7 @@ export function DeathSaves({ dying }: { dying: DyingCounter[]; })
                 <p key={counter.field} class="saves-row">
                     <span class="saves-label">{phraseLabel(fieldLabel(counter.field))}</span>
                     {Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, mark) => <span key={mark} class={`save ${index === 0 ? "success" : "failure"}${mark < counter.value ? " marked" : ""}`} aria-hidden="true" />)}
-                    <span class="visually-hidden">{`${counter.value} of ${counter.limit ?? "?"}`}</span>
+                    <span class="visually-hidden">{t("{value} of {max}", { value: counter.value, max: counter.limit ?? "?" })}</span>
                 </p>
             ))}
         </div>
@@ -141,7 +142,7 @@ export function Effects({ effects, most }: { effects: Member["effects"]; most?: 
     const shown = most === undefined ? effects : effects.slice(0, most);
     return effects.length === 0 ? null : (
         <span class="effects">
-            {shown.map((effect) => <span key={effect.text} class="effect" title={effect.text}>{effect.name}{effect.end && most === undefined ? <span class="end">· until {effect.end}</span> : null}</span>)}
+            {shown.map((effect) => <span key={effect.text} class="effect" title={effect.text}>{effect.name}{effect.end && most === undefined ? <span class="end">{`· ${t("until {end}", { end: effect.end })}`}</span> : null}</span>)}
             {effects.length > shown.length && <span class="effect more">+{effects.length - shown.length}</span>}
         </span>
     );

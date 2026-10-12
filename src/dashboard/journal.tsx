@@ -6,15 +6,15 @@ import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
 import type { ShownChapter, ShownQuest } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { fieldLabel, phraseLabel } from "./labels.ts";
+import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
+import { t } from "./text.ts";
 
 // The tab the player last chose, kept in this browser.
 const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "notes"] } as const;
-const tabNames: Record<string, string> = { quests: "Quests", story: "Story", notes: "Notes" };
 
 export function JournalView({ version, campaign }: { version: number; campaign?: string; })
 {
@@ -39,8 +39,8 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
 
     return (
         <section class="journal" aria-labelledby="journal-title">
-            <h2 id="journal-title">Journal</h2>
-            <div class="journal-tabs" role="tablist" aria-label="Journal" ref={tabs} onKeyDown={move}>
+            <h2 id="journal-title">{t("Journal")}</h2>
+            <div class="journal-tabs" role="tablist" aria-label={t("Journal")} ref={tabs} onKeyDown={move}>
                 {tabChoice.values.map((value) => (
                     <button
                         key={value}
@@ -52,7 +52,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                         tabIndex={tab === value ? 0 : -1}
                         onClick={() => setTab(value)}
                     >
-                        {tabNames[value]}
+                        {tabName(value)}
                     </button>
                 ))}
             </div>
@@ -61,7 +61,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
                 {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} now={journal.read.now} />}
                 {tab === "notes" && <Notes version={version} />}
-                {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">The journal starts with the player character.</p>}
+                {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">{t("The journal starts with the player character.")}</p>}
             </div>
         </section>
     );
@@ -80,7 +80,7 @@ export function FollowedQuest({ version, campaign }: { version: number; campaign
 
     const next = quest.goals.find((goal) => !goal.done);
     return (
-        <aside class="followed" aria-label="The quest you follow">
+        <aside class="followed" aria-label={t("The quest you follow")}>
             <button type="button" class="followed-star on" aria-label={`Follow ${quest.name}`} aria-pressed={true} onClick={() => setFollowed(undefined)}>
                 <Star />
             </button>
@@ -103,20 +103,20 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
     const failed = quests.filter((quest) => quest.status === "failed");
 
     if (quests.length === 0) {
-        return <p class="journal-none">No quests yet: the ones your character takes come here.</p>;
+        return <p class="journal-none">{t("No quests yet: the ones your character takes come here.")}</p>;
     }
 
     const card = (quest: ShownQuest) => <QuestCard key={quest.name} quest={quest} followed={quest.name === followed} onFollow={onFollow} />;
     return (
         <div class="quest-log">
             <h3 class="quest-group">
-                Active <span>{open.length}</span>
+                {t("Active")} <span>{open.length}</span>
             </h3>
-            {open.length === 0 ? <p class="journal-none">None open now.</p> : <div class="quest-cards">{open.map(card)}</div>}
+            {open.length === 0 ? <p class="journal-none">{t("None open now.")}</p> : <div class="quest-cards">{open.map(card)}</div>}
             {done.length > 0 && (
                 <details class="quest-folded">
                     <summary class="quest-group">
-                        Completed <span>{done.length}</span>
+                        {t("Completed")} <span>{done.length}</span>
                     </summary>
                     <div class="quest-cards">{done.map(card)}</div>
                 </details>
@@ -124,7 +124,7 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
             {failed.length > 0 && (
                 <details class="quest-folded">
                     <summary class="quest-group">
-                        Failed <span>{failed.length}</span>
+                        {t("Failed")} <span>{failed.length}</span>
                     </summary>
                     <div class="quest-cards">{failed.map(card)}</div>
                 </details>
@@ -139,9 +139,9 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     const id = `quest-${quest.name.replace(/[^\p{L}\p{N}]+/gu, "-")}`;
     const open = quest.status === "open";
     const from = [
-        quest.giver === undefined ? undefined : `from ${quest.giver}`,
-        quest.place === undefined ? undefined : `at ${quest.place}`,
-        quest.deadline === undefined ? undefined : `by ${quest.deadline.date}`,
+        quest.giver === undefined ? undefined : t("from {who}", { who: quest.giver }),
+        quest.place === undefined ? undefined : t("at {place}", { place: quest.place }),
+        quest.deadline === undefined ? undefined : t("by {date}", { date: quest.deadline.date }),
     ].filter((part) => part !== undefined);
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
@@ -154,15 +154,15 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                             type="button"
                             class={followed ? "followed-star on" : "followed-star"}
                             aria-pressed={followed}
-                            aria-label={`Follow ${quest.name}`}
-                            data-tip="Shown in Scene and Combat"
+                            aria-label={t("Follow {quest}", { quest: quest.name })}
+                            data-tip={t("Shown in Scene and Combat")}
                             onClick={() => onFollow(followed ? undefined : quest.name)}
                         >
                             <Star />
                         </button>
                     )}
                     {open && quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
-                    {quest.main && <span class="quest-badge">Main</span>}
+                    {quest.main && <span class="quest-badge">{t("Main")}</span>}
                 </div>
                 <h4 class="quest-name" id={id} title={quest.name}>{quest.name}</h4>
             </header>
@@ -173,14 +173,14 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                 </div>
             )}
             {quest.goals.length > 0 && (
-                <ul class="quest-goals" aria-label="Goals">
+                <ul class="quest-goals" aria-label={t("Goals")}>
                     {quest.goals.map((goal, index) => (
                         <li key={index} class={goal.done ? "done" : quest.status === "failed" ? "missed" : undefined}>
                             <span class="quest-tick" aria-hidden="true">{goal.done ? "✓" : quest.status === "failed" ? "–" : ""}</span>
                             <span>
                                 <Markdown text={goal.text} />
                             </span>
-                            <span class="visually-hidden">{goal.done ? "done" : open ? "to do" : "not done"}</span>
+                            <span class="visually-hidden">{goal.done ? t("done") : open ? t("to do") : t("not done")}</span>
                         </li>
                     ))}
                 </ul>
@@ -191,7 +191,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                     {quest.clock !== undefined && (
                         <span class="quest-clock">
                             <ClockFace clock={quest.clock} hidden />
-                            <span>{quest.clock.name ?? "Clock"} {quest.clock.value}/{quest.clock.max}</span>
+                            <span>{quest.clock.name ?? t("Clock")} {quest.clock.value}/{quest.clock.max}</span>
                         </span>
                     )}
                 </div>
@@ -239,7 +239,7 @@ function QuestBar({ counter }: { counter: ShownQuest["counters"][number]; })
                 aria-valuemin={0}
                 aria-valuemax={counter.max}
                 aria-valuenow={counter.value}
-                aria-valuetext={`${counter.value} of ${counter.max}`}
+                aria-valuetext={t("{value} of {max}", { value: counter.value, max: counter.max })}
             >
                 <span style={{ width: `${share * 100}%` }} />
             </span>
@@ -262,7 +262,7 @@ function ClockFace({ clock, small = false, hidden = false }: { clock: NonNullabl
         return `${centre + radius * Math.cos(angle)} ${centre + radius * Math.sin(angle)}`;
     };
 
-    const label = `${clock.name ?? "Clock"}: ${clock.value} of ${clock.max}`;
+    const label = `${clock.name ?? t("Clock")}: ${t("{value} of {max}", { value: clock.value, max: clock.max })}`;
     return (
         <svg class="clock-face" width={size} height={size} viewBox={`0 0 ${size} ${size}`} {...(hidden ? { "aria-hidden": "true" } : { role: "img", "aria-label": label })}>
             {Array.from({ length: slices }, (_, index) => (
@@ -283,15 +283,15 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 {
     const minutes = deadline.minutes;
     const near = minutes !== undefined && minutes < 24 * 60;
-    const text = minutes === undefined ? `by ${deadline.date}` : minutes <= 0 ? "Time is up" : durationText(minutes);
+    const text = minutes === undefined ? t("by {date}", { date: deadline.date }) : minutes <= 0 ? t("Time is up") : durationText(minutes);
     // Its word apart, which the followed quest's strip leaves to a screen reader on a phone.
     const left = minutes !== undefined && minutes > 0;
     return (
-        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={`By ${deadline.date}`}>
+        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={t("By {date}", { date: deadline.date })}>
             <Icon name="hourglass" />
             <span>
                 {text}
-                {left && <span class="quest-deadline-left">left</span>}
+                {left && <span class="quest-deadline-left">{` ${t("left")}`}</span>}
             </span>
         </span>
     );
@@ -301,13 +301,13 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
 {
     if (chapters.length === 0) {
-        return <p class="journal-none">The story starts with the first scene.</p>;
+        return <p class="journal-none">{t("The story starts with the first scene.")}</p>;
     }
 
     return (
         <ol class="story">
             <li class="story-mark now">
-                <b>Now</b>
+                <b>{t("Now")}</b>
                 {now !== undefined && <span>{phraseLabel(now)}</span>}
             </li>
             {chapters.map((chapter, index) =>
@@ -318,10 +318,10 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                             <ChapterPicture chapter={chapter} />
                             <div class="chapter-body">
                                 <header class="chapter-head">
-                                    {chapter.number !== undefined && <span class="chapter-number">Chapter {chapter.number}</span>}
+                                    {chapter.number !== undefined && <span class="chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
                                     <h3>{chapter.title}</h3>
-                                    {chapter.open && <span class="chapter-now">Now</span>}
-                                    {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(chapter.type)}</span>}
+                                    {chapter.open && <span class="chapter-now">{t("Now")}</span>}
+                                    {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(sceneTypeLabel(chapter.type))}</span>}
                                 </header>
                                 {(chapter.place !== undefined || chapter.date !== undefined) && (
                                     <p class="chapter-when">{[chapter.place, chapter.date === undefined ? undefined : phraseLabel(chapter.date)].filter((part) => part !== undefined).join(" · ")}</p>
@@ -329,7 +329,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                                 {chapter.summary !== undefined && <p class="chapter-summary">{chapter.summary}</p>}
                                 {chapter.facts.length > 0 && (
                                     <details class="chapter-facts">
-                                        <summary>{chapter.facts.length === 1 ? "1 thing that happened" : `${chapter.facts.length} things that happened`}</summary>
+                                        <summary>{chapter.facts.length === 1 ? t("1 thing that happened") : t("{count} things that happened", { count: chapter.facts.length })}</summary>
                                         <Facts facts={chapter.facts} />
                                     </details>
                                 )}
@@ -338,7 +338,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                     )
             )}
             <li class="story-mark start">
-                <b>The start</b>
+                <b>{t("The start")}</b>
             </li>
         </ol>
     );
@@ -372,7 +372,7 @@ function Between({ chapter }: { chapter: ShownChapter; })
     return (
         <li class="chapter between">
             <details class="chapter-facts">
-                <summary>Between scenes · {chapter.facts.length === 1 ? "1 thing" : `${chapter.facts.length} things`}</summary>
+                <summary>{`${t("Between scenes")} · ${chapter.facts.length === 1 ? t("1 thing") : t("{count} things", { count: chapter.facts.length })}`}</summary>
                 <Facts facts={chapter.facts} />
             </details>
         </li>
@@ -447,14 +447,20 @@ function durationText(minutes: number): string
     const rest = minutes % 60;
 
     if (days > 0) {
-        return `${days}d${hours > 0 ? ` ${hours}h` : ""}`;
+        return [t("{days}d", { days }), hours > 0 ? t("{hours}h", { hours }) : ""].filter((part) => part !== "").join(" ");
     }
 
-    return hours > 0 ? `${hours}h${rest > 0 ? ` ${rest}m` : ""}` : `${rest}m`;
+    return hours > 0 ? [t("{hours}h", { hours }), rest > 0 ? t("{minutes}m", { minutes: rest }) : ""].filter((part) => part !== "").join(" ") : t("{minutes}m", { minutes: rest });
 }
 
 /** A goal's words without the marks of markdown, for the small strip. */
 function plainText(text: string): string
 {
     return text.replace(/\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g, (_, page: string, label?: string) => label ?? page).replace(/[*_`]/g, "");
+}
+
+/** A tab's name in the page's language. */
+function tabName(tab: string): string
+{
+    return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : t("Notes");
 }

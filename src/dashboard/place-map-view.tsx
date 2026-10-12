@@ -6,7 +6,9 @@ import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
+import { strangerLabel } from "./labels.ts";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
+import { t } from "./text.ts";
 
 // How wide a square is drawn, in pixels.
 const size = 40;
@@ -65,7 +67,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
             {things.map((feature) =>
                 piecesOf(map, feature.symbol, feature.kind).map((piece) => (
                     <g key={`${feature.symbol} ${piece.left} ${piece.top}`} class={`lm-thing ${feature.kind}`}>
-                        <title>{[feature.name, feature.blocks ? "blocks" : "", feature.difficult ? "difficult" : ""].filter((part) => part !== "").join(", ")}</title>
+                        <title>{[feature.name, feature.blocks ? t("blocks") : "", feature.difficult ? t("difficult") : ""].filter((part) => part !== "").join(", ")}</title>
                         <Thing
                             kind={feature.kind}
                             symbol={feature.symbol}
@@ -84,7 +86,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
     return (
         <section class="lm" aria-labelledby="lm-title">
             <header class="lm-head">
-                <h3 id="lm-title">Map</h3>
+                <h3 id="lm-title">{t("Map")}</h3>
                 <span class="lm-sub">{place}</span>
             </header>
             <div class={picking === undefined ? "lm-frame" : "lm-frame panned"}>
@@ -95,7 +97,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                     viewBox={`0 0 ${width} ${height}`}
                     {...(picking === undefined ? {} : { width: width * 1.2 })}
                     role="img"
-                    aria-label={`Map of ${place}`}
+                    aria-label={t("Map of {place}", { place })}
                 >
                     <defs>
                         <Patterns />
@@ -168,7 +170,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                     )}
                 </svg>
             </div>
-            <ul class="lm-key" aria-label="Legend">
+            <ul class="lm-key" aria-label={t("Legend")}>
                 {/* What the veil on the player's turn is (D-335, D-340). */}
                 {reach.length > 0 && (
                     <li>
@@ -178,34 +180,34 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                                 <rect width={40} height={40} />
                             </g>
                         </svg>
-                        <span class="lm-key-name">out of your move this turn</span>
+                        <span class="lm-key-name">{t("out of your move this turn")}</span>
                     </li>
                 )}
                 {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
                     <li key={feature.symbol}>
                         <Swatch feature={feature} ground={map.ground} />
                         <span class="lm-key-name">{feature.name}</span>
-                        {feature.blocks && !["wall", "rock"].includes(feature.kind) && <span class="lm-key-note">blocks</span>}
-                        {feature.difficult && <span class="lm-key-note">difficult</span>}
+                        {feature.blocks && !["wall", "rock"].includes(feature.kind) && <span class="lm-key-note">{t("blocks")}</span>}
+                        {feature.difficult && <span class="lm-key-note">{t("difficult")}</span>}
                     </li>
                 ))}
                 {map.exits.map((exit) => (
                     <li key={exit.square} class="lm-key-exit">
                         <span class="lm-key-square">{exit.square}</span>
-                        <span>{`→ ${exit.to ?? "somewhere"}`}</span>
+                        <span>{`→ ${exit.to ?? t("somewhere")}`}</span>
                     </li>
                 ))}
             </ul>
             {standing.length > 0 && (
-                <ul class="lm-where" aria-label="Who is where">
+                <ul class="lm-where" aria-label={t("Who is where")}>
                     {/* The player's character first, then the companions, then the others, each as the map lists them. */}
                     {standing.toSorted((first, second) => roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
                         <li key={index} class={`lm-where-${one.role}`}>
-                            <span class="lm-where-name">{capitalized(one.name)}</span>
+                            <span class="lm-where-name">{one.stranger ? strangerLabel(one.name) : one.name}</span>
                             <span class="lm-key-square">{one.square}</span>
                             {one.distance !== undefined
                                 ? <span class="lm-where-far">{one.distance}</span>
-                                : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && <span class="lm-where-far">next to you</span>}
+                                : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && <span class="lm-where-far">{t("next to you")}</span>}
                         </li>
                     ))}
                 </ul>
@@ -669,7 +671,7 @@ function Token({ one, index, acting, x, y }: { one: ShownGrid["at"][number]; ind
     const number = one.stranger ? /[A-Z]?\d+$/.exec(one.name)?.[0] : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
-            <title>{`${capitalized(one.name)}, ${one.square}`}</title>
+            <title>{`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`}</title>
             {acting && (
                 <>
                     <circle class="lm-halo" cx={x} cy={y} r={r + 6} />
@@ -749,9 +751,4 @@ function canopy(x: number, y: number, r: number): string
         const [px, py] = [x + Math.cos(angle) * r, y + Math.sin(angle) * r];
         return index === 0 ? `M${px} ${py}` : `A${r * 0.36} ${r * 0.36} 0 0 1 ${px} ${py}`;
     }).join("") + "z";
-}
-
-function capitalized(text: string): string
-{
-    return `${text[0]?.toUpperCase() ?? ""}${text.slice(1)}`;
 }

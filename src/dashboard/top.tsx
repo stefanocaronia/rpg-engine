@@ -10,6 +10,7 @@ import type { Moment, Mood } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
 import { usePrefChange } from "./prefs.ts";
+import { t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
@@ -115,7 +116,7 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
     const away = [...shown.slice(fitting.sections), ...(fitting.pages ? [] : menuPages)];
     return (
         <div ref={row} class="nav-row">
-            <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : "Sections"}>
+            <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : t("Sections")}>
                 {[...shown, ...menuPages].map((section, index) => {
                     const gone = away.includes(section);
                     const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link" : "", gone ? "away" : ""];
@@ -132,7 +133,7 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
                                 <Icon name={section} />
                             </span>
                             {sectionLabel(section)}
-                            {section === "combat" && turn && <span class="visually-hidden">, your turn</span>}
+                            {section === "combat" && turn && <span class="visually-hidden">{`, ${t("your turn")}`}</span>}
                         </a>
                     );
                 })}
@@ -223,8 +224,8 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
             <button
                 type="button"
                 class="icon-button tonal menu-button tip-left"
-                aria-label="Menu"
-                data-tip="Menu"
+                aria-label={t("Menu")}
+                data-tip={t("Menu")}
                 aria-expanded={open}
                 tabIndex={hidden ? -1 : undefined}
                 onClick={() => setOpen(!open)}
@@ -281,14 +282,14 @@ function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
     const next = shownTheme() === "dark" ? "light" : "dark";
     const flip = (): void => pickTheme(next);
 
-    return [{ next, name: next === "dark" ? "Dark theme" : "Light theme" }, flip];
+    return [{ next, name: next === "dark" ? t("Dark theme") : t("Light theme") }, flip];
 }
 
 /** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; it leads to the scene (D-309). */
 function PlacePath({ path }: { path: string[]; })
 {
     return (
-        <a class="top-place" href={sectionAddress("scene")} aria-label={`Where the party is: ${path.toReversed().join(", ")}`}>
+        <a class="top-place" href={sectionAddress("scene")} aria-label={t("Where the party is: {path}", { path: path.toReversed().join(", ") })}>
             <Icon name="place" />
             <ol>{path.map((name, index) => <li key={index}>{name}</li>)}</ol>
         </a>
@@ -303,7 +304,7 @@ function StatusChips({ now, live }: { now?: string; live: boolean; })
         <div class="status-chips">
             <span class={live ? "status-chip live on" : "status-chip live"}>
                 <span class="dot" />
-                {live ? "live" : "waiting for the game"}
+                {live ? t("live") : t("waiting for the game")}
             </span>
             {now && (
                 <span class="status-chip">

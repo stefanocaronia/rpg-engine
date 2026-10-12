@@ -5,6 +5,7 @@ import type { ShownGrid } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { isStandable, squareOf } from "./place-map.ts";
+import { t } from "./text.ts";
 
 export function MapSheet({ map, place, question, onPick, onClose }: { map: ShownGrid; place: string; question: string; onPick(square: string): void; onClose(): void; })
 {
@@ -38,7 +39,7 @@ export function MapSheet({ map, place, question, onPick, onClose }: { map: Shown
         <dialog ref={dialog} class="map-sheet" aria-labelledby="map-sheet-title" onClose={onClose}>
             <header class="map-sheet-head">
                 <h2 id="map-sheet-title">{question}</h2>
-                <button type="button" class="icon-button tip-left" aria-label="Close" data-tip="Close" onClick={() => dialog.current?.close()}>
+                <button type="button" class="icon-button tip-left" aria-label={t("Close")} data-tip={t("Close")} onClick={() => dialog.current?.close()}>
                     <Icon name="close" />
                 </button>
             </header>
@@ -46,9 +47,9 @@ export function MapSheet({ map, place, question, onPick, onClose }: { map: Shown
                 <PlaceMap map={map} place={place} picking={{ selected: written === "" ? selected : undefined, onSelect: pick }} />
             </div>
             <form class="map-sheet-bar" onSubmit={send}>
-                <input type="text" value={typed} maxLength={5} placeholder={selected ?? "E4"} aria-label="The square, such as E4" onInput={(event) => setTyped(event.currentTarget.value)} />
+                <input type="text" value={typed} maxLength={5} placeholder={selected ?? "E4"} aria-label={t("The square, such as E4")} onInput={(event) => setTyped(event.currentTarget.value)} />
                 <button type="submit" class="map-sheet-go" disabled={!standable}>
-                    {chosen === undefined ? "Touch a square" : standable ? `Move to ${chosen}` : `${chosen}: no one stands there`}
+                    {chosen === undefined ? t("Touch a square") : standable ? t("Move to {square}", { square: chosen }) : t("{square}: no one stands there", { square: chosen })}
                 </button>
             </form>
         </dialog>

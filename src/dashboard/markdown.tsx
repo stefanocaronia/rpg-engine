@@ -1,6 +1,7 @@
 // A page's text as the player may read it, from its markdown (D-275): headings, paragraphs, lists, quotes, bold and italics, links as their names. Never HTML:
 // every piece is text, so nothing in a page can run in the dashboard.
 import { type ComponentChildren, Fragment } from "preact";
+import { t } from "./text.ts";
 
 export function Markdown({ text }: { text: string; })
 {
@@ -11,7 +12,7 @@ export function Markdown({ text }: { text: string; })
 export function plainLine(text: string): string | undefined
 {
     const line = text.split("\n").find((candidate) => candidate.trim() !== "" && !/^\s*#/.test(candidate));
-    return line === undefined ? undefined : linkNames(line).replace(/^\s*(?:>\s?|[-*]\s+)/, "").replace(/\[!secret\]/i, "Secret:").replace(/[*_]/g, "").trim();
+    return line === undefined ? undefined : linkNames(line).replace(/^\s*(?:>\s?|[-*]\s+)/, "").replace(/\[!secret\]/i, t("Secret:")).replace(/[*_]/g, "").trim();
 }
 
 function blocks(text: string): ComponentChildren[]
@@ -55,7 +56,7 @@ function blocks(text: string): ComponentChildren[]
             }
 
             // A quote, as a secret discovered: its text, its marker as a word.
-            paragraph.push(line.replace(/^\s*>\s?/, "").replace(/\[!secret\]/i, "Secret:"));
+            paragraph.push(line.replace(/^\s*>\s?/, "").replace(/\[!secret\]/i, t("Secret:")));
         }
     }
 

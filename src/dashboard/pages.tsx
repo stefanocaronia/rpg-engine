@@ -2,12 +2,7 @@
 import type { Section } from "./address.ts";
 import { sectionLabel } from "./address.ts";
 import { phraseLabel } from "./labels.ts";
-
-// What each section to come will hold, as the plan says (D-269).
-const upcoming: Partial<Record<Section, string>> = {
-    world: "What your character knows, the documents found and the calendar; the world map later.",
-    rules: "The rules of the game, to look up.",
-};
+import { t } from "./text.ts";
 
 /** A section the page does not have yet: what it will hold. */
 export function Upcoming({ section }: { section: Section; })
@@ -15,8 +10,8 @@ export function Upcoming({ section }: { section: Section; })
     return (
         <section class="upcoming" aria-labelledby="upcoming-title">
             <h2 id="upcoming-title">{sectionLabel(section)}</h2>
-            <p>{upcoming[section]}</p>
-            <p class="upcoming-note">It comes in a next step.</p>
+            <p>{upcoming(section)}</p>
+            <p class="upcoming-note">{t("It comes in a next step.")}</p>
         </section>
     );
 }
@@ -26,10 +21,16 @@ export function About({ product, system }: { product: string; system?: { name: s
 {
     return (
         <section class="upcoming" aria-labelledby="about-title">
-            <h2 id="about-title">About</h2>
-            <p>{product}: the dashboard of the campaign, beside the chat where you play.</p>
+            <h2 id="about-title">{t("About")}</h2>
+            <p>{t("{product}: the dashboard of the campaign, beside the chat where you play.", { product })}</p>
             {system && <p>{`${system.name} · ${phraseLabel(system.title)}`}</p>}
             {system?.attribution && <p class="upcoming-note">{system.attribution}</p>}
         </section>
     );
+}
+
+/** What a section to come will hold, as the plan says (D-269). */
+function upcoming(section: Section): string | undefined
+{
+    return section === "world" ? t("What your character knows, the documents found and the calendar; the world map later.") : section === "rules" ? t("The rules of the game, to look up.") : undefined;
 }

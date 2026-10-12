@@ -1,5 +1,6 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
 import type { Asked, PlayerSetting, ResetPoint, View, WorldMap } from "./data.ts";
+import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
 export type SavesView = Extract<View, { kind: "saves"; }>;
@@ -29,7 +30,7 @@ export async function readMap(): Promise<WorldMap>
     }
 
     if (body.kind !== "map") {
-        throw new Error("There is no player character yet: the map starts with one.");
+        throw new Error(t("There is no player character yet: the map starts with one."));
     }
 
     return body;
@@ -62,7 +63,7 @@ export async function readSetup(): Promise<SetupView>
     }
 
     if (body.kind !== "setup") {
-        throw new Error("The game gave no setup: reload the page.");
+        throw new Error(t("The game gave no setup: reload the page."));
     }
 
     return body;
@@ -73,9 +74,9 @@ export async function sendSetupWord(word: { leave: string; } | { ready: true; })
 {
     try {
         const response = await fetch("/api/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(word) });
-        return response.status === 202 ? undefined : ((await response.json() as { error?: string; }).error ?? "It did not reach the game: try again.");
+        return response.status === 202 ? undefined : ((await response.json() as { error?: string; }).error ?? t("It did not reach the game: try again."));
     } catch {
-        return "It did not reach the game: try again.";
+        return t("It did not reach the game: try again.");
     }
 }
 
@@ -112,7 +113,7 @@ export type NoteChange = { id: string; title: string; text: string; } | { remove
 export async function readNotes(): Promise<{ notes: Note[]; pending: string[]; }>
 {
     const response = await fetch("/api/notes");
-    const body = await response.json().catch(() => ({ error: `The notes did not come (${response.status}): reload the page.` })) as { notes: Note[]; pending?: string[]; } | {
+    const body = await response.json().catch(() => ({ error: t("The notes did not come ({status}): reload the page.", { status: response.status }) })) as { notes: Note[]; pending?: string[]; } | {
         error: string;
     };
 
@@ -135,9 +136,9 @@ export async function sendNote(change: NoteChange, leaving = false): Promise<str
     const post = async (): Promise<string | undefined> => {
         try {
             const response = await fetch("/api/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change), keepalive: leaving });
-            return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The note was not saved: try again.");
+            return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? t("The note was not saved: try again."));
         } catch {
-            return "The note was not saved: the game is not connected.";
+            return t("The note was not saved: the game is not connected.");
         }
     };
 
@@ -155,9 +156,9 @@ export async function sendStory(text: string): Promise<string | undefined>
 {
     try {
         const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-        return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? "The story did not reach the master: try again.");
+        return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? t("The story did not reach the master: try again."));
     } catch {
-        return "The story did not reach the master: the game is not connected.";
+        return t("The story did not reach the master: the game is not connected.");
     }
 }
 
@@ -179,7 +180,7 @@ export async function readSaves(): Promise<SavesView>
     }
 
     if (body.kind !== "saves") {
-        throw new Error("The game gave no saves: reload the page.");
+        throw new Error(t("The game gave no saves: reload the page."));
     }
 
     return body;
@@ -199,9 +200,9 @@ export async function changeSaves(change: SavesChange): Promise<string | undefin
         }
 
         const body = await response.json() as { error?: string; };
-        return body.error ?? "It did not reach the game: try again.";
+        return body.error ?? t("It did not reach the game: try again.");
     } catch {
-        return "It did not reach the game: try again.";
+        return t("It did not reach the game: try again.");
     }
 }
 
@@ -229,9 +230,9 @@ async function sendChange(change: SettingChange): Promise<string | undefined>
         }
 
         const body = await response.json() as { error?: string; };
-        return body.error ?? "The change did not reach the game: try again.";
+        return body.error ?? t("The change did not reach the game: try again.");
     } catch {
-        return "The change did not reach the game: try again.";
+        return t("The change did not reach the game: try again.");
     }
 }
 

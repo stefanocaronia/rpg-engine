@@ -6,21 +6,19 @@ import { changeSetting, readSettings, type SettingChange } from "./api.ts";
 import type { PlayerSetting } from "./data.ts";
 import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { DieSwatch, Icon } from "./icons.tsx";
-import { itemLabel, phraseLabel } from "./labels.ts";
+import { settingLabel, valueLabel } from "./labels.ts";
 import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
+import { t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice.
-const groups: { title: string; names: string[]; system?: true; }[] = [
-    { title: "The game", names: ["difficulty", "lethality", "saves", "rigor"] },
-    { title: "Learning the game", names: ["mentor", "learned"] },
-    { title: "Dice and measures", names: ["dice", "units"], system: true },
-    { title: "Limits", names: ["lines", "veils"] },
-    { title: "Pictures and language", names: ["pictures", "language"] },
+const groups: { names: string[]; system?: true; }[] = [
+    { names: ["difficulty", "lethality", "saves", "rigor"] },
+    { names: ["mentor", "learned"] },
+    { names: ["dice", "units"], system: true },
+    { names: ["lines", "veils"] },
+    { names: ["pictures", "language"] },
 ];
-
-// What a list's field suggests, as an example.
-const examples: Record<string, string> = { lines: "Add, e.g. spiders", veils: "Add, e.g. torture", learned: "Add what you know, e.g. Advantage" };
 
 export function SettingsView({ version }: { version: number; })
 {
@@ -57,17 +55,17 @@ export function SettingsView({ version }: { version: number; })
     const known = new Set(groups.flatMap((group) => group.names));
     return (
         <section class="settings" aria-labelledby="settings-title">
-            <h2 id="settings-title">Settings</h2>
-            <p class="settings-lead">A change counts at once, from now on: what is already in play stays as it is. The master hears of it at their next move, and of nothing you put back as it was.</p>
+            <h2 id="settings-title">{t("Settings")}</h2>
+            <p class="settings-lead">{t("A change counts at once, from now on: what is already in play stays as it is. The master hears of it at their next move, and of nothing you put back as it was.")}</p>
             {problem !== undefined && <p class="settings-problem" role="alert">{problem}</p>}
-            {settings !== undefined && groups.map((group) => {
+            {settings !== undefined && groups.map((group, index) => {
                 const shown = [
                     ...group.names.flatMap((name) => settings.filter((setting) => setting.name === name)),
                     ...(group.system ? settings.filter((setting) => !known.has(setting.name)) : []),
                 ];
                 return (
-                    <section key={group.title} class="settings-group">
-                        <h3>{group.title}</h3>
+                    <section key={group.names[0]} class="settings-group">
+                        <h3>{groupTitle(index)}</h3>
                         {shown.map((setting) => <SettingRow key={setting.name} setting={setting} onChange={change} />)}
                     </section>
                 );
@@ -124,15 +122,15 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
     return (
         <div class="setting">
             <div class="setting-what">
-                <span class="setting-name" id={id}>{phraseLabel(setting.name)}</span>
-                <span class="setting-about" id={`${id}-about`}>{setting.about}</span>
+                <span class="setting-name" id={id}>{settingLabel(setting.name)}</span>
+                <span class="setting-about" id={`${id}-about`}>{t(setting.about)}</span>
             </div>
             {setting.choices !== undefined
                 ? (
                     <Segmented
                         label={id}
                         described={chosen?.means === undefined ? `${id}-about` : `${id}-about ${id}-means`}
-                        options={setting.choices.map((choice) => ({ value: choice.value, label: itemLabel(choice.value) }))}
+                        options={setting.choices.map((choice) => ({ value: choice.value, label: valueLabel(choice.value) }))}
                         value={value}
                         onPick={choose}
                     />
@@ -143,10 +141,10 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
             <div class="setting-after">
                 {chosen?.means !== undefined && (
                     <p class="setting-means" id={`${id}-means`}>
-                        <strong>{itemLabel(chosen.value)}:</strong> {chosen.means}
+                        <strong>{valueLabel(chosen.value)}:</strong> {t(chosen.means)}
                     </p>
                 )}
-                {unset && <p class="setting-unset">{setting.choices === undefined ? "Not answered yet: add them here, or the master asks you." : "Not chosen yet: choose here, or the master asks you."}</p>}
+                {unset && <p class="setting-unset">{setting.choices === undefined ? t("Not answered yet: add them here, or the master asks you.") : t("Not chosen yet: choose here, or the master asks you.")}</p>}
                 {setting.note !== undefined && <SettingNote note={setting.note} />}
                 <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
             </div>
@@ -164,7 +162,7 @@ function useSaid(): { now?: { problem: boolean; text: string; }; show(problem: s
 
     const show = (problem: string | undefined): void => {
         clearTimeout(timer.current);
-        setNow(problem === undefined ? { problem: false, text: "✓ Saved" } : { problem: true, text: problem });
+        setNow(problem === undefined ? { problem: false, text: `✓ ${t("Saved")}` } : { problem: true, text: problem });
 
         if (problem === undefined) {
             timer.current = setTimeout(() => setNow(undefined), 4000);
@@ -198,8 +196,8 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
                         <button
                             type="button"
                             class="icon-button"
-                            aria-label={`Take ${one} off`}
-                            data-tip="Take off"
+                            aria-label={t("Take {item} off", { item: one })}
+                            data-tip={t("Take off")}
                             onClick={() => {
                                 setFocusAt(index);
                                 onChange({ setting: setting.name, remove: one });
@@ -224,11 +222,11 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
                     type="text"
                     value={item}
                     maxLength={200}
-                    placeholder={examples[setting.name] ?? "Add…"}
-                    aria-label={`Add to ${setting.name}`}
+                    placeholder={exampleOf(setting.name) ?? t("Add…")}
+                    aria-label={t("Add to {setting}", { setting: settingLabel(setting.name) })}
                     onInput={(event) => setItem(event.currentTarget.value)}
                 />
-                <button type="submit" class="setting-button" disabled={item.trim() === ""}>Add</button>
+                <button type="submit" class="setting-button" disabled={item.trim() === ""}>{t("Add")}</button>
             </form>
         </div>
     );
@@ -256,10 +254,10 @@ function LanguageSetting({ setting, label, onChange }: { setting: PlayerSetting;
         >
             <span class="setting-text-row">
                 <input type="text" value={text} maxLength={20} aria-labelledby={label} aria-describedby={`${label}-name`} onInput={(event) => setText(event.currentTarget.value)} />
-                <button type="submit" class="setting-button" disabled={name === undefined || typed === setting.value}>Save</button>
+                <button type="submit" class="setting-button" disabled={name === undefined || typed === setting.value}>{t("Save")}</button>
             </span>
             <span id={`${label}-name`} class={name === undefined && typed !== "" ? "setting-text-name problem" : "setting-text-name"}>
-                {typed === "" ? "" : name ?? "No language has this code: try it, en or pt-BR."}
+                {typed === "" ? "" : name ?? t("No language has this code: try it, en or pt-BR.")}
             </span>
         </form>
     );
@@ -330,7 +328,7 @@ function Command({ text }: { text: string; })
     return (
         <span class="setting-command">
             <code>{text}</code>
-            <button type="button" class="setting-copy" aria-label={`Copy ${text}`} onClick={() => void copy()}>{copied ? "Copied" : "Copy"}</button>
+            <button type="button" class="setting-copy" aria-label={t("Copy {command}", { command: text })} onClick={() => void copy()}>{copied ? t("Copied") : t("Copy")}</button>
         </span>
     );
 }
@@ -361,23 +359,35 @@ function PageSettings()
     const [byHand, setByHand] = usePref(byHandPref);
     // A row with many values has them under its name.
     const rows: { name: string; about: string; options: Option[]; value: string; pick(value: string): void; under?: boolean; }[] = [
-        { name: "Theme", about: "the page's look", options: [{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], value: shownTheme(), pick: (value) => pickTheme(value === "dark" ? "dark" : "light") },
-        { name: "Dice sound", about: "the dice as they roll", options: [{ value: "on", label: "On" }, { value: "off", label: "Off" }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
         {
-            name: "Dice set",
-            about: "what your dice are made of",
-            options: diceSets.map((set) => ({ value: set.value, label: set.label, picture: <SetSwatch value={set.value} /> })),
+            name: t("Theme"),
+            about: t("the page's look"),
+            options: [{ value: "light", label: t("Light") }, { value: "dark", label: t("Dark") }],
+            value: shownTheme(),
+            pick: (value) => pickTheme(value === "dark" ? "dark" : "light"),
+        },
+        { name: t("Dice sound"), about: t("the dice as they roll"), options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
+        {
+            name: t("Dice set"),
+            about: t("what your dice are made of"),
+            options: diceSets.map((set) => ({ value: set.value, label: diceSetLabel(set.value) ?? set.label, picture: <SetSwatch value={set.value} /> })),
             value: diceSet,
             pick: setDiceSet,
             under: true,
         },
-        { name: "Dice edges", about: "how the dice's edges are cut", options: [{ value: "rounded", label: "Rounded" }, { value: "sharp", label: "Sharp" }], value: edges, pick: setEdges },
         {
-            name: "Checks",
-            about: "what the master asks you to roll",
+            name: t("Dice edges"),
+            about: t("how the dice's edges are cut"),
+            options: [{ value: "rounded", label: t("Rounded") }, { value: "sharp", label: t("Sharp") }],
+            value: edges,
+            pick: setEdges,
+        },
+        {
+            name: t("Checks"),
+            about: t("what the master asks you to roll"),
             options: [
-                { value: "ready", label: "Ready buttons", means: "a button for each roll the master asks" },
-                { value: "hand", label: "By hand", means: "you find the row on your sheet, or roll from the tray, as at the table" },
+                { value: "ready", label: t("Ready buttons"), means: t("a button for each roll the master asks") },
+                { value: "hand", label: t("By hand"), means: t("you find the row on your sheet, or roll from the tray, as at the table") },
             ],
             value: byHand ? "hand" : "ready",
             pick: (value) => setByHand(value === "hand"),
@@ -385,8 +395,8 @@ function PageSettings()
     ];
     return (
         <section class="settings-group">
-            <h3>This page</h3>
-            <p class="setting-about">Kept in this browser alone.</p>
+            <h3>{t("This page")}</h3>
+            <p class="setting-about">{t("Kept in this browser alone.")}</p>
             {rows.map((row) => {
                 const id = `page-${idOf(row.name)}`;
                 const chosen = row.options.find((option) => option.value === row.value);
@@ -471,4 +481,39 @@ function Segmented({ label, described, options, value, onPick }: {
             ))}
         </span>
     );
+}
+
+/** A group of the campaign's settings by its place, in the page's language. */
+function groupTitle(index: number): string
+{
+    return [t("The game"), t("Learning the game"), t("Dice and measures"), t("Limits"), t("Pictures and language")][index] ?? "";
+}
+
+/** What a list's field suggests, as an example. */
+function exampleOf(name: string): string | undefined
+{
+    const examples: Record<string, string> = { lines: t("Add, e.g. spiders"), veils: t("Add, e.g. torture"), learned: t("Add what you know, e.g. Advantage") };
+    return examples[name];
+}
+
+/** A set of dice by its name in the page's language; undefined for one the page does not name. */
+function diceSetLabel(value: string): string | undefined
+{
+    const labels: Record<string, string> = {
+        theme: t("Theme"),
+        ivory: t("Ivory"),
+        obsidian: t("Obsidian"),
+        ruby: t("Ruby"),
+        emerald: t("Emerald"),
+        sapphire: t("Sapphire"),
+        amethyst: t("Amethyst"),
+        steel: t("Steel"),
+        brass: t("Brass"),
+        walnut: t("Walnut"),
+        ash: t("Ash"),
+        marble: t("Marble"),
+        onyx: t("Onyx"),
+        granite: t("Granite"),
+    };
+    return labels[value];
 }

@@ -7,8 +7,9 @@ import { readMap, readView } from "./api.ts";
 import type { MapPlace, MapPoint, Member, WorldMap } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { Icon, type IconName } from "./icons.tsx";
-import { biomes, placeKinds, symbolRadius } from "./map-symbols.ts";
+import { biomeLabel, biomes, placeKindLabel, placeKinds, symbolRadius } from "./map-symbols.ts";
 import { plainLine } from "./markdown.tsx";
+import { t } from "./text.ts";
 import {
     type Area,
     type Box,
@@ -79,8 +80,8 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
     if (map === undefined || drawn === undefined || part === undefined || layout === undefined || (layout.spots.length === 0 && layout.regions.length === 0)) {
         return (
             <section class="upcoming" aria-labelledby="world-title">
-                <h2 id="world-title">World</h2>
-                <p>{problem ?? (map === undefined ? "Reading the map…" : "Your character knows no place on the map yet: it grows as the master writes where places are.")}</p>
+                <h2 id="world-title">{t("World")}</h2>
+                <p>{problem ?? (map === undefined ? t("Reading the map…") : t("Your character knows no place on the map yet: it grows as the master writes where places are."))}</p>
             </section>
         );
     }
@@ -105,7 +106,7 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
 
     return (
         <section class="world" aria-labelledby="world-title">
-            <h2 id="world-title" class="visually-hidden">World</h2>
+            <h2 id="world-title" class="visually-hidden">{t("World")}</h2>
             <MapCard key={part.name} map={drawn} full={map} part={part} layout={layout} lead={lead} chosen={chosen} focus={focus} onChoose={choose} onGo={goTo} />
             <PlacesList map={drawn} layout={layout} onChoose={choose} />
         </section>
@@ -283,32 +284,32 @@ function MapCard(
     };
 
     const spot = layout.spots.find((one) => one.name === chosen);
-    const where = layout.partySpot === undefined ? "" : `, your party at ${layout.partySpot.name}`;
+    const label = layout.partySpot === undefined ? t("World map") : t("World map, your party at {place}", { place: layout.partySpot.name });
     const here = full.maps.find((known) => known.name === part.name);
     const partyMap = full.party === undefined ? undefined : mapNameOf(full, full.party);
     return (
         <section class="map-card" aria-labelledby="map-title">
             <header class="map-head">
-                <h3 id="map-title">Map</h3>
+                <h3 id="map-title">{t("Map")}</h3>
                 <span class="map-sub">
                     {[
-                        `${layout.spots.length} ${layout.spots.length === 1 ? "place" : "places"} you know`,
-                        here?.under === undefined ? undefined : `under ${here.under}`,
-                        here?.mirror === undefined ? undefined : `the mirror of ${here.mirror}`,
-                        partyMap === undefined || partyMap === part.name ? undefined : `your party is on ${partyMap}`,
+                        layout.spots.length === 1 ? t("1 place you know") : t("{count} places you know", { count: layout.spots.length }),
+                        here?.under === undefined ? undefined : t("under {map}", { map: here.under }),
+                        here?.mirror === undefined ? undefined : t("the mirror of {map}", { map: here.mirror }),
+                        partyMap === undefined || partyMap === part.name ? undefined : t("your party is on {map}", { map: partyMap }),
                     ].filter((text) => text !== undefined).join(" · ")}
                 </span>
                 <button type="button" class="map-to-list" onClick={() => document.getElementById("places-title")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
                     <Icon name="list" />
-                    <span>List</span>
+                    <span>{t("List")}</span>
                 </button>
             </header>
             {full.maps.length > 1 && (
-                <nav class="map-tabs" aria-label="Maps">
+                <nav class="map-tabs" aria-label={t("Maps")}>
                     {full.maps.map((known) => (
                         <button key={known.name} type="button" class="map-tab" aria-current={known.name === part.name ? "true" : undefined} onClick={() => onGo(known.name)}>
                             {known.name}
-                            {known.name === partyMap && <span class="map-tab-party" aria-label="your party is here" />}
+                            {known.name === partyMap && <span class="map-tab-party" aria-label={t("your party is here")} />}
                         </button>
                     ))}
                 </nav>
@@ -319,7 +320,7 @@ function MapCard(
                 tabIndex={0}
                 role="region"
                 aria-roledescription="map"
-                aria-label={`World map${where}`}
+                aria-label={label}
                 aria-describedby="map-help"
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
@@ -343,17 +344,17 @@ function MapCard(
                         chosen={chosen}
                     />
                 )}
-                <div class="map-tools" role="toolbar" aria-label="Map">
-                    <Tool name="plus" label="Zoom in" onClick={() => zoom(zoomStep)} />
-                    <Tool name="minus" label="Zoom out" onClick={() => zoom(1 / zoomStep)} />
+                <div class="map-tools" role="toolbar" aria-label={t("Map")}>
+                    <Tool name="plus" label={t("Zoom in")} onClick={() => zoom(zoomStep)} />
+                    <Tool name="minus" label={t("Zoom out")} onClick={() => zoom(1 / zoomStep)} />
                     <Tool
                         name="locate"
-                        label="Your party"
+                        label={t("Your party")}
                         onClick={() => (map.party !== undefined && view !== undefined ? setView({ ...view, x: map.party.x, y: map.party.y }) : partyMap !== undefined && onGo(partyMap))}
                     />
-                    <Tool name="fit" label="All you know" onClick={() => size !== undefined && setView(fitView(lifted, size.width, size.height))} />
+                    <Tool name="fit" label={t("All you know")} onClick={() => size !== undefined && setView(fitView(lifted, size.width, size.height))} />
                 </div>
-                <p id="map-help" class="visually-hidden">Arrows move the map, plus and minus zoom, Escape closes a place's card. The list of places below says the same.</p>
+                <p id="map-help" class="visually-hidden">{t("Arrows move the map, plus and minus zoom, Escape closes a place's card. The list of places below says the same.")}</p>
                 {spot !== undefined && <PlaceCard place={spot} map={full} layout={layout} narrow={narrow} onClose={() => onChoose(undefined)} onGo={onGo} />}
             </div>
             <Key map={map} layout={layout} narrow={narrow} trail={trails.length > 0} passages={part.passages.length > 0} />
@@ -521,7 +522,7 @@ function Drawing(
                     return placed === undefined ? null : (
                         <g key={region.name}>
                             <text class="label region-label" x={placed.x} y={placed.y} text-anchor="middle">{region.name}</text>
-                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{`${region.terrain} terrain`}</text>}
+                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{t("{terrain} terrain", { terrain: region.terrain })}</text>}
                         </g>
                     );
                 })}
@@ -544,7 +545,7 @@ function Drawing(
                 <rect class="scale-b" x={scale.width / 2} width={scale.width / 2} height={5} />
                 <text class="scale-text" x={0} y={-8}>0</text>
                 <text class="scale-text" x={scale.width} y={-8} text-anchor="middle">{scale.value}</text>
-                <text class="scale-text" x={scale.width + 8} y={5}>{map.unit.name === "km" ? "km" : "miles"}</text>
+                <text class="scale-text" x={scale.width + 8} y={5}>{map.unit.name === "km" ? "km" : t("miles")}</text>
             </g>
         </svg>
     );
@@ -620,11 +621,11 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
         closer.current?.focus({ preventScroll: true });
     }, [place.name]);
 
-    const eyebrow = [placeKinds[place.kind ?? ""]?.label ?? "Place", region?.name, here || place.from === undefined ? undefined : `${place.from} from you`].filter((part) => part !== undefined);
+    const eyebrow = [placeKindLabel(place.kind) ?? t("Place"), region?.name, here || place.from === undefined ? undefined : t("{distance} from you", { distance: place.from })].filter((part) => part !== undefined);
     return (
         <div class={narrow ? "place-card sheet" : "place-card"} role="dialog" aria-labelledby="place-card-title" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()}>
             {place.image !== undefined && <img class="pc-image" src={`/images/${encodeURIComponent(place.image.file)}?v=${place.image.version}`} alt="" />}
-            <button ref={closer} type="button" class="pc-close icon-button" aria-label="Close" onClick={onClose}>
+            <button ref={closer} type="button" class="pc-close icon-button" aria-label={t("Close")} onClick={onClose}>
                 <Icon name="close" />
             </button>
             <div class="pc-body">
@@ -633,13 +634,13 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
                 {here && (
                     <p class="pc-here">
                         <span class="here-dot" aria-hidden="true" />
-                        Your party is here
+                        {t("Your party is here")}
                     </p>
                 )}
                 {text !== undefined && <p class="pc-text">{text}</p>}
                 {inside.length > 0 && (
                     <>
-                        <h4 class="pc-sub">Inside</h4>
+                        <h4 class="pc-sub">{t("Inside")}</h4>
                         <ul class="in-chips">
                             {inside.flatMap((child) => [
                                 <li key={child.name} class="in-chip">{child.name}</li>,
@@ -654,17 +655,17 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
                 )}
                 {ways.length > 0 && (
                     <>
-                        <h4 class="pc-sub">Ways</h4>
+                        <h4 class="pc-sub">{t("Ways")}</h4>
                         <ul class="pc-ways">
                             {ways.map((way, index) => (
                                 <li key={index}>
                                     <Icon name={wayIcon(way.kind)} />
                                     <span>
                                         <b>{way.road}</b>
-                                        {` to `}
-                                        {way.map === undefined || way.to === undefined ? way.to ?? "somewhere you do not know" : (
+                                        {` ${t("to")} `}
+                                        {way.map === undefined || way.to === undefined ? way.to ?? t("somewhere you do not know") : (
                                             <button type="button" class="way-to-map" onClick={() => onGo(way.map as string, way.to)}>
-                                                {`${way.to}, on ${way.map}`}
+                                                {t("{place}, on {map}", { place: way.to, map: way.map })}
                                             </button>
                                         )}
                                         {way.km !== undefined && <span class="way-km num">{` · ${lengthText(way.km, map.unit)}`}</span>}
@@ -677,7 +678,7 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
                 {here && (
                     <a class="pc-scene" href={sectionAddress("scene")}>
                         <Icon name="scene" />
-                        <span>Scene</span>
+                        <span>{t("Scene")}</span>
                     </a>
                 )}
             </div>
@@ -694,10 +695,10 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
     const kinds = [...new Set(layout.spots.map((spot) => (spot.kind !== undefined && placeKinds[spot.kind] !== undefined ? spot.kind : "other")))];
     return (
         <details class="map-key" open={!narrow}>
-            <summary>Key</summary>
+            <summary>{t("Key")}</summary>
             <div class="key-groups">
                 <div class="key-group">
-                    <h4 class="key-title">Ways</h4>
+                    <h4 class="key-title">{t("Ways")}</h4>
                     <ul>
                         {ways.map((look) => (
                             <li key={look}>
@@ -711,7 +712,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                                     )}
                                     {(look === "path" || look === "other") && <path class={`${look}-ink`} d="M2 9q7-4 13-1t13-1" stroke-width={1.4} />}
                                 </svg>
-                                {look === "other" ? "Other way" : `${look[0].toUpperCase()}${look.slice(1)}`}
+                                {wayLabel(look)}
                             </li>
                         ))}
                         {trail && (
@@ -719,7 +720,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                                 <svg class="key-way" viewBox="0 0 30 16" aria-hidden="true">
                                     <path class="trail" d="M4 8h22" />
                                 </svg>
-                                Your trail
+                                {t("Your trail")}
                             </li>
                         )}
                         <li>
@@ -727,20 +728,20 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                                 <circle class="party-ring" r={7.5} />
                                 <circle class="party-disc" r={5.5} />
                             </svg>
-                            Your party
+                            {t("Your party")}
                         </li>
                         {passages && (
                             <li>
                                 <svg class="key-symbol" viewBox="-12 -12 24 24" aria-hidden="true">
                                     <circle class="passage-ring" r={9} />
                                 </svg>
-                                Passage to another map
+                                {t("Passage to another map")}
                             </li>
                         )}
                     </ul>
                 </div>
                 <div class="key-group">
-                    <h4 class="key-title">Land</h4>
+                    <h4 class="key-title">{t("Land")}</h4>
                     <ul>
                         {lands.map((look) => (
                             <li key={look}>
@@ -748,26 +749,26 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                                     <rect class={`hex lit ${look}`} x={1} y={1} width={20} height={14} rx={3} />
                                     {biomes[look] !== undefined && <path class={`tuft ${look}`} transform="translate(11 9)" d={biomes[look].mark} />}
                                 </svg>
-                                {biomes[look]?.label ?? "Other land"}
+                                {biomeLabel(look) ?? t("Other land")}
                             </li>
                         ))}
                         <li>
                             <svg class="key-swatch" viewBox="0 0 22 16" aria-hidden="true">
                                 <rect class="hex fogged" x={1} y={1} width={20} height={14} rx={3} />
                             </svg>
-                            Not found yet
+                            {t("Not found yet")}
                         </li>
                     </ul>
                 </div>
                 <div class="key-group">
-                    <h4 class="key-title">Places</h4>
+                    <h4 class="key-title">{t("Places")}</h4>
                     <ul>
                         {kinds.map((kind) => (
                             <li key={kind}>
                                 <svg class="key-symbol" viewBox="-17 -17 34 34" aria-hidden="true">
                                     <PlaceSymbol spot={{ name: kind, x: 0, y: 0, within: [], ...(kind === "other" ? {} : { kind }) }} x={0} y={0} chosen={false} />
                                 </svg>
-                                {placeKinds[kind]?.label ?? "Other place"}
+                                {placeKindLabel(kind) ?? t("Other place")}
                             </li>
                         ))}
                     </ul>
@@ -788,28 +789,28 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
     return (
         <section class="map-list" aria-labelledby="places-title">
             <header class="map-head">
-                <h3 id="places-title">Places you know</h3>
-                <span class="map-sub">{map.party === undefined ? "on the map" : "from your party, as the crow flies"}</span>
+                <h3 id="places-title">{t("Places you know")}</h3>
+                <span class="map-sub">{map.party === undefined ? t("on the map") : t("from your party, as the crow flies")}</span>
             </header>
             <ol class="places">
                 {layout.spots.map((spot) => (
                     <li key={spot.name}>
                         <button type="button" class="place-row" onClick={() => choose(spot.name)}>
                             <span class="pr-name">{spot.name}</span>
-                            <span class="pr-kind">{[placeKinds[spot.kind ?? ""]?.label ?? "Place", ...(layout.inside(spot.name).length > 0 ? [`${layout.inside(spot.name).length} inside`] : [])].join(" · ")}</span>
-                            <span class="pr-far num">{spot.from === undefined ? "" : spot.from === "here" ? "Here" : spot.from}</span>
+                            <span class="pr-kind">{[placeKindLabel(spot.kind) ?? t("Place"), ...(layout.inside(spot.name).length > 0 ? [t("{count} inside", { count: layout.inside(spot.name).length })] : [])].join(" · ")}</span>
+                            <span class="pr-far num">{spot.from === undefined ? "" : spot.from === "here" ? t("Here") : spot.from}</span>
                         </button>
                     </li>
                 ))}
             </ol>
-            {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="pc-sub">Regions and ways</h4>}
+            {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="pc-sub">{t("Regions and ways")}</h4>}
             <ul class="places">
                 {layout.regions.map((region) => <RegionRow key={region.name} region={region} unit={map.unit} />)}
                 {map.roads.map((road) => (
                     <li key={road.name}>
                         <span class="place-row static">
                             <span class="pr-name">{road.name}</span>
-                            <span class="pr-kind">{`${road.kind[0].toUpperCase()}${road.kind.slice(1)}`}</span>
+                            <span class="pr-kind">{wayLabel(road.kind)}</span>
                             <span class="pr-far num">{lengthText(road.points.slice(1).reduce((sum, point) => sum + point.km, 0), map.unit)}</span>
                         </span>
                     </li>
@@ -825,8 +826,8 @@ function RegionRow({ region, unit }: { region: Area; unit: WorldMap["unit"]; })
         <li>
             <span class="place-row static">
                 <span class="pr-name">{region.name}</span>
-                <span class="pr-kind">{["Region", biomes[region.biome ?? ""]?.label, region.terrain === undefined ? undefined : `${region.terrain} terrain`].filter((part) => part !== undefined).join(" · ")}</span>
-                <span class="pr-far num">{`${lengthText(region.radius * 2, unit)} across`}</span>
+                <span class="pr-kind">{[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : t("{terrain} terrain", { terrain: region.terrain })].filter((part) => part !== undefined).join(" · ")}</span>
+                <span class="pr-far num">{t("{length} across", { length: lengthText(region.radius * 2, unit) })}</span>
             </span>
         </li>
     );
@@ -897,4 +898,11 @@ function middleOf(points: { x: number; y: number; }[]): { x: number; y: number; 
 function spreadOf(points: { x: number; y: number; }[]): number
 {
     return points.length > 1 ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) : 0;
+}
+
+/** A kind of way by its name in the page's language: River, Road, Path. */
+function wayLabel(kind: string): string
+{
+    const labels: Record<string, string> = { river: t("River"), road: t("Road"), path: t("Path"), portal: t("Portal"), other: t("Other way") };
+    return labels[kind] ?? `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)}`;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { readStory, sendStory } from "./api.ts";
 import { Icon } from "./icons.tsx";
+import { t } from "./text.ts";
 
 export function StoryBox({ story }: { story: string; })
 {
@@ -50,7 +51,7 @@ export function StoryBox({ story }: { story: string; })
             <div class="story-box">
                 {proposed !== undefined && (
                     <p class="story-sent">
-                        <Icon name="send" /> Sent to the master: they write it in your page once you agree in the chat.
+                        <Icon name="send" /> {t("Sent to the master: they write it in your page once you agree in the chat.")}
                     </p>
                 )}
                 <button
@@ -63,7 +64,7 @@ export function StoryBox({ story }: { story: string; })
                         setEditing(true);
                     }}
                 >
-                    <Icon name="pencil" /> {proposed !== undefined ? "Change what you sent" : story === "" ? "Write your character's story" : "Propose changes to your story"}
+                    <Icon name="pencil" /> {proposed !== undefined ? t("Change what you sent") : story === "" ? t("Write your character's story") : t("Propose changes to your story")}
                 </button>
             </div>
         );
@@ -71,13 +72,13 @@ export function StoryBox({ story }: { story: string; })
 
     return (
         <form class="story-box editing" onSubmit={(event) => void send(event)}>
-            <label for={id}>Your character's story and look, in your words. It goes to the master, who writes it in your page with you.</label>
+            <label for={id}>{t("Your character's story and look, in your words. It goes to the master, who writes it in your page with you.")}</label>
             <textarea ref={field} id={id} value={draft} rows={10} maxLength={20_000} onInput={(event) => setDraft(event.currentTarget.value)} />
             <div class="story-buttons">
                 <span class="story-status" role="alert">{problem}</span>
-                <button type="button" class="save-button" onClick={() => setEditing(false)}>Cancel</button>
+                <button type="button" class="save-button" onClick={() => setEditing(false)}>{t("Cancel")}</button>
                 <button type="submit" class="save-button gold" disabled={busy || draft.trim() === "" || draft.trim() === (proposed ?? story).trim()}>
-                    <Icon name="send" /> Send to the master
+                    <Icon name="send" /> {t("Send to the master")}
                 </button>
             </div>
         </form>

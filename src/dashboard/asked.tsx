@@ -11,6 +11,7 @@ import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
 import { sheetAddress } from "./party.tsx";
 import { byHandPref, usePref } from "./prefs.ts";
+import { t, tParts } from "./text.ts";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 8;
@@ -70,7 +71,7 @@ export function AskedBanner(
             await answer(asked.id, given);
         } catch {
             setSent(undefined);
-            setProblem("The answer did not reach the game: try again.");
+            setProblem(t("The answer did not reach the game: try again."));
         }
 
         onAnswered();
@@ -90,7 +91,7 @@ export function AskedBanner(
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
                 {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). */}
-                {yourTurn && <p class="asked-turn">Your turn</p>}
+                {yourTurn && <p class="asked-turn">{t("Your turn")}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 {/* By hand, as a master says it: which check, with its dice as pictures; its number the player finds on the sheet. */}
@@ -98,19 +99,18 @@ export function AskedBanner(
                     <p class="asked-hand-note">
                         <Icon name="hand" />
                         <span>
-                            {"Roll "}
-                            {named.map((check, index) => (
-                                <Fragment key={check.check}>
-                                    {index > 0 && (index === named.length - 1 ? " or " : ", ")}
-                                    <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(asked.fields?.[asked.labels.findIndex((label) => checkOf(label, asked.title)?.check === check.check)])}>
-                                        <NotationIcons notation={check.dice} />
-                                        {check.check}
-                                    </a>
-                                </Fragment>
-                            ))}
-                            {" yourself, on "}
-                            <a href={sheetAddress(asked.who ?? "")}>your sheet</a>
-                            {" or with the dice."}
+                            {tParts("Roll {checks} yourself, on {sheet} or with the dice.", {
+                                checks: named.map((check, index) => (
+                                    <Fragment key={check.check}>
+                                        {index > 0 && (index === named.length - 1 ? ` ${t("or")} ` : ", ")}
+                                        <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(asked.fields?.[asked.labels.findIndex((label) => checkOf(label, asked.title)?.check === check.check)])}>
+                                            <NotationIcons notation={check.dice} />
+                                            {check.check}
+                                        </a>
+                                    </Fragment>
+                                )),
+                                sheet: <a href={sheetAddress(asked.who ?? "")}>{t("your sheet")}</a>,
+                            }).map((part, index) => <Fragment key={index}>{part}</Fragment>)}
                         </span>
                     </p>
                 )}
@@ -119,7 +119,7 @@ export function AskedBanner(
                     {asked.square && map !== undefined && (
                         <button type="button" class={sent === "square" ? "asked-check sent" : "asked-check"} disabled={gone} onClick={() => setPicking(true)}>
                             <Icon name="world" />
-                            <span class="asked-check-name">Choose on the map</span>
+                            <span class="asked-check-name">{t("Choose on the map")}</span>
                         </button>
                     )}
                     {asked.labels.map((label, index) => {
@@ -152,12 +152,12 @@ export function AskedBanner(
                             type="text"
                             value={words}
                             maxLength={mostWords}
-                            placeholder="Or write what you do…"
-                            aria-label="Or write what you do"
+                            placeholder={t("Or write what you do…")}
+                            aria-label={t("Or write what you do")}
                             disabled={gone}
                             onInput={(event) => setWords(event.currentTarget.value)}
                         />
-                        <button type="submit" class="icon-button" aria-label="Send" data-tip="Send" disabled={gone || words.trim() === ""}>
+                        <button type="submit" class="icon-button" aria-label={t("Send")} data-tip={t("Send")} disabled={gone || words.trim() === ""}>
                             <Icon name="send" />
                         </button>
                     </form>
@@ -170,7 +170,7 @@ export function AskedBanner(
                                 onChange={(event) => setByHand(event.currentTarget.checked)}
                             />
                             <Icon name="hand" />
-                            By hand
+                            {t("By hand")}
                         </label>
                     )}
                 </div>

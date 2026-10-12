@@ -2,6 +2,7 @@
 // regions' edges, where the labels go, the ways of a place. Hexes are only the drawing, never a measure: they grow as the map goes farther. Pure, so the tests
 // read it; what looks random is seeded by names and places, so the map is the same at every drawing.
 import type { MapPlace, MapPoint, WorldMap } from "./data.ts";
+import { t } from "./text.ts";
 
 /** Where the map looks and how near: its centre in km, and pixels a km. */
 export interface MapView
@@ -615,7 +616,7 @@ export function mapPart(map: WorldMap, name: string): MapPart
 export function lengthText(km: number, unit: WorldMap["unit"]): string
 {
     const value = Math.round(km / unit.km * 10) / 10;
-    return unit.name === "km" ? `${value} km` : `${value} ${value === 1 ? "mile" : "miles"}`;
+    return unit.name === "km" ? `${value} km` : value === 1 ? t("1 mile") : t("{count} miles", { count: value });
 }
 
 /** The scale bar: a round number of the player's units about as wide as `about` pixels, and its width in pixels. */

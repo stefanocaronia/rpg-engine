@@ -5,14 +5,14 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { changeSetting, readSetup, sendSetupWord, type SetupView as Setup } from "./api.ts";
 import type { PlayerSetting } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { fieldLabel, phraseLabel } from "./labels.ts";
+import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
 import { Master } from "./master.tsx";
+import { t } from "./text.ts";
 
 // The steps of a campaign before play (MOD-1).
-const steps = [{ mode: "setup", name: "Settings" }, { mode: "session zero", name: "Session zero" }, { mode: "play", name: "Play" }];
+const steps = ["setup", "session zero", "play"];
 // The lists of the setup, answered with items or with none: limits are the player's alone, never left to the master.
 const lists = new Set(["lines", "veils"]);
-const examples: Record<string, string> = { lines: "e.g. spiders", veils: "e.g. torture" };
 // How long the arrows rest on a choice before it goes to the game, in milliseconds: the game is changed once.
 const keyRest = 700;
 
@@ -46,7 +46,7 @@ export function SetupView({ setup }: { setup: Setup; })
     const [said, setSaid] = useState<string>();
     const done = at >= questions.length;
     const question = questions[Math.min(at, questions.length - 1)];
-    const step = steps.findIndex((one) => one.mode === setup.mode);
+    const step = steps.indexOf(setup.mode);
 
     const go = (index: number): void => {
         setMoved(true);
@@ -69,12 +69,12 @@ export function SetupView({ setup }: { setup: Setup; })
                 <Master mood="happy" />
             </div>
             <CampaignName name={setup.name} />
-            <h1 id="setup-title" class="visually-hidden">Setting up {setup.name}</h1>
-            <ol class="setup-steps" aria-label="Steps">
+            <h1 id="setup-title" class="visually-hidden">{t("Setting up {campaign}", { campaign: setup.name })}</h1>
+            <ol class="setup-steps" aria-label={t("Steps")}>
                 {steps.map((one, index) => (
-                    <li key={one.mode} class={index < step ? "done" : index === step ? "now" : undefined} aria-current={index === step ? "step" : undefined}>
+                    <li key={one} class={index < step ? "done" : index === step ? "now" : undefined} aria-current={index === step ? "step" : undefined}>
                         <span class="setup-step-dot" aria-hidden="true">{index < step ? "✓" : index + 1}</span>
-                        {one.name}
+                        {stepName(one)}
                     </li>
                 ))}
             </ol>
@@ -83,7 +83,7 @@ export function SetupView({ setup }: { setup: Setup; })
                 <Question
                     key={question.name}
                     question={question}
-                    count={`${at + 1} of ${questions.length}`}
+                    count={t("{value} of {max}", { value: at + 1, max: questions.length })}
                     left={left.has(question.name)}
                     focus={moved}
                     onBack={at > 0 ? () => go(at - 1) : undefined}
@@ -93,20 +93,20 @@ export function SetupView({ setup }: { setup: Setup; })
                 />
             )}
             {done && <Ready setup={setup} left={left} focus={moved} onGo={go} onProblem={setSaid} />}
-            <ol class="setup-dots" aria-label="Questions">
+            <ol class="setup-dots" aria-label={t("Questions")}>
                 {questions.map((one, index) => (
                     <li key={one.name}>
                         <button
                             type="button"
                             class={[answered(one) ? "answered" : left.has(one.name) ? "left" : "", index === at ? "here" : ""].filter((name) => name !== "").join(" ")}
-                            aria-label={`${phraseLabel(fieldLabel(one.name))}${answered(one) ? ": answered" : left.has(one.name) ? ": left to the master" : ""}`}
+                            aria-label={answered(one) ? t("{setting}: answered", { setting: settingLabel(one.name) }) : left.has(one.name) ? t("{setting}: left to the master", { setting: settingLabel(one.name) }) : settingLabel(one.name)}
                             aria-current={index === at ? "step" : undefined}
                             onClick={() => go(index)}
                         />
                     </li>
                 ))}
             </ol>
-            <p class="setup-chat">You can also tell the master in the chat: they hear what you choose here.</p>
+            <p class="setup-chat">{t("You can also tell the master in the chat: they hear what you choose here.")}</p>
         </section>
     );
 }
@@ -130,7 +130,7 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
     const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; }>();
     const heading = useRef<HTMLHeadingElement>(null);
     const value = picked ?? question.value;
-    const title = question.question ?? phraseLabel(fieldLabel(question.name));
+    const title = question.question === undefined ? settingLabel(question.name) : t(question.question);
     const id = `setup-${question.name.replace(/[^a-z0-9]+/gi, "-")}`;
     const isList = lists.has(question.name);
     const open = value === undefined && question.items === undefined && !left;
@@ -171,15 +171,15 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
         <article class="setup-card" aria-labelledby={id}>
             <p class="setup-count">{count}</p>
             <h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
-            <p class="setup-about">{phraseLabel(question.about)}</p>
+            <p class="setup-about">{phraseLabel(t(question.about))}</p>
             {question.choices !== undefined && <Choices question={question} value={value} labelledBy={id} onPick={pick} />}
             {isList && <ListQuestion question={question} onProblem={onProblem} />}
-            {left && value === undefined && <p class="setup-left">Left to the master: they choose, and tell you.</p>}
+            {left && value === undefined && <p class="setup-left">{t("Left to the master: they choose, and tell you.")}</p>}
             <div class="setup-moves">
-                {onBack !== undefined && <button type="button" class="setup-button setup-back" onClick={onBack}>Back</button>}
-                {open && !isList && <button type="button" class="setup-button quiet" onClick={onLeave}>You decide</button>}
+                {onBack !== undefined && <button type="button" class="setup-button setup-back" onClick={onBack}>{t("Back")}</button>}
+                {open && !isList && <button type="button" class="setup-button quiet" onClick={onLeave}>{t("You decide")}</button>}
                 <button type="button" class={open ? "setup-button quiet" : "setup-button gold"} onClick={onNext}>
-                    {open ? "Skip" : "Next"} <Icon name="send" />
+                    {open ? t("Skip") : t("Next")} <Icon name="send" />
                 </button>
             </div>
         </article>
@@ -221,10 +221,10 @@ function Choices({ question, value, labelledBy, onPick }: { question: PlayerSett
                     onClick={() => onPick(choice.value, false)}
                 >
                     <strong>
-                        {phraseLabel(choice.label ?? choice.value)}
-                        {choice.value === question.suggested && <span class="setup-suggested">Suggested</span>}
+                        {choice.label === undefined ? valueLabel(choice.value) : phraseLabel(t(choice.label))}
+                        {choice.value === question.suggested && <span class="setup-suggested">{t("Suggested")}</span>}
                     </strong>
-                    {choice.means !== undefined && <span>{phraseLabel(choice.means)}</span>}
+                    {choice.means !== undefined && <span>{phraseLabel(t(choice.means))}</span>}
                 </button>
             ))}
         </div>
@@ -247,7 +247,7 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                             <button
                                 type="button"
                                 class="icon-button"
-                                aria-label={`Take ${one} off`}
+                                aria-label={t("Take {item} off", { item: one })}
                                 onClick={() => {
                                     send({ setting: question.name, remove: one });
                                     field.current?.focus();
@@ -259,7 +259,7 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                     ))}
                 </ul>
             )}
-            {question.items !== undefined && question.items.length === 0 && <p class="setup-left">None: nothing kept out.</p>}
+            {question.items !== undefined && question.items.length === 0 && <p class="setup-left">{t("None: nothing kept out.")}</p>}
             <form
                 onSubmit={(event) => {
                     event.preventDefault();
@@ -275,12 +275,12 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                     type="text"
                     value={item}
                     maxLength={80}
-                    placeholder={`Add, ${examples[question.name] ?? "e.g. …"}`}
-                    aria-label={`Add to ${question.name}`}
+                    placeholder={question.name === "lines" ? t("Add, e.g. spiders") : question.name === "veils" ? t("Add, e.g. torture") : t("Add…")}
+                    aria-label={t("Add to {setting}", { setting: settingLabel(question.name) })}
                     onInput={(event) => setItem(event.currentTarget.value)}
                 />
-                <button type="submit" class="setup-button" disabled={item.trim() === ""}>Add</button>
-                {question.items === undefined && <button type="button" class="setup-button quiet" onClick={() => send({ setting: question.name, value: "none" })}>None</button>}
+                <button type="submit" class="setup-button" disabled={item.trim() === ""}>{t("Add")}</button>
+                {question.items === undefined && <button type="button" class="setup-button quiet" onClick={() => send({ setting: question.name, value: "none" })}>{t("None")}</button>}
             </form>
         </div>
     );
@@ -306,18 +306,18 @@ function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Se
 
     return (
         <article class="setup-card" aria-labelledby="setup-ready">
-            <h2 id="setup-ready" ref={heading} tabIndex={-1}>{open.length === 0 ? "All set" : "Almost there"}</h2>
+            <h2 id="setup-ready" ref={heading} tabIndex={-1}>{open.length === 0 ? t("All set") : t("Almost there")}</h2>
             {open.length > 0 && (
                 <div class="setup-open">
-                    <span class="setup-open-label">Still open</span>
-                    {open.map(({ question, index }) => <button key={question.name} type="button" class="setup-chip" onClick={() => onGo(index)}>{phraseLabel(fieldLabel(question.name))}</button>)}
+                    <span class="setup-open-label">{t("Still open")}</span>
+                    {open.map(({ question, index }) => <button key={question.name} type="button" class="setup-chip" onClick={() => onGo(index)}>{settingLabel(question.name)}</button>)}
                 </div>
             )}
-            {left.size > 0 && <p class="setup-about">Left to the master: {[...left].map((name) => fieldLabel(name)).join(", ")}.</p>}
-            {inChat.length > 0 && <p class="setup-about">In the chat, with the master: {inChat.map((name) => fieldLabel(name)).join(" · ")}.</p>}
-            {sent ? <p class="setup-left">The master knows: write to them in the chat, and the story begins.</p> : (
+            {left.size > 0 && <p class="setup-about">{t("Left to the master: {settings}.", { settings: [...left].map((name) => settingLabel(name).toLowerCase()).join(", ") })}</p>}
+            {inChat.length > 0 && <p class="setup-about">{t("In the chat, with the master: {settings}.", { settings: inChat.map((name) => settingLabel(name).toLowerCase()).join(" · ") })}</p>}
+            {sent ? <p class="setup-left">{t("The master knows: write to them in the chat, and the story begins.")}</p> : (
                 <div class="setup-moves">
-                    <button type="button" class="setup-button setup-back" onClick={() => onGo(setup.questions.length - 1)}>Back</button>
+                    <button type="button" class="setup-button setup-back" onClick={() => onGo(setup.questions.length - 1)}>{t("Back")}</button>
                     <button
                         type="button"
                         class="setup-button gold"
@@ -327,7 +327,7 @@ function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Se
                                 setSent(refused === undefined);
                             })}
                     >
-                        I'm ready
+                        {t("I'm ready")}
                     </button>
                 </div>
             )}
@@ -361,7 +361,7 @@ function CampaignName({ name }: { name: string; })
         return (
             <p class="setup-name">
                 <span>{name}</span>
-                <button ref={pencil} type="button" class="icon-button" aria-label="Change the campaign's name" onClick={() => setEditing(true)}>
+                <button ref={pencil} type="button" class="icon-button" aria-label={t("Change the campaign's name")} onClick={() => setEditing(true)}>
                     <Icon name="pencil" />
                 </button>
             </p>
@@ -386,7 +386,7 @@ function CampaignName({ name }: { name: string; })
                 type="text"
                 value={text}
                 maxLength={80}
-                aria-label="The campaign's name"
+                aria-label={t("The campaign's name")}
                 onInput={(event) => setText(event.currentTarget.value)}
                 onKeyDown={(event) => {
                     if (event.key === "Escape") {
@@ -395,7 +395,7 @@ function CampaignName({ name }: { name: string; })
                     }
                 }}
             />
-            <button type="submit" class="setup-button gold">Save</button>
+            <button type="submit" class="setup-button gold">{t("Save")}</button>
         </form>
     );
 }
@@ -404,4 +404,10 @@ function CampaignName({ name }: { name: string; })
 function answered(question: PlayerSetting): boolean
 {
     return question.value !== undefined || question.items !== undefined;
+}
+
+/** A step of a campaign before play, by its name in the page's language. */
+function stepName(mode: string): string
+{
+    return mode === "setup" ? t("Settings") : mode === "session zero" ? t("Session zero") : t("Play");
 }

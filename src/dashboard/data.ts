@@ -270,10 +270,12 @@ export interface WorldMap
 
 /** What view gives: the party, a page with its sheet, one section, the world map, or nothing. */
 export type View =
-    | { kind: "none"; }
+    | { kind: "none"; language?: string; }
     | {
         kind: "overview";
         campaign: string;
+        /** The campaign's language, in which the page writes its own words. */
+        language?: string;
         /** The game system: its name, what it is, and what its source asks to say. */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;

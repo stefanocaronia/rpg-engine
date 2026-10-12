@@ -11,6 +11,7 @@ import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { notationModifier } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
+import { t } from "./text.ts";
 
 // From this width the rolls are a column beside the sheet, as in the style sheet; where the browser remembers that the player put it away, and when they last
 // cleared the list of a campaign; how many older rolls each Load more shows.
@@ -88,10 +89,10 @@ export function RollLog(
 
     if (beside && away) {
         return (
-            <aside class="rolls away" aria-label="Rolls">
-                <button type="button" class="rolls-tab" aria-label="Show the rolls" onClick={() => putAway(false)}>
+            <aside class="rolls away" aria-label={t("Rolls")}>
+                <button type="button" class="rolls-tab" aria-label={t("Show the rolls")} onClick={() => putAway(false)}>
                     <DieIcon sides={20} />
-                    <span>Rolls</span>
+                    <span>{t("Rolls")}</span>
                 </button>
             </aside>
         );
@@ -102,7 +103,7 @@ export function RollLog(
             <details class="rolls-card" open={open}>
                 <CardHeader
                     icon={cardIcons.rolls}
-                    title={<h2 id="rolls-title" class="rolls-title">Rolls</h2>}
+                    title={<h2 id="rolls-title" class="rolls-title">{t("Rolls")}</h2>}
                     preview={newest === undefined ? undefined : `${[nameOf(newest, lead), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
                     open={open}
                     onToggle={toggle}
@@ -110,12 +111,12 @@ export function RollLog(
                 />
                 <div class={beside ? "rolls-tools" : "rolls-tools folding"}>
                     {(listed.shown.length > 0 || listed.more) && (
-                        <button type="button" class="icon-button tip-left" aria-label="Clear the rolls" data-tip="Clear the list" onClick={clear}>
+                        <button type="button" class="icon-button tip-left" aria-label={t("Clear the rolls")} data-tip={t("Clear the list")} onClick={clear}>
                             <Icon name="clearAll" />
                         </button>
                     )}
                     {beside && (
-                        <button type="button" class="icon-button tip-left" aria-label="Hide the rolls" data-tip="Hide" onClick={() => putAway(true)}>
+                        <button type="button" class="icon-button tip-left" aria-label={t("Hide the rolls")} data-tip={t("Hide")} onClick={() => putAway(true)}>
                             <Icon name="aside" />
                         </button>
                     )}
@@ -130,8 +131,8 @@ export function RollLog(
                                 </ol>
                             )}
                         {listed.more
-                            ? <button type="button" class="rolls-more" onClick={loadMore}>Load more</button>
-                            : cleared > 0 && <button type="button" class="rolls-more" onClick={restore}>Restore the cleared rolls</button>}
+                            ? <button type="button" class="rolls-more" onClick={loadMore}>{t("Load more")}</button>
+                            : cleared > 0 && <button type="button" class="rolls-more" onClick={restore}>{t("Restore the cleared rolls")}</button>}
                     </div>
                     {below && <div class="rolls-below" aria-hidden="true" />}
                 </div>
@@ -164,7 +165,7 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
     const player = roll.by === "player";
     const free = "free" in roll;
     // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll), free ? "Free roll · not logged" : undefined]
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, roll.words, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
@@ -172,7 +173,7 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
             {marked && <span class="roll-flag" aria-hidden="true">!</span>}
             {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
             <span class="roll-who">
-                <span class="visually-hidden">{`${marked ? "New. " : ""}${free ? "Your free roll, not logged: " : player ? "Your roll: " : "The master's roll: "}`}</span>
+                <span class="visually-hidden">{`${marked ? t("New.") + " " : ""}${free ? t("Your free roll, not logged:") : player ? t("Your roll:") : t("The master's roll:")} `}</span>
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
@@ -189,16 +190,16 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
 function emptyText(read: number, older: number): string
 {
     if (read === 0) {
-        return "The checks the master asks of you come here, and the master's rolls you may see.";
+        return t("The checks the master asks of you come here, and the master's rolls you may see.");
     }
 
-    return older > 0 ? "No rolls in the last half hour." : "Cleared: the new rolls come here.";
+    return older > 0 ? t("No rolls in the last half hour.") : t("Cleared: the new rolls come here.");
 }
 
 /** Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one. */
 function nameOf(roll: ShownRoll, lead: Member | undefined): string
 {
-    return roll.who ?? (roll.by === "player" ? lead?.name ?? "" : "The master");
+    return roll.who ?? (roll.by === "player" ? lead?.name ?? "" : t("The master"));
 }
 
 /**
@@ -355,6 +356,6 @@ function useListRoom(track: HTMLElement | null, beside: boolean): void
 function rolledWhen(roll: ShownRoll): string
 {
     const real = new Date(roll.at);
-    const time = Number.isNaN(real.getTime()) ? undefined : `rolled at ${real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-    return [roll.date === undefined ? undefined : `${roll.date} in the game`, time].filter((part) => part !== undefined).join(" · ");
+    const time = Number.isNaN(real.getTime()) ? undefined : t("rolled at {time}", { time: real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
+    return [roll.date === undefined ? undefined : t("{date} in the game", { date: roll.date }), time].filter((part) => part !== undefined).join(" · ");
 }

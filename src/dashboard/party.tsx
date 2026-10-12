@@ -3,7 +3,8 @@
 import type { Member } from "./data.ts";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
-import { MoodBadge } from "./mood.tsx";
+import { MoodBadge, moodLabel } from "./mood.tsx";
+import { t } from "./text.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
 /** The address of someone's sheet, which the AI can give the player too (D-276). */
@@ -16,11 +17,17 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
 {
     const ordered = [...party.filter((member) => !member.dead), ...party.filter((member) => member.dead)];
     return (
-        <nav class="party" aria-label="Party">
+        <nav class="party" aria-label={t("Party")}>
             {ordered.map((member) => {
                 const counter = stripCounter(member);
                 // One name for a screen reader, which the drawing inside would say twice.
-                const said = [member.name, member.mood ?? "", counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, member.dead ? "dead" : "", ...member.effects.map((effect) => effect.name)];
+                const said = [
+                    member.name,
+                    member.mood === undefined ? "" : moodLabel(member.mood),
+                    counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`,
+                    member.dead ? t("dead") : "",
+                    ...member.effects.map((effect) => effect.name),
+                ];
                 return (
                     <a
                         key={member.name}
@@ -31,7 +38,7 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
                     >
                         <MemberToken member={member} />
                         <span class="name">{member.name}</span>
-                        {member.dead ? <span class="dead-mark">dead</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
+                        {member.dead ? <span class="dead-mark">{t("dead")}</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
                     </a>
                 );

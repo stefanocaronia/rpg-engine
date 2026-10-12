@@ -5,10 +5,11 @@
 import { sectionAddress } from "./address.ts";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { shownText } from "./labels.ts";
+import { shownText, strangerLabel } from "./labels.ts";
 import { Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
+import { t } from "./text.ts";
 import { DeathSaves, Effects } from "./widgets.tsx";
 
 /** The player character's sheet as the page read it, for what it has at hand. */
@@ -27,10 +28,10 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
     if (scene === undefined || fighters === undefined) {
         return (
             <section class="upcoming" aria-labelledby="combat-title">
-                <h2 id="combat-title">Combat</h2>
-                <p>There is no fight now.</p>
+                <h2 id="combat-title">{t("Combat")}</h2>
+                <p>{t("There is no fight now.")}</p>
                 <p class="upcoming-note">
-                    <a href={sectionAddress("scene")}>Where the party is</a>
+                    <a href={sectionAddress("scene")}>{t("Where the party is")}</a>
                 </p>
             </section>
         );
@@ -41,7 +42,7 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
     const mine = lead !== undefined && scene.turn === lead.name;
     const self = fighters.find((fighter) => fighter.role === "pc");
     const order = (
-        <ol class="turn-order" aria-label="The order of the turns">
+        <ol class="turn-order" aria-label={t("The order of the turns")}>
             {fighters.map((fighter, index) => <FighterRow key={`${fighter.name} ${index}`} fighter={fighter} place={index + 1} acting={index === acting} />)}
         </ol>
     );
@@ -51,7 +52,7 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
             <header class={mine ? "turn-band mine" : `turn-band ${acting < 0 ? "" : fighters[acting].role}`}>
                 {scene.round !== undefined && (
                     <p class="round">
-                        <span class="eyebrow">Round</span>
+                        <span class="eyebrow">{t("Round")}</span>
                         <span class="round-number">{scene.round}</span>
                     </p>
                 )}
@@ -59,16 +60,16 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
                     {acting >= 0 && <FighterToken fighter={fighters[acting]} />}
                     {/* Told again when the turn passes: who acts, in one line. */}
                     <div aria-live="polite" aria-atomic="true">
-                        <p class="eyebrow">{mine ? "Your turn" : "Now acting"}</p>
+                        <p class="eyebrow">{mine ? t("Your turn") : t("Now acting")}</p>
                         <h2 id="combat-title">{mine ? lead?.name : acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
                     </div>
                 </div>
                 {next && (
                     <p class="turn-next">
-                        <span class="eyebrow">Next</span>
+                        <span class="eyebrow">{t("Next")}</span>
                         <span class="next-who">
                             <FighterToken fighter={next} />
-                            {next.role === "pc" ? "You" : shownName(next)}
+                            {next.role === "pc" ? t("You") : shownName(next)}
                         </span>
                     </p>
                 )}
@@ -105,12 +106,12 @@ function FighterRow({ fighter, place, acting }: { fighter: Fighter; place: numbe
             <div class="turn-main">
                 <p class="turn-name">
                     {shownName(fighter)}
-                    {fighter.role === "pc" && <span class="you">You</span>}
-                    {fighter.inactive && <span class="cant-act">Can't act</span>}
+                    {fighter.role === "pc" && <span class="you">{t("You")}</span>}
+                    {fighter.inactive && <span class="cant-act">{t("Can't act")}</span>}
                 </p>
-                {fighter.health && (fighter.role === "other" ? <span class={`wound ${fighter.health}`}>{fighter.health}</span> : <span class="turn-health num">{shownText(fighter.health)}</span>)}
+                {fighter.health && (fighter.role === "other" ? <span class={`wound ${fighter.health}`}>{healthLabel(fighter.health)}</span> : <span class="turn-health num">{shownText(fighter.health)}</span>)}
                 <Effects effects={fighter.effects} />
-                {fighter.keeps && <p class="keeping">{`Keeping ${fighter.keeps.join(", ")}`}</p>}
+                {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
                 {fighter.dying && <DeathSaves dying={fighter.dying} />}
             </div>
         </li>
@@ -125,11 +126,11 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
             <h3 id="at-hand-title">
                 <Icon name="party" />
                 {lead.name}
-                <span class="at-hand-note">At hand</span>
+                <span class="at-hand-note">{t("At hand")}</span>
             </h3>
             {fighter.dying ? <DeathSaves dying={fighter.dying} /> : (
                 <>
-                    {fighter.keeps && <p class="keeping">{`Keeping ${fighter.keeps.join(", ")}`}</p>}
+                    {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
                     <SheetAtHand member={lead} sheet={own.sheet} names={own.cards?.atHand ?? []} version={own.version} onRoll={own.onRoll} />
                 </>
             )}
@@ -153,5 +154,12 @@ function FighterToken({ fighter }: { fighter: Fighter; })
 /** A fighter's name as the page writes it: Creature 2 for "creature 2", Someone for "someone". */
 function shownName(fighter: Fighter): string
 {
-    return fighter.stranger ? `${fighter.name[0]?.toUpperCase() ?? ""}${fighter.name.slice(1)}` : fighter.name;
+    return fighter.stranger ? strangerLabel(fighter.name) : fighter.name;
+}
+
+/** How hurt a foe looks, in the page's language (D-314): unhurt, hurt, bloodied, down. */
+function healthLabel(health: string): string
+{
+    const labels: Record<string, string> = { unhurt: t("unhurt"), hurt: t("hurt"), bloodied: t("bloodied"), down: t("down") };
+    return labels[health] ?? health;
 }
