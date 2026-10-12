@@ -4268,7 +4268,7 @@ button.row,
 /* What the master asks (D-279): a banner over the page, in sight while it scrolls, with the question and a button for each check or answer. */
 .asked {
     position: sticky;
-    top: calc(var(--top-space, 0px) + 8px);
+    top: calc(var(--top-space, 0px) + 16px);
     z-index: 15;
     display: flex;
     align-items: flex-start;
