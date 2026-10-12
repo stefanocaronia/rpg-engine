@@ -12,8 +12,8 @@ import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Icon } from "./icons.tsx";
 import { FollowedQuest, JournalView } from "./journal.tsx";
-import { type Notice, Notices } from "./notices.tsx";
-import { About, Upcoming } from "./pages.tsx";
+import { gameNotices, type Notice, Notices } from "./notices.tsx";
+import { About, Help, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
@@ -62,6 +62,8 @@ interface Shown
     version: number;
     readAt?: Date;
     noCharacter?: boolean;
+    /** How many problems the campaign's files have, which the master fixes (validate). */
+    problems?: number;
     problem?: string;
 }
 
@@ -154,6 +156,7 @@ function App()
                     version: before.version + 1,
                     readAt: new Date(),
                     noCharacter: overview.kind === "none",
+                    problems: overview.kind === "overview" ? overview.problems : undefined,
                 }));
             }
         } catch (error) {
@@ -244,6 +247,7 @@ function App()
             ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) }]
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
+        ...gameNotices(shown.problems),
     ];
     return (
         <RequestedRoll.Provider value={requested}>
@@ -282,6 +286,7 @@ function App()
                         <div class="body">
                             <main>
                                 {address.section === "about" && <About product={productName} system={shown.system} />}
+                                {address.section === "help" && <Help />}
                                 {/* The quest the player follows, small, where the story goes on (D-367). */}
                                 {(address.section === "scene" || address.section === "combat") && <FollowedQuest version={shown.version} campaign={shown.campaign} />}
                                 {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
@@ -303,7 +308,7 @@ function App()
                                 {address.section === "settings" && <SettingsView version={shown.version} />}
                                 {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
                                 {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                                {!["party", "scene", "combat", "journal", "world", "about", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
+                                {!["party", "scene", "combat", "journal", "world", "about", "help", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
                                 {address.section === "party" && member && (
                                     <MemberSheet
                                         key={member.name}

@@ -2857,6 +2857,22 @@ a {
     margin: 0 0 6px;
 }
 
+/* Help, section by section; About's links in a row, as the foot's. */
+.upcoming :is(h3) {
+    margin-block: 16px 4px;
+    font-size: 1.05rem;
+}
+
+.about-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+
+.about-links a {
+    color: var(--accent);
+}
+
 .upcoming-note {
     color: var(--muted);
     font-size: 0.9rem;

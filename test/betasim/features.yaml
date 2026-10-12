@@ -14,4 +14,4 @@
 - {id: save-back, area: Saves, name: "Go back to a save, with free saves", decision: D-359}
 - {id: setup-choice, area: Setup, name: "A choice of the Setup: one of the questions before play", decision: D-370}
 - {id: settings-change, area: Settings, name: "Change a setting during play; the master hears it", decision: D-341}
-- {id: rules-find, area: Rules, name: "Look up a rule (the section says it comes in a next step)", decision: D-269}
+- {id: help-read, area: Help, name: "Read how to play with the chat and the dashboard", decision: D-407}

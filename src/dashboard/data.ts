@@ -328,6 +328,8 @@ export type View =
         rolls: ShownRoll[];
         /** How many public rolls the log has. */
         rollsTotal?: number;
+        /** How many problems the campaign's files have, which the master fixes. */
+        problems?: number;
     }
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; story?: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }

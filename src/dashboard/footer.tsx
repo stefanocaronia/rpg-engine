@@ -4,7 +4,8 @@ import { Icon } from "./icons.tsx";
 import { systemTitleLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
-const links = {
+/** Where the project lives, and how to support it. */
+export const footLinks = {
     github: "https://github.com/stefanocaronia/rpg-engine",
     npm: "https://www.npmjs.com/package/rpg-engine",
     support: "https://www.paypal.com/paypalme/stefanocaronia",
@@ -17,13 +18,13 @@ export function PageFoot({ product, system }: { product: string; system?: { name
         <footer class="page-foot">
             <p class="foot-own">
                 <span>{`© 2026 Stefano Caronia · ${product}`}</span>
-                <a href={links.github} target="_blank" rel="noreferrer" aria-label={t("{product} on GitHub", { product })} data-tip="GitHub">
+                <a href={footLinks.github} target="_blank" rel="noreferrer" aria-label={t("{product} on GitHub", { product })} data-tip="GitHub">
                     <Icon name="github" />
                 </a>
-                <a href={links.npm} target="_blank" rel="noreferrer" aria-label={t("{product} on npm", { product })} data-tip="npm">
+                <a href={footLinks.npm} target="_blank" rel="noreferrer" aria-label={t("{product} on npm", { product })} data-tip="npm">
                     <Icon name="npm" />
                 </a>
-                <a class="foot-support" href={links.support} target="_blank" rel="noreferrer">
+                <a class="foot-support" href={footLinks.support} target="_blank" rel="noreferrer">
                     <Icon name="heart" />
                     {t("Support {product}", { product })}
                 </a>

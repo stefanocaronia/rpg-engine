@@ -31,6 +31,7 @@ import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
+import { campaignProblems } from "./problems.ts";
 import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
@@ -112,6 +113,8 @@ export type ViewResult =
         rolls: ShownRoll[];
         /** How many public rolls the log has, for the dashboard to offer more (D-302). */
         rollsTotal: number;
+        /** How many problems the campaign's files have, which the dashboard tells the player the master fixes (validate). */
+        problems: number;
     }
     | {
         kind: "page";
@@ -342,6 +345,7 @@ export const view = defineCommand({
             total: diary.length,
             rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture)),
             rollsTotal: shownRolls.length,
+            problems: campaignProblems(root, world, context).length,
         };
     },
 

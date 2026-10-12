@@ -25,7 +25,7 @@ screens:
   "^#/combat": Combat
   "^#/journal": Journal
   "^#/world": World
-  "^#/rules": Rules
+  "^#/help": Help
   "^#/saves": Saves
   "^#/settings": Settings
   "^(/|)$": Party

@@ -6,8 +6,8 @@ import { t } from "./text.ts";
 // Combat is there only while a fight is open (D-314).
 export const sections = ["party", "scene", "combat", "journal", "world"] as const;
 
-/** The pages at the row's end, in the menu on a phone: Rules is looked up, as the settings are, not played in (D-356). */
-export const menuPages = ["rules", "saves", "settings", "about"] as const;
+/** The pages at the row's end, in the menu on a phone: Help is read, as the settings are, not played in (D-356). */
+export const menuPages = ["help", "saves", "settings", "about"] as const;
 
 export type Section = (typeof sections)[number] | (typeof menuPages)[number];
 
@@ -42,7 +42,7 @@ export function sectionLabel(section: Section): string
         combat: t("Combat"),
         journal: t("Journal"),
         world: t("World"),
-        rules: t("Rules"),
+        help: t("Help"),
         saves: t("Saves"),
         settings: t("Settings"),
         about: t("About"),

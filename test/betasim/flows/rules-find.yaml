@@ -1,7 +1,0 @@
-name: Look up a rule (today the section says it comes in a next step)
-covers: [rules-find]
-setup: {}
-steps:
-  - phone: {tapOn: Menu}   # on a phone Rules is in the menu
-  - tapOn: Rules
-  - assertVisible: It comes in a next step

@@ -1,0 +1,7 @@
+name: Read how to play with the chat and the dashboard
+covers: [help-read]
+setup: {}
+steps:
+  - phone: {tapOn: Menu}   # on a phone Help is in the menu
+  - tapOn: Help
+  - assertVisible: In the chat
