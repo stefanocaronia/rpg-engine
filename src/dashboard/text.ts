@@ -35,6 +35,9 @@ export const shippedLanguages = [
 // Codes the page reads as another it ships: Norwegian as Bokmål.
 const aliases: Record<string, string> = { no: "nb" };
 
+// The languages it ships that are written from right to left: the page mirrors for them.
+const rightToLeft = ["ar", "he"];
+
 /** How the page reads a language's file: the browser fetches it from the page's own folder. */
 export type ReadPhrases = (language: string) => Promise<Record<string, string>>;
 
@@ -88,10 +91,20 @@ export function systemWord(kind: "groups" | "fields" | "words", english: string)
     return Object.hasOwn(system[kind], english) ? system[kind][english] : undefined;
 }
 
-/** A phrase of the page in its language, or a text of the game system in its words, each {name} filled from values; the English where it has none. */
+/**
+ * A phrase of the page in its language, or a text of the game system in its words, each {name} filled from values; the English where it has none. In a
+ * language written from right to left each value is isolated, so that a name, a number or a notation keeps its own order: +2, 1d20+5.
+ */
 export function t(phrase: string, values: Record<string, string | number> = {}): string
 {
-    return (phrases[phrase] ?? systemWord("words", phrase) ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole));
+    const isolated = (value: string | number): string => (pageDirection() === "rtl" ? `\u2068${value}\u2069` : String(value));
+    return (phrases[phrase] ?? systemWord("words", phrase) ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? isolated(values[name]) : whole));
+}
+
+/** Which way the page's language is written: right to left for Arabic and Hebrew, left to right for the others. */
+export function pageDirection(): "rtl" | "ltr"
+{
+    return rightToLeft.includes(current) ? "rtl" : "ltr";
 }
 
 /** A phrase of the page with things put in its {names}, such as links: its pieces in order, the words as strings; for a sentence whose order each language keeps. */

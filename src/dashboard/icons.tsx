@@ -72,6 +72,9 @@ export const cardIcons = {
 /** The name of a control's picture. */
 export type IconName = keyof typeof iconPaths;
 
+// The icons that point a way, which turn in a language written from right to left.
+const turning = new Set<IconName>(["send", "undo", "aside"]);
+
 /** A die's picture, by its sides; nothing for a die the page does not draw. */
 export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean; })
 {
@@ -136,7 +139,7 @@ export function NotationIcons({ notation }: { notation: string; })
 export function Icon({ name }: { name: IconName; })
 {
     return (
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class={turning.has(name) ? "icon turns" : "icon"} viewBox="0 0 24 24" aria-hidden="true">
             <path d={iconPaths[name]} />
         </svg>
     );

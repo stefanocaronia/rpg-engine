@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
-import { pageLanguageOf, setLanguage, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
+import { pageDirection, pageLanguageOf, setLanguage, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world-map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -78,6 +78,18 @@ describe("the page's words (D-394)", () => {
         expect(fromLabel({ km: 12.4, direction: "north-east" }, (km) => lengthText(km, { name: "km", km: 1 }))).toBe("12,4 km a nord-est");
         expect(levelNeedLabel({ needs: 1200, level: 4 })).toBe("1200 al livello 4");
         expect(notationLabel([{ dice: "2d20", keep: { which: "highest", count: 1 } }, { add: "+5" }])).toBe("2d20, tieni il più alto, +5");
+        await setLanguage("en");
+    });
+
+    it("writes Arabic and Hebrew from right to left, each value of a phrase isolated in its own order, as +2 or 1d20+5 (D-394)", async () => {
+        const read = (language: string): Promise<Record<string, string>> => Promise.resolve(phrasesOf(language));
+        await setLanguage("ar", read);
+        expect(pageDirection()).toBe("rtl");
+        expect(t("{points} to level {level}", { points: 1200, level: 4 })).toContain("⁨1200⁩");
+        await setLanguage("he", read);
+        expect(pageDirection()).toBe("rtl");
+        await setLanguage("it", read);
+        expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "1200 al livello 4"]);
         await setLanguage("en");
     });
 });

@@ -23,7 +23,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
-import { setLanguage, setSystemWords, t } from "./text.ts";
+import { pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { WorldView } from "./world.tsx";
@@ -106,6 +106,7 @@ function App()
 
             if (number === reading.current) {
                 document.documentElement.lang = language ?? "en";
+                document.documentElement.dir = pageDirection();
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
