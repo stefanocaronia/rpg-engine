@@ -1,6 +1,7 @@
 // The world map as the player character knows it, for the dashboard (VIEW-7, D-316, D-318, D-320): the maps it knows; on each, the places it knows with their
 // kind and where they are, the regions with their biome, the roads as far as it knows their stops, the party and its trail. Never a place it does not know,
 // neither its name nor its point.
+import { formatLength, trueImperialUnits } from "../core/length.ts";
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
 import { directionName, directionTo, distanceBetween, type Point } from "../map/index.ts";
@@ -70,7 +71,8 @@ export interface KnownMap
  */
 export interface ShownMap
 {
-    unit: { name: "km" | "mi"; km: number; };
+    /** The player's unit and its km; in imperial the game's foot too, in metres, for what is shorter than a mile. */
+    unit: { name: "km" | "mi"; km: number; foot?: number; };
     maps: KnownMap[];
     places: MapPlace[];
     roads: MapRoad[];
@@ -101,7 +103,7 @@ export function shownMap(sight: PlaceSight, measures: Measures, campaign: string
     });
     const system = campaignSystem(sight.root, sight.context);
     return {
-        unit: measures.units === "imperial" ? { name: "mi", km: measures.imperial.mile / 1000 } : { name: "km", km: 1 },
+        unit: measures.units === "imperial" ? { name: "mi", km: measures.imperial.mile / 1000, foot: measures.imperial.foot } : { name: "km", km: 1 },
         maps: knownMaps(world, places, known, campaign),
         places: nearestFirst(places, partyAt, partyMap?.name),
         roads: [...roads.pages.values()].filter(known).flatMap((road) => {
@@ -379,10 +381,11 @@ function relationFrom(from: Point, to: Point): MapPlace["from"]
     return metres < 50 ? { km: 0 } : { km: km(metres), direction: directionName(directionTo(from, to)) };
 }
 
-/** "12 km north-east", in the player's units, or "here": where a place is from the party, in the chat's words. */
+/** "12 km north-east", "60 m north" or "200 feet south", in the player's units, or "here": where a place is from the party, in the chat's words. */
 function fromText(from: NonNullable<MapPlace["from"]>, unit: ShownMap["unit"]): string
 {
-    return from.direction === undefined ? "here" : `${Math.round(from.km / unit.km * 10) / 10} ${unit.name} ${from.direction}`;
+    const imperial = { mile: unit.km * 1000, foot: unit.foot ?? trueImperialUnits.foot };
+    return from.direction === undefined ? "here" : `${formatLength(from.km * 1000, unit.name === "mi" ? "imperial" : "metric", imperial)} ${from.direction}`;
 }
 
 /** Metres as km with two decimals. */

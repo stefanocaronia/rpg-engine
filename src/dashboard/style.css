@@ -3346,6 +3346,8 @@ a {
 }
 
 .place {
+    display: flex;
+    gap: 4px;
     margin: 0;
     color: var(--muted);
     font-size: 0.85rem;
@@ -3363,9 +3365,35 @@ a {
     direction: rtl;
 }
 
-[dir="rtl"] :is(span.num, .asked-dice, .die-modifier) {
+[dir="rtl"] :is(span.num:not([dir]), .asked-dice, .die-modifier, .tray-die-name, .tray-modifier-value) {
     direction: ltr;
     unicode-bidi: isolate;
+}
+
+/* The corner of the theme folds from the other side, and what opens a folded part points the way it reads. */
+[dir="rtl"] .theme-corner {
+    background: linear-gradient(to bottom right, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
+    filter: drop-shadow(1px 1px 1px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5)));
+}
+
+[dir="rtl"] .theme-corner::after {
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+[dir="rtl"] :is(.quest-folded, .map-key) summary::before {
+    content: "◂" / "";
+}
+
+[dir="rtl"] .quest-folded[open] summary::before {
+    rotate: -90deg;
+}
+
+[dir="rtl"] .map-key[open] summary::before {
+    transform: rotate(-90deg);
+}
+
+[dir="rtl"] .followed-next::before {
+    content: "◂ " / "";
 }
 
 [dir="rtl"] svg.icon.turns {
@@ -3378,10 +3406,9 @@ a {
 
 /* Where someone is, after the place's pin, without a preposition that each language would bend to the name (D-403). */
 .place svg.icon {
+    flex: none;
     width: 1em;
-    height: 1em;
-    margin-inline-end: 4px;
-    vertical-align: -0.15em;
+    height: 1.4em;
 }
 
 .line {

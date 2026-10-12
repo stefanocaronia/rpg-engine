@@ -40,13 +40,15 @@ interface Target
 {
     name: string;
     entries: Entry[];
+    /** How many entries go in one request: a system's words all at once, so that one concept has one term in every entry. */
+    batch: number;
     languages: string[];
     read(language: string): Record<string, string>;
     write(language: string, translations: Record<string, string>): void;
     brief(language: string, name: string): string[];
 }
 
-// How many entries go in one request, and how many requests run at once.
+// How many phrases of the page go in one request, and how many requests run at once.
 const batchSize = 130;
 const together = 6;
 const curated = "it";
@@ -68,7 +70,7 @@ const jobs = targets.flatMap((target) =>
     target.languages.filter((language) => languages.includes(language)).flatMap((language) => {
         const own = target.read(language);
         const wanted = target.entries.filter((entry) => !(entry.id in own) || (language !== curated && again.some((term) => names(entry.english, term))));
-        return Array.from({ length: Math.ceil(wanted.length / batchSize) }, (_, index) => ({ target, language, batch: wanted.slice(index * batchSize, (index + 1) * batchSize) }));
+        return Array.from({ length: Math.ceil(wanted.length / target.batch) }, (_, index) => ({ target, language, batch: wanted.slice(index * target.batch, (index + 1) * target.batch) }));
     })
 );
 
@@ -104,6 +106,7 @@ async function pageTarget(): Promise<Target>
     return {
         name: "page",
         entries: [...phrases].map((phrase) => ({ id: phrase, english: phrase, ...(italian[phrase] === undefined ? {} : { italian: italian[phrase] }) })),
+        batch: batchSize,
         languages: shippedLanguages,
         read: readPhrases,
         write: (language, translations) => {
@@ -143,6 +146,7 @@ function systemTargets(): Target[]
         return {
             name: `systems/${name}`,
             entries: Object.keys(italian).map((id) => ({ id, english: english(id), italian: italian[id] })),
+            batch: Math.max(1, Object.keys(italian).length),
             languages: shippedLanguages.filter((language) => language !== curated),
             read,
             write: (language, translations) => {
@@ -161,6 +165,8 @@ function systemTargets(): Target[]
                 "- Each entry has an id: group (a heading of the character sheet), field (the label of a value of the sheet, short; an ability score as the translation",
                 "  abbreviates it, as FOR for Strength in Italian), word (a name the game uses: races, classes, conditions, damage types, sizes, languages, armor and",
                 "  weapons a character is proficient in, the words of a setting), headline (the line under a character's name, as Level 3 Cleric).",
+                "- One concept, one term in every entry: a skill, a condition, an armor or a rest is written the same as a field, as a word, alone or in a list,",
+                "  only its case following the entry's. An entry such as until long rest or difficult terrain is a whole phrase: bend the words as the language needs.",
                 "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",
                 "- Keep every {name} in braces exactly as it is; move it where the language wants it.",
                 "- The Italian beside an entry, from the official Italian translation, shows what it means.",

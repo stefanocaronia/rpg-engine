@@ -7,7 +7,7 @@ import type { PlayerSetting } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
 import { Master } from "./master.tsx";
-import { t } from "./text.ts";
+import { arrowStep, t } from "./text.ts";
 
 // The steps of a campaign before play (MOD-1).
 const steps = ["setup", "session zero", "play"];
@@ -194,7 +194,7 @@ function Choices({ question, value, labelledBy, onPick }: { question: PlayerSett
     const stop = at >= 0 ? at : Math.max(0, choices.findIndex((choice) => choice.value === question.suggested));
 
     const move = (event: KeyboardEvent): void => {
-        const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+        const step = arrowStep(event.key);
 
         if (step === 0) {
             return;

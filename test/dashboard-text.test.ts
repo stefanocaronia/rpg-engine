@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
-import { pageDirection, pageLanguageOf, setLanguage, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
+import { itemLabel, settingLabel } from "../src/dashboard/labels.ts";
+import { arrowStep, pageDirection, pageLanguageOf, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world-map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -88,8 +89,17 @@ describe("the page's words (D-394)", () => {
         expect(t("{points} to level {level}", { points: 1200, level: 4 })).toContain("⁨1200⁩");
         await setLanguage("he", read);
         expect(pageDirection()).toBe("rtl");
+        expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight"), arrowStep("ArrowDown"), arrowStep("ArrowDown", true)]).toEqual([1, -1, 1, 0]);
         await setLanguage("it", read);
         expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "1200 al livello 4"]);
+        expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight")]).toEqual([-1, 1]);
         await setLanguage("en");
+    });
+
+    it("writes a game system's words where it has them, as they are, and in capitals only the short names of fields it lacks (D-403)", () => {
+        setSystemWords({ groups: {}, fields: { wis: "SAG" }, words: { insight: "Intuizione", advancement: "Avanzamento", "until long rest": "fino al riposo lungo" } });
+        expect([itemLabel("insight"), itemLabel("wis", new Set(["wis"])), itemLabel("cha", new Set(["cha"])), itemLabel("light hammer")]).toEqual(["Intuizione", "SAG", "CHA", "Light hammer"]);
+        expect([settingLabel("advancement"), effectEndLabel({ occasion: "long rest" })]).toEqual(["Avanzamento", "fino al riposo lungo"]);
+        setSystemWords(undefined);
     });
 });

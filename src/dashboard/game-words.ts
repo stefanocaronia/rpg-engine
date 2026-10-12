@@ -2,32 +2,50 @@
 // the facts of the story, dice in words, where someone is. The chat has its own English words for the same data.
 import type { DiceCondition, EffectEnd, JournalFact, Member, NotationPart, SheetValue } from "./data.ts";
 import { fieldLabel, phraseLabel } from "./labels.ts";
-import { listText, systemWord, t } from "./text.ts";
+import { isolated, listText, systemWord, t } from "./text.ts";
 
 /** A game date in the page's language: day 3, 06:00, or day 3; any other text as it is. */
 export function gameDateLabel(date: string): string
 {
-    const read = /^day\s+(\d+)(?:\s*,\s*(\d{1,2}:\d{2}))?$/i.exec(date.trim());
-
-    if (read === null) {
-        return date;
-    }
-
-    return read[2] === undefined ? t("day {day}", { day: read[1] }) : t("day {day}, {time}", { day: read[1], time: read[2] });
+    const read = readDate(date);
+    return read === undefined ? date : read.time === undefined ? t("day {day}", read) : t("day {day}, {time}", read);
 }
 
-/** When an effect ends, in the page's language: until day 1, 18:01, until the scene ends, until long rest. */
+// A date within a phrase is put in it by its day and hour, which each language bends as the phrase needs: до дня 3, jusqu'au jour 3.
+
+/** Until a game date, in the page's language: until day 3, 06:00. */
+export function untilDateLabel(date: string): string
+{
+    const read = readDate(date);
+    return read === undefined ? t("until {date}", { date }) : read.time === undefined ? t("until day {day}", read) : t("until day {day}, {time}", read);
+}
+
+/** By a game date, as a deadline: by day 3, 06:00. */
+export function byDateLabel(date: string): string
+{
+    const read = readDate(date);
+    return read === undefined ? t("by {date}", { date }) : read.time === undefined ? t("by day {day}", read) : t("by day {day}, {time}", read);
+}
+
+/** Since a game date: since day 1, 18:00. */
+export function sinceDateLabel(date: string): string
+{
+    const read = readDate(date);
+    return read === undefined ? t("since {when}", { when: date }) : read.time === undefined ? t("since day {day}", read) : t("since day {day}, {time}", read);
+}
+
+/** When an effect ends, in the page's language: until day 1, 18:01, until the scene ends, until the next long rest, as the game system says it. */
 export function effectEndLabel(end: EffectEnd): string
 {
     if ("date" in end) {
-        return t("until {date}", { date: gameDateLabel(end.date) });
+        return untilDateLabel(end.date);
     }
 
     if ("round" in end) {
         return t("until {name}'s turn in round {round}", { name: nameLabel(end.turn), round: end.round });
     }
 
-    return "scene" in end ? t("until the scene ends") : t("until {occasion}", { occasion: systemWord("words", end.occasion) ?? end.occasion });
+    return "scene" in end ? t("until the scene ends") : systemWord("words", `until ${end.occasion}`) ?? t("until {occasion}", { occasion: systemWord("words", end.occasion) ?? end.occasion });
 }
 
 /** An effect in the page's language, with its end: Benedizione until day 1, 18:01. */
@@ -85,13 +103,13 @@ export function besideLabel(value: SheetValue): string | undefined
 /** Where someone of the party is: the places that hold them, the nearest first; elsewhere, or in the open. */
 export function memberPlaceLabel(place: NonNullable<Member["place"]>): string
 {
-    return Array.isArray(place) ? place.join(" › ") : place === "open" ? t("In the open") : t("Elsewhere");
+    return Array.isArray(place) ? place.map(isolated).join(" › ") : place === "open" ? t("In the open") : t("Elsewhere");
 }
 
-/** A kind of terrain of the game system in the page's language, by its words: difficult. */
+/** A region's terrain in the page's language, as the game system says it: difficult terrain. */
 export function terrainLabel(terrain: string): string
 {
-    return systemWord("words", terrain) ?? terrain;
+    return systemWord("words", `${terrain} terrain`) ?? t("{terrain} terrain", { terrain: systemWord("words", terrain) ?? terrain });
 }
 
 /** A name of the story as the character knows it, in the page's language: someone, a creature, somewhere for those it does not know. */
@@ -107,28 +125,48 @@ export function factLabel(fact: JournalFact): string
     const told = ((): string => {
         switch (fact.kind) {
             case "counter":
-                return t("{who}: {field} {before} → {after}", { who: nameLabel(fact.who), field: fieldLabel(fact.field), before: fact.before, after: fact.after });
+                return t("{who}: {field} {before} → {after}", { who: subjectLabel(fact.who), field: fieldLabel(fact.field), before: fact.before, after: fact.after });
             case "time":
                 return fact.from === undefined
-                    ? t("The story starts on {date}", { date: gameDateLabel(fact.to) })
+                    ? storyStartLabel(fact.to)
                     : t("Time passes: {from} → {to}", { from: gameDateLabel(fact.from), to: gameDateLabel(fact.to) });
             case "moved":
                 return fact.to === undefined
-                    ? t("{who} to the open", { who: listText(fact.who.map(nameLabel)) })
-                    : t("{who} to {place}", { who: listText(fact.who.map(nameLabel)), place: nameLabel(fact.to) });
+                    ? t("{who} to the open", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))) })
+                    : t("{who} to {place}", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))), place: nameLabel(fact.to) });
             case "learned":
-                return t("{who} learned: {what}", { who: fact.who, what: listText(fact.what) });
+                return t("{who} learned: {what}", { who: fact.who, what: listText(fact.what.map((link) => link.replace("#", " › "))) });
             case "effect":
-                return t("{who}: {effect}", { who: nameLabel(fact.who), effect: effectLabel(fact) });
+                return t("{who}: {effect}", { who: subjectLabel(fact.who), effect: effectLabel(fact) });
             case "effect-ended":
-                return t("{who}: {effect} ended", { who: nameLabel(fact.who), effect: fact.effect });
+                return t("{who}: {effect} ended", { who: subjectLabel(fact.who), effect: fact.effect });
             case "back":
                 return t("Back to save {save}: what came after it is gone", { save: fact.save });
             case "quest":
                 return fact.status === "open" ? t("Quest taken: {quest}", { quest: fact.quest }) : fact.status === "done" ? t("Quest completed: {quest}", { quest: fact.quest }) : t("Quest failed: {quest}", { quest: fact.quest });
         }
     })();
-    return phraseLabel(told);
+    return told;
+}
+
+/** When the story starts: on day 1, 18:00. */
+function storyStartLabel(date: string): string
+{
+    const read = readDate(date);
+    return read === undefined ? t("The story starts on {date}", { date }) : read.time === undefined ? t("The story starts on day {day}", read) : t("The story starts on day {day}, {time}", read);
+}
+
+/** A game date's day and hour as the engine writes them, day 3, 06:00; undefined for any other text. */
+function readDate(date: string): { day: string; time?: string; } | undefined
+{
+    const read = /^day\s+(\d+)(?:\s*,\s*(\d{1,2}:\d{2}))?$/i.exec(date.trim());
+    return read === null ? undefined : { day: read[1], ...(read[2] === undefined ? {} : { time: read[2] }) };
+}
+
+/** Who does something, opening a fact: Someone and A creature with their capital, a name as it is written, as al-Mansur. */
+function subjectLabel(name: string): string
+{
+    return name === "someone" || name === "creature" ? phraseLabel(nameLabel(name)) : name;
 }
 
 /** A notation in words, in the page's language: 2d20, keep the highest, +5 (D-292); none for none. */

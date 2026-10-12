@@ -149,7 +149,8 @@ export function matches(language: Language, typed: string): boolean
 export function languageName(code: string, inLanguage: string): string | undefined
 {
     try {
-        return new Intl.DisplayNames([inLanguage], { type: "language", fallback: "none" }).of(code);
+        // Without its data the browser names it in its own language, not in the one asked.
+        return Intl.DisplayNames.supportedLocalesOf([inLanguage]).length === 0 ? undefined : new Intl.DisplayNames([inLanguage], { type: "language", fallback: "none" }).of(code);
     } catch {
         return undefined;
     }

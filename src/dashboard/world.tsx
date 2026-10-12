@@ -523,7 +523,7 @@ function Drawing(
                     return placed === undefined ? null : (
                         <g key={region.name}>
                             <text class="label region-label" x={placed.x} y={placed.y} text-anchor="middle">{region.name}</text>
-                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{t("{terrain} terrain", { terrain: terrainLabel(region.terrain) })}</text>}
+                            {region.terrain !== undefined && <text class="label region-note" x={placed.x} y={placed.y + 15} text-anchor="middle">{terrainLabel(region.terrain)}</text>}
                         </g>
                     );
                 })}
@@ -671,7 +671,8 @@ function PlaceCard({ place, map, layout, narrow, onClose, onGo }: { place: Spot;
                                                 {t("{place}, on {map}", { place: way.to, map: way.map })}
                                             </button>
                                         )}
-                                        {way.km !== undefined && <span class="way-km num">{` · ${lengthText(way.km, map.unit)}`}</span>}
+                                        {way.km !== undefined && " · "}
+                                        {way.km !== undefined && <span class="way-km num">{lengthText(way.km, map.unit)}</span>}
                                     </span>
                                 </li>
                             ))}
@@ -801,7 +802,7 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
                         <button type="button" class="place-row" onClick={() => choose(spot.name)}>
                             <span class="pr-name">{spot.name}</span>
                             <span class="pr-kind">{[placeKindLabel(spot.kind) ?? t("Place"), ...(layout.inside(spot.name).length > 0 ? [t("{count} inside", { count: layout.inside(spot.name).length })] : [])].join(" · ")}</span>
-                            <span class="pr-far num">{spot.from === undefined ? "" : fromLabel(spot.from, (km) => lengthText(km, map.unit))}</span>
+                            <span class="pr-far num" dir="auto">{spot.from === undefined ? "" : fromLabel(spot.from, (km) => lengthText(km, map.unit))}</span>
                         </button>
                     </li>
                 ))}
@@ -830,9 +831,9 @@ function RegionRow({ region, unit }: { region: Area; unit: WorldMap["unit"]; })
             <span class="place-row static">
                 <span class="pr-name">{region.name}</span>
                 <span class="pr-kind">
-                    {[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : t("{terrain} terrain", { terrain: terrainLabel(region.terrain) })].filter((part) => part !== undefined).join(" · ")}
+                    {[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : terrainLabel(region.terrain)].filter((part) => part !== undefined).join(" · ")}
                 </span>
-                <span class="pr-far num">{t("{length} across", { length: lengthText(region.radius * 2, unit) })}</span>
+                <span class="pr-far num" dir="auto">{t("{length} across", { length: lengthText(region.radius * 2, unit) })}</span>
             </span>
         </li>
     );

@@ -65,7 +65,7 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
 export function itemLabel(item: string, fields: ReadonlySet<string> = new Set()): string
 {
     const word = item.trim();
-    return systemWord("words", word) ?? systemWord("fields", word) ?? isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word);
+    return systemWord("words", word) ?? systemWord("fields", word) ?? (isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word));
 }
 
 /** A label of a sheet's line as a phrase, its first letter a capital: "sleight of hand" reads "Sleight of hand"; "STR save" stays as it is. */
@@ -226,7 +226,13 @@ export function settingLabel(name: string): string
         premise: t("Premise"),
         system: t("Game system"),
     };
-    return labels[name] ?? phraseLabel(fieldLabel(name));
+    return labels[name] ?? phraseLabel(systemWord("words", name) ?? fieldLabel(name));
+}
+
+/** What a game system is, as its system.yaml titles it, in its words when it has them: The fifth edition from the SRD 5.1. */
+export function systemTitleLabel(title: string): string
+{
+    return phraseLabel(systemWord("words", title) ?? title);
 }
 
 /** A value of a setting, in the page's language: Normal, On request; a game system's own from its words. */

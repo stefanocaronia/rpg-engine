@@ -12,7 +12,7 @@ import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
-import { t } from "../text.ts";
+import { arrowStep, t } from "../text.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, type Keep, keptOf, notation, trayDice, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
@@ -323,7 +323,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
 
     // The arrows choose among what counts, the focus going with the choice, as in a radio group.
     const moveKeep = (event: KeyboardEvent, sides: number): void => {
-        const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+        const step = arrowStep(event.key);
 
         if (step === 0) {
             return;

@@ -295,7 +295,7 @@ export interface KnownMap
 /** The world map as the character knows it (VIEW-7, D-318): the player's unit and its km, the maps it knows, the places nearest the party first, the roads, the party and its trail. */
 export interface WorldMap
 {
-    unit: { name: "km" | "mi"; km: number; };
+    unit: { name: "km" | "mi"; km: number; foot?: number; };
     maps: KnownMap[];
     places: MapPlace[];
     roads: MapRoad[];

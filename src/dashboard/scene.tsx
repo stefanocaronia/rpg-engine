@@ -2,9 +2,9 @@
 // whose turn it is; outside a scene who is there of those the character knows; then the place's text.
 import { sectionAddress } from "./address.ts";
 import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
-import { effectLabel, gameDateLabel, terrainLabel } from "./game-words.ts";
+import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
-import { sceneTypeLabel, strangerLabel } from "./labels.ts";
+import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
 import { biomeLabel } from "./map-symbols.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
@@ -96,7 +96,7 @@ function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name:
         <li>
             {"effect" in item ? effectLabel({ name: item.effect, end: item.end }) : (
                 <>
-                    <span class="k">{entry?.name}</span>
+                    {entry?.name !== "" && <span class="k">{entry?.name}</span>}
                     {entry?.value}
                 </>
             )}
@@ -109,7 +109,7 @@ function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name:
 function environmentLabel(name: string, value: string): { name: string; value: string; }
 {
     const known = name.trim().toLowerCase();
-    return known === "biome" ? { name: t("biome"), value: biomeLabel(value)?.toLowerCase() ?? value } : known === "terrain" ? { name: t("terrain"), value: terrainLabel(value) } : { name, value };
+    return known === "biome" ? { name: t("biome"), value: biomeLabel(value)?.toLowerCase() ?? value } : known === "terrain" ? { name: "", value: phraseLabel(terrainLabel(value)) } : { name, value };
 }
 
 /** The open scene (D-309): its title, type and since when, who is in it, and in a fight the round and whose turn it is. */
@@ -124,7 +124,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
                 <p class="eyebrow">{t("Scene")}</p>
                 <h3 id="scene-title">{scene.title}</h3>
                 <span class="scene-type" data-type={scene.type}>{sceneTypeLabel(scene.type)}</span>
-                {scene.since && <span class="scene-since">{t("since {when}", { when: gameDateLabel(scene.since) })}</span>}
+                {scene.since && <span class="scene-since">{sinceDateLabel(scene.since)}</span>}
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />

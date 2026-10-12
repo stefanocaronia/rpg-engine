@@ -612,11 +612,16 @@ export function mapPart(map: WorldMap, name: string): MapPart
     };
 }
 
-/** A length in km as the player measures it: km, or the game's miles. */
+/** A length in km as the player measures it, as the chat writes it: km or m, or the game's miles or feet below a mile. */
 export function lengthText(km: number, unit: WorldMap["unit"]): string
 {
     const value = Math.round(km / unit.km * 10) / 10;
-    return unit.name === "km" ? `${numberText(value)} km` : value === 1 ? t("1 mile") : t("{count} miles", { count: numberText(value) });
+
+    if (unit.name === "km") {
+        return km >= 0.9995 ? t("{count} km", { count: numberText(value) }) : t("{count} m", { count: numberText(Math.round(km * 1000)) });
+    }
+
+    return value >= 1 ? value === 1 ? t("1 mile") : t("{count} miles", { count: numberText(value) }) : t("{count} feet", { count: numberText(Math.round(km * 1000 / (unit.foot ?? 0.3048))) });
 }
 
 /** The scale bar: a round number of the player's units about as wide as `about` pixels, and its width in pixels. */

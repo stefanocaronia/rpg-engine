@@ -418,6 +418,11 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             "Time passes: day 1, 18:00 → day 1, 19:00",
             "Ettore: Benedizione ended",
         ]);
+        // A capital only to someone and a creature, never to a name that has none.
+        expect([factLabel({ kind: "counter", who: "al-Mansur", field: "hp", before: "3", after: "1" }), factLabel({ kind: "effect-ended", who: "creature", effect: "Stunned" })]).toEqual([
+            "al-Mansur: HP 3 → 1",
+            "A creature: Stunned ended",
+        ]);
         expect(JSON.stringify(chapters)).not.toContain("Saved:");
     });
 });

@@ -11,7 +11,7 @@ import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Icon } from "./icons.tsx";
 import { FollowedQuest, JournalView } from "./journal.tsx";
-import { phraseLabel } from "./labels.ts";
+import { systemTitleLabel } from "./labels.ts";
 import { type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
@@ -341,7 +341,7 @@ function App()
                         {shown.system && (
                             <footer class="credits">
                                 <span>
-                                    {shown.system.name} · {phraseLabel(shown.system.title)}
+                                    {shown.system.name} · {systemTitleLabel(shown.system.title)}
                                 </span>
                                 {shown.system.attribution && (
                                     <details>

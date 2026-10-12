@@ -202,6 +202,11 @@ describe("the player's view, after Matteo's round", () => {
         expect(view).toContain("- A creature: 1d20+4 = 8 [4] + 4");
         expect(view).toContain("- Bran to somewhere");
         expect(view).not.toMatch(/Lupo mannaro|Strega|Covo segreto|Zaino/);
+        // A name is written as it is, without a capital that is not its own (D-403).
+        await ok("write", "al-Mansur", "--type", "character");
+        await ok("write", "Kira", "--add", "knows=[[al-Mansur]]");
+        await ok("roll", "1d20", "--who", "al-Mansur");
+        expect(await ok("view", "--diary", "1")).toMatch(/- al-Mansur: 1d20 = /);
     });
 
     it("VIEW-1: is the view of the living player character, when the first one died", async () => {

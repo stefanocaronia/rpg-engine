@@ -23,11 +23,11 @@ function blocks(text: string): ComponentChildren[]
 
     const close = (): void => {
         if (paragraph.length > 0) {
-            shown.push(<p>{inline(paragraph.join(" "))}</p>);
+            shown.push(<p dir="auto">{inline(paragraph.join(" "))}</p>);
         }
 
         if (list.length > 0) {
-            shown.push(<ul>{list.map((item, index) => <li key={index}>{inline(item)}</li>)}</ul>);
+            shown.push(<ul>{list.map((item, index) => <li key={index} dir="auto">{inline(item)}</li>)}</ul>);
         }
 
         paragraph = [];
@@ -43,7 +43,7 @@ function blocks(text: string): ComponentChildren[]
         } else if (heading !== null) {
             close();
             // A page's own headings sit below the sheet's: the first level is a box's, and its sections come after.
-            shown.push(heading[1].length <= 2 ? <h4>{inline(heading[2])}</h4> : <h5>{inline(heading[2])}</h5>);
+            shown.push(heading[1].length <= 2 ? <h4 dir="auto">{inline(heading[2])}</h4> : <h5 dir="auto">{inline(heading[2])}</h5>);
         } else if (item !== null) {
             if (paragraph.length > 0) {
                 close();

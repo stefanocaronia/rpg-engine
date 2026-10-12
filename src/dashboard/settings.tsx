@@ -9,7 +9,7 @@ import { DieSwatch, Icon } from "./icons.tsx";
 import { settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
-import { t } from "./text.ts";
+import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice.
@@ -410,7 +410,7 @@ function Segmented({ label, described, options, value, onPick }: {
     const at = options.findIndex((option) => option.value === value);
 
     const move = (event: KeyboardEvent): void => {
-        const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+        const step = arrowStep(event.key);
 
         if (step === 0) {
             return;

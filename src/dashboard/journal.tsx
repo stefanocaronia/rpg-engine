@@ -5,14 +5,14 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
 import type { JournalFact, ShownChapter, ShownQuest } from "./data.ts";
-import { factLabel, gameDateLabel } from "./game-words.ts";
+import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
 import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
-import { t } from "./text.ts";
+import { arrowStep, t } from "./text.ts";
 
 // The tab the player last chose, kept in this browser.
 const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "notes"] } as const;
@@ -26,7 +26,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
 
     // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
     const move = (event: KeyboardEvent): void => {
-        const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+        const step = arrowStep(event.key, true);
 
         if (step === 0) {
             return;
@@ -142,7 +142,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     const from = [
         quest.giver === undefined ? undefined : t("from {who}", { who: quest.giver }),
         quest.place === undefined ? undefined : t("at {place}", { place: quest.place }),
-        quest.deadline === undefined ? undefined : t("by {date}", { date: gameDateLabel(quest.deadline.date) }),
+        quest.deadline === undefined ? undefined : byDateLabel(quest.deadline.date),
     ].filter((part) => part !== undefined);
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
@@ -284,11 +284,11 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 {
     const minutes = deadline.minutes;
     const near = minutes !== undefined && minutes < 24 * 60;
-    const text = minutes === undefined ? t("by {date}", { date: gameDateLabel(deadline.date) }) : minutes <= 0 ? t("Time is up") : durationText(minutes);
+    const text = minutes === undefined ? byDateLabel(deadline.date) : minutes <= 0 ? t("Time is up") : durationText(minutes);
     // Its word apart, which the followed quest's strip leaves to a screen reader on a phone.
     const left = minutes !== undefined && minutes > 0;
     return (
-        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={t("By {date}", { date: gameDateLabel(deadline.date) })}>
+        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={phraseLabel(byDateLabel(deadline.date))}>
             <Icon name="hourglass" />
             <span>
                 {text}

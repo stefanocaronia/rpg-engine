@@ -18,7 +18,7 @@ import { moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
 import { StoryBox } from "./story.tsx";
-import { systemWord, t } from "./text.ts";
+import { arrowStep, systemWord, t } from "./text.ts";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
@@ -175,7 +175,7 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
 
     // One stop of the Tab key for a group's numbers; the arrows move among them.
     const onKeyDown = (event: KeyboardEvent): void => {
-        const step = ["ArrowDown", "ArrowRight"].includes(event.key) ? 1 : ["ArrowUp", "ArrowLeft"].includes(event.key) ? -1 : 0;
+        const step = arrowStep(event.key);
         const stops = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("[data-stop]")];
         const at = stops.indexOf(document.activeElement as HTMLElement);
 
@@ -284,7 +284,7 @@ function Row(props: Line)
                 {value.roll && <RollMark roll={value.roll} />}
                 {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
             </Changing>
-            {beside !== undefined && <span class="beside num">{shownText(beside)}</span>}
+            {beside !== undefined && <span class="beside num" dir={value.levelNeed === undefined ? undefined : "auto"}>{shownText(beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
         </NumberBox>
     );

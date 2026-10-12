@@ -97,8 +97,20 @@ export function systemWord(kind: "groups" | "fields" | "words", english: string)
  */
 export function t(phrase: string, values: Record<string, string | number> = {}): string
 {
-    const isolated = (value: string | number): string => (pageDirection() === "rtl" ? `\u2068${value}\u2069` : String(value));
     return (phrases[phrase] ?? systemWord("words", phrase) ?? phrase).replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? isolated(values[name]) : whole));
+}
+
+/** How far an arrow key moves along choices, the way the page reads: 1 forward, -1 back, 0 for another key; up and down too, unless `across` alone. */
+export function arrowStep(key: string, across = false): number
+{
+    const [forward, back] = pageDirection() === "rtl" ? ["ArrowLeft", "ArrowRight"] : ["ArrowRight", "ArrowLeft"];
+    return key === forward || (!across && key === "ArrowDown") ? 1 : key === back || (!across && key === "ArrowUp") ? -1 : 0;
+}
+
+/** A name or a number set apart in a language written from right to left, so that it keeps its own order: Locanda del Guado, +2. */
+export function isolated(value: string | number): string
+{
+    return pageDirection() === "rtl" ? `\u2068${value}\u2069` : String(value);
 }
 
 /** Which way the page's language is written: right to left for Arabic and Hebrew, left to right for the others. */

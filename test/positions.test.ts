@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { fromLabel } from "../src/dashboard/game-words.ts";
+import { lengthText } from "../src/dashboard/world-map.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -264,6 +265,17 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
             ].join("\n"),
         );
         expect((await rpg("view", "Rocca", "--map")).output).toBe("Give map alone: it is the world map, apart from the page, the diary and the rolls.");
+        // Below a km or a mile, in metres or the game's feet, in the chat and on the page alike (D-403).
+        await ok("write", "Fonte", "--type", "place", "--set", "position=60 m N of [[Guadoscuro]]");
+        await ok("write", "Ettore", "--add", "knows=[[Fonte]]");
+        const near = JSON.parse(await ok("view", "--map", "--json"));
+        const fonte = near.places.find((place: { name: string; }) => place.name === "Fonte");
+        expect(await ok("view", "--map")).toContain("- Fonte: 60 m north");
+        expect(fromLabel(fonte.from, (km) => lengthText(km, near.unit))).toBe("60 m north");
+        await ok("config", "units", "imperial");
+        const imperial = JSON.parse(await ok("view", "--map", "--json"));
+        expect(await ok("view", "--map")).toContain("- Fonte: 200 feet north");
+        expect(fromLabel(imperial.places.find((place: { name: string; }) => place.name === "Fonte").from, (km) => lengthText(km, imperial.unit))).toBe("200 feet north");
     });
 
     it("draws a known road only up to its last known stop, with a beginning toward the next; the trail goes along the roads it took", async () => {

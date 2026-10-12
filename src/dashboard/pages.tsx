@@ -1,7 +1,7 @@
 // The sections still to come (D-276, D-309), each saying what it will hold; and About: the product, the game system and its source's credit.
 import type { Section } from "./address.ts";
 import { sectionLabel } from "./address.ts";
-import { phraseLabel } from "./labels.ts";
+import { systemTitleLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
 /** A section the page does not have yet: what it will hold. */
@@ -23,7 +23,7 @@ export function About({ product, system }: { product: string; system?: { name: s
         <section class="upcoming" aria-labelledby="about-title">
             <h2 id="about-title">{t("About")}</h2>
             <p>{t("{product}: the dashboard of the campaign, beside the chat where you play.", { product })}</p>
-            {system && <p>{`${system.name} · ${phraseLabel(system.title)}`}</p>}
+            {system && <p>{`${system.name} · ${systemTitleLabel(system.title)}`}</p>}
             {system?.attribution && <p class="upcoming-note">{system.attribution}</p>}
         </section>
     );

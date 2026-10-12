@@ -605,11 +605,11 @@ function factText(fact: StoryFact): string
             case "scene-closed":
                 return `Scene: ${fact.title} (${fact.type}): ${fact.summary}`;
             case "roll":
-                return `${fact.who === undefined ? "Roll" : nameText(fact.who)}: ${fact.result}`;
+                return `${fact.who === undefined ? "Roll" : nameText(fact.who, true)}: ${fact.result}`;
             case "roll-revealed":
                 return "A hidden roll was shown";
             case "counter":
-                return `${nameText(fact.who)}: ${fact.field} ${fact.before} → ${fact.after}`;
+                return `${nameText(fact.who, true)}: ${fact.field} ${fact.before} → ${fact.after}`;
             case "time":
                 return fact.from === undefined ? `The story starts on ${fact.to}` : `Time passes: ${fact.from} → ${fact.to}`;
             case "moved":
@@ -617,9 +617,9 @@ function factText(fact: StoryFact): string
             case "learned":
                 return `${fact.who} learned: ${fact.what.join(", ")}`;
             case "effect":
-                return `${nameText(fact.who)}: ${fact.text}`;
+                return `${nameText(fact.who, true)}: ${fact.text}`;
             case "effect-ended":
-                return `${nameText(fact.who)}: ${fact.effect} ended`;
+                return `${nameText(fact.who, true)}: ${fact.effect} ended`;
             case "saved":
                 return `Saved: ${fact.save}${fact.label === undefined ? "" : ` - ${fact.label}`}`;
             case "back":
@@ -630,13 +630,14 @@ function factText(fact: StoryFact): string
                 return `${fact.status === "open" ? "Quest taken" : fact.status === "done" ? "Quest completed" : "Quest failed"}: ${fact.quest}`;
         }
     })();
-    return `${told[0]?.toUpperCase() ?? ""}${told.slice(1)}`;
+    return told;
 }
 
-/** A name of the story in the chat's words: a creature for creature, as the copies of one it does not know. */
-function nameText(name: string): string
+/** A name of the story in the chat's words: a creature for creature, as the copies of one it does not know; Someone and A creature opening a line. */
+function nameText(name: string, first = false): string
 {
-    return name === "creature" ? "a creature" : name;
+    const said = name === "creature" ? "a creature" : name;
+    return first && (name === "creature" || name === "someone") ? `${said[0].toUpperCase()}${said.slice(1)}` : said;
 }
 
 /** Whether a name is a copy's in a scene, such as Lupo mannaro 1: a creature's name and a number, with no page of its own. */
