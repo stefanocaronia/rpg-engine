@@ -11,6 +11,8 @@ import { type Frame, loadPhysics, type Lying, type Throw, throwDice } from "./th
 
 // How long the face before a reroll stays in sight, in milliseconds.
 const beforeReroll = 300;
+// How many frames late a knock may still sound.
+const lateKnock = 4;
 
 /** How a throw is shown: at once, with reduced motion; with its sound or not; cut short when the tray says so; and stopped by a newer throw. */
 export interface Showing
@@ -114,9 +116,10 @@ function play(thrown: Throw, show: (frame: Frame[]) => void, showing: Showing): 
             const at = showing.skipping() ? frames.length - 1 : Math.min(frames.length - 1, Math.max(0, Math.floor((now - started) / (1000 / 60))));
             show(frames[at]);
 
-            // The knocks up to this frame: none when the throw is shown at once or cut short.
+            // The knocks up to this frame: none when the throw is shown at once or cut short, nor those left behind when the page stalled a moment, which would
+            // sound late, all together, the dice already still.
             while (heard < thrown.knocks.length && thrown.knocks[heard].frame <= at) {
-                if (showing.sound && !showing.instant && !showing.skipping()) {
+                if (showing.sound && !showing.instant && !showing.skipping() && at - thrown.knocks[heard].frame <= lateKnock) {
                     knock(thrown.knocks[heard].strength, thrown.knocks[heard].onDie);
                 }
 

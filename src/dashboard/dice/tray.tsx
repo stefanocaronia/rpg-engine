@@ -290,11 +290,9 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     const answering = pool.length === 0 ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier, shownKeeps)));
 
     const throwPool = (): void => {
-        // Dice that make a check the master asks answer it: the engine rolls it, and its dice land as for its button. The tray closes, and starts empty again.
+        // Dice that make a check the master asks answer it: the engine rolls it, and its dice land as for its button. The tray closes, keeping its dice for the
+        // next throw until the player clears them (D-405).
         setOpen(false);
-        setPool([]);
-        setKeeps({});
-        setModifier(0);
 
         if (answering !== undefined) {
             asked?.answer(answering.index);

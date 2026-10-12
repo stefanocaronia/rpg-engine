@@ -228,11 +228,10 @@ function App()
     const fight = shown.openScene?.type === "combat";
     const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
 
-    // The tab tells that the master asks something, or that it is the player's turn, when the page is behind another.
+    // The tab's title: the campaign's name and the product's, always the same.
     useEffect(() => {
-        const title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
-        document.title = shown.asked !== undefined ? `🎲 ${title}` : yourTurn ? `⚔ ${title}` : title;
-    }, [shown.campaign, shown.asked === undefined, yourTurn]);
+        document.title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
+    }, [shown.campaign]);
 
     const setup = useSetup(shown.version);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
