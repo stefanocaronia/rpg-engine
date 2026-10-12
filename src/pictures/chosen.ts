@@ -1,5 +1,5 @@
-// Who makes the pictures, by the chat in use (D-390): in Codex, Codex; elsewhere Codex where it is ready, else Claude's SVG. Gemini's own pictures wait for
-// Stefano's word on their cost; until then a Gemini chat goes the same way. Without any, the page shows its own picture all the same (D-389).
+// Who makes the pictures, by the chat in use (D-390): in Codex, Codex; elsewhere Codex where it is ready, else Claude's SVG, a Gemini chat too, as Gemini's
+// own pictures cost by the picture. Without any, the page shows its own picture all the same (D-389).
 import type { PictureMaker } from "../core/context.ts";
 import { claudePictures } from "./claude.ts";
 import { codexPictures } from "./codex.ts";
