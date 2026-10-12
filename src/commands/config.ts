@@ -340,10 +340,10 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
     ];
 }
 
-/** Whether this computer makes pictures, in the player's words (D-308): Codex logged in, or why not and how to have them; nothing where no maker is asked. */
 // Who makes the pictures on this computer, in the player's words (D-390).
 const madeBy = { Codex: "Codex makes them on this computer, from your ChatGPT plan.", Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan." };
 
+/** Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; nothing where no maker is asked. */
 function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 {
     const ready = context.pictures?.ready(true);

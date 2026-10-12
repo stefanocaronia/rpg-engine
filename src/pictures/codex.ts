@@ -7,6 +7,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MadePicture, PictureMaker, PicturesReady, PictureSubject } from "../core/context.ts";
 import { paintedBrief } from "./briefs.ts";
+import { stopTree } from "./stop.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
 const longest = 3 * 60 * 1000;
@@ -79,9 +80,10 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
         const child = spawn(line, { shell: true, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
         let output = "";
         let errors = "";
-        const timer = setTimeout(() => child.kill(), longest);
+        const timer = setTimeout(() => stopTree(child), longest);
         child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
+        child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);
         child.on("close", () => {
             clearTimeout(timer);

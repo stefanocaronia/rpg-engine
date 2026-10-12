@@ -101,7 +101,7 @@ export const settingsSchema = z.object({
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     // new places, as campaigns wrote it before quests had pictures, is read as the value that took its place (D-388).
     pictures: z.preprocess((value) => (value === "new places" ? "new places and quests" : value), z.enum(pictureWays)).optional().describe(
-        "the pictures of places and quests the engine has made on this computer, which spend the player's Codex: none, on request (those the player asks for) or new places and quests (one for each new place and quest)",
+        "the pictures of places and quests the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) or new places and quests (one for each new place and quest)",
     ),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),

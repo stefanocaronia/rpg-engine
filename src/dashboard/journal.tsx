@@ -283,11 +283,16 @@ function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>;
 {
     const minutes = deadline.minutes;
     const near = minutes !== undefined && minutes < 24 * 60;
-    const text = minutes === undefined ? `by ${deadline.date}` : minutes <= 0 ? "Time is up" : `${durationText(minutes)} left`;
+    const text = minutes === undefined ? `by ${deadline.date}` : minutes <= 0 ? "Time is up" : durationText(minutes);
+    // Its word apart, which the followed quest's strip leaves to a screen reader on a phone.
+    const left = minutes !== undefined && minutes > 0;
     return (
         <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={`By ${deadline.date}`}>
             <Icon name="hourglass" />
-            <span>{text}</span>
+            <span>
+                {text}
+                {left && <span class="quest-deadline-left">left</span>}
+            </span>
         </span>
     );
 }

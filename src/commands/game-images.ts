@@ -16,8 +16,11 @@ export function picturesNote(root: string, context: Context, world: World, place
     const setting = readSettings(root).pictures;
 
     if (setting === undefined) {
-        return context.pictures?.ready().ready === true
-            ? "Pictures: this computer can make the pictures of places and quests with the player's Codex, which spends their plan: ask them once whether they want one for each new place and quest, only those they ask for, or none; then config pictures (new places and quests, on request or none)."
+        const ready = context.pictures?.ready();
+        return ready?.ready === true
+            ? `Pictures: this computer can make the pictures of places and quests with the player's ${
+                ready.maker === "Claude" ? "Claude Code" : "Codex"
+            }, which spends their plan: ask them once whether they want one for each new place and quest, only those they ask for, or none; then config pictures (new places and quests, on request or none).`
             : undefined;
     }
 

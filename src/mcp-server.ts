@@ -102,20 +102,11 @@ export async function startMcpServer(): Promise<void>
     process.stdin.on("end", leave);
     process.stdin.on("close", leave);
     // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
-    let host: string | undefined;
-    const context: Context = { ...defaultContext(), pictures: hostPictures(() => host) };
+    let server: ReturnType<typeof createMcpServer> | undefined;
+    const context: Context = { ...defaultContext(), pictures: hostPictures(() => server?.server.getClientVersion()?.name) };
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
-    const server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
-
-    // After the server's own start, which offers the player's forms.
-    const started = server.server.oninitialized;
-
-    server.server.oninitialized = () => {
-        started?.();
-        host = server.server.getClientVersion()?.name;
-    };
-
+    server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
     await server.connect(new StdioServerTransport());
 }
 

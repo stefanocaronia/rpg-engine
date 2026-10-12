@@ -63,6 +63,15 @@ describe("an SVG drawn by a model, cleaned (D-342)", () => {
         );
     });
 
+    it("never lets a quote in a value close it and open another, writes SVG's names and its namespace, and keeps each attribute once (Matteo)", () => {
+        expect(cleanSvg(`<svg viewBox="0 0 1 1"><rect fill='x" onmouseover="alert(1)'/><rect fill='url("#a")' fill="red"/></svg>`)).toBe(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect fill="x' onmouseover='alert(1)"/><rect fill="url('#a')"/></svg>`,
+        );
+        expect(cleanSvg('<SVG VIEWBOX="0 0 1 1"><lineargradient id="a" gradientunits="userSpaceOnUse"></LINEARGRADIENT></SVG>')).toBe(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><linearGradient id="a" gradientUnits="userSpaceOnUse"></linearGradient></svg>',
+        );
+    });
+
     it("takes none without a single closed root, or larger than 100 KB, and finds the SVG in an answer with words around it", () => {
         expect(cleanSvg("<g><rect/></g>")).toBeUndefined();
         expect(cleanSvg('<svg viewBox="0 0 1 1"><g>')).toBeUndefined();

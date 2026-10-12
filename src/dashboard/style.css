@@ -1989,25 +1989,37 @@ a {
         grid-column: 2;
     }
 
+    /* The name alone on the first line; the next goal and the time left, without its word, on the second; the clock stays in the Journal's card. */
     .followed-name {
         grid-row: 1;
-        grid-column: 3;
+        grid-column: 3 / -1;
     }
 
     .followed > .clock-face {
-        grid-row: 1;
-        grid-column: 4;
+        display: none;
     }
 
     .followed > .quest-deadline {
-        grid-row: 1;
-        grid-column: 5;
+        grid-row: 2;
+        grid-column: 4 / -1;
     }
 
     .followed-next {
         grid-row: 2;
-        grid-column: 3 / -1;
+        grid-column: 3;
         padding-left: 0;
+    }
+
+    .followed .quest-deadline-left {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 }
 
