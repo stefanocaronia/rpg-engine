@@ -4,9 +4,9 @@ import type { ComponentChildren } from "preact";
 import { useLayoutEffect, useRef, useState } from "preact/hooks";
 import { columnsByHeight } from "./layout.ts";
 
-// The narrowest a column gets, and the room between two, in pixels.
+// The narrowest a column gets, and the room between two, in pixels: the page's one room, --gap in the style sheet.
 const columnWidth = 300;
-const columnGap = 14;
+const columnGap = 16;
 
 /** A card to place, by a key unique among the cards. */
 export interface Placed

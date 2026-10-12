@@ -12,6 +12,8 @@
 
 :root {
     color-scheme: light dark;
+    /* The one room around the page and between its cards and stacks, the bar and the master's question included. */
+    --gap: 16px;
     /* Two seeds from the robot, navy #192d4d and gold #f4c84c, as HCT tones by role. */
     --ink: light-dark(#182c4c, #eff0fa);
     --muted: light-dark(#586174, #a8b1c6);
@@ -78,7 +80,7 @@ body {
 /* The page takes the whole window: the cards fall into as many columns as fit. */
 .page {
     /* Room at the bottom for the dice's button, which stays over the page. */
-    padding: 12px 16px 96px;
+    padding: var(--gap) var(--gap) 96px;
 }
 
 .page.stale .sheet,
@@ -415,7 +417,7 @@ a {
    means under it; the page's own last. */
 .settings {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
     /* Room at the end for the dice button, which stays over the page: no row is left under it. */
     padding-bottom: 72px;
 }
@@ -877,7 +879,7 @@ a {
    at the end, in red. */
 .saves {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
     /* Room at the end for the dice button, which stays over the page. */
     padding-bottom: 72px;
 }
@@ -959,7 +961,7 @@ a {
 .save-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
+    gap: var(--gap);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1277,7 +1279,7 @@ a {
 /* The Journal (D-367): the quest log as a video game's, cards with goals, bars, a clock and the time left, the main quests in gold; the story by chapters. */
 .journal {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
     /* Room at the end for the dice button, which stays over the page. */
     padding-bottom: 72px;
 }
@@ -1322,7 +1324,7 @@ a {
 
 .quest-log {
     display: grid;
-    gap: 12px;
+    gap: var(--gap);
 }
 
 .quest-group {
@@ -1366,7 +1368,7 @@ a {
 .quest-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 12px;
+    gap: var(--gap);
 }
 
 .quest-card {
@@ -1782,7 +1784,7 @@ a {
 /* The player's notes (D-371): cards to write in, saved by themselves. */
 .player-notes {
     display: grid;
-    gap: 12px;
+    gap: var(--gap);
 }
 
 .player-notes-head {
@@ -1817,7 +1819,7 @@ a {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     align-items: start;
-    gap: 12px;
+    gap: var(--gap);
 }
 
 .note-card {
@@ -2442,7 +2444,7 @@ a {
 .setup {
     display: grid;
     justify-items: center;
-    gap: 14px;
+    gap: var(--gap);
     max-width: 640px;
     margin: 0 auto;
     padding: 24px 0 96px;
@@ -3217,7 +3219,7 @@ a {
 .notices {
     display: grid;
     gap: 8px;
-    margin: 0 0 14px;
+    margin: 0 0 var(--gap);
 }
 
 .notice {
@@ -3255,7 +3257,7 @@ a {
     gap: 8px;
     overflow-x: auto;
     padding: 2px 2px 8px;
-    margin-bottom: 12px;
+    margin-bottom: var(--gap);
 }
 
 .member {
@@ -3401,7 +3403,7 @@ a {
     align-items: flex-start;
     gap: 18px 24px;
     padding: 16px 18px;
-    margin-bottom: 14px;
+    margin-bottom: var(--gap);
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: linear-gradient(180deg, var(--panel-2), var(--panel));
@@ -3554,7 +3556,7 @@ a {
 .sheet-body {
     display: grid;
     grid-template-columns: 236px minmax(0, 1fr);
-    gap: 14px;
+    gap: var(--gap);
     align-items: start;
 }
 
@@ -3564,7 +3566,7 @@ a {
 
 .groups {
     columns: 300px;
-    column-gap: 14px;
+    column-gap: var(--gap);
 }
 
 /* A narrow sheet, as beside the rolls under a thousand pixels: the rail goes above the cards, in a row, so that the cards keep their width. */
@@ -3581,15 +3583,24 @@ a {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         align-items: start;
-        gap: 0 14px;
+        gap: var(--gap);
     }
+
+    .sheet-body > .rail > .group {
+        margin-bottom: 0;
+    }
+}
+
+/* The last card of a column takes no room under it: the column's own gap is the room. */
+:is(.rail, .fixed-column) > .group:last-child {
+    margin-bottom: 0;
 }
 
 /* The sheet's cards in columns that stay (D-383): each card in its column, whatever opens or closes. */
 .fixed-columns {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: var(--gap);
 }
 
 .fixed-column {
@@ -3614,7 +3625,7 @@ a {
 
 .group {
     break-inside: avoid;
-    margin-bottom: 14px;
+    margin-bottom: var(--gap);
     padding: 0 16px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
@@ -4268,12 +4279,12 @@ button.row,
 /* What the master asks (D-279): a banner over the page, in sight while it scrolls, with the question and a button for each check or answer. */
 .asked {
     position: sticky;
-    top: calc(var(--top-space, 0px) + 16px);
+    top: calc(var(--top-space, 0px) + var(--gap));
     z-index: 15;
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    margin: 0 0 14px;
+    margin: 0 0 var(--gap);
     padding: 16px 18px;
     border: 1px solid var(--accent);
     border-radius: var(--radius-xl);
@@ -4624,7 +4635,7 @@ button.row,
 
     .rolls-card {
         position: sticky;
-        top: calc(12px + var(--top-space, 0px) + var(--asked-space, 0px));
+        top: calc(var(--gap) + var(--top-space, 0px) + var(--asked-space, 0px));
         transition: top var(--short) var(--ease);
     }
 
@@ -6022,7 +6033,7 @@ svg.icon {
    in a card with the accent at its left; who is there as tokens with names under them; the place's text. */
 .place-band {
     position: relative;
-    margin-bottom: 14px;
+    margin-bottom: var(--gap);
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: linear-gradient(180deg, var(--panel-2), var(--panel));
@@ -6160,7 +6171,7 @@ svg.icon {
 }
 
 .scene-now {
-    margin-bottom: 14px;
+    margin-bottom: var(--gap);
     padding: 14px 18px 16px;
     border: 1px solid var(--rule);
     border-inline-start: 4px solid var(--accent);
@@ -6364,7 +6375,7 @@ svg.icon {
    marked by side, the foes red, the companions green, the player gold, as the tokens' rings; beside it what the player has at hand. */
 .combat {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
     container: combat / inline-size;
 }
 
@@ -6470,7 +6481,7 @@ svg.icon {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
     align-items: start;
-    gap: 14px;
+    gap: var(--gap);
 }
 
 .turn-order {
@@ -6740,7 +6751,7 @@ svg.icon {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 0 0 14px;
+    margin: 0 0 var(--gap);
     padding: 12px 16px;
     border-radius: var(--radius-l);
     background: var(--gold);
@@ -6796,7 +6807,7 @@ svg.icon {
    biome of their region, the rest the paper not drawn yet; the ways in ink, the names in the story's serif. The card and its key follow the theme. */
 .world {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
 }
 
 .map-card,
@@ -6831,7 +6842,7 @@ svg.icon {
     --l-foe: #a73929;
     --l-gold: #f5c63e;
     --l-disc: #182c4c;
-    margin-bottom: 14px;
+    margin-bottom: var(--gap);
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: var(--panel);
@@ -7450,7 +7461,7 @@ svg.icon {
 
 .lm-side {
     display: grid;
-    gap: 14px;
+    gap: var(--gap);
     min-width: 0;
 }
 

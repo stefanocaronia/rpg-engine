@@ -15,7 +15,7 @@ import { byHandPref, usePref } from "./prefs.ts";
 import { t, tParts } from "./text.ts";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
-const bannerTop = 8;
+const bannerTop = 16;
 const mostWords = 500;
 
 export function AskedBanner(
