@@ -353,6 +353,19 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
     };
 
     const chosen = open && pool.length > 0;
+    // The dice kept from the last throw, the tray closed: their throw and their clearing beside its button, a click away (D-410).
+    const kept = !open && pool.length > 0;
+    // What a throw of the dice chosen says: their pictures, or the check of the master's they answer.
+    const rollWords = answering === undefined
+        ? (
+            <span class="tray-roll">
+                {t("Roll")}
+                <PoolIcons pool={pool} keeps={shownKeeps} />
+                {modifier !== 0 && <span class="notation">{signed(modifier)}</span>}
+                <span class="visually-hidden">{notation(pool, modifier, shownKeeps)}</span>
+            </span>
+        )
+        : t("Answer: {check}", { check: answering.check });
     return (
         <>
             <canvas ref={canvas} class={fading ? "dice-stage fading" : "dice-stage"} aria-hidden="true" />
@@ -439,9 +452,15 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                     </div>
                 )}
                 <div class="dice-fab">
-                    {open && (pool.length > 0 || modifier !== 0) && (
+                    {(open || kept) && (pool.length > 0 || modifier !== 0) && (
                         <button type="button" class="icon-button tonal" aria-label={t("Clear the dice")} data-tip={t("Clear")} onClick={clear}>
                             <Icon name="clear" />
+                        </button>
+                    )}
+                    {kept && (
+                        <button type="button" class="dice-button extended" aria-disabled={rolling} onClick={() => !rolling && throwPool()}>
+                            <DieIcon sides={20} />
+                            <span>{rollWords}</span>
                         </button>
                     )}
                     <button
@@ -454,20 +473,7 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
                         onClick={press}
                     >
                         {open && !chosen ? <Icon name="close" /> : <DieIcon sides={20} />}
-                        {chosen && (
-                            <span>
-                                {answering === undefined
-                                    ? (
-                                        <span class="tray-roll">
-                                            {t("Roll")}
-                                            <PoolIcons pool={pool} keeps={shownKeeps} />
-                                            {modifier !== 0 && <span class="notation">{signed(modifier)}</span>}
-                                            <span class="visually-hidden">{notation(pool, modifier, shownKeeps)}</span>
-                                        </span>
-                                    )
-                                    : t("Answer: {check}", { check: answering.check })}
-                            </span>
-                        )}
+                        {chosen && <span>{rollWords}</span>}
                     </button>
                 </div>
             </div>

@@ -1,8 +1,9 @@
-// The celebration of a rare face (D-281, D-282), all on the floor, since the camera far above sees no rise: for the highest face a gold halo that grows and
-// breathes once, sparks that fly out from the die and twinkle out, and its numbers lit gold a moment (D-363); for the lowest a red halo that flares and sinks,
-// and puffs of smoke. With reduced motion, or a throw cut short, the halo alone in its last form. Everything moves for about a second, then the halo stays
-// until the dice go.
+// The celebration of a rare face (D-281, D-282), all on the floor, since the camera far above sees no rise: for the highest face a gold halo close around the
+// die that grows and breathes once, sparks that fly out from it and twinkle out, and its numbers lit gold a moment (D-363); for the lowest the floor cracked
+// around the die, as the die is (D-410). With reduced motion, or a throw cut short, the halo or the cracks alone in their last form. Everything moves for about
+// a second, then stays until the dice go.
 import * as THREE from "three";
+import { type CrackColours, floorCracks } from "./floor-cracks.ts";
 import type { RareFace } from "./models.ts";
 
 /** Something drawn over a while: what it shows at a moment, and whether it still moves; and what it lets go, once the dice go. */
@@ -17,45 +18,42 @@ export interface Glow
 {
     lights: boolean;
     highest: { halo: string; resting: number; sparks: [string, string]; };
-    lowest: { halo: string; smoke: [string, string]; };
+    lowest: CrackColours;
 }
 
-/** The pictures the celebrations are drawn with: a soft halo, a four-pointed star, a puff. */
+/** The pictures the celebrations are drawn with: a soft halo, a four-pointed star. */
 export interface Pictures
 {
     halo: THREE.Texture;
     star: THREE.Texture;
-    puff: THREE.Texture;
 }
 
-/** How a celebration is shown: at once and still, and how many sparks or puffs at most. */
+/** How a celebration is shown: at once and still, and how many sparks at most. */
 export interface Showing
 {
     instant: boolean;
     particles: number;
 }
 
-// The halos' radii on the floor; how long the highest's grows and breathes, and the lowest's flares and sinks, and how long a still halo takes to appear, in seconds.
-const highestRadius = 2.6;
-const lowestRadius = 2.3;
+// The halo's radius on the floor, half as wide around the die as it was, so that the eye goes to the numbers lit (D-410); how long it grows and breathes, and how
+// long a still halo takes to appear, in seconds.
+const haloRadius = 1.9;
 const growth = 0.25;
 const breathEnd = 1.2;
-const flare = 0.15;
-const sinkEnd = 0.75;
 const appear = 0.15;
-// Smoke at most.
-const puffs = 14;
 
 /** Celebrates a rare face of the die lying at this place. */
 export function celebrate(scene: THREE.Scene, at: THREE.Vector3, rare: RareFace, glow: Glow, pictures: Pictures, showing: Showing): Effect
 {
+    if (rare === "lowest") {
+        return floorCracks(scene, at, glow.lowest, glow.lights, showing.instant);
+    }
+
     const blending = glow.lights ? THREE.AdditiveBlending : THREE.NormalBlending;
-    const highest = rare === "highest";
-    const resting = highest ? glow.highest.resting : 0.75;
-    const radius = highest ? highestRadius : lowestRadius;
+    const resting = glow.highest.resting;
     const halo = new THREE.Mesh(
-        new THREE.PlaneGeometry(radius * 2, radius * 2),
-        new THREE.MeshBasicMaterial({ map: pictures.halo, color: highest ? glow.highest.halo : glow.lowest.halo, transparent: true, depthWrite: false, blending, opacity: 0 }),
+        new THREE.PlaneGeometry(haloRadius * 2, haloRadius * 2),
+        new THREE.MeshBasicMaterial({ map: pictures.halo, color: glow.highest.halo, transparent: true, depthWrite: false, blending, opacity: 0 }),
     );
     halo.rotation.x = -Math.PI / 2;
     halo.position.set(at.x, 0.03, at.z);
@@ -63,9 +61,7 @@ export function celebrate(scene: THREE.Scene, at: THREE.Vector3, rare: RareFace,
 
     const particles = showing.instant
         ? []
-        : highest
-        ? flyOut(scene, at, Math.min(40, showing.particles), pictures.star, glow.highest.sparks, blending, { speed: [3.5, 6], friction: 3, life: [0.7, 1], size: [0.18, 0.32], growTo: 1, opacity: 1 })
-        : flyOut(scene, at, Math.min(puffs, showing.particles), pictures.puff, glow.lowest.smoke, blending, { speed: [0.8, 1.6], friction: 2, life: [1.2, 1.2], size: [0.4, 0.6], growTo: 1.6, opacity: 0.5 });
+        : flyOut(scene, at, Math.min(40, showing.particles), pictures.star, glow.highest.sparks, blending, { speed: [3.5, 6], friction: 3, life: [0.7, 1], size: [0.18, 0.32], growTo: 1, opacity: 1 });
 
     let started: number | undefined;
     let before: number | undefined;
@@ -78,26 +74,18 @@ export function celebrate(scene: THREE.Scene, at: THREE.Vector3, rare: RareFace,
             before = now;
 
             if (showing.instant) {
-                halo.scale.setScalar(highest ? 1 : 0.9);
+                halo.scale.setScalar(1);
                 halo.material.opacity = resting * Math.min(1, seconds / appear);
                 return seconds < appear;
             }
 
-            if (highest) {
-                // It grows from half its size, then breathes once, out and back, and settles.
-                const grown = Math.min(1, seconds / growth);
-                const breath = seconds <= growth ? 0 : Math.sin(Math.min(1, (seconds - growth) / (breathEnd - growth)) * Math.PI) * 0.12;
-                halo.scale.setScalar(0.5 + 0.5 * (1 - (1 - grown) ** 3) + breath);
-                halo.material.opacity = seconds < growth ? grown : resting + (1 - resting) * Math.max(0, 1 - (seconds - growth) / (breathEnd - growth));
-            } else {
-                // It flares at once, then sinks, smaller and dimmer.
-                const sinking = Math.min(1, Math.max(0, (seconds - flare) / (sinkEnd - flare)));
-                halo.scale.setScalar(1.1 - 0.2 * sinking ** 2);
-                halo.material.opacity = seconds < flare ? seconds / flare : 1 - (1 - resting) * sinking ** 2;
-            }
-
+            // It grows from half its size, then breathes once, out and back, and settles.
+            const grown = Math.min(1, seconds / growth);
+            const breath = seconds <= growth ? 0 : Math.sin(Math.min(1, (seconds - growth) / (breathEnd - growth)) * Math.PI) * 0.12;
+            halo.scale.setScalar(0.5 + 0.5 * (1 - (1 - grown) ** 3) + breath);
+            halo.material.opacity = seconds < growth ? grown : resting + (1 - resting) * Math.max(0, 1 - (seconds - growth) / (breathEnd - growth));
             const flying = particles.filter((particle) => particle.move(step));
-            return flying.length > 0 || seconds < (highest ? breathEnd : sinkEnd);
+            return flying.length > 0 || seconds < breathEnd;
         },
         dispose()
         {
@@ -114,6 +102,9 @@ const inkRise = 150;
 const inkHold = 450;
 const inkFall = 700;
 const inkShine = 2.2;
+// The embers off a branded face: how many at most, and their colours, from glowing orange to white-hot.
+const emberCount = 16;
+const emberColours = ["#ff7a1a", "#ffa236", "#ffd27a"];
 
 /** Lights a die's numbers in this colour a moment, as its highest face lands: they flare, hold and go out; lit low and still with reduced motion. */
 export function lightInk(inks: THREE.MeshStandardMaterial[], colour: string, instant: boolean): Effect
@@ -145,12 +136,58 @@ export function lightInk(inks: THREE.MeshStandardMaterial[], colour: string, ins
     };
 }
 
+/** A few embers that fly off the numbers of a die lit as a brand: small round glows, orange, flickering, gone within a second; none with reduced motion. */
+export function embers(scene: THREE.Scene, middle: THREE.Vector3, pictures: Pictures, showing: Showing): Effect
+{
+    const count = showing.instant ? 0 : Math.min(emberCount, showing.particles);
+    const sparks = Array.from({ length: count }, () => {
+        const angle = Math.random() * Math.PI * 2;
+        const from = Math.random() * 0.55;
+        const sprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: pictures.halo, color: emberColours[Math.floor(Math.random() * emberColours.length)], transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }),
+        );
+        sprite.position.set(middle.x + Math.cos(angle) * from, middle.y + 0.95, middle.z + Math.sin(angle) * from);
+        scene.add(sprite);
+        return { sprite, angle, born: Math.random() * 0.45, life: 0.35 + Math.random() * 0.45, speed: 0.4 + Math.random() * 0.7, size: 0.07 + Math.random() * 0.06, phase: Math.random() * 6 };
+    });
+    let started: number | undefined;
+    let before: number | undefined;
+
+    return {
+        update(now)
+        {
+            started ??= now;
+            const seconds = (now - started) / 1000;
+            const step = before === undefined ? 0 : Math.min(0.05, (now - before) / 1000);
+            before = now;
+            sparks.forEach((spark) => {
+                const age = (seconds - spark.born) / spark.life;
+                spark.sprite.visible = age > 0 && age < 1;
+
+                if (age > 0 && age < 1) {
+                    spark.sprite.position.x += Math.cos(spark.angle) * spark.speed * step;
+                    spark.sprite.position.z += Math.sin(spark.angle) * spark.speed * step;
+                    spark.sprite.scale.setScalar(spark.size * (1 - 0.6 * age) * (0.75 + 0.25 * Math.sin(40 * seconds + spark.phase)));
+                    spark.sprite.material.opacity = age < 0.15 ? age / 0.15 : 1 - (age - 0.15) / 0.85;
+                }
+            });
+            return sparks.some((spark) => seconds < spark.born + spark.life);
+        },
+        dispose()
+        {
+            sparks.forEach((spark) => {
+                scene.remove(spark.sprite);
+                spark.sprite.material.dispose();
+            });
+        },
+    };
+}
+
 /** Makes the pictures of the celebrations, once for a stage; dispose them with it. */
 export function makePictures(): Pictures
 {
     return {
         halo: picture(128, (context, size) => softSpot(context, size, [[0, 0.9], [0.35, 0.45], [1, 0]])),
-        puff: picture(64, (context, size) => softSpot(context, size, [[0, 0.8], [0.6, 0.35], [1, 0]])),
         star: picture(64, (context, size) => {
             softSpot(context, size, [[0, 1], [0.2, 0.5], [0.5, 0]]);
 
