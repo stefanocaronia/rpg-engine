@@ -12,6 +12,7 @@ const asked =
     + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), units (metric, imperial), "
     + 'companions (none, made with the player, made by the master, met in play), lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
+const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
 
 /** What config shows of the settings, before what the campaign still needs. */
 function shown(output: string): string
@@ -58,10 +59,10 @@ describe("rpg init", () => {
         expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\n");
     });
 
-    it("says how to set what is still missing", async () => {
+    it("tells the player how to start playing, and the master what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
         expect(result.output).toBe(
-            `Created the campaign "${basename(folder)}" in ${folder}.\nStill to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`,
+            `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`,
         );
     });
 
@@ -95,14 +96,21 @@ describe("rpg init", () => {
         expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
     });
 
-    it("writes the files that send an AI host to the start lines, with Claude Code's auto memory off (D-97, D-242)", async () => {
+    it("writes the files that send an AI host to the start lines and the rpg server, with the hosts' memories off (D-97, D-242, D-362, D-412)", async () => {
         await runCommandLine(["init", "nuova"], context);
         expect(readFileSync(join(folder, "nuova", "AGENTS.md"), "utf8")).toBe(`${startMark}\n${startInstructions()}\n${endMark}\n`);
         expect(readFileSync(join(folder, "nuova", "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
-        expect(readFileSync(join(folder, "nuova", ".claude", "settings.json"), "utf8")).toBe('{\n  "autoMemoryEnabled": false\n}\n');
-        // Codex's memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself (D-362).
-        expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe("[memories]\ngenerate_memories = false\nuse_memories = false\n");
+        // Claude Code: no auto memory, and the rpg server approved with its tools allowed, so the first chat asks nothing of them.
+        expect(JSON.parse(readFileSync(join(folder, "nuova", ".claude", "settings.json"), "utf8"))).toEqual({
+            autoMemoryEnabled: false,
+            enabledMcpjsonServers: ["rpg"],
+            permissions: { allow: ["mcp__rpg"] },
+        });
+        // Codex: the rpg server, waiting for the player's click, and its memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself.
         const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
+        expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
+            `[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${rpg.args.map((arg) => `"${arg}"`).join(", ")}]\ntool_timeout_sec = 1800\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
+        );
         expect(JSON.parse(readFileSync(join(folder, "nuova", ".gemini", "settings.json"), "utf8"))).toEqual({
             mcpServers: { rpg },
             context: { fileName: ["AGENTS.md"] },
@@ -113,10 +121,10 @@ describe("rpg init", () => {
     it("keeps what the player wrote in Codex's and Gemini CLI's settings, and adds only what is missing (D-362)", async () => {
         mkdirSync(join(folder, "mia", ".codex"), { recursive: true });
         mkdirSync(join(folder, "mia", ".gemini"), { recursive: true });
-        writeFileSync(join(folder, "mia", ".codex", "config.toml"), 'model = "gpt-5"\n');
+        writeFileSync(join(folder, "mia", ".codex", "config.toml"), 'model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n');
         writeFileSync(join(folder, "mia", ".gemini", "settings.json"), '{ "mcpServers": { "altro": { "command": "x" } }, "tools": { "exclude": [] } }');
         await runCommandLine(["init", "mia"], context);
-        expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
+        expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
         expect(JSON.parse(readFileSync(join(folder, "mia", ".gemini", "settings.json"), "utf8"))).toMatchObject({
             mcpServers: { altro: { command: "x" }, rpg: expect.any(Object) },
             context: { fileName: ["AGENTS.md"] },
@@ -126,7 +134,7 @@ describe("rpg init", () => {
         mkdirSync(join(folder, "scelta", ".codex"), { recursive: true });
         writeFileSync(join(folder, "scelta", ".codex", "config.toml"), "[memories]\nuse_memories = true\n");
         await runCommandLine(["init", "scelta"], context);
-        expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toBe("[memories]\nuse_memories = true\n");
+        expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toMatch(/^\[memories\]\nuse_memories = true\n\n\[mcp_servers\.rpg\]\n/);
 
         mkdirSync(join(folder, "rotto", ".gemini"), { recursive: true });
         writeFileSync(join(folder, "rotto", ".gemini", "settings.json"), "{ non è json");
@@ -134,7 +142,7 @@ describe("rpg init", () => {
         expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
     });
 
-    it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and a memory choice", async () => {
+    it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and the player's choices", async () => {
         mkdirSync(join(folder, "mia", ".claude"), { recursive: true });
         writeFileSync(join(folder, "mia", "AGENTS.md"), "Parla come un bardo.\r\n");
         writeFileSync(join(folder, "mia", "CLAUDE.md"), "Niente spoiler.\n");
@@ -142,18 +150,24 @@ describe("rpg init", () => {
         await runCommandLine(["init", "mia"], context);
         expect(readFileSync(join(folder, "mia", "AGENTS.md"), "utf8")).toBe(`${startMark}\n${startInstructions()}\n${endMark}\n\nParla come un bardo.\n`.replace(/\n/g, "\r\n"));
         expect(readFileSync(join(folder, "mia", "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\nNiente spoiler.\n");
-        expect(JSON.parse(readFileSync(join(folder, "mia", ".claude", "settings.json"), "utf8"))).toEqual({ model: "opus", autoMemoryEnabled: false });
+        expect(JSON.parse(readFileSync(join(folder, "mia", ".claude", "settings.json"), "utf8"))).toEqual({
+            model: "opus",
+            autoMemoryEnabled: false,
+            enabledMcpjsonServers: ["rpg"],
+            permissions: { allow: ["mcp__rpg"] },
+        });
 
         mkdirSync(join(folder, "scelta", ".claude"), { recursive: true });
-        writeFileSync(join(folder, "scelta", ".claude", "settings.json"), '{ "autoMemoryEnabled": true }');
+        const chosen = '{ "autoMemoryEnabled": true, "enabledMcpjsonServers": [], "permissions": { "allow": ["Read"], "deny": ["Bash"] } }';
+        writeFileSync(join(folder, "scelta", ".claude", "settings.json"), chosen);
         await runCommandLine(["init", "scelta"], context);
-        expect(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8")).toBe('{ "autoMemoryEnabled": true }');
+        expect(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8")).toBe(chosen);
     });
 
     it("refuses a broken Claude Code settings file before creating anything", async () => {
         mkdirSync(join(folder, "rotto", ".claude"), { recursive: true });
         writeFileSync(join(folder, "rotto", ".claude", "settings.json"), "{ non è json");
-        expect((await runCommandLine(["init", "rotto"], context)).output).toContain("settings.json is not valid JSON, so Claude Code's auto memory cannot be turned off in it");
+        expect((await runCommandLine(["init", "rotto"], context)).output).toContain("settings.json is not valid JSON, so Claude Code cannot be set up for the game in it");
         expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
         expect(existsSync(join(folder, "rotto", "AGENTS.md"))).toBe(false);
     });

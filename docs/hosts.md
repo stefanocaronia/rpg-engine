@@ -10,12 +10,13 @@ the player's claims as facts, whatever its instructions said.
 
 ## Memory
 
-- **Claude Code**: nothing to do. The campaign turns off its auto memory (`.claude/settings.json`).
+- **Claude Code**: nothing to do. The campaign turns off its auto memory, and approves the rpg server with its tools, so that the first chat does not ask
+  (`.claude/settings.json`).
 - **Claude Desktop and claude.ai**: their memory belongs to your account, and no file in the campaign can turn it off. For the game's chats, turn memory off from
   the "+" menu before the first message, or use an incognito chat; or in Settings > Memory turn off memory and "Search and reference chats". Do not play in a
   Project that keeps memory.
-- **Codex**: trust the campaign folder when Codex asks, or the campaign's settings (`.codex/config.toml`, memories off) are ignored. In the desktop app, check
-  that memories are off for the game's chats too.
+- **Codex**: trust the campaign folder when Codex asks, or the campaign's settings (`.codex/config.toml`: the rpg server, memories off) are ignored, and Codex
+  does not find the game. In the desktop app, check that memories are off for the game's chats too.
 - **Gemini CLI**: trust the campaign folder when Gemini asks: its settings (`.gemini/settings.json`) give it the rpg server and the game's instructions, and
   keep it from writing files by itself.
 

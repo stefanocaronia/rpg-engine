@@ -16,6 +16,9 @@ import { createMcpServer } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
+// What init tells the player who made the campaign in a terminal.
+const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
+
 let folder: string;
 let client: Client;
 
@@ -67,7 +70,7 @@ describe("MCP server", () => {
     it("answers with the same text as the command line", async () => {
         const created = await call("init", { name: "Guadoscuro", language: "it", system: "5e", difficulty: "normal", lethality: "dice" });
         expect(created.isError).toBe(false);
-        expect(created.text).toBe((await runCommandLine(["config", "language"], testContext(folder))).output.replace(/^language: it\n\n/, `Created the campaign "Guadoscuro" in ${folder}.\n`));
+        expect(created.text).toBe((await runCommandLine(["config", "language"], testContext(folder))).output.replace(/^language: it\n\n/, `Created the campaign "Guadoscuro" in ${folder}.\n${playLine}\n\nFor the master: `));
         expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia" })).text).toBe("id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2");
     });
 
@@ -523,7 +526,7 @@ describe("MCP server, starting a session (D-194)", () => {
         try {
             await vi.waitFor(() => expect(readFileSync(agents, "utf8")).toBe(`${current}\nParla come un bardo.\n`));
             expect(readFileSync(join(folder, "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
-            expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toEqual({ autoMemoryEnabled: false });
+            expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ autoMemoryEnabled: false, permissions: { allow: ["mcp__rpg"] } });
             expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toContain("use_memories = false");
             expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8"))).toMatchObject({ tools: { exclude: ["write_file", "replace"] } });
         } finally {

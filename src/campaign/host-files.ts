@@ -1,6 +1,6 @@
 // What an AI host reads in a campaign besides .mcp.json: AGENTS.md, opening with the start lines (D-97); CLAUDE.md, which imports it; Claude Code's settings,
-// with its auto memory off, so that the master keeps nothing outside the campaign (D-242); Codex's, with its memories off, and Gemini CLI's, with the rpg server,
-// AGENTS.md and no writing of files by itself, where a memory would go (D-362).
+// with its auto memory off, so that the master keeps nothing outside the campaign (D-242), and the rpg server approved with its tools allowed (D-412); Codex's,
+// with the rpg server and its memories off, and Gemini CLI's, with the rpg server, AGENTS.md and no writing of files by itself, where a memory would go (D-362).
 import { join } from "node:path";
 import { files } from "../core/store.ts";
 
@@ -49,7 +49,7 @@ export function refreshHostFiles(root: string, startLines: string, platform: str
 
 function hostFiles(root: string, startLines: string, platform: string): (() => HostFile | undefined)[]
 {
-    return [() => agentsFile(root, startLines), () => claudeFile(root), () => claudeSettingsFile(root), () => codexConfigFile(root), () => geminiSettingsFile(root, platform)];
+    return [() => agentsFile(root, startLines), () => claudeFile(root), () => claudeSettingsFile(root), () => codexConfigFile(root, platform), () => geminiSettingsFile(root, platform)];
 }
 
 /** AGENTS.md with the start lines between rpg's marks: rewritten when they changed, put first when the file has none, as in a folder that already had one. */
@@ -81,32 +81,41 @@ function claudeFile(root: string): HostFile | undefined
     return text.split(/\r?\n/).some((line) => line.trim() === "@AGENTS.md") ? undefined : { path, text: `@AGENTS.md\n${text}` };
 }
 
-/** Claude Code's settings for the campaign, with its auto memory off; a value already written there is the player's, and stays. */
+/**
+ * Claude Code's settings for the campaign: its auto memory off, and the rpg server of .mcp.json approved with its tools allowed, so that the first chat neither
+ * asks whether to use it, with "continue without" chosen, nor asks for each tool (D-412); a value already written there is the player's, and stays.
+ */
 function claudeSettingsFile(root: string): HostFile | undefined
 {
     const path = join(root, ".claude", "settings.json");
     const text = files().fresh(path);
-
-    if (text === undefined) {
-        return { path, text: settingsText({ autoMemoryEnabled: false }) };
-    }
-
-    const settings = jsonObject(path, text, "Claude Code's auto memory cannot be turned off in it");
-    return "autoMemoryEnabled" in settings ? undefined : { path, text: settingsText({ ...settings, autoMemoryEnabled: false }) };
+    const settings = text === undefined ? {} : jsonObject(path, text, "Claude Code cannot be set up for the game in it");
+    const permissions = isObject(settings.permissions) ? settings.permissions : {};
+    const wanted = {
+        ...settings,
+        autoMemoryEnabled: settings.autoMemoryEnabled ?? false,
+        enabledMcpjsonServers: settings.enabledMcpjsonServers ?? ["rpg"],
+        permissions: { ...permissions, allow: permissions.allow ?? ["mcp__rpg"] },
+    };
+    return text !== undefined && JSON.stringify(wanted) === JSON.stringify(settings) ? undefined : { path, text: settingsText(wanted) };
 }
 
-/** Codex's settings for the campaign, with its memories off, read when the player trusts the folder; a [memories] table already written is the player's, and stays. */
-function codexConfigFile(root: string): HostFile | undefined
+/**
+ * Codex's settings for the campaign, read when the player trusts the folder: the rpg server, whose calls wait for the player's click as long as the server
+ * does (D-412), and its memories off; a table already written is the player's, and stays.
+ */
+function codexConfigFile(root: string, platform: string): HostFile | undefined
 {
     const path = join(root, ".codex", "config.toml");
-    const text = files().fresh(path);
-    const table = "[memories]\ngenerate_memories = false\nuse_memories = false\n";
-
-    if (text === undefined || text.trim() === "") {
-        return { path, text: table };
-    }
-
-    return /^\s*\[memories\]\s*$/m.test(text) ? undefined : { path, text: `${text.trimEnd()}\n\n${table}` };
+    const text = files().fresh(path) ?? "";
+    const server = rpgServer(platform);
+    const tables: [string, string][] = [
+        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800`],
+        ["memories", "generate_memories = false\nuse_memories = false"],
+    ];
+    const missing = tables.filter(([name]) => !text.split(/\r?\n/).some((line) => line.trim() === `[${name}]`));
+    const parts = [text.trimEnd(), ...missing.map(([name, body]) => `[${name}]\n${body}`)].filter((part) => part !== "");
+    return missing.length === 0 ? undefined : { path, text: `${parts.join("\n\n")}\n` };
 }
 
 /**

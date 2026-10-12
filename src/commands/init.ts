@@ -38,8 +38,13 @@ export const init = defineCommand({
         return { root, name: settings.name, note: campaignNote(root, context) };
     },
 
+    // The player reads it first, who made the campaign in a terminal: what to do next; then what the master still agrees with them.
     format(result)
     {
-        return [`Created the campaign "${result.name}" in ${result.root}.`, result.note].filter((line) => line !== "").join("\n");
+        return [
+            `Created the campaign "${result.name}" in ${result.root}.`,
+            "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.",
+            ...(result.note === "" ? [] : ["", `For the master: ${result.note}`]),
+        ].join("\n");
     },
 });

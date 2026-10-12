@@ -130,8 +130,8 @@ log.jsonl          one JSON line per change
 .mcp.json          registers `rpg mcp` for AI hosts (through cmd /c on Windows)
 AGENTS.md          opens with the start lines between rpg's marks, kept up to date; the player's own text may follow
 CLAUDE.md          imports AGENTS.md (@AGENTS.md)
-.claude/           settings.json: Claude Code's auto memory off (D-242)
-.codex/            config.toml: Codex's memories off, read when the player trusts the folder (D-362)
+.claude/           settings.json: Claude Code's auto memory off (D-242), the rpg server approved with its tools allowed (D-412)
+.codex/            config.toml: the rpg server and Codex's memories off, read when the player trusts the folder (D-362, D-412)
 .gemini/           settings.json: the rpg server, AGENTS.md as its context file, write_file and replace excluded, so no memory in files (D-362)
 sessions/          created by init
 world/             characters/ places/ factions/ quests/ items/ events/ topics/ creatures/
@@ -141,7 +141,7 @@ images/            the pictures of its pages, which `image` copies there (option
 .player/           notes.json: the player's notes, written on the dashboard, outside the game (D-371)
 ```
 
-`init` ([commands/init.ts](../src/commands/init.ts), [campaign/create-campaign.ts](../src/campaign/create-campaign.ts)) creates all but `rules/`; the host files come from [campaign/host-files.ts](../src/campaign/host-files.ts), which keeps what a folder already had: its own text after the start lines, other settings, a memory choice already written, and in Gemini CLI's settings each value the player wrote. A campaign is the nearest folder upwards with a `campaign.yaml` (`findCampaign`); one cannot hold another. Settings are validated by `settingsSchema` in [campaign/settings.ts](../src/campaign/settings.ts); YAML files are rewritten keeping their comments ([core/yaml-file.ts](../src/core/yaml-file.ts)).
+`init` ([commands/init.ts](../src/commands/init.ts), [campaign/create-campaign.ts](../src/campaign/create-campaign.ts)) creates all but `rules/`; the host files come from [campaign/host-files.ts](../src/campaign/host-files.ts), which keeps what a folder already had: its own text after the start lines, other settings, and each value the player wrote in a host's settings: a memory choice, the servers and tools allowed in Claude Code, a table of Codex's. A campaign is the nearest folder upwards with a `campaign.yaml` (`findCampaign`); one cannot hold another. Settings are validated by `settingsSchema` in [campaign/settings.ts](../src/campaign/settings.ts); YAML files are rewritten keeping their comments ([core/yaml-file.ts](../src/core/yaml-file.ts)).
 
 ### Pages
 
