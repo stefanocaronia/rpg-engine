@@ -246,7 +246,6 @@ a {
     min-width: 0;
     margin-top: -4px;
     padding-top: 10px;
-    border-top: 1px solid var(--rule);
     color: var(--muted);
     font-size: 0.9rem;
     text-decoration: none;
@@ -321,9 +320,14 @@ a {
     white-space: nowrap;
 }
 
+/* The section shown: in the accent, its tab lit as under a pointer, with a bar as wide as the tab. */
 .sections a[aria-current="page"] {
-    background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / calc(100% - 20px) 3px;
+    background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px;
     color: var(--accent);
+}
+
+.sections a[aria-current="page"]::after {
+    opacity: var(--state-hover);
 }
 
 .sections svg.icon {
