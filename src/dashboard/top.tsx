@@ -46,6 +46,12 @@ export function Top(top: TopOf)
     const header = useRef<HTMLElement>(null);
     const bar = useRef<HTMLDivElement>(null);
     const [past, setPast] = useState(false);
+    // The robot's face when the robot or the campaign's name leads back to the party.
+    const [poke, setPoke] = useState<Moment>();
+    const home = (): void => {
+        window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        setPoke({ id: String(Date.now()), mood: pokedMoods[Date.now() % pokedMoods.length] ?? "happy" });
+    };
 
     // The bar comes when the top has gone out of sight.
     useEffect(() => {
@@ -69,9 +75,11 @@ export function Top(top: TopOf)
     return (
         <>
             <header ref={header} class="top">
-                <MasterHome top={top} />
+                <MasterHome top={top} poke={poke} onHome={home} />
                 <div class="titles">
-                    <h1>{title}</h1>
+                    <h1>
+                        <a class="title-home" href={sectionAddress("party")} onClick={home}>{title}</a>
+                    </h1>
                     {top.campaign !== undefined && (
                         <p class="product">
                             {top.product}
@@ -85,9 +93,9 @@ export function Top(top: TopOf)
             </header>
             <ThemeCorner />
             <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
-                <MasterHome top={top} />
+                <MasterHome top={top} poke={poke} onHome={home} />
                 <span class="top-bar-title">
-                    {title}
+                    <a class="title-home" href={sectionAddress("party")} onClick={home}>{title}</a>
                     {top.campaign !== undefined && (
                         <span class="product">
                             {top.product}
@@ -302,20 +310,11 @@ function PlacePath({ path }: { path: string[]; })
 // The faces the robot makes when it is clicked.
 const pokedMoods: Mood[] = ["happy", "surprised", "mischievous", "delighted"];
 
-/** The robot, which leads back to the party at the top of the page, and makes a face as it does. */
-function MasterHome({ top }: { top: Pick<TopOf, "mood" | "moment" | "asleep">; })
+/** The robot, which leads back to the party at the top of the page, as the campaign's name does, and makes a face as it does. */
+function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" | "asleep">; poke?: Moment; onHome(): void; })
 {
-    const [poke, setPoke] = useState<Moment>();
     return (
-        <a
-            class="master-home"
-            href={sectionAddress("party")}
-            aria-label={t("Back to the party")}
-            onClick={() => {
-                window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-                setPoke({ id: String(Date.now()), mood: pokedMoods[Date.now() % pokedMoods.length] ?? "happy" });
-            }}
-        >
+        <a class="master-home" href={sectionAddress("party")} aria-label={t("Back to the party")} onClick={onHome}>
             <Master mood={top.mood} moment={top.moment} poke={poke} asleep={top.asleep} />
         </a>
     );

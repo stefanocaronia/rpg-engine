@@ -192,8 +192,14 @@ a {
     border-radius: 50%;
 }
 
-.master-home::after {
+.master-home::after,
+.title-home::after {
     display: none;
+}
+
+.title-home {
+    color: inherit;
+    text-decoration: none;
 }
 
 .top > .titles {
