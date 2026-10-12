@@ -93,7 +93,7 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Colleagues
 
-Eight experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [Crew](https://github.com/stefanocaronia/claude-crew) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), its commands hand the chat over ("voglio parlare con Matteo", "torna Claude"), and it draws the Crew panel. Install it once with `/plugin marketplace add stefanocaronia/claude-crew` and `/plugin install crew@claude-crew`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
+Nine experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [Crew](https://github.com/stefanocaronia/claude-crew) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), its commands hand the chat over ("voglio parlare con Matteo", "torna Claude"), and it draws the Crew panel. Install it once with `/plugin marketplace add stefanocaronia/claude-crew` and `/plugin install crew@claude-crew`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
 
 | Who | Field | `<id>` |
 |---|---|---|
@@ -105,6 +105,7 @@ Eight experts review the work and discuss it with the maintainer: subagents with
 | Matteo Conti | code review | `matteo-conti` |
 | Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-valli` |
 | Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-lanza` |
+| Mei Lin | localization: the dashboard's languages, the glossary of game terms in each, right-to-left and Asian scripts | `mei-lin` |
 
 Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain background in each colleague's color, made by Codex.
 
