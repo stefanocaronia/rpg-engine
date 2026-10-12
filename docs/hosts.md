@@ -3,6 +3,11 @@
 rpg-engine plays with any AI host that runs MCP servers. The campaign lives in its files: the host must keep nothing of the game outside them, or a save you go
 back to would still be remembered.
 
+## The master's model
+
+Give the master the host's largest model. In our tests a small one (Haiku in Claude) told secrets to a player who said they were the real master, and took
+the player's claims as facts, whatever its instructions said.
+
 ## Memory
 
 - **Claude Code**: nothing to do. The campaign turns off its auto memory (`.claude/settings.json`).
