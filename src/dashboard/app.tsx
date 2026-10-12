@@ -99,11 +99,11 @@ function App()
             const rolls = overview.kind === "overview" ? overview.rolls : [];
             const member = party.find((candidate) => candidate.name === readAddress(window.location.hash).name) ?? party[0];
             const page = member === undefined ? undefined : await readView(member.name);
+            // The page's words in the campaign's language (D-394), its file read once; its dates and screen readers follow the language too.
+            const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
+            await setLanguage(language);
 
             if (number === reading.current) {
-                // The page's words in the campaign's language (D-394), as its dates and screen readers.
-                const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
-                setLanguage(language);
                 document.documentElement.lang = language ?? "en";
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);

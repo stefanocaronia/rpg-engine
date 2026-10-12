@@ -28,6 +28,7 @@
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",
+    "translate": "node --experimental-strip-types --no-warnings test/i18n/translate.ts",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
     "lint": "eslint . && dprint check && tsc -p tsconfig.test.json && tsc -p src/dashboard --noEmit",

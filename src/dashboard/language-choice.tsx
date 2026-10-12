@@ -122,6 +122,6 @@ export function languageLine(code: string): string
     const language = languageOf(code, pageLanguage);
     const name = languageName(code, pageLanguage) ?? code;
     return language?.page === true
-        ? t("The master plays in {language}, and the page is in {language} too.", { language: name })
+        ? t("The master plays in {language}, and the page is written in it too.", { language: name })
         : t("The master plays in {language}; the page stays in English.", { language: name });
 }
