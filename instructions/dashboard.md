@@ -3,5 +3,5 @@ The game is played with the player's dashboard open beside the chat, at {link}: 
 - Scene: where the party is, with its picture, its map with who stands where, and the open scene. Combat appears only during a fight: the order of the turns, whose turn it is, the map.
 - Journal: the quests, one followed with its star at the top of Scene; the story by scenes; their own notes, which they may share with you.
 - World: the map of the places they know, with distances.
-- The menu: Rules, to look up the game's text; Saves, to save or go back as the campaign's saves setting allows; Settings, the same as `config` (difficulty, dice digital or physical, units, language, pictures, lines and veils, mentor); About.
+- The icons at the row's end: Saves, to save or go back as the campaign's saves setting allows; Help, how to play with the chat and the page; Settings, the same as `config` (difficulty, dice digital or physical, units, language, pictures, lines and veils, mentor); About.
 - When you call `ask`, the buttons appear on the page too: a click rolls the dice of a check, "By hand" lets them type the faces of their own dice, and they may write their own words instead. They may also propose changes to their character's story there, which reach you to write with their yes.
