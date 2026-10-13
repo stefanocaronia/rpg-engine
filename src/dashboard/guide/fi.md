@@ -1,210 +1,112 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 62159f4b 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
-**RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**.
+**RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
 
-Keskustelet pelinjohtajan kanssa **chatissa**: pelinjohtaja kertoo tarinaa, esittää kaikkia muita ja ratkaisee, mitä tapahtuu.
+Tämä opas on pelaajille: ohjelmointitaitoja ei tarvita.
 
-RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**.
-
-Chatin rinnalla pidät selaimessa auki sivua, **kojetaulua**. Siellä ovat hahmosi hahmolomake, nopat, kartat ja päiväkirja.
-
-Tämä opas on tarkoitettu pelaajille: ohjelmointitaitoja ei tarvita.
-
-## Pikaopas <!-- icon: send -->
+## Pika-aloitus <!-- icon: send -->
 
 1. Asenna **Node.js** osoitteesta [nodejs.org](https://nodejs.org) (LTS-versio).
-2. Asenna **Claude Code** tai **Codex**, tekoälysovellus, jossa pelinjohtaja toimii, ja kirjaudu sisään ([2.4](#24-connect-your-ai)).
-3. Avaa pääte ja asenna RPG Engine: `npm install -g rpg-engine`.
-4. Luo päätteessä kampanja: `rpg init "The Salt Isles"`.
-5. Avaa Claude Code tai Codex uudessa kansiossa ja kirjoita *Hei! Aloitetaan.* Pelinjohtaja vastaa kojelautasi linkillä: avaa se chatin viereen.
-
-Loppuopas selittää jokaisen vaiheen ja sen jälkeen pelaamisen.
+2. Asenna **tekoälyagentti**, ohjelma, jossa pelinjohtaja toimii, ja kirjaudu sisään: esimerkiksi Claude Code tai Codex ([2.4](#24-connect-your-ai)).
+3. Asenna RPG Engine päätteessä: `npm install -g rpg-engine`.
+4. Luo kampanja: `rpg init "The Salt Isles"`.
+5. Siirry uuteen kansioon komennolla `cd "The Salt Isles"` ja käynnistä agentti siellä: `claude` Claude Codelle, `codex` Codexille. Vastaa myöntävästi, kun se kysyy, luotatko kansioon ([2.4](#24-connect-your-ai)), ja kirjoita sitten *Hei! Aloitetaan.* Pelinjohtaja vastaa antamalla kojelaudan linkin.
 
 ## 1. Mikä RPG Engine on <!-- icon: about -->
 
-### Kuka tekee mitä
-
 | Kuka | Mitä tekee |
 |---|---|
-| **Sinä** | Pelaat hahmoasi. Kerrot, mitä hahmosi tekee, sanoo ja yrittää. |
-| **Pelinjohtaja** (tekoäly) | Kertoo tarinan, esittää kaikkia muita hahmoja, päättää, mitä tapahtuu, ja pyytää heittoja. |
-| **RPG Engine** | Muistaa kaiken tiedostoissa, heittää nopat, laskee osumapisteet, rahan, ajan ja matkat sekä pitää salaisuudet piilossa, kunnes löydät ne. |
+| **Sinä** | Pelaat hahmoasi: mitä hahmo tekee, sanoo ja yrittää. |
+| **Pelinjohtaja** (tekoäly) | Kertoo tarinaa, esittää kaikkia muita, päättää mitä tapahtuu ja pyytää heittoja. |
+| **RPG Engine** | Pitää maailman tiedostoissa, heittää nopat, laskee osumapisteet, rahat, ajan ja etäisyydet sekä pitää salaisuudet piilossa, kunnes ne paljastuvat. |
 
-Tekoäly kertoo hyvin tarinoita mutta muistaa huonosti. Yksin jätettynä se unohtaa, kuka on sinulle velkaa, kuinka monta nuolta sinulla on tai että silta paloi kaksi sessiota sitten. RPG Engine pitää kaiken tämän muistissa. Siksi maailma pysyy samana illasta toiseen, uudessa chatissakin ja jopa eri tekoälyllä.
+Maailma pysyy samana illasta toiseen, vaikka keskustelu vaihtuisi tai tekoäly olisi toinen:
 
-### Miltä se tuntuu
+- **Sanottu pysyy totena.** Kuollut konna pysyy kuolleena.
+- **Nopat ovat aitoja.** Pelinjohtaja ei voi vääntää niitä, paitsi helpoimmalla vaikeustasolla, jos valitset sen.
+- **Salaisuudet pysyvät salaisina.** Pelinjohtaja ei koskaan kerro, mitä hahmosi ei tiedä.
+- **Maailma liikkuu.** Uhat etenevät, kun lepäätte tai matkaatte, ja näet niiden merkit.
+- **Kampanja on kansio** tietokoneellasi: voit lopettaa milloin haluat ja jatkaa myöhemmin.
 
-Kirjoitat chattiin kuin puhuisit pelipöydässä:
-
-> Työnnän oven hitaasti auki ja katson sisään.
-
-Pelinjohtaja kertoo, mitä näet, ja pysähtyy, kun on sinun vuorosi valita. Kun jokin on epävarmaa ja tärkeää, pelinjohtaja kertoo, mikä on pelissä, ja pyytää heiton. Heiton painikkeet ilmestyvät kojelautaasi. Napsautat, nopat putoavat sivulle, ja pelinjohtaja kertoo, mitä tapahtuu.
-
-### Mikä tekee siitä erilaisen
-
-- **Maailma säilyy.** Mitä on sanottu, pysyy totena. Kuollut konna pysyy kuolleena.
-- **Nopat ovat oikeita.** Pelinjohtaja ei voi taivuttaa niitä (paitsi helpoimmalla vaikeustasolla, jos valitset sen).
-- **Salaisuudet pysyvät salaisina.** Pelinjohtaja ei koskaan kerro, mitä hahmosi ei tiedä, vaikka vaatisit.
-- **Maailma liikkuu ilman sinua.** Uhat etenevät, kun lepäät tai matkaat, ja näet niiden merkit.
-- **Monta iltaa, yksi tarina.** Kampanja on kansio tietokoneellasi. Voit lopettaa milloin haluat ja jatkaa myöhemmin.
-
-### Peli, jota se pelaa nykyään
-
-RPG Engine on tehty mille tahansa pöytäroolipelille. Nykyään mukana tulee yksi pelijärjestelmä: **viides editio** (ilmaisesta System Reference Document 5.1 -aineistosta). Muita pelejä on tulossa; katso [Pelijärjestelmät](#5-game-systems-and-house-rules) ja [Tulossa myöhemmin](#9-coming-later).
+Nykyisin RPG Engine pelaa yhtä pelijärjestelmää, **viidettä editiota**, ilmaisesta System Reference Document 5.1 -aineistosta. Muita on tulossa ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 
-## 2. Aloittaminen <!-- icon: path -->
+## 2. Alkuun pääseminen <!-- icon: path -->
 
 ### 2.1 Mitä tarvitset
 
-- Tietokone, jossa on Windows, macOS tai Linux.
-- **Node.js 22** tai uudempi. Lataa se osoitteesta [nodejs.org](https://nodejs.org): "LTS"-versio käy hyvin. Mukana tulee `npm`, joka asentaa RPG Enginen.
-- **Pääte** eli ikkuna, johon kirjoitat komentoja: Windowsissa Terminal-sovellus tai PowerShell, macOSissa Terminal. Sillä asennat RPG Enginen, luot jokaisen kampanjan ja käynnistät Claude Coden tai Codexin.
-- **Tekoälyisäntä** eli sovellus, jossa pelinjohtaja toimii: **Claude Code** tai **Codex**, tilauksineen ja kirjautumisineen. Katso [2.4](#24-connect-your-ai).
-- Isäntäsi **suurin malli**. Pieni malli menee helposti lankaan: testeissämme se kertoi salaisuuksia pelaajalle, joka väitti olevansa oikea pelinjohtaja.
-- Verkkoselain kojelautaa varten.
-
-Isännän kirjautumisella on muutakin käyttöä: RPG Engine käyttää sitä tietokoneellasi piirtääkseen kuvia paikoista, tehtävistä, tapaamistasi hahmoista ja omasta hahmostasi sekä kääntääkseen kojelaudan kielille, joita sen mukana ei tule. Katso [Kuvat](#311-pictures) ja [Kielet](#72-languages).
-
-**Päätteen avaaminen kansioon.** Monessa vaiheessa sanotaan "kampanjan kansiossa". Windowsissa napsauta kansiota hiiren kakkospainikkeella Resurssienhallinnassa ja valitse **Avaa Terminalissa**. macOSissa napsauta kansiota hiiren kakkospainikkeella Finderissa ja valitse **Palvelut > Uusi pääte kansioon**. Tai kirjoita jo avoimeen päätteeseen `cd` ja kansion polku, esimerkiksi `cd "C:\Users\me\Games\The Salt Isles"`.
+- Tietokoneen, jossa on Windows, macOS tai Linux, sekä selaimen.
+- **Node.js 22:n** tai uudemman osoitteesta [nodejs.org](https://nodejs.org). Mukana tulee `npm`, joka asentaa RPG Enginen.
+- **Päätteen**: Windowsissa Terminal tai PowerShell, macOS:ssä Terminal. Voit avata päätteen kansiossa napsauttamalla kansiota hiiren kakkospainikkeella ja valitsemalla **Avaa Terminalissa** (Windows) tai **Palvelut > Uusi Terminal kansiossa** (macOS).
+- **Tekoälyagentin** pelinjohtajaksi ([2.4](#24-connect-your-ai)). Valitse sen tarjoama **suurin malli**: pienen mallin voi helpommin puhua paljastamaan salaisuuksia tai taivuttamaan sääntöjä.
 
 ### 2.2 Asennus
-
-Avaa pääte ja kirjoita:
 
 ```text
 npm install -g rpg-engine
 ```
 
-Nyt sinulla on `rpg`-komento. Tarkista, että asennus onnistui:
-
-```text
-rpg --version
-```
-
-Käytät `rpg`-komentoa kerran kampanjaa kohden, sen luomiseen. Sen jälkeen puhut vain pelinjohtajan kanssa: tekoälyisäntäsi käynnistää RPG Enginen itse samalla `rpg`-komennolla.
+Komento `rpg --version` tarkistaa, että asennus onnistui. Käytät komentoa `rpg` vain kerran kampanjaa kohden, sen luomiseen. Sen jälkeen agenttisi käynnistää RPG Enginen itse.
 
 ### 2.3 Kampanjan luominen
 
-Kampanja on kansio. Avaa pääte kansiossa, jossa pidät pelisi, ja kirjoita:
+Avaa pääte kansiossa, jossa pidät pelisi ([2.1](#21-what-you-need) kertoo miten):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Tämä luo kansion `The Salt Isles`, jossa on uusi kampanja, ja kertoo, mitä tehdä seuraavaksi:
+Tämä luo kansion `The Salt Isles`, jossa on uusi kampanja. Siirry siihen komennolla `cd "The Salt Isles"`. Muista, missä kansio on: palaat siihen joka pelikerralla. Kaiken muun valitset myöhemmin keskustelussa tai kojelaudalla. Komento `rpg init --help` listaa valinnat, joilla voit asettaa jotain jo nyt, kuten `--language it` tai `--difficulty hard`.
 
-```text
-Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
-To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.
-
-For the master: Still to agree with the player: ...
-```
-
-Rivit *For the master* -tekstin jälkeen on tarkoitettu pelinjohtajalle, joka lukee ne keskustelussa. Niille ei tarvitse tehdä mitään. Muista, missä kansio on: palaat siihen joka kerta, kun pelaat. Jos et anna kansiolle nimeä, `rpg init` tekee kampanjan kansiosta, jossa olet.
-
-`init` luo kaiken, mitä kampanja tarvitsee: asetukset, maailman kansiot ja pienet tiedostot, jotka käskevät tekoälyisäntääsi käyttämään RPG Enginea eikä pitämään omaa muistia kampanjan ulkopuolella.
-
-Mitään ei tarvitse valita nyt. Pelinjohtaja kysyy loput keskustelussa, tai voit valita ne kojelaudalla. Jos tiedät jo joitakin valintoja, voit antaa ne tässä:
-
-```text
-rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
-```
-
-Tämä luo kansion `salt-isles`, jossa on kampanja *The Salt Isles*: kansion nimessä ei ole välilyöntejä, ja kampanjan nimi on sellainen kuin haluat.
-
-| Valitsin | Mitä se asettaa | Arvot |
-|---|---|---|
-| `--name` | Kampanjan nimi | mikä tahansa; jos jätät pois, kansion nimi |
-| `--language` | Pelin kieli | koodi, kuten `en`, `it`, `fr` |
-| `--system` | Pelijärjestelmä | `5e`, tällä hetkellä ainoa |
-| `--difficulty` | Kuinka vaikea maailma on | `story`, `easy`, `normal`, `hard`, `brutal` |
-| `--lethality` | Mitä taistelussa kaatuminen tarkoittaa | `narrative`, `epic`, `dice` |
-
-`rpg init --help` luettelee nämäkin. Kampanja ei voi olla toisen kampanjan kansion sisällä.
-
-Et voi pyytää pelinjohtajaa luomaan kampanjaa: ennen `init`-komentoa kansiossa ei ole mitään, mikä kertoisi tekoälyisännällesi, missä RPG Engine on.
+Pelinjohtaja ei voi luoda kampanjaa puolestasi: ennen komentoa `init` mikään ei kerro agentillesi, missä RPG Engine on.
 
 ### 2.4 Tekoälyn yhdistäminen
 
-RPG Engine toimii **Claude Coden** ja **Codexin** kanssa. Muutkin tekoälysovellukset, jotka käyttävät MCP-työkaluja, voivat toimia, mutta emme takaa sitä.
+Pelinjohtaja toimii **tekoälyagentissa**: tekoälysovelluksessa, päätteessä tai työpöydällä, joka voi käsitellä tietokoneesi tiedostoja, kuten Claude Code tai Codex. Pelkkä keskustelupalvelu, kuten claude.ai tai ChatGPT, tai puhelinsovellus ei riitä: pelinjohtajan on päästävä käsiksi kampanjan tiedostoihin tietokoneellasi. Jokainen agentti tarvitsee oman tilauksensa ja kirjautumisensa: Claude Code maksullisen Claude-tilauksen, Codex ChatGPT-kirjautumisen. Asennat sen kerran sen omalta sivulta: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-**Isännän asentaminen.** Claude Code ja Codex toimivat päätteessä: ne eivät ole puhelimesi Claude- tai ChatGPT-sovellus. Kumpikin tarvitsee oman tilauksen ja kirjautumisen: Claude Code maksullisen Claude-tilauksen, Codex ChatGPT-kirjautumisen. Asenna ne ja kirjaudu sisään niiden omien sivujen ohjeilla: [Claude Code](https://code.claude.com/docs/en/setup) ja [Codex](https://learn.chatgpt.com/docs/codex/cli). Teet tämän kerran kaikille kampanjoillesi.
+- **Claude Code**: kirjoita kampanjakansiossa `claude`. Kun se kysyy, luotatko kansioon, valitse **Yes, I trust this folder**. Varo: valmiiksi valittuna on *No, exit*.
+- **Codex**: kirjoita kampanjakansiossa `codex` ja vastaa myöntävästi, kun se kysyy, luotatko kansioon. Tarkista sen työpöytäsovelluksen asetuksista, että muistit ovat pois päältä pelin keskusteluissa.
+- **Muu agentti**: käynnistä se kampanjakansiossa ja anna sille MCP-palvelin `rpg mcp`. RPG Engine on tavallinen MCP-palvelin: mikä tahansa MCP:tä tukeva agentti voi olla pelinjohtaja, myös paikalliset.
 
-**Claude Code.** Avaa pääte kampanjan kansiossa ja kirjoita `claude`. Ensimmäisellä kerralla se kysyy, luotatko kansioon, ja kertoo, että kansio sallii pelin työkalut (`mcp__rpg`): valitse **Yes, I trust this folder**. Varo: valmiiksi valittuna on *No, exit*, joten Enterin painaminen heti sulkee Claude Coden. Siinä kaikki: kampanja on jo käskenyt Claude Codea käyttämään RPG Enginea ja sen työkaluja sekä pitämään muistin pois päältä.
-
-**Codex.** Avaa pääte kampanjan kansiossa ja kirjoita `codex`. Kun se kysyy, luotatko kansioon, vastaa kyllä: kampanjan omat asetukset kertovat Codexille, missä RPG Engine on, sallivat sen työkalut ja pitävät muistin pois päältä, ja Codex lukee ne vain kansiossa, johon luotat. Tarkista työpöytäsovelluksessa, että muistit on kytketty pois pelin keskusteluista.
-
-**Miksi muisti on tärkeä.** Kampanja elää tiedostoissaan. Jos isäntä muistaa asioita myös omillaan, tallennukseen palaaminen ei oikeasti palauttaisi mitään: pelinjohtaja muistaisi yhä sen, mikä peruttiin.
+Pelaamme ja testaamme **Claude Codella**. **Codex** on yhdistetty ja tarkistettu, mutta sillä ei ole vielä pelattu kokonaista kampanjaa. `init` valmistelee myös **Gemini CLI:n**. Kampanja sammuttaa agentin oman muistin: peli elää sen tiedostoissa, jotta tallennukseen palaaminen todella palauttaa pelin aiempaan tilaan.
 
 ### 2.5 Ensimmäinen keskustelu
 
-Kirjoita mitä tahansa, esimerkiksi:
+Kirjoita mitä tahansa, vaikka *Hei! Aloitetaan.* Jokaisen keskustelun ensimmäisessä vastauksessa pelinjohtaja antaa **linkin kojelautaasi**, joka on esimerkiksi `http://127.0.0.1:4750`. Avaa se ja pidä keskustelun rinnalla.
 
-> Hei! Aloitetaan.
+Pelinjohtajan viestien välissä agenttisi näyttää käyttämänsä työkalut. Älä avaa niiden tietoja (Claude Codessa ctrl+o), sillä ne voivat paljastaa salaisuuksia.
 
-Pelinjohtaja lukee, missä pelin tilanne on, ja vastaa. Jokaisen keskustelun ensimmäisessä vastauksessa se antaa sinulle **kojelaudan linkin** (jokin tällainen: `http://127.0.0.1:4750`). Avaa se selaimessa ja pidä se keskustelun vieressä koko pelin ajan. Jokainen kampanja pitää saman linkin keskustelusta toiseen, ellei jokin toinen ohjelma ole vienyt sitä: silloin pelinjohtaja antaa uuden.
+Uusi kampanja käy läpi kolme vaihetta, jotka näkyvät kojelaudan yläreunassa: **1 Asetukset** (miten haluat pelata), **2 Nollasessio** (teet hahmosi pelaamalla), **3 Pelaaminen**.
 
-Pelinjohtajan viestien välissä isäntäsi näyttää pelinjohtajan käyttämät työkalut lyhyinä riveinä. Älä avaa niiden tietoja (Claude Codessa ctrl+o): ne voivat näyttää, mitä pelinjohtaja kirjoittaa, salaisuudet mukaan lukien.
+### 2.6 Asetukset: miten pelaat
 
-Uusi kampanja käy läpi kolme vaihetta, kuten peli ihmispelinjohtajan kanssa. Kojelauta näyttää ne ylhäällä: *1 Asetukset · 2 Nollasessio · 3 Peli*:
+Pelinjohtaja kysyy vain sen, mikä vielä puuttuu, muutaman kysymyksen kerrallaan. Kojelaudan **Asetukset**-vaihe näyttää samat kysymykset korteilla. Kirjoita "päätä sinä", niin pelinjohtaja valitsee. Kaiken voi muuttaa myöhemmin, keskustelussa tai **Asetuksissa**.
 
-1. **Asetukset**: valitset, miten haluat pelata. Tarinan ulkopuolella.
-2. **Nollasessio**: luot hahmosi pelaten.
-3. **Peli**: tarina.
+| Asetus | Mitä se ratkaisee | Arvot |
+|---|---|---|
+| **Mentori** | Kuinka paljon pelinjohtaja opettaa sinulle sääntöjä | pois, vihjeet, opastus |
+| **Vaikeustaso** | Kuinka vaikea maailma on | tarina, helppo, normaali, vaikea, häikäilemätön |
+| **Tappavuus** | Mitä kaatuminen taistelussa tarkoittaa | kerronnallinen (ei kuolemaa), eeppinen (vain kun sillä on merkitystä), nopat |
+| **Tallennukset** | Milloin voit palata taaksepäin | pysyvä kuolema, tarkistuspiste, vapaa ([3.8](#38-saves-and-going-back)) |
+| **Tarkkuus** | Kuinka tarkasti ruoka, valo ja matkustaminen noudattavat sääntöjä | sujuva, säännöt, simulaatio |
+| **Nopat** | Kuka heittää noppasi | digitaaliset, fyysiset |
+| **Mittayksiköt** | Etäisyydet ja painot | metrijärjestelmä, brittiläiset yksiköt |
+| **Seuralaiset** | Ketkä matkaavat kanssasi | ei ketään, tehty yhdessä kanssasi, pelinjohtajan tekemät, tavataan pelissä |
+| **Kuvat** | Kuvat paikoista, tehtävistä ja tapaamistasi hahmoista | ei mitään, pyydettäessä, uudet paikat, tehtävät ja tapaamasi hahmot ([3.11](#311-pictures)) |
+| **Rajat** ja **Verhot** | Mikä ei koskaan näy ja mikä tapahtuu vain kuvan ulkopuolella | listat |
+| **Kieli** | Pelin ja kojelaudan kieli | mikä tahansa |
 
-### 2.6 Asetukset: pelitavan valinta
+Viides edtio lisää **kehittymisen**: kokemuspisteet tai merkkipaalut.
 
-Pelinjohtaja kysyy vain sen, mikä vielä puuttuu, muutaman kysymyksen kerrallaan. Jos kirjoitat "päätä sinä", pelinjohtaja valitsee ja kertoo, mitä valitsi. Kun kojelauta on auki, sen ensimmäinen vaihe, **Asetukset**, näyttää samat kysymykset korteilla: yksi kysymys kerrallaan, jokaisen arvon merkitys selitettynä ja tavallisin merkittynä sanalla **Ehdotettu**. Valitse siellä, niin pelinjohtaja ei kysy samaa uudestaan keskustelussa. **Ohita** jättää kysymyksen myöhemmäksi. Keskustelussa ratkaistaan vain se, minkä voi ratkaista sanoin: uuden maailman lähtökohta, kieli ja kuvat, joista pelinjohtaja kysyy vain, jos tietokoneesi osaa tehdä niitä. Siksi sivu kysyy vähemmän kuin alla oleva taulukko luettelee.
+Jos maailmaa ei ole kirjoitettu valmiiksi, pelinjohtaja kysyy myös **lähtökohdan** (genre, tunnelma, muutama elementti omin sanoin) ja **valmistelun**: rakennetaanko maailma lennossa pelin edetessä vai kokonaan alussa.
 
-Taulukkoa ei tarvitse opiskella: se on tarkistamista varten. Voit muuttaa jokaista näistä myöhemmin keskustelussa tai kojelaudan **Asetuksissa**. Muutos tulee voimaan pelinjohtajan seuraavasta vastauksesta.
-
-| Asetus | Mitä se ratkaisee | Arvot | Ehdotettu |
-|---|---|---|---|
-| **Mentori** (kysytään muodossa "Kuinka hyvin tunnet tämän pelin?") | Kuinka paljon pelinjohtaja opettaa sinulle sääntöjä tarinan ulkopuolella | **pois** (pelkkä tarina; kysy sulkeissa, kun haluat), **vihjeet** (lyhyt vinkki ennen tärkeitä valintoja ja kun sääntö jää huomaamatta), **opastus** (jokainen sääntö selitetään ensimmäisellä kerralla, jokaisen heiton koko laskutoimitus, lyhyt läpikäynti taistelujen jälkeen) | vastauksesi mukaan: en ole koskaan pelannut → opastus, vähän → vihjeet, tunnen pelin → pois |
-| **Vaikeustaso** | Kuinka vaikea maailma on: taistelut, vihollisten taktiikka, vihjeet, aarteet, uhkien etenemisen nopeus | story, easy, normal, hard, brutal | |
-| **Tappavuus** | Mitä taistelussa kaatuminen tarkoittaa | **narrative** (hahmosi ei koskaan kuole), **epic** (kuolee vain, kun sillä on tarinalle merkitystä), **dice** (nopat ratkaisevat) | seuraa vaikeustasoa: story → narrative, easy → epic, normal ja ylöspäin → dice |
-| **Tallennukset** | Milloin voit palata taaksepäin | **permadeath** (ei koskaan; voit vain aloittaa kampanjan alusta), **checkpoint** (takaisin viimeisen kohtauksen loppuun, vain jos hahmosi kuolee), **free** (takaisin mihin tahansa tallennukseen, ja tallennus aina pyydettäessä) | checkpoint |
-| **Tarkkuus** | Kuinka tarkasti ruoka, valo, väsymys, kantopaino, loitsujen aineosat ja matkustaminen noudattavat sääntöjä | **smooth** (pelinjohtaja ohittaa ne ylimalkaisesti), **rules** (kirjoitettujen sääntöjen mukaan: soihdut palavat loppuun, muona loppuu), **simulation** (sääntöjä pidemmälle: kuluminen, pilaantuminen, sää) | smooth |
-| **Nopat** | Kuka heittää hahmosi nopat | **digital** (RPG Engine heittää ne sivulla), **physical** (heität omasi ja kerrot silmäluvut) | |
-| **Mittayksiköt** | Tarinan etäisyydet ja painot | metric, imperial | |
-| **Seuralaiset** | Kuka kulkee kanssasi | none, luotu kanssasi nollasessiossa, pelinjohtajan luoma, tavattu pelissä | |
-| **Kuvat** | Kuvat paikoista, tehtävistä ja tapaamistasi hahmoista sekä hahmosi muotokuva pyydettäessä | ei mitään, pyydettäessä, uudet paikat, tehtävät ja tapaamasi hahmot | kysytään kerran, vain jos tietokoneesi osaa tehdä niitä |
-| **Rajat** | Mikä ei koskaan esiinny pelissä | lista tai ei mitään | |
-| **Verhot** | Mikä saa tapahtua, mutta vain kuvan ulkopuolella | lista tai ei mitään | |
-| **Kieli** | Pelin ja kojelaudan kieli | mikä tahansa | otetaan siitä, miten kirjoitat, ja varmistetaan |
-
-Pelijärjestelmä voi lisätä omia asetuksiaan. Viides painos lisää **kehittymisen**: miten hahmosi nousee tasoja, **kokemuspisteillä** tai tarinan **merkkipaaluilla**.
-
-**Mitä vaikeustaso tarkoittaa pelissä.** Story: heikkoja, helppoja vihollisia, ilmeisiä vihjeitä, runsaasti kaikkea; pelinjohtaja voi pehmentää omia heittojaan. Easy: yksinkertaisia vihollisia, anteliaita resursseja. Normal: järkeviä vihollisia, kolme vihjettä jokaiseen johtopäätökseen, tavalliset hinnat ja aarteet. Hard: älykkäitä vihollisia, hienovaraisia vihjeitä, niukkoja resursseja, nopeasti etenevät uhat. Brutal: viholliset yllättävät, vetäytyvät ja viimeistelevät kaatuneet, hyvin niukat resurssit, ankarimmat lepotauot. Taistelut mitoitetaan aina seurueesi nykyiseen tilaan.
-
-**Jos kirjoitettua maailmaa ei ole**, asetuksissa kysytään vielä kaksi asiaa:
-
-- **Lähtökohta**: lajityyppi, sävy ja muutama maailman piirre omin sanoin. Esimerkiksi: *"Matala fantasia, synkkä mutta toiveikas. Jokikaupunki, kummitteleva kahlaamo, kultti kukkuloilla."*
-- **Valmistelu**: **lennosta** (pelinjohtaja rakentaa maailman jokaisen osan juuri ennen kuin tarvitset sitä; ehdotettu) tai **kaikki alussa**.
-
-Sitten pelinjohtaja ehdottaa kampanjalle nimeä. Kun mikään ei puutu ja sanot olevasi valmis, peli siirtyy nollasessioon.
-
-**Pelinjohtajan tyyliä** ei kysytä koskaan: muuta sitä milloin haluat, keskustelussa tai **Asetuksissa**, missä sillä on oma ryhmänsä. Sävy pysyy lähtökohdassa; tyyli on se, miten tarina kerrotaan.
-
-- **Proosa**: **plain** (lyhyitä lauseita, yksi konkreettinen yksityiskohta kerrallaan; tavallisin), **literary** (enemmän tilaa huippukohdille), **pulp** (jännittynyt, eloisa, lyhyt, jokainen viesti päättyy uhkaan tai koukkuun) tai **wry** (kertoja, joka hymyilee maailmalle puolittain, mutta ei koskaan hahmollesi).
-- **Tarinat**, sille mitä pelinjohtaja keksii, ei koskaan kirjoitetulle seikkailulle: **situations** (ryhmittymiä, uhkia ja salaisuuksien paikkoja, ei pääjuonta; tavallisin), **arcs** (keskeinen uhka, joka etenee vaiheittain), **episodes** (tarina, joka päättyy jokaisessa sessiossa) tai **mystery** (jokainen tarina on tutkimus, jonka totuus päätetään ensin).
-- **Kirjoita kuin**: kirjailija, jonka kerrontatavan pelinjohtaja ottaa proosan tilalle: heidän rytminsä ja valitsemansa yksityiskohdat, ei koskaan heidän lauseitaan, nimiään tai paikkojaan, eikä koskaan enempää kuin hahmosi näkee.
-- **Omin sanoin**: mikä tahansa muu, muutamalla sanalla, kuten *"kolmas persoona, imperfekti"*. Pelinjohtaja kertoo tarinan toisessa persoonassa ja preesensissä, ellet pyydä toisin.
+**Pelinjohtajan tyyliä** ei kysytä koskaan, mutta voit muuttaa sitä keskustelussa tai **Asetuksissa**: **proosa** (selkeä, kirjallinen, pulp, kuivan humoristinen), keksittävät **tarinat** (tilanteet, kaaret, jaksot, mysteeri), kirjailija, jonka tapaan **kirjoitetaan**, tai mikä tahansa muu **omin sanoin**.
 
 ### 2.7 Nollasessio: hahmosi
 
-Nollasessio on peliä: luot hahmosi pelinjohtajan kanssa, kuten pöydän ääressä.
-
-- **Jokainen valinta on sinun**, ellet pyydä pelinjohtajaa tekemään sitä. Voit tulla valmiin idean kanssa ("puoliksi haltiasta pappi, joka jätti temppelinsä"), epämääräisen ("joku, joka parantaa, mutta ei ole kiltti") tai ilman mitään ("yllätä minut, sitten annat minun muuttaa asioita").
-- **Ominaisuuspisteet.** Pelinjohtaja kertoo menetelmän ja turvaverkon ennen kuin yhtään noppaa heitetään. Viidennessä painoksessa: vakiosarja, pisteostot tai 4d6, pienin pois. Sovittu menetelmä jää pöydän sopimuksiin.
-- **Taustatarinaa** ei vaadita koskaan. Jos annat sellaisen, pelinjohtaja kirjoittaa sen sanoillasi, lukee sen sinulle kerran ja sitoo sen ihmiset ja paikat maailmaan. Voit kirjoittaa sen myös kojelaudalla (katso [Seurue](#party)).
-- **Persoonallisuus** (viides painos): luonteenpiirre, ihanne, side ja heikkous, taustasi taulukoista tai omasi.
-- **Kuva.** Kun hahmosi on valmis, pelinjohtaja pyytää sinulta kuvaa hahmosta: tiedoston tietokoneeltasi tai muotokuvan, joka tehdään tietokoneellasi kuvauksesi pohjalta (katso [hahmosi kuva](#37-your-characters-story-and-picture)).
-
-Hahmolomakkeen luvut laskee RPG Engine valintojesi pohjalta: sinun ei tarvitse laskea itse. Kun hahmot on tehty ja vahvistat, tarina alkaa.
+Teet hahmosi pelinjohtajan kanssa, kuten pelipöydässä. Jokainen valinta on sinun, ellet pyydä pelinjohtajaa tekemään sitä. Voit tulla valmiin idean, epämääräisen idean tai tyhjin käsin. Pelinjohtaja kertoo, miten kykypisteet määräytyvät, ennen kuin yhtään noppaa heitetään. Hahmon tarinaa ei vaadita koskaan. Jos annat sellaisen, pelinjohtaja kirjoittaa sen sinun sanoillasi. Sen jälkeen pelinjohtaja kysyy kuvaa hahmostasi ([3.7](#37-your-characters-story-and-picture)). RPG Engine laskee hahmolomakkeen: sinun ei tarvitse laskea itse mitään.
 
 ---
 
@@ -212,260 +114,99 @@ Hahmolomakkeen luvut laskee RPG Engine valintojesi pohjalta: sinun ei tarvitse l
 
 ### 3.1 Puhuminen pelinjohtajan kanssa
 
-Kirjoita, mitä hahmosi tekee tai sanoo, omin sanoin. Lyhyt riittää.
+Kirjoita omin sanoin, mitä hahmosi tekee tai sanoo:
 
 > Kysyn majatalon isännältä, ketä muita on käynyt täällä tänä iltana.
->
-> "Emme ole täällä hankaluuksien takia", sanon käsi poissa miekaltani.
->
-> Kiipeän katolle ja odotan.
 
-**Tarinan ulkopuolella** kirjoita hakasulkeiden väliin:
+Tarinan ulkopuolella kirjoita hakasulkeiden väliin: *[Miten kamppailu toimii?]* Pelinjohtaja vastaa myös hakasulkeissa.
 
-> [Miten painiminen toimii?]
->
-> [Voinko vielä käyttää reaktioni tällä kierroksella?]
->
-> [Lopetetaan tältä illalta tähän.]
-
-Pelinjohtaja vastaa myös hakasulkeissa ja palaa sitten tarinaan.
-
-**Sinä sanot, mitä yrität; pelinjohtaja sanoo, mitä tapahtuu.** Mikä rikkoo maailman logiikan tai jo vahvistetut tosiasiat, ei tapahdu: pelinjohtaja kertoo sen tarinan sisällä ja tarjoaa, mikä on mahdollista.
-
-**Pelinjohtaja ei koskaan päätä hahmosi puolesta.** Pelinjohtaja ei pane sinua puhumaan, tuntemaan tai valitsemaan. Epäselvässä tilanteessa pelinjohtaja kysyy.
-
-**Pelinjohtaja ei koskaan puhu moottorista.** Kysy, pitääkö pelinjohtaja asioista kirjaa, ja vastaus tulee pelinjohtajan tapaan: "Pidän kaiken muistissa: jatkamme tästä ensi kerralla."
-
-**Voit kysyä pelinjohtajalta, miten kojelautaa käytetään.** Pelinjohtaja tuntee sivun: "Mistä näen loitsuni?", "Miten heitän käsin?"
+Sinä kerrot, mitä yrität. Pelinjohtaja kertoo, mitä tapahtuu. Pelinjohtaja ei koskaan päätä hahmosi puolesta eikä puhu pelimoottorista. Voit kysyä siltä, miten kojelautaa käytetään.
 
 ### 3.2 Heitot
 
-**Milloin heitetään.** Pelinjohtaja pyytää heittoa vain, kun lopputulos on epävarma ja sillä on merkitystä. Muuten vastaus on kyllä tai "kyllä, mutta". Ennen heittoasi pelinjohtaja kertoo, mitä on pelissä ja mitkä heitot sopivat, ja pysähtyy. Sinä heität tai muutat mielesi:
+Pelinjohtaja pyytää heittoa vain, kun lopputulos on epävarma ja sillä on merkitystä, ja kertoo ensin, mikä on pelissä. Sitten:
 
-> **Pelinjohtaja:** Reunus on kapea ja märkä. Jos liukastut, edessä on pitkä pudotus jokeen. Ketteryys (Akrobatia) -heitto, tai voit palata etsimään portaita.
->
-> **Sinä:** Yritän sitä.
+- **Kojelaudalla** banneri näyttää painikkeen jokaiselle heitolle, esimerkiksi *Acrobatics +4 · with advantage*. Napsauta sitä: nopat putoavat sivulle ja pelinjohtaja saa tuloksen. Voit myös napsauttaa hahmolomakkeen valaistua riviä, heittää noppia noppa-alustalta tai kirjoittaa bannerissa jotain muuta.
+- **Käsin**, bannerin kulmasta tai **Asetuksista**: banneri kertoo, mitä heittää, ja heität sen hahmolomakkeesta tai noppa-alustalta.
+- **Fyysiset nopat**, kun noppa-asetus on fyysinen: kirjoitat heittämäsi silmäluvut, *[Heitin 14.]*, ja RPG Engine lisää muuntimesi.
 
-**Heittäminen kojelaudalla.** Kun pelinjohtaja pyytää, sivun ylälaitaan ilmestyy banneri, jossa on painike jokaiselle heitolle, esimerkiksi *Akrobatia +4 · edulla*. Napsauta sitä: nopat putoavat sivulle, ja pelinjohtaja kuulee tuloksen. Voit myös:
+**Vapaat heitot**: napsauta mitä tahansa hahmolomakkeen lukua tai avaa noppa-alusta heittääksesi huvikseen. Ne eivät koskaan lasku mihinkään, eikä pelinjohtaja näe niitä.
 
-- napsauttaa hahmolomakkeesi vastaavaa riviä, joka syttyy kullanhohtoiseksi;
-- heittää oikeat nopat noppa-alustalta;
-- kirjoittaa bannerin sijaan omat sanasi, jos haluat tehdä jotain muuta.
-
-**Heittäminen käsin.** Jos haluat valita nopat itse, kytke **Käsin** päälle bannerin kulmasta (tai **Asetuksista**). Heiton painike katoaa, ja banneri kertoo, mitä heittää, pelinjohtajan tapaan: *Heitä Akrobatia itse, hahmolomakkeella tai nopilla.* Napsauta hahmolomakkeen riviä, joka syttyy, tai heitä oikeat nopat noppa-alustalta: RPG Engine heittää ne, lisää bonuksesi ja pelinjohtaja kuulee tuloksen. Heitto, jota hahmolomake tai noppa-alusta ei voi tehdä, kuten vahinko, joka heitetään uudelleen ykkösten osalta, säilyttää painikkeensa. Käsin pysyy päällä tässä selaimessa, kunnes kytket sen pois.
-
-**Fyysiset nopat koko pelin ajan.** Kun **Nopat**-asetus on fyysinen, pelinjohtaja pyytää heittosi sanoin ja sinä kirjoitat heittämäsi silmäluvut:
-
-> [Heitin 14.]
-
-RPG Engine lisää muuntimesi ja hylkää silmäluvun, jota noppasi eivät voi näyttää.
-
-**Vapaat heitot.** Napsauta mitä tahansa lukua hahmolomakkeellasi tai avaa noppa-alusta heittääksesi vain huvikseen. Vapaat heitot eivät koskaan lasketa, niitä ei koskaan kirjata, eikä pelinjohtaja näe niitä koskaan. Vapaasta 20:stä ei tule myöhemmin oikeaa.
-
-**Pelinjohtajan heitot.** Pelinjohtaja heittää vihollisten ja muiden puolesta myös RPG Enginellä. Useimmat heitot näkyvät heittosarakkeessasi. Kun et saa nähdä tulosta, pelinjohtaja heittää salaa. Voit aina kysyä:
-
-> [Oliko tuo heitto oikea?]
-
-Näkyvästä heitosta pelinjohtaja antaa luvut ja perusteen. Salaisesta heitosta pelinjohtaja antaa sormenjäljen, joka todistaa heiton tehdyn ennen kuin kysyit.
-
-**Keskustelun heitot** näkyvät hakasulkeissa heti sen hetken jälkeen, jonka ne ratkaisevat: *[Suostuttelu 14 + 3 = 17]*. Sitten tarina kertoo lopputuloksen.
+**Pelinjohtajan heitot** näkyvät heittosarakkeessasi, salaisia lukuun ottamatta. Voit aina kysyä *[Oliko tuo heitto aito?]*: salaisesta heitosta pelinjohtaja antaa sormenjäljen, joka todistaa heiton tehdyn ennen kysymystäsi.
 
 ### 3.3 Kohtaukset ja taistelut
 
-Pelinjohtaja vie tarinaa eteenpäin **kohtauksissa**: taistelu, keskustelu, tutkiminen, matkustus, lepo, haaste (takaa-ajo, kilpa, arvoitus). Sinun ei tarvitse hallita niitä: niin RPG Engine pitää tarinan lukuja. Jokaisen kohtauksen lopussa peli tallentaa itsestään, ja kohtaus siirtyy päiväkirjasi tarinaan.
+Tarina etenee **kohtauksissa**: taistelu, keskustelu, tutkiminen, matkustaminen, lepo. Jokaisen kohtauksen lopussa peli tallentaa itsestään, ja kohtaus siirtyy päiväkirjaasi.
 
-**Taistelussa** pelinjohtaja kertoo kaikki vuorot, jotka eivät ole sinun, peräkkäin jokaisen heiton kanssa, ja **pysähtyy kohtaan, jossa voit päättää**: vuorosi, reaktio, valinta. Omalla vuorollasi kerro, mitä teet:
+Taistelussa pelinjohtaja kertoo jokaisen vuoron, joka ei ole sinun, ja pysähtyy kohtaan, jossa voit päättää. **Taistelu**-osio näyttää vuorojärjestyksen, seurueesi osumapisteet ja sen, miltä viholliset näyttävät sanoin kuvattuna. Jos hahmosi kaatuu, kuolemanpelastusheitot näkyvät suurina sivulla.
 
-> Loitsin Sacred Flamen oven vieressä olevaan.
+### 3.4 Aika, matkustaminen ja liikkuva maailma
 
-Kojelaudan **Taistelu**-osio näyttää vuorojärjestyksen, kenen vuoro on, seurueesi osumapisteet ja miltä viholliset näyttävät (vahingoittumaton, haavoittunut, verinen, kaatunut: sanoin, ei koskaan luvuin). Jos hahmosi kaatuu, kuolemanpelastusheitot ilmestyvät suurina sivulle.
+RPG Engine pitää kirjaa päivämäärästä. Pelikertojen välillä aikaa ei kulu. Sano, että lepäätte, *Pidämme pitkän levon*, ja lepo palauttaa sen, minkä pitääkin. Kerro, minne menette, *Lähdemme pohjoiseen johtavaa tietä Roccaan*, ja RPG Engine laskee reitin, matkan ja päivät, ja pysähtyy, kun matkalla tapahtuu jotain. Raha lasketaan pelin kolikoissa, vaihtorahat mukaan lukien.
 
-**Kun taistelu on jo ratkennut**, pelinjohtaja voi tarjota kertovansa lopun yhdessä viestissä.
-
-### 3.4 Aika, matkustus ja maailma, joka liikkuu
-
-**Aika.** Jokainen teko vie aikaa tarinassa, ja RPG Engine pitää päivämäärää: kolmas päivä, aikainen aamu. Pelinjohtaja kertoo ajan niin kuin maailma sen mittaa: aamunkoitto, kolmas kello, yön lasku. Istuntojen välillä aikaa ei kulu: jatkat siitä, mihin jäit.
-
-**Levot.** Sano, että lepäät, niin pelinjohtaja soveltaa sen, mitä lepo palauttaa, kuten osumapisteet ja loitsupaikat:
-
-> Pystytämme leirin ja otamme pitkän levon.
-
-**Matkustus.** Sano, minne haluat mennä:
-
-> Lähdemme tietä pohjoiseen kohti Roccaa.
-
-RPG Engine laskee reitin, matkan ja päivät vauhtisi mukaan ja siirtää sinut perille. Matka keskeytyy, kun matkalla tapahtuu jotain suunniteltua, jokaisen matkapäivän päätteeksi ja perille saapuessa. Voit kysyä paikan etäisyyttä ennen lähtöä:
-
-> [Kuinka kaukana Rocca on, ja kuinka kauan matka kestäisi jalan?]
-
-**Maailma liikkuu ilman sinua.** Konnilla on suunnitelmia määräaikoineen ja kelloineen. Joka uusi päivä pelinjohtaja etenee uhkia, joita aika on vienyt eteenpäin, ja näet niiden merkit: huhun, jäljen, muutoksen kaupungissa. Et koskaan näe itse kelloa, vain sen jättämät jäljet.
-
-**Raha** lasketaan pelin kolikoissa. Maksa, myy, saa palkka: RPG Engine hoitaa vaihtorahat.
+Konnilla on suunnitelmia, joilla on määräajat. Joka uusi päivä pelinjohtaja siirtää uhkia, joita aika on edistänyt, ja näet niiden merkit, mutta et koskaan itse kelloa.
 
 ### 3.5 Kartat
 
-**Maailmankartta** (kojelauta: **Maailma**) näyttää vain paikat, jotka hahmosi tuntee, niiden väliset tiet, kulkemasi polun ja sumun kaiken muun päällä. Napsauta paikkaa nähdäksesi, mitä siitä tiedät ja kuinka kaukana se on.
-
-**Paikan kartta** (kojelauta: **Kohtaus**, ja **Taistelu** taistelussa) ilmestyy, kun pelinjohtaja piirtää sellaisen paikasta, jossa olet: seinät, ovet, maaperä ja kuka seisoo missä, pelinappuloina. Taistelussa omalla vuorollasi ruudut, joihin et ylety, on peitetty verholla, joten näet yhdellä silmäyksellä, minne voit mennä. Kun pelinjohtaja kysyy, minne hahmosi liikkuu, sivu avaa kartan ja voit koskettaa ruutua tai kirjoittaa sen, esimerkiksi *E4*.
+**Maailma** näyttää hahmosi tuntemat paikat, niiden väliset tiet ja kulkemasi reitin. Muu on sumun peitossa. **Kohtaus** näyttää sen paikan kartan, jossa olet, kun sellainen on, ja kuka missäkin seisoo. Taistelussa omalla vuorollasi ruudut, joihin et yllä, on verhottu. Kun pelinjohtaja kysyy, minne siirryt, kosketa ruutua tai kirjoita se, esimerkiksi *E4*.
 
 ### 3.6 Tehtävät, päiväkirja ja muistiinpanot
 
-**Tehtävät.** Kun hahmosi ottaa tehtävän, siitä tulee tehtävä **Päiväkirjaasi**: kuka sen antoi, missä, mihin mennessä, sen tavoitteet luettelona ja mitä se mittaa (määräaika ja jäljellä oleva aika, kello, laskuri). Merkitse tehtävä tähdellä seurataksesi sitä: se pysyy pienenä Kohtauksen yläosassa seuraavan tavoitteensa kanssa. Tehtävä päättyy, kun tarina päättää sen, ei koskaan itsestään.
-
-**Tarina.** Päiväkirjan Tarina-välilehti on kampanjasi aikajanana: jokainen kohtaus on luku paikkoineen, päivämäärineen ja lyhyine tiivistelmineen, viimeisin ensin.
-
-**Muistiinpanosi.** Päiväkirjan Muistiinpanot-välilehdellä kirjoitat omia muistiinpanojasi: teorioita, nimiä, suunnitelmia. Ne pysyvät tietokoneellasi, eikä pelinjohtaja lue niitä, ellet **Jaa** jotakin. Jaettu muistiinpano saavuttaa pelinjohtajan seuraavassa vastauksessa sellaisena, mitä ajattelet, ei koskaan tosiasiana. Teoriasi ei muutu todeksi sillä, että kirjoitit sen. Muistiinpano, joka pyytää lopettamaan tai välttämään jonkin sisällön, lasketaan kuin olisit sanonut sen pöydässä.
+Tehtävä, jonka hahmosi ottaa vastaan, tulee **Päiväkirjaan** omine tavoitteineen, määräaikoineen ja mittareineen. Tähdellä merkitty tehtävä pysyy näkyvillä Kohtauksen yläosassa. Päiväkirja kertoo myös **tarinasi** kohtaus kohtaukselta ja säilyttää **muistiinpanosi**: ne ovat yksityisiä, ellet **Jaa** jotakin. Pelinjohtaja kuulee jaetun muistiinpanon sinun ajatuksenasi, ei koskaan tosiasiana.
 
 ### 3.7 Hahmosi tarina ja kuva
 
-Hahmosi hahmolomakkeella **Kuvaus**-kortissa on kenttä hahmosi tarinan kirjoittamista varten. Lähetä se, niin pelinjohtaja kirjoittaa sen hahmoon omin sanoin, kun olet sanonut kyllä.
-
-Hahmosi kuvaa varten anna pelinjohtajalle kuvatiedosto keskustelussa sekä sen sijainti tietokoneellasi (PNG, JPEG, WebP tai SVG, enintään 5 Mt):
-
-> [Tässä hahmoni muotokuva: C:\Users\me\Pictures\mira.png]
-
-Pelinjohtaja kopioi sen kampanjaan, ja se ilmestyy hahmosi nappulaan kojelaudalla. Voit vaihtaa sen samalla tavalla milloin haluat.
-
-Tai teetä muotokuva, jos tietokoneesi tekee kuvia (katso [Kuvat](#311-pictures)): kuvaile hahmosi pelinjohtajalle tai anna pelinjohtajan kuvailla.
-
-> [Tee minulle muotokuva: harmaat hiukset letillä, arpi leuassa, väsyneet silmät.]
-
-Muotokuva näyttää täsmälleen sen, mikä hahmosi on pelissä, hänen kansansa sellaisena kuin tämä maailma sen tuntee, kukkulakääpiö kukkulakääpiönä, kuvailemasi ulkonäön kanssa. Se valmistuu noin minuutissa hahmosi nappulaan. Seuralaisesi voivat saada omansa samalla tavalla.
+Hahmolomakkeen **Kuvaus**-kortissa on kenttä hahmosi tarinalle: pelinjohtaja kirjoittaa sen siihen, kun olet myöntänyt. Kuvaksi voit antaa pelinjohtajalle tiedoston (PNG, JPEG, WebP tai SVG, enintään 5 Mt) ja kertoa, missä se on tietokoneellasi, tai teettää muotokuvan ([3.11](#311-pictures)): *[Tee minulle muotokuva: harmaat hiukset letillä, arpi leuassa.]*
 
 ### 3.8 Tallennukset ja taaksepäin palaaminen
 
-RPG Engine tallentaa koko kampanjan **jokaisen kohtauksen lopussa** itsestään. Se, mitä näillä tallennuksilla voi tehdä, riippuu **Tallennukset**-asetuksesta:
+RPG Engine tallentaa koko kampanjan jokaisen kohtauksen lopussa. **Tallennukset**-asetus ratkaisee lopun:
 
-| Tallennukset | Tallenna, kun haluat | Palaa taaksepäin |
+| Tallennukset | Tallenna kun haluat | Palaa taaksepäin |
 |---|---|---|
-| **pysyvä kuolema** | ei | ei koskaan; voit vain aloittaa kampanjan alusta |
+| **pysyvä kuolema** | ei | ei koskaan |
 | **tarkistuspiste** | ei | viimeiseen tallennukseen, vain kun hahmosi kuolee |
-| **vapaa** | kyllä | mihin tahansa tallennukseen, milloin haluat |
+| **vapaa** | kyllä | mihin tahansa tallennukseen |
 
-Joka tilassa voit **aloittaa alusta**: pelin alusta samalla hahmolla tai nollasessiosta uudella hahmolla.
+Jokaisessa tilassa voit **aloittaa alusta**, pelin alusta tai nollasessiosta. Tee se keskustelussa tai kohdassa **Tallennukset**.
 
-Kaiken tämän voi tehdä keskustelussa ("[Palataan ennen kaksintaistelua.]") tai kojelaudan **Tallennukset**-osiossa.
+Taaksepäin palaamisen jälkeen **avaa uusi keskustelu**: vanha muistaa, mikä peruttiin. Kirjoita uudessa keskustelussa *jatka* ja paina sitten Tallennuksissa **Avasin uuden keskustelun**.
 
-**Taaksepäin palaamisen jälkeen avaa uusi keskustelu.** Keskustelu, jossa pelasit, muistaa sen, mikä peruttiin. Avaa uusi keskustelu pelinjohtajan kanssa (`/clear` Claude Codessa, `/new` Codexissa), kirjoita *jatka*, paina sitten Tallennukset-osiossa **Avasin uuden keskustelun** tai kerro asia pelinjohtajalle uudessa keskustelussa. Älä koskaan jatka vanhaa keskustelua. Kunnes vahvistat, pelinjohtaja ei jatka.
+### 3.9 Pelikerrat: lopettaminen ja palaaminen
 
-### 3.9 Istunnot: lopettaminen ja palaaminen
-
-**Päätät istunnon**, kun haluat:
-
-> [Lopetetaan tältä illalta tähän.]
-
-"Tallenna ja lopeta" -toimintoa ei ole: kaikki on jo tiedostoissa.
-
-**Keskustelun sulkemiseksi** kirjoita `/exit` Claude Codessa tai `/quit` Codexissa. Kojelauta hiljenee seuraavaan keskusteluun asti.
-
-**Palataksesi** avaa pääte kampanjakansiossa (siinä, jonka `init` tulosti), käynnistä isäntäsi siellä ja kirjoita *jatka*. Pelinjohtaja lukee, missä peli menee, antaa lyhyen kertauksen ja aloittaa jollain tapahtumalla. Uusi keskustelu ei hävitä mitään: kampanja elää tiedostoissaan, ei keskustelussa.
-
-Pelinjohtaja ei esitä lopuksi rutiinikysymyksiä. Vain jos pelinjohtaja huomasi, ettei jokin toiminut, se kysyy lyhyesti.
+Lopeta milloin haluat: *[Lopetetaan tältä illalta tähän.]* Kaikki on jo tallennettu tiedostoihin. Palataksesi käynnistä agenttisi kampanjakansiossa ja kirjoita *jatka*: pelinjohtaja antaa lyhyen kertauksen ja jatkaa.
 
 ### 3.10 Pelinjohtajan mieliala
 
-Kojelaudan yläreunassa on pelinjohtajan avatar, pieni robotti. Sen kasvot seuraavat tarinan sävyä: huolestuneet, kun vaara kasvaa, ilahtuneet rohkeasta ideasta, yllättyneet käänteestä. Se reagoi hetkeksi luonnolliseen 20:een tai luonnolliseen 1:een. Se ei koskaan näytä sitä, mitä et vielä tiedä: ei virnettä ennen kuin ansa laukeaa. Seurueesi nappulat näyttävät myös mielialansa. Kun keskustelu on suljettu, robotti nukkuu.
+Kojelaudan yläreunan robotti on pelinjohtaja: sen ilme seuraa tarinan tunnelmaa eikä koskaan paljasta sitä, mitä et vielä tiedä. Kun keskustelu on suljettu, se nukkuu.
 
 ### 3.11 Kuvat
 
-RPG Engine voi teettää kuvan jokaisesta paikasta, johon pääset, jokaisesta tehtävästä, jonka otat, ja jokaisesta tapaamastasi hahmosta tai olentolajista, piirrettynä sellaisina kuin ne näet, **Kuvat**-asetuksen mukaan, sekä hahmosi muotokuvan pyydettäessä. Se käyttää sitä, mitä tietokoneellasi jo on:
+RPG Engine voi teettää kuvia saavuttamistasi paikoista, ottamistasi tehtävistä ja tapaamistasi hahmoista **Kuvat**-asetuksen mukaan sekä hahmosi muotokuvan, kun pyydät. Se käyttää sitä, mitä tietokoneellasi on, omalla kirjautumisellasi: **Codex** maalaa ne, muuten **Claude Code** piirtää ne. **Asetukset** kertoo, voiko tämä tietokone tehdä niitä, ja miten sen saa toimimaan, jos ei voi. Voit aina antaa pelinjohtajalle oman kuvasi.
 
-- **Codex** ChatGPT-kirjautumisellasi: maalattu kuva.
-- Muuten **Claude Code** Claude-kirjautumisellasi: piirros.
+### 3.12 Turvallisuus: rajat, verhot ja pysäytys
 
-Kuva käyttää omaa tilaustasi, ei meidän. **Asetukset**-osio kertoo, voiko tietokoneellasi tehdä kuvia, ja jos ei, vaiheet sen käyttöönottoon. Ilman kuvia sivu näyttää kunkin paikkatyypin merkin. Voit myös antaa pelinjohtajalle oman kuvasi mistä tahansa paikasta tai hahmosta.
-
-### 3.12 Turvallisuus: rajat, verhot ja stop
-
-- **Rajat**: mikä ei koskaan esiinny pelissä.
-- **Verhot**: mikä saa tapahtua, mutta vain kuvan ulkopuolella.
-- **Stop**: milloin tahansa voit pysäyttää sisällön selittämättä. Kirjoita se tarinan ulkopuolella:
-
-> [stop]
-
-Pelinjohtaja jättää sen heti pois ja lisää sen rajoihisi kaikkia tulevia istuntoja varten. Näet ja voit muuttaa rajasi ja verhosi **Asetuksissa**.
+**Rajat** eivät koskaan näy pelissä. **Verhot** tapahtuvat vain kuvan ulkopuolella. Kirjoita milloin tahansa *[stop]*: pelinjohtaja jättää sen sisällön heti pois ja lisää sen rajoihisi.
 
 ### 3.13 Mielen muuttaminen
 
-Jokaista asetusta voi muuttaa kampanjan aikana: keskustelussa ("[Tehdään siitä vaikeampi.]") tai **Asetuksissa**. Pelinjohtaja kuulee muutoksesta seuraavassa vastauksessaan. Ratkaisusta, jonka pelinjohtaja teki ilman sääntökirjaa, tulee **ennakkotapaus**, ja se säilytetään, jotta sama kysymys saa ensi kerralla saman vastauksen.
+Jokaista asetusta voi muuttaa, keskustelussa tai **Asetuksissa**. Pelinjohtajan ilman sääntökirjaa tekemä ratkaisu muuttuu **ennakkotapaukseksi**, jotta sama kysymys saa ensi kerralla saman vastauksen.
 
 ---
 
-## 4. Kojelauta osio osiolta <!-- icon: party -->
+## 4. Kojelauta <!-- icon: party -->
 
-Kojelauta on sivu omalla tietokoneellasi. Pelinjohtaja antaa sen linkin jokaisen chatin alussa. Se seuraa peliä suorana: kun pelinjohtaja muuttaa jotain, sivu muuttuu myös.
+Sivu omalla tietokoneellasi, avattavissa vain sen koneen selaimessa ja elossa niin kauan kuin keskustelu on auki. Kun keskustelu sulkeutuu, sivulla lukee *Not connected*. Yhteys palaa itsestään seuraavan keskustelun mukana.
 
-Vain sen tietokoneen selain, jolla pelaat, voi avata sen: ei puhelin eikä tabletti, vaikka ne olisivat samassa Wi-Fi-verkossa. Sivu sopii myös kapeaan ikkunaan: silloin osiot siirtyvät alapalkkiin ja kuvakkeet valikkoon.
+- **Seurue**: sinun ja seuralaistesi hahmolomakkeet. Napsauta lukua heittääksesi sen, vie hiiri sen päälle nähdäksesi, mistä se tulee. Vieressä ovat heitot.
+- **Kohtaus**: missä olet, sen kuva ja kartta, ketkä ovat paikalla ja mitä tapahtuu.
+- **Taistelu**: vain taistelussa: vuorot, taistelijat ja se, mitä sinulla on käsillä.
+- **Päiväkirja**: tehtävät, tarina ja muistiinpanosi.
+- **Maailma**: maailmankartta sellaisena kuin hahmosi sen tuntee.
+- **Noppa-alusta**: valitse nopat ja muunnin ja heitä.
+- **Tallennukset**, **Ohje**, **Asetukset** ja **Tietoja** kuvakkeina rivin lopussa. Asetuksissa ovat myös sivun omat valinnat: teema, noppien ääni, noppasetti.
 
-Sivu elää niin kauan kuin chat. Sulje chat, ja auki jäänyt sivu näyttää tekstin *Not connected* hahmolomakkeen entisessä tilassa, ja pelinjohtajan robotti nukahtaa; avaa kampanjassa taas chat, ja kun pelinjohtaja on vastannut, sivu palaa itsestään.
-
-### Yläreunassa
-
-- **Pelinjohtajan avatar** mielialoineen.
-- Kampanjan nimi, pelijärjestelmä, **peliaika** ja se, onko peli **yhteydessä** (chat yhdistetty).
-- Osiot: **Seurue**, **Kohtaus**, **Taistelu** (vain taistelun aikana), **Päiväkirja**, **Maailma**; rivin lopussa kuvakkeina: **Tallennukset**, **Ohje**, **Asetukset**, **Tietoja**.
-- Vaalea ja tumma teema oikeassa yläkulmassa.
-
-Kun pelinjohtaja kysyy sinulta jotain, sen banneri pysyy sivun yläreunassa, missä osiossa tahansa olet.
-
-### Seurue
-
-Hahmosi hahmolomake ja seuralaistesi lomakkeet. Jokainen hahmolomakkeen osa on kortti, jonka voit avata ja sulkea.
-
-- **Napsauta lukua** heittääksesi sen huvikseen. Osoita lukua nähdäksesi, miten se muodostuu ("+5: Viisaus +3, taitovarmuus +2").
-- **Osumapisteet, paikat ja käyttökerrat** näkyvät palkkeina ja pisteinä.
-- **Tilat ja vaikutukset** näkyvät kestonsa kanssa.
-- **Kuvaus** sisältää hahmosi tekstin ja laatikon, jolla lähetät pelinjohtajalle hahmosi tarinan.
-- Kun osumapisteet ovat 0, **kuolemantallennukset** ilmestyvät isoina nimen alle.
-- Hahmolomakkeen vieressä (kapealla näytöllä sen alla): **heitot**, uusin ensin, omasi ja ne pelinjohtajan heitot, jotka saat nähdä. **Poista** tyhjentää luettelon; **Palauta** tuo sen takaisin. Vapaat heitot näkyvät katkoviivalla ja himmennettyinä.
-
-Seuralainen, jolla on ominaisuuslista, kuten susi, näyttää täyden hahmolomakkeen sijaan ominaisuuslistansa.
-
-### Kohtaus
-
-Missä seurueesi on: paikan kuva ja nimi, sen ympärillä olevat paikat, paikan kartta, jos sellainen on, ketkä ovat paikalla, ja avoin kohtaus sen kanssa, mitä juuri nyt tapahtuu. Seuraamasi tehtävä on ylhäällä.
-
-### Taistelu
-
-Vain taistelun aikana. Ylhäällä: kierros, kuka toimii, kuka on seuraavana. Alla: vuorojärjestys, jokainen taistelija tiloineen, seurueesi lukuina ja viholliset sanoin; mitä hahmollasi on käden ulottuvilla (Classe Armatura, osumapisteet, hyökkäykset); paikan kartta, jossa toimiva on rengastettu. Omalla vuorollasi Taistelu-linkki sykkii kultaisena, missä tahansa oletkin.
-
-### Päiväkirja
-
-Kolme välilehteä:
-
-- **Tehtävät**: aktiiviset, suoritetut ja epäonnistuneet, kukin korttina tavoitteineen, määräaikoineen ajastimena ja kelloineen. Tähti seuraa tehtävää.
-- **Tarina**: kampanjan luvut kohtaus kohtaukselta, viimeisin ensin.
-- **Muistiinpanot**: omat muistiinpanosi, yksityisiä, kunnes jaat jonkin.
-
-### Maailma
-
-Maailmankartta sellaisena kuin hahmosi sen tuntee, sumu muun päällä. Liikuta vetämällä, zoomaa rullalla tai nipistämällä. Napsauta paikkaa nähdäksesi sen kortin. Paikkojen luettelo, lähin ensin, on sen vieressä. Jos karttoja on useampi (kaupunki, manner, toinen taso), välilehdet vaihtavat niiden välillä.
-
-### Noppa-alusta
-
-Noppapainike avaa alustan: valitse nopat ja muunnin ja heitä. Jos samaa noppaa on kaksi tai useampi, valitse, mitkä lasketaan: **Kaikki**, **Korkein** (vain korkein) tai **Matalin** (vain matalin). Valitsemasi nopat pysyvät, kunnes painat **Poista**, joten sama vahinkoheitto on yksi napsautus joka kierros. Kun pelinjohtaja pyytää heittoa, alusta kertoo, mitkä nopat vastaavat siihen.
-
-### Tallennukset
-
-Tallennuksesi, uusin ensin, kukin paikkoineen, peli-päivämäärineen ja tekohetkineen. **Tallenna nyt** (vapailla tallennuksilla), **Palaa tähän** ja **Aloita alusta**, punaisena, kahdessa vaiheessa. Katso [Tallennukset ja taaksepäin palaaminen](#38-saves-and-going-back).
-
-### Asetukset
-
-Asetuksesi ryhmittäin: peli, pelin oppiminen (mentori ja sinulle jo selitetyt säännöt), nopat ja mitat, rajoitukset (rajat ja verhot), kuvat, kieli. Napsauta arvoa valitaksesi sen; sen alla kerrotaan, mitä se tarkoittaa. Sitten sivun omat asetukset, jotka säilyvät vain tässä selaimessa: teema, noppien ääni, **noppasarja** (hartsi, metalli, puu, kivi), pyöristetyt tai terävät reunat, käsin heittäminen.
-
-Pelinjohtajan omat asetukset, kuten talosäännöt ja ennakkotapaukset, eivät ole täällä: ne pysyvät chatissa.
-
-### Ohje ja Tietoja
-
-**Ohje**: tämä opas. **Tietoja**: mikä RPG Engine on, sen linkit, lisenssit ja pelijärjestelmän tekijätiedot.
-
-### Ennen peliä: Asetukset ja nollasessio
-
-Kun uusi kampanja on ensimmäisessä vaiheessaan, **Asetuksissa**, koko sivu esittää kysymyksensä: yhden kerrallaan, jokaisen arvojen merkityksen ja ehdotetun arvon kanssa. **Päätä sinä** jättää kysymyksen pelinjohtajalle, paitsi rajat ja verhot, jotka ovat aina sinun; **Ohita** jättää sen myöhemmäksi. Lopuksi **Olen valmis**.
-
-### Sivun ilmoitukset
-
-Joskus sivu näyttää ilmoituksen päällään: ongelma kampanjan tiedostoissa (pelinjohtaja korjaa sen), peli poissa (chat on suljettu), sivua käännetään.
+Kun pelinjohtaja kysyy sinulta jotain, sen banneri pysyy ylhäällä missä osiossa tahansa olet.
 
 ---
 
@@ -473,125 +214,62 @@ Joskus sivu näyttää ilmoituksen päällään: ongelma kampanjan tiedostoissa 
 
 ### 5.1 Mikä pelijärjestelmä on
 
-Pelijärjestelmä on yhden pelin tiedot: sen hahmolomake, luvut, hirviöt, esineet, loitsut ja sääntötekstit. Jokaisessa kampanjassa pelataan yhtä järjestelmää.
+Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mitä kuluu ja mitä palautuu. Pelinjohtaja lukee säännöistä, miten ominaisuus toimii, ja päättää, kuten pelipöydässä.
 
-RPG Engine laskee hahmolomakkeesi ja sen, mikä kuluu ja mikä palautuu, kuten osumapisteet ja loitsupaikat. Digitaalinen hahmolomake tekee samoin. Pelinjohtaja lukee säännöistä, miten kyky tai loitsu toimii, ja päättää sen, aivan kuten pöydän ääressä.
+### 5.2 Viides edtio, mukana
 
-### 5.2 Viides laitos mukana
+SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalla sanamuodolla; täysi hahmolomake, laskettuna valmiiksi.
 
-RPG Enginen mukana tulee **5e**, System Reference Document 5.1:n pohjalta (vuoden 2014 säännöt, vapaasti käytettävissä Creative Commons -lisenssillä). Mukana on:
-
-- SRD:n rodut, hahmoluokat, alaluokat, tausta ja etu (feat);
-- 319 loitsua, aseet, panssarit ja varusteet, taikaesineet ja SRD:n hirviöt;
-- sääntöluvut, jotka pelinjohtaja hakee tarkalla tekstillä;
-- täydellinen, laskettu hahmolomake: kykymuuntimet, tallennusheitot, taidot, panssariluokka, hyökkäykset, loitsujen vaikeusaste, loitsupaikat, osumanopat, tasokohtaiset ominaisuudet, kokemus ja tasonnousu;
-- lepo, joka palauttaa sen, minkä pitääkin; tilat sääntötekstineen; muistutukset keskittymisestä.
-
-**SRD:n ulkopuolinen sisältö.** Viidettä laitosta voi pelata myös sisällöllä, jota SRD:ssä ei ole, esimerkiksi omistamasi kirjan hahmoluokalla tai hirviöllä. Pelinjohtaja tuntee pelin, osaa lukea ohjekirjasi ja voi hakea tietoa verkosta. Se kirjoittaa tarvitsemansa kampanjasi sivuiksi, ja RPG Engine toimii niiden kanssa samoin. Mukana toimitettavaa rajoittaa lisenssi. Sitä, minkä pelinjohtajasi tuntee, ei rajoita mikään.
-
-RPG Engine sisältää vain alkuperäistä tai avoimesti lisensoitua sisältöä: viidennelle laitokselle SRD 5.1:n CC BY 4.0 -lisenssillä. Kaiken muun, mitä peliisi ilmestyy, kirjoittaa tekoälysi tai sinä itse kampanjasi sivuiksi omalle koneellesi. Se ei kuulu RPG Engineen, emmekä jaa sitä.
-
-RPG Engine on yhteensopiva viidennen laitoksen kanssa.
+Voit pelata myös sisältöä, jota SRD:stä puuttuu, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee niitä ominaan. RPG Engine toimittaa vain avointa sisältöä. Pelinjohtajasi tietämys ei ole rajattua.
 
 ### 5.3 Kotisäännöt ja omat lisäykset
 
-Et tarvitse yhtään tiedostoa. Pyydä pelinjohtajaa:
+Pyydä pelinjohtajalta: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Se pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, kun sellainen tarvitaan. Valmiiksi kirjoitetut kotisäännöt voivat olla tekstitiedostoina kampanjan `rules`-kansiossa.
 
-> [Kotisääntö: luonnollinen 1 hyökkäysheitossa tarkoittaa, että pudotat aseesi.]
->
-> [Haluaisin pelata Blood Hunterina. Kirja on minulla: tässä ovat hahmoluokan ominaisuudet.]
->
-> [Tässä kampanjassa lyhyt lepo kestää 10 minuuttia.]
+### 5.4 Oman pelijärjestelmän lisääminen tai tuominen
 
-Pelinjohtaja kirjaa ne kampanjaasi jollakin näistä tavoista:
-
-- **Pöydän sopimus** sanoin, kuten yllä oleva pudotettu ase tai lyhyt lepo. Pelinjohtaja säilyttää sen kampanjan asetusten kanssa ja pelaa siitä lähtien sen mukaan. Ratkaisu, jonka pelinjohtaja tekee ilman kirjaa, tallennetaan samalla tavalla **ennakkotapauksena**.
-- **Uusi sivu**, kuten hahmoluokka, rotu tai esine. Uusi hahmoluokka toimii kuten järjestelmän omat: tasosi, osumanopat ja ominaisuudet lasketaan sen mukaan. Uusi rotu voi perustua olemassa olevaan ("kuten haltia, ja lisäksi…"). Nimetty miekka voi perustua pitkämiekkaan.
-- **Uudet luvut hahmolomakkeelle**: kenttä, taulukko, kaava tai laskuri, jonka lepo palauttaa. Esimerkiksi Battle Masterin ylivoimanopat, jotka palaavat lyhyellä levolla. Kotisääntö voi myös korvata jonkin järjestelmän kaavan.
-
-Jos sinulla on kotisäännöt jo kirjoitettuna, voit myös tallentaa ne tekstitiedostoina kampanjan `rules`-kansioon (katso [kampanjakansio](#8-for-the-curious-the-campaign-folder)). Pelinjohtaja lukee ne ennen kirjan samannimistä sääntöä.
-
-### 5.4 Oman pelijärjestelmän lisääminen tai tuonti
-
-Tällä hetkellä RPG Engine tukee vain viidettä laitosta. Muita pelijärjestelmiä on tulossa, samoin tapa lisätä oma järjestelmä tai muuttaa omistamasi peli järjestelmäksi sen ohjekirjojen pohjalta. Katso [Tulossa myöhemmin](#9-coming-later).
+Ei vielä: nykyisin RPG Engine pelaa vain viidettä editiota ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 
 ## 6. Laajennukset <!-- icon: plus -->
 
-**Laajennukset eivät ole vielä saatavilla.** Laajennus lisää kampanjaan jotain pelijärjestelmän päälle: maailman, seikkailun, ominaisuuden kuten sään tai tarot-pakan, jaettavia talosääntöjä. Valitset, mitä kukin kampanja käyttää. Ensimmäiset viidennelle editiolle suunnitellut ovat sää ja lukkojen tiirikointi.
+Ei vielä. Laajennus lisää kampanjaan jotakin pelijärjestelmän päälle: maailman, seikkailun, ominaisuuden kuten sään tai jaettavia kotisääntöjä.
 
 ---
 
-## 7. Mistä kampanja tulee, ja sen kieli <!-- icon: world -->
+## 7. Mistä kampanja tulee ja sen kieli <!-- icon: world -->
 
 ### 7.1 Kolme tapaa saada maailma
 
-**Tehty lennossa.** Annat lähtökohdan asetusvaiheessa, ja pelinjohtaja rakentaa maailman matkan varrella: jokaisen paikan, henkilön ja juonen juuri ennen kuin tarvitset sitä, ja säilyttää sen siitä eteenpäin. Tämä on nopein tapa pelata: asenna, luo, ja muutamassa minuutissa teet hahmoasi. Mitään keksittyä ei menetetä: kun jotain on sanottu, se kirjoitetaan ylös ja pysyy totena.
+- **Tehty lennossa**: lähtökohdastasi pelinjohtaja rakentaa jokaisen paikan, henkilön ja juonen juuri ennen kuin tarvitset sen, ja säilyttää sen.
+- **Valmisteltu alussa**: sama, mutta maailma rakennetaan ennen pelin alkua.
+- **Omasta seikkailusta**: anna pelinjohtajalle teksti tai PDF ja pyydä sitä valmistelemaan se, *[Valmistele tämä seikkailu kampanjaksemme. Älä kerro minulle mitään siitä, mitä siinä on.]* Se kirjoittaa paikat, hahmot ja salaisuudet. Tuontipainiketta ei vielä ole.
 
-**Valmisteltu alussa.** Sama lähtökohta, mutta asetuksella **valmistelu: kaikki alussa** pelinjohtaja rakentaa maailman paikat, ryhmittymät, uhat ja niiden suunnitelmat ennen pelin alkua. Ensimmäinen sessio alkaa myöhemmin, ja taustalla on enemmän valmiina.
-
-**Olemassa olevasta kampanjasta tai seikkailusta.** Nykyään tuontipainiketta ei ole. Anna pelinjohtajalle seikkailusi (teksti tai PDF, jonka isäntäsi osaa lukea) ja pyydä sitä valmistelemaan se:
-
-> [Minulla on tämä seikkailu PDF:nä. Valmistele se kampanjaksemme: lue se ja kirjoita sen paikat, hahmot ja salaisuudet. Älä kerro minulle mitään siitä, mitä siinä on.]
-
-Pelinjohtaja lukee sen tekoälyisäntäsi työkaluilla ja kirjoittaa sen kampanjan sivuiksi, salaisuudet mukaan lukien, jotka löydät pelissä. Claude Code lukee PDF-tiedostoja; Codexin kanssa teksti- tai markdown-tiedosto on varmempi valinta. Tee tämä asetusvaiheessa, ennen nollasessiota.
-
-Kun pelinjohtaja työskentelee, älä avaa sen lukemisen tai kirjoittamisen tietoja (Claude Codessa ctrl+o): ne näyttävät seikkailun tekstin salaisuuksineen. Pelinjohtaja itse pitää salaisuudet, kuten aina.
-
-Heti kun kampanjassa on omia sivuja, asetusvaihe lakkaa kysymästä lähtökohtaa ja valmistelua. Myös kirjoitetussa kampanjassa, kun menet paikkaan, jota teksti ei kata, pelinjohtaja luo tarvittavan ja kirjaa sen.
-
-**Kampanja pelataan kerran.** Jos haluat pelata saman seikkailun uudelleen, luo uusi kampanja. Kampanjan sisällä voit yhä palata tallennukseen tai aloittaa alusta, sen mukaan kuin tallennusasetus sallii.
+Kampanja pelataan kerran: pelataksesi saman seikkailun uudelleen luo uusi kampanja.
 
 ### 7.2 Kielet
 
-**Yksi kieli kampanjaa kohden**: pelinjohtajan. Pelinjohtaja kirjoittaa sillä, ja kojelauta seuraa sitä. Pelinjohtaja ottaa sen siitä, miten kirjoitat, ja vahvistaa sen.
-
-**Kojelauta** tulee englanniksi ja italiaksi (huolella laadittu) sekä 24 muulla kielellä: ranska, saksa, espanja, portugali (brasilialainen), hollanti, ruotsi, norja, tanska, suomi, islanti, venäjä, ukraina, puola, tšekki, romania, unkari, kreikka, turkki, arabia, heprea, hindi, kiina, japani, korea. Arabia ja heprea luetaan oikealta vasemmalle: sivu peilautuu, kun taas kartat ja nopat pysyvät piirrettyinä.
-
-**Mikä tahansa muu kieli**, jonka valitset Asetuksissa, käännetään tietokoneellasi taustalla Codexilla tai Claude Codella omalla kirjautumisellasi, alkaen avoinna olevasta osiosta. Se tehdään kerran kieltä kohden, kaikille kampanjoillesi. Kunnes se on valmis, sivu on englanniksi. Asetukset kertoo, onko käännös käynnissä, valmis vai mahdoton tietokoneellasi.
-
-**Pelin sanat.** Viides editio tuo omat termit italiaksi viralliselta italialaiselta SRD:ltä, joten italialaiset pelaajat lukevat *Classe Armatura*, *tiro salvezza*, *vantaggio*. Muille kielille järjestelmän termit käännetään.
-
-**Pelijärjestelmän oma teksti** (loitsut, hirviöt, sääntöluvut) pysyy englanniksi. Pelinjohtaja lukee sen ja kertoo sen sinulle sinun kielelläsi.
-
-**Kielen vaihtaminen kesken kampanjan** jättää jo kirjoitetut sivut ennalleen; pelinjohtaja kirjoittaa uudet uudella kielellä.
+Yksi kieli kampanjaa kohden, pelinjohtajan kieli, jota kojelauta seuraa. Kojelaudan mukana tulee 26 kieltä. Minkä tahansa muun kielen kääntää tietokoneellasi Codex tai Claude Code, tai ilman niitä pelinjohtaja keskustelussa. Viidennen editionin italiankieliset termit tulevat viralliselta italialaiselta SRD:ltä. Sääntöteksti pysyy englanniksi, ja pelinjohtaja kertoo sen sinun kielelläsi.
 
 ---
 
 ## 8. Uteliaille: kampanjakansio <!-- icon: list -->
 
-Sinun ei koskaan tarvitse avata sitä. Jos avaat, tiedä, että **siinä ovat kampanjasi salaisuudet**: sen lukeminen pilaa pelin.
+Sinun ei koskaan tarvitse avata sitä, ja siinä ovat kampanjasi salaisuudet. Siinä on `campaign.yaml` (asetuksesi), `state.yaml` (missä peli on), `world/` (yksi markdown-sivu jokaista hahmoa, paikkaa, tehtävää ja muuta kohden), `rules/` (kotisääntösi), `images/`, `log.jsonl` (jokainen muutos), `.saves/`, `.player/` (muistiinpanosi) sekä pienet tiedostot, jotka kertovat tekoälyagenteille, missä RPG Engine on. Sivut käyttävät Obsidianin muotoa. Jos muutat sivua käsin, pelinjohtaja saa siitä tiedon seuraavassa vastauksessaan.
 
-Kampanjakansiossa on:
-
-- `campaign.yaml`: asetuksesi;
-- `state.yaml`: missä peli on nyt: sen vaihe, päivämäärä, avoin kohtaus;
-- `world/`: yksi sivu jokaista hahmoa, paikkaa, ryhmittymää, tehtävää, esinettä, tapahtumaa, aihetta tai olentoa kohden, markdown-tiedostoina;
-- `rules/`: talosääntösi tekstitiedostoina, jos lisäät sellaisia (`init` ei luo sitä);
-- `images/`: kuvat, kun niitä on;
-- `log.jsonl`: jokainen muutos järjestyksessä;
-- `.saves/`: tallennukset ensimmäisestä alkaen;
-- `.player/`: omat muistiinpanosi Päiväkirjasta, joita pelinjohtaja ei lue;
-- `sessions/`: RPG Enginen ylläpitämä;
-- `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.claude/`, `.codex/`, `.gemini/`: pienet tiedostot, jotka kertovat tekoälyisännille, missä RPG Engine on, ja pitävät niiden muistin pois päältä. RPG Engine pitää ne ajan tasalla; jätä ne ennalleen.
-
-Sivut ovat pelkkää markdownia, ja linkit ovat muotoa `[[Rocca]]`, Obsidianin formaattia: pelinjohtajan muistikirjan voi avata siellä. **Jos muutat sivua käsin**, pelinjohtaja kuulee muutoksesta seuraavassa vastauksessaan.
-
-**Komentorivi.** Kaikki, mitä pelinjohtaja tekee, kulkee komentojen kautta, joita voit ajaa myös itse kampanjakansiossa. Et koskaan tarvitse niitä pelaamiseen, ja monet tulostavat kampanjan salaisuuksia, kuten `rpg status` ja `rpg show`. `rpg --help` luettelee ne kaikki, ja `rpg roll --help` selittää yhden. Komento, joka muuttaa jotain chatin ollessa auki, on sallittu: pelinjohtaja kuulee siitä seuraavassa vastauksessaan, kuten käsin muutetusta sivusta.
+Jokaisen pelinjohtajan käyttämän komennon voi ajaa myös kampanjakansiossa: `rpg --help` listaa ne. Monet tulostavat kampanjan salaisuuksia.
 
 ---
 
 ## 9. Tulossa myöhemmin <!-- icon: hourglass -->
 
-Mitä on suunnitteilla, mutta ei vielä täällä:
-
-- **Sinä pelinjohtajana**: sinä johdat peliä, ja tekoäly pelaa seuruetta.
-- **Useita ihmisiä pöydässä**, kullakin oma roolinsa.
-- **Laajennukset**: asetuksia, seikkailuja, ominaisuuksia ja talosääntöjä, valittuna kampanjakohtaisesti.
-- **Oppaiden ja seikkailujen tuonti.**
-- **Muita pelejä**: lisää pelijärjestelmiä ja omasi.
-- **Tekijätila**: tee kampanja tai seikkailu tekoälyn kanssa ja jaa se muiden pelattavaksi.
+- **Sinä pelinjohtajana**, ja tekoäly pelaa seuruetta.
+- **Tekijätila**: kirjoita seikkailu tekoälyn kanssa, vie se ulos ja jaa se.
+- **Useita pelaajia samalla tietokoneella**, joilla kullakin on oma hahmo ja jotka vuorottelevat samassa keskustelussa.
+- **Laajennukset**: asetukset, seikkailut, ominaisuudet ja kotisäännöt.
+- **Oppaiden ja seikkailujen tuonti**.
+- **Muut pelit**: lisää pelijärjestelmiä ja omat järjestelmät.
 
 ---
 
@@ -599,49 +277,30 @@ Mitä on suunnitteilla, mutta ei vielä täällä:
 
 ### Kysymykset
 
-**Tarvitseeko minun tuntea säännöt?** Ei. Valitse mentoriksi opastus, niin pelinjohtaja opettaa sinulle sitä mukaa kuin pelaat, yksi sääntö kerrallaan. Voit aina kysyä hakasulkeissa.
+**Tarvitseeko minun osata säännöt?** Ei. Valitse opastava mentori ja kysy hakasulkeissa milloin haluat.
 
-**Voiko pelinjohtaja huijata?** Se ei voi muuttaa RPG Enginen tekemää heittoa paitsi vaikeustasolla story, eikä se koskaan muuta jo vahvistettuja tosiasioita. Voit kysyä, oliko jokin heitto aito.
+**Voiko pelinjohtaja huijata?** Se ei voi muuttaa RPG Enginen tekemää heittoa, paitsi vaikeustasolla tarina, eikä jo vahvistettuja tosiasioita.
 
-**Voinko minä huijata?** Voit yrittää. Pelinjohtaja ei usko sanaasi tosiasioista: viestisi rivi, joka näyttää pelin viestiltä, on silti vain sanojasi, eikä pelinjohtaja koskaan vahvista arvauksiasi salaisuuksista.
+**Maksaako se mitään?** RPG Engine on ilmainen. Pelinjohtaja toimii agenttisi tilauksella tai omalla koneellasi paikallisella mallilla. Pelilta on pitkä keskustelu: pienimmillä tilauksilla voit saavuttaa tilauksen rajan ennen illan loppua. Kuvat ja käännökset käyttävät samaa tilausta.
 
-**Maksaako se mitään?** RPG Engine on ilmainen. Pelinjohtaja toimii omalla Claude- tai ChatGPT-tilauksellasi, ja pelilta on pitkä chat: pienimmillä tilauksilla tilauksen raja voi tulla vastaan ennen illan loppua. Kuvat ja käännökset käyttävät samaa tilausta.
+**Voinko pelata puhelimella?** Et: pelinjohtaja toimii tietokoneellasi, ja kojelauta aukeaa vain siellä.
 
-**Voinko pelata puhelimellani?** Et. Pelinjohtaja toimii tietokoneellasi, ja kojelauta aukeaa vain sen tietokoneen selaimessa.
+**Voinko pelata kavereiden kanssa?** Et vielä: nykyisin yksi pelaaja, yksi hahmo ja seuralaiset ([Tulossa myöhemmin](#9-coming-later)).
 
-**Voinko pelata ystävien kanssa?** Et vielä: nykyään yksi pelaaja, yksi hahmo ja seuralaiset. Useampi ihminen pöydässä tulee rooleineen.
-
-**Voinko käyttää ensi kerralla toista tekoälyä?** Kyllä. Kampanja elää tiedostoissaan: avaa se toisessa isännässä ja kirjoita *jatka*.
-
-**Entä jos suljen selaimen?** Mitään ei menetetä. Avaa linkki uudelleen, kun chat on auki; sivu palaa siihen, missä peli on.
-
-**Voinko pelata omistamallani D&D-sisällöllä?** Kyllä. Pelinjohtaja voi käyttää kirjojasi, omaa tietoaan ja verkkoa. Se, mitä RPG Engine toimittaa, rajoittuu ilmaiseen sisältöön; se, mitä pelisi käyttää, on sinun päätettävissäsi.
+**Voinko käyttää ensi kerralla toista tekoälyä?** Kyllä: avaa kampanja toisessa agentissa ja kirjoita *jatka*.
 
 ### Ongelmat
 
-**Kojelauta ei aukea.** Pyydä pelinjohtajalta linkki: `[Mikä on kojelaudan linkki?]`. Sivu toimii vain, kun chat pelinjohtajan kanssa on auki kyseisessä kampanjassa, ja vasta pelinjohtajan ensimmäisen vastauksen jälkeen siinä chatissa. Kun chat on suljettu, selain ei tavoita sivua; auki jäänyt sivu näyttää tekstin *Not connected*.
+**Kojelauta ei aukea.** Kysy pelinjohtajalta: `[What's the dashboard link?]`. Se toimii vain, kun kyseisessä kampanjassa on keskustelu auki, pelinjohtajan ensimmäisen vastauksen jälkeen.
 
-**Pelinjohtaja ei tunnu tuntevan peliä tai keksii työkaluja.** Tekoälyisäntäsi ei ladannut RPG Engineä.
+**Pelinjohtaja ei tunnu tuntevan peliä.** Agenttisi ei ladannut RPG Engineä. Tarkista, että käynnistit sen kampanjakansiossa ja luotit kansioon. Kirjoita Claude Codessa `/mcp` ja yhdistä `rpg` uudelleen. Codexissa komennon `codex mcp list` kampanjakansiossa on näytettävä `rpg`. Jos `rpg --version` ei löydy, asenna RPG Engine uudelleen ([2.2](#22-install)).
 
-- Tarkista ensin, että käynnistit isännän **kampanjakansiossa** ja että sanoit luottavasi siihen.
-- **Claude Code**: kirjoita `/mcp`. Jos `rpg` on siellä mutta epäonnistui, valitse se ja sitten **Reconnect**. Jos se puuttuu, sulje Claude Code, kirjoita kampanjakansiossa `claude mcp reset-project-choices` ja käynnistä se uudelleen.
-- **Codex**: kirjoita päätteessä kampanjakansiossa `codex mcp list`. Jos `rpg` puuttuu, Codex ei luota kansioon: käynnistä se siellä uudelleen ja vastaa kyllä, kun se kysyy.
-- Molemmissa: jos `rpg --version` päätteessä sanoo, ettei komentoa löydy, asenna RPG Engine uudelleen ([2.2](#22-install)) ja avaa uusi pääte.
+**Päivittäminen.** Suorita `npm install -g rpg-engine` uudelleen ja avaa sitten uusi keskustelu: käynnissä oleva pelinjohtaja pitää sen version, jolla se käynnistyi.
 
-**Päivityksen jälkeen mikään ei muuttunut.** Käynnissä oleva pelinjohtaja pitää version, jolla se käynnistyi. Avaa uusi chat tai yhdistä Claude Codessa palvelin uudelleen (`/mcp`, sitten `rpg`, sitten **Reconnect**).
+**Pelinjohtaja muistaa jotain, minkä peruin.** Avaa uusi keskustelu ja paina Tallennuksissa **Avasin uuden keskustelun**.
 
-**Pelinjohtaja muistaa jotain, minkä peruin.** Palasit tallennukseen mutta jatkoit pelaamista samassa chatissa. Avaa uusi chat ja paina Tallennukset-osiossa **Avasin uuden keskustelun**.
+**Kuvia ei ilmesty.** Asetukset > Kuvat kertoo, voiko tämä tietokone tehdä niitä, ja miten.
 
-**Pelinjohtaja kysyy asetuskysymyksiä, joihin jo vastasin sivulla.** Kerro sille: `[Valitsin ne kojelaudalla.]`
+**Asennus epäonnistuu tai `rpg` ei käynnisty.** Komennon `node --version` on kerrottava 22 tai uudempi. Windowsissa pidä RPG Engine ja kampanjasi poissa poluista, joissa on `&`.
 
-**Kuvia ei ilmesty.** Avaa Asetukset > Kuvat: se kertoo, voiko tämä tietokone tehdä niitä, ja jos ei, vaiheet, kunkin komennon vieressä painike sen kopioimiseksi.
-
-**Sivu on englanniksi, vaikka valitsin toisen kielen.** Sitä käännetään taustalla; Asetukset kertoo, miten se edistyy. Jos tällä tietokoneella ei ole Codexia tai Claude Codea, se pysyy englanniksi.
-
-**Pelinjohtaja sanoo, että kampanjassa on ongelmia.** Se korjaa ne itse. Jos muokkasit tiedostoja käsin, se voi kysyä, mitä tarkoitit.
-
-**Windows: `npm` epäonnistuu kansiossani.** Älä pidä kampanjaa tai RPG Engineä polussa, jossa on `&`.
-
-**Asennus epäonnistuu tai `rpg` ei käynnisty.** Tarkista Node.js-versiosi komennolla `node --version`: sen on oltava 22 tai uudempi. Jos se on vanhempi, asenna LTS-versio osoitteesta [nodejs.org](https://nodejs.org) ja asenna sitten RPG Engine uudelleen.
-
-**Kojelaudan linkki muuttui.** Toinen ohjelma käytti kampanjan tavallista osoitetta, tai Windows oli varannut sen. RPG Engine otti toisen; pelinjohtaja antaa uuden linkin. Mikään muu ei muutu.
+**Kojelaudan linkki vaihtui.** Toinen ohjelma otti tavallisen osoitteen. Pelinjohtaja antaa sinulle uuden linkin.

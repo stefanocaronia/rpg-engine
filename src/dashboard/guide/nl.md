@@ -1,57 +1,35 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 62159f4b 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
-**RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**.
-
-Je praat met de spelleider in een **chat**: de spelleider vertelt het verhaal, speelt alle anderen en beslist wat er gebeurt.
-
-RPG Engine werkt achter de schermen: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de score bij**.
-
-Naast de chat houd je een pagina open in je browser, het **dashboard**, met het karakterblad van je personage, de dobbelstenen, de kaarten en je dagboek.
+**RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
 
 Deze handleiding is voor spelers: je hoeft niet te kunnen programmeren.
 
-## Snel starten <!-- icon: send -->
+## Snelstart <!-- icon: send -->
 
-1. Installeer **Node.js** van [nodejs.org](https://nodejs.org) (de LTS-versie).
-2. Installeer **Claude Code** of **Codex**, de AI-app waarin de spelleider draait, en log in ([2.4](#24-connect-your-ai)).
-3. Open een terminal en installeer RPG Engine: `npm install -g rpg-engine`.
-4. Maak in de terminal een campagne aan: `rpg init "The Salt Isles"`.
-5. Open Claude Code of Codex in de nieuwe map en schrijf *Hoi! Laten we beginnen.* De spelleider antwoordt met de link naar je dashboard. Open die naast de chat.
-
-De rest van deze handleiding legt elke stap uit en daarna hoe je speelt.
+1. Installeer **Node.js** vanaf [nodejs.org](https://nodejs.org) (de LTS-versie).
+2. Installeer een **AI-agent**, het programma waarin de spelleider draait, en log in: bijvoorbeeld Claude Code of Codex ([2.4](#24-connect-your-ai)).
+3. Installeer RPG Engine in een terminal: `npm install -g rpg-engine`.
+4. Maak een campagne: `rpg init "The Salt Isles"`.
+5. Ga naar de nieuwe map, `cd "The Salt Isles"`, en start daar je agent: `claude` voor Claude Code, `codex` voor Codex. Zeg ja als er wordt gevraagd of je de map vertrouwt ([2.4](#24-connect-your-ai)) en schrijf dan *Hoi! Laten we beginnen.* De spelleider antwoordt met de link naar je dashboard.
 
 ## 1. Wat RPG Engine is <!-- icon: about -->
 
-### Wie doet wat
-
 | Wie | Wat doet die |
 |---|---|
-| **Jij** | Je speelt je personage. Je zegt wat het doet, zegt en probeert. |
-| **De spelleider** (de AI) | Vertelt het verhaal, speelt alle andere personages, beslist wat er gebeurt en vraagt om worpen. |
-| **RPG Engine** | Onthoudt alles in bestanden, gooit de dobbelstenen, telt hitpoints, geld, tijd en afstanden en houdt geheimen verborgen tot jij ze ontdekt. |
+| **Jij** | Je speelt je personage: wat het doet, zegt en probeert. |
+| **De spelleider** (de AI) | Vertelt het verhaal, speelt alle anderen, beslist wat er gebeurt en vraagt om worpen. |
+| **RPG Engine** | Bewaart de wereld in bestanden, gooit de dobbelstenen, telt levenspunten, geld, tijd en afstanden en houdt geheimen verborgen tot je ze ontdekt. |
 
-Een AI is goed in verhalen vertellen en slecht in onthouden. Aan zijn lot overgelaten vergeet die wie jou geld schuldig is, hoeveel pijlen je hebt, of dat de brug twee sessies geleden is afgebrand. RPG Engine houdt dat allemaal bij. Zo blijft de wereld van de ene avond op de andere hetzelfde, zelfs in een nieuwe chat, zelfs met een andere AI.
+De wereld blijft van de ene avond op de andere hetzelfde, ook in een nieuwe chat, ook met een andere AI:
 
-### Hoe het voelt
+- **Wat gezegd is, blijft waar.** Een dode schurk blijft dood.
+- **De dobbelstenen zijn echt.** De spelleider kan ze niet buigen, behalve bij de makkelijkste moeilijkheid, als je die kiest.
+- **Geheimen blijven geheim.** De spelleider vertelt je nooit wat je personage niet weet.
+- **De wereld beweegt mee.** Dreigingen rukken op terwijl je rust of reist, en je ziet er de tekenen van.
+- **Een campagne is een map** op je computer: stop wanneer je wilt en pak het later weer op.
 
-Je schrijft in de chat, zoals je aan tafel zou praten:
-
-> Ik duw de deur langzaam open en kijk naar binnen.
-
-De spelleider antwoordt met wat je ziet en stopt als het jouw beurt is om te kiezen. Is iets onzeker en belangrijk, dan zegt de spelleider wat er op het spel staat en vraagt om een worp. De knoppen voor die worp verschijnen op je dashboard. Je klikt, de dobbelstenen vallen op de pagina en de spelleider vertelt wat er gebeurt.
-
-### Wat het bijzonder maakt
-
-- **De wereld is blijvend.** Wat gezegd is, blijft waar. Een dode schurk blijft dood.
-- **De dobbelstenen zijn echt.** De spelleider kan ze niet buigen (behalve bij de makkelijkste moeilijkheid, als je die kiest).
-- **Geheimen blijven geheim.** De spelleider vertelt nooit wat jouw personage niet weet, ook niet als je blijft aandringen.
-- **De wereld beweegt zonder jou.** Dreigingen rukken op terwijl je rust of reist, en je ziet de sporen ervan.
-- **Veel avonden, één verhaal.** Een campagne is een map op je computer. Je kunt stoppen wanneer je wilt en later verdergaan.
-
-### Het spel dat het nu speelt
-
-RPG Engine is gemaakt voor elk tafelrollenspel. Nu levert het één spelsysteem mee: **vijfde editie** (uit het gratis System Reference Document 5.1). Andere spellen volgen; zie [Spelsystemen](#5-game-systems-and-house-rules) en [Komt later](#9-coming-later).
+Op dit moment speelt RPG Engine één spelsysteem, de **vijfde editie**, uit het vrije System Reference Document 5.1. Andere volgen ([Komt later](#9-coming-later)).
 
 ---
 
@@ -59,152 +37,76 @@ RPG Engine is gemaakt voor elk tafelrollenspel. Nu levert het één spelsysteem 
 
 ### 2.1 Wat je nodig hebt
 
-- Een computer met Windows, macOS of Linux.
-- **Node.js 22** of nieuwer. Haal het op bij [nodejs.org](https://nodejs.org): de "LTS"-versie is prima. Het wordt geleverd met `npm`, waarmee je RPG Engine installeert.
-- Een **terminal**, het venster waarin je opdrachten typt: op Windows de Terminal-app of PowerShell, op macOS Terminal. Je gebruikt de terminal om RPG Engine te installeren, om elke campagne aan te maken en om Claude Code of Codex te starten.
-- Een **AI-host**, de app waarin de spelleider draait: **Claude Code** of **Codex**, met bijbehorend abonnement en bijbehorende login. Zie [2.4](#24-connect-your-ai).
-- Het **grootste model** dat je host aanbiedt. Een klein model laat zich beetnemen: in onze tests vertelde het geheimen aan een speler die beweerde de echte spelleider te zijn.
-- Een webbrowser voor het dashboard.
-
-De login die je voor je host gebruikt, doet nog meer: RPG Engine gebruikt die, op je eigen computer, om afbeeldingen te tekenen van plaatsen, missies, de mensen die je ontmoet en je personage. Ook vertaalt RPG Engine ermee het dashboard naar talen die het niet meelevert. Zie [Afbeeldingen](#311-pictures) en [Talen](#72-languages).
-
-**Een terminal openen in een map.** Veel stappen zeggen "in de campagnemap". Klik in Windows met de rechtermuisknop op de map in Verkenner en kies **Openen in Terminal**. Klik in macOS met de rechtermuisknop op de map in Finder en kies **Services > Nieuwe Terminal bij map**. Of typ in een terminal die al open is `cd` en het pad van de map, zoals `cd "C:\Users\me\Games\The Salt Isles"`.
+- Een computer met Windows, macOS of Linux en een webbrowser.
+- **Node.js 22** of nieuwer, van [nodejs.org](https://nodejs.org). Daarbij zit `npm`, waarmee je RPG Engine installeert.
+- Een **terminal**: op Windows Terminal of PowerShell, op macOS Terminal. Om er een in een map te openen, klik je met de rechtermuisknop op de map en kies je **Openen in Terminal** (Windows) of **Services > Nieuwe Terminal bij map** (macOS).
+- Een **AI-agent** voor de spelleider ([2.4](#24-connect-your-ai)), met het **grootste model** dat die biedt: een klein model laat zich makkelijker verleiden om geheimen te verklappen of regels te buigen.
 
 ### 2.2 Installeren
-
-Open een terminal en typ:
 
 ```text
 npm install -g rpg-engine
 ```
 
-Hiermee krijg je de opdracht `rpg`. Zo controleer je of het gelukt is:
+Met `rpg --version` controleer je of het gelukt is. Je gebruikt `rpg` één keer per campagne, om die te maken; daarna start je agent RPG Engine zelf.
 
-```text
-rpg --version
-```
+### 2.3 Een campagne maken
 
-Je gebruikt `rpg` één keer per campagne, om die aan te maken. Daarna praat je alleen nog met de spelleider: je AI-host start RPG Engine zelf, met dezelfde opdracht `rpg`.
-
-### 2.3 Een campagne aanmaken
-
-Een campagne is een map. Open een terminal in de map waar je je spellen bewaart en typ:
+Open een terminal in de map waar je je spellen bewaart ([2.1](#21-what-you-need) legt uit hoe):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Dit maakt de map `The Salt Isles` met een nieuwe campagne erin, en vertelt je wat je daarna doet:
+Dit maakt de map `The Salt Isles` met daarin een nieuwe campagne; ga erheen met `cd "The Salt Isles"`. Onthoud waar die staat: je keert er elke keer naar terug als je speelt. Al het andere kies je later, in de chat of op het dashboard; `rpg init --help` toont de opties om nu al iets te kiezen, zoals `--language it` of `--difficulty hard`.
 
-```text
-Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
-To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.
-
-For the master: Still to agree with the player: ...
-```
-
-De regels na *For the master* zijn voor de spelleider, die ze in de chat leest: jij hoeft er niets mee. Onthoud waar de map staat: je komt er elke keer naar terug als je speelt. Zonder mapnaam maakt `rpg init` van de map waarin je zit de campagne.
-
-`init` maakt alles wat de campagne nodig heeft: de instellingen, de mappen voor de wereld en de kleine bestanden die je AI-host vertellen RPG Engine te gebruiken en buiten de campagne geen eigen geheugen bij te houden.
-
-Je hoeft nu niets te kiezen. De spelleider vraagt de rest in de chat, of je kiest het op het dashboard. Weet je al sommige keuzes? Dan geef je ze hier mee:
-
-```text
-rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
-```
-
-Dit maakt de map `salt-isles` met de campagne *The Salt Isles* erin: een mapnaam zonder spaties, en de naam van de campagne zoals jij wilt.
-
-| Optie | Wat het instelt | Waarden |
-|---|---|---|
-| `--name` | De naam van de campagne | alles; de naam van de map als je het weglaat |
-| `--language` | De taal van het spel | een code, zoals `en`, `it`, `fr` |
-| `--system` | Het spelsysteem | `5e`, nu het enige |
-| `--difficulty` | Hoe hard de wereld speelt | `story`, `easy`, `normal`, `hard`, `brutal` |
-| `--lethality` | Wat neergaan in een gevecht betekent | `narrative`, `epic`, `dice` |
-
-`rpg init --help` laat ze ook zien. Een campagne kan niet in de map van een andere campagne staan.
-
-Je kunt de spelleider niet vragen een campagne aan te maken: vóór `init` staat er in de map niets dat je AI-host vertelt waar RPG Engine is.
+De spelleider kan geen campagne voor je maken: vóór `init` vertelt niets je agent waar RPG Engine is.
 
 ### 2.4 Je AI verbinden
 
-RPG Engine werkt met **Claude Code** en **Codex**. Andere AI-apps die MCP-tools gebruiken werken misschien ook, maar dat garanderen we niet.
+De spelleider draait in een **AI-agent**: een AI-app, in de terminal of op het bureaublad, die met de bestanden op je computer kan werken, zoals Claude Code of Codex. Een gewone chat zoals claude.ai of ChatGPT, of een app op je telefoon, is niet genoeg: de spelleider moet bij de bestanden van de campagne op je computer kunnen. Elke agent heeft een eigen abonnement en login nodig: Claude Code een betaald Claude-abonnement, Codex een ChatGPT-login. Je installeert de agent één keer, vanaf de eigen pagina: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-**Je host installeren.** Claude Code en Codex draaien in de terminal: het zijn niet de Claude- of ChatGPT-app op je telefoon. Elk heeft een eigen abonnement en login nodig: Claude Code een betaald Claude-abonnement, Codex een ChatGPT-login. Volg hun eigen pagina's om ze te installeren en in te loggen: [Claude Code](https://code.claude.com/docs/en/setup) en [Codex](https://learn.chatgpt.com/docs/codex/cli). Dit doe je één keer, voor al je campagnes.
+- **Claude Code**: schrijf in de campagnemap `claude`. Als er wordt gevraagd of je de map vertrouwt, kies dan **Yes, I trust this folder**; let op, het antwoord dat al is geselecteerd is *No, exit*.
+- **Codex**: schrijf in de campagnemap `codex` en zeg ja als er wordt gevraagd of je de map vertrouwt. Controleer in de desktop-app bij de instellingen dat het geheugen uit staat voor de chats van het spel.
+- **Een andere agent**: start die in de campagnemap en geef hem de MCP-server `rpg mcp`. RPG Engine is een standaard MCP-server: elke agent die MCP ondersteunt kan de spelleider zijn, ook lokale.
 
-**Claude Code.** Open een terminal in de campagnemap en typ `claude`. De eerste keer vraagt Claude Code of je de map vertrouwt, en meldt dat de map de tools van het spel toestaat (`mcp__rpg`): kies **Yes, I trust this folder**. Let op: het antwoord dat al geselecteerd staat is *No, exit*, dus als je meteen op Enter drukt, sluit Claude Code af. Meer hoef je niet te doen: de campagne heeft Claude Code al verteld RPG Engine en de bijbehorende tools te gebruiken en het eigen geheugen uit te laten.
-
-**Codex.** Open een terminal in de campagnemap en typ `codex`. Als Codex vraagt of je de map vertrouwt, zeg je ja: de eigen instellingen van de campagne vertellen Codex waar RPG Engine is, staan de tools toe en zetten het geheugen uit. Codex leest ze alleen in een map die je vertrouwt. Controleer in de desktop-app dat de geheugens uit staan voor de chats van het spel.
-
-**Waarom het geheugen ertoe doet.** De campagne leeft in haar bestanden. Als de host ook zelf dingen onthoudt, is teruggaan naar een opgeslagen spel niet echt teruggaan: de spelleider zou nog weten wat ongedaan is gemaakt.
+Wij spelen en testen met **Claude Code**; **Codex** is gekoppeld en gecontroleerd, maar er is nog geen hele campagne mee gespeeld; `init` richt ook **Gemini CLI** in. De campagne zet het eigen geheugen van de agent uit: het spel leeft in de bestanden, zodat teruggaan naar een opgeslagen spel echt teruggaat.
 
 ### 2.5 De eerste chat
 
-Typ iets, bijvoorbeeld:
+Schrijf iets, bijvoorbeeld *Hoi! Laten we beginnen.* In zijn eerste antwoord van elke chat geeft de spelleider je de **link naar je dashboard**, zoiets als `http://127.0.0.1:4750`: open die en houd de pagina naast de chat.
 
-> Hoi! Laten we beginnen.
+Tussen de berichten van de spelleider toont je agent de hulpmiddelen die hij gebruikt: open de details daarvan niet (in Claude Code, ctrl+o), ze kunnen geheimen tonen.
 
-De spelleider leest hoe het spel ervoor staat en antwoordt. In het eerste antwoord van elke chat geeft de spelleider je de **link naar je dashboard** (iets als `http://127.0.0.1:4750`). Open die in je browser en houd het dashboard tijdens het hele spel naast de chat. Elke campagne houdt dezelfde link van de ene chat tot de volgende, tenzij een ander programma die heeft ingenomen: dan geeft de spelleider je de nieuwe.
-
-Tussen de berichten van de spelleider laat je host in korte regels de tools zien die de spelleider gebruikt. Open de details daarvan niet (in Claude Code: ctrl+o): ze kunnen laten zien wat de spelleider schrijft, geheimen inbegrepen.
-
-Een nieuwe campagne doorloopt drie fasen, zoals een spel met een menselijke spelleider. Het dashboard toont ze bovenaan als *1 Instellingen · 2 Sessie nul · 3 Spelen*:
-
-1. **Instellingen**: je kiest hoe je wilt spelen. Buiten het verhaal.
-2. **Sessie nul**: je maakt je personage, al spelend.
-3. **Spelen**: het verhaal.
+Een nieuwe campagne doorloopt drie stappen, bovenaan het dashboard te zien: **1 Instellingen** (hoe je wilt spelen), **2 Sessie nul** (je maakt je personage, al spelend), **3 Spelen**.
 
 ### 2.6 Instellingen: kiezen hoe je speelt
 
-De spelleider vraagt alleen wat er nog ontbreekt, een paar vragen tegelijk. Schrijf je "jij beslist", dan kiest de spelleider en vertelt wat er is gekozen. Met het dashboard open toont de eerste stap, **Instellingen**, dezelfde vragen als kaarten: één vraag tegelijk, elke waarde met wat die betekent, de gebruikelijke gemarkeerd als **Aanbevolen**. Kies daar, dan vraagt de spelleider het niet nog eens in de chat. Met **Overslaan** bewaar je een vraag voor later. De chat regelt wat alleen woorden kunnen: het uitgangspunt van een nieuwe wereld, de taal en de afbeeldingen, waar de spelleider alleen naar vraagt als je computer ze kan maken. Daarom stelt de pagina minder vragen dan de tabel hieronder opsomt.
+De spelleider vraagt alleen wat nog ontbreekt, een paar vragen per keer; de stap **Instellingen** op het dashboard toont dezelfde vragen als kaarten. Schrijf "jij beslist" en de spelleider kiest. Alles kan later veranderen, in de chat of bij **Instellingen**.
 
-Je hoeft de tabel niet te studeren: hij is er om iets in op te zoeken. Je kunt elk van deze instellingen later nog wijzigen, in de chat of in de **Instellingen** van het dashboard. Een wijziging geldt vanaf het volgende antwoord van de spelleider.
+| Instelling | Wat het bepaalt | Waarden |
+|---|---|---|
+| **Mentor** | Hoeveel de spelleider je over de regels leert | uit, hints, tutorial |
+| **Moeilijkheid** | Hoe zwaar de wereld speelt | verhaal, makkelijk, normaal, moeilijk, meedogenloos |
+| **Dodelijkheid** | Wat neergaan in een gevecht betekent | verhalend (nooit doodgaan), episch (alleen als het ertoe doet), dobbelstenen |
+| **Opgeslagen spellen** | Wanneer je terug mag | permadeath, checkpoint, vrij ([3.8](#38-saves-and-going-back)) |
+| **Strengheid** | Hoe strak eten, licht en reizen de regels volgen | soepel, regels, simulatie |
+| **Dobbelstenen** | Wie je dobbelstenen gooit | digitaal, fysiek |
+| **Eenheden** | Afstanden en gewichten | metrisch, imperiaal |
+| **Metgezellen** | Wie met je meereist | geen, met jou gemaakt, door de spelleider gemaakt, ontmoet tijdens het spel |
+| **Afbeeldingen** | Afbeeldingen van plaatsen, missies en wie je ontmoet | geen, op verzoek, nieuwe plaatsen, missies en wie je ontmoet ([3.11](#311-pictures)) |
+| **Grenzen** en **Sluiers** | Wat nooit voorkomt, en wat alleen buiten beeld gebeurt | lijsten |
+| **Taal** | De taal van het spel en van het dashboard | elke taal |
 
-| Instelling | Wat het bepaalt | Waarden | Aanbevolen |
-|---|---|---|---|
-| **Mentor** (gevraagd als "Hoe goed ken je dit spel?") | Hoeveel de spelleider je de regels leert, buiten het verhaal | **uit** (alleen het verhaal; vraag tussen haakjes wanneer je wilt), **hints** (een korte tip vóór keuzes die ertoe doen en als een regel voorbijglipt), **tutorial** (elke regel de eerste keer uitgelegd, de hele som van elke worp, een korte nabespreking na gevechten) | uit je antwoord: nooit gespeeld → tutorial, een beetje → hints, ik ken het → uit |
-| **Moeilijkheid** | Hoe hard de wereld speelt: gevechten, tactieken van tegenstanders, aanwijzingen, schatten, hoe snel bedreigingen oprukken | verhaal, makkelijk, normaal, moeilijk, brutaal | |
-| **Dodelijkheid** | Wat neergaan in een gevecht betekent | **verhalend** (je personage sterft nooit), **episch** (sterft alleen als het ertoe doet voor het verhaal), **dobbelstenen** (de dobbelstenen beslissen) | volgt de moeilijkheid: verhaal → verhalend, makkelijk → episch, normaal en hoger → dobbelstenen |
-| **Opgeslagen spellen** | Wanneer je terug mag | **permadood** (nooit; alleen de campagne opnieuw beginnen), **checkpoint** (terug naar het laatste einde van een scène, alleen als je personage sterft), **vrij** (terug naar elk opgeslagen spel, en opslaan wanneer je erom vraagt) | checkpoint |
-| **Strengheid** | Hoe nauw eten, licht, vermoeidheid, draaggewicht, spreukcomponenten en reizen de regels volgen | **soepel** (de spelleider gaat er luchtig overheen), **regels** (zoals geschreven: fakkels doven, rantsoenen raken op), **simulatie** (voorbij de regels: slijtage, bederf, weer) | soepel |
-| **Dobbelstenen** | Wie de dobbelstenen van je personage gooit | **digitaal** (RPG Engine gooit ze, op de pagina), **fysiek** (je gooit zelf en zegt wat je hebt gegooid) | |
-| **Eenheden** | Afstanden en gewichten in het verhaal | metrisch, imperiaal | |
-| **Metgezellen** | Wie met je meereist | geen, met jou gemaakt in sessie nul, door de spelleider gemaakt, ontmoet tijdens het spel | |
-| **Afbeeldingen** | Afbeeldingen van plaatsen, missies en de mensen die je ontmoet, en het portret van je personage als je erom vraagt | geen, op verzoek, nieuwe plaatsen, missies en de mensen die je ontmoet | eenmalig gevraagd, alleen als je computer ze kan maken |
-| **Grenzen** | Wat nooit in het spel voorkomt | een lijst, of geen | |
-| **Sluiers** | Wat mag gebeuren, maar alleen buiten beeld | een lijst, of geen | |
-| **Taal** | De taal van het spel en het dashboard | elke | afgeleid van hoe je schrijft, en bevestigd |
+De vijfde editie voegt **voortgang** toe: ervaringspunten of mijlpalen.
 
-Het spelsysteem kan eigen instellingen toevoegen. De vijfde editie voegt **vooruitgang** toe: hoe je personage een niveau stijgt, met **ervaringspunten** of bij **mijlpalen** van het verhaal.
+Zonder een uitgeschreven wereld vraagt de spelleider ook om een **uitgangspunt** (genre, toon, een paar elementen, in je eigen woorden) en om de **voorbereiding**: de wereld al doende bouwen, terwijl je speelt, of alles aan het begin.
 
-**Wat de moeilijkheid in het spel betekent.** Verhaal: zwakke, naïeve tegenstanders, duidelijke aanwijzingen, van alles genoeg; de spelleider mag de eigen worpen verzachten. Makkelijk: eenvoudige tegenstanders, ruime middelen. Normaal: verstandige tegenstanders, drie aanwijzingen voor elke conclusie, standaardprijzen en standaardschatten. Moeilijk: slimme tegenstanders, subtiele aanwijzingen, schaarse middelen, bedreigingen die snel oprukken. Brutaal: tegenstanders die een hinderlaag leggen, zich terugtrekken en gevallenen afmaken, zeer schaarse middelen, de strengste rustperiodes. Gevechten zijn altijd afgestemd op je groep zoals die nu is.
-
-**Zonder een geschreven wereld** vraagt de opzet nog twee dingen:
-
-- **Uitgangspunt**: het genre, de toon en een paar elementen van de wereld, in eigen woorden. Bijvoorbeeld: *"Low fantasy, grimmig maar met hoop. Een rivierstadje, een spookachtige doorwaadbare plaats, een sekte in de heuvels."*
-- **Voorbereiding**: **onderweg** (de spelleider bouwt elk deel van de wereld vlak voordat je het nodig hebt; aanbevolen) of **alles vooraf**.
-
-De spelleider stelt daarna een naam voor de campagne voor. Als er niets meer ontbreekt en je zegt dat je klaar bent, gaat het spel door naar sessie nul.
-
-**De stijl van de spelleider** wordt nooit gevraagd: verander hem wanneer je wilt, in de chat of in de **Instellingen**, waar hij een eigen groep heeft. De toon blijft in het uitgangspunt; de stijl is hoe het verteld wordt.
-
-- **Vertelstijl**: **eenvoudig** (korte zinnen, steeds één concreet detail; de gebruikelijke), **literair** (meer ruimte op de hoogtepunten), **pulp** (gespannen, levendig, kort, elk bericht eindigt met een dreiging of een haakje) of **droog** (een verteller met een halve glimlach om de wereld, nooit om je personage).
-- **Verhalen**, voor wat de spelleider zelf verzint, nooit een geschreven avontuur: **situaties** (facties, bedreigingen en plaatsen met geheimen, geen hoofdplot; de gebruikelijke), **bogen** (een centrale dreiging die stapsgewijs oprukt), **afleveringen** (een verhaal dat elke sessie wordt afgesloten) of **mysterie** (elk verhaal een onderzoek, de waarheid vooraf bepaald).
-- **Schrijf als**: een auteur wiens manier van vertellen de spelleider overneemt, in plaats van de vertelstijl: het ritme en de details die de auteur kiest, nooit de zinnen, namen of plaatsen, en nooit meer dan je personage ziet.
-- **In eigen woorden**: al het andere, in een paar woorden, zoals *"derde persoon, verleden tijd"*. De spelleider vertelt het verhaal in de tweede persoon, tegenwoordige tijd, tenzij je anders vraagt.
+**De stijl van de spelleider** wordt nooit gevraagd, maar je kunt hem veranderen in de chat of bij **Instellingen**: het **proza** (sober, literair, pulp, droog), de **verhalen** die de spelleider verzint (situaties, bogen, afleveringen, mysterie), een auteur om **als te schrijven**, of iets anders **in je eigen woorden**.
 
 ### 2.7 Sessie nul: je personage
 
-Sessie nul is spelen: je maakt je personage samen met de spelleider, zoals je dat aan tafel zou doen.
-
-- **Elke keuze is aan jou**, tenzij je de spelleider vraagt die te maken. Je kunt komen met een volledig idee ("een halfelfen-cleric die de tempel verliet"), een vaag idee ("iemand die geneest, maar niet aardig is") of niets ("verras me, dan pas ik dingen aan").
-- **Vaardigheidswaarden.** De spelleider vertelt je de methode en het vangnet voordat er een dobbelsteen wordt gegooid. In de vijfde editie: de standaardreeks, puntenkoop of 4d6 waarbij je de laagste weglaat. De methode waarover je het eens wordt, blijft staan bij de afspraken van de tafel.
-- **Je verhaal** is nooit verplicht. Geef je er een, dan schrijft de spelleider het in jouw woorden, leest het je één keer terug en verbindt de mensen en plaatsen ervan met de wereld. Je kunt het ook op het dashboard schrijven (zie [Groep](#party)).
-- **Persoonlijkheid** (vijfde editie): een karaktertrek, een ideaal, een band en een zwakte, uit de tabellen van je achtergrond of van jezelf.
-- **Een afbeelding.** Als je personage klaar is, vraagt de spelleider je om een afbeelding ervan: een bestand op je computer, of een portret dat op je computer wordt gemaakt naar jouw beschrijving (zie [de afbeelding van je personage](#37-your-characters-story-and-picture)).
-
-De getallen op het karakterblad worden door RPG Engine uitgerekend uit je keuzes: je hoeft zelf nooit te rekenen. Als de personages klaar zijn en je bevestigt, begint het verhaal.
+Je maakt je personage samen met de spelleider, zoals aan een tafel. Elke keuze is aan jou, tenzij je de spelleider vraagt die te maken: kom met een volledig idee, een vaag idee of met niets. De spelleider vertelt je hoe de waarden van de vaardigheden worden bepaald voordat er een dobbelsteen wordt gegooid. Een achtergrondverhaal is nooit verplicht; als je er een geeft, schrijft de spelleider het in jouw woorden. Daarna vraagt de spelleider om een afbeelding van je personage ([3.7](#37-your-characters-story-and-picture)). RPG Engine rekent het karakterblad uit: je hoeft nooit zelf te rekenen.
 
 ---
 
@@ -212,260 +114,99 @@ De getallen op het karakterblad worden door RPG Engine uitgerekend uit je keuzes
 
 ### 3.1 Praten met de spelleider
 
-Schrijf wat je personage doet of zegt, in je eigen woorden. Kort is prima.
+Schrijf in je eigen woorden wat je personage doet of zegt:
 
 > Ik vraag de herbergier wie er vanavond nog meer langskwam.
->
-> "We komen niet voor problemen," zeg ik, mijn hand weg van mijn zwaard.
->
-> Ik klim op het dak en wacht.
 
-**Buiten het verhaal** schrijf je tussen blokhaken:
+Wil je buiten het verhaal om iets zeggen, schrijf dan tussen vierkante haken: *[Hoe werkt grijpen?]* De spelleider antwoordt ook tussen haken.
 
-> [Hoe werkt grijpen?]
->
-> [Kan ik mijn reactie deze ronde nog gebruiken?]
->
-> [Laten we er voor vanavond mee stoppen.]
-
-De spelleider antwoordt ook tussen haakjes en gaat dan terug naar het verhaal.
-
-**Jij zegt wat je probeert; de spelleider zegt wat er gebeurt.** Iets wat de logica van de wereld of reeds vastgelegde feiten breekt, gebeurt niet: de spelleider zegt dat binnen het verhaal en biedt aan wat wel kan.
-
-**De spelleider beslist nooit voor je personage.** De spelleider laat je niet spreken, voelen of kiezen. Bij twijfel vraagt de spelleider het.
-
-**De spelleider praat nooit over de engine.** Vraag of alles wordt bijgehouden en je krijgt een antwoord zoals een spelleider het zou geven: "Ik houd alles bij: we pakken het de volgende keer hier weer op."
-
-**Je kunt de spelleider vragen hoe je het dashboard gebruikt.** De spelleider kent de pagina: "Waar zie ik mijn spreuken?", "Hoe gooi ik met de hand?"
+Jij zegt wat je probeert; de spelleider zegt wat er gebeurt. De spelleider beslist nooit voor je personage en praat nooit over de engine. Je kunt de spelleider vragen hoe je het dashboard gebruikt.
 
 ### 3.2 Worpen
 
-**Wanneer er een worp is.** De spelleider vraagt alleen om een worp als de uitkomst onzeker is en ertoe doet. Anders zegt de spelleider ja, of "ja, maar". Vóór je worp zegt de spelleider wat er op het spel staat en welke proeven passen, en stopt dan. Jij gooit, of bedenkt je:
+De spelleider vraagt alleen om een worp als de uitkomst onzeker is en ertoe doet, en zegt eerst wat er op het spel staat. Daarna:
 
-> **Spelleider:** De richel is smal en nat. Als je uitglijdt, volgt een lange val in de rivier. Een proef op Behendigheid (Acrobatiek), of je gaat terug en zoekt de trap.
->
-> **Jij:** Ik probeer het.
+- **Op het dashboard** toont een banner een knop voor elke proef, zoals *Acrobatiek +4 · met voordeel*. Klik erop: de dobbelstenen vallen op de pagina en de spelleider hoort de uitkomst. Je kunt ook op de regel van je karakterblad klikken die oplicht, de dobbelstenen uit de dobbelbak gooien, of iets anders in de banner schrijven.
+- **Met de hand**, in de hoek van de banner of bij **Instellingen**: de banner zegt wat je moet gooien, en je gooit het vanaf je karakterblad of uit de dobbelbak.
+- **Fysieke dobbelstenen**, als de dobbelstenen-instelling op fysiek staat: je schrijft de ogen die je gooide, *[Ik gooide een 14.]*, en RPG Engine telt je modifiers erbij.
 
-**Gooien op het dashboard.** Als de spelleider erom vraagt, verschijnt bovenaan de pagina een banner met een knop voor elke proef, bijvoorbeeld *Acrobatiek +4 · met voordeel*. Klik erop: de dobbelstenen vallen op de pagina en de spelleider hoort de uitkomst. Je kunt ook:
+**Vrije worpen**: klik op een willekeurig getal op je karakterblad, of open de dobbelbak, om voor de lol te gooien. Ze tellen nooit mee en de spelleider ziet ze nooit.
 
-- op de bijbehorende regel van je karakterblad klikken, die goud oplicht;
-- de juiste dobbelstenen uit de dobbelbak gooien;
-- in plaats daarvan je eigen woorden in de banner schrijven, als je iets anders wilt doen.
-
-**Met de hand gooien.** Als je de dobbelstenen liever zelf kiest, zet je **Met de hand** aan in de hoek van de banner (of in **Instellingen**). De knop van de proef verdwijnt en de banner zegt wat je moet gooien, zoals een spelleider dat zou doen: *Gooi zelf Acrobatiek, op je karakterblad of met de dobbelstenen.* Klik op de regel van je karakterblad die oplicht, of gooi de juiste dobbelstenen uit de dobbelbak: RPG Engine gooit ze, telt je bonus erbij op en de spelleider hoort de uitkomst. Een proef die noch je karakterblad noch de dobbelbak kan doen, zoals schade waarbij je 1'en opnieuw gooit, houdt zijn knop. Met de hand blijft aan in deze browser tot je het uitzet.
-
-**Fysieke dobbelstenen voor het hele spel.** Als de instelling **Dobbelstenen** op physical staat, vraagt de spelleider je worpen in woorden en schrijf jij de ogen die je gooide:
-
-> [Ik gooide een 14.]
-
-RPG Engine telt je modifiers erbij op en weigert ogen die jouw dobbelstenen niet kunnen tonen.
-
-**Vrije worpen.** Klik op een willekeurig getal op je karakterblad, of open de dobbelbak, om voor de lol te gooien. Vrije worpen tellen nooit mee, worden nooit vastgelegd en de spelleider ziet ze nooit. Een vrije 20 wordt later nooit een echte.
-
-**De worpen van de spelleider.** De spelleider gooit voor vijanden en anderen ook met RPG Engine. De meeste worpen zie je in je worpenkolom. Als je een uitkomst niet mag zien, gooit de spelleider in het geheim. Je kunt altijd vragen:
-
-> [Was die worp echt?]
-
-Bij een getoonde worp geeft de spelleider de getallen en de reden. Bij een geheime worp geeft de spelleider een vingerafdruk die bewijst dat de worp is gedaan voordat je het vroeg.
-
-**Worpen in de chat** verschijnen tussen haakjes, direct na het moment dat ze beslissen: *[Overtuigen 14 + 3 = 17]*. Daarna vertelt het verhaal de afloop.
+**De worpen van de spelleider** staan in je worpenkolom, behalve de geheime. Je kunt altijd vragen *[Was die worp echt?]*: bij een geheime worp geeft de spelleider een vingerafdruk die bewijst dat de worp is gedaan vóór je het vroeg.
 
 ### 3.3 Scènes en gevechten
 
-De spelleider leidt het verhaal in **scènes**: een gevecht, een gesprek, verkenning, reizen, een rustperiode, een uitdaging (een achtervolging, een race, een puzzel). Je hoeft ze niet te beheren: zo houdt RPG Engine de hoofdstukken van het verhaal bij. Aan het einde van elke scène wordt het spel vanzelf opgeslagen en de scène komt in het verhaal van je dagboek.
+Het verhaal loopt in **scènes**: een gevecht, een gesprek, verkennen, reizen, een rustpauze. Aan het eind van elke scène slaat het spel zichzelf op, en de scène komt in je dagboek.
 
-**In een gevecht** vertelt de spelleider alle beurten die niet van jou zijn, de een na de ander, met elke worp, en **stopt waar jij kunt beslissen**: je beurt, een reactie, een keuze. Zeg op je beurt wat je doet:
+In een gevecht vertelt de spelleider elke beurt die niet van jou is, en stopt waar jij kunt beslissen. De sectie **Gevecht** toont de volgorde van de beurten, de levenspunten van je groep en hoe gewond de vijanden eruitzien, in woorden. Als je personage neergaat, verschijnen de redworpen tegen de dood groot op de pagina.
 
-> Ik werp Heilige Vlam op degene bij de deur.
+### 3.4 Tijd, reizen en de wereld die beweegt
 
-Het onderdeel **Gevecht** van het dashboard toont de volgorde van de beurten, wie er aan de beurt is, de levenspunten van je groep en hoe gewond de vijanden eruitzien (ongedeerd, gewond, bloedend, neergegaan: in woorden, nooit in getallen). Als je personage valt, verschijnen de reddingsworpen tegen de dood groot op de pagina.
+RPG Engine houdt de datum bij; tussen sessies verstrijkt geen tijd. Zeg dat je rust, *We nemen een lange rust*, en de rust herstelt wat hij moet herstellen. Zeg waarheen je gaat, *We nemen de weg naar het noorden, naar Rocca*, en RPG Engine rekent de route, de afstand en de dagen uit, en stopt als er onderweg iets gebeurt. Geld wordt geteld in de munten van het spel, wisselgeld inbegrepen.
 
-**Als het gevecht al beslist is,** kan de spelleider aanbieden de rest in één bericht te vertellen.
-
-### 3.4 Tijd, reizen en de wereld die doorgaat
-
-**Tijd.** Elke actie kost tijd in het verhaal en RPG Engine houdt de datum bij: dag 3, vroege ochtend. De spelleider vertelt de tijd zoals de wereld hem meet: ochtendgloren, de derde klok, vallende avond. Tussen sessies verstrijkt er geen tijd: je pakt op waar je stopte.
-
-**Rust.** Zeg dat je rust en de spelleider past toe wat een rustperiode teruggeeft, zoals levenspunten en spreukslots:
-
-> We slaan ons kamp op en nemen een lange rust.
-
-**Reizen.** Zeg waarheen je wilt gaan:
-
-> We nemen de weg naar het noorden, richting Rocca.
-
-RPG Engine rekent de route, de afstand en de dagen uit op jullie tempo en brengt je erheen. Een reis stopt als er onderweg iets gepland gebeurt, aan het einde van elke reisdag en bij aankomst. Je kunt vragen hoe ver een plaats weg is voordat je vertrekt:
-
-> [Hoe ver is Rocca, en hoe lang duurt het te voet?]
-
-**De wereld gaat door zonder jou.** Schurken hebben plannen met deadlines en klokken. Elke nieuwe dag laat de spelleider de bedreigingen opschuiven die de tijd heeft vooruitgebracht, en jij ziet de tekenen ervan: een gerucht, een spoor, een verandering in de stad. De klok zelf zie je nooit, alleen wat die achterlaat.
-
-**Geld** wordt geteld in de munten van het spel. Betalen, verkopen, betaald krijgen: RPG Engine regelt het wisselgeld.
+Schurken hebben plannen met deadlines. Elke nieuwe dag laat de spelleider de dreigingen opschuiven die de tijd heeft vooruitgebracht, en jij ziet de tekenen daarvan, nooit de klok zelf.
 
 ### 3.5 Kaarten
 
-**De wereldkaart** (dashboard: **Wereld**) toont alleen de plaatsen die je personage kent, met de wegen ertussen, het pad dat je hebt afgelegd en mist over al het andere. Klik op een plaats om te zien wat je ervan weet en hoe ver het is.
-
-**De kaart van een plaats** (dashboard: **Scène**, en **Gevecht** tijdens een gevecht) verschijnt als de spelleider er een tekent van waar je bent: muren, deuren, de grond, en wie waar staat, als pionnen. In een gevecht zijn op jouw beurt de vakjes die je niet kunt bereiken gesluierd, zodat je in één oogopslag ziet waarheen je kunt. Als de spelleider vraagt waarheen je personage beweegt, opent de pagina de kaart en tik je op een vakje, of schrijf je het, zoals *E4*.
+**Wereld** toont de plaatsen die je personage kent, de wegen ertussen en het pad dat je liep, met mist over de rest. **Scène** toont de kaart van de plek waar je bent, als die er is, met wie waar staat; in een gevecht zijn op jouw beurt de vakjes die je niet kunt bereiken verhuld. Als de spelleider vraagt waarheen je gaat, tik je op een vakje, of schrijf je het, zoals *E4*.
 
 ### 3.6 Missies, dagboek en notities
 
-**Missies.** Als je personage een taak op zich neemt, wordt het een missie in je **Dagboek**: wie hem gaf, waar, tegen wanneer, de doelen als lijst, en wat hij meet (een deadline met de resterende tijd, een klok, een telling). Markeer een missie met de ster om hem te volgen: hij blijft klein bovenaan in Scène staan, met het volgende doel. De missie eindigt als het verhaal hem beëindigt, nooit uit zichzelf.
-
-**Het verhaal.** Het tabblad Verhaal van het Dagboek is je campagne als tijdlijn: elke scène een hoofdstuk, met plaats, datum en een korte samenvatting, de laatste bovenaan.
-
-**Je notities.** In het tabblad Notities van het Dagboek schrijf je je eigen notities: theorieën, namen, plannen. Ze blijven op je computer en de spelleider leest ze niet, tenzij je er een **Deelt**. Een gedeelde notitie bereikt de spelleider bij het volgende antwoord als wat jij denkt, nooit als een feit. Je theorie wordt niet waar omdat je haar hebt opgeschreven. Een notitie die vraagt om bepaalde inhoud te stoppen of te vermijden, telt alsof je het aan tafel had gezegd.
+Een taak die je personage aanneemt wordt een missie in het **Dagboek**, met de doelen, de deadline en wat die meet; geef er een ster aan om haar bovenaan bij Scène in beeld te houden. Het Dagboek vertelt ook je **verhaal**, scène voor scène, en bewaart je **notities**: privé, tenzij je er een **Deelt**; de spelleider hoort die als wat jij denkt, nooit als een feit.
 
 ### 3.7 Het verhaal en de afbeelding van je personage
 
-Op het karakterblad van je personage heeft de kaart **Beschrijving** een vak om het verhaal van je personage in te schrijven. Verstuur het en de spelleider schrijft het in eigen woorden in het personage, nadat je ja hebt gezegd.
-
-Voor de afbeelding van je personage geef je de spelleider in de chat een afbeeldingsbestand, met waar het op je computer staat (PNG, JPEG, WebP of SVG, tot 5 MB):
-
-> [Hier is het portret van mijn personage: C:\Users\me\Pictures\mira.png]
-
-De spelleider kopieert het naar de campagne en het verschijnt op de pion van je personage op het dashboard. Je kunt het op dezelfde manier wijzigen wanneer je wilt.
-
-Of laat het portret maken, waar je computer afbeeldingen kan maken (zie [Afbeeldingen](#311-pictures)): beschrijf je personage aan de spelleider, of laat de spelleider het beschrijven.
-
-> [Maak een portret voor me: grijs haar in een vlecht, een litteken op de kin, vermoeide ogen.]
-
-Het portret toont precies wat je personage in het spel is, hun volk zoals deze wereld het kent, een heuveldwerg als heuveldwerg, met de look die je beschreef. Het komt er binnen ongeveer een minuut, op de pion van je personage. Je metgezellen kunnen op dezelfde manier een portret krijgen.
+Op je karakterblad heeft de kaart **Beschrijving** een vak voor het verhaal van je personage: de spelleider schrijft het erin, nadat je ja hebt gezegd. Voor een afbeelding geef je de spelleider een bestand (PNG, JPEG, WebP of SVG, tot 5 MB) met de plek waar het op je computer staat, of laat je een portret maken ([3.11](#311-pictures)): *[Maak een portret van me: grijs haar in een vlecht, een litteken op de kin.]*
 
 ### 3.8 Opgeslagen spellen en teruggaan
 
-RPG Engine slaat de hele campagne **aan het einde van elke scène** vanzelf op. Wat je met die opgeslagen spellen kunt doen, hangt af van de instelling **Opgeslagen spellen**:
+RPG Engine slaat de hele campagne op aan het eind van elke scène. De instelling **Opgeslagen spellen** bepaalt de rest:
 
 | Opgeslagen spellen | Opslaan wanneer je wilt | Teruggaan |
 |---|---|---|
-| **permadeath** | nee | nooit; je kunt alleen de campagne opnieuw beginnen |
-| **checkpoint** | nee | naar het laatste opgeslagen spel, alleen als je personage sterft |
-| **free** | ja | naar elk opgeslagen spel, wanneer je maar wilt |
+| **permadeath** | nee | nooit |
+| **checkpoint** | nee | naar het laatste opgeslagen spel, alleen als je personage doodgaat |
+| **vrij** | ja | naar elk opgeslagen spel |
 
-In elke modus kun je **opnieuw beginnen**: vanaf het begin van het spel met hetzelfde personage, of vanaf sessie nul met een nieuw personage.
+In elke modus kun je **opnieuw beginnen**, vanaf het begin van het spel of vanaf sessie nul. Doe dat in de chat of bij **Opgeslagen spellen**.
 
-Dit kun je allemaal doen in de chat ("[Laten we teruggaan naar vóór het duel.]") of in het onderdeel **Opgeslagen spellen** van het dashboard.
-
-**Open na het teruggaan een nieuwe chat.** De chat waarin je speelde, onthoudt wat ongedaan is gemaakt. Open een nieuwe chat met de spelleider (`/clear` in Claude Code, `/new` in Codex), schrijf *ga door*, druk dan op **Ik heb een nieuwe chat geopend** bij Opgeslagen spellen, of zeg het tegen de spelleider in de nieuwe chat. Hervat nooit de oude chat. Tot je bevestigt, gaat de spelleider niet verder.
+Open na het teruggaan **een nieuwe chat**: de oude onthoudt wat ongedaan is gemaakt. Schrijf *verder* in de nieuwe chat en druk dan bij Opgeslagen spellen op **Ik heb een nieuwe chat geopend**.
 
 ### 3.9 Sessies: stoppen en terugkomen
 
-**Jij beëindigt de sessie** wanneer je wilt:
-
-> [Laten we er voor vanavond mee stoppen.]
-
-Er is geen "opslaan en afsluiten": alles staat al in de bestanden.
-
-**Om de chat te sluiten** schrijf je `/exit` in Claude Code, of `/quit` in Codex. Het dashboard valt stil tot de volgende chat.
-
-**Om terug te komen** open je een terminal in de campagnemap (die `init` toonde), start je je host daar en schrijf je *ga door*. De spelleider leest hoe het spel ervoor staat, geeft je een korte terugblik en begint met iets dat gebeurt. Met een nieuwe chat gaat niets verloren: de campagne leeft in haar bestanden, niet in de chat.
-
-De spelleider stelt aan het eind geen routinevragen. Alleen als de spelleider merkte dat iets niet werkte, vraagt die er kort naar.
+Stop wanneer je wilt: *[Laten we hier voor vanavond stoppen.]* Alles is al opgeslagen in de bestanden. Om terug te komen start je je agent in de campagnemap en schrijf je *verder*: de spelleider geeft een korte samenvatting en gaat door.
 
 ### 3.10 De stemming van de spelleider
 
-Bovenaan het dashboard staat de avatar van de spelleider, een kleine robot. Het gezicht volgt de toon van het verhaal: bezorgd als het gevaar groeit, verrukt bij een gedurfd idee, verrast bij een wending. Even reageert het op een natuurlijke 20 of een natuurlijke 1. Het toont nooit wat je nog niet weet: geen grijns voordat de val is dichtgeklapt. De pionnen van je groep tonen ook hun stemming. Als de chat gesloten is, slaapt de robot.
+De robot bovenaan het dashboard is de spelleider: het gezicht volgt de toon van het verhaal en verraadt nooit wat je nog niet weet. Als de chat gesloten is, slaapt de robot.
 
 ### 3.11 Afbeeldingen
 
-RPG Engine kan een afbeelding laten maken van elke plaats die je bereikt, elke missie die je aanneemt en elk personage of elke soort wezen die je ontmoet, getekend zoals jij ze ziet, zoals de instelling **Afbeeldingen** zegt, en van het portret van je personage als je erom vraagt. Het gebruikt wat al op je computer staat:
-
-- **Codex**, met je ChatGPT-login: een geschilderde afbeelding.
-- Anders **Claude Code**, met je Claude-login: een tekening.
-
-De afbeelding gebruikt jouw eigen abonnement, niet het onze. Het onderdeel **Instellingen** vertelt je of er afbeeldingen op je computer gemaakt kunnen worden en, zo niet, de stappen om dat in te stellen. Zonder afbeeldingen toont de pagina in plaats daarvan het teken van elk soort plaats. Je kunt de spelleider ook een eigen afbeelding geven voor elke plaats of elk personage.
+RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missies die je aanneemt en wie je ontmoet, zoals de instelling **Afbeeldingen** zegt, en van het portret van je personage als je erom vraagt. Het gebruikt wat op je computer staat, met je eigen login: **Codex** schildert ze, anders tekent **Claude Code** ze. **Instellingen** zegt of deze computer ze kan maken, en hoe je dat instelt als het niet kan. Je kunt de spelleider altijd een eigen afbeelding geven.
 
 ### 3.12 Veiligheid: grenzen, sluiers en stop
 
-- **Grenzen**: wat nooit in het spel voorkomt.
-- **Sluiers**: wat mag gebeuren, maar alleen buiten beeld.
-- **Stop**: op elk moment kun je een onderwerp stoppen, zonder uitleg. Schrijf het buiten het verhaal:
-
-> [stop]
-
-De spelleider laat het meteen vallen en voegt het toe aan je grenzen, voor elke sessie die komt. Je kunt je grenzen en sluiers bekijken en wijzigen in **Instellingen**.
+**Grenzen** komen nooit in het spel voor; **sluiers** gebeuren alleen buiten beeld. Schrijf op elk moment *[stop]*: de spelleider laat die inhoud meteen vallen en voegt haar toe aan je grenzen.
 
 ### 3.13 Van gedachten veranderen
 
-Elke instelling kan tijdens de campagne veranderen: in de chat ("[Laten we het moeilijker maken.]") of in **Instellingen**. De spelleider hoort van een wijziging bij het volgende antwoord. Een uitspraak die de spelleider deed zonder het boek wordt een **precedent** en blijft bewaard, zodat dezelfde vraag de volgende keer hetzelfde antwoord krijgt.
+Elke instelling kan veranderen, in de chat of bij **Instellingen**. Een uitspraak die de spelleider doet zonder het boek wordt een **precedent**, zodat dezelfde vraag de volgende keer hetzelfde antwoord krijgt.
 
 ---
 
-## 4. Het dashboard, onderdeel voor onderdeel <!-- icon: party -->
+## 4. Het dashboard <!-- icon: party -->
 
-Het dashboard is een pagina op je eigen computer. De spelleider geeft je de link aan het begin van elke chat. Het volgt het spel live: als de spelleider iets verandert, verandert de pagina mee.
+Een pagina op je eigen computer, alleen te openen in de browser van die computer, actief zolang de chat open is. Als de chat sluit, staat er *Not connected*; bij de volgende chat komt de pagina vanzelf terug.
 
-Alleen de browser van de computer waarop je speelt kan hem openen: geen telefoon of tablet, ook niet op hetzelfde wifi. De pagina past ook in een smal venster: dan verhuizen de onderdelen naar een balk onderaan en de pictogrammen naar een menu.
+- **Groep**: jouw karakterblad en dat van je metgezellen. Klik op een getal om het te gooien; houd de muis erboven om te zien waar het vandaan komt. Ernaast staan de worpen.
+- **Scène**: waar je bent, de afbeelding en kaart ervan, wie er is, wat er gebeurt.
+- **Gevecht**: alleen in een gevecht: de beurten, de vechters, wat je bij de hand hebt.
+- **Dagboek**: missies, het verhaal, je notities.
+- **Wereld**: de wereldkaart zoals je personage die kent.
+- **De dobbelbak**: kies dobbelstenen en een modifier, en gooi.
+- **Opgeslagen spellen**, **Help**, **Instellingen** en **Over**, als pictogrammen aan het eind van de rij. Instellingen bevat ook de eigen voorkeuren van de pagina: thema, dobbelgeluid, dobbelsteenset.
 
-De pagina leeft zolang de chat. Sluit je de chat, dan toont een geopend gelaten pagina *Niet verbonden* met het karakterblad zoals het was, en valt het robotje van de spelleider in slaap; open je weer een chat in de campagne, dan komt de pagina vanzelf terug zodra de spelleider heeft geantwoord.
-
-### Bovenaan
-
-- De **avatar van de spelleider**, met zijn stemming.
-- De naam van de campagne, het spelsysteem, de **speltijd** en of het spel **verbonden** is (de chat verbonden).
-- De onderdelen: **Groep**, **Scène**, **Gevecht** (alleen tijdens een gevecht), **Dagboek**, **Wereld**; aan het eind van de rij, als pictogrammen: **Opgeslagen spellen**, **Help**, **Instellingen**, **Over**.
-- Het lichte en donkere thema, rechtsboven.
-
-Als de spelleider je iets vraagt, blijft de banner bovenaan de pagina staan, in welk onderdeel je ook bent.
-
-### Groep
-
-Het karakterblad van je personage en dat van je metgezellen. Elk deel van het karakterblad is een kaart die je kunt openen en sluiten.
-
-- **Klik op een getal** om er voor de lol mee te gooien. Wijs een getal aan om te zien hoe het is opgebouwd ("+5: Wijsheid +3, bekwaamheid +2").
-- **Hitpoints, plaatsen en gebruiken** worden getoond als balken en stipjes.
-- **Toestanden en effecten** worden getoond met hoe lang ze duren.
-- **Beschrijving** bevat de tekst van je personage en het vak om de spelleider het verhaal van je personage te sturen.
-- Bij 0 hitpoints verschijnen de **dodelijke-redding-worpen** groot onder de naam.
-- Naast het karakterblad (eronder op een smal scherm): **de worpen**, nieuwste eerst, die van jou en die van de spelleider die je mag zien. **Wissen** maakt de lijst leeg; **Herstellen** brengt hem terug. Vrije worpen staan gestippeld en gedimd.
-
-Een metgezel met een stat block, zoals een wolf, toont zijn stat block in plaats van een volledig karakterblad.
-
-### Scène
-
-Waar je groep is: de afbeelding en naam van de plaats, de plaatsen eromheen, de kaart van de plaats als die er is, wie er zijn, en de open scène met wat er nu gebeurt. De missie die je volgt staat bovenaan.
-
-### Gevecht
-
-Alleen tijdens een gevecht. Bovenaan: de ronde, wie er handelt, wie er daarna komt. Daaronder: de volgorde van de beurten, elke strijder met zijn toestand, je groep in getallen en de vijanden in woorden; wat je personage bij de hand heeft (Classe Armatura, hitpoints, aanvallen); de kaart van de plaats, met degene die aan de beurt is omcirkeld. Op jouw beurt pulseert de link naar Gevecht goud, waar je ook bent.
-
-### Dagboek
-
-Drie tabbladen:
-
-- **Missies**: actief, voltooid en mislukt, elk als kaart met zijn doelen, zijn deadline als timer en zijn klokken. De ster volgt een missie.
-- **Verhaal**: de hoofdstukken van de campagne, scène voor scène, de laatste eerst.
-- **Notities**: je eigen notities, privé tot je er een deelt.
-
-### Wereld
-
-De wereldkaart zoals je personage hem kent, met de mist over de rest. Sleep om te verplaatsen, gebruik het wiel of knijp om te zoomen. Klik op een plaats voor de kaart ervan. Een lijst van de plaatsen, de dichtstbijzijnde eerst, staat ernaast. Bij meer dan één kaart (een stad, een continent, een ander vlak) schakel je er met tabbladen tussen.
-
-### De dobbelbak
-
-De dobbelknop opent de dobbelbak: kies dobbelstenen en een modifier, en gooi. Bij twee of meer dobbelstenen van een soort kies je welke tellen: **Alle**, **Hoogste** (alleen de hoogste) of **Laagste** (alleen de laagste). De dobbelstenen die je koos blijven staan tot je op **Wissen** drukt, zodat dezelfde schadeworp elke ronde één klik is. Terwijl de spelleider om een worp vraagt, vertelt de dobbelbak welke dobbelstenen daarop antwoorden.
-
-### Opgeslagen spellen
-
-Je opgeslagen spellen, nieuwste eerst, elk met zijn plaats, de speldatum en wanneer het is gemaakt. **Nu opslaan** (bij vrij opslaan), **Ga hierheen terug** en **Opnieuw beginnen**, in rood, in twee stappen. Zie [Opgeslagen spellen en teruggaan](#38-saves-and-going-back).
-
-### Instellingen
-
-Je instellingen, in groepen: het spel, het spel leren (de mentor en de regels die je al zijn uitgelegd), dobbelstenen en maten, beperkingen (grenzen en sluiers), afbeeldingen, taal. Klik op een waarde om te kiezen; eronder staat wat ze betekent. Daarna de eigen voorkeuren van de pagina, alleen in deze browser bewaard: het thema, het geluid van de dobbelstenen, de **dobbelsteenset** (hars, metaal, hout, steen), afgeronde of scherpe randen, met de hand gooien.
-
-De eigen instellingen van de spelleider, zoals huisregels en precedenten, staan hier niet: die blijven in de chat.
-
-### Help en Over
-
-**Help**: deze handleiding. **Over**: wat RPG Engine is, de links, de licenties en de credits van het spelsysteem.
-
-### Vóór het spel: Instellingen en sessie nul
-
-Zolang een nieuwe campagne in de eerste stap, **Instellingen**, zit, stelt de hele pagina haar vragen: één tegelijk, elk met wat de waarden betekenen en de aanbevolen. Met **Jij beslist** laat je een vraag aan de spelleider over, behalve grenzen en sluiers, die altijd van jou zijn; met **Overslaan** bewaar je hem voor later. Aan het eind: **Ik ben klaar**.
-
-### Berichten van de pagina
-
-Soms toont de pagina een melding over zichzelf heen: een probleem in de bestanden van de campagne (de spelleider lost het op), het spel is weg (de chat is gesloten), de pagina wordt vertaald.
+Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welke sectie je ook zit.
 
 ---
 
@@ -473,125 +214,62 @@ Soms toont de pagina een melding over zichzelf heen: een probleem in de bestande
 
 ### 5.1 Wat een spelsysteem is
 
-Een spelsysteem is de data van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en regelteksten. Elke campagne speelt één systeem.
+De gegevens van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en regeltekst. Elke campagne speelt één systeem. RPG Engine rekent het karakterblad uit en wat er wordt uitgegeven en terugkomt; hoe een eigenschap werkt, leest de spelleider in de regels en beslist die, zoals aan een tafel.
 
-RPG Engine berekent je karakterblad en wat er wordt verbruikt en terugkomt, zoals hitpoints en spreukplaatsen, zoals een digitaal karakterblad dat doet. Hoe een eigenschap of een spreuk werkt, leest de spelleider in de regels. De spelleider beslist dat, zoals aan een tafel.
+### 5.2 Vijfde editie, inbegrepen
 
-### 5.2 Vijfde editie, meegeleverd
+De rassen, klassen, subklassen, een achtergrond en een talent van de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de hoofdstukken met regels, die de spelleider op hun exacte tekst leest; het volledige karakterblad, uitgerekend.
 
-RPG Engine levert **5e** mee, uit het System Reference Document 5.1 (de regels van 2014, gratis onder Creative Commons). Dit zit erin:
-
-- de rassen, klassen, subklassen, een achtergrond en een feat uit de SRD;
-- de 319 spreuken, de wapens, wapenrustingen en uitrusting, de magische voorwerpen en de monsters uit de SRD;
-- de regelhoofdstukken, die de spelleider opzoekt aan de hand van de exacte tekst;
-- het volledige karakterblad, uitgerekend: ability modifiers, saves, vaardigheden, Armor Class, aanvallen, spell save DC, spreukplaatsen, hit dice, eigenschappen per level, ervaring en levelen;
-- rustperiodes die teruggeven wat ze horen terug te geven; condities met hun regeltekst; herinneringen voor concentratie.
-
-**Inhoud buiten de SRD.** Je kunt de vijfde editie spelen met inhoud die niet in de SRD staat, zoals een klasse of een monster uit een boek dat je bezit. De spelleider kent het spel, kan je handboeken lezen en kan op internet zoeken. De spelleider schrijft op wat nodig is, als pagina's van je campagne, en RPG Engine werkt daar op dezelfde manier mee. Wat wij meeleveren, wordt beperkt door de licentie. Wat jouw spelleider weet, niet.
-
-RPG Engine levert alleen originele of open gelicentieerde inhoud mee: voor de vijfde editie de SRD 5.1 onder CC BY 4.0. Al het andere dat in je spel verschijnt, is geschreven door je AI of door jou, als pagina's van je campagne op je computer. Het is geen onderdeel van RPG Engine en wij verspreiden het niet.
-
-RPG Engine is compatibel met de vijfde editie.
+Je kunt ook inhoud spelen die de SRD mist, uit een boek dat je bezit: de spelleider schrijft die uit als pagina's van je campagne, en RPG Engine behandelt ze als de zijne. RPG Engine levert alleen open inhoud mee; wat je spelleider weet, is niet beperkt.
 
 ### 5.3 Huisregels en je eigen toevoegingen
 
-Je hoeft geen enkel bestand aan te raken. Vraag het de spelleider:
-
-> [Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]
->
-> [Ik wil graag een Blood Hunter spelen. Ik heb het boek: hier zijn de klasse-eigenschappen.]
->
-> [In deze campagne duurt een korte rust 10 minuten.]
-
-De spelleider legt ze op een van deze manieren vast in je campagne:
-
-- **Een afspraak van de tafel**, in woorden, zoals het gevallen wapen of de korte rust hierboven. De spelleider bewaart die bij de instellingen van de campagne en speelt er vanaf dat moment naar. Een uitspraak die de spelleider zonder het boek doet, wordt op dezelfde manier bewaard, als **precedent**.
-- **Een nieuwe pagina**, zoals een klasse, een ras of een voorwerp. Een nieuwe klasse werkt zoals die van het systeem: je level, hit dice en eigenschappen tellen mee. Een nieuw ras kan voortbouwen op een bestaand ras ("zoals de Elf, plus…"). Een zwaard met een eigen naam kan voortbouwen op het Longsword.
-- **Nieuwe getallen voor het karakterblad**: een veld, een tabel, een formule, een teller die een rust terugzet. Bijvoorbeeld de superiority dice van een Battle Master, die terugkomen na een korte rust. Een huisregel kan ook een van de formules van het systeem vervangen.
-
-Heb je huisregels al uitgeschreven, dan kun je ze ook als tekstbestanden in de map `rules` van de campagne zetten (zie [de campagnemap](#8-for-the-curious-the-campaign-folder)). De spelleider leest ze vóór de regel met dezelfde naam uit het boek.
+Vraag het de spelleider: *[Huisregel: een natuurlijke 1 bij een aanval betekent dat je je wapen laat vallen.]* De spelleider bewaart die als afspraak van de tafel, of schrijft een pagina of een getal van het karakterblad als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
 
 ### 5.4 Je eigen spelsysteem toevoegen of importeren
 
-Op dit moment speelt RPG Engine alleen de vijfde editie. Andere spelsystemen komen er nog. Ook komt er een manier om je eigen systeem toe te voegen, of om een spel dat je bezit om te zetten naar een systeem op basis van de handboeken. Zie [Later beschikbaar](#9-coming-later).
+Nog niet: op dit moment speelt RPG Engine alleen de vijfde editie ([Komt later](#9-coming-later)).
 
 ---
 
 ## 6. Extensies <!-- icon: plus -->
 
-**Extensies zijn er nog niet.** Een extensie voegt iets toe aan een campagne bovenop het spelsysteem: een wereld, een avontuur, een functie zoals het weer of een tarotspel, huisregels om te delen. Jij kiest welke elke campagne gebruikt. De eerste die voor de vijfde editie gepland zijn, zijn weer en sloten openen.
+Nog niet. Een extensie voegt iets toe aan een campagne, bovenop het spelsysteem: een wereld, een avontuur, een functie zoals het weer, huisregels om te delen.
 
 ---
 
-## 7. Waar een campagne vandaan komt, en haar taal <!-- icon: world -->
+## 7. Waar een campagne vandaan komt, en de taal ervan <!-- icon: world -->
 
 ### 7.1 Drie manieren om een wereld te hebben
 
-**Onderweg gemaakt.** Je geeft bij de installatie een uitgangspunt, en de spelleider bouwt de wereld al spelend: elke plaats, persoon en intrige vlak voordat je ze nodig hebt, en vanaf dan bewaard. Dit is de snelste manier om te spelen: installeren, aanmaken, en binnen een paar minuten maak je je personage. Niets wat verzonnen is gaat verloren: eenmaal gezegd wordt het opgeschreven en blijft het waar.
+- **Al doende gemaakt**: uit je uitgangspunt bouwt de spelleider elke plaats, persoon en intrige vlak voordat je ze nodig hebt, en bewaart ze.
+- **Aan het begin voorbereid**: hetzelfde, met de wereld gebouwd vóór het spel.
+- **Uit je eigen avontuur**: geef de spelleider een tekst of een pdf en vraag het in te richten, *[Richt dit avontuur in als onze campagne. Vertel me niets van wat erin staat.]* De spelleider schrijft de plaatsen, de personages en de geheimen uit. Er is nog geen importknop.
 
-**Vooraf voorbereid.** Hetzelfde uitgangspunt, maar met **voorbereiding: all at the start** bouwt de spelleider de plaatsen, facties, dreigingen en hun plannen van de wereld voordat het spel begint. De eerste sessie begint later, met meer klaar achter de schermen.
-
-**Uit een bestaande campagne of een bestaand avontuur.** Nu is er geen importknop. Geef de spelleider je avontuur (een tekst of een pdf die je host kan lezen) en vraag het in te richten:
-
-> [Ik heb dit avontuur als pdf. Richt het in als onze campagne: lees het en schrijf de plaatsen, personages en geheimen ervan uit. Vertel me niets van wat erin staat.]
-
-De spelleider leest het met de tools van je AI-host en schrijft het uit als pagina's van de campagne, geheimen inbegrepen, die jij al spelend zult ontdekken. Claude Code leest pdf's; met Codex is een tekst- of markdownbestand de veiligere keuze. Doe dit tijdens de installatie, vóór sessie nul.
-
-Terwijl de spelleider werkt, open je de details van wat die leest of schrijft niet (in Claude Code: ctrl+o): ze tonen de tekst van het avontuur, geheimen en al. De spelleider zelf houdt de geheimen, zoals altijd.
-
-Zodra de campagne eigen pagina's heeft, vraagt de installatie niet meer om een uitgangspunt en een voorbereiding. Ook in een uitgeschreven campagne maakt de spelleider, als je ergens heen gaat dat de tekst niet dekt, aan wat nodig is en legt het vast.
-
-**Een campagne speel je eenmaal.** Wil je hetzelfde avontuur opnieuw spelen, maak dan een nieuwe campagne aan. Binnen een campagne kun je nog steeds teruggaan naar een opgeslagen spel of opnieuw beginnen, zoals de instelling Opgeslagen spellen toestaat.
+Een campagne wordt één keer gespeeld: om hetzelfde avontuur opnieuw te spelen, maak je een nieuwe campagne.
 
 ### 7.2 Talen
 
-**Eén taal per campagne**: die van de spelleider. De spelleider schrijft erin en het dashboard volgt. De spelleider haalt haar uit hoe je schrijft en bevestigt haar.
-
-**Het dashboard** wordt geleverd in het Engels en Italiaans (verzorgd) en in 24 andere talen: Frans, Duits, Spaans, Portugees (Braziliaans), Nederlands, Zweeds, Noors, Deens, Fins, IJslands, Russisch, Oekraïens, Pools, Tsjechisch, Roemeens, Hongaars, Grieks, Turks, Arabisch, Hebreeuws, Hindi, Chinees, Japans, Koreaans. Arabisch en Hebreeuws lezen van rechts naar links: de pagina spiegelt, terwijl de kaarten en de dobbelstenen blijven zoals getekend.
-
-**Elke andere taal** die je in Instellingen kiest, wordt op je computer op de achtergrond vertaald door Codex of Claude Code met je eigen login, te beginnen met het onderdeel dat je open hebt. Het gebeurt één keer per taal, voor al je campagnes. Tot het klaar is, staat de pagina in het Engels. Instellingen vertelt je of de vertaling bezig is, klaar is, of niet mogelijk is op je computer.
-
-**De woorden van het spel.** De vijfde editie brengt haar eigen termen in het Italiaans mee uit de officiële Italiaanse SRD, zodat Italiaanse spelers *Classe Armatura*, *tiro salvezza*, *vantaggio* lezen. Andere talen krijgen de termen van het systeem vertaald.
-
-**De eigen tekst van het spelsysteem** (de spreuken, de monsters, de regelhoofdstukken) blijft Engels. De spelleider leest hem en vertelt hem je in jouw taal.
-
-**Van taal wisselen halverwege de campagne** laat de al geschreven pagina's zoals ze zijn; de spelleider schrijft nieuwe in de nieuwe taal.
+Eén taal per campagne, die van de spelleider, die het dashboard volgt. Het dashboard wordt geleverd in 26 talen. Elke andere taal wordt op je computer vertaald door Codex of Claude Code, of, zonder die twee, door de spelleider in de chat. De termen van de vijfde editie in het Italiaans komen uit de officiële Italiaanse SRD; de regeltekst blijft Engels, en de spelleider vertelt hem in jouw taal.
 
 ---
 
 ## 8. Voor de nieuwsgierigen: de campagnemap <!-- icon: list -->
 
-Je hoeft hem nooit te openen. Doe je het toch, weet dan dat **hij de geheimen** van je campagne bevat: hem lezen bederft het spel.
+Je hoeft hem nooit te openen, en hij bevat de geheimen van je campagne. Hij heeft `campaign.yaml` (je instellingen), `state.yaml` (hoe het spel ervoor staat), `world/` (één markdownpagina voor elk personage, elke plaats, missie en de rest), `rules/` (je huisregels), `images/`, `log.jsonl` (elke wijziging), `.saves/`, `.player/` (je notities) en de kleine bestanden die AI-agenten vertellen waar RPG Engine is. De pagina's gebruiken het formaat van Obsidian. Als je een pagina met de hand verandert, hoort de spelleider het bij zijn volgende antwoord.
 
-Een campagnemap bevat:
-
-- `campaign.yaml`: je instellingen;
-- `state.yaml`: waar het spel nu staat: de fase, de datum, de open scène;
-- `world/`: één pagina per personage, plaats, factie, missie, voorwerp, gebeurtenis, onderwerp of wezen, als markdownbestanden;
-- `rules/`: je huisregels als tekstbestanden, als je er toevoegt (`init` maakt hem niet aan);
-- `images/`: de afbeeldingen, zodra er zijn;
-- `log.jsonl`: elke wijziging, op volgorde;
-- `.saves/`: de opgeslagen spellen, vanaf de eerste;
-- `.player/`: je eigen notities uit het Dagboek, die de spelleider niet leest;
-- `sessions/`: bijgehouden door RPG Engine;
-- `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.claude/`, `.codex/`, `.gemini/`: de kleine bestanden die AI-hosts vertellen waar RPG Engine is en hun geheugen uit houden. RPG Engine houdt ze up-to-date; laat ze zoals ze zijn.
-
-De pagina's zijn gewone markdown met links als `[[Rocca]]`, het formaat van Obsidian: het notitieboek van de spelleider kan daar worden geopend. **Als je een pagina met de hand wijzigt**, hoort de spelleider bij het volgende antwoord wat er veranderd is.
-
-**De opdrachtregel.** Alles wat de spelleider doet gaat via commando's die jij ook kunt uitvoeren, in de campagnemap. Om te spelen heb je ze nooit nodig, en veel ervan tonen de geheimen van de campagne, zoals `rpg status` en `rpg show`. `rpg --help` somt ze allemaal op en `rpg roll --help` legt er een uit. Een commando dat iets wijzigt terwijl er een chat open is, is prima: de spelleider hoort ervan bij het volgende antwoord, net als bij een pagina die met de hand is gewijzigd.
+Elke opdracht die de spelleider gebruikt, kun je ook zelf uitvoeren in de campagnemap: `rpg --help` toont ze. Veel ervan tonen de geheimen van de campagne.
 
 ---
 
 ## 9. Komt later <!-- icon: hourglass -->
 
-Wat gepland is, maar er nog niet is:
-
-- **Jij als spelleider**: jij leidt het spel en de AI speelt de groep.
-- **Meerdere mensen aan tafel**, elk met een eigen rol.
-- **Extensies**: instellingen, avonturen, functies en huisregels, per campagne gekozen.
+- **Jij als spelleider**, met de AI die de groep speelt.
+- **Auteursmodus**: schrijf een avontuur met de AI, exporteer het en deel het.
+- **Meerdere spelers op dezelfde computer**, elk met een eigen personage, om de beurt in dezelfde chat.
+- **Extensies**: instellingen, avonturen, functies en huisregels.
 - **Importeren** van je handboeken en avonturen.
 - **Andere spellen**: meer spelsystemen, en je eigen.
-- **Auteursmodus**: maak met de AI een campagne of een avontuur en deel het zodat anderen het kunnen spelen.
 
 ---
 
@@ -599,49 +277,30 @@ Wat gepland is, maar er nog niet is:
 
 ### Vragen
 
-**Moet ik de regels kennen?** Nee. Kies de mentor tutorial en de spelleider leert je het al spelend, één regel tegelijk. Je kunt altijd tussen haakjes vragen.
+**Moet ik de regels kennen?** Nee. Kies de mentor tutorial en stel je vragen tussen haken wanneer je wilt.
 
-**Kan de spelleider valsspelen?** Die kan een worp die RPG Engine deed niet wijzigen, behalve bij moeilijkheid story, en verandert nooit feiten die al vaststaan. Je kunt vragen of een worp echt was.
+**Kan de spelleider valsspelen?** De spelleider kan een worp die RPG Engine deed niet veranderen, behalve bij de moeilijkheid verhaal, en ook geen feiten die al vastliggen.
 
-**Kan ik valsspelen?** Je kunt het proberen. De spelleider neemt je niet op je woord voor feiten: een regel in je bericht die op een spelbericht lijkt, is nog steeds gewoon jouw tekst, en de spelleider bevestigt je gissingen over geheimen nooit.
+**Kost het iets?** RPG Engine is gratis. De spelleider draait op het abonnement van je agent, of op je eigen computer met een lokaal model. Een speelavond is een lange chat: bij de kleinste abonnementen kun je de limiet van het abonnement bereiken voordat de avond om is. Afbeeldingen en vertalingen gebruiken hetzelfde abonnement.
 
-**Kost het iets?** RPG Engine is gratis. De spelleider draait op je eigen Claude- of ChatGPT-abonnement, en een speelavond is een lange chat: bij de kleinste abonnementen bereik je misschien de limiet van het abonnement voordat de avond voorbij is. Afbeeldingen en vertalingen gebruiken hetzelfde abonnement.
+**Kan ik op mijn telefoon spelen?** Nee: de spelleider draait op je computer en het dashboard opent alleen daar.
 
-**Kan ik op mijn telefoon spelen?** Nee. De spelleider draait op je computer en het dashboard opent alleen in de browser van die computer.
+**Kan ik met vrienden spelen?** Nog niet: op dit moment één speler, één personage, plus metgezellen ([Komt later](#9-coming-later)).
 
-**Kan ik met vrienden spelen?** Nog niet: nu één speler, één personage, plus metgezellen. Meerdere mensen aan tafel komen met rollen.
-
-**Kan ik de volgende keer een andere AI gebruiken?** Ja. De campagne leeft in haar bestanden: open haar in een andere host en schrijf *verder*.
-
-**Wat als ik de browser sluit?** Er gaat niets verloren. Open de link opnieuw zolang de chat open is; de pagina komt terug waar het spel is.
-
-**Kan ik D&D-inhoud spelen die ik bezit?** Ja. De spelleider kan je boeken, zijn eigen kennis en het web gebruiken. Wat RPG Engine meelevert is beperkt tot gratis inhoud; wat jouw spel gebruikt is aan jou.
+**Kan ik de volgende keer een andere AI gebruiken?** Ja: open de campagne in een andere agent en schrijf *verder*.
 
 ### Problemen
 
-**Het dashboard gaat niet open.** Vraag de spelleider om de link: `[Wat is de link naar het dashboard?]`. De pagina werkt alleen zolang er een chat met de spelleider open is in die campagne, en pas na het eerste antwoord van de spelleider in die chat. Met de chat gesloten kan de browser de pagina niet bereiken; een open gelaten pagina zegt *Niet verbonden*.
+**Het dashboard opent niet.** Vraag het de spelleider: `[Wat is de link naar het dashboard?]`. Het werkt alleen zolang er een chat open is in die campagne, na het eerste antwoord van de spelleider.
 
-**De spelleider lijkt het spel niet te kennen, of verzint tools.** Je AI-host heeft RPG Engine niet geladen.
+**De spelleider lijkt het spel niet te kennen.** Je agent heeft RPG Engine niet geladen. Controleer of je hem in de campagnemap hebt gestart en de map hebt vertrouwd. Schrijf in Claude Code `/mcp` en verbind `rpg` opnieuw. In Codex moet `codex mcp list` in de campagnemap `rpg` tonen. Als `rpg --version` niet wordt gevonden, installeer RPG Engine dan opnieuw ([2.2](#22-install)).
 
-- Controleer eerst of je de host **in de campagnemap** hebt gestart en hebt gezegd dat je hem vertrouwt.
-- **Claude Code**: schrijf `/mcp`. Staat `rpg` er maar is het mislukt, kies het dan en dan **Reconnect**. Ontbreekt het, sluit dan Claude Code, schrijf `claude mcp reset-project-choices` in de campagnemap en start het opnieuw.
-- **Codex**: schrijf `codex mcp list` in een terminal, in de campagnemap. Ontbreekt `rpg`, dan vertrouwt Codex de map niet: start het daar opnieuw en zeg ja als het erom vraagt.
-- In beide gevallen: als `rpg --version` in een terminal zegt dat het commando niet gevonden is, installeer RPG Engine dan opnieuw ([2.2](#22-install)) en open een nieuwe terminal.
+**Bijwerken.** Voer `npm install -g rpg-engine` opnieuw uit en open dan een nieuwe chat: een spelleider die al draait, houdt de versie waarmee hij begon.
 
-**Na een update is er niets veranderd.** Een draaiende spelleider houdt de versie waarmee die gestart is. Open een nieuwe chat, of verbind in Claude Code de server opnieuw (`/mcp`, dan `rpg`, dan **Reconnect**).
+**De spelleider herinnert zich iets wat ik ongedaan heb gemaakt.** Open een nieuwe chat en druk bij Opgeslagen spellen op **Ik heb een nieuwe chat geopend**.
 
-**De spelleider herinnert zich iets wat ik ongedaan heb gemaakt.** Je ging terug naar een opgeslagen spel maar speelde door in dezelfde chat. Open een nieuwe chat en druk bij Opgeslagen spellen op **Ik heb een nieuwe chat geopend**.
+**Er verschijnen geen afbeeldingen.** Instellingen > Afbeeldingen zegt of deze computer ze kan maken, en hoe.
 
-**De spelleider stelt installatievragen die ik al op de pagina heb beantwoord.** Zeg het: `[Die heb ik op het dashboard gekozen.]`
+**Installeren mislukt, of `rpg` start niet.** `node --version` moet 22 of nieuwer tonen. Houd op Windows RPG Engine en je campagnes uit paden met een `&`.
 
-**Er verschijnen geen afbeeldingen.** Open Instellingen > Afbeeldingen: daar staat of deze computer ze kan maken, en zo niet de stappen, elk commando met een knop om het te kopiëren.
-
-**De pagina staat in het Engels maar ik koos een andere taal.** Hij wordt op de achtergrond vertaald; Instellingen laat zien hoe ver het is. Zonder Codex of Claude Code op deze computer blijft hij Engels.
-
-**De spelleider zegt dat de campagne problemen heeft.** Die lost ze zelf op. Als je bestanden met de hand hebt bewerkt, vraagt de spelleider misschien wat je bedoelde.
-
-**Windows: `npm` mislukt in mijn map.** Bewaar de campagne, of RPG Engine, niet onder een pad dat `&` bevat.
-
-**Installeren mislukt, of `rpg` start niet.** Controleer je Node.js-versie met `node --version`: die moet 22 of nieuwer zijn. Is die ouder, installeer dan de LTS-versie van [nodejs.org](https://nodejs.org) en installeer daarna RPG Engine opnieuw.
-
-**De link naar het dashboard is veranderd.** Een ander programma gebruikte het gebruikelijke adres van de campagne, of Windows had het gereserveerd. RPG Engine nam een ander; de spelleider geeft je de nieuwe link. Verder verandert er niets.
+**De link naar het dashboard is veranderd.** Een ander programma nam het gebruikelijke adres in; de spelleider geeft je de nieuwe link.

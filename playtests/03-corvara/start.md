@@ -9,7 +9,7 @@ Player: `players/marco-lungo.md`, Marco who counts everything on a journey, with
 Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell):
 
 ```
-$campaign = "F:\sviluppo\runs\rpg-engine\2026-10-09\1\corvara"
+$campaign = "<runs>\2026-10-09\1\corvara"
 rpg init $campaign --name "La strada per Corvara" --system 5e --language it --difficulty normal --lethality epic
 Copy-Item -Recurse -Force playtests\03-corvara\world\* $campaign\world
 Push-Location $campaign

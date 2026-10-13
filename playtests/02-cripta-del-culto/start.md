@@ -9,7 +9,7 @@ Player: `players/marco.md`, with [brief.md](brief.md), what Marco remembers of h
 Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell):
 
 ```
-$campaign = "F:\sviluppo\runs\rpg-engine\2026-10-09\1\cripta"
+$campaign = "<runs>\2026-10-09\1\cripta"
 rpg init $campaign --name "La cripta di San Ruffo" --system 5e --language it --difficulty normal --lethality epic
 Copy-Item -Recurse -Force playtests\02-cripta-del-culto\world\* $campaign\world
 Push-Location $campaign

@@ -7,7 +7,7 @@ import { basename, dirname, join } from "node:path";
 const [results, scenarioWorld] = process.argv.slice(2);
 
 if (results === undefined || scenarioWorld === undefined || !existsSync(results) || !existsSync(scenarioWorld)) {
-    console.error("Usage: node playtests/count-playtest.mjs <results folder> <scenario's world folder>, such as F:\\sviluppo\\runs\\rpg-engine\\2026-10-05\\3\\results playtests/01-guadoscuro/world");
+    console.error("Usage: node playtests/count-playtest.mjs <results folder> <scenario's world folder>, such as <runs>\\2026-10-05\\3\\results playtests/01-guadoscuro/world");
     process.exit(1);
 }
 

@@ -1,57 +1,35 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 62159f4b 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
-O **RPG Engine** permite que você jogue um RPG de mesa com uma **IA como mestre**.
-
-Você conversa com o mestre em um **chat**: o mestre conta a história, interpreta todas as outras pessoas e decide o que acontece.
-
-O RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**.
-
-Ao lado do chat, você mantém aberta no navegador uma página, o **dashboard**, com a ficha do seu personagem, os dados, os mapas e o seu diário.
+**RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
 
 Este guia é para quem joga: você não precisa saber programar.
 
 ## Início rápido <!-- icon: send -->
 
-1. Instale o **Node.js** pelo site [nodejs.org](https://nodejs.org) (a versão LTS).
-2. Instale o **Claude Code** ou o **Codex**, o aplicativo de IA em que o mestre funciona, e faça login ([2.4](#24-connect-your-ai)).
-3. Abra um terminal e instale o RPG Engine: `npm install -g rpg-engine`.
-4. No terminal, crie uma campanha: `rpg init "The Salt Isles"`.
-5. Abra o Claude Code ou o Codex na pasta nova e escreva *Oi! Vamos começar.* O mestre responde com o link do seu painel: abra-o ao lado do chat.
-
-O resto deste guia explica cada passo e, depois, como jogar.
+1. Instale o **Node.js** em [nodejs.org](https://nodejs.org) (a versão LTS).
+2. Instale um **agente de IA**, o programa em que o mestre roda, e entre na sua conta: por exemplo, Claude Code ou Codex ([2.4](#24-connect-your-ai)).
+3. Em um terminal, instale o RPG Engine: `npm install -g rpg-engine`.
+4. Crie uma campanha: `rpg init "The Salt Isles"`.
+5. Entre na nova pasta, `cd "The Salt Isles"`, e inicie seu agente nela: `claude` para o Claude Code, `codex` para o Codex. Diga sim quando ele perguntar se você confia na pasta ([2.4](#24-connect-your-ai)) e escreva *Oi! Vamos começar.* O mestre responde com o link do seu painel.
 
 ## 1. O que é o RPG Engine <!-- icon: about -->
 
-### Quem faz o quê
-
 | Quem | O que faz |
 |---|---|
-| **Você** | Joga com o seu personagem. Diz o que ele faz, diz e tenta. |
-| **O mestre** (a IA) | Conta a história, interpreta todos os outros personagens, decide o que acontece, pede rolagens. |
-| **RPG Engine** | Guarda tudo em arquivos, rola os dados, conta pontos de vida, dinheiro, tempo e distâncias, e mantém os segredos até você descobri-los. |
+| **Você** | Joga com seu personagem: o que ele faz, diz e tenta. |
+| **O mestre** (a IA) | Conta a história, interpreta todos os outros, decide o que acontece e pede rolagens. |
+| **RPG Engine** | Guarda o mundo em arquivos, rola os dados, conta pontos de vida, dinheiro, tempo e distâncias, e mantém os segredos até você descobri-los. |
 
-Uma IA é boa para contar histórias e ruim para lembrar. Sozinha, ela esquece quem lhe deve dinheiro, quantas flechas você tem ou que a ponte pegou fogo duas sessões atrás. O RPG Engine guarda tudo isso, então o mundo continua o mesmo de uma noite para a outra, mesmo em um chat novo, mesmo com outra IA.
+O mundo continua o mesmo de uma noite para outra, até em um chat novo, até com outra IA:
 
-### Como é jogar
+- **O que foi dito continua valendo.** Um vilão morto continua morto.
+- **Os dados são de verdade.** O mestre não pode alterá-los, exceto na dificuldade mais fácil, se você escolher.
+- **Segredos continuam secretos.** O mestre nunca conta o que seu personagem não sabe.
+- **O mundo se move.** As ameaças avançam enquanto você descansa ou viaja, e você vê os sinais delas.
+- **Uma campanha é uma pasta** no seu computador: pare quando quiser e retome depois.
 
-Você escreve no chat, como falaria em uma mesa:
-
-> Empurro a porta devagar e olho lá dentro.
-
-O mestre responde com o que você vê e para quando é a sua vez de escolher. Quando algo é incerto e importa, o mestre diz o que está em jogo e pede uma rolagem. Os botões da rolagem aparecem no seu painel. Você clica, os dados caem na página, e o mestre conta o que acontece.
-
-### O que o torna diferente
-
-- **O mundo é persistente.** O que foi dito continua valendo. Um vilão morto continua morto.
-- **Os dados são de verdade.** O mestre não consegue entortá-los (exceto na dificuldade mais fácil, se você escolher).
-- **Segredos continuam secretos.** O mestre nunca conta o que o seu personagem não sabe, mesmo que você insista.
-- **O mundo se mexe sem você.** As ameaças avançam enquanto você descansa ou viaja, e você vê os sinais.
-- **Muitas noites, uma só história.** Uma campanha é uma pasta no seu computador. Você pode parar quando quiser e continuar depois.
-
-### O jogo que ele joga hoje
-
-O RPG Engine foi feito para qualquer RPG de mesa. Hoje ele traz um sistema de jogo: a **quinta edição** (do System Reference Document 5.1, gratuito). Outros jogos virão; veja [Sistemas de jogo](#5-game-systems-and-house-rules) e [Em breve](#9-coming-later).
+Hoje o RPG Engine joga um sistema de jogo, a **quinta edição**, a partir do System Reference Document 5.1, que é gratuito. Outros virão ([Em breve](#9-coming-later)).
 
 ---
 
@@ -59,152 +37,76 @@ O RPG Engine foi feito para qualquer RPG de mesa. Hoje ele traz um sistema de jo
 
 ### 2.1 O que você precisa
 
-- Um computador com Windows, macOS ou Linux.
-- **Node.js 22** ou mais recente. Baixe em [nodejs.org](https://nodejs.org): a versão "LTS" serve. Ele vem com o `npm`, que instala o RPG Engine.
-- Um **terminal**, a janela onde você escreve comandos: no Windows, o app Terminal ou o PowerShell; no macOS, o Terminal. Você usa o terminal para instalar o RPG Engine, para criar cada campanha e para iniciar o Claude Code ou o Codex.
-- Um **host de IA**, o app em que o mestre roda: o **Claude Code** ou o **Codex**, com o plano e o login dele. Veja [2.4](#24-connect-your-ai).
-- O **maior modelo** que seu host oferecer. Um modelo pequeno se deixa enganar: nos nossos testes, ele contou segredos a um jogador que dizia ser o verdadeiro mestre.
-- Um navegador, para o dashboard.
-
-O login que você usa no seu host faz mais uma coisa: o RPG Engine o usa, no seu computador, para desenhar imagens de locais, missões, das pessoas que você encontra e do seu personagem, e para traduzir o dashboard para idiomas que ele não traz. Veja [Imagens](#311-pictures) e [Idiomas](#72-languages).
-
-**Como abrir um terminal em uma pasta.** Muitos passos dizem "na pasta da campanha". No Windows, clique com o botão direito na pasta no Explorador de Arquivos e escolha **Abrir no Terminal**. No macOS, clique com o botão direito na pasta no Finder e escolha **Serviços > Novo Terminal na Pasta**. Ou, em um terminal que já está aberto, escreva `cd` e o caminho da pasta, como `cd "C:\Users\me\Games\The Salt Isles"`.
+- Um computador com Windows, macOS ou Linux, e um navegador.
+- **Node.js 22** ou mais novo, em [nodejs.org](https://nodejs.org). Ele traz o `npm`, que instala o RPG Engine.
+- Um **terminal**: no Windows, Terminal ou PowerShell; no macOS, Terminal. Para abrir um terminal em uma pasta, clique nela com o botão direito e escolha **Abrir no Terminal** (Windows) ou **Serviços > Novo Terminal na Pasta** (macOS).
+- Um **agente de IA** para o mestre ([2.4](#24-connect-your-ai)), com o **maior modelo** que ele oferecer: um modelo pequeno é mais fácil de convencer a revelar segredos ou a burlar as regras.
 
 ### 2.2 Instalar
-
-Abra um terminal e escreva:
 
 ```text
 npm install -g rpg-engine
 ```
 
-Isso lhe dá o comando `rpg`. Para conferir se funcionou:
-
-```text
-rpg --version
-```
-
-Você usa o `rpg` uma vez por campanha, para criá-la. Depois disso, você só conversa com o mestre: seu host de IA inicia o RPG Engine sozinho, com o mesmo comando `rpg`.
+`rpg --version` confirma que deu certo. Você usa `rpg` uma vez por campanha, para criá-la; depois disso, seu agente inicia o RPG Engine sozinho.
 
 ### 2.3 Criar uma campanha
 
-Uma campanha é uma pasta. Abra um terminal na pasta onde você guarda seus jogos e escreva:
+Abra um terminal na pasta onde você guarda seus jogos ([2.1](#21-what-you-need) explica como):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Isso cria a pasta `The Salt Isles` com uma campanha nova dentro e diz o que fazer em seguida:
+Isso cria a pasta `The Salt Isles` com uma campanha nova dentro; entre nela com `cd "The Salt Isles"`. Lembre onde ela está: você volta a ela toda vez que jogar. O resto você escolhe depois, no chat ou no painel; `rpg init --help` lista as opções para escolher algumas agora, como `--language it` ou `--difficulty hard`.
 
-```text
-Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
-To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.
-
-For the master: Still to agree with the player: ...
-```
-
-As linhas depois de *For the master* são para o mestre, que as lê no chat: você não precisa fazer nada com elas. Guarde onde a pasta está: você volta a ela toda vez que jogar. Sem um nome de pasta, `rpg init` transforma a pasta em que você está na campanha.
-
-O `init` cria tudo de que a campanha precisa: as configurações, as pastas do mundo e os pequenos arquivos que dizem ao seu host de IA para usar o RPG Engine e para não guardar memória própria fora da campanha.
-
-Você não precisa escolher nada agora. O mestre pergunta o resto no chat, ou você escolhe no dashboard. Se você já sabe algumas escolhas, pode informá-las aqui:
-
-```text
-rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
-```
-
-Isso cria a pasta `salt-isles`, com a campanha *The Salt Isles* dentro: um nome de pasta sem espaços e o nome da campanha como você quiser.
-
-| Opção | O que define | Valores |
-|---|---|---|
-| `--name` | O nome da campanha | qualquer um; o nome da pasta, se você omitir |
-| `--language` | O idioma do jogo | um código, como `en`, `it`, `fr` |
-| `--system` | O sistema de jogo | `5e`, hoje o único |
-| `--difficulty` | Quão difícil é o mundo | `story`, `easy`, `normal`, `hard`, `brutal` |
-| `--lethality` | O que significa cair em combate | `narrative`, `epic`, `dice` |
-
-O `rpg init --help` também lista essas opções. Uma campanha não pode ficar dentro da pasta de outra campanha.
-
-Você não pode pedir ao mestre que crie uma campanha: antes do `init`, a pasta não tem nada que diga ao seu host de IA onde está o RPG Engine.
+O mestre não pode criar uma campanha para você: antes do `init`, nada diz ao seu agente onde está o RPG Engine.
 
 ### 2.4 Conectar sua IA
 
-O RPG Engine funciona com o **Claude Code** e o **Codex**. Outros apps de IA que usam ferramentas MCP também podem funcionar, mas não garantimos.
+O mestre roda em um **agente de IA**: um aplicativo de IA, no terminal ou no desktop, que consegue trabalhar com os arquivos do seu computador, como o Claude Code ou o Codex. Um chat comum, como o claude.ai ou o ChatGPT, ou um aplicativo de celular, não basta: o mestre precisa acessar os arquivos da campanha no seu computador. Cada agente exige seu próprio plano e login: o Claude Code, um plano pago do Claude; o Codex, um login do ChatGPT. Você o instala uma vez, pela página dele: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-**Como instalar seu host.** O Claude Code e o Codex rodam no terminal: não são o app Claude ou ChatGPT do seu celular. Cada um precisa de plano e login próprios: o Claude Code, de um plano pago do Claude; o Codex, de um login do ChatGPT. Siga as páginas deles para instalar e entrar: [Claude Code](https://code.claude.com/docs/en/setup) e [Codex](https://learn.chatgpt.com/docs/codex/cli). Você faz isso uma vez, para todas as suas campanhas.
+- **Claude Code**: na pasta da campanha, escreva `claude`. Quando ele perguntar se você confia na pasta, escolha **Yes, I trust this folder**; cuidado, a resposta já selecionada é *No, exit*.
+- **Codex**: na pasta da campanha, escreva `codex` e diga sim quando ele perguntar se você confia na pasta. No aplicativo desktop dele, confira nas configurações se as memórias estão desligadas para os chats do jogo.
+- **Outro agente**: inicie-o na pasta da campanha e dê a ele o servidor MCP `rpg mcp`. O RPG Engine é um servidor MCP padrão: qualquer agente que aceite MCP pode ser o mestre, inclusive os locais.
 
-**Claude Code.** Abra um terminal na pasta da campanha e escreva `claude`. Na primeira vez, ele pergunta se você confia na pasta e avisa que a pasta permite as ferramentas do jogo (`mcp__rpg`): escolha **Yes, I trust this folder**. Cuidado: a resposta já selecionada é *No, exit*, então apertar Enter de imediato fecha o Claude Code. Só isso: a campanha já disse ao Claude Code para usar o RPG Engine e suas ferramentas, e para manter a memória dele desligada.
-
-**Codex.** Abra um terminal na pasta da campanha e escreva `codex`. Quando ele perguntar se você confia na pasta, diga que sim: as configurações da própria campanha dizem ao Codex onde está o RPG Engine, permitem as ferramentas dele e mantêm a memória desligada, e o Codex só as lê em uma pasta em que você confia. No app para desktop, confira se as memórias estão desligadas nos chats do jogo.
-
-**Por que a memória importa.** A campanha vive nos arquivos dela. Se o host também lembra de coisas por conta própria, voltar a um jogo salvo não seria voltar de verdade: o mestre ainda lembraria o que foi desfeito.
+Nós jogamos e testamos com o **Claude Code**; o **Codex** está conectado e verificado, mas ainda não se jogou uma campanha inteira com ele; o `init` também configura o **Gemini CLI**. A campanha desliga a memória própria do agente: o jogo vive nos arquivos, para que voltar a um jogo salvo realmente volte.
 
 ### 2.5 O primeiro chat
 
-Escreva qualquer coisa, por exemplo:
+Escreva qualquer coisa, como *Oi! Vamos começar.* Na primeira resposta de cada chat, o mestre dá o **link do seu painel**, algo como `http://127.0.0.1:4750`: abra-o e deixe-o ao lado do chat.
 
-> Oi! Vamos começar.
+Entre as mensagens do mestre, seu agente mostra as ferramentas que usa: não abra os detalhes delas (no Claude Code, ctrl+o), pois podem revelar segredos.
 
-O mestre lê em que pé está o jogo e responde. Na primeira resposta de cada chat, ele lhe dá o **link do seu dashboard** (algo como `http://127.0.0.1:4750`). Abra-o no navegador e deixe-o ao lado do chat durante todo o jogo. Cada campanha mantém o mesmo link de um chat para o outro, a menos que outro programa o tenha tomado: nesse caso, o mestre lhe dá o novo.
+Uma campanha nova passa por três etapas, mostradas no topo do painel: **1 Configurações** (como você quer jogar), **2 Sessão zero** (você cria seu personagem, jogando), **3 Jogar**.
 
-Entre as mensagens do mestre, seu host mostra as ferramentas que o mestre usa, em linhas curtas. Não abra os detalhes delas (no Claude Code, ctrl+o): eles podem mostrar o que o mestre escreve, segredos inclusive.
+### 2.6 Configurações: escolhendo como jogar
 
-Uma campanha nova passa por três etapas, como um jogo com um mestre humano. O dashboard as mostra no alto como *1 Configurações · 2 Sessão zero · 3 Jogar*:
+O mestre pergunta só o que ainda falta, algumas perguntas por vez; a etapa **Configurações** do painel mostra as mesmas perguntas em cartões. Escreva "você decide" e o mestre escolhe. Tudo pode mudar depois, no chat ou em **Configurações**.
 
-1. **Configurações**: você escolhe como quer jogar. Fora da história.
-2. **Sessão zero**: você cria seu personagem, jogando.
-3. **Jogar**: a história.
+| Configuração | O que decide | Valores |
+|---|---|---|
+| **Mentor** | Quanto o mestre ensina as regras a você | desligado, dicas, tutorial |
+| **Dificuldade** | Quão duro o mundo joga | história, fácil, normal, difícil, brutal |
+| **Letalidade** | O que significa cair em um combate | narrativa (nunca morre), épica (só quando importa), dados |
+| **Jogos salvos** | Quando você pode voltar | morte permanente, ponto de controle, livre ([3.8](#38-saves-and-going-back)) |
+| **Rigor** | Quão de perto comida, luz e viagem seguem as regras | fluido, regras, simulação |
+| **Dados** | Quem rola seus dados | digitais, físicos |
+| **Unidades** | Distâncias e pesos | métrico, imperial |
+| **Companheiros** | Quem viaja com você | nenhum, criados com você, criados pelo mestre, encontrados no jogo |
+| **Imagens** | Imagens de locais, missões e de quem você encontra | nenhuma, sob pedido, novos locais, missões e quem você encontra ([3.11](#311-pictures)) |
+| **Linhas** e **Véus** | O que nunca aparece e o que acontece só fora de cena | listas |
+| **Idioma** | O idioma do jogo e do painel | qualquer um |
 
-### 2.6 Configurações: escolhendo como você joga
+A quinta edição acrescenta o **avanço**: pontos de experiência ou marcos.
 
-O mestre pergunta só o que ainda falta, algumas perguntas por vez. Se você escrever "você decide", o mestre escolhe e conta o que escolheu. Com o dashboard aberto, o primeiro passo dele, **Configurações**, mostra as mesmas perguntas como cartões: uma pergunta por vez, cada valor com o que significa, e o mais usual marcado como **Sugerida**. Escolha ali, e o mestre não pergunta de novo no chat; **Pular** deixa uma pergunta para depois. O chat resolve o que só palavras resolvem: a premissa de um mundo novo, o idioma e as imagens, sobre as quais o mestre só pergunta se o seu computador puder criá-las. Por isso a página faz menos perguntas do que a tabela abaixo lista.
+Sem um mundo escrito, o mestre também pergunta uma **premissa** (gênero, tom, alguns elementos, com suas palavras) e a **preparação**: montar o mundo na hora, conforme você avança, ou tudo no início.
 
-Você não precisa estudar a tabela: ela está aqui para consulta. Você pode mudar qualquer uma delas depois, no chat ou nas **Configurações** do dashboard. A mudança vale a partir da próxima resposta do mestre.
-
-| Configuração | O que decide | Valores | Sugerida |
-|---|---|---|---|
-| **Mentor** (perguntado como "Quanto você conhece este jogo?") | Quanto o mestre ensina as regras a você, fora da história | **desligado** (só a história; pergunte entre colchetes quando quiser), **dicas** (uma dica curta antes de escolhas importantes e quando uma regra passa batida), **tutorial** (cada regra explicada na primeira vez, a soma completa de cada rolagem, um breve resumo depois dos combates) | conforme sua resposta: nunca joguei → tutorial, um pouco → dicas, conheço bem → desligado |
-| **Dificuldade** | Quão difícil é o mundo: combates, táticas dos inimigos, pistas, tesouro, a rapidez com que as ameaças avançam | história, fácil, normal, difícil, brutal | |
-| **Letalidade** | O que significa cair em combate | **narrativa** (seu personagem nunca morre), **épica** (morre só quando importa para a história), **dados** (os dados decidem) | acompanha a dificuldade: história → narrativa, fácil → épica, normal para cima → dados |
-| **Jogos salvos** | Quando você pode voltar atrás | **morte permanente** (nunca; só recomeçando a campanha), **ponto de controle** (volta ao último fim de cena, só se seu personagem morrer), **livre** (volta a qualquer jogo salvo, e salva sempre que você pedir) | ponto de controle |
-| **Rigor** | Quão de perto comida, luz, fadiga, peso carregado, componentes de magia e viagem seguem as regras | **suave** (o mestre passa por cima), **regras** (como escrito: tochas se apagam, rações acabam), **simulação** (além das regras: desgaste, deterioração, clima) | suave |
-| **Dados** | Quem rola os dados do seu personagem | **digitais** (o RPG Engine rola, na página), **físicos** (você rola os seus e diz os resultados) | |
-| **Unidades** | Distâncias e pesos na história | métricas, imperiais | |
-| **Companheiros** | Quem viaja com você | nenhum, criados com você na sessão zero, criados pelo mestre, encontrados durante o jogo | |
-| **Imagens** | Imagens de locais, missões e das pessoas que você encontra, e o retrato do seu personagem quando você pedir | nenhuma, sob pedido, novos locais, missões e pessoas encontradas | perguntada uma vez, só se o seu computador puder criá-las |
-| **Linhas** | O que nunca aparece no jogo | uma lista, ou nenhuma | |
-| **Véus** | O que pode acontecer, mas só fora de cena | uma lista, ou nenhuma | |
-| **Idioma** | O idioma do jogo e do dashboard | qualquer um | tirado de como você escreve, e confirmado |
-
-O sistema de jogo pode acrescentar configurações próprias. A quinta edição acrescenta o **avanço**: como seu personagem sobe de nível, com **pontos de experiência** ou por **marcos** da história.
-
-**O que a dificuldade significa no jogo.** História: inimigos fracos e ingênuos, pistas óbvias, fartura de tudo; o mestre pode suavizar as próprias rolagens. Fácil: inimigos simples, recursos generosos. Normal: inimigos sensatos, três pistas para cada conclusão, preços e tesouros padrão. Difícil: inimigos astutos, pistas sutis, recursos escassos, ameaças que avançam depressa. Brutal: inimigos que emboscam, recuam e acabam com quem caiu, recursos muito escassos, os descansos mais duros. Os combates são sempre dimensionados para o seu grupo como ele está agora.
-
-**Sem um mundo escrito**, a preparação pede mais duas coisas:
-
-- **Premissa**: o gênero, o tom e alguns elementos do mundo, com suas palavras. Por exemplo: *"Fantasia sombria, dura mas com esperança. Uma cidade à beira de um rio, um vau assombrado, um culto nas colinas."*
-- **Preparação**: **na hora** (o mestre constrói cada parte do mundo logo antes de você precisar dela; sugerida) ou **tudo no começo**.
-
-O mestre então propõe um nome para a campanha. Quando nada mais falta e você diz que está pronto, o jogo passa para a sessão zero.
-
-**O estilo do mestre** nunca é perguntado: mude quando quiser, no chat ou em **Configurações**, onde ele tem um grupo próprio. O tom fica na premissa; o estilo é como a história é contada.
-
-- **Prosa**: **simples** (frases curtas, um detalhe concreto por vez; a mais usual), **literária** (mais espaço nos pontos altos), **pulp** (tensa, vívida, curta, cada mensagem terminando em uma ameaça ou um gancho) ou **irônica** (um narrador com um meio sorriso para o mundo, nunca para o seu personagem).
-- **Histórias**, para o que o mestre inventa, nunca uma aventura escrita: **situações** (facções, ameaças e locais com segredos, sem enredo principal; a mais usual), **arcos** (uma ameaça central que avança por etapas), **episódios** (uma história que se fecha a cada sessão) ou **mistério** (toda história é uma investigação, com a verdade decidida primeiro).
-- **Escrever como**: um autor cujo jeito de contar o mestre adota, no lugar da prosa: o ritmo e os detalhes que ele escolhe, nunca as frases, os nomes ou os locais, e nunca mais do que o seu personagem vê.
-- **Com suas palavras**: qualquer outra coisa, em poucas palavras, como *"terceira pessoa, passado"*. O mestre conta a história na segunda pessoa, no presente, a menos que você peça outra coisa.
+**O estilo do mestre** nunca é perguntado, mas você pode mudá-lo no chat ou em **Configurações**: a **prosa** (simples, literária, pulp, irônica), as **histórias** que ele inventa (situações, arcos, episódios, mistério), um autor para **escrever como** ou qualquer outra coisa **com suas palavras**.
 
 ### 2.7 Sessão zero: seu personagem
 
-A sessão zero já é jogo: você cria seu personagem com o mestre, como faria numa mesa.
-
-- **Toda escolha é sua**, a menos que você peça ao mestre que a faça. Você pode chegar com uma ideia completa ("uma clériga meio-elfa que deixou o templo"), uma ideia vaga ("alguém que cura, mas sem simpatia") ou nada ("me surpreenda, depois deixe eu mudar o que quiser").
-- **Valores de habilidade.** O mestre diz o método e a rede de segurança antes de qualquer dado ser rolado. Na quinta edição: o conjunto padrão, a compra de pontos ou 4d6 descartando o menor. O método combinado fica nos acordos da mesa.
-- **A história do seu personagem** nunca é obrigatória. Se você der uma, o mestre a escreve com suas palavras, a lê de volta para você uma vez e liga as pessoas e os locais dela ao mundo. Você também pode escrevê-la no dashboard (veja [Grupo](#party)).
-- **Personalidade** (quinta edição): um traço, um ideal, um vínculo e um defeito, tirados das tabelas do seu antecedente ou criados por você.
-- **Uma imagem.** Quando seu personagem estiver pronto, o mestre pede uma imagem dele: um arquivo do seu computador, ou um retrato feito no seu computador a partir da sua descrição (veja [a imagem do seu personagem](#37-your-characters-story-and-picture)).
-
-Os números da ficha são calculados pelo RPG Engine a partir das suas escolhas: você nunca faz as contas. Quando os personagens estiverem prontos e você confirmar, a história começa.
+Você cria seu personagem com o mestre, como em uma mesa. Toda escolha é sua, a menos que você peça ao mestre para fazê-la: venha com uma ideia completa, uma ideia vaga ou nada. O mestre explica como os valores de habilidade são feitos antes de qualquer dado ser rolado. A história do personagem nunca é obrigatória; se você der uma, o mestre a escreve com suas palavras. Depois, o mestre pede uma imagem do personagem ([3.7](#37-your-characters-story-and-picture)). O RPG Engine calcula a ficha: você nunca faz as contas.
 
 ---
 
@@ -212,260 +114,99 @@ Os números da ficha são calculados pelo RPG Engine a partir das suas escolhas:
 
 ### 3.1 Conversando com o mestre
 
-Escreva o que seu personagem faz ou diz, em suas próprias palavras. Curto basta.
+Escreva o que seu personagem faz ou diz, com suas próprias palavras:
 
-> Pergunto à dona da estalagem quem mais passou por aqui esta noite.
->
-> "Não viemos criar problemas", digo, com a mão longe da espada.
->
-> Subo no telhado e espero.
+> Pergunto ao estalajadeiro quem mais passou por aqui esta noite.
 
-**Fora da história**, escreva entre colchetes:
+Fora da história, escreva entre colchetes: *[Como funciona agarrar?]* O mestre também responde entre colchetes.
 
-> [Como funciona agarrar?]
->
-> [Ainda posso usar minha reação nesta rodada?]
->
-> [Vamos parar por aqui esta noite.]
-
-O mestre também responde entre colchetes e depois volta à história.
-
-**Você diz o que tenta; o mestre diz o que acontece.** Algo que quebre a lógica do mundo ou fatos já estabelecidos não acontece: o mestre avisa, dentro da história, e oferece o que é possível.
-
-**O mestre nunca decide pelo seu personagem.** Ele não faz você falar, sentir ou escolher. Na dúvida, ele pergunta.
-
-**O mestre nunca fala do motor do jogo.** Pergunte se ele guarda o registro das coisas e ele responde como um mestre de jogo: "Eu guardo tudo: da próxima vez, continuamos daqui."
-
-**Você pode perguntar ao mestre como usar o dashboard.** Ele conhece a página: "Onde vejo minhas magias?", "Como rolo manualmente?"
+Você diz o que tenta; o mestre diz o que acontece. O mestre nunca decide pelo seu personagem e nunca fala do motor do jogo. Você pode perguntar a ele como usar o painel.
 
 ### 3.2 Rolagens
 
-**Quando acontece uma rolagem.** O mestre só pede uma rolagem quando o resultado é incerto e importa. Fora isso, ele diz sim, ou "sim, mas". Antes da sua rolagem, o mestre diz o que está em jogo e quais testes servem, e então para. Você rola, ou muda de ideia:
+O mestre pede uma rolagem só quando o resultado é incerto e importa, e diz antes o que está em jogo. Então:
 
-> **Mestre:** A saliência é estreita e está molhada. Se você escorregar, é uma longa queda até o rio. Um teste de Destreza (Acrobacia), ou você pode voltar e procurar a escada.
->
-> **Você:** Vou tentar.
+- **No painel**, um aviso mostra um botão para cada teste, como *Acrobacia +4 · com vantagem*. Clique nele: os dados caem na página e o mestre recebe o resultado. Você também pode clicar na linha da sua ficha que se acende, jogar os dados pela bandeja de dados ou escrever outra coisa no aviso.
+- **Manual**, no canto do aviso ou em **Configurações**: o aviso diz o que rolar, e você rola pela ficha ou pela bandeja de dados.
+- **Dados físicos**, com a configuração de dados em físicos: você escreve as faces que tirou, *[Tirei 14.]*, e o RPG Engine soma seus modificadores.
 
-**Rolando no dashboard.** Quando o mestre pede, aparece um aviso no alto da página com um botão para cada teste, por exemplo *Acrobacia +4 · com vantagem*. Clique nele: os dados caem na página, e o mestre ouve o resultado. Você também pode:
+**Rolagens livres**: clique em qualquer número da sua ficha, ou abra a bandeja de dados, para rolar por diversão. Elas nunca contam e o mestre nunca as vê.
 
-- clicar na linha correspondente da sua ficha, que se acende em dourado;
-- lançar os dados certos da bandeja de dados;
-- escrever suas próprias palavras no aviso, se quiser fazer outra coisa.
-
-**Rolando manualmente.** Se você prefere escolher os dados, ative **Manual** no canto do aviso (ou em **Configurações**). O botão do teste some, e o aviso diz o que rolar como um mestre diria: *Role Acrobacia você mesmo, na sua ficha ou com os dados.* Clique na linha da sua ficha que se acende, ou lance os dados certos da bandeja de dados: o RPG Engine os rola, soma seu bônus e o mestre ouve o resultado. Um teste que nem a ficha nem a bandeja de dados conseguem fazer, como um dano que rerrola os 1, mantém o botão. O modo Manual continua ligado neste navegador até você desligá-lo.
-
-**Dados físicos para o jogo todo.** Com a configuração **Dados** em físico, o mestre pede suas rolagens em palavras e você escreve as faces que tirou:
-
-> [Tirei 14.]
-
-O RPG Engine soma seus modificadores e recusa uma face que os seus dados não podem mostrar.
-
-**Rolagens livres.** Clique em qualquer número da sua ficha, ou abra a bandeja de dados, para rolar só por diversão. Rolagens livres nunca contam, nunca são registradas, e o mestre nunca as vê. Um 20 livre nunca vira um 20 de verdade depois.
-
-**As rolagens do mestre.** O mestre também rola pelos inimigos e outros personagens com o RPG Engine. A maioria das rolagens aparece na sua coluna de rolagens. Quando você não deve ver um resultado, o mestre rola em segredo. Você sempre pode perguntar:
-
-> [Aquela rolagem foi de verdade?]
-
-Para uma rolagem mostrada, o mestre dá os números e o motivo. Para uma secreta, dá uma impressão digital que prova que a rolagem foi feita antes de você perguntar.
-
-**As rolagens no chat** aparecem entre colchetes, logo depois do momento que decidem: *[Persuasão 14 + 3 = 17]*. Depois, a história conta o resultado.
+**As rolagens do mestre** aparecem na sua coluna de rolagens, exceto as secretas. Você sempre pode perguntar *[Essa rolagem foi de verdade?]*: para uma rolagem secreta, o mestre dá uma impressão digital que prova que ela foi feita antes de você perguntar.
 
 ### 3.3 Cenas e combates
 
-O mestre conduz a história em **cenas**: um combate, uma conversa, uma exploração, uma viagem, um descanso, um desafio (uma perseguição, uma corrida, um enigma). Você não precisa gerenciá-las: é assim que o RPG Engine guarda os capítulos da história. No fim de cada cena, o jogo é salvo sozinho, e a cena entra na história do seu diário.
+A história corre em **cenas**: um combate, uma conversa, uma exploração, uma viagem, um descanso. No fim de cada cena o jogo é salvo sozinho, e a cena entra no seu diário.
 
-**Em um combate**, o mestre conta todos os turnos que não são seus, um após o outro, com cada rolagem, e **para onde você pode decidir**: sua vez, uma reação, uma escolha. Na sua vez, diga o que você faz:
+Em um combate, o mestre narra todo turno que não é seu e para onde você pode decidir. A seção **Combate** mostra a ordem dos turnos, os pontos de vida do seu grupo e o quanto os inimigos parecem feridos, em palavras. Se seu personagem cair, os testes de morte aparecem grandes na página.
 
-> Lanço Chama Sagrada no que está perto da porta.
+### 3.4 Tempo, viagem e o mundo que se move
 
-A seção **Combate** do dashboard mostra a ordem dos turnos, de quem é a vez, os pontos de vida do seu grupo e o quanto os inimigos parecem feridos (ileso, ferido, gravemente ferido, caído: em palavras, nunca em números). Se o seu personagem cair, os testes de resistência contra a morte aparecem grandes na página.
+O RPG Engine guarda a data; nenhum tempo passa entre as sessões. Diga que você descansa, *Fazemos um descanso longo*, e o descanso devolve o que deve. Diga para onde vai, *Pegamos a estrada ao norte, rumo a Rocca*, e o RPG Engine calcula o caminho, a distância e os dias, parando quando algo acontece no trajeto. O dinheiro é contado nas moedas do jogo, troco incluído.
 
-**Quando o combate já está decidido**, o mestre pode se oferecer para contar o resto em uma só mensagem.
-
-### 3.4 Tempo, viagens e o mundo que se move
-
-**Tempo.** Toda ação leva tempo na história, e o RPG Engine guarda a data: dia 3, de manhã cedo. O mestre conta o tempo como o mundo o mede: amanhecer, o terceiro sino, anoitecer. Entre as sessões, não passa tempo: você continua de onde parou.
-
-**Descansos.** Diga que você descansa, e o mestre aplica o que um descanso recupera, como pontos de vida e espaços de magia:
-
-> Montamos acampamento e fazemos um descanso longo.
-
-**Viagens.** Diga aonde você quer ir:
-
-> Seguimos pela estrada para o norte, até Rocca.
-
-O RPG Engine calcula o caminho, a distância e os dias no seu ritmo, e leva você até lá. Uma viagem para quando algo planejado acontece no caminho, no fim de cada dia de viagem e na chegada. Você pode perguntar a que distância fica um local antes de partir:
-
-> [A que distância fica Rocca, e quanto tempo levaria a pé?]
-
-**O mundo se move sem você.** Vilões têm planos com prazos e relógios. A cada novo dia, o mestre move as ameaças que o tempo fez avançar, e você vê os sinais delas: um boato, um rastro, uma mudança na cidade. Você nunca vê o relógio em si, só o que ele deixa para trás.
-
-**O dinheiro** é contado nas moedas do jogo. Pague, venda, receba: o RPG Engine faz o troco.
+Vilões têm planos com prazos. A cada novo dia, o mestre move as ameaças que o tempo fez avançar, e você vê os sinais delas, nunca o relógio em si.
 
 ### 3.5 Mapas
 
-**O mapa do mundo** (dashboard: **Mundo**) mostra só os locais que seu personagem conhece, com as estradas entre eles, a trilha que você percorreu e a névoa sobre todo o resto. Clique em um local para ver o que você sabe sobre ele e a que distância fica.
-
-**O mapa de um local** (dashboard: **Cena**, e **Combate** em um combate) aparece quando o mestre desenha um para onde você está: paredes, portas, o terreno e quem está onde, como marcadores. Em um combate, na sua vez, os quadrados que você não alcança ficam cobertos por um véu, para você ver de relance aonde pode ir. Quando o mestre pergunta para onde seu personagem se move, a página abre o mapa e você toca em um quadrado, ou o escreve, como *E4*.
+**Mundo** mostra os locais que seu personagem conhece, as estradas entre eles e o caminho que você percorreu, com névoa sobre o resto. **Cena** mostra o mapa do local onde você está, quando há um, com quem está em cada lugar; em um combate, na sua vez, os quadrados que você não alcança ficam velados. Quando o mestre perguntar para onde você se move, toque em um quadrado ou escreva-o, como *E4*.
 
 ### 3.6 Missões, diário e notas
 
-**Missões.** Quando seu personagem assume uma tarefa, ela vira uma missão no seu **Diário**: quem a deu, onde, até quando, seus objetivos em uma lista e o que ela mede (um prazo com o tempo restante, um relógio, uma contagem). Marque uma com a estrela para acompanhá-la: ela fica pequena no alto de Cena, com o próximo objetivo. A missão termina quando a história a termina, nunca sozinha.
-
-**A história.** A aba História do Diário é a sua campanha como uma linha do tempo: cada cena é um capítulo, com seu local, data e um breve resumo, a última primeiro.
-
-**Suas notas.** Na aba Notas do Diário, você escreve suas próprias notas: teorias, nomes, planos. Elas ficam no seu computador e o mestre não as lê, a menos que você **Compartilhar** uma. Uma nota compartilhada chega ao mestre na próxima resposta como o que você pensa, nunca como um fato. Sua teoria não se torna verdade porque você a escreveu. Uma nota que peça para parar ou evitar algum conteúdo vale como se você tivesse dito isso à mesa.
+Uma tarefa que seu personagem assume vira uma missão no **Diário**, com seus objetivos, seu prazo e o que ela mede; marque-a com uma estrela para mantê-la à vista no topo de Cena. O Diário também conta sua **história**, cena por cena, e guarda suas **notas**: privadas, a menos que você **Compartilhar** uma, que o mestre ouve como o que você pensa, nunca como um fato.
 
 ### 3.7 A história e a imagem do seu personagem
 
-Na ficha do seu personagem, o cartão **Descrição** tem uma caixa para escrever a história do personagem. Envie, e o mestre a escreve no personagem, com as palavras dele, depois que você disser sim.
-
-Para a imagem do seu personagem, dê ao mestre um arquivo de imagem no chat, com o lugar onde ele está no seu computador (PNG, JPEG, WebP ou SVG, até 5 MB):
-
-> [Aqui está o retrato do meu personagem: C:\Users\me\Pictures\mira.png]
-
-O mestre o copia para a campanha, e ele aparece no marcador do seu personagem no dashboard. Você pode trocá-lo do mesmo jeito quando quiser.
-
-Ou peça que o retrato seja criado, onde o seu computador cria imagens (veja [Imagens](#311-pictures)): descreva seu personagem ao mestre, ou deixe o mestre descrevê-lo.
-
-> [Faça um retrato: cabelo grisalho em uma trança, uma cicatriz no queixo, olhos cansados.]
-
-O retrato mostra exatamente o que seu personagem é no jogo, com o povo dele como este mundo o tem, um anão da colina como anão da colina, com o visual que você descreveu. Ele chega em cerca de um minuto, no marcador do seu personagem. Seus companheiros podem ter os deles do mesmo jeito.
+Na sua ficha, o cartão **Descrição** tem uma caixa para a história do seu personagem: o mestre a escreve ali, depois que você disser sim. Para uma imagem, dê ao mestre um arquivo (PNG, JPEG, WebP ou SVG, até 5 MB) com o local dele no seu computador, ou peça um retrato ([3.11](#311-pictures)): *[Faça um retrato meu: cabelo grisalho em uma trança, uma cicatriz no queixo.]*
 
 ### 3.8 Jogos salvos e voltar atrás
 
-O RPG Engine salva a campanha inteira **no fim de cada cena**, sozinho. O que você pode fazer com esses jogos salvos depende da configuração **Jogos salvos**:
+O RPG Engine salva a campanha inteira no fim de cada cena. A configuração **Jogos salvos** decide o resto:
 
 | Jogos salvos | Salvar quando quiser | Voltar |
 |---|---|---|
-| **morte permanente** | não | nunca; só dá para recomeçar a campanha |
-| **checkpoint** | não | ao último jogo salvo, só quando seu personagem morre |
-| **livre** | sim | a qualquer jogo salvo, quando quiser |
+| **morte permanente** | não | nunca |
+| **ponto de controle** | não | ao último jogo salvo, só quando seu personagem morre |
+| **livre** | sim | a qualquer jogo salvo |
 
-Em todos os modos você pode **recomeçar**: do início do jogo com o mesmo personagem, ou da sessão zero com um novo.
+Em todos os modos você pode **recomeçar**, desde o início do jogo ou desde a sessão zero. Faça isso no chat ou em **Jogos salvos**.
 
-Você pode fazer tudo isso no chat ("[Vamos voltar a antes do duelo.]") ou na seção **Jogos salvos** do dashboard.
-
-**Depois de voltar, abra um novo chat.** O chat em que você estava jogando se lembra do que foi desfeito. Abra um novo chat com o mestre (`/clear` no Claude Code, `/new` no Codex), escreva *continuar*, depois aperte **Abri um novo chat** em Jogos salvos, ou avise o mestre no novo chat. Nunca retome o chat antigo. Até você confirmar, o mestre não continua.
+Depois de voltar, **abra um chat novo**: o antigo lembra do que foi desfeito. Escreva *continuar* no chat novo e depois aperte **Abri um novo chat** em Jogos salvos.
 
 ### 3.9 Sessões: parar e voltar
 
-**Você encerra a sessão** quando quiser:
-
-> [Vamos parar por aqui esta noite.]
-
-Não existe "salvar e sair": tudo já está nos arquivos.
-
-**Para fechar** o chat, escreva `/exit` no Claude Code, ou `/quit` no Codex. O dashboard fica em silêncio até o próximo chat.
-
-**Para voltar**, abra um terminal na pasta da campanha (a que o `init` mostrou), inicie seu host ali e escreva *continuar*. O mestre lê em que pé está o jogo, faz um breve resumo e começa com algo acontecendo. Um novo chat não perde nada: a campanha vive em seus arquivos, não no chat.
-
-O mestre não faz perguntas de rotina no fim. Só se notou que algo não funcionou, ele pergunta rapidamente.
+Pare quando quiser: *[Vamos parar por aqui esta noite.]* Tudo já está salvo nos arquivos. Para voltar, inicie seu agente na pasta da campanha e escreva *continuar*: o mestre faz um resumo curto e segue em frente.
 
 ### 3.10 O humor do mestre
 
-No alto do dashboard fica o avatar do mestre, um pequeno robô. O rosto dele acompanha o tom da história: preocupado quando o perigo cresce, encantado com uma ideia ousada, surpreso com uma reviravolta. Ele reage por um instante a um 20 natural ou a um 1 natural. Nunca mostra o que você ainda não sabe: nenhum sorriso antes de a armadilha ser acionada. Os marcadores do seu grupo também mostram seus humores. Quando o chat está fechado, o robô dorme.
+O robô no topo do painel é o mestre: o rosto dele acompanha o tom da história e nunca revela o que você ainda não sabe. Quando o chat está fechado, ele dorme.
 
 ### 3.11 Imagens
 
-O RPG Engine pode mandar criar uma imagem para cada local que você alcança, cada missão que assume e cada personagem ou tipo de criatura que encontra, desenhados como você os vê, conforme a configuração **Imagens** diz, e o retrato do seu personagem quando você pedir. Ele usa o que já está no seu computador:
-
-- **Codex**, com seu login do ChatGPT: uma imagem pintada.
-- Caso contrário, o **Claude Code**, com seu login do Claude: um desenho.
-
-A imagem usa o seu próprio plano, não o nosso. A seção **Configurações** diz se é possível criar imagens no seu computador e, se não for, os passos para configurar. Sem imagens, a página mostra a marca de cada tipo de local no lugar delas. Você também pode dar ao mestre uma imagem sua para qualquer local ou personagem.
+O RPG Engine pode gerar imagens dos locais a que você chega, das missões que você assume e de quem você encontra, conforme a configuração **Imagens**, e o retrato do seu personagem quando você pedir. Ele usa o que há no seu computador, com o seu próprio login: o **Codex** as pinta; se não, o **Claude Code** as desenha. **Configurações** diz se este computador consegue gerá-las e como configurá-lo, se não. Você sempre pode dar ao mestre uma imagem sua.
 
 ### 3.12 Segurança: linhas, véus e parar
 
-- **Linhas**: o que nunca aparece no jogo.
-- **Véus**: o que pode acontecer, mas só fora da cena.
-- **Parar**: a qualquer momento você pode interromper um conteúdo, sem explicar. Escreva fora da história:
-
-> [parar]
-
-O mestre abandona o conteúdo na hora e o acrescenta às suas linhas, para todas as sessões seguintes. Você pode ver e mudar suas linhas e véus em **Configurações**.
+As **Linhas** nunca aparecem no jogo; os **véus** acontecem só fora de cena. A qualquer momento, escreva *[parar]*: o mestre abandona esse conteúdo na hora e o acrescenta às suas linhas.
 
 ### 3.13 Mudando de ideia
 
-Toda configuração pode mudar durante a campanha: no chat ("[Vamos deixar mais difícil.]") ou em **Configurações**. O mestre fica sabendo da mudança na próxima resposta. Uma decisão que o mestre tomou sem o livro vira um **precedente** e é guardada, para que a mesma pergunta tenha a mesma resposta da próxima vez.
+Toda configuração pode mudar, no chat ou em **Configurações**. Uma decisão que o mestre toma sem o livro vira um **precedente**, para que a mesma pergunta tenha a mesma resposta da próxima vez.
 
 ---
 
-## 4. O painel, seção por seção <!-- icon: party -->
+## 4. O painel <!-- icon: party -->
 
-O painel é uma página no seu próprio computador. O mestre lhe dá o link no começo de cada chat. Ele acompanha o jogo ao vivo: quando o mestre muda algo, a página muda também.
+Uma página no seu próprio computador, aberta só no navegador dele, ativa enquanto o chat estiver aberto. Quando o chat fecha, ela mostra *Não conectado*; volta sozinha com o próximo chat.
 
-Só o navegador do computador onde você joga consegue abri-lo: não um celular ou um tablet, nem na mesma rede Wi-Fi. A página também cabe em uma janela estreita: nesse caso, as seções vão para uma barra na parte de baixo, e os ícones para um menu.
+- **Grupo**: sua ficha e a dos seus companheiros. Clique em um número para rolá-lo; passe o mouse sobre ele para ver de onde vem. Ao lado, as rolagens.
+- **Cena**: onde você está, a imagem e o mapa dela, quem está lá, o que está acontecendo.
+- **Combate**: só em um combate: os turnos, quem luta, o que você tem à mão.
+- **Diário**: missões, a história, suas notas.
+- **Mundo**: o mapa do mundo como seu personagem o conhece.
+- **A bandeja de dados**: escolha os dados e um modificador, e jogue.
+- **Jogos salvos**, **Ajuda**, **Configurações** e **Sobre**, como ícones no fim da fileira. Configurações também guarda as preferências da própria página: tema, som dos dados, conjunto de dados.
 
-A página vive enquanto o chat vive. Feche o chat, e uma página deixada aberta mostra *Não conectado* com a ficha como estava, e o robô do mestre adormece; abra um chat na campanha de novo e, depois que o mestre responder, a página volta sozinha.
-
-### No alto
-
-- O **avatar do mestre**, com o humor dele.
-- O nome da campanha, o sistema de jogo, a **hora do jogo** e se o jogo está **conectado** (o chat ligado).
-- As seções: **Grupo**, **Cena**, **Combate** (só durante um combate), **Diário**, **Mundo**; no fim da fileira, como ícones: **Jogos salvos**, **Ajuda**, **Configurações**, **Sobre**.
-- O tema claro e escuro, no canto superior direito.
-
-Quando o mestre lhe pergunta algo, o aviso dele fica no alto da página, em qualquer seção em que você esteja.
-
-### Grupo
-
-A ficha do seu personagem e as dos seus companheiros. Cada parte da ficha é um cartão que você pode abrir e fechar.
-
-- **Clique em um número** para rolá-lo por diversão. Aponte para um número para ver como ele é formado ("+5: Sabedoria +3, proficiência +2").
-- **Pontos de vida, espaços e usos** aparecem como barras e marcadores.
-- **Condições e efeitos** aparecem com a duração.
-- **Descrição** guarda o texto do seu personagem e a caixa para enviar ao mestre a história dele.
-- Com 0 pontos de vida, os **testes contra a morte** aparecem grandes sob o nome.
-- Ao lado da ficha (abaixo dela em uma tela estreita): **as rolagens**, da mais nova para a mais antiga, as suas e as do mestre que você pode ver. **Limpar** esvazia a lista; **Restaurar** a traz de volta. As rolagens livres aparecem tracejadas e esmaecidas.
-
-Um companheiro com ficha de criatura, como um lobo, mostra essa ficha de criatura em vez de uma ficha completa.
-
-### Cena
-
-Onde o seu grupo está: a imagem e o nome do local, os locais ao redor, o mapa do local quando houver, quem está ali e a cena aberta com o que acontece agora. A missão que você acompanha fica no alto.
-
-### Combate
-
-Só durante um combate. No alto: a rodada, quem age, quem vem depois. Abaixo: a ordem dos turnos, cada combatente com o seu estado, o seu grupo em números e os inimigos em palavras; o que o seu personagem tem à mão (Classe de Armadura, pontos de vida, ataques); o mapa do local, com quem age destacado por um círculo. Na sua vez, o link Combate pulsa em dourado, onde quer que você esteja.
-
-### Diário
-
-Três abas:
-
-- **Missões**: ativas, concluídas e fracassadas, cada uma em um cartão com os objetivos, o prazo como um cronômetro e os relógios. A estrela acompanha uma missão.
-- **História**: os capítulos da campanha, cena por cena, o último primeiro.
-- **Notas**: as suas próprias notas, privadas até você compartilhar uma.
-
-### Mundo
-
-O mapa do mundo como o seu personagem o conhece, com a névoa sobre o resto. Arraste para mover, use a roda do mouse ou o gesto de pinça para dar zoom. Clique em um local para ver o cartão dele. Uma lista dos locais, do mais próximo ao mais distante, fica ao lado. Com mais de um mapa (uma cidade, um continente, outro plano), abas alternam entre eles.
-
-### A bandeja de dados
-
-O botão de dados abre a bandeja: escolha os dados e um modificador, e lance. Com dois ou mais dados do mesmo tipo, escolha quais contam: **Todos**, **Maior** (só o mais alto) ou **Menor** (só o mais baixo). Os dados que você escolheu ficam até você apertar **Limpar**, então a mesma rolagem de dano é um clique a cada rodada. Enquanto o mestre pede uma rolagem, a bandeja diz quais dados a respondem.
-
-### Jogos salvos
-
-Os seus jogos salvos, do mais novo ao mais antigo, cada um com o local, a data do jogo e quando foi feito. **Salvar agora** (com jogos salvos livres), **Voltar para cá** e **Recomeçar**, em vermelho, em dois passos. Veja [Jogos salvos e voltar atrás](#38-saves-and-going-back).
-
-### Configurações
-
-Suas configurações, em grupos: o jogo, aprender o jogo (o mentor e as regras que já foram explicadas a você), dados e medidas, limites (linhas e véus), imagens, idioma. Clique em um valor para escolhê-lo; embaixo dele, o que significa. Depois, as preferências da própria página, guardadas só neste navegador: o tema, o som dos dados, o **conjunto de dados** (resina, metal, madeira, pedra), bordas arredondadas ou retas, rolar à mão.
-
-As configurações do próprio mestre, como regras da casa e precedentes, não estão aqui: ficam no chat.
-
-### Ajuda e Sobre
-
-**Ajuda**: este guia. **Sobre**: o que é o RPG Engine, seus links, suas licenças e os créditos do sistema de jogo.
-
-### Antes do jogo: Configurações e sessão zero
-
-Enquanto uma campanha nova está no primeiro passo, **Configurações**, a página inteira faz as perguntas: uma por vez, cada uma com o que os valores significam e o valor sugerido. **Você decide** deixa a pergunta para o mestre, exceto linhas e véus, que são sempre seus; **Pular** a deixa para depois. No fim, **Pode começar**.
-
-### Mensagens da página
-
-Às vezes a página mostra um aviso sobre si mesma: um problema nos arquivos da campanha (o mestre corrige), o jogo ausente (o chat está fechado), a página sendo traduzida.
+Quando o mestre pergunta algo a você, o aviso dele fica no topo, em qualquer seção em que você esteja.
 
 ---
 
@@ -473,125 +214,62 @@ Enquanto uma campanha nova está no primeiro passo, **Configurações**, a pági
 
 ### 5.1 O que é um sistema de jogo
 
-Um sistema de jogo são os dados de um jogo: sua ficha, seus números, suas criaturas, itens, magias e o texto das regras. Cada campanha usa um só sistema.
-
-O RPG Engine calcula a ficha do seu personagem e o que se gasta e se recupera, como pontos de vida e espaços de magia, como faz uma ficha digital. Como uma característica ou uma magia funciona, o mestre lê nas regras e decide, como em uma mesa.
+Os dados de um jogo: a ficha, os números, as criaturas, os itens, as magias e o texto das regras. Cada campanha joga um sistema. O RPG Engine calcula a ficha e o que é gasto e o que volta; como uma característica funciona, o mestre lê nas regras e decide, como em uma mesa.
 
 ### 5.2 Quinta edição, incluída
 
-O RPG Engine traz a **5e**, do System Reference Document 5.1 (as regras de 2014, livres sob Creative Commons). Ela inclui:
+As raças, classes, subclasses, um antecedente e uma talento do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, calculada.
 
-- as raças, classes, subclasses, um antecedente e uma talento do SRD;
-- as 319 magias, as armas, armaduras e equipamentos, os itens mágicos e os monstros do SRD;
-- os capítulos de regras, que o mestre consulta pelo texto exato;
-- a ficha completa, calculada: modificadores de atributo, jogos de salvaguarda, perícias, Classe Armatura, ataques, CD de magia, espaços de magia, dados de vida, características por nível, experiência e subida de nível;
-- descansos que recuperam o que devem; condições com o texto da regra; lembretes de concentração.
-
-**Conteúdo além do SRD.** Você pode jogar a quinta edição com conteúdo que o SRD não tem, como uma classe ou um monstro de um livro seu. O mestre conhece o jogo, pode ler seus manuais e pode pesquisar na web. Ele escreve o que precisa como páginas da sua campanha, e o RPG Engine funciona do mesmo jeito com elas. O que distribuímos é limitado pela licença; o que o seu mestre conhece, não.
-
-O RPG Engine traz apenas conteúdo original ou de licença aberta: para a quinta edição, o SRD 5.1 sob CC BY 4.0. Todo o resto que aparece no seu jogo é escrito pela sua IA ou por você, como páginas da sua campanha no seu computador: não faz parte do RPG Engine, e nós não o distribuímos.
-
-O RPG Engine é compatível com a quinta edição.
+Você também pode jogar conteúdo que o SRD não tem, de um livro que você possua: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine traz só conteúdo aberto; o que seu mestre sabe não tem esse limite.
 
 ### 5.3 Regras da casa e acréscimos seus
 
-Você não precisa mexer em nenhum arquivo. Peça ao mestre:
-
-> [Regra da casa: um 1 natural em um ataque faz você largar a arma.]
->
-> [Quero jogar com um Caçador de Sangue. Tenho o livro: aqui estão as características da classe.]
->
-> [Nesta campanha, um descanso curto dura 10 minutos.]
-
-O mestre registra isso na sua campanha de uma destas formas:
-
-- **Um acordo da mesa**, em palavras, como a arma largada ou o descanso curto acima. O mestre o guarda com as configurações da campanha e joga com ele daí em diante. Uma decisão que o mestre toma sem o livro é guardada do mesmo jeito, como um **precedente**.
-- **Uma página nova**, como uma classe, uma raça ou um item. Uma classe nova funciona como as do sistema: seu nível, dados de vida e características a contam. Uma raça nova pode partir de uma existente ("como o Elfo, mais…"); uma espada com nome pode partir da Espada Longa.
-- **Números novos para a ficha**: um campo, uma tabela, uma fórmula, um contador que um descanso recupera. Por exemplo, os dados de superioridade de um Mestre da Batalha, que voltam em um descanso curto. Uma regra da casa também pode substituir uma das fórmulas do sistema.
-
-Se você já tem regras da casa escritas, também pode colocá-las como arquivos de texto na pasta `rules` da campanha (veja [a pasta da campanha](#8-for-the-curious-the-campaign-folder)): o mestre as lê antes da regra do livro com o mesmo nome.
+Peça ao mestre: *[Regra da casa: um 1 natural em um ataque faz você largar a arma.]* Ele a guarda como um acordo da mesa ou escreve uma página ou um número da ficha quando for preciso. Regras da casa já escritas podem ir como arquivos de texto na pasta `rules` da campanha.
 
 ### 5.4 Adicionar ou importar seu próprio sistema de jogo
 
-Hoje o RPG Engine joga apenas a quinta edição. Outros sistemas de jogo virão, e também uma forma de adicionar o seu, ou de transformar um jogo que você tem em um sistema a partir dos manuais. Veja [Em breve](#9-coming-later).
+Ainda não: hoje o RPG Engine joga só a quinta edição ([Em breve](#9-coming-later)).
 
 ---
 
 ## 6. Extensões <!-- icon: plus -->
 
-**As extensões ainda não estão disponíveis.** Uma extensão acrescentará algo a uma campanha, além do sistema de jogo: um mundo, uma aventura, um recurso como o clima ou um baralho de tarô, regras da casa para compartilhar. Você escolherá quais cada campanha usa. As primeiras planejadas para a quinta edição são clima e arrombamento de fechaduras.
+Ainda não. Uma extensão vai acrescentar algo a uma campanha além do sistema de jogo: um mundo, uma aventura, um recurso como o clima, regras da casa para compartilhar.
 
 ---
 
-## 7. De onde vem uma campanha, e o idioma dela <!-- icon: world -->
+## 7. De onde vem uma campanha, e seu idioma <!-- icon: world -->
 
 ### 7.1 Três jeitos de ter um mundo
 
-**Criado na hora.** Você dá uma premissa na preparação, e o mestre constrói o mundo conforme avança: cada local, pessoa e trama logo antes de você precisar, e guardado daí em diante. É o jeito mais rápido de jogar: instalar, criar, e em poucos minutos você está criando o seu personagem. Nada do que for inventado se perde: dito uma vez, fica escrito e continua valendo.
+- **Feito na hora**: a partir da sua premissa, o mestre monta cada local, pessoa e trama pouco antes de você precisar, e os guarda.
+- **Preparado no início**: o mesmo, com o mundo montado antes do jogo.
+- **De uma aventura sua**: dê ao mestre um texto ou um PDF e peça que ele prepare tudo, *[Prepare esta aventura como nossa campanha. Não me conte nada do que está nela.]* Ele escreve os locais, os personagens e os segredos. Ainda não há botão de importar.
 
-**Preparado no início.** A mesma premissa, mas com **preparação: tudo no início**: o mestre constrói os locais, as facções, as ameaças e os planos delas do mundo antes de o jogo começar. A primeira sessão começa mais tarde, com mais coisas prontas nos bastidores.
-
-**A partir de uma campanha ou aventura existente.** Hoje não há botão de importar. Dê a sua aventura ao mestre (um texto ou um PDF que o seu host consiga ler) e peça que ele a monte:
-
-> [Tenho esta aventura em PDF. Monte-a como nossa campanha: leia, e escreva os locais, personagens e segredos dela. Não me conte nada do que está nela.]
-
-O mestre a lê com as ferramentas do seu host de IA e a escreve como páginas da campanha, segredos incluídos, que você descobrirá jogando. O Claude Code lê PDFs; com o Codex, um arquivo de texto ou markdown é a escolha mais segura. Faça isso durante a preparação, antes da sessão zero.
-
-Enquanto o mestre trabalha, não abra os detalhes do que ele lê ou escreve (no Claude Code, ctrl+o): eles mostram o texto da aventura, segredos e tudo. O próprio mestre guarda os segredos, como sempre.
-
-Assim que a campanha tem páginas próprias, a preparação deixa de pedir uma premissa e uma preparação. Mesmo em uma campanha escrita, quando você vai a um lugar que o texto não cobre, o mestre cria o que for preciso e registra.
-
-**Uma campanha é jogada uma vez.** Para jogar a mesma aventura de novo, crie uma campanha nova. Dentro de uma campanha, você ainda pode voltar a um jogo salvo ou recomeçar, conforme a configuração Jogos salvos permitir.
+Uma campanha é jogada uma vez: para jogar a mesma aventura de novo, crie uma campanha nova.
 
 ### 7.2 Idiomas
 
-**Um idioma por campanha**: o do mestre. O mestre escreve nele, e o painel o acompanha. O mestre o tira do seu jeito de escrever e o confirma.
-
-**O painel** vem em inglês e italiano (revisados) e em mais 24 idiomas: francês, alemão, espanhol, português (brasileiro), holandês, sueco, norueguês, dinamarquês, finlandês, islandês, russo, ucraniano, polonês, tcheco, romeno, húngaro, grego, turco, árabe, hebraico, hindi, chinês, japonês, coreano. O árabe e o hebraico se leem da direita para a esquerda: a página se espelha, enquanto os mapas e os dados continuam como foram desenhados.
-
-**Qualquer outro idioma** que você escolher em Configurações é traduzido no seu computador, em segundo plano, pelo Codex ou pelo Claude Code com o seu próprio login, começando pela seção que você tem aberta. Isso é feito uma vez por idioma, para todas as suas campanhas. Até ficar pronto, a página fica em inglês. As Configurações dizem se a tradução está em andamento, pronta ou impossível no seu computador.
-
-**As palavras do jogo.** A quinta edição traz seus próprios termos em italiano, do SRD oficial italiano, então quem joga em italiano lê *Classe Armatura*, *tiro salvezza*, *vantaggio*. Os outros idiomas recebem os termos do sistema traduzidos.
-
-**O texto do próprio sistema de jogo** (as magias, os monstros, os capítulos de regras) fica em inglês. O mestre o lê e o conta a você no seu idioma.
-
-**Mudar de idioma no meio da campanha** mantém como estão as páginas já escritas; o mestre escreve as novas no novo idioma.
+Um idioma por campanha, o do mestre, que o painel acompanha. O painel vem com 26 idiomas. Qualquer outro é traduzido no seu computador pelo Codex ou pelo Claude Code ou, sem eles, pelo mestre no chat. Os termos da quinta edição em italiano vêm do SRD italiano oficial; o texto das regras fica em inglês, e o mestre o conta no seu idioma.
 
 ---
 
 ## 8. Para os curiosos: a pasta da campanha <!-- icon: list -->
 
-Você nunca precisa abri-la. Se abrir, saiba que **ela guarda os segredos** da sua campanha: lê-la estraga o jogo.
+Você nunca precisa abri-la, e ela guarda os segredos da sua campanha. Nela estão `campaign.yaml` (suas configurações), `state.yaml` (em que pé está o jogo), `world/` (uma página markdown para cada personagem, local, missão e o resto), `rules/` (suas regras da casa), `images/`, `log.jsonl` (cada mudança), `.saves/`, `.player/` (suas notas) e os pequenos arquivos que dizem aos agentes de IA onde está o RPG Engine. As páginas usam o formato do Obsidian. Se você mudar uma página à mão, o mestre fica sabendo na resposta seguinte.
 
-Uma pasta de campanha contém:
-
-- `campaign.yaml`: as suas configurações;
-- `state.yaml`: em que ponto o jogo está agora: a etapa, a data, a cena aberta;
-- `world/`: uma página por personagem, local, facção, missão, item, evento, tema ou criatura, como arquivos markdown;
-- `rules/`: as suas regras da casa como arquivos de texto, se você acrescentar alguma (o `init` não a cria);
-- `images/`: as imagens, quando houver alguma;
-- `log.jsonl`: cada mudança, em ordem;
-- `.saves/`: os jogos salvos, a partir do primeiro;
-- `.player/`: as suas próprias notas do Diário, que o mestre não lê;
-- `sessions/`: mantida pelo RPG Engine;
-- `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, `.claude/`, `.codex/`, `.gemini/`: os pequenos arquivos que dizem aos hosts de IA onde está o RPG Engine e mantêm a memória deles desligada. O RPG Engine os mantém atualizados; deixe-os como estão.
-
-As páginas são markdown simples, com links como `[[Rocca]]`, o formato do Obsidian: o caderno do mestre pode ser aberto lá. **Se você mudar uma página à mão**, o mestre fica sabendo do que mudou na próxima resposta.
-
-**A linha de comando.** Tudo o que o mestre faz passa por comandos que você também pode executar, na pasta da campanha. Você nunca precisa deles para jogar, e muitos mostram os segredos da campanha, como o `rpg status` e o `rpg show`. `rpg --help` lista todos, e `rpg roll --help` explica um. Um comando que muda algo enquanto um chat está aberto não tem problema: o mestre fica sabendo na próxima resposta, como no caso de uma página mudada à mão.
+Todo comando que o mestre usa também pode ser executado na pasta da campanha: `rpg --help` os lista. Muitos mostram os segredos da campanha.
 
 ---
 
 ## 9. Em breve <!-- icon: hourglass -->
 
-O que está planejado, mas ainda não existe:
-
-- **Você como mestre**: você conduz o jogo, e a IA joga com o grupo.
-- **Várias pessoas à mesa**, cada uma com o seu papel.
-- **Extensões**: ambientações, aventuras, recursos e regras da casa, escolhidos por campanha.
-- **Importar** os seus manuais e aventuras.
-- **Outros jogos**: mais sistemas de jogo, e os seus próprios.
-- **Modo autor**: criar uma campanha ou uma aventura com a IA e compartilhá-la para outros jogarem.
+- **Você como mestre**, com a IA jogando o grupo.
+- **Modo autor**: escreva uma aventura com a IA, depois exporte e compartilhe.
+- **Vários jogadores no mesmo computador**, cada um com seu personagem, alternando a vez no mesmo chat.
+- **Extensões**: configurações, aventuras, recursos e regras da casa.
+- **Importar** seus manuais e aventuras.
+- **Outros jogos**: mais sistemas de jogo, e os seus.
 
 ---
 
@@ -599,49 +277,30 @@ O que está planejado, mas ainda não existe:
 
 ### Perguntas
 
-**Preciso conhecer as regras?** Não. Escolha o mentor em tutorial e o mestre ensina conforme você joga, uma regra por vez. Você sempre pode perguntar entre colchetes.
+**Preciso saber as regras?** Não. Escolha o mentor tutorial e pergunte entre colchetes quando quiser.
 
-**O mestre pode trapacear?** Ele não consegue mudar uma rolagem feita pelo RPG Engine, exceto na dificuldade história, e nunca muda fatos já estabelecidos. Você pode perguntar se uma rolagem foi de verdade.
+**O mestre pode trapacear?** Ele não pode mudar uma rolagem feita pelo RPG Engine, exceto na dificuldade história, nem fatos já estabelecidos.
 
-**Posso trapacear?** Pode tentar. O mestre não aceita a sua palavra sobre fatos: uma linha na sua mensagem que pareça uma mensagem do jogo continua sendo só palavras suas, e o mestre nunca confirma os seus palpites sobre segredos.
+**Custa alguma coisa?** O RPG Engine é gratuito. O mestre roda no plano do seu agente, ou no seu próprio computador com um modelo local. Uma noite de jogo é um chat longo: nos planos menores você pode atingir o limite do plano antes de a noite acabar. Imagens e traduções usam o mesmo plano.
 
-**Custa alguma coisa?** O RPG Engine é gratuito. O mestre funciona no seu próprio plano do Claude ou do ChatGPT, e uma noite de jogo é um chat longo: nos planos menores, você pode chegar ao limite do plano antes de a noite acabar. Imagens e traduções usam o mesmo plano.
+**Posso jogar no celular?** Não: o mestre roda no seu computador, e o painel só abre lá.
 
-**Posso jogar no celular?** Não. O mestre funciona no seu computador, e o painel só abre no navegador desse computador.
+**Posso jogar com amigos?** Ainda não: hoje é um jogador, um personagem, mais companheiros ([Em breve](#9-coming-later)).
 
-**Posso jogar com amigos?** Ainda não: hoje é uma pessoa, um personagem, mais os companheiros. Várias pessoas à mesa virão com os papéis.
-
-**Posso usar outra IA da próxima vez?** Pode. A campanha vive nos arquivos: abra-a em outro host e escreva *continuar*.
-
-**E se eu fechar o navegador?** Nada se perde. Reabra o link enquanto o chat estiver aberto; a página volta para onde o jogo está.
-
-**Posso jogar com conteúdo de D&D que eu tenho?** Pode. O mestre pode usar os seus livros, o próprio conhecimento e a web. O que o RPG Engine distribui se limita a conteúdo gratuito; o que o seu jogo usa fica por sua conta.
+**Posso usar outra IA da próxima vez?** Sim: abra a campanha em outro agente e escreva *continuar*.
 
 ### Problemas
 
-**O painel não abre.** Peça o link ao mestre: `[Qual é o link do painel?]`. A página só funciona enquanto um chat com o mestre estiver aberto nessa campanha, e só depois da primeira resposta do mestre nesse chat. Com o chat fechado, o navegador não alcança a página; uma página deixada aberta diz *Não conectado*.
+**O painel não abre.** Pergunte ao mestre: `[Qual é o link do painel?]`. Ele só funciona enquanto há um chat aberto nessa campanha, depois da primeira resposta do mestre.
 
-**O mestre parece não conhecer o jogo, ou inventa ferramentas.** O seu host de IA não carregou o RPG Engine.
+**O mestre parece não conhecer o jogo.** Seu agente não carregou o RPG Engine. Confira se você o iniciou na pasta da campanha e confiou nela. No Claude Code, escreva `/mcp` e reconecte o `rpg`. No Codex, `codex mcp list` na pasta da campanha deve mostrar `rpg`. Se `rpg --version` não for encontrado, instale o RPG Engine de novo ([2.2](#22-install)).
 
-- Primeiro, confira se você iniciou o host **na pasta da campanha** e se disse que confia nela.
-- **Claude Code**: escreva `/mcp`. Se o `rpg` estiver lá mas tiver falhado, escolha-o e depois **Reconnect**. Se estiver faltando, feche o Claude Code, escreva `claude mcp reset-project-choices` na pasta da campanha e inicie de novo.
-- **Codex**: escreva `codex mcp list` em um terminal, na pasta da campanha. Se o `rpg` estiver faltando, o Codex não confia na pasta: inicie-o ali de novo e diga sim quando ele perguntar.
-- Nos dois: se `rpg --version` em um terminal disser que o comando não foi encontrado, instale o RPG Engine de novo ([2.2](#22-install)) e abra um terminal novo.
+**Atualizar.** Execute `npm install -g rpg-engine` de novo e depois abra um chat novo: um mestre em execução mantém a versão com que começou.
 
-**Depois de uma atualização, nada mudou.** Um mestre em funcionamento mantém a versão com que começou. Abra um chat novo ou, no Claude Code, reconecte o servidor (`/mcp`, depois `rpg`, depois **Reconnect**).
+**O mestre lembra de algo que eu desfiz.** Abra um chat novo e aperte **Abri um novo chat** em Jogos salvos.
 
-**O mestre lembra de algo que eu desfiz.** Você voltou a um jogo salvo, mas continuou jogando no mesmo chat. Abra um chat novo e aperte **Abri um novo chat** em Jogos salvos.
+**Nenhuma imagem aparece.** Configurações > Imagens diz se este computador consegue gerá-las e como.
 
-**O mestre faz perguntas de preparação que eu já respondi na página.** Avise: `[Eu escolhi isso no painel.]`
+**A instalação falha, ou o `rpg` não inicia.** `node --version` deve mostrar 22 ou mais novo. No Windows, mantenha o RPG Engine e suas campanhas fora de caminhos que contenham `&`.
 
-**Nenhuma imagem aparece.** Abra Configurações > Imagens: ali diz se este computador consegue criá-las, e os passos se não conseguir, cada comando com um botão para copiá-lo.
-
-**A página está em inglês, mas eu escolhi outro idioma.** Ela está sendo traduzida em segundo plano; as Configurações dizem como vai. Sem o Codex ou o Claude Code neste computador, ela fica em inglês.
-
-**O mestre diz que a campanha tem problemas.** Ele os corrige sozinho. Se você editou arquivos à mão, ele pode perguntar o que você quis fazer.
-
-**Windows: o `npm` falha na minha pasta.** Não deixe a campanha, nem o RPG Engine, em um caminho que contenha `&`.
-
-**A instalação falha, ou o `rpg` não inicia.** Confira a versão do Node.js com `node --version`: ela precisa ser 22 ou mais nova. Se for mais antiga, instale a versão LTS de [nodejs.org](https://nodejs.org) e depois instale o RPG Engine de novo.
-
-**O link do painel mudou.** Outro programa estava usando o endereço habitual da campanha, ou o Windows o havia reservado. O RPG Engine pegou outro; o mestre lhe dá o novo link. Nada mais muda.
+**O link do painel mudou.** Outro programa ocupou o endereço de costume; o mestre dá a você o novo link.

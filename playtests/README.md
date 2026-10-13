@@ -20,8 +20,8 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 ## Prepare
 
 1. Commit everything, and `npm link` once: the run refuses uncommitted changes, builds `dist/` from the commit and checks that the global `rpg` is that build.
-2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with no `&`: one folder per run, `F:\sviluppo\runs\rpg-engine\<date>\<n>\`, such as `F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro`. The master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
-3. Put the output folder next to the campaign, such as `F:\sviluppo\runs\rpg-engine\2026-10-03\1\results`: a run folder can then be deleted or archived whole.
+2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with no `&`: one folder per run, `<runs>\<date>\<n>\`, where `<runs>` is a folder of yours, such as `<runs>\2026-10-03\1\guadoscuro`. The master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
+3. Put the output folder next to the campaign, such as `<runs>\2026-10-03\1\results`: a run folder can then be deleted or archived whole.
 4. Try it first on a throwaway campaign and output folder, with `--max 1 --hard 2`.
 
 ## Run
@@ -29,9 +29,9 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 From the repo, in a terminal of your own rather than inside a Claude Code session:
 
 ```
-node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --session 1 --first "Ciao! Possiamo cominciare?" --max 50
-node playtests/run-playtest.mjs --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --session 2 --first "Ciao, riprendiamo?" --max 15
-node playtests/run-playtest.mjs --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\1\results --questionnaire playtests/questionnaire.md
+node playtests/run-playtest.mjs --campaign <runs>\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out <runs>\2026-10-03\1\results --session 1 --first "Ciao! Possiamo cominciare?" --max 50
+node playtests/run-playtest.mjs --campaign <runs>\2026-10-03\1\guadoscuro --profile playtests/players/marco.md --out <runs>\2026-10-03\1\results --session 2 --first "Ciao, riprendiamo?" --max 15
+node playtests/run-playtest.mjs --profile playtests/players/marco.md --out <runs>\2026-10-03\1\results --questionnaire playtests/questionnaire.md
 ```
 
 Then count the numbers, for B12 and the report: `node playtests/count-playtest.mjs <results folder> playtests/01-guadoscuro/world`.
@@ -43,7 +43,7 @@ A run only goes forward: each session is played once, in the same output folder,
 To try a moment again, a run can start from a save: `--from` with the `session-N` folder of an earlier run copies its `campaign-after/` into `--campaign`, a new folder, with the host files that this commit's `rpg init` writes, and plays session N+1 in a new `--out`. The player is a new chat that gets the earlier evenings' dialogues as its memory with its first turn, from the runs the save came through when it was itself a run from a save; the counts start from the saved campaign.
 
 ```
-node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\results\session-2 --campaign F:\sviluppo\runs\rpg-engine\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out F:\sviluppo\runs\rpg-engine\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
+node playtests/run-playtest.mjs --from <runs>\2026-10-03\1\results\session-2 --campaign <runs>\2026-10-03\2\guadoscuro --profile playtests/players/marco.md --out <runs>\2026-10-03\2\results --first "Ciao, riprendiamo?" --max 3
 ```
 
 A scenario may start in play, from a campaign its `start.md` prepares (settings, characters, the date): `--prepared` with the scenario's brief accepts it for session 1, and gives the brief to the player with the first turn, as what they remember of their character. Give it again to every run from a save of that scenario.

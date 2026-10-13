@@ -9,7 +9,7 @@ Player: `players/marco.md`, with [brief.md](brief.md). This file never goes into
 Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell):
 
 ```
-$campaign = "F:\sviluppo\runs\rpg-engine\2026-10-09\11\valdorso"
+$campaign = "<runs>\2026-10-09\11\valdorso"
 rpg init $campaign --name "Tre settimane a Valdorso" --system 5e --language it --difficulty normal --lethality epic
 Copy-Item -Recurse -Force playtests\04-tre-settimane\world\* $campaign\world
 Push-Location $campaign
