@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { conditionMark } from "../src/commands/game-effects.ts";
 import { findSystem, installedSystems, rollName } from "../src/systems/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
@@ -101,6 +102,24 @@ describe("what a fight follows on the dashboard (D-314)", () => {
         expect(() => installedSystems([near])).toThrow("dying: forza is not declared as a counter in fields");
         system(near, "nostro", `${base}dying: {at: pf, show: [salvi]}\n`);
         expect(() => installedSystems([near])).toThrow("cannot be read");
+    });
+
+    it("reads the drawing of a condition, and marks an effect named as one of its conditions, whatever its case, with its drawing when it has one (D-419)", () => {
+        system(near, "nostro", `${base}condition-icons: { stordito: "M4 4L20 20" }\n`);
+        const read = installedSystems([near])[0];
+        expect(read.conditionIcons).toEqual({ stordito: "M4 4L20 20" });
+        expect([conditionMark(read, "STORDITO"), conditionMark(read, "Prono"), conditionMark(read, "Benedizione"), conditionMark(undefined, "Prono")]).toEqual([
+            { condition: true, icon: "M4 4L20 20" },
+            { condition: true },
+            {},
+            {},
+        ]);
+        system(near, "nostro", `${base}condition-icons: { Paralizzato: "M4 4L20 20" }\n`);
+        expect(() => installedSystems([near])).toThrow("condition-icons: Paralizzato is not one of its conditions (Stordito, Prono); write it as one of them, or add it to conditions.");
+        system(near, "nostro", `${base}condition-icons: { Prono: "<path d='M4 4'/>" }\n`);
+        expect(() => installedSystems([near])).toThrow("write it as the d of an SVG path on a grid of 24");
+        system(far, "altro", base);
+        expect(installedSystems([far])[0].conditionIcons).toEqual({});
     });
 });
 

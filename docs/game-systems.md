@@ -312,13 +312,15 @@ recipes:
 - It also brings back the uses whose `refill` names one of the occasions it ends (see `counters`).
 - `rules`: the titles of the rules for what it leaves to the master. The output names them, and lists the page's other counters away from their usual value, each with the rule of a threshold that applies.
 
-### conditions
+### conditions and condition-icons
 
 ```yaml
 conditions: [Blinded, Charmed, Poisoned, Prone]
+condition-icons:
+  Prone: "M4 18h16M7 14l5-4 5 4"
 ```
 
-An effect with one of these names shows the text of the rule so titled, a house rule first, with the table's precedents on it; a roll notes the conditions of who rolls.
+An effect with one of these names shows the text of the rule so titled, a house rule first, with the table's precedents on it; a roll notes the conditions of who rolls. The dashboard marks such an effect as a condition, whatever its case, on the tokens and in Combat (D-419). `condition-icons` draws some of them: by condition, the `d` of an SVG path on a grid of 24, its letters and numbers alone; each key must be one of `conditions`. A condition without a drawing, or a system without the key, has a generic mark.
 
 ### keeping
 

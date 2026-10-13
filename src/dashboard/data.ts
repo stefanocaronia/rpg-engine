@@ -80,6 +80,13 @@ export interface ShownPerson
     hostile?: true;
     stranger?: true;
     count?: number;
+    /** What is on them (D-419): the party's effects with their end, of others only the conditions anyone sees. */
+    effects?: SeenEffect[];
+    /** A condition keeps them from acting (D-314). */
+    inactive?: true;
+    /** At 0, as Combat tells it: the party at the dying point, a foe down. */
+    down?: true;
+    dead?: true;
 }
 
 /** Where the player character is, as it knows it (VIEW-6): the places that hold it, the outermost first; what holds there; its text; who is there. */
@@ -183,6 +190,10 @@ export interface SeenEffect
     name: string;
     end?: EffectEnd;
     text: string;
+    /** One of the system's conditions (D-419). */
+    condition?: true;
+    /** The condition's drawing, the d of an SVG path on a grid of 24, when the system gives one (D-419). */
+    icon?: string;
 }
 
 /** When an effect ends (EFF-2): at a game date; at the start of someone's turn in a round; when the scene ends; at an occasion of the game system, as long rest. */

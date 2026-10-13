@@ -398,6 +398,51 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(overview.diary).toContain("Bran: Benedizione until round 2, a creature");
     });
 
+    it("gives the state of each one at the place, in the scene and on the map: the party's effects, of the others the conditions anyone sees; none for someone (D-419)", async () => {
+        await ok("write", "Radura", "--type", "place", "--text", "```map\n#######\n#.....#\n#.....#\n#######\n```");
+
+        for (const [who, square] of [["Kira", "B2"], ["Bran", "C2"], ["Varro", "D2"], ["Strega", "E2"]]) {
+            await ok("move", who, "--to", "Radura", "--at", square);
+        }
+
+        // The witch, seen once only as an old woman, stays unknown: in a scene where the master gives no words, she is someone (D-416).
+        await ok("scene", "open", "--title", "Prima", "--type", "social", "--place", "Radura", "--with", "Kira", "--with", "Strega", "--seen", "Strega=vecchia");
+        await ok("scene", "close", "--summary", "Una vecchia passa.");
+        await ok("write", "Kira", "--set", "hp=0/12");
+        const args = ["--with", "Kira", "--with", "Bran", "--with", "Varro", "--with", "Strega", "--creatures", "Lupo nero=1", "--creatures", "Wolf=2", "--seen", "Varro=uomo incappucciato"];
+        await ok("scene", "open", "--title", "Radura", "--type", "combat", "--place", "Radura", ...args);
+        await ok("move", "Lupo nero 1", "--at", "B3");
+        await ok("move", "Wolf 1", "--at", "C3");
+        await ok("move", "Wolf 2", "--at", "D3");
+        await ok("effect", "add", "Bran", "Prone");
+        await ok("effect", "add", "Bran", "Benedizione");
+        await ok("effect", "add", "Varro", "Stunned");
+        await ok("effect", "add", "Varro", "Maledizione");
+        await ok("effect", "add", "Strega", "Prone");
+        await ok("change", "Lupo nero 1", "hp", "--to=0");
+        await ok("effect", "add", "Lupo nero 1", "prone");
+        await ok("effect", "add", "Wolf 1", "Prone");
+        const prone = { name: "Prone", text: "Prone", condition: true };
+        const bran = { effects: [prone, { name: "Benedizione", text: "Benedizione" }] };
+        const varro = { effects: [{ name: "Stunned", text: "Stunned", condition: true }], inactive: true };
+        const state = ({ effects, inactive, down, dead }: Record<string, unknown>): Record<string, unknown> => JSON.parse(JSON.stringify({ effects, inactive, down, dead }));
+        const states = (people: Record<string, unknown>[]): Record<string, unknown> => Object.fromEntries(people.map((one) => [one.name, state(one)]));
+        let overview = JSON.parse(await ok("view", "--json"));
+        // Kira at 0; Bran's blessing too, which is no condition; the hooded man by the conditions anyone sees, one keeping him from acting; the witch nothing.
+        expect(states(overview.place.here)).toEqual({ Kira: { down: true }, Bran: bran });
+        const atZero = { effects: [{ name: "prone", text: "prone", condition: true }], down: true };
+        // A kind of one copy shows its copy's state, the name as written; a kind of two none, each its own on the map.
+        expect(states(overview.openScene.who)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A": atZero, "creature B": {} });
+        expect(states(overview.place.map.at)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A1": atZero, "creature B1": { effects: [prone] }, "creature B2": {} });
+        // The same marks in Combat.
+        expect(overview.openScene.fighters.find((one: { name: string; }) => one.name === "Bran").effects).toEqual(bran.effects);
+        await ok("write", "Kira", "--add", "knows=[[Varro]]");
+        await ok("write", "Bran", "--set", "status=dead");
+        overview = JSON.parse(await ok("view", "--json"));
+        expect(states(overview.place.here)).toEqual({ Kira: { down: true }, Varro: varro });
+        expect(states(overview.openScene.who)).toMatchObject({ Bran: { ...bran, dead: true }, Varro: varro });
+    });
+
     it("gives someone of the party at the dying point the panel of the dying in their band, outside a fight too; never the dead (D-310 (7))", async () => {
         await ok("write", "Bran", "--set", "hp=0/9", "--set", "death-failures=2");
         const dying = [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 2, limit: 3 }];

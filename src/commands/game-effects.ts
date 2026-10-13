@@ -7,6 +7,7 @@ import { formatCounter, readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
 import { concernsPlayer, isDeclaredUncounted, isEmptyField, type Page, systemFirstFix, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { type GameDate, minutesBetween, readGameDate } from "../time/index.ts";
 import { effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
 import { copyPage, updateScene } from "./game-scene.ts";
@@ -159,12 +160,29 @@ export interface SeenEffect
     name: string;
     end?: EffectEnd;
     text: string;
+    /** One of the system's conditions (D-186, D-419). */
+    condition?: true;
+    /** The condition's drawing, when the system gives one (D-419): the d of an SVG path on a grid of 24. */
+    icon?: string;
 }
 
-/** An effect as the dashboard shows it on someone of the party: its name, its end, and the line status gives (D-276, D-314). */
-export function effectParts(world: World, effect: Effect): SeenEffect
+/** An effect as the dashboard shows it on someone of the party: its name, its end, the line status gives, and whether it is a condition (D-276, D-314, D-419). */
+export function effectParts(world: World, system: GameSystem | undefined, effect: Effect): SeenEffect
 {
-    return { name: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), text: effectShown(world, effect) };
+    return { name: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), text: effectShown(world, effect), ...conditionMark(system, effect.name) };
+}
+
+/** Whether an effect's name is one of the system's conditions, whatever its case, and the drawing the system gives it (D-419); nothing for any other effect. */
+export function conditionMark(system: GameSystem | undefined, name: string): Pick<SeenEffect, "condition" | "icon">
+{
+    const condition = (system?.conditions ?? []).find((named) => comparableText(named) === comparableText(name));
+
+    if (condition === undefined) {
+        return {};
+    }
+
+    const icon = Object.entries(system?.conditionIcons ?? {}).find(([named]) => comparableText(named) === comparableText(condition))?.[1];
+    return { condition: true, ...(icon === undefined ? {} : { icon }) };
 }
 
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */

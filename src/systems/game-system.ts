@@ -104,6 +104,7 @@ const systemSchema = z.object({
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
+    "condition-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
         error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
     }).strict().optional(),
@@ -319,6 +320,8 @@ export interface GameSystem
     recipes: Recipe[];
     /** The names of its conditions (D-186, DAT-6). */
     conditions: string[];
+    /** By condition, its drawing on a token and in Combat (D-419): the d of an SVG path on a grid of 24. */
+    conditionIcons: Record<string, string>;
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
@@ -512,10 +515,13 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     const unknownCondition = [
         ...(data.keeping?.conditions ?? []).map((condition) => ({ where: "keeping.conditions", condition })),
         ...(data.combat?.inactive ?? []).map((condition) => ({ where: "combat.inactive", condition })),
+        ...Object.keys(data["condition-icons"] ?? {}).map((condition) => ({ where: "condition-icons", condition })),
     ].find((entry) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(entry.condition)));
 
     if (unknownCondition !== undefined) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${unknownCondition.where}: ${unknownCondition.condition} is not one of its conditions.`);
+        const named = (data.conditions ?? []).length === 0 ? "" : ` (${(data.conditions ?? []).join(", ")})`;
+        const what = `${unknownCondition.where}: ${unknownCondition.condition} is not one of its conditions${named}; write it as one of them, or add it to conditions.`;
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${what}`);
     }
 
     const gridField = [data.grid?.speed, data.grid?.size].find((field) => field !== undefined && kindOf(field) === undefined);
@@ -611,6 +617,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             rules: value.rules ?? [],
         })),
         conditions: data.conditions ?? [],
+        conditionIcons: data["condition-icons"] ?? {},
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),

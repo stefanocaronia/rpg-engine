@@ -9,7 +9,7 @@ import { environmentAt, locate, type Page, pagesWithName, parsePageReference, pl
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { effectParts, keptEffects, type SeenEffect } from "./game-effects.ts";
+import { conditionMark, effectParts, keptEffects, type SeenEffect } from "./game-effects.ts";
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
 import { shownImage } from "./game-images.ts";
@@ -34,6 +34,13 @@ export interface ShownPerson
     stranger?: true;
     /** How many copies of a creature, in the open scene. */
     count?: number;
+    /** What is on them (D-419): the party's effects with their end, of others only the conditions anyone sees (D-314). */
+    effects?: SeenEffect[];
+    /** A condition keeps them from acting (D-314). */
+    inactive?: true;
+    /** At 0, as Combat tells it (D-314): one of the party at the system's dying point, another when a foe's counter in words says down. */
+    down?: true;
+    dead?: true;
 }
 
 /** Where the player character is, as it knows it (VIEW-6). */
@@ -165,6 +172,7 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
         here: [...sight.party.filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => ({
             ...person(sight, page),
             ...hostileMark(readOpenScene(sight.root).scene, page.name),
+            ...stateOf(sight, page),
         })),
         ...(grid === undefined ? {} : { map: shownGrid(sight, place, grid) }),
     };
@@ -198,12 +206,14 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
         const measured = { square, ...(system?.grid === undefined ? {} : measuredFrom(sight, system.grid, measures, here, self, one)) };
 
         if (one.copy !== undefined && here !== undefined) {
-            const creature = knownPage(sight, here.copies[one.copy]?.creature);
+            const copy = here.copies[one.copy];
+            const creature = knownPage(sight, copy?.creature);
             const image = creature === undefined ? undefined : picture(sight, creature);
+            const state = copy === undefined ? {} : stateOf(sight, copyPage(one.copy, copy));
             return [
                 creature === undefined
-                    ? { name: strangerName(here, one.copy), role: "other", stranger: true, ...hostileMark(here, one.copy), ...measured }
-                    : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), ...hostileMark(here, one.copy), ...measured },
+                    ? { name: strangerName(here, one.copy), role: "other", stranger: true, ...hostileMark(here, one.copy), ...state, ...measured }
+                    : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), ...hostileMark(here, one.copy), ...state, ...measured },
             ];
         }
 
@@ -214,10 +224,12 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
         }
 
         if (sight.party.includes(page) || knowsPage(sight.knowledge, page)) {
-            return [{ ...person(sight, page), ...hostileMark(here, page.name), ...measured }];
+            return [{ ...person(sight, page), ...hostileMark(here, page.name), ...stateOf(sight, page), ...measured }];
         }
 
-        return inScene.has(comparableText(page.name)) ? [{ name: seenName(here, page.name), role: "other", stranger: true, ...hostileMark(here, page.name), ...measured }] : [];
+        return inScene.has(comparableText(page.name))
+            ? [{ name: seenName(here, page.name), role: "other", stranger: true, ...hostileMark(here, page.name), ...strangerState(sight, here, page), ...measured }]
+            : [];
     });
     const reach = system?.grid === undefined || here === undefined || self === undefined || !isTurnOf(here, self.name) ? [] : reachOf(sight, system.grid, measures, here, self, { ...grid, lines });
     return {
@@ -276,9 +288,12 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
 
     const place = knownPage(sight, scene.place);
     const characters = scene.with.map((link) => {
+        const name = parsePageReference(link).name;
         const page = knownPage(sight, link);
-        const hostile = hostileMark(scene, parsePageReference(link).name);
-        return page === undefined ? { name: seenName(scene, parsePageReference(link).name), role: "other" as const, stranger: true as const, ...hostile } : { ...person(sight, page), ...hostile };
+        const hostile = hostileMark(scene, name);
+        const written = pagesWithName(sight.world, name)[0];
+        const state = written === undefined ? {} : strangerState(sight, scene, written);
+        return page === undefined ? { name: seenName(scene, name), role: "other" as const, stranger: true as const, ...hostile, ...state } : { ...person(sight, page), ...hostile, ...stateOf(sight, page) };
     });
     const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
         const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
@@ -288,7 +303,9 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         const name = first === undefined ? "creature" : strangerName(scene, first).replace(/\s*\d+$/, "");
         // A kind is hostile when one of its copies is.
         const hostile = Object.keys(scene.copies).some((copy) => scene.copies[copy].creature === creature && hostileMark(scene, copy).hostile === true) ? { hostile: true as const } : {};
-        return page === undefined ? { name, role: "other" as const, stranger: true as const, count, ...hostile } : { ...person(sight, page), count, ...hostile };
+        // A kind of one copy shows its state; of more, each shows its own on the map and in Combat.
+        const state = count === 1 && first !== undefined ? stateOf(sight, copyPage(first, scene.copies[first])) : {};
+        return page === undefined ? { name, role: "other" as const, stranger: true as const, count, ...hostile, ...state } : { ...person(sight, page), count, ...hostile, ...state };
     });
     const turnName = (name: string): string => shownTurn(sight, scene, name);
     return {
@@ -343,12 +360,8 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
     const stranger = copy === undefined ? !party && !knowsPage(sight.knowledge, page) : creature === undefined;
     const shown = !stranger ? page.name : copy === undefined ? seenName(scene, page.name) : strangerName(scene, copy[0]);
     const image = stranger ? undefined : picture(sight, creature ?? page);
-    const counters = pageCounters(sight.world, page);
-    const track = system?.combat === undefined ? undefined : readCounter(counters[system.combat.track]);
-    const conditions = new Set((system?.conditions ?? []).map(comparableText));
-    const effects = effectsOf(page).filter((effect) => party || conditions.has(comparableText(effect.name)));
-    const inactive = new Set((system?.combat?.inactive ?? []).map(comparableText));
-    const health = track === undefined ? undefined : party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
+    const effects = shownEffects(sight, system, page, party);
+    const health = healthOf(sight.world, system, page, party);
     const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
     const dying = party ? dyingOf(sight.world, system, page) : undefined;
     const icon = party ? tokenIcon(sight.world, system, page) : undefined;
@@ -360,8 +373,8 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
         ...(stranger ? { stranger: true as const } : {}),
         ...hostileMark(scene, name),
         ...(health === undefined ? {} : { health }),
-        effects: effects.map((effect) => (party ? seenEffect(sight, effect) : { name: effect.name, text: effect.name })),
-        ...(effects.some((effect) => inactive.has(comparableText(effect.name))) ? { inactive: true as const } : {}),
+        effects,
+        ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
         ...(keeps.length === 0 ? {} : { keeps }),
         ...(dying === undefined ? {} : { dying }),
     };
@@ -387,13 +400,67 @@ export function dyingOf(world: World, system: GameSystem | undefined, page: Page
 export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
 {
     const end = effect.end;
+    const system = campaignSystem(sight.root, sight.context);
 
     if (end === undefined || !("turn" in end)) {
-        return effectParts(sight.world, effect);
+        return effectParts(sight.world, system, effect);
     }
 
     const scene = readOpenScene(sight.root).scene ?? { copies: {} };
-    return effectParts(sight.world, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } });
+    return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } });
+}
+
+/**
+ * The state a token shows (D-419): what is on them, whether a condition keeps them from acting, whether they are at 0 as Combat tells it, or dead; the party in
+ * full, the others by what anyone sees (D-314).
+ */
+function stateOf(sight: PlaceSight, page: Page): Pick<ShownPerson, "effects" | "inactive" | "down" | "dead">
+{
+    const system = campaignSystem(sight.root, sight.context);
+    const party = sight.party.includes(page);
+    const effects = shownEffects(sight, system, page, party);
+    const dead = page.fields.status === "dead";
+    const down = !dead && (party ? dyingOf(sight.world, system, page) !== undefined : healthOf(sight.world, system, page, false) === "down");
+    return {
+        ...(effects.length === 0 ? {} : { effects }),
+        ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
+        ...(down ? { down: true as const } : {}),
+        ...(dead ? { dead: true as const } : {}),
+    };
+}
+
+/** The state of a character in the scene the character does not know (D-419): as anyone sees it when the master said what it sees of them, none for someone. */
+function strangerState(sight: PlaceSight, scene: Pick<Scene, "seen"> | undefined, page: Page): Pick<ShownPerson, "effects" | "inactive" | "down" | "dead">
+{
+    return scene === undefined || seenOf(scene, page.name) === undefined ? {} : stateOf(sight, page);
+}
+
+/** What is on someone as the player sees it (D-314, D-419): the party's effects as their line gives them, with their end; of the others only the conditions anyone sees. */
+function shownEffects(sight: PlaceSight, system: GameSystem | undefined, page: Page, party: boolean): SeenEffect[]
+{
+    return effectsOf(page).flatMap((effect) => {
+        const mark = conditionMark(system, effect.name);
+        return party ? [seenEffect(sight, effect)] : mark.condition === true ? [{ name: effect.name, text: effect.name, ...mark }] : [];
+    });
+}
+
+/** Whether one of these effects is a condition the system says keeps from acting (D-314). */
+function keepsFromActing(system: GameSystem | undefined, effects: SeenEffect[]): boolean
+{
+    const inactive = new Set((system?.combat?.inactive ?? []).map(comparableText));
+    return effects.some((effect) => inactive.has(comparableText(effect.name)));
+}
+
+/** Someone's counter in a fight as the player may know it (D-238, D-314): the party's as numbers, a foe's in words when the system says so, else none. */
+function healthOf(world: World, system: GameSystem | undefined, page: Page, party: boolean): string | undefined
+{
+    const track = system?.combat === undefined ? undefined : readCounter(pageCounters(world, page)[system.combat.track]);
+
+    if (track === undefined) {
+        return undefined;
+    }
+
+    return party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
 }
 
 /** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */
