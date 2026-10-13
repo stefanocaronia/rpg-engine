@@ -63,6 +63,20 @@ export function CardHeader({ icon, title, preview, open, onToggle, fixed }: { ic
     );
 }
 
+/** The header of a card that is always open, as Combat's (D-419): the look of a card's header, its icon, its title, and a note at its end; no toggle. */
+export function CardHead({ icon, title, note }: { icon: string; title: ComponentChildren; note?: ComponentChildren; })
+{
+    return (
+        <header class="card-head">
+            <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d={icon} />
+            </svg>
+            {title}
+            {note !== undefined && <span class="card-head-note">{note}</span>}
+        </header>
+    );
+}
+
 function storedOpen(name: string, first: boolean): boolean
 {
     try {

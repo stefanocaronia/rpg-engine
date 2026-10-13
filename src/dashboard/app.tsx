@@ -283,7 +283,7 @@ function App()
                             </a>
                         )}
                         {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-                        {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} />}
+                        {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
                         <div class="body">
                             <main>
                                 {address.section === "about" && <About product={productName} system={shown.system} />}
@@ -297,6 +297,7 @@ function App()
                                         map={shown.place?.map}
                                         place={shown.place?.name}
                                         lead={lead}
+                                        party={shown.party}
                                         own={{
                                             sheet: shown.chosen === lead?.name ? shown.sheet : [],
                                             cards: shown.cards,
@@ -321,6 +322,7 @@ function App()
                                         story={shown.story}
                                         version={shown.version}
                                         onRoll={throwFromSheet}
+                                        scene={shown.openScene}
                                     />
                                 )}
                             </main>

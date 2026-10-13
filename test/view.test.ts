@@ -422,15 +422,17 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         await ok("change", "Lupo nero 1", "hp", "--to=0");
         await ok("effect", "add", "Lupo nero 1", "prone");
         await ok("effect", "add", "Wolf 1", "Prone");
-        const prone = { name: "Prone", text: "Prone", condition: true };
+        // Each condition with its drawing, as the 5e gives one (condition-icons).
+        const drawn = expect.any(String) as unknown as string;
+        const prone = { name: "Prone", text: "Prone", condition: true, icon: drawn };
         const bran = { effects: [prone, { name: "Benedizione", text: "Benedizione" }] };
-        const varro = { effects: [{ name: "Stunned", text: "Stunned", condition: true }], inactive: true };
+        const varro = { effects: [{ name: "Stunned", text: "Stunned", condition: true, icon: drawn }], inactive: true };
         const state = ({ effects, inactive, down, dead }: Record<string, unknown>): Record<string, unknown> => JSON.parse(JSON.stringify({ effects, inactive, down, dead }));
         const states = (people: Record<string, unknown>[]): Record<string, unknown> => Object.fromEntries(people.map((one) => [one.name, state(one)]));
         let overview = JSON.parse(await ok("view", "--json"));
         // Kira at 0; Bran's blessing too, which is no condition; the hooded man by the conditions anyone sees, one keeping him from acting; the witch nothing.
         expect(states(overview.place.here)).toEqual({ Kira: { down: true }, Bran: bran });
-        const atZero = { effects: [{ name: "prone", text: "prone", condition: true }], down: true };
+        const atZero = { effects: [{ name: "prone", text: "prone", condition: true, icon: drawn }], down: true };
         // A kind of one copy shows its copy's state, the name as written; a kind of two none, each its own on the map.
         expect(states(overview.openScene.who)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A": atZero, "creature B": {} });
         expect(states(overview.place.map.at)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A1": atZero, "creature B1": { effects: [prone] }, "creature B2": {} });

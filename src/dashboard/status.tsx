@@ -1,0 +1,90 @@
+// Someone's state (D-419): on their token a small pip at the lower right, the mark that counts most (dead, at 0, kept from acting, then the last condition put
+// on), a second coin behind it when there are more, all of them in its tooltip; in Combat's order each mark as an icon. The conditions' drawings are the game
+// system's (`condition-icons`); one it does not draw, or a system without them, has a plain mark. The player chooses when the pips show (Settings).
+import type { Member, SeenEffect, ShownScene } from "./data.ts";
+import { effectLabel } from "./game-words.ts";
+import { statusIcons } from "./icons.tsx";
+import { conditionsPref, useChoice } from "./prefs.ts";
+import { t } from "./text.ts";
+
+/** What a token's pip reads of someone: what is on them, whether they act, are at 0 or dead. */
+export interface TokenStatus
+{
+    effects?: SeenEffect[] | undefined;
+    inactive?: boolean | undefined;
+    down?: boolean | undefined;
+    dead?: boolean | undefined;
+}
+
+/** A mark of someone's state: its drawing, its words, and whether it is one of the engine's states, a condition, or another effect (`other`: `.effect` is the chips of the effects). */
+export interface StatusMark
+{
+    icon: string;
+    label: string;
+    kind: "state" | "condition" | "other";
+}
+
+/** The marks of someone's state, the one that counts most first: dead, at 0, kept from acting, then the conditions, the last put on first; with `all`, their other effects after them. */
+export function statusMarks(status: TokenStatus, all = false): StatusMark[]
+{
+    const effects = status.effects ?? [];
+    const states: StatusMark[] = status.dead === true
+        ? [{ icon: statusIcons.dead, label: t("dead"), kind: "state" }]
+        : [
+            ...(status.down === true ? [{ icon: statusIcons.down, label: t("down"), kind: "state" as const }] : []),
+            ...(status.inactive === true ? [{ icon: statusIcons.inactive, label: t("Can't act"), kind: "state" as const }] : []),
+        ];
+    const conditions = effects.filter((effect) => effect.condition === true).reverse().map((effect): StatusMark => ({ icon: effect.icon ?? statusIcons.condition, label: effectLabel(effect), kind: "condition" }));
+    const others = all ? effects.filter((effect) => effect.condition !== true).map((effect): StatusMark => ({ icon: statusIcons.condition, label: effectLabel(effect), kind: "other" })) : [];
+    return [...states, ...conditions, ...others];
+}
+
+/** The state of one of the party: their effects, whether dead or at their dying point, and whether the open scene says they cannot act. */
+export function memberStatus(member: Member, scene?: ShownScene): TokenStatus
+{
+    const inScene = scene?.fighters?.find((fighter) => fighter.name === member.name) ?? scene?.who.find((person) => person.name === member.name);
+    return { effects: member.effects, dead: member.dead, down: member.dying !== undefined, inactive: inScene?.inactive === true };
+}
+
+/** The pip of someone's state on their token, its marks in its tooltip; none without a mark, or while the player keeps them off. */
+export function StatusPip({ status }: { status: TokenStatus | undefined; })
+{
+    const [shown] = useChoice(conditionsPref);
+    const marks = status === undefined ? [] : statusMarks(status);
+
+    if (shown === "never" || marks.length === 0) {
+        return null;
+    }
+
+    const classes = ["status-pip", marks[0].kind === "state" ? "strong" : "", marks.length > 1 ? "stacked" : "", shown === "hover" ? "on-hover" : ""];
+    return (
+        <span class={classes.filter((name) => name !== "").join(" ")} data-tip={marks.map((mark) => mark.label).join(", ")}>
+            <svg viewBox="-3 -3 30 30" aria-hidden="true">
+                <path d={marks[0].icon} />
+            </svg>
+        </span>
+    );
+}
+
+/** Each mark of someone's state as an icon with its words, for a screen reader too and for the keyboard, as Combat's order shows them (D-419). */
+export function StatusIcons({ status }: { status: TokenStatus; })
+{
+    const marks = statusMarks(status, true);
+    return marks.length === 0 ? null : (
+        <span class="status-icons">
+            {marks.map((mark, index) => (
+                <span key={`${mark.label} ${index}`} class={`status-icon ${mark.kind}`} role="img" aria-label={mark.label} data-tip={mark.label} tabIndex={0}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d={mark.icon} />
+                    </svg>
+                </span>
+            ))}
+        </span>
+    );
+}
+
+/** The words of someone's state for a screen reader, as a token's name says them. */
+export function statusWords(status: TokenStatus): string[]
+{
+    return statusMarks(status, true).map((mark) => mark.label);
+}

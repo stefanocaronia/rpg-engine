@@ -70,6 +70,17 @@ const iconPaths = {
     licence: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 14l2 2 3.5-4",
 };
 
+/**
+ * The engine's states on a token and in Combat (D-419), for any game: dead, at 0, kept from acting; and the mark of a condition the system draws no picture
+ * for. The conditions' own pictures are the system's (`condition-icons`).
+ */
+export const statusIcons = {
+    dead: "M7 20V10.5a5 5 0 0 1 10 0V20 M4.5 20h15 M12 9v6 M9.8 11.2h4.4",
+    down: "M3 12.5h4.5l2-5 3 10 2.5-5H21",
+    inactive: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17Z M10 9v6 M14 9v6",
+    condition: "M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8Z",
+};
+
 /** The pictures of the page's own cards, and the plain one of a card whose system gives none (D-284). */
 export const cardIcons = {
     description: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",

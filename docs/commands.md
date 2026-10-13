@@ -217,7 +217,7 @@ Read-only: no. Positional parameters: `action`, `page`, `name`.
 
 ### mood
 
-Set a mood: yours as the master, which the dashboard's robot shows, or a character's when it changes for a while: the party's show on their tokens, anyone else's only you see, in status. Set yours when the story's tone turns as the player lives it, and let your voice follow it. moment is a reaction of a few seconds to what the player has just seen happen, what a roll decides or a bold choice, a few times a session; the dashboard already reacts to the dice's highs and lows by itself. Your face never shows what the player does not know yet: no grin before the trap is sprung. Mirror the player character's mood from how the player plays them, never decide it for them. neutral takes a mood away. Example: master worried; master surprised, moment; Lena afraid.
+Set a mood: yours as the master, which the dashboard's robot shows, or a character's when it changes for a while: the party's show on their sheets, anyone else's only you see, in status. Set yours when the story's tone turns as the player lives it, and let your voice follow it. moment is a reaction of a few seconds to what the player has just seen happen, what a roll decides or a bold choice, a few times a session; the dashboard already reacts to the dice's highs and lows by itself. Your face never shows what the player does not know yet: no grin before the trap is sprung. Mirror the player character's mood from how the player plays them, never decide it for them. neutral takes a mood away. Example: master worried; master surprised, moment; Lena afraid.
 
 Read-only: no. Positional parameters: `who`, `mood`.
 

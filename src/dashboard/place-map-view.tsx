@@ -1,15 +1,18 @@
 // The map of the place where the party is (GRD-6, D-323, D-325), in Joseph's ink and washes on light paper in both themes: walls hatched in bundles with a
 // shade along them, the floor's outline rounded where it meets rock, the ground by the place's look and its kinds, the things of the legend drawn by kind, by
-// square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting ringed, a foe the master marked glowing (D-415); then the key, and who
+// square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting raised off the paper, a foe the master marked glowing (D-415); then the key, and who
 // is where in words, the map's twin.
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { CardHead } from "./card.tsx";
 import type { ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
+import { iconPath } from "./icons.tsx";
 import { strangerLabel } from "./labels.ts";
 import { type Side, sideIcons, sideOf } from "./party.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
-import { tokenSymbolsPref, usePref } from "./prefs.ts";
+import { conditionsPref, tokenSymbolsPref, useChoice, usePref } from "./prefs.ts";
+import { statusMarks, statusWords } from "./status.tsx";
 import { t } from "./text.ts";
 
 // How wide a square is drawn, in pixels.
@@ -53,10 +56,16 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
     const self = standing.find((one) => one.role === "pc");
     // What one fills, in squares a side: a large creature stands on the square at the top left of its own (GRD-4).
     const middle = (one: { at: Square; side?: number; }): [number, number] => [X(one.at.column) + (size * (one.side ?? 1)) / 2, Y(one.at.row) + (size * (one.side ?? 1)) / 2];
-    const reach = (map.reach ?? []).flatMap((name) => {
-        const square = squareOf(name);
-        return square === undefined ? [] : [square];
-    });
+    // The squares the character can still reach, and those it stands on, which are never out of its reach (D-328).
+    const reach = [
+        ...(map.reach ?? []).flatMap((name) => {
+            const square = squareOf(name);
+            return square === undefined ? [] : [square];
+        }),
+        ...(map.reach === undefined || self === undefined
+            ? []
+            : Array.from({ length: (self.side ?? 1) ** 2 }, (_, index) => ({ column: self.at.column + (index % (self.side ?? 1)), row: self.at.row + Math.floor(index / (self.side ?? 1)) }))),
+    ];
     const letters = Math.max(11, 11 / scale);
     const drawn = (
         <>
@@ -87,10 +96,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
     );
     return (
         <section class="lm" aria-labelledby="lm-title">
-            <header class="lm-head">
-                <h3 id="lm-title">{t("Map")}</h3>
-                <span class="lm-sub">{place}</span>
-            </header>
+            <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />
             <div class={picking === undefined ? "lm-frame" : "lm-frame panned"}>
                 {/* To choose a square, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
                 <svg
@@ -672,8 +678,9 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
 
 /**
  * Someone on the map, as a coin (D-409): their picture to its edge, or a stranger's number, as Creature 2's, or the hood, under glass, its edge bevelled, lit
- * above and shaded below, its shadow low on the paper; no ring of a side. Whoever acts has a ring of the accent off the token; a foe the master marked glows
- * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414).
+ * above and shaded below, its shadow low on the paper; no ring of a side. Whoever acts is raised off the paper, a little larger, its shadow wide and soft (D-419); a foe the master marked glows
+ * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414); anyone the pip of
+ * their state at the lower right, and its words in the token's title (D-419).
  */
 function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; })
 {
@@ -684,14 +691,13 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
     const pip = symbols ? sideOf(one.role) : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
-            <title>{`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`}</title>
+            <title>{[`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`, ...statusWords(one)].join(" · ")}</title>
             {hostile && (
                 <>
                     <circle class="lm-hostile-glow" cx={x} cy={y} r={r + 7} fill="url(#lm-hostile-glow)" />
                     <circle class="lm-hostile" cx={x} cy={y} r={r + 2.4} />
                 </>
             )}
-            {acting && <circle class="lm-acting" cx={x} cy={y} r={r + 4.5} />}
             {/* A token under glass, its shadow on the paper. */}
             <g filter="url(#lm-drop)">
                 <circle class="lm-disc" cx={x} cy={y} r={r} />
@@ -714,6 +720,8 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
                 <path class="lm-bevel-shade" d={crescent(x, y, r, -1.5)} />
             </g>
             {pip !== undefined && <MapPip side={pip} icon={one.stranger ? undefined : one.icon} x={x - r * 0.725} y={y + r * 0.725} />}
+            {/* A little further in than the side's pip, so that two tokens side by side keep their pips apart. */}
+            <MapStatus one={one} x={x + r * 0.68} y={y + r * 0.68} />
         </g>
     );
 }
@@ -730,6 +738,37 @@ function MapPip({ side, icon, x, y }: { side: Side; icon: string | undefined; x:
             {side === "you" && <circle class="lm-pip-gold" cx={x} cy={y} r={radius + 1.5} />}
             <circle class="lm-pip-disc" cx={x} cy={y} r={radius} />
             <path class="lm-pip-symbol" d={icon ?? sideIcons[side]} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
+        </g>
+    );
+}
+
+/** The pip of someone's state on the map (D-419): as on the page, smaller than the side's, a second coin behind when there are more; the same size for any creature. */
+function MapStatus({ one, x, y }: { one: ShownGrid["at"][number]; x: number; y: number; })
+{
+    const [shown] = useChoice(conditionsPref);
+    const marks = statusMarks(one);
+
+    if (shown === "never" || marks.length === 0) {
+        return null;
+    }
+
+    // As on a token of 40 pixels, a pip of 14 with a symbol of 11.2.
+    const radius = size * 0.43 * (14 / 40);
+    const scale = (radius * 2 * (24 / 30)) / 24;
+    // The second coin up more than out, within the token's square.
+    const behind = { x: radius * 0.2, y: radius * 0.45 };
+    const strong = marks[0].kind === "state";
+    return (
+        <g class={["lm-status", strong ? "strong" : "", shown === "hover" ? "on-hover" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
+            {marks.length > 1 && (
+                <>
+                    <circle class="lm-pip-paper" cx={x + behind.x} cy={y - behind.y} r={radius + 1.5} />
+                    <circle class="lm-status-back" cx={x + behind.x} cy={y - behind.y} r={radius} />
+                </>
+            )}
+            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + 1.5} />
+            <circle class="lm-status-disc" cx={x} cy={y} r={radius} />
+            <path class="lm-status-symbol" d={marks[0].icon} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
         </g>
     );
 }

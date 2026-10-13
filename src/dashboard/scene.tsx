@@ -10,6 +10,7 @@ import { Markdown, plainLine } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
+import { StatusPip } from "./status.tsx";
 import { t } from "./text.ts";
 
 export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownScene; })
@@ -143,7 +144,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
 
 /**
  * Who is there: their tokens with their names under them, the party first; someone the character does not know as a hood, the copies with how many; a foe the
- * master marked glows red a little (D-415); one of the party with the pip of their side (D-414).
+ * master marked glows red a little (D-415); one of the party with the pip of their side (D-414); anyone with the pip of their state (D-419).
  */
 function People({ people }: { people: ShownPerson[]; })
 {
@@ -156,6 +157,7 @@ function People({ people }: { people: ShownPerson[]; })
                             // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
                             <span class={["token stranger", letterOf(person.name) === undefined ? "" : "numbered", person.hostile === true ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                                 {letterOf(person.name) ?? <Icon name="stranger" />}
+                                <StatusPip status={person} />
                             </span>
                         )
                         : (
@@ -163,6 +165,7 @@ function People({ people }: { people: ShownPerson[]; })
                                 member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
                                 hostile={person.hostile === true}
                                 side={sideOf(person.role)}
+                                status={person}
                             />
                         )}
                     <span>

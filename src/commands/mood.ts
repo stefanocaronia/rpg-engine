@@ -12,9 +12,9 @@ import { campaignWorld } from "./game-world.ts";
 
 // What a character's new mood asks of the master, by their role.
 const moodAdvice = {
-    pc: "the dashboard shows it on their token. It mirrors what the player writes and plays, never what you narrate or what a spell or condition does to them: "
+    pc: "the dashboard shows it on their sheet. It mirrors what the player writes and plays, never what you narrate or what a spell or condition does to them: "
         + "when the player says they feel otherwise, follow the player.",
-    companion: "the dashboard shows it on their token. Let it colour how they speak and act.",
+    companion: "the dashboard shows it on their sheet. Let it colour how they speak and act.",
     npc: "only you know it. Show it in how they speak and act, and the player reads it from that; a check your game has for reading someone only when they hide it.",
 };
 
@@ -23,7 +23,7 @@ interface MoodResult
     /** The master, or the character's page. */
     who: string;
     master: boolean;
-    /** The character's role: the party's moods show on their tokens. */
+    /** The character's role: the party's moods show on their sheets (D-419). */
     role?: "pc" | "companion" | "npc";
     mood: Mood;
     /** The mood before; for a moment, the one the master goes back to. */
@@ -34,7 +34,7 @@ interface MoodResult
 
 export const mood = defineCommand({
     name: "mood",
-    description: "Set a mood: yours as the master, which the dashboard's robot shows, or a character's when it changes for a while: the party's show on their tokens, "
+    description: "Set a mood: yours as the master, which the dashboard's robot shows, or a character's when it changes for a while: the party's show on their sheets, "
         + "anyone else's only you see, in status. Set yours when the story's tone turns as the player lives it, and let your voice follow it. "
         + "moment is a reaction of a few seconds to what the player has just seen happen, what a roll decides or a bold choice, a few times a session; "
         + "the dashboard already reacts to the dice's highs and lows by itself. Your face never shows what the player does not know yet: no grin before the trap is sprung. "

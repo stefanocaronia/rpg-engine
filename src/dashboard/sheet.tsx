@@ -8,15 +8,16 @@ import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
-import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
-import { moodLabel } from "./mood.tsx";
+import { MoodFace, moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
+import { memberStatus } from "./status.tsx";
 import { StoryBox } from "./story.tsx";
 import { arrowStep, systemWord, t } from "./text.ts";
 import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
@@ -29,7 +30,7 @@ const backstoryCard = "Backstory";
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
 
 export function MemberSheet(
-    { member, headline, sheet, cards, text, story, version, onRoll }: {
+    { member, headline, sheet, cards, text, story, version, onRoll, scene }: {
         member: Member;
         headline?: string;
         sheet: SheetGroup[];
@@ -38,12 +39,11 @@ export function MemberSheet(
         story?: string;
         version: number;
         onRoll: FreeRoll;
+        scene?: ShownScene;
     },
 )
 {
     const { rail, others } = arrangedGroups(sheet, cards);
-    // The system's headline, and the mood in words, which the badge's tooltip never shows on a touch screen (D-306).
-    const title = [headline, member.mood === undefined ? undefined : moodLabel(member.mood)].filter((part) => part !== undefined && part !== "").join(" · ");
     const fields = sheetFields(member, sheet);
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} first={shown === others[0]} />;
     // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
@@ -54,10 +54,24 @@ export function MemberSheet(
         <section class="sheet" aria-label={member.name}>
             <header class="band">
                 <div class="identity">
-                    <MemberToken member={member} large />
+                    <MemberToken member={member} large status={memberStatus(member, scene)} />
                     <div class="who">
                         <h2>{member.name}</h2>
-                        {title !== "" && <p class="headline">{title}</p>}
+                        {/* The system's headline, and the mood: only here, its face before its word (D-305, D-419). */}
+                        {(headline !== undefined && headline !== "") || member.mood !== undefined
+                            ? (
+                                <p class="headline">
+                                    {headline}
+                                    {headline !== undefined && headline !== "" && member.mood !== undefined && " · "}
+                                    {member.mood !== undefined && (
+                                        <span class="mood-word">
+                                            <MoodFace mood={member.mood} />
+                                            {moodLabel(member.mood)}
+                                        </span>
+                                    )}
+                                </p>
+                            )
+                            : null}
                         {member.place && (
                             <p class="place">
                                 <Icon name="place" />

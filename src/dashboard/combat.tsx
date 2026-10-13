@@ -1,17 +1,20 @@
 // The Combat section (D-314, D-315): only while the open scene is a fight. On top the band: the round, who acts, who comes next, the line of now; gold when it is
-// the player's turn. Under it the order of the turns, fixed, the mark moving: each one's counter, the party's as numbers and a foe's in words, what is on them,
-// "can't act", what they keep, the death saves at 0. Beside it what the player's character has at hand, the fields and groups of its sheet the system names. The
-// page never decides a rule: it shows.
+// the player's turn. Under it the order of the turns, fixed, the mark moving, each one a small card (D-419): their place in a strip that lights up on their
+// turn, their counter, the party's as numbers and a foe's in words, their state as icons, what they keep, the death saves at 0. Beside it what the player's
+// character has at hand, the fields and groups of its sheet the system names; every card with its header. The page never decides a rule: it shows.
 import { sectionAddress } from "./address.ts";
+import { CardHead } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } from "./data.ts";
-import { Icon } from "./icons.tsx";
-import { shownText, strangerLabel } from "./labels.ts";
+import { Icon, iconPath } from "./icons.tsx";
+import { fieldLabel, shownText, strangerLabel } from "./labels.ts";
+import { stripCounter } from "./layout.ts";
 import { PageHead } from "./pages.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
+import { StatusIcons, StatusPip, type TokenStatus } from "./status.tsx";
 import { t } from "./text.ts";
-import { DeathSaves, Effects } from "./widgets.tsx";
+import { Bar, DeathSaves } from "./widgets.tsx";
 
 /** The player character's sheet as the page read it, for what it has at hand. */
 interface OwnSheet
@@ -22,7 +25,7 @@ interface OwnSheet
     onRoll: FreeRoll;
 }
 
-export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScene; lead?: Member; own: OwnSheet; map?: ShownGrid; place?: string; })
+export function CombatView({ scene, lead, party, own, map, place }: { scene?: ShownScene; lead?: Member; party: Member[]; own: OwnSheet; map?: ShownGrid; place?: string; })
 {
     const fighters = scene?.type === "combat" ? scene.fighters ?? [] : undefined;
 
@@ -45,9 +48,24 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
     const mine = lead !== undefined && scene.turn === lead.name;
     const self = fighters.find((fighter) => fighter.role === "pc");
     const order = (
-        <ol class="turn-order" aria-label={t("The order of the turns")}>
-            {fighters.map((fighter, index) => <FighterRow key={`${fighter.name} ${index}`} fighter={fighter} place={index + 1} acting={index === acting} />)}
-        </ol>
+        <section class="turns-card" aria-labelledby="turns-title">
+            <CardHead
+                icon={iconPath("list")}
+                title={<h3 id="turns-title">{t("Turns")}</h3>}
+                {...(scene.round === undefined ? {} : { note: t("Round {round}", { round: scene.round }) })}
+            />
+            <ol class="turn-order" aria-label={t("The order of the turns")}>
+                {fighters.map((fighter, index) => (
+                    <FighterRow
+                        key={`${fighter.name} ${index}`}
+                        fighter={fighter}
+                        member={party.find((one) => one.role === fighter.role && one.name === fighter.name)}
+                        place={index + 1}
+                        acting={index === acting}
+                    />
+                ))}
+            </ol>
+        </section>
     );
     const atHand = lead && self && (own.cards?.atHand.length ?? 0) > 0 ? <AtHand lead={lead} fighter={self} own={own} /> : null;
     return (
@@ -99,21 +117,28 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
     );
 }
 
-/** One in the order (D-315): their place, token and name, their counter, what is on them, whether they act, what they keep; the death saves at 0. */
-function FighterRow({ fighter, place, acting }: { fighter: Fighter; place: number; acting: boolean; })
+/**
+ * One in the order (D-315), as a small card (D-419): their place, token and name, their counter, their state as icons (whether they act, at 0, what is on
+ * them), what they keep; the death saves at 0. Their token has no pip of state: the icons beside it say it.
+ */
+function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; member: Member | undefined; place: number; acting: boolean; })
 {
+    // One of the party has the bar of their strip (D-419), the icons under it.
+    const counter = member === undefined ? undefined : stripCounter(member);
     return (
         <li class={["turn-row", fighter.role, acting ? "now" : ""].filter((part) => part !== "").join(" ")} aria-current={acting ? "step" : undefined}>
             <span class="turn-place">{place}</span>
-            <FighterToken fighter={fighter} />
+            <FighterToken fighter={fighter} state={false} />
             <div class="turn-main">
                 <p class="turn-name">
                     {shownName(fighter)}
                     {fighter.role === "pc" && <span class="you">{t("You")}</span>}
-                    {fighter.inactive && <span class="cant-act">{t("Can't act")}</span>}
                 </p>
-                {fighter.health && (fighter.role === "other" ? <span class={`wound ${fighter.health}`}>{healthLabel(fighter.health)}</span> : <span class="turn-health num">{shownText(fighter.health)}</span>)}
-                <Effects effects={fighter.effects} />
+                {counter !== undefined && <Bar value={counter} label={fieldLabel(counter.field)} />}
+                <div class="turn-facts">
+                    {counter === undefined && fighter.health && (fighter.role === "other" ? <span class={`wound ${fighter.health}`}>{healthLabel(fighter.health)}</span> : <span class="turn-health num">{shownText(fighter.health)}</span>)}
+                    <StatusIcons status={fighterStatus(fighter)} />
+                </div>
                 {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
                 {fighter.dying && <DeathSaves dying={fighter.dying} />}
             </div>
@@ -126,11 +151,7 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
 {
     return (
         <aside class="at-hand" aria-labelledby="at-hand-title">
-            <h3 id="at-hand-title">
-                <Icon name="party" />
-                {lead.name}
-                <span class="at-hand-note">{t("At hand")}</span>
-            </h3>
+            <CardHead icon={iconPath("party")} title={<h3 id="at-hand-title">{lead.name}</h3>} note={t("At hand")} />
             {fighter.dying ? <DeathSaves dying={fighter.dying} /> : (
                 <>
                     {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
@@ -141,9 +162,13 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
     );
 }
 
-/** A fighter's token; a foe the master marked glows red a little, with no pip (D-415); one of the party with the pip of their side unless it is too small for one (D-414). */
-function FighterToken({ fighter, pip = true }: { fighter: Fighter; pip?: boolean; })
+/**
+ * A fighter's token; a foe the master marked glows red a little, with no pip (D-415); one of the party with the pip of their side unless it is too small for one
+ * (D-414); with the pip of their state unless `state` is false (D-419).
+ */
+function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter; pip?: boolean; state?: boolean; })
 {
+    const status = state ? fighterStatus(fighter) : undefined;
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
     const hostile = fighter.hostile === true;
@@ -151,6 +176,7 @@ function FighterToken({ fighter, pip = true }: { fighter: Fighter; pip?: boolean
         ? (
             <span class={["token stranger", number === undefined ? "" : "numbered", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {number ?? <Icon name="stranger" />}
+                <StatusPip status={status} />
             </span>
         )
         : (
@@ -158,8 +184,15 @@ function FighterToken({ fighter, pip = true }: { fighter: Fighter; pip?: boolean
                 member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
                 hostile={hostile}
                 side={pip ? sideOf(fighter.role) : undefined}
+                {...(status === undefined ? {} : { status })}
             />
         );
+}
+
+/** A fighter's state: what is on them, whether they act, and at 0 the party's dying point or a foe down. */
+function fighterStatus(fighter: Fighter): TokenStatus
+{
+    return { effects: fighter.effects, inactive: fighter.inactive === true, down: fighter.dying !== undefined || fighter.health === "down" };
 }
 
 /** A fighter's name as the page writes it: Creature 2 for "creature 2", Someone for "someone". */

@@ -1,10 +1,10 @@
-// The party's strip (D-276): a link to each one's sheet, with their token and its mood's badge (D-305), their name, the first counter of their line and their
-// effects; the dead go last.
-import type { Member } from "./data.ts";
+// The party's strip (D-276): a link to each one's sheet, with their token and the pip of their state (D-419), their name, the first counter of their line and
+// their effects; the dead go last.
+import type { Member, ShownScene } from "./data.ts";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
-import { MoodBadge, moodLabel } from "./mood.tsx";
 import { tokenSymbolsPref, usePref } from "./prefs.ts";
+import { memberStatus, StatusPip, statusWords, type TokenStatus } from "./status.tsx";
 import { t } from "./text.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
@@ -14,21 +14,16 @@ export function sheetAddress(name: string): string
     return `#/party/${encodeURIComponent(name)}`;
 }
 
-export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string; })
+export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?: string; scene?: ShownScene; })
 {
     const ordered = [...party.filter((member) => !member.dead), ...party.filter((member) => member.dead)];
     return (
         <nav class="party" aria-label={t("Party")}>
             {ordered.map((member) => {
                 const counter = stripCounter(member);
+                const status = memberStatus(member, scene);
                 // One name for a screen reader, which the drawing inside would say twice.
-                const said = [
-                    member.name,
-                    member.mood === undefined ? "" : moodLabel(member.mood),
-                    counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`,
-                    member.dead ? t("dead") : "",
-                    ...member.effects.map((effect) => effect.name),
-                ];
+                const said = [member.name, counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, ...statusWords(status)];
                 return (
                     <a
                         key={member.name}
@@ -37,7 +32,7 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
                         aria-current={member.name === chosen ? "page" : undefined}
                         aria-label={said.filter((part) => part !== "").join(", ")}
                     >
-                        <MemberToken member={member} />
+                        <MemberToken member={member} status={status} />
                         <span class="name">{member.name}</span>
                         {member.dead ? <span class="dead-mark">{t("dead")}</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
@@ -48,13 +43,12 @@ export function PartyStrip({ party, chosen }: { party: Member[]; chosen?: string
     );
 }
 
-/** A party member's token with the badge of their mood (D-305), in the strip and the sheet's band; never in the rolls. */
-export function MemberToken({ member, large }: { member: Member; large?: boolean; })
+/** A party member's token with the pip of their state (D-419), in the strip and the sheet's band; never in the rolls. Their class in its tooltip (D-409). */
+export function MemberToken({ member, large, status }: { member: Member; large?: boolean; status: TokenStatus; })
 {
     return (
         <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
-            <Token member={member} large={large} side={sideOf(member.role)} />
-            <MoodBadge mood={member.mood} large={large} />
+            <Token member={member} large={large} side={sideOf(member.role)} status={status} />
         </span>
     );
 }
@@ -79,9 +73,9 @@ export const sideIcons: Record<Side, string> = {
 
 /**
  * Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe the master marked glows red a little (D-415).
- * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414).
+ * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414); with a state, its pip at the end (D-419).
  */
-export function Token({ member, large, hostile, side }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; })
+export function Token({ member, large, hostile, side, status }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; status?: TokenStatus; })
 {
     const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
     return (
@@ -91,6 +85,7 @@ export function Token({ member, large, hostile, side }: { member: Tokened; large
                 // A new address when the picture changes; the same one comes back as not modified on a reload (D-277).
                 : <img src={`/images/${encodeURIComponent(member.image.file)}?v=${member.image.version}`} alt="" />}
             {side !== undefined && <TokenPip side={side} icon={member.icon} />}
+            <StatusPip status={status} />
         </span>
     );
 }

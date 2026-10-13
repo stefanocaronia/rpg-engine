@@ -1,4 +1,4 @@
-// The page's own preferences, kept in this browser alone (D-341): the dice's sound, their colours and rolling by hand, the tokens' symbols, and the theme's change. A change,
+// The page's own preferences, kept in this browser alone (D-341): the dice's sound, their colours and rolling by hand, the tokens' symbols and conditions, and the theme's change. A change,
 // from Settings or from where the switch is, reaches every part of the page that shows it at once.
 import { useEffect, useState } from "preact/hooks";
 
@@ -27,6 +27,9 @@ export const byHandPref: Pref = { key: "rpg-engine.rolls-by-hand", on: false };
 
 /** Whether the tokens show the pip of their side, or their class (D-414). */
 export const tokenSymbolsPref: Pref = { key: "rpg-engine.token-symbols", on: true };
+
+/** When the tokens show the pip of their state, the conditions on them and who is down (D-419): always, only under the mouse, or never. */
+export const conditionsPref: Choice = { key: "rpg-engine.token-conditions", initial: "always", values: ["always", "hover", "never"] };
 
 // The event that tells the page a preference changed.
 const changed = "rpg-engine:pref";

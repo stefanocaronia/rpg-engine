@@ -3731,17 +3731,11 @@ a {
     opacity: 0.6;
 }
 
-/* A party member's token with their mood's badge on its lower right (D-305): the token clips what it holds, so the badge stands beside it. */
+/* A party member's token, with their class in its tooltip (D-409). */
 .token-holder {
     position: relative;
     display: inline-flex;
     flex: 0 0 auto;
-}
-
-.token-holder > .mood-badge {
-    position: absolute;
-    inset-inline-end: -4px;
-    bottom: -4px;
 }
 
 .token img {
@@ -3753,7 +3747,7 @@ a {
 }
 
 /* The pip of a token's side (D-414): at the start of its lower edge, ringed in the colour of what it stands on; gold round the player's character's, green a
-   companion's; with their class's symbol or the side's; none on a foe (D-415). The mood's badge keeps the other corner. */
+   companion's; with their class's symbol or the side's; none on a foe (D-415). The pip of their state keeps the other corner (D-419). */
 .token .side-pip {
     --pip: 17px;
     position: absolute;
@@ -3799,6 +3793,111 @@ a {
     bottom: -2px;
 }
 
+/* The pip of someone's state (D-419): at the end of the token's lower edge, smaller than the side's; a condition dark on cream, a state of the engine (dead, at 0,
+   kept from acting) cream on dark; a second coin behind it, up and out, when there are more, drawn by its shadows; under the mouse only, when the player asks. */
+.token .status-pip {
+    --pip: 14px;
+    --pip-paper: #f1e8d3;
+    --pip-ink: #1b2233;
+    --pip-back: #cfc4ab;
+    position: absolute;
+    inset-inline-end: -2px;
+    bottom: -2px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: var(--pip);
+    height: var(--pip);
+    border-radius: 50%;
+    background: var(--pip-paper);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 0 0 1.5px var(--pip-ring, var(--panel));
+}
+
+.token .status-pip.strong {
+    --pip-paper: #1b2233;
+    --pip-ink: #f1e8d3;
+    --pip-back: #1b2233;
+    box-shadow: inset 0 0 0 1px #f1e8d3, 0 0 0 1.5px var(--pip-ring, var(--panel));
+}
+
+.token .status-pip.stacked {
+    --behind: 3px;
+    box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.35),
+        0 0 0 1.5px var(--pip-ring, var(--panel)),
+        var(--behind) calc(var(--behind) * -1) 0 0 var(--pip-back),
+        var(--behind) calc(var(--behind) * -1) 0 1px rgb(0 0 0 / 0.35),
+        var(--behind) calc(var(--behind) * -1) 0 2.5px var(--pip-ring, var(--panel));
+}
+
+.token .status-pip.strong.stacked {
+    box-shadow:
+        inset 0 0 0 1px #f1e8d3,
+        0 0 0 1.5px var(--pip-ring, var(--panel)),
+        var(--behind) calc(var(--behind) * -1) 0 0 #f1e8d3,
+        var(--behind) calc(var(--behind) * -1) 0 1px var(--pip-back),
+        var(--behind) calc(var(--behind) * -1) 0 2.5px var(--pip-ring, var(--panel));
+}
+
+/* The second coin behind, toward the token's outside in either direction of the text. */
+[dir="rtl"] .token .status-pip.stacked {
+    --behind: -3px;
+}
+
+.token .status-pip svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--pip-ink);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.token.large .status-pip {
+    --pip: 20px;
+    inset-inline-end: -1px;
+    bottom: -1px;
+}
+
+.token.large .status-pip.stacked {
+    --behind: 4px;
+}
+
+[dir="rtl"] .token.large .status-pip.stacked {
+    --behind: -4px;
+}
+
+.token .status-pip.on-hover {
+    opacity: 0;
+    transition: opacity var(--quick) linear;
+}
+
+:is(.member, .present li, .identity, .turn-now, .next-who, .token):is(:hover, :focus-visible, :focus-within) .status-pip.on-hover {
+    opacity: 1;
+}
+
+/* Its tooltip from the pip toward the name, where there is room, in lines when it is long. */
+.token .status-pip[data-tip]::before {
+    left: auto;
+    inset-inline-start: 0;
+    width: max-content;
+    max-width: 240px;
+    white-space: normal;
+    translate: 0 4px;
+}
+
+@media (hover: hover) {
+    .token .status-pip[data-tip]:hover::before {
+        translate: 0 0;
+    }
+}
+
+/* Over the pip, its tooltip alone: not the one of the class of whom it is on. */
+.token-holder:has(.status-pip:hover)::before {
+    opacity: 0;
+}
+
 /* What the pip stands on, where it is not the panel. */
 .band {
     --pip-ring: var(--panel-2);
@@ -3808,16 +3907,8 @@ a {
     --pip-ring: var(--gold);
 }
 
-.turn-row.now {
-    --pip-ring: color-mix(in srgb, var(--low) 10%, var(--panel-2));
-}
-
-.turn-row.now.companion {
-    --pip-ring: color-mix(in srgb, var(--ally) 10%, var(--panel-2));
-}
-
-.turn-row.now.pc {
-    --pip-ring: color-mix(in srgb, var(--gold) 18%, var(--panel-2));
+.turn-row {
+    --pip-ring: var(--panel-2);
 }
 
 .initials {
@@ -3862,6 +3953,29 @@ a {
     margin: 4px 0 2px;
     font-size: 1rem;
     font-weight: 600;
+}
+
+/* The mood, in the band alone (D-305, D-419): its face of 20 pixels on a disc like the robot's screen, then its word. */
+.mood-word {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    vertical-align: bottom;
+}
+
+.mood-word .mood-face {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--disc);
+    box-shadow: inset 0 0 0 1.5px var(--gold);
+    color: #fff4d5;
+    stroke-width: 1.6;
+}
+
+.mood-word .mood-face .mood-eyes {
+    stroke-width: 2.8;
 }
 
 /* The boxes beside the name while there is room for them; under it, the band's whole width, when the band is narrow (D-299). */
@@ -6919,58 +7033,90 @@ svg.icon {
     gap: var(--gap);
 }
 
-.turn-order {
+.turns-card {
     display: grid;
-    gap: 6px;
-    margin: 0;
-    padding: 8px;
+    min-width: 0;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: var(--panel);
     box-shadow: var(--lift), var(--raise);
+}
+
+/* The header of a card that is always open (D-419): the look of a card's summary, its icon and title, a note at its end. */
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.card-head h3 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-head-note {
+    flex: none;
+    margin-inline-start: auto;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* The order of the turns as small cards (D-419, R1): the place in a strip at the start, told apart by its ground alone, lit in a light yellow on the turn. */
+.turn-order {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 10px;
     list-style: none;
 }
 
 .turn-row {
     display: grid;
-    grid-template-columns: 22px auto minmax(0, 1fr);
-    align-items: start;
-    gap: 10px;
-    padding: 8px 10px;
+    grid-template-columns: 34px auto minmax(0, 1fr);
+    align-items: stretch;
+    overflow: hidden;
+    border: 1px solid var(--rule);
     border-radius: var(--radius-m);
+    background: var(--panel-2);
 }
 
 .turn-row .token {
-    --size: 44px;
-}
-
-/* Whoever acts, by side. */
-.turn-row.now {
-    background: color-mix(in srgb, var(--low) 10%, var(--panel-2));
-    box-shadow: inset 4px 0 0 var(--low);
-}
-
-.turn-row.now.companion {
-    background: color-mix(in srgb, var(--ally) 10%, var(--panel-2));
-    box-shadow: inset 4px 0 0 var(--ally);
-}
-
-.turn-row.now.pc {
-    background: color-mix(in srgb, var(--gold) 18%, var(--panel-2));
-    box-shadow: inset 4px 0 0 var(--gold);
+    --size: 40px;
+    align-self: center;
+    margin: 8px 10px;
 }
 
 .turn-place {
-    padding-top: 12px;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
     color: var(--muted);
     font-weight: 700;
-    text-align: end;
+}
+
+/* Whoever acts: the strip lit, the card's edge in gold. */
+.turn-row.now {
+    border-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+}
+
+.turn-row.now .turn-place {
+    background: light-dark(color-mix(in srgb, var(--gold) 45%, var(--panel-2)), color-mix(in srgb, var(--gold) 85%, var(--panel-2)));
+    color: light-dark(var(--ink), #1b2233);
 }
 
 .turn-main {
     display: grid;
-    gap: 4px;
+    align-content: center;
+    gap: 5px;
     min-width: 0;
+    padding-block: 8px;
+    padding-inline: 0 10px;
 }
 
 .turn-name {
@@ -6979,27 +7125,79 @@ svg.icon {
     align-items: center;
     gap: 8px;
     margin: 0;
+    font-size: 0.95rem;
     font-weight: 700;
 }
 
-.turn-name .you,
-.turn-name .cant-act {
+.turn-name .you {
     padding: 1px 6px;
     border-radius: var(--radius-xs);
+    background: var(--gold);
+    color: var(--on-gold);
     font-size: 0.7rem;
     font-weight: 750;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
-.turn-name .you {
-    background: var(--gold);
-    color: var(--on-gold);
+/* The bar of one of the party, as in the strip, the main's whole width. */
+.turn-main .bar-line {
+    display: flex;
+    font-size: 0.85rem;
 }
 
-.turn-name .cant-act {
+.turn-main .bar {
+    flex: 1 1 auto;
+    max-width: 160px;
+}
+
+.turn-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.turn-facts:empty {
+    display: none;
+}
+
+/* Someone's state as icons, each with its words (D-419): the engine's states in the colour of danger, the conditions in the accent, other effects muted. */
+.status-icons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.status-icon {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+}
+
+.status-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.status-icon.state {
     background: color-mix(in srgb, var(--low) 16%, transparent);
     color: var(--low);
+}
+
+.status-icon.other {
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    color: var(--muted);
 }
 
 .turn-health {
@@ -7107,7 +7305,7 @@ svg.icon {
     gap: 12px;
     align-content: start;
     min-width: 0;
-    padding: 12px 16px 0;
+    padding: 0 16px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
     background: var(--panel);
@@ -7118,11 +7316,9 @@ svg.icon {
     padding-bottom: 14px;
 }
 
-.at-hand h3 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1.05rem;
+/* Its header the card's whole width, as every card's (D-419). */
+.at-hand > .card-head {
+    margin: 0 -16px;
 }
 
 /* The sheet's cards inside it, as its sections. */
@@ -7143,24 +7339,11 @@ svg.icon {
     border-radius: 0 0 calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px);
 }
 
-.at-hand h3 svg.icon {
-    width: 20px;
-    height: 20px;
-    color: var(--accent);
-}
-
 /* The fields at hand: boxes that share the panel's width. */
 .at-hand .line-value {
     --box: 64px;
     flex: 1 1 auto;
     padding: 8px;
-}
-
-.at-hand-note {
-    margin-inline-start: auto;
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 500;
 }
 
 /* The player's turn from another section (D-315, D-349, D-351): Combat's name and picture pulse in gold, never a fill that looks like the section chosen;
@@ -7236,6 +7419,11 @@ svg.icon {
     .combat:has(.turn-band.mine) .at-hand {
         order: -1;
     }
+
+    /* The dice's button stands over the end of the rows as the page scrolls: their names and icons keep clear of its column (D-419). */
+    .turn-main {
+        padding-inline-end: 60px;
+    }
 }
 
 /* The World section (D-318), as Joseph tried it: hexes on paper that stays light in both themes, lit around what the character knows and coloured by the
@@ -7286,22 +7474,17 @@ svg.icon {
     overflow: hidden;
 }
 
-.lm-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 2px 10px;
-    padding: 12px 16px;
+/* The map's place, at the end of its header, may be long. */
+.lm > .card-head {
+    border-bottom: 0;
 }
 
-.lm-head h3 {
-    margin: 0;
-    font-size: 1.125rem;
-}
-
-.lm-sub {
-    color: var(--muted);
-    font-size: 0.875rem;
+.lm .card-head-note {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lm-frame {
@@ -7658,6 +7841,45 @@ svg.icon {
     stroke: #f5c63e;
 }
 
+/* The pip of someone's state on the map (D-419), as on the page. */
+.lm-status-disc {
+    fill: #f1e8d3;
+    stroke: rgb(0 0 0 / 0.35);
+    stroke-width: 0.8;
+}
+
+.lm-status-back {
+    fill: #cfc4ab;
+    stroke: rgb(0 0 0 / 0.35);
+    stroke-width: 0.8;
+}
+
+.lm-status-symbol {
+    fill: none;
+    stroke: #1b2233;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.lm-status.strong .lm-status-disc {
+    fill: #1b2233;
+    stroke: #f1e8d3;
+}
+
+.lm-status.strong .lm-status-symbol {
+    stroke: #f1e8d3;
+}
+
+.lm-status.on-hover {
+    opacity: 0;
+    transition: opacity var(--quick) linear;
+}
+
+.lm-token:hover .lm-status.on-hover {
+    opacity: 1;
+}
+
 /* A foe the master marked (D-415): a thin red ring close round the coin, the paper between them, over a breath of red light. */
 .lm-hostile {
     fill: none;
@@ -7666,10 +7888,15 @@ svg.icon {
 }
 
 /* Whoever acts: a ring of the accent, as on paper, off the token. */
-.lm-acting {
-    fill: none;
-    stroke: var(--l-accent);
-    stroke-width: 2.5;
+/* Whoever acts, raised off the paper as a piece taken in hand (D-419): a little up and larger, with its pips, its shadow wide and soft; no ring. */
+.lm-token.acting {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: translateY(-4px) scale(1.1);
+}
+
+.lm-token.acting > g[filter] {
+    filter: drop-shadow(0 2px 1px rgb(42 29 16 / 0.4)) drop-shadow(0 10px 6px rgb(42 29 16 / 0.45));
 }
 
 .lm-wall-under,
@@ -7948,7 +8175,7 @@ svg.icon {
         display: contents;
     }
 
-    .combat-body.with-map .turn-order {
+    .combat-body.with-map .turns-card {
         order: 1;
     }
 
@@ -8942,23 +9169,6 @@ svg.icon {
     animation-duration: 8s;
 }
 
-.mood-badge {
-    --mood-size: 20px;
-    display: inline-grid;
-    place-items: center;
-    width: var(--mood-size);
-    height: var(--mood-size);
-    border-radius: 50%;
-    background: var(--disc);
-    color: #fff4d5;
-    /* The robot's yellow round its screen, then the panel, to stand off the token. */
-    box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 0 2px var(--panel);
-}
-
-.mood-badge.large {
-    --mood-size: 28px;
-}
-
 .mood-face {
     width: 100%;
     height: 100%;
@@ -8971,15 +9181,6 @@ svg.icon {
 
 .mood-face .mood-eyes {
     stroke-width: 2.6;
-}
-
-/* Small, the lines thicken to stay readable. */
-.mood-badge:not(.large) .mood-face {
-    stroke-width: 1.6;
-}
-
-.mood-badge:not(.large) .mood-face .mood-eyes {
-    stroke-width: 2.8;
 }
 
 @media (prefers-reduced-motion: no-preference) {
