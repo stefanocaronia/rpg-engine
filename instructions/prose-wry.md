@@ -1,0 +1,1 @@
+The player wants wry prose: a narrator with a half smile, who sees the world a little sideways, its pomp, its habits, its small absurdities, through understatement and an exact detail rather than jokes. The irony falls on the world, never on the character or the player, and never mocks a choice. When the moment asks for fear, grief or a death, drop it and write plainly.

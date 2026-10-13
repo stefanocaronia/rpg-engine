@@ -9,6 +9,7 @@ import {
     changeOtherSetting,
     changeSetting,
     checkSettingName,
+    clearSetting,
     companionWays,
     diceWays,
     difficulties,
@@ -19,6 +20,7 @@ import {
     missingSettings,
     pictureWays,
     preparations,
+    proseWays,
     readCampaignData,
     readSettings,
     readTextSetting,
@@ -29,6 +31,8 @@ import {
     type SettingName,
     settingNames,
     setupSettingNames,
+    storyWays,
+    styleTextLengths,
     unitSystems,
 } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
@@ -47,7 +51,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
-import { mentorPart } from "./parts.ts";
+import { mentorPart, stylePart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
 const counterExample = 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}';
@@ -68,6 +72,8 @@ export const config = defineCommand({
         + "mentor is how much you teach the game, out of the story: off (the story alone, answering what the player asks between brackets), hints (a tip before choices "
         + "that matter and when a rule slips by) or tutorial (each mechanic explained the first time, a roll's whole sum, a debrief after fights); "
         + "learned is a list: the mechanics you explained, by their names in the system's language. "
+        + "prose (plain, literary, pulp, wry), story (situations, arcs, episodes, mystery), author (one whose way of writing you take) and style (the player's own words on how you write) "
+        + "are how you write and build what you invent, as the player asks; none takes away an author or a style. "
         + "table is a list too: what you promise the player about how you play, in the words you said. "
         + "precedents too: each ruling you made without the text, starting with the name of the rule in the system's language, then what you said, such as 'Poisoned: …'. "
         + 'coins, for a game with money whose system does not give them, lists each coin with its value in the smallest coin, with other names after a slash and "rare" for a coin never given as change; the first is the one totals are counted in. '
@@ -129,6 +135,10 @@ export const config = defineCommand({
             if (changeListSettingToNone(root, input.setting)) {
                 appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
             }
+        } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && freeSettingNames.includes(checkSettingName(input.setting))) {
+            if (clearSetting(root, input.setting)) {
+                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
+            }
         } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
         }
@@ -139,7 +149,9 @@ export const config = defineCommand({
         const listed = input.setting === undefined ? shown.filter((name) => !added(name) || settings[name] !== undefined) : shown;
         const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
         // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
-        const part = input.setting?.trim() === "mentor" && input.value !== undefined && context.actor !== "player" ? mentorPart(root, context, settings.mentor) : "";
+        const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
+        // And of how the master writes, the parts as they are now (D-395).
+        const part = changed === "mentor" ? mentorPart(root, context, settings.mentor) : styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
         return {
             settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
             note: campaignNote(root, context),
@@ -155,8 +167,12 @@ export const config = defineCommand({
     },
 });
 
+// The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
+const freeSettingNames: SettingName[] = ["author", "style"];
+const styleSettingNames = ["prose", "story", "author", "style"];
+
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
-export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "dice", "units", "pictures", "lines", "veils", "language"] as const;
+export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "pictures", "lines", "veils", "language"] as const;
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -173,10 +189,12 @@ export interface PlayerSetting
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
+    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
+    most?: number;
 }
 
 // What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
-const playerWords: Record<(typeof playerSettingNames)[number], { about: string; means?: Record<string, string>; values?: readonly string[]; added?: string; takenOff?: string; }> = {
+const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
     difficulty: {
         about: "how hard the world plays",
         values: difficulties,
@@ -217,6 +235,38 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
         added: "they know it already: no need to explain it",
         takenOff: "explain it again the next time it comes up",
     },
+    prose: {
+        about: "how the master writes",
+        values: proseWays,
+        unset: "plain",
+        means: {
+            plain: "short sentences, one concrete detail at a time",
+            literary: "more room at the high points, images and subtext",
+            pulp: "tense action, strong colours, each message ending on a threat or a hook",
+            wry: "a narrator with a half smile at the world, never at your character",
+        },
+    },
+    story: {
+        about: "how the master builds the stories they invent; a written adventure keeps its own",
+        values: storyWays,
+        unset: "situations",
+        means: {
+            situations: "factions, threats and places with secrets, no main plot: you choose where to go",
+            arcs: "a central threat that advances by stages, your character's own story woven in",
+            episodes: "a story that closes each session, with a thread that comes back",
+            mystery: "every story an investigation, its truth decided before you start",
+        },
+    },
+    author: {
+        about: "an author the master writes like: their way of telling, never their sentences, names or places",
+        most: styleTextLengths.author,
+        cleared: "write as the prose setting says again",
+    },
+    style: {
+        about: "your own wishes for how the master writes, in a few words, such as third person, past tense",
+        most: styleTextLengths.style,
+        cleared: "their own words on how you write no longer hold",
+    },
     dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
     units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
     pictures: {
@@ -228,6 +278,22 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     veils: { about: "what happens only off screen, without details" },
     language: { about: "the language the master plays in, and the page's too when it is translated" },
 };
+
+/**
+ * What a setting of the player's is to them, its values and what each means; what the master does when an item is added to a list or taken off it, or a text
+ * cleared; the value shown while it is unset, the core's own; the longest text of the player's own words.
+ */
+interface PlayerWords
+{
+    about: string;
+    means?: Record<string, string>;
+    values?: readonly string[];
+    added?: string;
+    takenOff?: string;
+    cleared?: string;
+    unset?: string;
+    most?: number;
+}
 
 // What the setup asks besides the player's settings (D-370): how the companions come, how far ahead a world is made, the campaign's name.
 const setupWords: Record<string, { about: string; values?: readonly string[]; means?: Record<string, string>; }> = {
@@ -327,14 +393,15 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
     });
     return [
         ...playerSettingNames.map((name): PlayerSetting => {
-            const words = playerWords[name];
-            const value = settings[name];
+            const words: PlayerWords = playerWords[name];
+            const value = settings[name] ?? words.unset;
             const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
             return {
                 name,
                 about: words.about,
                 ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
                 ...(choices === undefined ? {} : { choices }),
+                ...(words.most === undefined ? {} : { most: words.most }),
             };
         }),
         ...own,
@@ -381,14 +448,27 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
         ];
     }
 
-    if (after.value === before.value || after.value === undefined) {
+    if (after.value === before.value) {
         return [];
     }
 
+    // How the master writes comes with its parts as they are now, on a line of their own: the same for each of them the player changed (D-395).
+    const style = styleSettingNames.includes(after.name) ? stylePart(root, context) : "";
+
+    if (after.value === undefined) {
+        const cleared = wordsOf(after.name)?.cleared;
+        return cleared === undefined ? [] : [`The player took ${after.name} away on the dashboard: ${cleared}. Play by it from now on.`, ...(style === "" ? [] : [style])];
+    }
+
     const meaning = settingMeaning(after.name, after.value) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
+    const value = after.most === undefined ? after.value : `"${after.value}"`;
+    const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
     // The mentor's new part comes with it, once in the chat (D-347).
     const part = after.name === "mentor" ? mentorPart(root, context, after.value) : "";
-    return [`The player set ${after.name} to ${after.value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${part === "" ? "" : `\n\n${part}`}`];
+    return [
+        `The player set ${after.name} to ${value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${author}${part === "" ? "" : `\n\n${part}`}`,
+        ...(style === "" ? [] : [style]),
+    ];
 }
 
 /** What an item the player added to a list means to the master: what the list holds, or what to do, as for learned. */
@@ -462,6 +542,13 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
 
     if (mapSettingNames.includes(name)) {
         return settings[name] ?? {};
+    }
+
+    // How the master writes, unset: the core's own ways, never missing (D-395).
+    const own: Record<string, string> = { prose: "plain (as your instructions write)", story: "situations (as your instructions write)", author: "(none)", style: "(none)" };
+
+    if (settings[name] === undefined && Object.hasOwn(own, name)) {
+        return own[name];
     }
 
     return name === "coins" ? coinsShown(root, context) : name === "system" ? systemShown(settings.system, context) : settings[name];

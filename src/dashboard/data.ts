@@ -447,6 +447,8 @@ export interface PlayerSetting
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
+    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
+    most?: number;
 }
 
 /** A game system's words in the campaign's language (D-403): its groups by their names, its fields' labels by their ids, other words and texts by their English. */

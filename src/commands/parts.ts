@@ -39,3 +39,26 @@ export function mentorPart(root: string, context: Context, mentor: string | unde
     const learned = mentor === "tutorial" ? (readSettings(root).learned ?? []) : [];
     return part === "" || learned.length === 0 ? part : `${part}\n\nAlready explained: ${learned.join(", ")}.`;
 }
+
+/**
+ * How the master writes, as the player chose it (D-395): the author's part in place of the prose's, the story's, and the player's own words, each with what
+ * was written in it; none for the core's own ways. Every time it is asked, as a change of them must reach the chat.
+ */
+export function stylePart(root: string, context: Context): string
+{
+    const settings = readSettings(root);
+    const system = campaignSystem(root, context);
+
+    const part = (name: string, value: string | undefined, placeholder?: string): string => {
+        const text = value === undefined ? undefined : partText(name, system);
+        // The player's words as they are: replaceAll would read a $ in them.
+        return text === undefined ? "" : placeholder === undefined || value === undefined ? text : text.split(placeholder).join(value);
+    };
+
+    return [
+        part("author", settings.author, "{author}"),
+        settings.author !== undefined || settings.prose === "plain" ? "" : part(`prose-${settings.prose}`, settings.prose),
+        settings.story === "situations" ? "" : part(`story-${settings.story}`, settings.story),
+        part("style", settings.style, "{style}"),
+    ].filter((text) => text !== "").join("\n\n");
+}

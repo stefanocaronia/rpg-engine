@@ -28,7 +28,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
-import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
+import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -324,10 +324,13 @@ export const view = defineCommand({
         const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
 
-        // The picture of someone the log names, as the player character knows them.
+        // The picture of someone the log names, as the player character knows them; of a stranger, as the scene shows them, a copy by its creature (D-420, D-421).
         const picture = (name: unknown): ShownRoll["image"] => {
             const page = knownNamedPage(world, knowledge, name);
-            return page === undefined ? undefined : shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
+            const who = String(name ?? "").trim();
+            return page !== undefined
+                ? shownImage(root, context, world, page, (base) => knowsPage(knowledge, base))
+                : strangerImage(root, context, world, isCopyName(world, who) ? who.replace(/ \d+$/, "") : who);
         };
 
         const log = readLog(root);
@@ -427,7 +430,8 @@ function shownRoll(
     const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
     const who = data.who === undefined ? undefined : known ?? strangerOfRoll(world, data.who, named, seen);
-    const image = known === undefined ? undefined : picture(data.who);
+    // A stranger the scene of the roll never named shows no face: it would tell who acted out of sight (D-421).
+    const image = data.who === undefined || who === "someone" ? undefined : picture(data.who);
     const words = notationParts(String(data.notation ?? ""));
     return {
         id: entry.id,

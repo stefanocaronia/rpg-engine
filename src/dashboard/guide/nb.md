@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 d32a17eb 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 62159f4b 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: den komplette guiden
 
 **RPG Engine** lar deg spille et pen-and-paper-rollespill med en **KI som spilleder**.
@@ -57,18 +57,18 @@ RPG Engine er laget for alle pen-and-paper-rollespill. I dag følger det med ett
 
 ## 2. Kom i gang <!-- icon: path -->
 
-### 2.1 Hva du trenger
+### 2.1 Dette trenger du
 
 - En datamaskin med Windows, macOS eller Linux.
-- **Node.js 22** eller nyere. Last den ned fra [nodejs.org](https://nodejs.org): «LTS»-versjonen duger fint. Den følger med `npm`, som installerer RPG Engine.
+- **Node.js 22** eller nyere. Last den ned fra [nodejs.org](https://nodejs.org): «LTS»-versjonen er fin. Den følger med `npm`, som installerer RPG Engine.
 - En **terminal**, vinduet der du skriver kommandoer: på Windows er det Terminal-appen eller PowerShell, på macOS er det Terminal. Du bruker den til å installere RPG Engine, til å opprette hver kampanje og til å starte Claude Code eller Codex.
-- En **AI-vert**, appen spilleder kjører i: **Claude Code** eller **Codex**, med abonnement og innlogging. Se [2.4](#24-connect-your-ai).
-- Den **største modellen** verten din tilbyr. En liten modell lar seg lure: i testene våre røpet den hemmeligheter til en spiller som påsto å være den ekte spilleder.
-- En nettleser til dashbordet.
+- En **AI-vert**, appen som spillederen kjører i: **Claude Code** eller **Codex**, med abonnement og innlogging. Se [2.4](#24-connect-your-ai).
+- Den **største modellen** verten din tilbyr. En liten modell lar seg lure: i testene våre fortalte den hemmeligheter til en spiller som påstod å være den ekte spillederen.
+- En nettleser, for dashbordet.
 
-Innloggingen du bruker for verten, gjør mer: RPG Engine bruker den, på din egen datamaskin, til å lage bilder av steder, oppdrag, de du møter og karakteren din, og til å oversette dashbordet til språk det ikke leveres med. Se [Bilder](#311-pictures) og [Språk](#72-languages).
+Innloggingen du bruker til verten, gjør mer: RPG Engine bruker den, på datamaskinen din, til å tegne bilder av steder, oppdrag, de du møter og karakteren din, og til å oversette dashbordet til språk det ikke har med fra før. Se [Bilder](#311-pictures) og [Språk](#72-languages).
 
-**Åpne en terminal i en mappe.** Mange trinn sier «i kampanjemappen». På Windows høyreklikker du mappen i Filutforsker og velger **Åpne i Terminal**. På macOS høyreklikker du mappen i Finder og velger **Tjenester > Ny Terminal i mappen**. Eller, i en terminal som allerede er åpen, skriver du `cd` og stien til mappen, for eksempel `cd "C:\Users\me\Games\The Salt Isles"`.
+**Slik åpner du en terminal i en mappe.** Mange steg sier «i kampanjemappen». På Windows høyreklikker du mappen i Filutforsker og velger **Åpne i Terminal**. På macOS høyreklikker du mappen i Finder og velger **Tjenester > Ny terminal i mappen**. Eller skriv `cd` og mappens sti i en terminal som allerede er åpen, for eksempel `cd "C:\Users\me\Games\The Salt Isles"`.
 
 ### 2.2 Installer
 
@@ -84,7 +84,7 @@ Da får du kommandoen `rpg`. Slik sjekker du at det virket:
 rpg --version
 ```
 
-Du bruker `rpg` én gang per kampanje, for å opprette den. Etter det snakker du bare med spilleder: AI-verten starter RPG Engine av seg selv, med den samme `rpg`-kommandoen.
+Du bruker `rpg` én gang per kampanje, for å opprette den. Etter det snakker du bare med spillederen: AI-verten din starter RPG Engine selv, med den samme kommandoen `rpg`.
 
 ### 2.3 Opprett en kampanje
 
@@ -103,11 +103,11 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Linjene etter *For the master* er til spilleder, som leser dem i chatten: du trenger ikke gjøre noe med dem. Husk hvor mappen ligger: du kommer tilbake til den hver gang du spiller. Uten mappenavn gjør `rpg init` mappen du står i, til kampanjen.
+Linjene etter *For the master* er til spillederen, som leser dem i chatten: du har ingenting å gjøre med dem. Husk hvor mappen ligger: du kommer tilbake til den hver gang du spiller. Uten mappenavn gjør `rpg init` mappen du står i, til kampanjen.
 
-`init` lager alt kampanjen trenger: innstillingene, verdensmappene og de små filene som ber AI-verten bruke RPG Engine og ikke ha noe eget minne utenfor kampanjen.
+`init` lager alt kampanjen trenger: innstillingene, verdensmappene og de små filene som ber AI-verten din om å bruke RPG Engine og om å ikke ha noe eget minne utenfor kampanjen.
 
-Du trenger ikke velge noe nå. Spilleder spør om resten i chatten, eller du velger det på dashbordet. Hvis du allerede vet noen valg, kan du oppgi dem her:
+Du trenger ikke velge noe nå. Spillederen spør om resten i chatten, eller du velger det på dashbordet. Hvis du allerede vet noen valg, kan du oppgi dem her:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
@@ -117,27 +117,27 @@ Da lages mappen `salt-isles` med kampanjen *The Salt Isles* i: et mappenavn uten
 
 | Valg | Hva det setter | Verdier |
 |---|---|---|
-| `--name` | Kampanjens navn | hva som helst; mappens navn hvis du utelater det |
+| `--name` | Kampanjens navn | hva som helst; mappens navn hvis du lar det stå ute |
 | `--language` | Spillets språk | en kode, for eksempel `en`, `it`, `fr` |
 | `--system` | Spillsystemet | `5e`, foreløpig det eneste |
 | `--difficulty` | Hvor hardt verden spiller | `story`, `easy`, `normal`, `hard`, `brutal` |
 | `--lethality` | Hva det betyr å falle i en kamp | `narrative`, `epic`, `dice` |
 
-`rpg init --help` lister dem også. En kampanje kan ikke ligge inni mappen til en annen kampanje.
+`rpg init --help` viser dem også. En kampanje kan ikke ligge inni mappen til en annen kampanje.
 
-Du kan ikke be spilleder om å opprette en kampanje: før `init` er det ingenting i mappen som forteller AI-verten hvor RPG Engine er.
+Du kan ikke be spillederen om å opprette en kampanje: før `init` har mappen ingenting som forteller AI-verten din hvor RPG Engine er.
 
 ### 2.4 Koble til AI-en din
 
-RPG Engine fungerer med **Claude Code** og **Codex**. Andre AI-apper som bruker MCP-verktøy kan kanskje også fungere, men det garanterer vi ikke.
+RPG Engine fungerer med **Claude Code** og **Codex**. Andre AI-apper som bruker MCP-verktøy, kan også fungere, men det garanterer vi ikke.
 
-**Installer verten din.** Claude Code og Codex kjører i terminalen: de er ikke Claude- eller ChatGPT-appen på telefonen. Hver trenger sitt eget abonnement og sin egen innlogging: Claude Code et betalt Claude-abonnement, Codex en ChatGPT-innlogging. Følg de to verktøyenes egne sider for å installere dem og logge inn: [Claude Code](https://code.claude.com/docs/en/setup) og [Codex](https://learn.chatgpt.com/docs/codex/cli). Dette gjør du én gang, for alle kampanjene dine.
+**Installer verten din.** Claude Code og Codex kjører i terminalen: de er ikke Claude- eller ChatGPT-appen på telefonen. Hver av dem trenger eget abonnement og egen innlogging: Claude Code et betalt Claude-abonnement, Codex en ChatGPT-innlogging. Følg deres egne sider for å installere dem og logge inn: [Claude Code](https://code.claude.com/docs/en/setup) og [Codex](https://learn.chatgpt.com/docs/codex/cli). Du gjør dette én gang, for alle kampanjene dine.
 
-**Claude Code.** Åpne en terminal i kampanjemappen og skriv `claude`. Første gang spør den om du stoler på mappen, og sier at mappen tillater spillets verktøy (`mcp__rpg`): velg **Yes, I trust this folder**. Pass opp: svaret som allerede er valgt, er *No, exit*, så hvis du trykker Enter med en gang, lukkes Claude Code. Mer skal ikke til: kampanjen har allerede bedt Claude Code bruke RPG Engine og verktøyene, og holde minnet sitt av.
+**Claude Code.** Åpne en terminal i kampanjemappen og skriv `claude`. Første gang spør den om du stoler på mappen, og sier at mappen tillater spillets verktøy (`mcp__rpg`): velg **Yes, I trust this folder**. Pass på: svaret som er valgt på forhånd, er *No, exit*, så hvis du trykker Enter med en gang, lukkes Claude Code. Det er alt: kampanjen har allerede bedt Claude Code om å bruke RPG Engine og verktøyene, og om å holde minnet sitt av.
 
-**Codex.** Åpne en terminal i kampanjemappen og skriv `codex`. Når den spør om du stoler på mappen, svarer du ja: kampanjens egne innstillinger forteller Codex hvor RPG Engine er, tillater verktøyene og holder minnet av, og Codex leser dem bare i en mappe du stoler på. I skrivebordsappen må du sjekke at minner er slått av for spillets chatter.
+**Codex.** Åpne en terminal i kampanjemappen og skriv `codex`. Når den spør om du stoler på mappen, svar ja: kampanjens egne innstillinger forteller Codex hvor RPG Engine er, tillater verktøyene og holder minnet av, og Codex leser dem bare i en mappe du stoler på. I skrivebordsappen må du sjekke at minner er slått av for spillets chatter.
 
-**Hvorfor minnet betyr noe.** Kampanjen lever i filene sine. Hvis verten også husker ting på egen hånd, blir det ikke en ekte retur å gå tilbake til et lagret spill: spilleder ville fortsatt huske det som er angret.
+**Hvorfor minnet er viktig.** Kampanjen lever i filene sine. Hvis verten også husker ting på egen hånd, blir det ikke en ekte tilbakegang å gå tilbake til et lagret spill: spillederen ville fortsatt huske det som ble angret.
 
 ### 2.5 Den første chatten
 
@@ -145,59 +145,66 @@ Skriv hva som helst, for eksempel:
 
 > Hei! La oss begynne.
 
-Spilleder leser hvor spillet står, og svarer. I det første svaret i hver chat gir den deg **lenken til dashbordet** (noe sånt som `http://127.0.0.1:4750`). Åpne den i nettleseren og ha den ved siden av chatten gjennom hele spillet. Hver kampanje beholder den samme lenken fra chat til chat, med mindre et annet program har tatt den: da gir spilleder deg den nye.
+Spillederen leser hvor spillet står, og svarer. I det første svaret i hver chat gir spillederen deg **lenken til dashbordet ditt** (noe som `http://127.0.0.1:4750`). Åpne den i nettleseren og la den stå ved siden av chatten gjennom hele spillet. Hver kampanje beholder den samme lenken fra en chat til den neste, med mindre et annet program har tatt den: da gir spillederen deg den nye.
 
-Mellom spillederens meldinger viser verten verktøyene spilleder bruker, i korte linjer. Ikke åpne detaljene (i Claude Code: ctrl+o): de kan vise det spilleder skriver, hemmeligheter inkludert.
+Mellom spillederens meldinger viser verten din verktøyene spillederen bruker, i korte linjer. Ikke åpne detaljene deres (i Claude Code, ctrl+o): de kan vise det spillederen skriver, hemmeligheter inkludert.
 
-En ny kampanje går gjennom tre trinn, som et spill med en spilleder av kjøtt og blod. Dashbordet viser dem øverst som *1 Innstillinger · 2 Sesjon null · 3 Spill*:
+En ny kampanje går gjennom tre trinn, som et spill med en menneskelig spilleder. Dashbordet viser dem øverst som *1 Innstillinger · 2 Sesjon null · 3 Spill*:
 
 1. **Innstillinger**: du velger hvordan du vil spille. Utenfor historien.
-2. **Sesjon null**: du lager karakteren din, i spill.
+2. **Sesjon null**: du lager karakteren din, i spillet.
 3. **Spill**: historien.
 
-### 2.6 Innstillinger: velg hvordan du spiller
+### 2.6 Innstillinger: velg hvordan du vil spille
 
-Spilleder spør bare om det som fortsatt mangler, noen få spørsmål om gangen. Skriver du «bestem du», velger spilleder og forteller deg hva den valgte. Når dashbordet er åpent, viser det første trinnet, **Innstillinger**, de samme spørsmålene som kort: ett spørsmål om gangen, hver verdi med hva den betyr, og den vanlige er merket **Foreslått**. Velg der, så spør ikke spilleder igjen i chatten; **Hopp over** lar et spørsmål ligge til senere. Chatten tar det bare ord kan avgjøre: premisset for en ny verden, språket og bildene, som spilleder bare spør om hvis datamaskinen din kan lage dem. Derfor stiller siden færre spørsmål enn tabellen under lister opp.
+Spillederen spør bare om det som fortsatt mangler, noen få spørsmål om gangen. Hvis du skriver «bestem du», velger spillederen og forteller deg hva som ble valgt. Når dashbordet er åpent, viser det første trinnet, **Innstillinger**, de samme spørsmålene som kort: ett spørsmål om gangen, hver verdi med hva den betyr, og den vanlige er merket **Foreslått**. Velg der, så spør ikke spillederen igjen i chatten; **Hopp over** lar et spørsmål ligge til senere. Chatten tar det bare ord kan avgjøre: premisset for en ny verden, språket og bildene, som spillederen bare spør om hvis datamaskinen din kan lage dem. Derfor stiller siden færre spørsmål enn tabellen under lister opp.
 
-Du trenger ikke lære tabellen: den er her for oppslag. Du kan endre alle disse senere, i chatten eller i dashbordets **Innstillinger**. En endring gjelder fra spillerederens neste svar.
+Du trenger ikke studere tabellen: den er her for oppslag. Du kan endre hver av disse senere, i chatten eller i dashbordets **Innstillinger**. En endring gjelder fra spillederens neste svar.
 
 | Innstilling | Hva den avgjør | Verdier | Foreslått |
 |---|---|---|---|
-| **Mentor** (spørsmålet lyder «Hvor godt kjenner du dette spillet?») | Hvor mye spilleder lærer deg reglene, utenfor historien | **av** (bare historien; spør i hakeparentes når du vil), **hint** (et kort tips før viktige valg og når en regel glipper forbi), **opplæring** (hver regel forklart første gang, hele regnestykket i hvert kast, en kort oppsummering etter kamper) | ut fra svaret ditt: aldri spilt → opplæring, litt → hint, jeg kan det → av |
-| **Vanskelighetsgrad** | Hvor hardt verden spiller: kamper, fiendens taktikk, spor, skatter, hvor fort trusler rører seg | historie, lett, normal, vanskelig, brutal | |
-| **Dødelighet** | Hva det betyr å falle i en kamp | **fortellende** (karakteren din dør aldri), **episk** (dør bare når det betyr noe for historien), **terninger** (terningene avgjør) | følger vanskelighetsgraden: historie → fortellende, lett → episk, normal og opp → terninger |
-| **Lagrede spill** | Når du kan gå tilbake | **permadød** (aldri; du kan bare starte kampanjen på nytt), **sjekkpunkt** (tilbake til slutten av forrige scene, bare hvis karakteren din dør), **fri** (tilbake til et hvilket som helst lagret spill, og lagre når du ber om det) | sjekkpunkt |
-| **Strenghet** | Hvor nøye mat, lys, utmattelse, bæreevne, trylleingredienser og reiser følger reglene | **smidig** (spilleder hopper lett over dem), **regler** (som skrevet: fakler brenner ut, rasjoner tar slutt), **simulering** (utover reglene: slitasje, bedervelse, vær) | smidig |
-| **Terninger** | Hvem som kaster karakterens terninger | **digitale** (RPG Engine kaster dem, på siden), **fysiske** (du kaster dine egne og sier hva de viste) | |
-| **Måleenheter** | Avstander og vekt i historien | metriske, imperiale | |
-| **Følgesvenner** | Hvem som reiser med deg | ingen, laget sammen med deg i sesjon null, laget av spilleder, møtt underveis | |
+| **Mentor** (spørres som «Hvor godt kjenner du dette spillet?») | Hvor mye spillederen lærer deg reglene, utenfor historien | **av** (bare historien; spør mellom parenteser når du vil), **hint** (et kort tips før valg som betyr noe og når en regel glipper forbi), **veiledning** (hver regel forklares første gang, hele regnestykket for hvert kast, en kort oppsummering etter kamper) | fra svaret ditt: aldri spilt → veiledning, litt → hint, jeg kan det → av |
+| **Vanskelighetsgrad** | Hvor hardt verden spiller: kamper, fiendens taktikk, spor, skatter, hvor fort trusler rykker frem | story, easy, normal, hard, brutal | |
+| **Dødelighet** | Hva det betyr å falle i en kamp | **narrative** (karakteren din dør aldri), **epic** (dør bare når det betyr noe for historien), **dice** (terningene avgjør) | følger vanskelighetsgraden: story → narrative, easy → epic, normal og oppover → dice |
+| **Lagrede spill** | Når du kan gå tilbake | **permadeath** (aldri; bare start kampanjen på nytt), **checkpoint** (tilbake til siste slutt på en scene, bare hvis karakteren din dør), **free** (tilbake til et hvilket som helst lagret spill, og lagre når du ber om det) | checkpoint |
+| **Strenghet** | Hvor nøye mat, lys, tretthet, bæreevne, trylleingredienser og reiser følger reglene | **smooth** (spillederen hopper lett over dem), **rules** (som skrevet: fakler brenner ut, rasjoner går tom), **simulation** (utover reglene: slitasje, bedervelse, vær) | smooth |
+| **Terninger** | Hvem som kaster karakterens terninger | **digital** (RPG Engine kaster dem, på siden), **physical** (du kaster dine egne og sier hva de viser) | |
+| **Måleenheter** | Avstander og vekt i historien | metric, imperial | |
+| **Følgesvenner** | Hvem som reiser med deg | ingen, laget sammen med deg i sesjon null, laget av spillederen, møtt underveis i spillet | |
 | **Bilder** | Bilder av steder, oppdrag og de du møter, og karakterens portrett når du ber om det | ingen, på forespørsel, nye steder, oppdrag og de du møter | spørres én gang, bare hvis datamaskinen din kan lage dem |
 | **Linjer** | Det som aldri dukker opp i spillet | en liste, eller ingen | |
 | **Slør** | Det som kan skje, men bare utenfor scenen | en liste, eller ingen | |
 | **Språk** | Språket i spillet og dashbordet | hvilket som helst | hentet fra hvordan du skriver, og bekreftet |
 
-Spillsystemet kan legge til egne innstillinger. Femte utgave legger til **utvikling**: hvordan karakteren din går opp i nivå, med **erfaringspoeng** eller ved **milepæler** i historien.
+Spillsystemet kan legge til egne innstillinger. Femte utgave legger til **fremgang**: hvordan karakteren din går opp i nivå, med **erfaringspoeng** eller ved **milepæler** i historien.
 
-**Hva vanskelighetsgraden betyr i spillet.** Historie: svake, naive fiender, åpenbare spor, rikelig av alt; spilleder kan mildne sine egne kast. Lett: enkle fiender, raushet med ressurser. Normal: fornuftige fiender, tre spor til hver slutning, vanlige priser og skatter. Vanskelig: smarte fiender, subtile spor, knappe ressurser, trusler som rører seg fort. Brutal: fiender som går i bakhold, trekker seg tilbake og gjør ende på de falne, svært knappe ressurser, de hardeste hvilene. Kamper tilpasses alltid gruppen din slik den er nå.
+**Hva vanskelighetsgraden betyr i spillet.** Story: svake, naive fiender, åpenbare spor, rikelig med alt; spillederen kan mildne sine egne kast. Easy: enkle fiender, raushjertede ressurser. Normal: fornuftige fiender, tre spor til hver slutning, vanlige priser og skatter. Hard: kloke fiender, subtile spor, knappe ressurser, trusler som rykker raskt frem. Brutal: fiender som lager bakhold, trekker seg tilbake og gjør ende på de falne, svært knappe ressurser, de hardeste hvilene. Kamper tilpasses alltid gruppen din slik den er nå.
 
-**Uten en skrevet verden** stiller oppsettet to spørsmål til:
+**Uten en skrevet verden** spør oppsettet om to ting til:
 
-- **Premiss**: sjangeren, tonen og noen få elementer i verden, med dine egne ord. For eksempel: *«Lavfantasy, dyster men med håp. En elveby, et hjemsøkt vadested, en kult i åsene.»*
-- **Forberedelse**: **underveis** (spilleder bygger hver del av verden like før du trenger den; foreslått) eller **alt i begynnelsen**.
+- **Premiss**: sjangeren, tonen og noen få elementer i verden, med dine ord. For eksempel: *«Lavfantasy, dyster men med håp. En elveby, et hjemsøkt vadested, en kult i åsene.»*
+- **Forberedelse**: **underveis** (spillederen bygger hver del av verden like før du trenger den; foreslått) eller **alt i starten**.
 
-Spilleder foreslår så et navn på kampanjen. Når ingenting mangler og du sier at du er klar, går spillet over til sesjon null.
+Spillederen foreslår så et navn på kampanjen. Når ingenting mangler og du sier at du er klar, går spillet over til sesjon null.
+
+**Spillederens stil** blir aldri spurt om: endre den når du vil, i chatten eller i **Innstillinger**, der den har en egen gruppe. Tonen blir i premisset; stilen er hvordan det fortelles.
+
+- **Prosa**: **plain** (korte setninger, én konkret detalj om gangen; den vanlige), **literary** (mer rom i høydepunktene), **pulp** (spent, levende, kort, hver melding slutter med en trussel eller en krok) eller **wry** (en forteller med et halvt smil til verden, aldri til karakteren din).
+- **Historier**, for det spillederen finner på, aldri et skrevet eventyr: **situations** (fraksjoner, trusler og steder med hemmeligheter, ingen hovedintrige; den vanlige), **arcs** (en sentral trussel som rykker frem i trinn), **episodes** (en historie som avsluttes i hver sesjon) eller **mystery** (hver historie en etterforskning, sannheten avgjort først).
+- **Skriv som**: en forfatter hvis måte å fortelle på spillederen tar i bruk i stedet for prosaen: rytmen og detaljene de velger, aldri setningene, navnene eller stedene deres, og aldri mer enn karakteren din ser.
+- **Med dine ord**: alt annet, med noen få ord, for eksempel *«tredjeperson, preteritum»*. Spillederen forteller historien i andre person, presens, med mindre du ber om noe annet.
 
 ### 2.7 Sesjon null: karakteren din
 
-Sesjon null er spill: du lager karakteren din sammen med spilleder, som rundt et bord.
+Sesjon null er spill: du lager karakteren din sammen med spillederen, som ved et bord.
 
-- **Hvert valg er ditt**, med mindre du ber spilleder gjøre det. Du kan komme med en full idé («en halvalvisk kleriker som forlot tempelet sitt»), en vag («en som helbreder, men ikke er hyggelig om det»), eller ingenting («overrask meg, så får jeg endre ting etterpå»).
-- **Egenskapspoeng.** Spilleder forteller deg metoden og sikkerhetsnettet før noen terning kastes. I femte utgave: standardrekken, poengkjøp eller 4d6 og dropp den laveste. Metoden dere blir enige om, står i bordets avtaler.
-- **Historien din** er aldri påkrevd. Hvis du gir en, skriver spilleder den med dine ord, leser den opp for deg én gang og knytter menneskene og stedene i den til verden. Du kan også skrive den på dashbordet (se [Gruppe](#party)).
+- **Hvert valg er ditt**, med mindre du ber spillederen ta det. Du kan komme med en full idé («en halvalv-prest som forlot tempelet sitt»), en vag en («en som helbreder, men ikke er snill om det») eller ingenting («overrask meg, så lar du meg endre ting»).
+- **Egenskapsverdier.** Spillederen forteller deg metoden og sikkerhetsnettet før noen terning kastes. I femte utgave: standardrekken, poengkjøp eller 4d6 der den laveste forkastes. Metoden dere blir enige om, blir stående blant bordets avtaler.
+- **Historien din** er aldri påkrevd. Hvis du gir en, skriver spillederen den med dine ord, leser den opp for deg én gang og knytter menneskene og stedene i den til verden. Du kan også skrive den på dashbordet (se [Gruppe](#party)).
 - **Personlighet** (femte utgave): et trekk, et ideal, et bånd og en feil, fra bakgrunnens tabeller eller dine egne.
-- **Et bilde.** Når karakteren din er laget, ber spilleder deg om et bilde av den: en fil på datamaskinen din, eller et portrett laget på datamaskinen din ut fra beskrivelsen din (se [bildet av karakteren din](#37-your-characters-story-and-picture)).
+- **Et bilde.** Når karakteren din er laget, ber spillederen deg om et bilde av den: en fil på datamaskinen din, eller et portrett laget på datamaskinen din ut fra hvordan du beskriver karakteren (se [karakterens bilde](#37-your-characters-story-and-picture)).
 
-Tallene på karakterarket regnes ut av RPG Engine ut fra valgene dine: du tar aldri regnestykkene selv. Når karakterene er laget og du bekrefter, begynner historien.
+Tallene på karakterarket regnes ut av RPG Engine fra valgene dine: du gjør aldri regnestykkene. Når karakterene er laget og du bekrefter, begynner historien.
 
 ---
 

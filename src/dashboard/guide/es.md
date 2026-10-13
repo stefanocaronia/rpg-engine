@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 d32a17eb 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 62159f4b 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar a un juego de rol de mesa con una **IA como máster**.
@@ -60,15 +60,15 @@ RPG Engine está pensado para cualquier juego de rol de mesa. Hoy incluye un sol
 ### 2.1 Qué necesitas
 
 - Un equipo con Windows, macOS o Linux.
-- **Node.js 22** o una versión más reciente. Descárgalo de [nodejs.org](https://nodejs.org): la versión "LTS" sirve. Incluye `npm`, que instala RPG Engine.
+- **Node.js 22** o superior. Descárgalo en [nodejs.org](https://nodejs.org): la versión "LTS" va bien. Incluye `npm`, que instala RPG Engine.
 - Una **terminal**, la ventana donde escribes comandos: en Windows, la aplicación Terminal o PowerShell; en macOS, Terminal. La usas para instalar RPG Engine, para crear cada campaña y para iniciar Claude Code o Codex.
-- Un **host de IA**, la aplicación donde vive el máster: **Claude Code** o **Codex**, con su plan y su inicio de sesión. Consulta [2.4](#24-connect-your-ai).
-- El **modelo más grande** que ofrezca tu host. Un modelo pequeño se deja engañar: en nuestras pruebas contó secretos a un jugador que decía ser el verdadero máster.
+- Un **host de IA**, la aplicación donde funciona el máster: **Claude Code** o **Codex**, con su plan y su inicio de sesión. Consulta [2.4](#24-connect-your-ai).
+- El **modelo más grande** que ofrezca tu host. Un modelo pequeño se deja engañar: en nuestras pruebas reveló secretos a alguien que decía ser el máster de verdad.
 - Un navegador web, para el panel.
 
-El inicio de sesión que usas para tu host sirve para más cosas: RPG Engine lo usa, en tu equipo, para dibujar imágenes de lugares, misiones, personajes que conoces y tu propio personaje, y para traducir el panel a idiomas que no incluye. Consulta [Imágenes](#311-pictures) e [Idiomas](#72-languages).
+El inicio de sesión que usas en tu host sirve para más cosas: RPG Engine lo usa, en tu equipo, para dibujar imágenes de lugares, misiones, personajes que conoces y de tu personaje, y para traducir el panel a los idiomas que no incluye. Consulta [Imágenes](#311-pictures) e [Idiomas](#72-languages).
 
-**Abrir una terminal en una carpeta.** Muchos pasos dicen "en la carpeta de la campaña". En Windows, haz clic derecho en la carpeta en el Explorador de archivos y elige **Abrir en Terminal**. En macOS, haz clic derecho en la carpeta en Finder y elige **Servicios > Nueva terminal en la carpeta**. O, en una terminal que ya tengas abierta, escribe `cd` y la ruta de la carpeta, como `cd "C:\Users\me\Games\The Salt Isles"`.
+**Abrir una terminal en una carpeta.** Muchos pasos dicen "en la carpeta de la campaña". En Windows, haz clic derecho en la carpeta, en el Explorador de archivos, y elige **Abrir en Terminal**. En macOS, haz clic derecho en la carpeta, en el Finder, y elige **Servicios > Nueva terminal en la carpeta**. O, en una terminal que ya tengas abierta, escribe `cd` y la ruta de la carpeta, por ejemplo `cd "C:\Users\me\Games\The Salt Isles"`.
 
 ### 2.2 Instalar
 
@@ -78,13 +78,13 @@ Abre una terminal y escribe:
 npm install -g rpg-engine
 ```
 
-Esto te da el comando `rpg`. Para comprobar que funcionó:
+Esto te da el comando `rpg`. Para comprobar que ha funcionado:
 
 ```text
 rpg --version
 ```
 
-Usarás `rpg` una vez por campaña, para crearla. Después, solo hablas con el máster: tu host de IA inicia RPG Engine por sí mismo, con el mismo comando `rpg`.
+Usarás `rpg` una vez por campaña, para crearla. Después, solo hablas con el máster: tu host de IA inicia RPG Engine por sí solo, con el mismo comando `rpg`.
 
 ### 2.3 Crear una campaña
 
@@ -94,7 +94,7 @@ Una campaña es una carpeta. Abre una terminal en la carpeta donde guardas tus j
 rpg init "The Salt Isles"
 ```
 
-Esto crea la carpeta `The Salt Isles` con una campaña nueva dentro, y te dice qué hacer a continuación:
+Esto crea la carpeta `The Salt Isles` con una campaña nueva dentro y te dice qué hacer a continuación:
 
 ```text
 Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
@@ -103,11 +103,11 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Las líneas después de *For the master* son para el máster, que las lee en el chat: tú no tienes que hacer nada con ellas. Recuerda dónde está la carpeta: vuelves a ella cada vez que juegas. Si no pones nombre de carpeta, `rpg init` convierte en campaña la carpeta en la que estás.
+Las líneas después de *For the master* son para el máster, que las lee en el chat: tú no tienes que hacer nada con ellas. Recuerda dónde está la carpeta: volverás a ella cada vez que juegues. Si no pones nombre de carpeta, `rpg init` convierte en campaña la carpeta donde estás.
 
 `init` crea todo lo que la campaña necesita: sus ajustes, sus carpetas del mundo y los archivos pequeños que le dicen a tu host de IA que use RPG Engine y que no guarde memoria propia fuera de la campaña.
 
-No necesitas elegir nada ahora. El máster te pregunta el resto en el chat, o lo eliges en el panel. Si ya sabes algunas opciones, puedes darlas aquí:
+No necesitas elegir nada ahora. El máster te pregunta el resto en el chat, o lo eliges en el panel. Si ya tienes claras algunas opciones, puedes indicarlas aquí:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
@@ -119,7 +119,7 @@ Esto crea la carpeta `salt-isles`, con la campaña *The Salt Isles* dentro: un n
 |---|---|---|
 | `--name` | El nombre de la campaña | cualquiera; el nombre de la carpeta si lo omites |
 | `--language` | El idioma del juego | un código, como `en`, `it`, `fr` |
-| `--system` | El sistema de juego | `5e`, hoy el único |
+| `--system` | El sistema de juego | `5e`, por ahora el único |
 | `--difficulty` | Lo duro que es el mundo | `story`, `easy`, `normal`, `hard`, `brutal` |
 | `--lethality` | Qué significa caer en un combate | `narrative`, `epic`, `dice` |
 
@@ -129,13 +129,13 @@ No puedes pedirle al máster que cree una campaña: antes de `init`, la carpeta 
 
 ### 2.4 Conectar tu IA
 
-RPG Engine funciona con **Claude Code** y **Codex**. Otras aplicaciones de IA que usen herramientas MCP podrían funcionar también, pero no lo garantizamos.
+RPG Engine funciona con **Claude Code** y **Codex**. Otras aplicaciones de IA que usen herramientas MCP quizá también funcionen, pero no lo garantizamos.
 
-**Instalar tu host.** Claude Code y Codex se ejecutan en la terminal: no son la aplicación de Claude ni la de ChatGPT del móvil. Cada uno necesita su propio plan y su inicio de sesión: Claude Code un plan de pago de Claude, Codex un inicio de sesión de ChatGPT. Sigue sus propias páginas para instalarlos e iniciar sesión: [Claude Code](https://code.claude.com/docs/en/setup) y [Codex](https://learn.chatgpt.com/docs/codex/cli). Lo haces una sola vez, para todas tus campañas.
+**Instalar tu host.** Claude Code y Codex funcionan en la terminal: no son la aplicación de Claude ni la de ChatGPT del móvil. Cada uno necesita su propio plan e inicio de sesión: Claude Code, un plan de pago de Claude; Codex, una cuenta de ChatGPT. Sigue sus propias páginas para instalarlos e iniciar sesión: [Claude Code](https://code.claude.com/docs/en/setup) y [Codex](https://learn.chatgpt.com/docs/codex/cli). Esto se hace una sola vez, para todas tus campañas.
 
-**Claude Code.** Abre una terminal en la carpeta de la campaña y escribe `claude`. La primera vez, te pregunta si confías en la carpeta y avisa de que la carpeta permite las herramientas del juego (`mcp__rpg`): elige **Yes, I trust this folder**. Ojo: la respuesta seleccionada de entrada es *No, exit*, así que si pulsas Intro de inmediato se cierra Claude Code. Eso es todo: la campaña ya le ha dicho a Claude Code que use RPG Engine y sus herramientas, y que mantenga su memoria desactivada.
+**Claude Code.** Abre una terminal en la carpeta de la campaña y escribe `claude`. La primera vez, pregunta si confías en la carpeta y avisa de que la carpeta permite las herramientas del juego (`mcp__rpg`): elige **Yes, I trust this folder**. Cuidado: la respuesta que aparece marcada es *No, exit*, así que si pulsas Enter de inmediato, Claude Code se cierra. Eso es todo: la campaña ya le ha indicado a Claude Code que use RPG Engine y sus herramientas, y que mantenga su memoria desactivada.
 
-**Codex.** Abre una terminal en la carpeta de la campaña y escribe `codex`. Cuando te pregunte si confías en la carpeta, di que sí: los ajustes propios de la campaña le dicen a Codex dónde está RPG Engine, permiten sus herramientas y mantienen su memoria desactivada, y Codex solo los lee en una carpeta de confianza. En la aplicación de escritorio, comprueba que las memorias estén desactivadas para los chats del juego.
+**Codex.** Abre una terminal en la carpeta de la campaña y escribe `codex`. Cuando pregunte si confías en la carpeta, responde que sí: los ajustes propios de la campaña le dicen a Codex dónde está RPG Engine, permiten sus herramientas y mantienen su memoria desactivada, y Codex solo los lee en una carpeta de confianza. En la aplicación de escritorio, comprueba que las memorias estén desactivadas en los chats del juego.
 
 **Por qué importa la memoria.** La campaña vive en sus archivos. Si el host además recuerda cosas por su cuenta, volver a una partida guardada no sería volver de verdad: el máster seguiría recordando lo que se deshizo.
 
@@ -145,9 +145,9 @@ Escribe lo que quieras, por ejemplo:
 
 > ¡Hola! Empecemos.
 
-El máster lee cómo está el juego y responde. En su primera respuesta de cada chat te da el **enlace a tu panel** (algo como `http://127.0.0.1:4750`). Ábrelo en tu navegador y manténlo junto al chat durante toda la partida. Cada campaña conserva el mismo enlace de un chat al siguiente, salvo que otro programa lo haya ocupado: entonces el máster te da el nuevo.
+El máster lee cómo está la partida y responde. En su primera respuesta de cada chat te da el **enlace a tu panel** (algo como `http://127.0.0.1:4750`). Ábrelo en tu navegador y déjalo junto al chat durante todo el juego. Cada campaña conserva el mismo enlace de un chat a otro, salvo que otro programa lo haya ocupado: entonces el máster te da el nuevo.
 
-Entre los mensajes del máster, tu host muestra las herramientas que usa el máster, en líneas cortas. No abras sus detalles (en Claude Code, ctrl+o): pueden mostrar lo que escribe el máster, secretos incluidos.
+Entre los mensajes del máster, tu host muestra las herramientas que el máster usa, en líneas breves. No abras sus detalles (en Claude Code, ctrl+o): pueden mostrar lo que escribe el máster, secretos incluidos.
 
 Una campaña nueva pasa por tres etapas, como un juego con un máster humano. El panel las muestra arriba como *1 Ajustes · 2 Sesión cero · 3 Jugar*:
 
@@ -157,47 +157,54 @@ Una campaña nueva pasa por tres etapas, como un juego con un máster humano. El
 
 ### 2.6 Ajustes: elegir cómo juegas
 
-El máster solo pregunta lo que aún falta, unas pocas preguntas cada vez. Si escribes "decide tú", el máster elige y te dice lo que eligió. Con el panel abierto, su primer paso, **Ajustes**, muestra las mismas preguntas como tarjetas: una pregunta cada vez, cada valor con su significado, y el habitual marcado como **Sugerida**. Elige ahí y el máster no volverá a preguntar en el chat; **Omitir** deja una pregunta para más tarde. El chat resuelve lo que solo se puede con palabras: la premisa de un mundo nuevo, el idioma y las imágenes, sobre las que el máster pregunta solo si tu equipo puede crearlas. Por eso la página hace menos preguntas de las que enumera la tabla de abajo.
+El máster pregunta solo lo que aún falta, unas pocas preguntas cada vez. Si escribes "decide tú", el máster elige y te dice qué ha elegido. Con el panel abierto, su primer paso, **Ajustes**, muestra las mismas preguntas como tarjetas: una pregunta cada vez, cada valor con su significado y el habitual marcado como **Sugerida**. Elige ahí y el máster no volverá a preguntar en el chat; **Omitir** deja una pregunta para más tarde. El chat resuelve lo que solo se puede con palabras: la premisa de un mundo nuevo, el idioma y las imágenes, sobre las que el máster pregunta solo si tu equipo puede crearlas. Por eso la página hace menos preguntas que las que enumera la tabla de abajo.
 
-No necesitas estudiar la tabla: está para consultarla. Puedes cambiar cada uno de estos ajustes más tarde, en el chat o en los **Ajustes** del panel. Un cambio cuenta desde la siguiente respuesta del máster.
+No necesitas estudiar la tabla: está para consultarla. Puedes cambiar cualquiera de estos ajustes más adelante, en el chat o en los **Ajustes** del panel. Un cambio vale desde la siguiente respuesta del máster.
 
 | Ajuste | Qué decide | Valores | Sugerida |
 |---|---|---|---|
-| **Mentor** (se pregunta como "¿Cuánto conoces este juego?") | Cuánto te enseña el máster las reglas, fuera de la historia | **desactivado** (solo la historia; preguntas entre corchetes cuando quieras), **pistas** (un consejo breve antes de las decisiones importantes y cuando se pasa por alto una regla), **tutorial** (cada regla explicada la primera vez, la suma completa de cada tirada, un breve repaso tras los combates) | según tu respuesta: nunca he jugado → tutorial, un poco → pistas, lo conozco → desactivado |
-| **Dificultad** | Lo duro que es el mundo: combates, tácticas enemigas, pistas, tesoro, lo rápido que avanzan las amenazas | historia, fácil, normal, difícil, brutal | |
-| **Letalidad** | Qué significa caer en un combate | **narrativa** (tu personaje nunca muere), **épica** (muere solo cuando importa para la historia), **dados** (deciden los dados) | sigue la dificultad: historia → narrativa, fácil → épica, normal o más → dados |
-| **Partidas guardadas** | Cuándo puedes volver atrás | **muerte permanente** (nunca; solo empezar la campaña de nuevo), **punto de control** (vuelta al último final de escena, solo si tu personaje muere), **libre** (vuelta a cualquier partida guardada, y guardas cuando lo pidas) | punto de control |
-| **Rigor** | Con qué fidelidad siguen las reglas la comida, la luz, la fatiga, el peso que cargas, los componentes de conjuros y los viajes | **fluido** (el máster los pasa por alto), **reglas** (como está escrito: las antorchas se apagan, las raciones se acaban), **simulación** (más allá de las reglas: desgaste, descomposición, clima) | fluido |
-| **Dados** | Quién tira los dados de tu personaje | **digitales** (RPG Engine los tira, en la página), **físicos** (tú tiras los tuyos y dices las caras) | |
+| **Mentor** (se pregunta como "¿Cuánto conoces este juego?") | Cuánto te enseña el máster las reglas, fuera de la historia | **desactivado** (solo la historia; pregunta entre corchetes cuando quieras), **pistas** (un consejo breve antes de las decisiones importantes y cuando se pasa por alto una regla), **tutorial** (cada regla explicada la primera vez, la suma completa de cada tirada, un breve repaso tras los combates) | según tu respuesta: nunca he jugado → tutorial, un poco → pistas, lo conozco → desactivado |
+| **Dificultad** | Lo duro que es el mundo: combates, tácticas enemigas, pistas, tesoro, rapidez con la que avanzan las amenazas | historia, fácil, normal, difícil, brutal | |
+| **Letalidad** | Qué significa caer en un combate | **narrativa** (tu personaje nunca muere), **épica** (muere solo cuando importa para la historia), **dados** (deciden los dados) | sigue la dificultad: historia → narrativa, fácil → épica, normal y superiores → dados |
+| **Partidas guardadas** | Cuándo puedes volver atrás | **muerte permanente** (nunca; solo empezar la campaña de nuevo), **punto de control** (vuelves al último final de escena, solo si tu personaje muere), **libre** (vuelves a cualquier partida guardada y guardas cuando lo pidas) | punto de control |
+| **Rigor** | Con qué fidelidad se siguen las reglas de comida, luz, fatiga, peso transportado, componentes de conjuros y viajes | **fluido** (el máster los pasa por alto), **reglas** (tal como están escritas: las antorchas se apagan, las raciones se acaban), **simulación** (más allá de las reglas: desgaste, deterioro, clima) | fluido |
+| **Dados** | Quién tira los dados de tu personaje | **digitales** (los tira RPG Engine, en la página), **físicos** (tiras tú y dices los resultados) | |
 | **Unidades** | Distancias y pesos en la historia | métricas, imperiales | |
 | **Compañeros** | Quién viaja contigo | ninguno, creados contigo en la sesión cero, creados por el máster, conocidos durante el juego | |
 | **Imágenes** | Imágenes de lugares, misiones y personajes que conoces, y el retrato de tu personaje cuando lo pides | ninguna, a petición, lugares nuevos, misiones y personajes que conoces | se pregunta una vez, solo si tu equipo puede crearlas |
 | **Líneas** | Lo que nunca aparece en el juego | una lista, o ninguna | |
-| **Velos** | Lo que puede ocurrir, pero solo fuera de escena | una lista, o ninguno | |
-| **Idioma** | El idioma del juego y del panel | cualquiera | según cómo escribes, y se confirma |
+| **Velos** | Lo que puede pasar, pero solo fuera de escena | una lista, o ninguno | |
+| **Idioma** | El idioma del juego y del panel | cualquiera | se toma de cómo escribes, y se confirma |
 
-El sistema de juego puede añadir sus propios ajustes. La quinta edición añade el **avance**: cómo sube de nivel tu personaje, con **puntos de experiencia** o con **hitos** de la historia.
+El sistema de juego puede añadir sus propios ajustes. La quinta edición añade el **avance**: cómo sube de nivel tu personaje, con **puntos de experiencia** o por **hitos** de la historia.
 
-**Qué significa la dificultad al jugar.** Historia: enemigos débiles e ingenuos, pistas evidentes, abundancia de todo; el máster puede suavizar sus propias tiradas. Fácil: enemigos sencillos, recursos generosos. Normal: enemigos sensatos, tres pistas por cada conclusión, precios y tesoros estándar. Difícil: enemigos astutos, pistas sutiles, recursos escasos, amenazas que avanzan rápido. Brutal: enemigos que tienden emboscadas, se retiran y rematan a los caídos, recursos muy escasos, los descansos más duros. Los combates siempre se ajustan a tu grupo tal como es ahora.
+**Qué significa la dificultad al jugar.** Historia: enemigos débiles e ingenuos, pistas evidentes, abundancia de todo; el máster puede suavizar sus propias tiradas. Fácil: enemigos sencillos, recursos generosos. Normal: enemigos sensatos, tres pistas para cada conclusión, precios y tesoros estándar. Difícil: enemigos astutos, pistas sutiles, recursos escasos, amenazas que avanzan rápido. Brutal: enemigos que tienden emboscadas, se retiran y rematan a quien cae, recursos muy escasos, los descansos más duros. Los combates siempre se ajustan a tu grupo tal como está ahora.
 
-**Sin un mundo ya escrito**, la preparación pregunta dos cosas más:
+**Sin un mundo escrito**, la preparación pregunta dos cosas más:
 
-- **Premisa**: el género, el tono y algunos elementos del mundo, con tus palabras. Por ejemplo: *"Fantasía baja, sombría pero con esperanza. Un pueblo junto a un río, un vado encantado, una secta en las colinas."*
-- **Preparación**: **sobre la marcha** (el máster construye cada parte del mundo justo antes de que la necesites; sugerida) o **todo al principio**.
+- **Premisa**: el género, el tono y algunos elementos del mundo, con tus palabras. Por ejemplo: *"Fantasía baja, sombría pero con esperanza. Un pueblo junto a un río, un vado encantado, un culto en las colinas."*
+- **Preparación**: **sobre la marcha** (el máster construye cada parte del mundo justo antes de que la necesites; es la sugerida) o **todo al principio**.
 
 Después, el máster propone un nombre para la campaña. Cuando no falta nada y dices que estás listo, el juego pasa a la sesión cero.
 
+**El estilo del máster** nunca se pregunta: cámbialo cuando quieras, en el chat o en **Ajustes**, donde tiene un grupo propio. El tono se queda en la premisa; el estilo es cómo se cuenta.
+
+- **Narración**: **sencilla** (frases cortas, un detalle concreto cada vez; la habitual), **literaria** (más espacio en los momentos álgidos), **pulp** (tensa, viva, breve, con cada mensaje acabando en una amenaza o un gancho) o **irónica** (un narrador con una media sonrisa ante el mundo, nunca ante tu personaje).
+- **Historias**, para lo que el máster inventa, nunca una aventura escrita: **situaciones** (facciones, amenazas y lugares con secretos, sin trama principal; la habitual), **arcos** (una amenaza central que avanza por etapas), **episodios** (una historia que se cierra en cada sesión) o **misterio** (cada historia es una investigación, con su verdad decidida de antemano).
+- **Escribir como**: un autor o autora cuya manera de contar adopta el máster en lugar de la narración propia: su ritmo y los detalles que elige, nunca sus frases, nombres o lugares, y nunca más de lo que ve tu personaje.
+- **Con tus palabras**: cualquier otra cosa, en pocas palabras, como *"tercera persona, pasado"*. El máster cuenta la historia en segunda persona, en presente, salvo que pidas otra cosa.
+
 ### 2.7 Sesión cero: tu personaje
 
-La sesión cero ya es juego: creas tu personaje con el máster, como harías en una mesa.
+La sesión cero ya es juego: creas tu personaje con el máster, como lo harías en una mesa.
 
-- **Cada elección es tuya**, salvo que le pidas al máster que la haga. Puedes llegar con una idea completa ("un personaje clérigo semielfo que dejó su templo"), una idea vaga ("alguien que cura, pero sin ser amable") o con nada ("sorpréndeme, y luego déjame cambiar cosas").
-- **Puntuaciones de característica.** El máster te explica el método y la red de seguridad antes de tirar ningún dado. En la quinta edición: la serie estándar, la compra de puntos o 4d6 descartando el más bajo. El método que acordéis queda en los acuerdos de la mesa.
-- **Tu historia** nunca es obligatoria. Si das una, el máster la escribe con tus palabras, te la lee una vez y enlaza a sus personajes y lugares con el mundo. También puedes escribirla en el panel (consulta [Grupo](#party)).
+- **Cada decisión es tuya**, salvo que le pidas al máster que la tome. Puedes llegar con una idea completa ("un personaje clérigo semielfo que dejó su templo"), una idea vaga ("alguien que cura, pero sin amabilidad") o con nada ("sorpréndeme, y luego déjame cambiar cosas").
+- **Puntuaciones de característica.** El máster te explica el método y la red de seguridad antes de tirar ningún dado. En la quinta edición: el conjunto estándar, la compra de puntos o 4d6 descartando el más bajo. El método acordado queda en los acuerdos de la mesa.
+- **Tu historia** nunca es obligatoria. Si das una, el máster la escribe con tus palabras, te la lee una vez y enlaza a sus personas y lugares con el mundo. También puedes escribirla en el panel (consulta [Grupo](#party)).
 - **Personalidad** (quinta edición): un rasgo, un ideal, un vínculo y un defecto, de las tablas de tu trasfondo o propios.
-- **Una imagen.** Cuando tu personaje está hecho, el máster te pide una imagen suya: un archivo de tu equipo, o un retrato creado en tu equipo a partir de cómo lo describas (consulta [la imagen de tu personaje](#37-your-characters-story-and-picture)).
+- **Una imagen.** Cuando tu personaje está creado, el máster te pide una imagen suya: un archivo de tu equipo o un retrato creado en tu equipo a partir de cómo lo describes (consulta [la imagen de tu personaje](#37-your-characters-story-and-picture)).
 
-RPG Engine calcula los números de la ficha a partir de tus elecciones: tú nunca haces las cuentas. Cuando los personajes están hechos y confirmas, empieza la historia.
+Los números de la ficha los calcula RPG Engine a partir de tus decisiones: tú nunca haces las cuentas. Cuando los personajes están creados y lo confirmas, empieza la historia.
 
 ---
 

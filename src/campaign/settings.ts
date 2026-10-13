@@ -55,7 +55,7 @@ export const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
 /** What the chosen difficulty, rigor or mentor means, as status and config give it; undefined for another setting or a value it does not take. */
 export function settingMeaning(name: string, value: unknown): string | undefined
 {
-    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings };
+    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings, ...styleMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
 }
@@ -74,11 +74,42 @@ export const companionWays = ["none", "made with the player", "made by the maste
 /** How far ahead a world without a written campaign is made (D-80): as it is needed, or all at the start. */
 export const preparations = ["on the fly", "all at the start"] as const;
 
+/** How the master writes (D-395): plain, the core's own, literary, pulp or wry; the tone stays in the premise, and an author takes its place. */
+export const proseWays = ["plain", "literary", "pulp", "wry"] as const;
+
+/** How the master builds what they invent (D-395): situations, the core's own, arcs, episodes or a mystery; a written adventure keeps its own. */
+export const storyWays = ["situations", "arcs", "episodes", "mystery"] as const;
+
+/** The longest text the player's own words of how the master writes may be, by setting (D-395). */
+export const styleTextLengths = { author: 80, style: 300 } as const;
+
+/** What each way of writing and of building the story means to the master, which config gives for the chosen one (D-395). */
+const styleMeanings: Record<string, Record<string, string>> = {
+    prose: {
+        plain: "short sentences, one concrete detail a thing, as your instructions write",
+        literary: "more room at the high points, images and subtext, as the prose part of your instructions says",
+        pulp: "tense action, strong colours, every message ending on a threat or a hook, as the prose part of your instructions says",
+        wry: "a narrator with a half smile at the world, never at the character, as the prose part of your instructions says",
+    },
+    story: {
+        situations: "a world of factions, threats with their clocks and places with secrets, no main plot, as your instructions write",
+        arcs: "a central threat that advances by stages, the party's own arcs woven in, as the story part of your instructions says",
+        episodes: "a story that closes each session, with a thread that comes back, as the story part of your instructions says",
+        mystery: "every story an investigation, its truth written first in the secrets, as the story part of your instructions says",
+    },
+};
+
 /** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
 const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
 
 /** A list setting; an empty item written by hand, as - "", holds nothing and is left out, so that it never stops the game. */
 const listSetting = z.preprocess((items) => (Array.isArray(items) ? items.filter((item) => item !== null && String(item).trim() !== "") : items), z.array(listItem)).nullish();
+
+/** The player's own words in a setting, on one line: a line break in them would be read as a heading of the instructions they go into (D-395). */
+function oneLine(most: number)
+{
+    return z.preprocess((value) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim() : value), z.string().min(1).max(most));
+}
 
 /** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
 export const settingsSchema = z.object({
@@ -90,6 +121,10 @@ export const settingsSchema = z.object({
     ),
     premise: z.string().min(1).optional().describe("without a written campaign: the genre, the tone and a few elements of the world, in the player's words"),
     preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
+    prose: z.enum(proseWays).optional().describe("how the master writes, as the player chose it: plain, literary, pulp or wry; the tone stays in the premise; an author takes its place"),
+    story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),
+    author: oneLine(styleTextLengths.author).optional().describe("an author the master writes like, as the player named them: their way, never their sentences, names or places"),
+    style: oneLine(styleTextLengths.style).optional().describe("the player's own wishes for how the master writes, in a few words, such as third person, past tense"),
     difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
     saves: z.enum(saveModes).optional().describe(
@@ -142,7 +177,9 @@ export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 
 // Settings that only some games have, or that only the setup asks: never asked for in play when missing.
 // The pictures: status asks for them once, only where they can be made (D-308).
-const optionalSettingNames: SettingName[] = ["coins", "pictures", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames];
+// How the master writes: the core's own until the player chooses (D-395).
+const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -211,6 +248,21 @@ export function changeSetting(root: string, name: string, value: unknown): boole
     }
 
     document.set(setting, parsed.data);
+    saveSettings(root, document);
+    return true;
+}
+
+/** Takes away a setting the player may leave unset again, as the author the master writes like (D-395). Returns whether it changed. */
+export function clearSetting(root: string, name: string): boolean
+{
+    const setting = checkSettingName(name);
+    const document = readSettingsDocument(root);
+
+    if (!document.has(setting)) {
+        return false;
+    }
+
+    document.delete(setting);
     saveSettings(root, document);
     return true;
 }

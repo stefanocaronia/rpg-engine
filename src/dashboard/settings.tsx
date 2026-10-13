@@ -17,6 +17,7 @@ import { pickTheme, shownTheme } from "./theme.ts";
 const groups: { names: string[]; system?: true; }[] = [
     { names: ["difficulty", "lethality", "saves", "rigor"] },
     { names: ["mentor", "learned"] },
+    { names: ["prose", "story", "author", "style"] },
     { names: ["dice", "units"], system: true },
     { names: ["lines", "veils"] },
     { names: ["pictures", "language"] },
@@ -68,7 +69,7 @@ export function SettingsView({ version }: { version: number; })
                 return (
                     <section key={group.names[0]} class="settings-group">
                         <h3>{groupTitle(index)}</h3>
-                        {shown.map((setting) => <SettingRow key={setting.name} setting={setting} onChange={change} />)}
+                        {shown.map((setting) => <SettingRow key={setting.name} setting={setting} off={offBy(setting, settings)} onChange={change} />)}
                     </section>
                 );
             })}
@@ -77,8 +78,18 @@ export function SettingsView({ version }: { version: number; })
     );
 }
 
-/** One setting: its name and what it is, its values to choose from, a list's items to add and take off, or the language; what the chosen value means. */
-function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(change: SettingChange): Promise<string | undefined>; })
+/** Why a setting counts for nothing now, as the prose while an author is written (D-395); undefined for one that counts. */
+function offBy(setting: PlayerSetting, settings: PlayerSetting[]): string | undefined
+{
+    const author = settings.find((one) => one.name === "author")?.value;
+    return setting.name === "prose" && author !== undefined ? t("The author you wrote takes its place: this counts again once you clear the author.") : undefined;
+}
+
+/**
+ * One setting: its name and what it is, its values to choose from, a list's items to add and take off, the player's own words, or the language; what the chosen
+ * value means; why it counts for nothing now, its values still to choose.
+ */
+function SettingRow({ setting, off, onChange }: { setting: PlayerSetting; off?: string; onChange(change: SettingChange): Promise<string | undefined>; })
 {
     // The value just picked shows at once, until the setting is read again.
     const [picked, setPicked] = useState<string>();
@@ -120,9 +131,10 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
     };
 
     const chosen = setting.choices?.find((choice) => choice.value === value);
-    const unset = setting.choices === undefined ? setting.items === undefined && setting.value === undefined : chosen === undefined;
+    const unset = setting.most === undefined && (setting.choices === undefined ? setting.items === undefined && setting.value === undefined : chosen === undefined);
+    const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(off === undefined ? [] : [`${id}-off`])].join(" ");
     return (
-        <div class="setting">
+        <div class={off === undefined ? "setting" : "setting off"}>
             <div class="setting-what">
                 <span class="setting-name" id={id}>{settingLabel(setting.name)}</span>
                 <span class="setting-about" id={`${id}-about`}>{t(setting.about)}</span>
@@ -131,7 +143,7 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
                 ? (
                     <Segmented
                         label={id}
-                        described={chosen?.means === undefined ? `${id}-about` : `${id}-about ${id}-means`}
+                        described={described}
                         options={setting.choices.map((choice) => ({ value: choice.value, label: valueLabel(choice.value) }))}
                         value={value}
                         onPick={choose}
@@ -139,8 +151,11 @@ function SettingRow({ setting, onChange }: { setting: PlayerSetting; onChange(ch
                 )
                 : setting.name === "language"
                 ? <LanguageChoice value={value} labelledBy={id} describedBy={`${id}-about`} onPick={(code) => choose(code, false)} />
+                : setting.most !== undefined
+                ? <TextSetting setting={setting} label={id} onChange={send} />
                 : <ListSetting setting={setting} label={id} onChange={send} />}
             <div class="setting-after">
+                {off !== undefined && <p class="setting-off" id={`${id}-off`}>{off}</p>}
                 {chosen?.means !== undefined && (
                     <p class="setting-means" id={`${id}-means`}>
                         <strong>{valueLabel(chosen.value)}:</strong> {t(chosen.means)}
@@ -232,6 +247,80 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
                 <button type="submit" class="setting-button" disabled={item.trim() === ""}>{t("Add")}</button>
             </form>
         </div>
+    );
+}
+
+/**
+ * The player's own words, as the author the master writes like (D-395): sent with Enter or Save, back as they were with Escape, cleared with Clear or by
+ * saving them empty; the focus stays in the field.
+ */
+function TextSetting({ setting, label, onChange }: { setting: PlayerSetting; label: string; onChange(change: SettingChange): void; })
+{
+    const saved = setting.value ?? "";
+    const [text, setText] = useState(saved);
+    const field = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+    const form = useRef<HTMLFormElement>(null);
+    // As the engine keeps them: on one line, without spaces around.
+    const said = text.replace(/\s+/g, " ").trim();
+
+    useEffect(() => setText(saved), [saved]);
+
+    const send = (words: string): void => {
+        onChange({ setting: setting.name, value: words === "" ? "none" : words });
+    };
+
+    const keys = (event: KeyboardEvent): void => {
+        if (event.key === "Escape" && text !== saved) {
+            event.preventDefault();
+            setText(saved);
+        } else if (event.key === "Enter" && !event.isComposing && field.current instanceof HTMLTextAreaElement) {
+            // A line break would be folded anyway: Enter sends, as in the field of one line; not while it picks a word of a script, as Japanese.
+            event.preventDefault();
+            form.current?.requestSubmit();
+        }
+    };
+
+    const attributes = {
+        ref: field,
+        value: text,
+        maxLength: setting.most,
+        placeholder: exampleOf(setting.name),
+        "aria-labelledby": label,
+        "aria-describedby": `${label}-about`,
+        onInput: (event: Event) => setText((event.currentTarget as HTMLInputElement).value),
+        onKeyDown: keys,
+    };
+    return (
+        <form
+            class="setting-text"
+            ref={form}
+            onSubmit={(event) => {
+                event.preventDefault();
+
+                if (said !== saved) {
+                    send(said);
+                }
+            }}
+        >
+            {(setting.most ?? 0) > 100 ? <textarea rows={2} {...attributes} /> : <input type="text" {...attributes} />}
+            <span class="setting-text-buttons">
+                <button type="submit" class="setting-button" disabled={said === saved}>{t("Save")}</button>
+                {saved !== "" && (
+                    <button
+                        type="button"
+                        class="setting-button"
+                        aria-label={t("Clear {setting}", { setting: settingLabel(setting.name) })}
+                        onClick={() => {
+                            setText("");
+                            send("");
+                            field.current?.focus();
+                        }}
+                    >
+                        {t("Clear")}
+                    </button>
+                )}
+            </span>
+        </form>
     );
 }
 
@@ -464,13 +553,19 @@ function Segmented({ label, described, options, value, onPick }: {
 /** A group of the campaign's settings by its place, in the page's language. */
 function groupTitle(index: number): string
 {
-    return [t("The game"), t("Learning the game"), t("Dice and measures"), t("Limits"), t("Pictures and language")][index] ?? "";
+    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Pictures and language")][index] ?? "";
 }
 
 /** What a list's field suggests, as an example. */
 function exampleOf(name: string): string | undefined
 {
-    const examples: Record<string, string> = { lines: t("Add, e.g. spiders"), veils: t("Add, e.g. torture"), learned: t("Add what you know, e.g. Advantage") };
+    const examples: Record<string, string> = {
+        lines: t("Add, e.g. spiders"),
+        veils: t("Add, e.g. torture"),
+        learned: t("Add what you know, e.g. Advantage"),
+        author: t("An author's name"),
+        style: t("e.g. third person, past tense; more dialogue"),
+    };
     return examples[name];
 }
 

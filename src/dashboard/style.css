@@ -698,7 +698,35 @@ a {
     max-width: 420px;
 }
 
+/* The player's own words (D-395): the field, then Save and Clear, which go under it where the row is narrow. */
+.setting-text {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    align-items: flex-start;
+    gap: 6px;
+    max-width: 560px;
+}
+
+.setting-text-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+/* A setting that counts for nothing now, as the prose while an author is written: its values faded, still to choose. */
+.setting.off > .segmented,
+.setting.off .setting-means {
+    opacity: 0.55;
+}
+
+.setting-off {
+    color: var(--muted);
+    font-style: italic;
+}
+
 .setting-list input,
+.setting-text input,
+.setting-text textarea,
 .language-choice input {
     flex: 1;
     min-width: 0;
@@ -709,6 +737,23 @@ a {
     background: var(--panel-2);
     color: var(--ink);
     font: inherit;
+}
+
+/* After the fields' shared look, which it changes: the player's words take the row, the long ones on two lines. */
+.setting-text input,
+.setting-text textarea {
+    flex: 1 1 240px;
+}
+
+/* The long words grow with what is written, up to six lines, where the browser can. */
+.setting-text textarea {
+    field-sizing: content;
+    height: auto;
+    min-height: calc(2lh + 16px);
+    max-height: calc(6lh + 16px);
+    padding: 8px 10px;
+    line-height: 1.35;
+    resize: vertical;
 }
 
 /* The language (D-394): a field that searches every language, the chosen one in its own words, and under it the list, those the page is written in first. */
@@ -849,6 +894,7 @@ a {
     }
 
     .setting-list input,
+    .setting-text input,
     .language-choice input,
     .setting-button {
         height: var(--target);

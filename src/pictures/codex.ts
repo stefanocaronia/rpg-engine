@@ -1,12 +1,13 @@
 // Codex makes the pictures (D-308): only when the player is logged in with ChatGPT, never with an API key, which pays by the picture. It runs in an empty folder of
 // its own, so that it never reads the campaign; the picture it makes stays in its own folder, from which the engine takes it. Three minutes at most; a refusal is
 // never tried again, as it costs all the same.
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { paintedBrief } from "./briefs.ts";
+import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
@@ -37,15 +38,21 @@ export const codexSays = {
     },
 };
 
+// How Codex is started, as the last look found it: by name on the PATH, or by its full path in the engine's folder (D-425).
+let codex = "codex";
+
 /** Codex on this computer, as the player's ChatGPT login lets it make pictures. */
 export function codexPictures(): PictureMaker
 {
-    let known: { said: PicturesReady; at: number; } | undefined;
+    let known: { said: PicturesReady; at: number; changes: number; } | undefined;
     return {
-        // Asked once; a no again after a minute, only where the player may be waiting for it, as Settings and image: never on every call of the master.
+        // Asked once; a no again after a minute, only where the player may be waiting for it, as Settings and image: never on every call of the master; and
+        // again at once after a program came ready here, as after the player signs in (D-424).
         ready: (again) => {
-            if (known === undefined || (again === true && !known.said.ready && Date.now() - known.at > 60_000)) {
-                known = { said: codexReady(), at: Date.now() };
+            const late = again === true && Date.now() - (known?.at ?? 0) > 60_000;
+
+            if (known === undefined || (!known.said.ready && (late || known.changes !== helperChanges()))) {
+                known = { said: codexReady(), at: Date.now(), changes: helperChanges() };
             }
 
             return known.said;
@@ -63,20 +70,18 @@ export function codexWriter(maker: PictureMaker = codexPictures()): TextWriter
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
 function codexReady(): PicturesReady
 {
-    // One line for the shell, which finds codex as npm installed it, a script on Windows; its version answers only where it is, in any language of the shell.
-    const version = spawnSync("codex --version", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true });
-    const status = version.error === undefined && version.status === 0 ? spawnSync("codex login status", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true }) : undefined;
-    const said = `${status?.stdout ?? ""}${status?.stderr ?? ""}`;
+    const { state, line } = helperState("codex");
+    codex = line ?? "codex";
 
-    if (status === undefined) {
+    if (state === "missing") {
         return { ready: false, ...codexSays.missing };
     }
 
-    if (status.error !== undefined || status.status !== 0 || /not logged in/i.test(said)) {
+    if (state === "logged out") {
         return { ready: false, ...codexSays.loggedOut };
     }
 
-    return /chatgpt/i.test(said) ? { ready: true, maker: "Codex" } : { ready: false, ...codexSays.apiKey };
+    return state === "ready" ? { ready: true, maker: "Codex" } : { ready: false, ...codexSays.apiKey };
 }
 
 /** One picture: Codex in an empty folder of its own, the painted brief on its input, its events read for its thread; the picture from its own folder. */
@@ -84,10 +89,10 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-picture-"));
     const last = join(folder, "last.txt");
-    const line = `codex exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" --json -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+    const line = `${codex} exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" --json -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "pipe", "pipe"] });
         let output = "";
         let errors = "";
         const timer = setTimeout(() => stopTree(child), longest);
@@ -135,10 +140,10 @@ function write(brief: string): Promise<string | undefined>
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
     const last = join(folder, "last.txt");
-    const line = `codex exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+    const line = `${codex} exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, stdio: ["pipe", "ignore", "ignore"] });
+        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "ignore"] });
         const timer = setTimeout(() => stopTree(child), longest);
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);

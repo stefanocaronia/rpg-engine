@@ -15,7 +15,7 @@ import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
-import { hostPictures, hostWriter } from "./pictures/index.ts";
+import { computerHelpers, hostPictures, hostWriter } from "./pictures/index.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -104,7 +104,7 @@ export async function startMcpServer(): Promise<void>
     // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
-    const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host) };
+    const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host), helpers: computerHelpers() };
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
     server = createMcpServer(served, process.env, dashboardOpener(served, session).open);

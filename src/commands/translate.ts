@@ -88,10 +88,18 @@ export function translationOffer(root: string, context: Context): string | undef
 
     const found = campaignSystem(root, context);
     const left = chatBatch(context.home, context.pageFolder, language, found === undefined ? undefined : { name: found.name, folder: found.folder })?.left;
-    return left === undefined
-        ? undefined
-        : `The dashboard is not in ${languageName(language)} on this computer, and nothing here translates it in the background: offer the player once to translate it now, `
-            + "in a couple of minutes, with translate; if they say no, it stays in English until they ask.";
+    const lacks = `The dashboard is not in ${languageName(language)} on this computer, and nothing here translates it in the background`;
+
+    if (left === undefined) {
+        return undefined;
+    }
+
+    // Where the engine can install them, a program first, by the player's account (D-424, D-425); the chat for whoever has none.
+    return context.helpers === undefined
+        ? `${lacks}: offer the player once to translate it now, in a couple of minutes, with translate; if they say no, it stays in English until they ask.`
+        : `${lacks}. Ask the player once which account they have, and offer: with ChatGPT, any plan, to install Codex, with install codex (the page in the background, `
+            + "pictures from Plus up); with Claude Pro or Max, Claude Code, with install claude (the page, and drawn pictures); with neither, to translate it now in the chat, "
+            + "in a couple of minutes, with translate. If they say no, it stays in English until they ask.";
 }
 
 /** Where the translation goes and what it reads: the player's data folder and the built page, for a language the page does not ship; else why there is nothing to do. */

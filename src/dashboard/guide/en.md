@@ -186,6 +186,13 @@ The game system can add its own settings. Fifth edition adds **advancement**: ho
 
 The master then proposes a name for the campaign. When nothing is missing and you say you are ready, the game moves to session zero.
 
+**The master's style** is never asked: change it whenever you like, in the chat or in **Settings**, where it has a group of its own. The tone stays in the premise; the style is how it is told.
+
+- **Prose**: **plain** (short sentences, one concrete detail at a time; the usual one), **literary** (more room at the high points), **pulp** (tense, vivid, short, every message ending on a threat or a hook) or **wry** (a narrator with a half smile at the world, never at your character).
+- **Stories**, for what the master invents, never a written adventure: **situations** (factions, threats and places with secrets, no main plot; the usual one), **arcs** (a central threat that advances by stages), **episodes** (a story that closes each session) or **mystery** (every story an investigation, its truth decided first).
+- **Write like**: an author whose way of telling the master takes, in place of the prose: their rhythm and the details they choose, never their sentences, names or places, and never more than your character sees.
+- **In your words**: anything else, in a few words, such as *"third person, past tense"*. The master tells the story in the second person, present tense, unless you ask otherwise.
+
 ### 2.7 Session zero: your character
 
 Session zero is play: you make your character with the master, as you would at a table.

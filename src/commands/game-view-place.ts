@@ -522,8 +522,14 @@ function picture(sight: PlaceSight, page: Page): { file: string; version: number
  */
 function strangerPicture(sight: PlaceSight, name: string | undefined): { file: string; version: number; } | undefined
 {
-    const page = name === undefined ? undefined : pagesWithName(sight.world, parsePageReference(name).name)[0];
-    const file = page === undefined || page.system !== undefined ? undefined : imageFile(sight.root, sight.context, ownImage(page));
+    return strangerImage(sight.root, sight.context, sight.world, name);
+}
+
+/** The picture of one the character does not know, as strangerPicture gives it, for the scene and for the rolls (D-420, D-421). */
+export function strangerImage(root: string, context: Context, world: World, name: string | undefined): { file: string; version: number; } | undefined
+{
+    const page = name === undefined ? undefined : pagesWithName(world, parsePageReference(name).name)[0];
+    const file = page === undefined || page.system !== undefined ? undefined : imageFile(root, context, ownImage(page));
     // By a name of its bytes: the file's own is the page's, which the character does not know.
     const hidden = file === undefined ? undefined : hiddenImageName(file);
     return file === undefined || hidden === undefined ? undefined : { file: hidden, version: Math.trunc(files().modified(file) ?? 0) };

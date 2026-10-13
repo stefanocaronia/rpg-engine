@@ -152,6 +152,10 @@ describe("view as data (VIEW-1, D-272)", () => {
             "rigor",
             "mentor",
             "learned",
+            "prose",
+            "story",
+            "author",
+            "style",
             "dice",
             "units",
             "pictures",
@@ -166,6 +170,10 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(named("lines")).toEqual({ name: "lines", about: "what never appears in the game", items: ["ragni"] });
         expect(named("veils")).toEqual({ name: "veils", about: "what happens only off screen, without details" });
         expect(named("language")).toMatchObject({ value: "it" });
+        // How the master writes (D-395): the core's own ways while unset, the player's own words with how long they may be.
+        expect(named("prose")).toMatchObject({ value: "plain" });
+        expect(named("story")).toMatchObject({ value: "situations" });
+        expect(named("author")).toEqual({ name: "author", about: expect.stringMatching(/^an author the master writes like/), most: 80 });
         // A setting the game system adds, with its values but not what they mean to the master.
         expect(named("advancement")).toEqual({
             name: "advancement",
@@ -973,6 +981,22 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(dashboard.news().lines).toEqual(['The player added "Advantage" to learned on the dashboard: they know it already: no need to explain it.']);
         expect((await send("POST", "/api/config", { setting: "learned", remove: "Advantage" })).status).toBe(202);
         expect(dashboard.news().lines).toEqual(['The player took "Advantage" off learned on the dashboard: explain it again the next time it comes up.']);
+        // How the master writes comes with its parts as they are now, once for all of them; an author cleared says so, the prose under it says it waits (D-395).
+        expect((await send("POST", "/api/config", { setting: "prose", value: "pulp" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "author", value: "  Un  autore " })).status).toBe(202);
+        const style = dashboard.news().lines;
+        expect(style).toHaveLength(3);
+        expect(style[0]).toMatch(/^The player set prose to pulp on the dashboard: tense action, .+\. Play by it from now on\. An author is written: theirs takes its place until the player takes it away\.$/);
+        expect(style[1]).toBe('The player set author to "Un autore" on the dashboard. Play by it from now on.');
+        expect(style[2]).toContain("Un autore");
+        expect((await send("POST", "/api/config", { setting: "prose", value: "wry" })).status).toBe(202);
+        expect(dashboard.news().lines[0]).toMatch(/Play by it from now on\. An author is written: theirs takes its place until the player takes it away\.$/);
+        expect((await send("POST", "/api/config", { setting: "author", value: "none" })).status).toBe(202);
+        const cleared = dashboard.news().lines;
+        expect(cleared[0]).toBe("The player took author away on the dashboard: write as the prose setting says again. Play by it from now on.");
+        expect(cleared[1]).not.toContain("Un autore");
+        expect((await send("POST", "/api/config", { setting: "prose", value: "plain" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set prose to plain on the dashboard: short sentences/)]);
         // A setting's name in any case is the player's; one that does not exist is no one's.
         expect((await send("POST", "/api/config", { setting: "Advancement", value: "xp" })).status).toBe(202);
         expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set advancement to xp on the dashboard: experience points/)]);

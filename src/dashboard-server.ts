@@ -893,10 +893,12 @@ function settingNews(served: Served): { lines: string[]; restore(): void; }
         const lines = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
             const now = playerSettings(root, served.context);
-            return changed.flatMap(([name, before]) => {
+            const news = changed.flatMap(([name, before]) => {
                 const after = now.find((setting) => setting.name === name) ?? setupSettingNamed(root, name);
                 return after === undefined ? [] : playerChangeNews(root, served.context, before, after);
             });
+            // The parts of how the master writes come the same with each of them the player changed: once, after the last (D-395).
+            return news.filter((line, index) => news.lastIndexOf(line) === index);
         });
         served.changed.clear();
         return { lines, restore: () => giveBack(served, changed) };

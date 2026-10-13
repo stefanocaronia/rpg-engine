@@ -117,6 +117,13 @@ export const status = defineCommand({
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
             note: campaignNote(root, context),
             premise: settings.premise === undefined ? undefined : `${settings.premise}${settings.preparation === undefined ? "" : ` (preparation ${settings.preparation})`}`,
+            // How the master writes, as the player chose it, under the eyes at every start (D-395).
+            writing: [
+                named("prose", settings.author === undefined ? settings.prose : undefined),
+                named("story", settings.story),
+                settings.author === undefined ? undefined : `like ${settings.author}`,
+                settings.style === undefined ? undefined : `the player's words: "${settings.style}"`,
+            ].filter((part) => part !== undefined),
             lines: settings.lines ?? [],
             veils: settings.veils ?? [],
             table: settings.table ?? [],
@@ -173,6 +180,7 @@ export const status = defineCommand({
             ...result.meanings,
             result.note,
             result.premise === undefined ? "" : `Premise: ${result.premise}`,
+            result.writing.length === 0 ? "" : `Your writing: ${result.writing.join(" · ")}`,
             boundariesLine(result.lines, result.veils),
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,

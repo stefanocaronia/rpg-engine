@@ -49,6 +49,27 @@ export interface Context
     home?: string;
     /** The folder of the dashboard's built page, whose i18n/ lists every phrase it has (D-423). */
     pageFolder?: string;
+    /** Codex and Claude Code on this computer, installed and signed in with the player's yes (D-424); missing outside the MCP server, as in tests. */
+    helpers?: Helpers;
+}
+
+/** A program of this computer that writes and draws outside the chat, with the player's own login (D-424). */
+export type HelperName = "codex" | "claude";
+
+/** How a helper program stands: not on this computer, there without the player's login, signed in with an API key, which the engine never uses, or ready. */
+export type HelperState = "missing" | "logged out" | "api key" | "ready";
+
+/** The player's sign-in of a helper program: waiting for them in the browser, with the link it gave; done; or failed, and why. */
+export type HelperLogin = { state: "waiting"; link?: string; } | { state: "done"; } | { state: "failed"; why: string; };
+
+/** Codex and Claude Code on this computer (D-424, D-425): how each stands, installing one in the engine's own folder, and the player's sign-in. */
+export interface Helpers
+{
+    state(name: HelperName): HelperState;
+    /** Installs a program in the engine's folder: undefined once it answers there, else why not. */
+    install(name: HelperName): Promise<string | undefined>;
+    /** Starts the sign-in once, kept alive for ten minutes, and tells how it stands once it gave its link or ended, or after a few seconds. */
+    login(name: HelperName): Promise<HelperLogin>;
 }
 
 /** What writes text from a brief outside the chat (D-406): whether it can now, and its answer, none when it gave none. */

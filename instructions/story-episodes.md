@@ -1,0 +1,1 @@
+The player wants episodes: each story is sized for one session and closes, a job, a place, someone in trouble, with its own stakes. A thread comes back from episode to episode, a face, a debt, a rival, and the world remembers. Only for what you invent: a written adventure keeps its structure. Chosen mid-campaign, close the arc under way at its next natural end, never mid-scene.

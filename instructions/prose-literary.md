@@ -1,0 +1,1 @@
+The player wants literary prose. Give room where the story earns it, an arrival, a revelation, a loss: one image that carries the moment, subtext in what people leave unsaid, up to about 250 words there and only there. Fights, rulings and answers stay short. Verbs over adjectives, no stock phrases; the last paragraph still hands the choice back, never buried under description.

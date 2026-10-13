@@ -6,7 +6,7 @@ import { buttonsInstructions, dashboardInstructions, masterInstructions } from "
 import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { mentorPart, situationPart } from "./parts.ts";
+import { mentorPart, situationPart, stylePart } from "./parts.ts";
 
 export const instructions = defineCommand({
     name: "instructions",
@@ -27,6 +27,7 @@ export const instructions = defineCommand({
             masterInstructions(),
             modeText(context.folder, context),
             mentorText(context.folder, context),
+            styleText(context.folder, context),
             sceneText(context.folder, context),
             buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
             // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
@@ -68,6 +69,18 @@ function mentorText(folder: string, context: Context): string
 
     try {
         return root === undefined ? "" : mentorPart(root, context, readSettings(root).mentor);
+    } catch {
+        return "";
+    }
+}
+
+/** How the master writes, as the player chose it (D-395), in session zero and in play; none in the setup, outside a campaign, or in one that does not read. */
+function styleText(folder: string, context: Context): string
+{
+    const root = findCampaign(folder);
+
+    try {
+        return root === undefined || campaignMode(root, campaignWorld(root, context)) === "setup" ? "" : stylePart(root, context);
     } catch {
         return "";
     }

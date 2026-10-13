@@ -190,7 +190,8 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\ndifficulty: (missing)\nlethality: (missing)\n"
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
+                + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\npictures: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
@@ -265,7 +266,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, difficulty, lethality, saves, rigor, dice, units, companions, pictures, lines, veils, table, precedents, learned, coins, fields, tables, computed, counters, recipes, status-line, travel.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, pictures, lines, veils, table, precedents, learned, coins, fields, tables, computed, counters, recipes, status-line, travel.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

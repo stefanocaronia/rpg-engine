@@ -312,9 +312,24 @@ describe("pictures of places, quests, the party and those met made from words (D
         expect(scene.fighters.map((fighter: { image?: unknown; }) => fighter.image !== undefined)).toEqual([false, false, true, true, true, false]);
         // Neither the file's name nor anything else tells who they are.
         expect(JSON.stringify(scene)).not.toMatch(/Varro|Oste|Brigante|Goblin|Bandit/);
+        // Their rolls show them as the scene does, the copies by their creature's, the system's none (D-421).
+        await ok("roll", "1d20+3", "--who", "Brigante 1", "--check", "Scimitarra");
+        await ok("roll", "1d20", "--who", "Oste", "--check", "Furtività");
+        await ok("roll", "1d20", "--who", "Goblin 1", "--check", "Furtività");
+        const rolls = JSON.parse(await ok("view", "--json")).rolls.slice(-3);
+        expect(rolls.map((roll: { who: string; image?: unknown; }) => [roll.who, roll.image])).toEqual([["creature", hidden("png")], ["uomo col grembiule", hidden("svg")], ["creature", undefined]]);
+        expect(JSON.stringify(rolls)).not.toMatch(/Varro|Oste|Brigante|Goblin|Bandit/);
         // Known, they show it by its own name.
         await ok("write", "Ennio", "--add", "knows=[[Oste]]");
         expect(JSON.parse(await ok("view", "--json")).openScene.who[2]).toMatchObject({ name: "Oste", image: { file: "Oste.svg" } });
+    });
+
+    it("shows no face in the rolls of one no scene named, as one who acts out of sight (D-421)", async () => {
+        await ok("write", "Duca", "--type", "character", "--set", "role=npc");
+        await ok("image", "Duca", picture("d.svg", svg));
+        await ok("roll", "1d20+5", "--who", "Duca", "--check", "Inganno");
+        expect(JSON.parse(await ok("view", "--json")).rolls.at(-1)).toMatchObject({ who: "someone", stranger: true });
+        expect(JSON.parse(await ok("view", "--json")).rolls.at(-1).image).toBeUndefined();
     });
 
     it("reminds the master, as one met without a picture enters a scene, to have theirs made from what the character sees", async () => {

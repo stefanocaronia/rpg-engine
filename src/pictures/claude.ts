@@ -1,11 +1,12 @@
 // Claude draws the pictures as SVG where Codex cannot (D-342, D-390): Claude Code with the player's Claude login, never an API key, in an empty folder of its
 // own without tools, settings, memory or a session kept; its SVG cleaned before the engine takes it. Three minutes at most; a refusal never tried again.
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { svgBrief } from "./briefs.ts";
+import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
 import { cleanSvg, svgIn } from "./svg.ts";
 
@@ -13,11 +14,13 @@ import { cleanSvg, svgIn } from "./svg.ts";
 const longest = 3 * 60 * 1000;
 
 // Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer (Elena's probe, 12 October).
-const drawing = `claude -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
+const drawing = (claude: string): string =>
+    `${claude} -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
     + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You draw pictures as SVG code from a brief. You reply with the SVG alone."`;
 
 // Claude Code as a writer of text (D-406): Sonnet at low effort, with nothing but the brief.
-const writing = `claude -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
+const writing = (claude: string): string =>
+    `${claude} -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
     + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You write what a brief asks, and only that."`;
 
 /** Claude Code on this computer as a writer of text (D-406): ready where the player's Claude login lets it draw too. */
@@ -32,14 +35,19 @@ export const claudeSays = {
     apiKey: { why: "Claude Code uses an API key, which pays by the call: pictures are drawn only with the Claude login" },
 };
 
+// How Claude Code is started, as the last look found it: by name on the PATH, or by its full path in the engine's folder (D-425).
+let claude = "claude";
+
 /** Claude Code on this computer, as the player's Claude login lets it draw pictures. */
 export function claudePictures(): PictureMaker
 {
-    let known: { said: PicturesReady; at: number; } | undefined;
+    let known: { said: PicturesReady; at: number; changes: number; } | undefined;
     return {
         ready: (again) => {
-            if (known === undefined || (again === true && !known.said.ready && Date.now() - known.at > 60_000)) {
-                known = { said: claudeReady(), at: Date.now() };
+            const late = again === true && Date.now() - (known?.at ?? 0) > 60_000;
+
+            if (known === undefined || (!known.said.ready && (late || known.changes !== helperChanges()))) {
+                known = { said: claudeReady(), at: Date.now(), changes: helperChanges() };
             }
 
             return known.said;
@@ -51,20 +59,14 @@ export function claudePictures(): PictureMaker
 /** Whether Claude Code is there and logged in with the player's Claude plan: asked in a moment, without spending anything. */
 function claudeReady(): PicturesReady
 {
-    const status = spawnSync("claude auth status", { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true, env: childEnvironment() });
-    let said: { loggedIn?: unknown; authMethod?: unknown; } = {};
+    const { state, line } = helperState("claude");
+    claude = line ?? "claude";
 
-    try {
-        said = JSON.parse(status.stdout ?? "") as typeof said;
-    } catch {
-        said = {};
-    }
-
-    if (status.error !== undefined || said.loggedIn !== true) {
+    if (state === "missing" || state === "logged out") {
         return { ready: false, ...claudeSays.loggedOut };
     }
 
-    return said.authMethod === "claude.ai" ? { ready: true, maker: "Claude" } : { ready: false, ...claudeSays.apiKey };
+    return state === "ready" ? { ready: true, maker: "Claude" } : { ready: false, ...claudeSays.apiKey };
 }
 
 /** One SVG picture: Claude Code in an empty folder of its own, the brief on its input, its answer read, cleaned and written there. */
@@ -74,7 +76,7 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
     const clean = (): void => rmSync(folder, { recursive: true, force: true });
 
     return new Promise((done) => {
-        const child = spawn(drawing, { shell: true, windowsHide: true, cwd: folder, env: childEnvironment(), stdio: ["pipe", "pipe", "pipe"] });
+        const child = spawn(drawing(claude), { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
         let output = "";
         let errors = "";
         let settled = false;
@@ -123,7 +125,7 @@ function write(brief: string): Promise<string | undefined>
     const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
 
     return new Promise((done) => {
-        const child = spawn(writing, { shell: true, windowsHide: true, cwd: folder, env: childEnvironment(), stdio: ["pipe", "pipe", "ignore"] });
+        const child = spawn(writing(claude), { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "ignore"] });
         let output = "";
         const timer = setTimeout(() => stopTree(child), longest);
         child.stdout.setEncoding("utf8");
@@ -149,13 +151,6 @@ function refusal(answer: { is_error?: unknown; result?: unknown; } | undefined, 
     }
 
     return answer.is_error === true ? `Claude failed: ${String(answer.result)}` : "Claude drew no picture that could be used";
-}
-
-/** The environment of the drawing Claude: the chat's own variables and any API key taken away; where its login and its shell are, kept. */
-function childEnvironment(): NodeJS.ProcessEnv
-{
-    const kept = new Set(["CLAUDE_CONFIG_DIR", "CLAUDE_CODE_GIT_BASH_PATH"]);
-    return Object.fromEntries(Object.entries(process.env).filter(([name]) => kept.has(name.toUpperCase()) || !/^(CLAUDE|ANTHROPIC)/i.test(name)));
 }
 
 function parsed(output: string): { is_error?: unknown; result?: unknown; } | undefined
