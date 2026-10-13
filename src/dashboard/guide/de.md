@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 b69f95b1 5738adad 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 8b2b048d 7705224a 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: die vollständige Anleitung
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen.
@@ -60,19 +60,19 @@ RPG Engine ist für jedes Pen-&-Paper-Rollenspiel gedacht. Heute enthält es ein
 ### 2.1 Was du brauchst
 
 - Einen Computer mit Windows, macOS oder Linux.
-- **Node.js 22** oder neuer. Du bekommst es auf [nodejs.org](https://nodejs.org): Die „LTS“-Version genügt. Es bringt `npm` mit, das RPG Engine installiert.
-- Ein **Terminal**, das Fenster, in dem du Befehle schreibst: unter Windows die Terminal-App oder PowerShell, unter macOS Terminal. Du brauchst es, um RPG Engine zu installieren, jede Kampagne zu erstellen und Claude Code oder Codex zu starten.
+- **Node.js 22** oder neuer. Du bekommst es auf [nodejs.org](https://nodejs.org): Die "LTS"-Version genügt. Es bringt `npm` mit, das RPG Engine installiert.
+- Ein **Terminal**, das Fenster, in dem du Befehle schreibst: unter Windows die Terminal-App oder PowerShell, unter macOS Terminal. Damit installierst du RPG Engine, legst jede Kampagne an und startest Claude Code oder Codex.
 - Einen **KI-Host**, die App, in der die Spielleitung läuft: **Claude Code** oder **Codex**, mit Tarif und Anmeldung. Siehe [2.4](#24-connect-your-ai).
-- Das **größte Modell**, das dein Host anbietet. Ein kleines Modell lässt sich täuschen: In unseren Tests hat es Geheimnisse an eine spielende Person verraten, die behauptete, die echte Spielleitung zu sein.
+- Das **größte Modell**, das dein Host anbietet. Ein kleines Modell lässt sich täuschen: In unseren Tests hat es Geheimnisse an jemanden verraten, der behauptete, die echte Spielleitung zu sein.
 - Einen Webbrowser für das Dashboard.
 
-Die Anmeldung, die du für deinen Host nutzt, kann noch mehr: RPG Engine verwendet sie auf deinem Computer, um Bilder von Orten zu zeichnen und das Dashboard in Sprachen zu übersetzen, die es nicht mitbringt. Siehe [Bilder](#311-pictures) und [Sprachen](#72-languages).
+Die Anmeldung, die du für deinen Host nutzt, kann noch mehr: RPG Engine verwendet sie auf deinem Computer, um Bilder von Orten, Quests und deinem Charakter zu zeichnen und um das Dashboard in Sprachen zu übersetzen, die nicht mitgeliefert werden. Siehe [Bilder](#311-pictures) und [Sprachen](#72-languages).
 
-**Ein Terminal in einem Ordner öffnen.** Viele Schritte sagen „im Kampagnenordner“. Unter Windows klickst du im Datei-Explorer mit der rechten Maustaste auf den Ordner und wählst **Im Terminal öffnen**. Unter macOS klickst du im Finder mit der rechten Maustaste auf den Ordner und wählst **Dienste > Neues Terminal im Ordner**. Oder du schreibst in einem schon offenen Terminal `cd` und den Pfad des Ordners, zum Beispiel `cd "C:\Users\me\Games\The Salt Isles"`.
+**Ein Terminal in einem Ordner öffnen.** Viele Schritte sagen "im Kampagnenordner". Unter Windows klickst du im Datei-Explorer mit der rechten Maustaste auf den Ordner und wählst **Im Terminal öffnen**. Unter macOS klickst du im Finder mit der rechten Maustaste auf den Ordner und wählst **Dienste > Neues Terminal beim Ordner**. Oder du schreibst in einem schon offenen Terminal `cd` und den Pfad des Ordners, etwa `cd "C:\Users\me\Games\The Salt Isles"`.
 
 ### 2.2 Installieren
 
-Öffne ein Terminal und schreib:
+Öffne ein Terminal und schreibe:
 
 ```text
 npm install -g rpg-engine
@@ -84,11 +84,11 @@ Damit bekommst du den Befehl `rpg`. So prüfst du, ob es geklappt hat:
 rpg --version
 ```
 
-Du benutzt `rpg` einmal pro Kampagne, um sie zu erstellen. Danach sprichst du nur noch mit der Spielleitung: Dein KI-Host startet RPG Engine selbst, mit demselben Befehl `rpg`.
+Du nutzt `rpg` einmal pro Kampagne, um sie anzulegen. Danach sprichst du nur noch mit der Spielleitung: Dein KI-Host startet RPG Engine selbst, mit demselben Befehl `rpg`.
 
-### 2.3 Eine Kampagne erstellen
+### 2.3 Eine Kampagne anlegen
 
-Eine Kampagne ist ein Ordner. Öffne ein Terminal in dem Ordner, in dem du deine Spiele ablegst, und schreib:
+Eine Kampagne ist ein Ordner. Öffne ein Terminal in dem Ordner, in dem du deine Spiele aufbewahrst, und schreibe:
 
 ```text
 rpg init "The Salt Isles"
@@ -103,101 +103,101 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Die Zeilen nach *For the master* sind für die Spielleitung, die sie im Chat liest: Du musst damit nichts tun. Merk dir, wo der Ordner liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Ohne Ordnernamen macht `rpg init` aus dem Ordner, in dem du gerade bist, die Kampagne.
+Die Zeilen nach *For the master* sind für die Spielleitung, die sie im Chat liest: Du musst damit nichts tun. Merke dir, wo der Ordner liegt: Du kehrst bei jeder Partie dorthin zurück. Ohne Ordnername macht `rpg init` aus dem Ordner, in dem du gerade bist, die Kampagne.
 
 `init` legt alles an, was die Kampagne braucht: ihre Einstellungen, ihre Weltordner und die kleinen Dateien, die deinem KI-Host sagen, dass er RPG Engine benutzen und außerhalb der Kampagne kein eigenes Gedächtnis führen soll.
 
-Du musst jetzt nichts auswählen. Die Spielleitung fragt dich den Rest im Chat, oder du wählst es im Dashboard. Wenn du einige Entscheidungen schon kennst, kannst du sie gleich hier angeben:
+Du musst jetzt nichts auswählen. Die Spielleitung fragt dich den Rest im Chat, oder du wählst ihn im Dashboard. Wenn du einige Entscheidungen schon kennst, kannst du sie gleich hier angeben:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
 ```
 
-Das legt den Ordner `salt-isles` an, mit der Kampagne *The Salt Isles* darin: ein Ordnername ohne Leerzeichen und der Name der Kampagne, wie du ihn willst.
+Das legt den Ordner `salt-isles` an, mit der Kampagne *The Salt Isles* darin: ein Ordnername ohne Leerzeichen und ein Kampagnenname, wie du ihn willst.
 
 | Option | Was sie festlegt | Werte |
 |---|---|---|
-| `--name` | Der Name der Kampagne | beliebig; der Ordnername, wenn du sie weglässt |
-| `--language` | Die Sprache des Spiels | ein Code, zum Beispiel `en`, `it`, `fr` |
-| `--system` | Das Spielsystem | `5e`, heute das einzige |
+| `--name` | Der Name der Kampagne | beliebig; der Ordnername, wenn du ihn weglässt |
+| `--language` | Die Sprache des Spiels | ein Code, etwa `en`, `it`, `fr` |
+| `--system` | Das Spielsystem | `5e`, derzeit das einzige |
 | `--difficulty` | Wie hart die Welt spielt | `story`, `easy`, `normal`, `hard`, `brutal` |
-| `--lethality` | Was Fallen im Kampf bedeutet | `narrative`, `epic`, `dice` |
+| `--lethality` | Was es bedeutet, in einem Kampf zu fallen | `narrative`, `epic`, `dice` |
 
-`rpg init --help` listet sie auch auf. Eine Kampagne kann nicht im Ordner einer anderen Kampagne liegen.
+Auch `rpg init --help` listet sie auf. Eine Kampagne kann nicht im Ordner einer anderen Kampagne liegen.
 
-Du kannst die Spielleitung nicht bitten, eine Kampagne zu erstellen: Vor `init` enthält der Ordner nichts, was deinem KI-Host sagt, wo RPG Engine ist.
+Du kannst die Spielleitung nicht bitten, eine Kampagne anzulegen: Vor `init` enthält der Ordner nichts, was deinem KI-Host sagt, wo RPG Engine ist.
 
 ### 2.4 Deine KI verbinden
 
-RPG Engine funktioniert mit **Claude Code** und **Codex**. Andere KI-Apps, die MCP-Tools nutzen, könnten auch gehen, aber wir garantieren es nicht.
+RPG Engine funktioniert mit **Claude Code** und **Codex**. Andere KI-Apps, die MCP-Tools nutzen, funktionieren vielleicht auch, aber wir garantieren es nicht.
 
-**Deinen Host installieren.** Claude Code und Codex laufen im Terminal: Sie sind nicht die Claude- oder ChatGPT-App auf deinem Handy. Jeder braucht einen eigenen Tarif und eine eigene Anmeldung: Claude Code einen bezahlten Claude-Tarif, Codex eine ChatGPT-Anmeldung. Folge den eigenen Seiten, um sie zu installieren und dich anzumelden: [Claude Code](https://code.claude.com/docs/en/setup) und [Codex](https://learn.chatgpt.com/docs/codex/cli). Das machst du einmal, für alle deine Kampagnen.
+**Deinen Host installieren.** Claude Code und Codex laufen im Terminal: Sie sind nicht die Claude- oder ChatGPT-App auf deinem Handy. Beide brauchen einen eigenen Tarif und eine eigene Anmeldung: Claude Code einen kostenpflichtigen Claude-Tarif, Codex eine ChatGPT-Anmeldung. Folge zum Installieren und Anmelden ihren eigenen Seiten: [Claude Code](https://code.claude.com/docs/en/setup) und [Codex](https://learn.chatgpt.com/docs/codex/cli). Das machst du einmal, für alle deine Kampagnen.
 
-**Claude Code.** Öffne ein Terminal im Kampagnenordner und schreib `claude`. Beim ersten Mal fragt es, ob du dem Ordner vertraust, und sagt, dass der Ordner die Tools des Spiels (`mcp__rpg`) erlaubt: Wähle **Yes, I trust this folder**. Vorsicht: Die schon vorgewählte Antwort ist *No, exit*, wenn du also gleich Enter drückst, schließt sich Claude Code. Das ist alles: Die Kampagne hat Claude Code bereits gesagt, dass es RPG Engine und seine Tools nutzen und sein Gedächtnis ausgeschaltet lassen soll.
+**Claude Code.** Öffne ein Terminal im Kampagnenordner und schreibe `claude`. Beim ersten Mal fragt Claude Code, ob du dem Ordner vertraust, und sagt, dass der Ordner die Tools des Spiels (`mcp__rpg`) erlaubt: Wähle **Yes, I trust this folder**. Vorsicht: Die vorausgewählte Antwort ist *No, exit*, wenn du also sofort Enter drückst, schließt sich Claude Code. Mehr ist nicht nötig: Die Kampagne hat Claude Code schon gesagt, dass es RPG Engine und dessen Tools nutzen und sein Gedächtnis ausgeschaltet lassen soll.
 
-**Codex.** Öffne ein Terminal im Kampagnenordner und schreib `codex`. Wenn es fragt, ob du dem Ordner vertraust, sag ja: Die eigenen Einstellungen der Kampagne sagen Codex, wo RPG Engine ist, erlauben seine Tools und halten sein Gedächtnis aus, und Codex liest sie nur in einem Ordner, dem du vertraust. Prüfe in der Desktop-App, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
+**Codex.** Öffne ein Terminal im Kampagnenordner und schreibe `codex`. Wenn Codex fragt, ob du dem Ordner vertraust, sage ja: Die eigenen Einstellungen der Kampagne sagen Codex, wo RPG Engine ist, erlauben dessen Tools und schalten das Gedächtnis aus, und Codex liest sie nur in einem Ordner, dem du vertraust. Prüfe in der Desktop-App, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
 
-**Warum das Gedächtnis wichtig ist.** Die Kampagne lebt in ihren Dateien. Wenn sich der Host zusätzlich selbst Dinge merkt, wäre das Zurückkehren zu einem Spielstand kein echtes Zurückgehen: Die Spielleitung würde sich weiter an das erinnern, was rückgängig gemacht wurde.
+**Warum das Gedächtnis wichtig ist.** Die Kampagne lebt in ihren Dateien. Wenn sich der Host zusätzlich selbst Dinge merkt, wäre ein Zurückgehen zu einem Spielstand nicht wirklich ein Zurückgehen: Die Spielleitung würde sich weiter an das erinnern, was rückgängig gemacht wurde.
 
 ### 2.5 Der erste Chat
 
-Schreib irgendetwas, zum Beispiel:
+Schreibe irgendetwas, zum Beispiel:
 
 > Hallo! Lass uns anfangen.
 
-Die Spielleitung liest, wie das Spiel steht, und antwortet. In ihrer ersten Antwort in jedem Chat gibt sie dir den **Link zu deinem Dashboard** (etwa `http://127.0.0.1:4750`). Öffne ihn im Browser und lass ihn das ganze Spiel über neben dem Chat offen. Jede Kampagne behält von einem Chat zum nächsten denselben Link, außer ein anderes Programm hat ihn belegt: Dann gibt dir die Spielleitung den neuen.
+Die Spielleitung liest, wo das Spiel steht, und antwortet. In ihrer ersten Antwort jedes Chats gibt sie dir den **Link zu deinem Dashboard** (etwa `http://127.0.0.1:4750`). Öffne ihn in deinem Browser und lass ihn das ganze Spiel über neben dem Chat offen. Jede Kampagne behält von einem Chat zum nächsten denselben Link, es sei denn, ein anderes Programm hat ihn belegt: Dann nennt die Spielleitung dir den neuen.
 
-Zwischen den Nachrichten der Spielleitung zeigt dein Host die Tools, die sie benutzt, in kurzen Zeilen. Öffne ihre Details nicht (in Claude Code: ctrl+o): Sie können zeigen, was die Spielleitung schreibt, auch Geheimnisse.
+Zwischen den Nachrichten der Spielleitung zeigt dein Host die Tools, die sie benutzt, in kurzen Zeilen. Öffne deren Details nicht (in Claude Code mit Strg+O): Sie können zeigen, was die Spielleitung schreibt, Geheimnisse eingeschlossen.
 
 Eine neue Kampagne durchläuft drei Phasen, wie ein Spiel mit menschlicher Spielleitung. Das Dashboard zeigt sie oben als *1 Einstellungen · 2 Session Zero · 3 Spiel*:
 
-1. **Einstellungen**: Du wählst, wie du spielen möchtest. Außerhalb der Geschichte.
+1. **Einstellungen**: Du wählst, wie du spielen willst. Außerhalb der Geschichte.
 2. **Session Zero**: Du erschaffst deinen Charakter, im Spiel.
-3. **Spiel**: die Geschichte.
+3. **Spiel**: Die Geschichte.
 
 ### 2.6 Einstellungen: wählen, wie du spielst
 
-Die Spielleitung fragt nur, was noch fehlt, ein paar Fragen auf einmal. Wenn du „Du entscheidest“ schreibst, wählt die Spielleitung und sagt dir, was sie gewählt hat. Bei geöffnetem Dashboard zeigt der erste Schritt, **Einstellungen**, dieselben Fragen als Karten: eine Frage nach der anderen, jeder Wert mit seiner Bedeutung, der übliche als **Empfohlen** markiert. Wähle dort, und die Spielleitung fragt im Chat nicht noch einmal; **Überspringen** hebt eine Frage für später auf. Der Chat klärt, was nur Worte klären können: die Ausgangslage einer neuen Welt, die Sprache und die Bilder, nach denen die Spielleitung nur fragt, wenn dein Computer sie erzeugen kann. Darum stellt die Seite weniger Fragen, als die Tabelle unten auflistet.
+Die Spielleitung fragt nur, was noch fehlt, einige Fragen auf einmal. Wenn du "entscheide du" schreibst, wählt die Spielleitung und sagt dir, was sie gewählt hat. Bei geöffnetem Dashboard zeigt der erste Schritt, **Einstellungen**, dieselben Fragen als Karten: eine Frage nach der anderen, jeder Wert mit seiner Bedeutung, der übliche Wert mit **Empfohlen** markiert. Wähle dort, dann fragt die Spielleitung im Chat nicht noch einmal; mit **Überspringen** lässt du eine Frage für später offen. Der Chat klärt, was nur Worte klären können: die Ausgangslage einer neuen Welt, die Sprache und die Bilder, nach denen die Spielleitung nur fragt, wenn dein Computer sie erzeugen kann. Darum stellt die Seite weniger Fragen, als die Tabelle unten aufführt.
 
-Du musst die Tabelle nicht auswendig lernen: Sie ist zum Nachschlagen da. Du kannst jede dieser Einstellungen später ändern, im Chat oder in den **Einstellungen** des Dashboards. Eine Änderung gilt ab der nächsten Antwort der Spielleitung.
+Du musst die Tabelle nicht studieren: Sie ist zum Nachschlagen da. Du kannst jede dieser Einstellungen später ändern, im Chat oder in den **Einstellungen** des Dashboards. Eine Änderung gilt ab der nächsten Antwort der Spielleitung.
 
-| Einstellung | Was sie bestimmt | Werte | Empfohlen |
+| Einstellung | Was sie festlegt | Werte | Empfohlen |
 |---|---|---|---|
-| **Mentor** (gefragt als „Wie gut kennst du dieses Spiel?“) | Wie viel die Spielleitung dir die Regeln beibringt, außerhalb der Geschichte | **aus** (nur die Geschichte; frag in Klammern, wann du willst), **Hinweise** (ein kurzer Tipp vor wichtigen Entscheidungen und wenn eine Regel untergeht), **Tutorial** (jede Regel beim ersten Mal erklärt, die ganze Rechnung jedes Wurfs, eine kurze Nachbesprechung nach Kämpfen) | nach deiner Antwort: noch nie gespielt → Tutorial, ein wenig → Hinweise, ich kenne es → aus |
-| **Schwierigkeit** | Wie hart die Welt spielt: Kämpfe, Taktik der Gegner, Hinweise, Schätze, wie schnell Bedrohungen vorrücken | Geschichte, leicht, normal, schwer, brutal | |
-| **Tödlichkeit** | Was Fallen im Kampf bedeutet | **erzählerisch** (dein Charakter stirbt nie), **episch** (stirbt nur, wenn es für die Geschichte zählt), **Würfel** (die Würfel entscheiden) | folgt der Schwierigkeit: Geschichte → erzählerisch, leicht → episch, normal und höher → Würfel |
-| **Spielstände** | Wann du zurückgehen darfst | **Permadeath** (nie; nur die Kampagne neu beginnen), **Checkpoint** (zurück zum letzten Szenenende, nur wenn dein Charakter stirbt), **frei** (zurück zu jedem Spielstand, und speichern, wann immer du willst) | Checkpoint |
-| **Strenge** | Wie genau Essen, Licht, Erschöpfung, Traglast, Zauberkomponenten und Reisen den Regeln folgen | **locker** (die Spielleitung geht darüber hinweg), **Regeln** (wie geschrieben: Fackeln brennen herunter, Rationen gehen aus), **Simulation** (über die Regeln hinaus: Verschleiß, Verderben, Wetter) | locker |
+| **Mentor** (gefragt als "Wie gut kennst du dieses Spiel?") | Wie viel die Spielleitung dir die Regeln beibringt, außerhalb der Geschichte | **aus** (nur die Geschichte; frag in Klammern, wenn du etwas wissen willst), **Hinweise** (ein kurzer Tipp vor wichtigen Entscheidungen und wenn eine Regel untergeht), **Tutorial** (jede Regel wird beim ersten Mal erklärt, die ganze Rechnung jedes Wurfs, eine kurze Nachbesprechung nach Kämpfen) | nach deiner Antwort: noch nie gespielt → Tutorial, ein wenig → Hinweise, ich kenne es → aus |
+| **Schwierigkeit** | Wie hart die Welt spielt: Kämpfe, Taktik der Gegner, Hinweise, Schätze, wie schnell Bedrohungen vorankommen | story, easy, normal, hard, brutal | |
+| **Tödlichkeit** | Was es bedeutet, in einem Kampf zu fallen | **narrativ** (dein Charakter stirbt nie), **episch** (stirbt nur, wenn es für die Geschichte zählt), **Würfel** (die Würfel entscheiden) | folgt der Schwierigkeit: story → narrativ, easy → episch, normal und höher → Würfel |
+| **Spielstände** | Wann du zurückgehen darfst | **Permadeath** (nie; nur die Kampagne von vorn beginnen), **Checkpoint** (zurück zum letzten Szenenende, nur wenn dein Charakter stirbt), **frei** (zurück zu jedem Spielstand, und speichern, wann immer du willst) | Checkpoint |
+| **Strenge** | Wie genau Essen, Licht, Erschöpfung, Traglast, Zauberkomponenten und Reisen den Regeln folgen | **locker** (die Spielleitung geht darüber hinweg), **Regeln** (wie geschrieben: Fackeln brennen herunter, Rationen gehen zur Neige), **Simulation** (über die Regeln hinaus: Verschleiß, Verderb, Wetter) | locker |
 | **Würfel** | Wer die Würfel deines Charakters wirft | **digital** (RPG Engine würfelt, auf der Seite), **physisch** (du würfelst selbst und nennst die Augenzahlen) | |
 | **Maßeinheiten** | Entfernungen und Gewichte in der Geschichte | metrisch, imperial | |
-| **Begleiter** | Wer mit dir reist | keine, in Session Zero mit dir erschaffen, von der Spielleitung erschaffen, im Spiel getroffen | |
-| **Bilder** | Bilder von Orten und Quests | keine, auf Wunsch, neue Orte und Quests | einmal gefragt, nur wenn dein Computer sie erzeugen kann |
-| **Linien** | Was im Spiel nie vorkommt | eine Liste oder keine | |
-| **Schleier** | Was passieren darf, aber nur abseits der Bühne | eine Liste oder keine | |
-| **Sprache** | Die Sprache des Spiels und des Dashboards | beliebig | aus deiner Schreibweise erkannt und bestätigt |
+| **Begleiter** | Wer mit dir reist | keine, in der Session Zero mit dir erschaffen, von der Spielleitung erschaffen, im Spiel getroffen | |
+| **Bilder** | Bilder von Orten und Quests, und das Porträt deines Charakters auf Wunsch | keine, auf Wunsch, neue Orte und Quests | einmal gefragt, nur wenn dein Computer sie erzeugen kann |
+| **Linien** | Was nie im Spiel vorkommt | eine Liste oder keine | |
+| **Schleier** | Was geschehen darf, aber nur abseits der Bühne | eine Liste oder keine | |
+| **Sprache** | Die Sprache des Spiels und des Dashboards | beliebig | daran erkannt, wie du schreibst, und bestätigt |
 
-Das Spielsystem kann eigene Einstellungen hinzufügen. Die fünfte Edition fügt **Fortschritt** hinzu: wie dein Charakter aufsteigt, mit **Erfahrungspunkten** oder an **Meilensteinen** der Geschichte.
+Das Spielsystem kann eigene Einstellungen hinzufügen. Die fünfte Edition fügt die **Charakterentwicklung** hinzu: wie dein Charakter aufsteigt, mit **Erfahrungspunkten** oder an **Meilensteinen** der Geschichte.
 
-**Was die Schwierigkeit im Spiel bedeutet.** Geschichte: schwache, naive Gegner, offensichtliche Hinweise, reichlich von allem; die Spielleitung darf ihre eigenen Würfe abmildern. Leicht: einfache Gegner, großzügige Ressourcen. Normal: vernünftige Gegner, drei Hinweise zu jeder Schlussfolgerung, übliche Preise und Schätze. Schwer: kluge Gegner, feine Hinweise, knappe Ressourcen, Bedrohungen, die schnell vorrücken. Brutal: Gegner, die Hinterhalte legen, sich zurückziehen und Gefallene erledigen, sehr knappe Ressourcen, die härtesten Rasten. Kämpfe sind immer auf deine Gruppe in ihrem aktuellen Stand zugeschnitten.
+**Was die Schwierigkeit im Spiel bedeutet.** Story: schwache, naive Gegner, offensichtliche Hinweise, von allem reichlich; die Spielleitung darf ihre eigenen Würfe abmildern. Easy: einfache Gegner, großzügige Vorräte. Normal: vernünftige Gegner, drei Hinweise zu jedem Schluss, übliche Preise und Schätze. Hard: kluge Gegner, feine Hinweise, knappe Vorräte, Bedrohungen, die schnell vorankommen. Brutal: Gegner, die Hinterhalte legen, sich zurückziehen und Gefallene erledigen, sehr knappe Vorräte, die härtesten Rasten. Kämpfe sind immer auf deine Gruppe zugeschnitten, so wie sie jetzt ist.
 
-**Ohne geschriebene Welt** fragt die Einrichtung noch zwei Dinge:
+**Ohne eine geschriebene Welt** fragt die Einrichtung noch zwei Dinge:
 
-- **Ausgangslage**: das Genre, der Ton und ein paar Elemente der Welt, in deinen Worten. Zum Beispiel: *„Low Fantasy, düster, aber mit Hoffnung. Eine Flussstadt, eine heimgesuchte Furt, ein Kult in den Hügeln.“*
-- **Vorbereitung**: **spontan** (die Spielleitung baut jeden Teil der Welt kurz bevor du ihn brauchst; empfohlen) oder **alles zu Beginn**.
+- **Ausgangslage**: das Genre, der Ton und einige Elemente der Welt, in deinen Worten. Zum Beispiel: *"Low Fantasy, düster, aber mit Hoffnung. Eine Flussstadt, eine verwunschene Furt, ein Kult in den Hügeln."*
+- **Vorbereitung**: **spontan** (die Spielleitung baut jeden Teil der Welt kurz bevor du ihn brauchst; empfohlen) oder **alles am Anfang**.
 
-Danach schlägt die Spielleitung einen Namen für die Kampagne vor. Wenn nichts mehr fehlt und du sagst, dass du bereit bist, geht das Spiel zu Session Zero über.
+Danach schlägt die Spielleitung einen Namen für die Kampagne vor. Wenn nichts mehr fehlt und du sagst, dass du bereit bist, geht das Spiel in die Session Zero über.
 
 ### 2.7 Session Zero: dein Charakter
 
-Session Zero ist Spiel: Du erschaffst deinen Charakter mit der Spielleitung, wie du es am Tisch tun würdest.
+Die Session Zero ist Spiel: Du erschaffst deinen Charakter gemeinsam mit der Spielleitung, wie an einem Tisch.
 
-- **Jede Entscheidung liegt bei dir**, außer du bittest die Spielleitung, sie zu treffen. Du kannst mit einer fertigen Idee kommen („eine Halbelfen-Klerikerin, die ihren Tempel verlassen hat“), mit einer vagen („jemand, der heilt, aber nicht nett dabei ist“) oder mit nichts („überrasch mich, dann lass mich Dinge ändern“).
-- **Attributswerte.** Die Spielleitung nennt dir Methode und Absicherung, bevor ein Würfel fällt. In der fünften Edition: die Standardverteilung, Point Buy oder 4d6, der niedrigste fällt weg. Die Methode, auf die ihr euch einigt, bleibt in den Absprachen des Tisches.
-- **Deine Geschichte** ist nie Pflicht. Wenn du eine gibst, schreibt die Spielleitung sie in deinen Worten auf, liest sie dir einmal vor und verknüpft ihre Menschen und Orte mit der Welt. Du kannst sie auch im Dashboard schreiben (siehe [Gruppe](#party)).
+- **Jede Entscheidung gehört dir**, es sei denn, du bittest die Spielleitung, sie zu treffen. Du kannst mit einer fertigen Idee kommen ("ein halbelfischer Charakter aus dem Klerus, der den Tempel verlassen hat"), mit einer vagen ("jemand, der heilt, aber nicht nett dabei ist") oder mit nichts ("überrasch mich, dann lass mich Dinge ändern").
+- **Attributswerte.** Die Spielleitung nennt dir die Methode und das Sicherheitsnetz, bevor ein Würfel fällt. In der fünften Edition: die Standardreihe, Point Buy oder 4W6, den niedrigsten streichen. Die Methode, auf die ihr euch einigt, bleibt in den Vereinbarungen des Tisches.
+- **Deine Geschichte** ist nie Pflicht. Wenn du eine gibst, schreibt die Spielleitung sie in deinen Worten auf, liest sie dir einmal vor und verknüpft ihre Personen und Orte mit der Welt. Du kannst sie auch im Dashboard schreiben (siehe [Gruppe](#party)).
 - **Persönlichkeit** (fünfte Edition): ein Wesenszug, ein Ideal, eine Bindung und ein Makel, aus den Tabellen deines Hintergrunds oder von dir selbst.
-- **Ein Bild.** Sobald dein Charakter fertig ist, bittet dich die Spielleitung um ein Bild: eine Datei auf deinem Computer. Wenn dein KI-Host selbst Bilder zeichnen kann, bietet die Spielleitung vielleicht an, eines zu erzeugen.
+- **Ein Bild.** Sobald dein Charakter erschaffen ist, bittet die Spielleitung dich um ein Bild: eine Datei auf deinem Computer oder ein Porträt, das auf deinem Computer nach deiner Beschreibung erzeugt wird (siehe [das Bild deines Charakters](#37-your-characters-story-and-picture)).
 
-Die Zahlen des Charakterbogens berechnet RPG Engine aus deinen Entscheidungen: Du rechnest nie selbst. Wenn die Charaktere fertig sind und du bestätigst, beginnt die Geschichte.
+Die Zahlen des Charakterbogens berechnet RPG Engine aus deinen Entscheidungen: Du rechnest nie selbst. Wenn die Charaktere erschaffen sind und du bestätigst, beginnt die Geschichte.
 
 ---
 
@@ -205,11 +205,11 @@ Die Zahlen des Charakterbogens berechnet RPG Engine aus deinen Entscheidungen: D
 
 ### 3.1 Mit der Spielleitung sprechen
 
-Schreib, was dein Charakter tut oder sagt, in deinen eigenen Worten. Kurz ist in Ordnung.
+Schreibe, was dein Charakter tut oder sagt, in deinen eigenen Worten. Kurz ist in Ordnung.
 
-> Ich frage die Wirtin, wer heute Abend sonst noch hier durchgekommen ist.
+> Ich frage die Wirtin, wer heute Nacht noch hier durchgekommen ist.
 >
-> „Wir suchen keinen Ärger“, sage ich, die Hand weg vom Schwert.
+> "Wir suchen keinen Ärger", sage ich, die Hand weg vom Schwert.
 >
 > Ich klettere aufs Dach und warte.
 
@@ -217,107 +217,113 @@ Schreib, was dein Charakter tut oder sagt, in deinen eigenen Worten. Kurz ist in
 
 > [Wie funktioniert Ringen?]
 >
-> [Kann ich in dieser Runde noch meine Reaktion nutzen?]
+> [Kann ich in dieser Runde noch meine Reaktion einsetzen?]
 >
-> [Lass uns für heute Abend aufhören.]
+> [Hier hören wir für heute Abend auf.]
 
 Die Spielleitung antwortet ebenfalls in Klammern und kehrt dann zur Geschichte zurück.
 
-**Du sagst, was du versuchst; die Spielleitung sagt, was passiert.** Was die Logik der Welt oder bereits festgelegte Tatsachen bricht, geschieht nicht: Die Spielleitung sagt es dir innerhalb der Geschichte und bietet an, was möglich ist.
+**Du sagst, was du versuchst; die Spielleitung sagt, was geschieht.** Was die Logik der Welt oder bereits feststehende Tatsachen bricht, geschieht nicht: Die Spielleitung sagt es dir innerhalb der Geschichte und bietet an, was möglich ist.
 
-**Die Spielleitung entscheidet nie für deinen Charakter.** Sie lässt ihn nicht sprechen, fühlen oder wählen. Im Zweifel fragt sie.
+**Die Spielleitung entscheidet nie für deinen Charakter.** Sie lässt dich nicht sprechen, fühlen oder wählen. Im Zweifel fragt sie nach.
 
-**Die Spielleitung spricht nie über die Technik.** Frag sie, ob sie Dinge festhält, und sie antwortet wie eine Spielleitung: „Ich behalte alles: Wir machen beim nächsten Mal hier weiter.“
+**Die Spielleitung spricht nie über die Technik.** Frag sie, ob sie Dinge festhält, und sie antwortet wie eine Spielleitung am Tisch: "Ich behalte alles: Nächstes Mal machen wir hier weiter."
 
-**Du kannst die Spielleitung fragen, wie das Dashboard funktioniert.** Sie kennt die Seite: „Wo sehe ich meine Zauber?“, „Wie würfle ich von Hand?“
+**Du kannst die Spielleitung fragen, wie das Dashboard funktioniert.** Sie kennt die Seite: "Wo sehe ich meine Zauber?", "Wie würfle ich von Hand?"
 
 ### 3.2 Würfe
 
-**Wann gewürfelt wird.** Die Spielleitung verlangt nur dann einen Wurf, wenn der Ausgang unsicher ist und zählt. Sonst sagt sie ja oder „ja, aber“. Vor deinem Wurf sagt die Spielleitung, was auf dem Spiel steht und welche Proben passen, und hält dann an. Du würfelst oder überlegst es dir anders:
+**Wann gewürfelt wird.** Die Spielleitung verlangt einen Wurf nur, wenn der Ausgang ungewiss ist und zählt. Sonst sagt sie ja oder "ja, aber". Vor deinem Wurf sagt die Spielleitung, was auf dem Spiel steht und welche Proben passen, und hält dann an. Du würfelst oder überlegst es dir anders:
 
-> **Spielleitung:** Der Sims ist schmal und nass. Wenn du ausrutschst, ist es ein langer Sturz in den Fluss. Eine Probe auf Geschicklichkeit (Akrobatik), oder du gehst zurück und suchst die Treppe.
+> **Spielleitung:** Der Vorsprung ist schmal und nass. Wenn du ausrutschst, ist es ein langer Sturz in den Fluss. Eine Probe auf Geschicklichkeit (Akrobatik), oder du gehst zurück und suchst die Treppe.
 >
 > **Du:** Ich versuche es.
 
-**Auf dem Dashboard würfeln.** Wenn die Spielleitung einen Wurf verlangt, erscheint oben auf der Seite ein Banner mit einer Schaltfläche für jede Probe, zum Beispiel *Akrobatik +4 · mit Vorteil*. Klick darauf: Die Würfel fallen auf der Seite, und die Spielleitung erfährt das Ergebnis. Du kannst auch:
+**Auf dem Dashboard würfeln.** Wenn die Spielleitung einen Wurf verlangt, erscheint oben auf der Seite ein Banner mit einem Button für jede Probe, zum Beispiel *Akrobatik +4 · mit vantaggio*. Klicke darauf: Die Würfel fallen auf der Seite, und die Spielleitung erfährt das Ergebnis. Du kannst auch:
 
 - die passende Zeile deines Charakterbogens anklicken, die golden aufleuchtet;
 - die passenden Würfel aus der Würfelschale werfen;
 - stattdessen im Banner eigene Worte schreiben, wenn du etwas anderes tun willst.
 
-**Von Hand würfeln.** Wenn du die Würfel lieber selbst wählst, schalte in der Ecke des Banners **Von Hand** ein (oder in den **Einstellungen**). Die Schaltfläche der Probe verschwindet, und das Banner sagt, was zu würfeln ist, wie eine Spielleitung es täte: *Würfle Akrobatik selbst, auf deinem Charakterbogen oder mit den Würfeln.* Klick die Zeile des Charakterbogens an, die aufleuchtet, oder wirf die passenden Würfel aus der Würfelschale: RPG Engine würfelt, addiert deinen Bonus, und die Spielleitung erfährt das Ergebnis. Eine Probe, die weder dein Charakterbogen noch die Würfelschale ausführen kann, etwa Schaden, der Einsen neu würfelt, behält ihre Schaltfläche. Von Hand bleibt in diesem Browser eingeschaltet, bis du es ausschaltest.
+**Von Hand würfeln.** Wenn du die Würfel lieber selbst wählst, schalte **Von Hand** in der Ecke des Banners ein (oder in den **Einstellungen**). Der Button der Probe verschwindet, und das Banner sagt, was zu würfeln ist, wie es eine Spielleitung täte: *Würfle Akrobatik selbst, auf deinem Charakterbogen oder mit den Würfeln.* Klicke die aufleuchtende Zeile deines Charakterbogens an oder wirf die passenden Würfel aus der Würfelschale: RPG Engine würfelt, addiert deinen Bonus, und die Spielleitung erfährt das Ergebnis. Eine Probe, die weder dein Charakterbogen noch die Würfelschale ausführen kann, etwa Schaden, bei dem Einsen neu gewürfelt werden, behält ihren Button. Von Hand bleibt in diesem Browser eingeschaltet, bis du es ausschaltest.
 
 **Physische Würfel für das ganze Spiel.** Steht die Einstellung **Würfel** auf physisch, verlangt die Spielleitung deine Würfe in Worten, und du schreibst die gewürfelten Augenzahlen:
 
 > [Ich habe eine 14 gewürfelt.]
 
-RPG Engine addiert deine Modifikatoren und lehnt eine Augenzahl ab, die deine Würfel gar nicht zeigen können.
+RPG Engine addiert deine Modifikatoren und weist eine Augenzahl zurück, die deine Würfel nicht zeigen können.
 
-**Freie Würfe.** Klick eine beliebige Zahl auf deinem Charakterbogen an oder öffne die Würfelschale, um nur zum Spaß zu würfeln. Freie Würfe zählen nie, werden nie aufgezeichnet, und die Spielleitung sieht sie nie. Eine freie 20 wird später nie zu einer echten.
+**Freie Würfe.** Klicke eine beliebige Zahl auf deinem Charakterbogen an oder öffne die Würfelschale, um nur zum Spaß zu würfeln. Freie Würfe zählen nie, werden nie aufgezeichnet, und die Spielleitung sieht sie nie. Eine freie 20 wird später nie zu einer echten.
 
-**Die Würfe der Spielleitung.** Die Spielleitung würfelt für Gegner und andere ebenfalls mit RPG Engine. Die meisten Würfe siehst du in deiner Wurfspalte. Wenn du ein Ergebnis nicht sehen darfst, würfelt die Spielleitung geheim. Du kannst jederzeit fragen:
+**Die Würfe der Spielleitung.** Die Spielleitung würfelt für Gegner und andere ebenfalls mit RPG Engine. Die meisten Würfe siehst du in deiner Wurfspalte. Wenn du ein Ergebnis nicht sehen darfst, würfelt die Spielleitung im Geheimen. Du kannst jederzeit fragen:
 
 > [War dieser Wurf echt?]
 
-Bei einem gezeigten Wurf nennt die Spielleitung ihre Zahlen und den Grund. Bei einem geheimen Wurf nennt sie einen Fingerabdruck, der beweist, dass der Wurf gemacht wurde, bevor du gefragt hast.
+Bei einem sichtbaren Wurf nennt die Spielleitung die Zahlen und den Grund. Bei einem geheimen gibt sie einen Fingerabdruck, der beweist, dass der Wurf gemacht wurde, bevor du gefragt hast.
 
 **Würfe im Chat** erscheinen in Klammern, direkt nach dem Moment, den sie entscheiden: *[Überzeugen 14 + 3 = 17]*. Dann erzählt die Geschichte den Ausgang.
 
 ### 3.3 Szenen und Kämpfe
 
-Die Spielleitung führt die Geschichte in **Szenen**: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast, eine Herausforderung (eine Verfolgungsjagd, ein Rennen, ein Rätsel). Du musst sie nicht verwalten: So hält RPG Engine die Kapitel der Geschichte fest. Am Ende jeder Szene speichert das Spiel von selbst, und die Szene geht in die Geschichte deines Tagebuchs.
+Die Spielleitung führt die Geschichte in **Szenen**: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast, eine Herausforderung (eine Verfolgung, ein Rennen, ein Rätsel). Du musst sie nicht verwalten: Mit ihnen hält RPG Engine die Kapitel der Geschichte fest. Am Ende jeder Szene speichert das Spiel von selbst, und die Szene geht in die Geschichte deines Tagebuchs ein.
 
-**In einem Kampf** erzählt die Spielleitung alle Züge, die nicht deine sind, nacheinander, mit jedem Wurf, und **hält an, wo du entscheiden kannst**: dein Zug, eine Reaktion, eine Wahl. In deinem Zug sagst du, was du tust:
+**In einem Kampf** erzählt die Spielleitung alle Züge, die nicht deine sind, einen nach dem anderen, mit jedem Wurf, und **hält an, wo du entscheiden kannst**: dein Zug, eine Reaktion, eine Wahl. In deinem Zug sagst du, was du tust:
 
 > Ich wirke Heilige Flamme auf den Gegner an der Tür.
 
-Der Bereich **Kampf** des Dashboards zeigt die Reihenfolge der Züge, wer am Zug ist, die Trefferpunkte deiner Gruppe und wie verletzt die Gegner aussehen (unversehrt, verletzt, blutend, am Boden: in Worten, nie in Zahlen). Wenn dein Charakter fällt, erscheinen die Todesrettungswürfe groß auf der Seite.
+Der Bereich **Kampf** des Dashboards zeigt die Reihenfolge der Züge, wer am Zug ist, die Trefferpunkte deiner Gruppe und wie verletzt die Gegner aussehen (unverletzt, verletzt, blutend, am Boden: in Worten, nie in Zahlen). Wenn dein Charakter fällt, erscheinen die Todesrettungswürfe groß auf der Seite.
 
-**Wenn der Kampf schon entschieden ist**, bietet die Spielleitung vielleicht an, den Rest in einer Nachricht zu erzählen.
+**Wenn der Kampf schon entschieden ist**, kann die Spielleitung anbieten, den Rest in einer Nachricht zu erzählen.
 
 ### 3.4 Zeit, Reisen und die Welt, die sich bewegt
 
-**Zeit.** Jede Handlung braucht Zeit in der Geschichte, und RPG Engine führt das Datum: Tag 3, früher Morgen. Die Spielleitung erzählt die Zeit so, wie die Welt sie misst: Morgengrauen, die dritte Glocke, Einbruch der Nacht. Zwischen den Sitzungen vergeht keine Zeit: Du machst dort weiter, wo du aufgehört hast.
+**Zeit.** Jede Handlung braucht Zeit in der Geschichte, und RPG Engine führt das Datum: Tag 3, früher Morgen. Die Spielleitung gibt die Zeit so an, wie die Welt sie misst: Morgengrauen, die dritte Glocke, Einbruch der Nacht. Zwischen den Sitzungen vergeht keine Zeit: Du machst da weiter, wo du aufgehört hast.
 
-**Rasten.** Sag, dass du rastest, und die Spielleitung wendet an, was eine Rast zurückbringt, etwa Trefferpunkte und Zauberplätze:
+**Rasten.** Sage, dass du rastest, und die Spielleitung wendet an, was eine Rast zurückbringt, etwa Trefferpunkte und Zauberplätze:
 
-> Wir schlagen das Lager auf und machen eine lange Rast.
+> Wir schlagen ein Lager auf und machen eine lange Rast.
 
-**Reisen.** Sag, wohin du willst:
+**Reisen.** Sage, wohin du willst:
 
 > Wir nehmen die Straße nach Norden Richtung Rocca.
 
-RPG Engine berechnet den Weg, die Entfernung und die Tage in deinem Tempo und bringt dich hin. Eine Reise hält an, wenn unterwegs etwas Geplantes geschieht, am Ende jedes Reisetags und bei der Ankunft. Du kannst vor dem Aufbruch fragen, wie weit ein Ort entfernt ist:
+RPG Engine berechnet den Weg, die Entfernung und die Tage in deinem Tempo und bringt dich ans Ziel. Eine Reise hält an, wenn unterwegs etwas Geplantes geschieht, am Ende jeder Tagesreise und bei der Ankunft. Du kannst vor der Abreise fragen, wie weit ein Ort entfernt ist:
 
-> [Wie weit ist Rocca, und wie lange würde es zu Fuß dauern?]
+> [Wie weit ist Rocca, und wie lange dauert es zu Fuß?]
 
-**Die Welt bewegt sich ohne dich.** Schurken haben Pläne mit Fristen und Uhren. Mit jedem neuen Tag bewegt die Spielleitung die Bedrohungen weiter, die die Zeit vorgerückt hat, und du siehst ihre Spuren: ein Gerücht, ein Hinweis, eine Veränderung in der Stadt. Die Uhr selbst siehst du nie, nur was sie hinterlässt.
+**Die Welt bewegt sich ohne dich.** Schurken haben Pläne mit Fristen und Uhren. Mit jedem neuen Tag bewegt die Spielleitung die Bedrohungen, die die Zeit vorangebracht hat, und du siehst ihre Zeichen: ein Gerücht, eine Spur, eine Veränderung in der Stadt. Die Uhr selbst siehst du nie, nur das, was sie hinterlässt.
 
-**Geld** wird in den Münzen des Spiels gezählt. Bezahlen, verkaufen, bezahlt werden: RPG Engine gibt das Wechselgeld.
+**Geld** wird in den Münzen des Spiels gezählt. Bezahlen, verkaufen, bezahlt werden: RPG Engine gibt das Wechselgeld heraus.
 
 ### 3.5 Karten
 
-**Die Weltkarte** (Dashboard: **Welt**) zeigt nur die Orte, die dein Charakter kennt, mit den Straßen dazwischen, dem Weg, den du gegangen bist, und dem Nebel über allem anderen. Klick einen Ort an, um zu sehen, was du über ihn weißt und wie weit er entfernt ist.
+**Die Weltkarte** (Dashboard: **Welt**) zeigt nur die Orte, die dein Charakter kennt, mit den Straßen dazwischen, dem Pfad, den du gegangen bist, und dem Nebel über allem anderen. Klicke einen Ort an, um zu sehen, was du über ihn weißt und wie weit er entfernt ist.
 
-**Die Karte eines Ortes** (Dashboard: **Szene**, und **Kampf** im Kampf) erscheint, wenn die Spielleitung eine für deinen Aufenthaltsort zeichnet: Wände, Türen, der Boden und wer wo steht, als Spielfiguren. Im Kampf sind in deinem Zug die Felder verhüllt, die du nicht erreichen kannst, sodass du auf einen Blick siehst, wohin du gehen kannst. Wenn die Spielleitung fragt, wohin dein Charakter sich bewegt, öffnet die Seite die Karte, und du tippst ein Feld an oder schreibst es, etwa *E4*.
+**Die Karte eines Ortes** (Dashboard: **Szene**, und **Kampf** in einem Kampf) erscheint, wenn die Spielleitung eine für deinen Aufenthaltsort zeichnet: Wände, Türen, der Boden und wer wo steht, als Spielfiguren. In einem Kampf sind in deinem Zug die Felder, die du nicht erreichen kannst, verschleiert, sodass du auf einen Blick siehst, wohin du gehen kannst. Wenn die Spielleitung fragt, wohin sich dein Charakter bewegt, öffnet die Seite die Karte, und du tippst auf ein Feld oder schreibst es, etwa *E4*.
 
 ### 3.6 Quests, Tagebuch und Notizen
 
-**Quests.** Wenn dein Charakter eine Aufgabe übernimmt, wird sie in deinem **Tagebuch** zu einer Quest: wer sie gegeben hat, wo, bis wann, ihre Ziele als Liste und was sie misst (eine Frist mit der verbleibenden Zeit, eine Uhr, ein Zähler). Markiere eine mit ihrem Stern, um ihr zu folgen: Sie bleibt klein oben in der Szene, mit ihrem nächsten Ziel. Die Quest endet, wenn die Geschichte sie beendet, nie von selbst.
+**Quests.** Wenn dein Charakter eine Aufgabe übernimmt, wird sie zu einer Quest in deinem **Tagebuch**: wer sie gegeben hat, wo, bis wann, ihre Ziele als Liste und was sie misst (eine Frist mit der verbleibenden Zeit, eine Uhr, ein Zähler). Markiere eine mit ihrem Stern, um ihr zu folgen: Sie bleibt klein oben in der Szene, mit ihrem nächsten Ziel. Die Quest endet, wenn die Geschichte sie beendet, nie von selbst.
 
-**Die Geschichte.** Der Tab Geschichte im Tagebuch ist deine Kampagne als Zeitleiste: jede Szene ein Kapitel, mit Ort, Datum und einer kurzen Zusammenfassung, die letzte zuerst.
+**Die Geschichte.** Der Reiter Geschichte im Tagebuch zeigt deine Kampagne als Zeitleiste: jede Szene ein Kapitel, mit Ort, Datum und einer kurzen Zusammenfassung, die letzte zuerst.
 
-**Deine Notizen.** Im Tab Notizen des Tagebuchs schreibst du deine eigenen Notizen: Theorien, Namen, Pläne. Sie bleiben auf deinem Computer, und die Spielleitung liest sie nicht, außer du **Teilen** eine. Eine geteilte Notiz erreicht die Spielleitung bei ihrer nächsten Antwort als das, was du denkst, nie als Tatsache. Deine Theorie wird nicht wahr, weil du sie aufgeschrieben hast. Eine Notiz, die darum bittet, bestimmte Inhalte zu beenden oder zu vermeiden, gilt, als hättest du es am Tisch gesagt.
+**Deine Notizen.** Im Reiter Notizen des Tagebuchs schreibst du deine eigenen Notizen: Theorien, Namen, Pläne. Sie bleiben auf deinem Computer, und die Spielleitung liest sie nicht, es sei denn, du **teilst** eine. Eine geteilte Notiz erreicht die Spielleitung bei ihrer nächsten Antwort als das, was du denkst, nie als Tatsache. Deine Theorie wird nicht wahr, nur weil du sie aufgeschrieben hast. Eine Notiz, die darum bittet, einen Inhalt zu beenden oder zu meiden, zählt so, als hättest du es am Tisch gesagt.
 
-### 3.7 Geschichte und Bild deines Charakters
+### 3.7 Die Geschichte und das Bild deines Charakters
 
-Auf dem Charakterbogen hat die Karte **Beschreibung** ein Feld, in das du die Geschichte deines Charakters schreibst. Schick sie ab, und die Spielleitung schreibt sie in eigenen Worten in den Charakter, nachdem du ja gesagt hast.
+Auf dem Charakterbogen deines Charakters hat die Karte **Beschreibung** ein Feld, in das du die Geschichte deines Charakters schreibst. Schicke sie ab, und die Spielleitung schreibt sie, nachdem du ja gesagt hast, in eigenen Worten in den Charakter.
 
-Für das Bild deines Charakters gibst du der Spielleitung im Chat eine Bilddatei, mit dem Ort auf deinem Computer (PNG, JPEG, WebP oder SVG, bis 5 MB):
+Für das Bild deines Charakters gib der Spielleitung im Chat eine Bilddatei, mit dem Ort, an dem sie auf deinem Computer liegt (PNG, JPEG, WebP oder SVG, bis 5 MB):
 
 > [Hier ist das Porträt meines Charakters: C:\Users\me\Pictures\mira.png]
 
-Die Spielleitung kopiert es in die Kampagne, und es erscheint auf der Spielfigur deines Charakters im Dashboard. Du kannst es jederzeit auf dieselbe Weise ändern. RPG Engine selbst zeichnet nur Orte und Quests (siehe [Bilder](#311-pictures)).
+Die Spielleitung kopiert es in die Kampagne, und es erscheint auf der Spielfigur deines Charakters im Dashboard. Du kannst es jederzeit auf dieselbe Weise ändern.
+
+Oder lass das Porträt erzeugen, wo dein Computer Bilder erzeugen kann (siehe [Bilder](#311-pictures)): Beschreibe deinen Charakter der Spielleitung, oder lass die Spielleitung ihn beschreiben.
+
+> [Mach mir ein Porträt: graue Haare in einem Zopf, eine Narbe am Kinn, müde Augen.]
+
+Das Porträt zeigt genau, was dein Charakter im Spiel ist, sein Volk so, wie diese Welt es hat, ein Hügelzwerg als Hügelzwerg, mit dem Aussehen, das du beschrieben hast. Es kommt nach etwa einer Minute, auf der Spielfigur deines Charakters. Auch deine Begleiter können ihres auf dieselbe Weise bekommen.
 
 ### 3.8 Spielstände und Zurückgehen
 
@@ -325,56 +331,56 @@ RPG Engine speichert die ganze Kampagne **am Ende jeder Szene** von selbst. Was 
 
 | Spielstände | Speichern, wann du willst | Zurückgehen |
 |---|---|---|
-| **Permadeath** | nein | nie; du kannst nur die Kampagne neu beginnen |
+| **Permadeath** | nein | nie; du kannst die Kampagne nur von vorn beginnen |
 | **Checkpoint** | nein | zum letzten Spielstand, nur wenn dein Charakter stirbt |
-| **frei** | ja | zu jedem Spielstand, wann du willst |
+| **frei** | ja | zu jedem Spielstand, wann immer du willst |
 
-In jedem Modus kannst du **neu beginnen**: vom Anfang des Spiels mit demselben Charakter oder ab Session Zero mit einem neuen.
+In jedem Modus kannst du **von vorn beginnen**: vom Spielbeginn an mit demselben Charakter oder ab der Session Zero mit einem neuen.
 
-Das alles kannst du im Chat tun („[Gehen wir zurück zu vor dem Duell.]“) oder im Bereich **Spielstände** des Dashboards.
+Das alles geht im Chat ("[Gehen wir zurück zu vor dem Duell.]") oder im Bereich **Spielstände** des Dashboards.
 
-**Öffne nach dem Zurückgehen einen neuen Chat.** Der Chat, in dem du gespielt hast, erinnert sich an das, was rückgängig gemacht wurde. Öffne einen neuen Chat mit der Spielleitung (`/clear` in Claude Code, `/new` in Codex), schreib *weiter*, drück dann **Ich habe einen neuen Chat geöffnet** in den Spielständen oder sag es der Spielleitung im neuen Chat. Setz den alten Chat nie fort. Bis du bestätigst, macht die Spielleitung nicht weiter.
+**Öffne nach dem Zurückgehen einen neuen Chat.** Der Chat, in dem du gespielt hast, erinnert sich an das, was rückgängig gemacht wurde. Öffne einen neuen Chat mit der Spielleitung (`/clear` in Claude Code, `/new` in Codex), schreibe *weiter*, drücke dann in Spielstände auf **Ich habe einen neuen Chat geöffnet** oder sage es der Spielleitung im neuen Chat. Setze nie den alten Chat fort. Bis du bestätigst, macht die Spielleitung nicht weiter.
 
 ### 3.9 Sitzungen: aufhören und zurückkommen
 
 **Du beendest die Sitzung**, wann du willst:
 
-> [Lass uns für heute Abend aufhören.]
+> [Hier hören wir für heute Abend auf.]
 
-Es gibt kein „Speichern und Beenden“: Alles steht schon in den Dateien.
+Es gibt kein "Speichern und Beenden": Alles steht schon in den Dateien.
 
-**Um den Chat zu schließen**, schreib `/exit` in Claude Code oder `/quit` in Codex. Das Dashboard wird still, bis der nächste Chat beginnt.
+**Um den Chat zu schließen**, schreibe `/exit` in Claude Code oder `/quit` in Codex. Das Dashboard wird still, bis zum nächsten Chat.
 
-**Um zurückzukommen**, öffne ein Terminal im Kampagnenordner (dem, den `init` ausgegeben hat), starte dort deinen Host und schreib *weiter*. Die Spielleitung liest, wie das Spiel steht, gibt dir eine kurze Zusammenfassung und beginnt mit etwas, das geschieht. Ein neuer Chat verliert nichts: Die Kampagne lebt in ihren Dateien, nicht im Chat.
+**Um zurückzukommen**, öffne ein Terminal im Kampagnenordner (dem, den `init` ausgegeben hat), starte dort deinen Host und schreibe *weiter*. Die Spielleitung liest, wo das Spiel steht, gibt dir eine kurze Zusammenfassung und beginnt damit, dass etwas geschieht. Ein neuer Chat verliert nichts: Die Kampagne lebt in ihren Dateien, nicht im Chat.
 
 Die Spielleitung stellt am Ende keine Routinefragen. Nur wenn ihr aufgefallen ist, dass etwas nicht funktioniert hat, fragt sie kurz nach.
 
 ### 3.10 Die Stimmung der Spielleitung
 
-Oben im Dashboard sitzt der Avatar der Spielleitung, ein kleiner Roboter. Sein Gesicht folgt dem Ton der Geschichte: besorgt, wenn die Gefahr wächst, begeistert bei einer kühnen Idee, überrascht bei einer Wendung. Bei einer natürlichen 20 oder einer natürlichen 1 reagiert er kurz. Er verrät nie, was du noch nicht weißt: kein Grinsen, bevor die Falle zuschnappt. Auch die Spielfiguren deiner Gruppe zeigen ihre Stimmung. Wenn der Chat geschlossen ist, schläft der Roboter.
+Oben im Dashboard sitzt der Avatar der Spielleitung, ein kleiner Roboter. Sein Gesicht folgt dem Ton der Geschichte: besorgt, wenn die Gefahr wächst, begeistert bei einer kühnen Idee, überrascht bei einer Wendung. Bei einer natürlichen 20 oder einer natürlichen 1 reagiert er einen Moment lang. Er zeigt nie, was du noch nicht weißt: kein Grinsen, bevor die Falle zuschnappt. Auch die Spielfiguren deiner Gruppe zeigen ihre Stimmungen. Wenn der Chat geschlossen ist, schläft der Roboter.
 
 ### 3.11 Bilder
 
-RPG Engine kann für jeden Ort, den du erreichst, und jede Quest, die du annimmst, ein Bild erzeugen lassen, wie es die Einstellung **Bilder** vorgibt. Es nutzt, was schon auf deinem Computer ist:
+RPG Engine kann für jeden Ort, den du erreichst, und jede Quest, die du annimmst, ein Bild erzeugen lassen, wie es die Einstellung **Bilder** festlegt, und auf Wunsch das Porträt deines Charakters. Es nutzt, was schon auf deinem Computer ist:
 
 - **Codex**, mit deiner ChatGPT-Anmeldung: ein gemaltes Bild.
 - Sonst **Claude Code**, mit deiner Claude-Anmeldung: eine Zeichnung.
 
-Das Bild nutzt deinen eigenen Tarif, nicht unseren. Der Bereich **Einstellungen** sagt dir, ob auf deinem Computer Bilder erzeugt werden können, und wenn nicht, die Schritte zur Einrichtung. Ohne Bilder zeigt die Seite stattdessen das Zeichen der jeweiligen Ortsart. Du kannst der Spielleitung auch ein eigenes Bild für jeden Ort oder Charakter geben.
+Das Bild nutzt deinen eigenen Tarif, nicht unseren. Der Bereich **Einstellungen** sagt dir, ob auf deinem Computer Bilder erzeugt werden können, und wenn nicht, welche Schritte zur Einrichtung nötig sind. Ohne Bilder zeigt die Seite stattdessen das Zeichen der jeweiligen Art von Ort. Du kannst der Spielleitung auch ein eigenes Bild für jeden Ort oder Charakter geben.
 
 ### 3.12 Sicherheit: Linien, Schleier und Stopp
 
-- **Linien**: was im Spiel nie vorkommt.
-- **Schleier**: was passieren darf, aber nur abseits der Bühne.
-- **Stopp**: Du kannst jederzeit einen Inhalt stoppen, ohne es zu erklären. Schreib es außerhalb der Geschichte:
+- **Linien**: was nie im Spiel vorkommt.
+- **Schleier**: was geschehen darf, aber nur abseits der Bühne.
+- **Stopp**: Du kannst jederzeit einen Inhalt stoppen, ohne es zu erklären. Schreibe es außerhalb der Geschichte:
 
-> [Stopp]
+> [stopp]
 
-Die Spielleitung lässt ihn sofort fallen und fügt ihn deinen Linien hinzu, für jede kommende Sitzung. Deine Linien und Schleier kannst du in den **Einstellungen** ansehen und ändern.
+Die Spielleitung lässt den Inhalt sofort fallen und nimmt ihn für alle kommenden Sitzungen in deine Linien auf. Deine Linien und Schleier kannst du in den **Einstellungen** ansehen und ändern.
 
-### 3.13 Sich umentscheiden
+### 3.13 Es sich anders überlegen
 
-Jede Einstellung kann sich während der Kampagne ändern: im Chat („[Machen wir es schwerer.]“) oder in den **Einstellungen**. Die Spielleitung erfährt von einer Änderung bei ihrer nächsten Antwort. Eine Entscheidung, die die Spielleitung ohne das Regelbuch getroffen hat, wird zu einem **Präzedenzfall** und bleibt erhalten, sodass dieselbe Frage beim nächsten Mal dieselbe Antwort bekommt.
+Jede Einstellung kann sich während der Kampagne ändern: im Chat ("[Machen wir es schwerer.]") oder in den **Einstellungen**. Die Spielleitung erfährt von einer Änderung bei ihrer nächsten Antwort. Eine Entscheidung, die die Spielleitung ohne das Regelbuch getroffen hat, wird zu einem **Präzedenzfall** und bleibt bestehen, sodass dieselbe Frage das nächste Mal dieselbe Antwort bekommt.
 
 ---
 

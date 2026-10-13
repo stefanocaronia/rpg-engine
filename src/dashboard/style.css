@@ -2891,13 +2891,15 @@ a {
     align-items: center;
     gap: 6px;
     min-height: 36px;
-    padding: 0 12px;
+    padding: 6px 12px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: var(--panel);
     color: var(--ink);
     font: inherit;
     font-size: 0.9rem;
+    line-height: 1.25;
+    text-align: start;
     font-weight: 500;
     cursor: pointer;
 }
@@ -2917,6 +2919,12 @@ a {
 .help-card.group {
     margin: 0;
     scroll-margin-top: calc(var(--top-space, 0px) + var(--gap));
+}
+
+/* A part's title is long: it wraps, the chevron stays in sight. */
+.help-card > summary h3 {
+    min-width: 0;
+    white-space: normal;
 }
 
 .help-card > p {
@@ -2996,8 +3004,15 @@ a {
     font-weight: 650;
 }
 
+/* A command reads left to right in every language, its quotes where it has them. */
+.guide code,
+.guide pre {
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
 .guide code {
-    padding: 1px 5px;
+    padding: 1px 4px;
     border-radius: var(--radius-xs);
     background: var(--panel-2);
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -3011,6 +3026,11 @@ a {
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: var(--panel-2);
+}
+
+/* An option in a table stays whole: the table scrolls instead. */
+.guide td code {
+    white-space: nowrap;
 }
 
 .guide pre code {

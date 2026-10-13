@@ -62,11 +62,16 @@ export interface TextWriter
  */
 export type PicturesReady = { ready: true; maker?: "Codex" | "Claude"; } | { ready: false; why: string; fix?: string; };
 
-/** What a picture shows (D-308, D-388): a place as the party sees it arriving, or a quest as the character knows it; never what the table keeps out. */
+/**
+ * What a picture shows (D-308, D-388, D-408): a place as the party sees it arriving, a quest as the character knows it, or the portrait of one of the party as
+ * the player sees them; never what the table keeps out.
+ */
 export interface PictureSubject
 {
-    kind: "place" | "quest";
+    kind: "place" | "quest" | "portrait";
     name: string;
+    /** For a portrait, what the game says they are: what their page derives from, as their people, and the line under their name. */
+    who?: string;
     seen: string;
     unseen: string[];
 }

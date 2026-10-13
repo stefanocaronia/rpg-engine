@@ -6,10 +6,11 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
-import { baseChain, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
+import { baseChain, isPartyMember, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
 import { imageFile, ownImage } from "./game-images.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld } from "./game-world.ts";
+import { campaignSystem, campaignWorld } from "./game-world.ts";
+import { sheetHeadline } from "./sheet.ts";
 
 interface ImageResult
 {
@@ -31,8 +32,8 @@ export const image = defineCommand({
         + "It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; "
         + "a page without one shows the picture of the page it derives from, such as a goblin's icon. "
         + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. "
-        + "For a place or a quest, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
-        + "for a quest what the character knows of it, never what they do not know. "
+        + "For a place, a quest or one of the party, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
+        + "for a quest what the character knows of it, never what they do not know; for the player character or a companion, when the player asks, their portrait as the player described them. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
     group: "game",
     positionals: ["page", "file"],
@@ -40,7 +41,8 @@ export const image = defineCommand({
         page: z.string().describe("the page that gets the picture"),
         file: z.string().optional().describe("the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
         describe: z.string().optional().describe(
-            "instead of file, for a place: what the party sees arriving; for a quest: what the character knows of it; in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
+            "instead of file, for a place: what the party sees arriving; for a quest: what the character knows of it; for one of the party: their look, their people as this world has them and the rest as the player described it; "
+                + "in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
         ),
     }),
 
@@ -67,7 +69,7 @@ export const image = defineCommand({
                 throw new Error("Give file or describe, not both: file is a picture you have, describe has one made. Nothing changed.");
             }
 
-            return madePicture(root, context, page, input.describe.trim());
+            return madePicture(root, context, world, page, input.describe.trim());
         }
 
         if (input.file === undefined || input.file.trim() === "") {
@@ -115,13 +117,18 @@ function setImage(root: string, context: Context, world: World, page: Page, from
 }
 
 /**
- * A place's picture made from what the party sees, or a quest's from what the character knows of it (D-308, D-388, PIC-1–PIC-3), where the campaign's setting allows it and this computer can: in the MCP server it comes
- * by itself while the story goes on; on the command line the command waits for it. A refusal is never tried again.
+ * A place's picture made from what the party sees, a quest's from what the character knows of it, or the portrait of one of the party as the player described
+ * them (D-308, D-388, D-408, PIC-1–PIC-3), where the campaign's setting allows it and this computer can: in the MCP server it comes by itself while the story
+ * goes on; on the command line the command waits for it. A refusal is never tried again.
  */
-function madePicture(root: string, context: Context, page: Page, seen: string): ImageResult | Promise<ImageResult>
+function madePicture(root: string, context: Context, world: World, page: Page, seen: string): ImageResult | Promise<ImageResult>
 {
-    if (page.type !== "place" && page.type !== "quest") {
-        throw new Error(`describe makes pictures of places and quests, and ${page.name} is a ${page.type ?? "page"}: give a picture of it with file. Nothing changed.`);
+    const kind = page.type === "place" || page.type === "quest" ? page.type : isPartyMember(page) ? "portrait" : undefined;
+
+    if (kind === undefined) {
+        throw new Error(
+            `describe makes pictures of places, quests and the party, and ${page.name} is a ${page.type ?? "page"} out of the party: give a picture of it with file. Nothing changed.`,
+        );
     }
 
     const setting = readSettings(root).pictures;
@@ -139,7 +146,8 @@ function madePicture(root: string, context: Context, page: Page, seen: string): 
     }
 
     const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
-    const making = context.pictures.make({ kind: page.type === "quest" ? "quest" : "place", name: page.name, seen, unseen }).then((made) => {
+    const who = kind === "portrait" ? portraitWho(root, context, world, page) : undefined;
+    const making = context.pictures.make({ kind, name: page.name, ...(who === undefined ? {} : { who }), seen, unseen }).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));
             throw new Error(`No picture of ${page.name}: ${made.refused}. Go on without, or give one with file.`);
@@ -162,6 +170,13 @@ function madePicture(root: string, context: Context, page: Page, seen: string): 
     // The MCP server lives on: the picture comes by itself, and the dashboard shows it.
     making.catch(() => undefined);
     return { page: page.name, changed: false, making: true };
+}
+
+/** What the game says one of the party is, for their portrait (D-408): what their page derives from, as their people, and the line under their name. */
+function portraitWho(root: string, context: Context, world: World, page: Page): string | undefined
+{
+    const said = [baseChain(world, page).map((base) => base.name).join(", "), sheetHeadline(world, campaignSystem(root, context), page) ?? ""].filter((part) => part !== "");
+    return said.length === 0 ? undefined : said.join("; ");
 }
 
 function removeImage(root: string, context: Context, world: World, page: Page, old: string | undefined): ImageResult

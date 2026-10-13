@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 b69f95b1 5738adad 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 8b2b048d 7705224a 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**.
@@ -55,18 +55,18 @@ RPG Engine est fait pour n'importe quel jeu de rôle sur table. Aujourd'hui, il 
 
 ---
 
-## 2. Bien démarrer <!-- icon: path -->
+## 2. Premiers pas <!-- icon: path -->
 
 ### 2.1 Ce qu'il te faut
 
 - Un ordinateur sous Windows, macOS ou Linux.
-- **Node.js 22** ou plus récent. Prends-le sur [nodejs.org](https://nodejs.org) : la version « LTS » convient. Il est livré avec `npm`, qui installe RPG Engine.
-- Un **terminal**, la fenêtre où l'on écrit des commandes : sous Windows, l'appli Terminal ou PowerShell ; sous macOS, Terminal. Tu t'en sers pour installer RPG Engine, créer chaque campagne et lancer Claude Code ou Codex.
-- Un **hôte d'IA**, l'appli dans laquelle tourne le MJ : **Claude Code** ou **Codex**, avec son abonnement et sa connexion. Voir [2.4](#24-connect-your-ai).
-- Le **plus grand modèle** que ton hôte propose. Un petit modèle se laisse berner : dans nos tests, il a révélé des secrets à un joueur qui prétendait être le vrai MJ.
+- **Node.js 22** ou plus récent. Télécharge-le sur [nodejs.org](https://nodejs.org) : la version « LTS » convient. Il est fourni avec `npm`, qui installe RPG Engine.
+- Un **terminal**, la fenêtre où tu écris des commandes : sous Windows, l'application Terminal ou PowerShell ; sous macOS, Terminal. Tu t'en sers pour installer RPG Engine, pour créer chaque campagne et pour lancer Claude Code ou Codex.
+- Un **hôte IA**, l'application dans laquelle le MJ tourne : **Claude Code** ou **Codex**, avec son abonnement et sa connexion. Voir [2.4](#24-connect-your-ai).
+- Le **plus grand modèle** que ton hôte propose. Un petit modèle se laisse berner : lors de nos tests, il a révélé des secrets à un joueur qui prétendait être le vrai MJ.
 - Un navigateur web, pour le tableau de bord.
 
-La connexion que tu utilises pour ton hôte sert aussi à autre chose : RPG Engine l'utilise, sur ton ordinateur, pour dessiner des images de lieux et pour traduire le tableau de bord dans des langues qu'il ne livre pas. Voir [Images](#311-pictures) et [Langues](#72-languages).
+La connexion que tu utilises pour ton hôte sert à autre chose aussi : RPG Engine l'utilise, sur ton ordinateur, pour dessiner des images de lieux, de quêtes et de ton personnage, et pour traduire le tableau de bord dans les langues qu'il ne propose pas d'origine. Voir [Images](#311-pictures) et [Langues](#72-languages).
 
 **Ouvrir un terminal dans un dossier.** Beaucoup d'étapes disent « dans le dossier de la campagne ». Sous Windows, fais un clic droit sur le dossier dans l'Explorateur de fichiers et choisis **Ouvrir dans le Terminal**. Sous macOS, fais un clic droit sur le dossier dans le Finder et choisis **Services > Nouveau Terminal au dossier**. Ou, dans un terminal déjà ouvert, écris `cd` suivi du chemin du dossier, par exemple `cd "C:\Users\me\Games\The Salt Isles"`.
 
@@ -78,23 +78,23 @@ Ouvre un terminal et écris :
 npm install -g rpg-engine
 ```
 
-Cela te donne la commande `rpg`. Pour vérifier que ça a marché :
+Cela te donne la commande `rpg`. Pour vérifier que tout a marché :
 
 ```text
 rpg --version
 ```
 
-Tu utilises `rpg` une fois par campagne, pour la créer. Ensuite, tu ne fais que parler avec le MJ : ton hôte d'IA lance RPG Engine tout seul, avec la même commande `rpg`.
+Tu utiliseras `rpg` une fois par campagne, pour la créer. Ensuite, tu parles seulement avec le MJ : ton hôte IA lance RPG Engine tout seul, avec la même commande `rpg`.
 
 ### 2.3 Créer une campagne
 
-Une campagne est un dossier. Ouvre un terminal dans le dossier où tu ranges tes jeux, et écris :
+Une campagne est un dossier. Ouvre un terminal dans le dossier où tu ranges tes jeux et écris :
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Cela crée le dossier `The Salt Isles` avec une nouvelle campagne dedans, et te dit quoi faire ensuite :
+Cela crée le dossier `The Salt Isles` avec une nouvelle campagne dedans, et t'indique la suite :
 
 ```text
 Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
@@ -105,51 +105,51 @@ For the master: Still to agree with the player: ...
 
 Les lignes après *For the master* sont destinées au MJ, qui les lit dans le chat : tu n'as rien à en faire. Retiens où se trouve le dossier : tu y reviens à chaque partie. Sans nom de dossier, `rpg init` transforme le dossier où tu te trouves en campagne.
 
-`init` crée tout ce dont la campagne a besoin : ses paramètres, ses dossiers du monde, et les petits fichiers qui disent à ton hôte d'IA d'utiliser RPG Engine et de ne garder aucune mémoire à lui en dehors de la campagne.
+`init` crée tout ce dont la campagne a besoin : ses réglages, ses dossiers du monde, et les petits fichiers qui disent à ton hôte IA d'utiliser RPG Engine et de ne garder aucune mémoire à lui en dehors de la campagne.
 
-Tu n'as rien à choisir maintenant. Le MJ te demande le reste dans le chat, ou tu choisis sur le tableau de bord. Si tu connais déjà certains choix, tu peux les donner ici :
+Tu n'as rien à choisir maintenant. Le MJ te pose les autres questions dans le chat, ou tu choisis sur le tableau de bord. Si tu connais déjà certains choix, tu peux les donner ici :
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
 ```
 
-Cela crée le dossier `salt-isles`, avec la campagne *The Salt Isles* dedans : un nom de dossier sans espaces, et le nom de la campagne comme tu l'aimes.
+Cela crée le dossier `salt-isles`, avec la campagne *The Salt Isles* dedans : un nom de dossier sans espaces, et le nom de la campagne comme tu le veux.
 
 | Option | Ce qu'elle règle | Valeurs |
 |---|---|---|
 | `--name` | Le nom de la campagne | au choix ; le nom du dossier si tu l'omets |
 | `--language` | La langue du jeu | un code, comme `en`, `it`, `fr` |
-| `--system` | Le système de jeu | `5e`, le seul aujourd'hui |
+| `--system` | Le système de jeu | `5e`, le seul pour l'instant |
 | `--difficulty` | La difficulté du monde | `story`, `easy`, `normal`, `hard`, `brutal` |
-| `--lethality` | Ce que signifie tomber en combat | `narrative`, `epic`, `dice` |
+| `--lethality` | Ce que signifie tomber au combat | `narrative`, `epic`, `dice` |
 
 `rpg init --help` les liste aussi. Une campagne ne peut pas se trouver dans le dossier d'une autre campagne.
 
-Tu ne peux pas demander au MJ de créer une campagne : avant `init`, le dossier ne contient rien qui dise à ton hôte d'IA où se trouve RPG Engine.
+Tu ne peux pas demander au MJ de créer une campagne : avant `init`, le dossier ne contient rien qui dise à ton hôte IA où se trouve RPG Engine.
 
 ### 2.4 Connecter ton IA
 
-RPG Engine fonctionne avec **Claude Code** et **Codex**. D'autres applis d'IA qui utilisent des outils MCP pourraient fonctionner aussi, mais nous ne le garantissons pas.
+RPG Engine fonctionne avec **Claude Code** et **Codex**. D'autres applications d'IA qui utilisent des outils MCP peuvent marcher aussi, mais nous ne le garantissons pas.
 
-**Installer ton hôte.** Claude Code et Codex tournent dans le terminal : ce ne sont pas les applis Claude ou ChatGPT de ton téléphone. Chacun demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT. Suis leurs pages pour les installer et te connecter : [Claude Code](https://code.claude.com/docs/en/setup) et [Codex](https://learn.chatgpt.com/docs/codex/cli). Tu le fais une seule fois, pour toutes tes campagnes.
+**Installer ton hôte.** Claude Code et Codex tournent dans le terminal : ce ne sont pas les applications Claude ou ChatGPT de ton téléphone. Chacun demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT. Suis leurs pages pour les installer et te connecter : [Claude Code](https://code.claude.com/docs/en/setup) et [Codex](https://learn.chatgpt.com/docs/codex/cli). Tu fais cela une seule fois, pour toutes tes campagnes.
 
 **Claude Code.** Ouvre un terminal dans le dossier de la campagne et écris `claude`. La première fois, il te demande si tu fais confiance au dossier, et indique que le dossier autorise les outils du jeu (`mcp__rpg`) : choisis **Yes, I trust this folder**. Attention : la réponse déjà sélectionnée est *No, exit*, donc appuyer tout de suite sur Entrée ferme Claude Code. C'est tout : la campagne a déjà dit à Claude Code d'utiliser RPG Engine et ses outils, et de désactiver sa mémoire.
 
-**Codex.** Ouvre un terminal dans le dossier de la campagne et écris `codex`. Quand il te demande si tu fais confiance au dossier, réponds oui : les paramètres propres à la campagne disent à Codex où se trouve RPG Engine, autorisent ses outils et désactivent sa mémoire, et Codex ne les lit que dans un dossier de confiance. Dans l'appli de bureau, vérifie que les mémoires sont désactivées pour les chats du jeu.
+**Codex.** Ouvre un terminal dans le dossier de la campagne et écris `codex`. Quand il te demande si tu fais confiance au dossier, réponds oui : les réglages propres à la campagne disent à Codex où se trouve RPG Engine, autorisent ses outils et désactivent sa mémoire, et Codex ne les lit que dans un dossier de confiance. Dans l'application de bureau, vérifie que les mémoires sont désactivées pour les chats du jeu.
 
 **Pourquoi la mémoire compte.** La campagne vit dans ses fichiers. Si l'hôte retient aussi des choses de son côté, revenir à une sauvegarde ne ramènerait pas vraiment en arrière : le MJ se souviendrait encore de ce qui a été annulé.
 
 ### 2.5 Le premier chat
 
-Écris n'importe quoi, par exemple :
+Écris ce que tu veux, par exemple :
 
 > Salut ! On commence.
 
-Le MJ lit où en est le jeu et répond. Dans sa première réponse de chaque chat, il te donne le **lien vers ton tableau de bord** (quelque chose comme `http://127.0.0.1:4750`). Ouvre-le dans ton navigateur et garde-le à côté du chat pendant toute la partie. Chaque campagne garde le même lien d'un chat à l'autre, sauf si un autre programme l'a pris : le MJ te donne alors le nouveau.
+Le MJ lit où en est le jeu et répond. Dans sa première réponse de chaque chat, il te donne le **lien de ton tableau de bord** (quelque chose comme `http://127.0.0.1:4750`). Ouvre-le dans ton navigateur et garde-le à côté du chat pendant toute la partie. Chaque campagne garde le même lien d'un chat à l'autre, sauf si un autre programme l'a pris : dans ce cas, le MJ te donne le nouveau.
 
 Entre les messages du MJ, ton hôte affiche les outils que le MJ utilise, en lignes courtes. N'ouvre pas leurs détails (dans Claude Code, ctrl+o) : ils peuvent montrer ce que le MJ écrit, secrets compris.
 
-Une nouvelle campagne passe par trois étapes, comme une partie avec un MJ humain. Le tableau de bord les affiche en haut : *1 Paramètres · 2 Session zéro · 3 Jeu*.
+Une nouvelle campagne passe par trois étapes, comme un jeu avec un MJ humain. Le tableau de bord les affiche en haut : *1 Paramètres · 2 Session zéro · 3 Jeu*.
 
 1. **Paramètres** : tu choisis comment tu veux jouer. Hors de l'histoire.
 2. **Session zéro** : tu crées ton personnage, en jouant.
@@ -157,47 +157,47 @@ Une nouvelle campagne passe par trois étapes, comme une partie avec un MJ humai
 
 ### 2.6 Paramètres : choisir comment tu joues
 
-Le MJ ne demande que ce qui manque encore, quelques questions à la fois. Si tu écris « à toi de décider », le MJ choisit et te dit ce qu'il a choisi. Avec le tableau de bord ouvert, sa première étape, **Paramètres**, présente les mêmes questions sous forme de cartes : une question à la fois, chaque valeur avec sa signification, la valeur habituelle marquée **Conseillé**. Choisis là, et le MJ ne reposera pas la question dans le chat ; **Passer** laisse une question pour plus tard. Le chat règle ce que seuls les mots peuvent régler : la prémisse d'un nouveau monde, la langue, et les images, dont le MJ ne parle que si ton ordinateur peut en créer. C'est pourquoi la page pose moins de questions que n'en liste le tableau ci-dessous.
+Le MJ ne demande que ce qui manque encore, quelques questions à la fois. Si tu écris « décide toi-même », le MJ choisit et te dit ce qu'il a choisi. Quand le tableau de bord est ouvert, sa première étape, **Paramètres**, affiche les mêmes questions sous forme de cartes : une question à la fois, chaque valeur avec sa signification, la valeur habituelle marquée **Conseillé**. Choisis là, et le MJ ne redemandera pas dans le chat ; **Passer** laisse une question pour plus tard. Le chat règle ce que seuls les mots peuvent régler : la prémisse d'un nouveau monde, la langue, et les images, dont le MJ ne parle que si ton ordinateur peut en créer. C'est pourquoi la page pose moins de questions que n'en liste le tableau ci-dessous.
 
-Tu n'as pas besoin d'étudier ce tableau : il est là pour t'y reporter. Tu peux modifier chacun de ces réglages plus tard, dans le chat ou dans les **Paramètres** du tableau de bord. Un changement compte à partir de la prochaine réponse du MJ.
+Tu n'as pas besoin d'étudier ce tableau : il est là pour t'y reporter. Tu peux changer chacun de ces réglages plus tard, dans le chat ou dans les **Paramètres** du tableau de bord. Un changement compte dès la prochaine réponse du MJ.
 
 | Réglage | Ce qu'il décide | Valeurs | Conseillé |
 |---|---|---|---|
-| **Mentor** (demandé sous la forme « Tu connais bien ce jeu ? ») | Combien le MJ t'enseigne les règles, hors de l'histoire | **désactivé** (l'histoire seule ; pose ta question entre crochets quand tu veux), **indices** (un court conseil avant les choix importants et quand une règle passe inaperçue), **tutoriel** (chaque règle expliquée la première fois, le calcul complet de chaque jet, un court bilan après les combats) | selon ta réponse : jamais joué → tutoriel, un peu → indices, je connais → désactivé |
-| **Difficulté** | La dureté du monde : combats, tactiques des ennemis, indices, trésors, vitesse des menaces | histoire, facile, normal, difficile, brutal | |
-| **Létalité** | Ce que signifie tomber en combat | **narrative** (ton personnage ne meurt jamais), **épique** (meurt seulement quand c'est important pour l'histoire), **dés** (les dés décident) | suit la difficulté : histoire → narrative, facile → épique, normal et au-delà → dés |
-| **Sauvegardes** | Quand tu peux revenir en arrière | **mort définitive** (jamais ; tu peux seulement recommencer la campagne), **point de contrôle** (retour à la dernière fin de scène, seulement si ton personnage meurt), **libre** (retour à n'importe quelle sauvegarde, et sauvegarde quand tu veux) | point de contrôle |
-| **Rigueur** | À quel point la nourriture, la lumière, la fatigue, le poids porté, les composantes de sorts et les voyages suivent les règles | **fluide** (le MJ les survole), **règles** (à la lettre : les torches s'éteignent, les rations s'épuisent), **simulation** (au-delà des règles : usure, péremption, météo) | fluide |
+| **Mentor** (demandé sous la forme « Tu connais bien ce jeu ? ») | Combien le MJ t'enseigne les règles, hors de l'histoire | **désactivé** (l'histoire seule ; pose ta question entre crochets quand tu veux), **conseils** (une courte astuce avant les choix importants et quand une règle passe inaperçue), **tutoriel** (chaque règle expliquée la première fois, le calcul complet de chaque jet, un court bilan après les combats) | selon ta réponse : jamais joué → tutoriel, un peu → conseils, je connais → désactivé |
+| **Difficulté** | La difficulté du monde : combats, tactiques des ennemis, indices, trésors, vitesse des menaces | histoire, facile, normal, difficile, brutal | |
+| **Létalité** | Ce que signifie tomber au combat | **narrative** (ton personnage ne meurt jamais), **épique** (meurt seulement quand c'est important pour l'histoire), **dés** (les dés décident) | suit la difficulté : histoire → narrative, facile → épique, normal et au-delà → dés |
+| **Sauvegardes** | Quand tu peux revenir en arrière | **mort définitive** (jamais ; seulement recommencer la campagne), **point de contrôle** (retour à la dernière fin de scène, seulement si ton personnage meurt), **libre** (retour à n'importe quelle sauvegarde, et sauvegarde quand tu le demandes) | point de contrôle |
+| **Rigueur** | À quel point la nourriture, la lumière, la fatigue, le poids transporté, les composantes de sorts et les voyages suivent les règles | **souple** (le MJ passe dessus), **règles** (comme écrit : les torches s'éteignent, les rations s'épuisent), **simulation** (au-delà des règles : usure, péremption, météo) | souple |
 | **Dés** | Qui lance les dés de ton personnage | **numériques** (RPG Engine les lance, sur la page), **physiques** (tu lances les tiens et tu annonces les faces) | |
-| **Unités** | Distances et poids dans l'histoire | métriques, impériales | |
+| **Unités** | Les distances et les poids dans l'histoire | métriques, impériales | |
 | **Compagnons** | Qui voyage avec toi | aucun, créés avec toi en session zéro, créés par le MJ, rencontrés en jeu | |
-| **Images** | Images des lieux et des quêtes | aucune, sur demande, nouveaux lieux et quêtes | demandé une seule fois, seulement si ton ordinateur peut en créer |
-| **Lignes** | Ce qui n'apparaît jamais dans le jeu | une liste, ou aucune | |
-| **Voiles** | Ce qui peut arriver, mais seulement hors-champ | une liste, ou aucun | |
-| **Langue** | La langue du jeu et du tableau de bord | toutes | déduite de ta façon d'écrire, puis confirmée |
+| **Images** | Images des lieux et des quêtes, et portrait de ton personnage sur demande | aucune, sur demande, nouveaux lieux et quêtes | demandé une fois, seulement si ton ordinateur peut en créer |
+| **Lignes** | Ce qui n'apparaît jamais dans le jeu | une liste, ou rien | |
+| **Voiles** | Ce qui peut arriver, mais seulement hors champ | une liste, ou rien | |
+| **Langue** | La langue du jeu et du tableau de bord | au choix | déduite de ta façon d'écrire, puis confirmée |
 
-Le système de jeu peut ajouter ses propres réglages. La cinquième édition ajoute la **progression** : comment ton personnage monte de niveau, avec des **points d'expérience** ou aux **étapes clés** de l'histoire.
+Le système de jeu peut ajouter ses propres réglages. La cinquième édition ajoute la **progression** : comment ton personnage monte de niveau, avec des **points d'expérience** ou à des **étapes** de l'histoire.
 
-**Ce que la difficulté change en jeu.** Histoire : des adversaires faibles et naïfs, des indices évidents, de tout en abondance ; le MJ peut adoucir ses propres jets. Facile : des adversaires simples, des ressources généreuses. Normal : des adversaires censés, trois indices pour chaque conclusion, des prix et des trésors standard. Difficile : des adversaires malins, des indices subtils, des ressources rares, des menaces qui avancent vite. Brutal : des adversaires qui tendent des embuscades, battent en retraite et achèvent les blessés, des ressources très rares, les repos les plus durs. Les combats sont toujours dimensionnés pour ton groupe tel qu'il est maintenant.
+**Ce que la difficulté change en jeu.** Histoire : des adversaires faibles et naïfs, des indices évidents, de tout en abondance ; le MJ peut adoucir ses propres jets. Facile : des adversaires simples, des ressources généreuses. Normal : des adversaires censés, trois indices pour chaque conclusion, des prix et des trésors standards. Difficile : des adversaires malins, des indices subtils, des ressources rares, des menaces qui avancent vite. Brutal : des adversaires qui tendent des embuscades, battent en retraite et achèvent les vaincus, des ressources très rares, les repos les plus durs. Les combats sont toujours dimensionnés pour ton groupe tel qu'il est maintenant.
 
 **Sans monde écrit**, la mise en place pose deux questions de plus :
 
-- **Prémisse** : le genre, le ton et quelques éléments du monde, dans tes mots. Par exemple : *« Fantasy sombre, mais avec de l'espoir. Une ville au bord d'une rivière, un gué hanté, un culte dans les collines. »*
+- **Prémisse** : le genre, le ton et quelques éléments du monde, avec tes mots. Par exemple : *« Low fantasy, sombre mais avec de l'espoir. Une ville au bord d'un fleuve, un gué hanté, un culte dans les collines. »*
 - **Préparation** : **à la volée** (le MJ construit chaque partie du monde juste avant que tu en aies besoin ; conseillé) ou **tout au début**.
 
-Le MJ propose alors un nom pour la campagne. Quand il ne manque rien et que tu dis que tu es prêt, le jeu passe à la session zéro.
+Le MJ propose ensuite un nom pour la campagne. Quand il ne manque plus rien et que tu dis que tu es prêt·e, le jeu passe à la session zéro.
 
 ### 2.7 Session zéro : ton personnage
 
-La session zéro, c'est déjà du jeu : tu crées ton personnage avec le MJ, comme à une table.
+La session zéro, c'est déjà du jeu : tu crées ton personnage avec le MJ, comme autour d'une table.
 
-- **Chaque choix t'appartient**, sauf si tu demandes au MJ de le faire. Tu peux venir avec une idée complète (« un personnage demi-elfe, clerc, qui a quitté son temple »), une idée vague (« quelqu'un qui soigne, mais sans être gentil ») ou rien du tout (« surprends-moi, puis laisse-moi changer des choses »).
-- **Valeurs de caractéristiques.** Le MJ t'explique la méthode et le filet de sécurité avant de lancer le moindre dé. Dans la cinquième édition : la série standard, l'achat de points, ou 4d6 en retirant le plus bas. La méthode convenue reste dans les accords de la table.
+- **Chaque choix t'appartient**, sauf si tu demandes au MJ de le faire. Tu peux arriver avec une idée complète (« un personnage de clergé demi-elfe, qui a quitté son temple »), une idée vague (« quelqu'un qui soigne, mais sans douceur ») ou rien du tout (« surprends-moi, puis laisse-moi changer des choses »).
+- **Caractéristiques.** Le MJ t'annonce la méthode et le filet de sécurité avant que le moindre dé soit lancé. En cinquième édition : la série standard, l'achat de points, ou 4d6 en retirant le plus bas. La méthode sur laquelle vous vous accordez reste dans les accords de la table.
 - **Ton histoire** n'est jamais obligatoire. Si tu en donnes une, le MJ l'écrit avec tes mots, te la relit une fois, et relie ses personnages et ses lieux au monde. Tu peux aussi l'écrire sur le tableau de bord (voir [Groupe](#party)).
 - **Personnalité** (cinquième édition) : un trait, un idéal, un lien et un défaut, tirés des tables de ton historique ou inventés par toi.
-- **Une image.** Une fois ton personnage créé, le MJ te demande une image de lui : un fichier sur ton ordinateur. Si ton hôte d'IA peut dessiner des images lui-même, le MJ peut proposer d'en faire une.
+- **Une image.** Une fois ton personnage créé, le MJ te demande une image de lui : un fichier sur ton ordinateur, ou un portrait réalisé sur ton ordinateur d'après ta description (voir [l'image de ton personnage](#37-your-characters-story-and-picture)).
 
-Les chiffres de la fiche sont calculés par RPG Engine à partir de tes choix : tu ne fais jamais les additions. Quand les personnages sont créés et que tu confirmes, l'histoire commence.
+Les chiffres de la fiche sont calculés par RPG Engine à partir de tes choix : tu ne fais jamais les calculs. Quand les personnages sont créés et que tu confirmes, l'histoire commence.
 
 ---
 
@@ -205,7 +205,7 @@ Les chiffres de la fiche sont calculés par RPG Engine à partir de tes choix : 
 
 ### 3.1 Parler avec le MJ
 
-Écris ce que ton personnage fait ou dit, avec tes propres mots. Court, c'est très bien.
+Écris ce que ton personnage fait ou dit, avec tes mots. Court, c'est très bien.
 
 > Je demande à l'aubergiste qui d'autre est passé ce soir.
 >
@@ -223,31 +223,31 @@ Les chiffres de la fiche sont calculés par RPG Engine à partir de tes choix : 
 
 Le MJ répond aussi entre crochets, puis retourne à l'histoire.
 
-**Tu dis ce que tu tentes ; le MJ dit ce qui arrive.** Ce qui brise la logique du monde ou les faits déjà établis n'arrive pas : le MJ te le dit, dans l'histoire, et propose ce qui est possible.
+**Tu dis ce que tu tentes ; le MJ dit ce qui se passe.** Ce qui brise la logique du monde ou les faits déjà établis n'arrive pas : le MJ te le dit, dans l'histoire, et propose ce qui est possible.
 
-**Le MJ ne décide jamais à la place de ton personnage.** Il ne te fera ni parler, ni ressentir, ni choisir. Dans le doute, il demande.
+**Le MJ ne décide jamais à la place de ton personnage.** Il ne te fera pas parler, ressentir ou choisir. En cas de doute, il demande.
 
-**Le MJ ne parle jamais du moteur.** Demande-lui s'il garde une trace des choses, et il répond en MJ : « Je garde tout : on reprend d'ici la prochaine fois. »
+**Le MJ ne parle jamais du moteur.** Demande-lui s'il garde une trace des choses et il répond en MJ : « Je garde tout : on reprend ici la prochaine fois. »
 
 **Tu peux demander au MJ comment utiliser le tableau de bord.** Il connaît la page : « Où est-ce que je vois mes sorts ? », « Comment je lance les dés à la main ? »
 
-### 3.2 Les jets
+### 3.2 Jets
 
-**Quand un jet a lieu.** Le MJ ne demande un jet que si l'issue est incertaine et importante. Sinon, il dit oui, ou « oui, mais ». Avant ton jet, le MJ dit ce qui est en jeu et quels tests conviennent, puis s'arrête. Tu lances, ou tu changes d'avis :
+**Quand un jet a lieu.** Le MJ demande un jet seulement quand le résultat est incertain et compte. Sinon, il dit oui, ou « oui, mais ». Avant ton jet, le MJ dit ce qui est en jeu et quels tests conviennent, puis s'arrête. Tu lances, ou tu changes d'avis :
 
-> **MJ :** La corniche est étroite et mouillée. Si tu glisses, c'est une longue chute jusqu'à la rivière. Un test de Dextérité (Acrobaties), ou tu peux faire demi-tour et chercher l'escalier.
+> **MJ :** La corniche est étroite et mouillée. Si tu glisses, c'est une longue chute jusque dans la rivière. Un test de Dextérité (Acrobaties), ou tu peux revenir chercher les escaliers.
 >
 > **Toi :** Je tente.
 
-**Lancer sur le tableau de bord.** Quand le MJ le demande, une bannière apparaît en haut de la page, avec un bouton pour chaque test, par exemple *Acrobaties +4 · avec avantage*. Clique dessus : les dés tombent sur la page, et le MJ entend le résultat. Tu peux aussi :
+**Lancer sur le tableau de bord.** Quand le MJ le demande, une bannière apparaît en haut de la page avec un bouton pour chaque test, par exemple *Acrobaties +4 · avec avantage*. Clique dessus : les dés tombent sur la page, et le MJ entend le résultat. Tu peux aussi :
 
 - cliquer sur la ligne correspondante de ta fiche, qui s'illumine en or ;
 - lancer les bons dés depuis la piste de dés ;
-- écrire tes propres mots dans la bannière à la place, si tu veux faire autre chose.
+- écrire plutôt tes propres mots dans la bannière, si tu veux faire autre chose.
 
-**Lancer à la main.** Si tu préfères choisir les dés toi-même, active **À la main** dans le coin de la bannière (ou dans les **Paramètres**). Le bouton du test disparaît, et la bannière dit quoi lancer, comme le ferait un MJ : *Lance toi-même Acrobaties, sur ta fiche ou avec les dés.* Clique sur la ligne de ta fiche qui s'illumine, ou lance les bons dés depuis la piste de dés : RPG Engine les lance, ajoute ton bonus et le MJ entend le résultat. Un test que ni ta fiche ni la piste de dés ne peuvent faire, comme des dégâts qui relancent les 1, garde son bouton. À la main reste activé dans ce navigateur jusqu'à ce que tu le désactives.
+**Lancer à la main.** Si tu préfères choisir les dés toi-même, active **À la main** dans le coin de la bannière (ou dans les **Paramètres**). Le bouton du test disparaît, et la bannière dit quoi lancer comme le ferait un MJ : *Lance Acrobaties toi-même, sur ta fiche ou avec les dés.* Clique sur la ligne de ta fiche qui s'illumine, ou lance les bons dés depuis la piste de dés : RPG Engine les lance, ajoute ton bonus et le MJ entend le résultat. Un test que ni ta fiche ni la piste de dés ne peuvent faire, comme des dégâts qui relancent les 1, garde son bouton. À la main reste activé dans ce navigateur jusqu'à ce que tu le désactives.
 
-**Des dés physiques pour toute la partie.** Avec le réglage **Dés** sur physiques, le MJ te demande tes jets avec des mots et tu écris les faces que tu as obtenues :
+**Dés physiques pour toute la partie.** Quand le réglage **Dés** est sur physiques, le MJ demande tes jets avec des mots et tu écris les faces obtenues :
 
 > [J'ai fait 14.]
 
@@ -255,19 +255,19 @@ RPG Engine ajoute tes modificateurs et refuse une face que tes dés ne peuvent p
 
 **Jets libres.** Clique sur n'importe quel nombre de ta fiche, ou ouvre la piste de dés, pour lancer juste pour le plaisir. Les jets libres ne comptent jamais, ne sont jamais enregistrés, et le MJ ne les voit jamais. Un 20 libre ne devient jamais un vrai 20 plus tard.
 
-**Les jets du MJ.** Le MJ lance aussi avec RPG Engine pour les ennemis et les autres. La plupart des jets sont affichés dans ta colonne des jets. Quand tu ne dois pas voir un résultat, le MJ lance en secret. Tu peux toujours demander :
+**Les jets du MJ.** Le MJ lance aussi pour les ennemis et les autres avec RPG Engine. La plupart des jets s'affichent dans ta colonne de jets. Quand tu ne dois pas voir un résultat, le MJ lance en secret. Tu peux toujours demander :
 
-> [Ce jet était vrai ?]
+> [Ce jet était-il réel ?]
 
-Pour un jet affiché, le MJ donne ses chiffres et sa raison. Pour un jet secret, une empreinte qui prouve que le jet a été fait avant que tu demandes.
+Pour un jet affiché, le MJ donne ses chiffres et sa raison. Pour un jet secret, une empreinte qui prouve que le jet a été fait avant ta question.
 
-**Les jets dans le chat** apparaissent entre crochets, juste après le moment qu'ils décident : *[Persuasion 14 + 3 = 17]*. Puis l'histoire raconte l'issue.
+**Les jets dans le chat** apparaissent entre crochets, juste après le moment qu'ils décident : *[Persuasion 14 + 3 = 17]*. Ensuite, l'histoire raconte l'issue.
 
 ### 3.3 Scènes et combats
 
-Le MJ mène l'histoire en **scènes** : un combat, une conversation, une exploration, un voyage, un repos, un défi (une poursuite, une course, une énigme). Tu n'as pas à les gérer : c'est ainsi que RPG Engine tient les chapitres de l'histoire. À la fin de chaque scène, le jeu se sauvegarde tout seul, et la scène entre dans l'histoire de ton journal.
+Le MJ mène l'histoire en **scènes** : un combat, une conversation, une exploration, un voyage, un repos, un défi (une poursuite, une course, une énigme). Tu n'as pas à les gérer : c'est ainsi que RPG Engine garde les chapitres de l'histoire. À la fin de chaque scène, le jeu se sauvegarde tout seul, et la scène entre dans l'histoire de ton journal.
 
-**Dans un combat**, le MJ raconte tous les tours qui ne sont pas les tiens, l'un après l'autre, avec chaque jet, et **s'arrête là où tu peux décider** : ton tour, une réaction, un choix. À ton tour, dis ce que tu fais :
+**Pendant un combat**, le MJ raconte tous les tours qui ne sont pas les tiens, l'un après l'autre, avec chaque jet, et **s'arrête là où tu peux décider** : ton tour, une réaction, un choix. À ton tour, dis ce que tu fais :
 
 > Je lance Flamme sacrée sur celui qui est près de la porte.
 
@@ -275,53 +275,59 @@ La section **Combat** du tableau de bord montre l'ordre des tours, à qui c'est 
 
 **Quand le combat est déjà décidé**, le MJ peut proposer de raconter la suite en un seul message.
 
-### 3.4 Temps, voyages et monde en mouvement
+### 3.4 Temps, voyage et monde qui bouge
 
-**Le temps.** Chaque action prend du temps dans l'histoire, et RPG Engine tient la date : jour 3, tôt le matin. Le MJ dit l'heure comme le monde la mesure : l'aube, la troisième cloche, la tombée de la nuit. Entre les sessions, aucun temps ne passe : tu reprends là où tu t'es arrêté.
+**Le temps.** Chaque action prend du temps dans l'histoire, et RPG Engine tient la date : jour 3, tôt le matin. Le MJ donne l'heure comme le monde la mesure : l'aube, la troisième cloche, la tombée de la nuit. Entre les sessions, le temps ne passe pas : tu reprends là où tu t'es arrêté·e.
 
-**Les repos.** Dis que tu te reposes, et le MJ applique ce qu'un repos rend, comme les points de vie et les emplacements de sorts :
+**Repos.** Dis que tu te reposes, et le MJ applique ce qu'un repos rend, comme les points de vie et les emplacements de sorts :
 
-> On installe le camp et on prend un repos long.
+> On installe le camp et on fait un repos long.
 
-**Les voyages.** Dis où tu veux aller :
+**Voyage.** Dis où tu veux aller :
 
 > On prend la route du nord vers Rocca.
 
-RPG Engine calcule le chemin, la distance et les jours à ton allure, et t'y emmène. Un voyage s'arrête quand un événement prévu survient en chemin, à la fin de chaque journée de marche, et à l'arrivée. Tu peux demander à quelle distance se trouve un lieu avant de partir :
+RPG Engine calcule le chemin, la distance et les jours à ton allure, et t'y déplace. Un voyage s'arrête quand un événement prévu survient en chemin, à la fin de chaque journée de marche, et à l'arrivée. Tu peux demander à quelle distance se trouve un lieu avant de partir :
 
-> [À quelle distance est Rocca, et combien de temps ça prendrait à pied ?]
+> [À quelle distance est Rocca, et combien de temps faut-il à pied ?]
 
-**Le monde avance sans toi.** Les méchants ont des plans avec des échéances et des horloges. Chaque nouveau jour, le MJ fait avancer les menaces que le temps a fait progresser, et tu en vois les signes : une rumeur, une trace, un changement en ville. Tu ne vois jamais l'horloge elle-même, seulement ce qu'elle laisse derrière elle.
+**Le monde bouge sans toi.** Les méchants ont des plans avec des échéances et des horloges. Chaque nouveau jour, le MJ fait avancer les menaces que le temps a fait progresser, et tu en vois les signes : une rumeur, une trace, un changement en ville. Tu ne vois jamais l'horloge elle-même, seulement ce qu'elle laisse derrière elle.
 
-**L'argent** est compté dans les pièces du jeu. Payer, vendre, être payé : RPG Engine rend la monnaie.
+**L'argent** se compte en pièces du jeu. Payer, vendre, être payé : RPG Engine rend la monnaie.
 
-### 3.5 Les cartes
+### 3.5 Cartes
 
-**La carte du monde** (tableau de bord : **Monde**) ne montre que les lieux que ton personnage connaît, avec les routes entre eux, le chemin que tu as parcouru, et le brouillard sur tout le reste. Clique sur un lieu pour voir ce que tu en sais et à quelle distance il se trouve.
+**La carte du monde** (tableau de bord : **Monde**) montre seulement les lieux que ton personnage connaît, avec les routes entre eux, le chemin que tu as parcouru, et le brouillard sur tout le reste. Clique sur un lieu pour voir ce que tu en sais et à quelle distance il se trouve.
 
-**La carte d'un lieu** (tableau de bord : **Scène**, et **Combat** pendant un combat) apparaît quand le MJ en dessine une pour l'endroit où tu te trouves : murs, portes, sol, et qui se tient où, sous forme de pions. Dans un combat, à ton tour, les cases que tu ne peux pas atteindre sont voilées, donc tu vois d'un coup d'œil où tu peux aller. Quand le MJ demande où ton personnage se déplace, la page ouvre la carte et tu touches une case, ou tu l'écris, par exemple *E4*.
+**La carte d'un lieu** (tableau de bord : **Scène**, et **Combat** pendant un combat) apparaît quand le MJ en dessine une pour l'endroit où tu es : murs, portes, sol, et qui se tient où, sous forme de pions. Pendant un combat, à ton tour, les cases que tu ne peux pas atteindre sont voilées, pour que tu voies d'un coup d'œil où tu peux aller. Quand le MJ demande où ton personnage se déplace, la page ouvre la carte et tu touches une case, ou tu l'écris, par exemple *E4*.
 
 ### 3.6 Quêtes, journal et notes
 
-**Quêtes.** Quand ton personnage se charge d'une tâche, elle devient une quête dans ton **Journal** : qui l'a confiée, où, pour quand, ses objectifs sous forme de liste, et ce qu'elle mesure (une échéance avec le temps restant, une horloge, un décompte). Marque-en une avec son étoile pour la suivre : elle reste en petit en haut de Scène, avec son prochain objectif. La quête se termine quand l'histoire la termine, jamais toute seule.
+**Quêtes.** Quand ton personnage prend une tâche en charge, elle devient une quête dans ton **Journal** : qui l'a donnée, où, pour quand, ses objectifs sous forme de liste, et ce qu'elle mesure (une échéance avec le temps restant, une horloge, un compte). Marque-en une avec son étoile pour la suivre : elle reste en petit en haut de Scène, avec son prochain objectif. La quête se termine quand l'histoire la termine, jamais toute seule.
 
 **L'histoire.** L'onglet Histoire du Journal est ta campagne sous forme de chronologie : chaque scène est un chapitre, avec son lieu, sa date et un court résumé, la plus récente en premier.
 
-**Tes notes.** Dans l'onglet Notes du Journal, tu écris tes propres notes : théories, noms, plans. Elles restent sur ton ordinateur et le MJ ne les lit pas, sauf si tu en **Partages** une. Une note partagée parvient au MJ à sa prochaine réponse comme ce que tu penses, jamais comme un fait. Ta théorie ne devient pas vraie parce que tu l'as écrite. Une note qui demande d'arrêter ou d'éviter un contenu compte comme si tu l'avais dit à la table.
+**Tes notes.** Dans l'onglet Notes du Journal, tu écris tes propres notes : théories, noms, plans. Elles restent sur ton ordinateur et le MJ ne les lit pas, sauf si tu en **Partager** une. Une note partagée parvient au MJ à sa prochaine réponse comme ce que tu penses, jamais comme un fait. Ta théorie ne devient pas vraie parce que tu l'as écrite. Une note qui demande d'arrêter ou d'éviter un contenu compte comme si tu l'avais dit à la table.
 
 ### 3.7 L'histoire et l'image de ton personnage
 
-Sur la fiche de ton personnage, la carte **Description** contient une zone pour écrire l'histoire de ton personnage. Envoie-la, et le MJ l'écrit dans le personnage avec ses propres mots, après que tu as dit oui.
+Sur la fiche de ton personnage, la carte **Description** contient une zone pour écrire l'histoire de ton personnage. Envoie-la, et le MJ l'écrit dans le personnage avec ses propres mots, après ton accord.
 
-Pour l'image de ton personnage, donne au MJ un fichier d'image dans le chat, avec son emplacement sur ton ordinateur (PNG, JPEG, WebP ou SVG, jusqu'à 5 Mo) :
+Pour l'image de ton personnage, donne au MJ un fichier image dans le chat, avec son emplacement sur ton ordinateur (PNG, JPEG, WebP ou SVG, jusqu'à 5 Mo) :
 
 > [Voici le portrait de mon personnage : C:\Users\me\Pictures\mira.png]
 
-Le MJ la copie dans la campagne, et elle apparaît sur le pion de ton personnage dans le tableau de bord. Tu peux la changer de la même façon quand tu veux. RPG Engine lui-même ne dessine que des lieux et des quêtes (voir [Images](#311-pictures)).
+Le MJ le copie dans la campagne, et il apparaît sur le pion de ton personnage sur le tableau de bord. Tu peux le changer de la même façon quand tu veux.
 
-### 3.8 Sauvegardes et retour en arrière
+Ou fais créer le portrait, là où ton ordinateur sait créer des images (voir [Images](#311-pictures)) : décris ton personnage au MJ, ou laisse le MJ le décrire.
 
-RPG Engine sauvegarde toute la campagne **à la fin de chaque scène**, tout seul. Ce que tu peux faire de ces sauvegardes dépend du réglage **Sauvegardes** :
+> [Fais-moi un portrait : cheveux gris tressés, une cicatrice au menton, des yeux fatigués.]
+
+Le portrait montre exactement ce qu'est ton personnage dans le jeu, son peuple tel que ce monde le présente, un nain des collines en nain des collines, avec l'apparence que tu as décrite. Il arrive en une minute environ, sur le pion de ton personnage. Tes compagnons peuvent avoir le leur de la même façon.
+
+### 3.8 Sauvegardes et retours en arrière
+
+RPG Engine sauvegarde toute la campagne **à la fin de chaque scène**, tout seul. Ce que tu peux faire avec ces sauvegardes dépend du réglage **Sauvegardes** :
 
 | Sauvegardes | Sauvegarder quand tu veux | Revenir en arrière |
 |---|---|---|
@@ -343,19 +349,19 @@ Tu peux tout faire dans le chat (« [Revenons à avant le duel.] ») ou dans la 
 
 Il n'y a pas de « sauvegarder et quitter » : tout est déjà dans les fichiers.
 
-**Pour fermer** le chat, écris `/exit` dans Claude Code, ou `/quit` dans Codex. Le tableau de bord devient silencieux jusqu'au prochain chat.
+**Pour fermer** le chat, écris `/exit` dans Claude Code, ou `/quit` dans Codex. Le tableau de bord se tait jusqu'au prochain chat.
 
-**Pour revenir**, ouvre un terminal dans le dossier de la campagne (celui qu'`init` a affiché), lance ton hôte dedans et écris *continue*. Le MJ lit où en est le jeu, te fait un court résumé, et commence par quelque chose qui se passe. Un nouveau chat ne fait rien perdre : la campagne vit dans ses fichiers, pas dans le chat.
+**Pour revenir**, ouvre un terminal dans le dossier de la campagne (celui qu'`init` a affiché), lance ton hôte dedans et écris *continue*. Le MJ lit où en est le jeu, te fait un court récapitulatif, et commence par quelque chose qui se passe. Un nouveau chat ne fait rien perdre : la campagne vit dans ses fichiers, pas dans le chat.
 
-Le MJ ne pose pas de questions de routine à la fin. Seulement s'il a remarqué que quelque chose n'a pas fonctionné, il demande brièvement.
+Le MJ ne pose pas de questions de routine à la fin. Seulement s'il a remarqué que quelque chose n'a pas marché, il le demande brièvement.
 
 ### 3.10 L'humeur du MJ
 
-En haut du tableau de bord se trouve l'avatar du MJ, un petit robot. Son visage suit le ton de l'histoire : inquiet quand le danger grandit, ravi devant une idée audacieuse, surpris par un rebondissement. Il réagit un instant à un 20 naturel ou à un 1 naturel. Il ne montre jamais ce que tu ne sais pas encore : pas de sourire avant que le piège ne se referme. Les pions de ton groupe montrent aussi leurs humeurs. Quand le chat est fermé, le robot dort.
+En haut du tableau de bord se trouve l'avatar du MJ, un petit robot. Son visage suit le ton de l'histoire : inquiet quand le danger grandit, ravi devant une idée audacieuse, surpris par un retournement. Il réagit un instant à un 20 naturel ou à un 1 naturel. Il ne montre jamais ce que tu ignores encore : pas de sourire avant que le piège ne se referme. Les pions de ton groupe montrent aussi leurs humeurs. Quand le chat est fermé, le robot dort.
 
 ### 3.11 Images
 
-RPG Engine peut faire créer une image pour chaque lieu où tu arrives et chaque quête que tu prends, selon ce que dit le réglage **Images**. Il utilise ce qui est déjà sur ton ordinateur :
+RPG Engine peut faire créer une image pour chaque lieu où tu arrives et chaque quête que tu prends, selon le réglage **Images**, ainsi que le portrait de ton personnage quand tu le demandes. Il utilise ce qui se trouve déjà sur ton ordinateur :
 
 - **Codex**, avec ta connexion ChatGPT : une image peinte.
 - Sinon **Claude Code**, avec ta connexion Claude : un dessin.
@@ -365,7 +371,7 @@ L'image utilise ton propre abonnement, pas le nôtre. La section **Paramètres**
 ### 3.12 Sécurité : lignes, voiles et stop
 
 - **Lignes** : ce qui n'apparaît jamais dans le jeu.
-- **Voiles** : ce qui peut arriver, mais seulement hors-champ.
+- **Voiles** : ce qui peut arriver, mais seulement hors champ.
 - **Stop** : à tout moment, tu peux arrêter un contenu, sans avoir à t'expliquer. Écris-le hors de l'histoire :
 
 > [stop]
@@ -374,7 +380,7 @@ Le MJ l'abandonne aussitôt et l'ajoute à tes lignes, pour toutes les sessions 
 
 ### 3.13 Changer d'avis
 
-Chaque réglage peut changer pendant la campagne : dans le chat (« [Rends le jeu plus difficile.] ») ou dans les **Paramètres**. Le MJ prend connaissance d'un changement à sa prochaine réponse. Une décision que le MJ a prise sans le livre devient un **précédent** et est conservée, pour que la même question reçoive la même réponse la prochaine fois.
+Chaque réglage peut changer pendant la campagne : dans le chat (« [Rends-le plus difficile.] ») ou dans les **Paramètres**. Le MJ prend connaissance du changement à sa prochaine réponse. Une décision que le MJ a prise sans le livre devient un **précédent** et est conservée, pour que la même question reçoive la même réponse la prochaine fois.
 
 ---
 

@@ -279,7 +279,7 @@ function guideBrief(language: string, english: string): string
         "with an AI game master in a chat (Claude Code or Codex), with a page in the browser beside it, the dashboard. The reader is a player who does not program.",
         `- Write natural, clear ${name}, in short sentences, as the manual of a well-made game would.`,
         `- How it speaks: ${glossary.voice[language] ?? "address the player informally, where the language has an informal you."}`,
-        "- Keep the markdown as it is: the same headings, in the same order and levels, each with its <!-- icon: ... --> comment untouched; the same lists,",
+        "- Keep the markdown as it is: the same headings, in the same order and levels, their words translated, each with its <!-- icon: ... --> comment untouched; the same lists,",
         "  tables, quotes and blank lines.",
         "- Keep each link's target in parentheses exactly, such as (#24-connect-your-ai) or a web address; translate the link's words.",
         "- Keep each block of code between ``` exactly: commands, and what a command prints. In `inline code`, keep commands, file names, keys and paths as",

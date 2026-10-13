@@ -41,6 +41,10 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(quest).toContain('viewBox="0 0 1600 600" (16:6)');
         expect(quest).toContain("Primary request: the quest La campana, as an emblem of what it is about: una campana sommersa");
         expect(quest).not.toContain("Never show");
+        const portrait = svgBrief({ kind: "portrait", name: "Mira", who: "Hill Dwarf, Dwarf; Level 3 Cleric", seen: "una chierica dai capelli grigi", unseen: [] });
+        expect(portrait).toContain('viewBox="0 0 1024 1024" (1:1)');
+        expect(portrait).toContain("Primary request: a portrait of Mira, Hill Dwarf, Dwarf; Level 3 Cleric: una chierica dai capelli grigi");
+        expect(portrait).toContain("Faithfulness: exactly what the game says they are (Hill Dwarf, Dwarf; Level 3 Cleric)");
     });
 });
 

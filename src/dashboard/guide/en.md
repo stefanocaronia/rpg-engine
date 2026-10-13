@@ -65,7 +65,7 @@ RPG Engine is made for any tabletop RPG. Today it ships one game system: **fifth
 - The **largest model** your host offers. A small model gets fooled: in our tests it told secrets to a player who claimed to be the real master.
 - A web browser, for the dashboard.
 
-The login you use for your host does more: RPG Engine uses it, on your computer, to draw pictures of places and to translate the dashboard into languages it does not ship. See [Pictures](#311-pictures) and [Languages](#72-languages).
+The login you use for your host does more: RPG Engine uses it, on your computer, to draw pictures of places, quests and your character, and to translate the dashboard into languages it does not ship. See [Pictures](#311-pictures) and [Languages](#72-languages).
 
 **Getting a terminal into a folder.** Many steps say "in the campaign folder". On Windows, right-click the folder in File Explorer and choose **Open in Terminal**. On macOS, right-click the folder in Finder and choose **Services > New Terminal at Folder**. Or, in a terminal already open, write `cd` and the folder's path, such as `cd "C:\Users\me\Games\The Salt Isles"`.
 
@@ -170,7 +170,7 @@ You do not need to study the table: it is here to look up. You can change every 
 | **Dice** | Who rolls your character's dice | **digital** (RPG Engine rolls them, on the page), **physical** (you roll your own and tell the faces) | |
 | **Units** | Distances and weights in the story | metric, imperial | |
 | **Companions** | Who travels with you | none, made with you in session zero, made by the master, met in play | |
-| **Pictures** | Pictures of places and quests | none, on request, new places and quests | asked once, only if your computer can make them |
+| **Pictures** | Pictures of places and quests, and your character's portrait when you ask | none, on request, new places and quests | asked once, only if your computer can make them |
 | **Lines** | What never appears in the game | a list, or none | |
 | **Veils** | What may happen, but only off screen | a list, or none | |
 | **Language** | The language of the game and the dashboard | any | taken from how you write, and confirmed |
@@ -194,7 +194,7 @@ Session zero is play: you make your character with the master, as you would at a
 - **Ability scores.** The master tells you the method and the safety net before any die is rolled. In fifth edition: the standard array, point buy, or 4d6 drop the lowest. The method you agree on stays in the table's agreements.
 - **Your story** is never required. If you give one, the master writes it in your words, reads it back to you once, and ties its people and places into the world. You can also write it on the dashboard (see [Party](#party)).
 - **Personality** (fifth edition): a trait, an ideal, a bond and a flaw, from your background's tables or your own.
-- **A picture.** Once your character is made, the master asks you for a picture of them: a file on your computer. If your AI host can draw pictures by itself, the master may offer to make one.
+- **A picture.** Once your character is made, the master asks you for a picture of them: a file on your computer, or a portrait made on your computer from how you describe them (see [your character's picture](#37-your-characters-story-and-picture)).
 
 The sheet's numbers are worked out by RPG Engine from your choices: you never do the sums. When the characters are made and you confirm, the story begins.
 
@@ -316,7 +316,13 @@ For your character's picture, give the master a picture file in the chat, with w
 
 > [Here's my character's portrait: C:\Users\me\Pictures\mira.png]
 
-The master copies it into the campaign, and it appears on your character's token on the dashboard. You can change it the same way whenever you want. RPG Engine itself draws only places and quests (see [Pictures](#311-pictures)).
+The master copies it into the campaign, and it appears on your character's token on the dashboard. You can change it the same way whenever you want.
+
+Or have the portrait made, where your computer makes pictures (see [Pictures](#311-pictures)): describe your character to the master, or let the master describe them.
+
+> [Make me a portrait: grey hair in a braid, a scar on the chin, tired eyes.]
+
+The portrait shows exactly what your character is in the game, their people as this world has them, a hill dwarf as a hill dwarf, with the look you described. It comes in a minute or so, on your character's token. Your companions can have theirs the same way.
 
 ### 3.8 Saves and going back
 
@@ -354,7 +360,7 @@ At the top of the dashboard sits the master's avatar, a small robot. Its face fo
 
 ### 3.11 Pictures
 
-RPG Engine can have a picture made for each place you reach and each quest you take, as the **pictures** setting says. It uses what is already on your computer:
+RPG Engine can have a picture made for each place you reach and each quest you take, as the **pictures** setting says, and your character's portrait when you ask. It uses what is already on your computer:
 
 - **Codex**, with your ChatGPT login: a painted picture.
 - Otherwise **Claude Code**, with your Claude login: a drawing.

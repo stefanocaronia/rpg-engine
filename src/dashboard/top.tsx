@@ -93,7 +93,7 @@ export function Top(top: TopOf)
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
-            <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true">
+            <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true" inert={!past}>
                 <MasterHome top={top} poke={poke} onHome={home} />
                 <span class="top-bar-title">
                     <a class="title-home" href={sectionAddress("party")} onClick={home}>{title}</a>

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 b69f95b1 5738adad 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 8b2b048d 7705224a 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tabletopową grę fabularną z **AI w roli Mistrza Gry**.
@@ -59,16 +59,16 @@ RPG Engine jest stworzony z myślą o dowolnej tradycyjnej grze fabularnej. Dzi�
 
 ### 2.1 Czego potrzebujesz
 
-- Komputera z Windows, macOS lub Linuksem.
-- **Node.js 22** lub nowszego. Pobierz go ze strony [nodejs.org](https://nodejs.org): wersja „LTS" wystarczy. Razem z nim dostajesz `npm`, które instaluje RPG Engine.
-- **Terminala**, czyli okna, w którym wpisujesz polecenia: w Windows to aplikacja Terminal lub PowerShell, w macOS Terminal. Używasz go do instalacji RPG Engine, do tworzenia każdej kampanii i do uruchamiania Claude Code lub Codex.
-- **Hosta AI**, czyli aplikacji, w której działa Mistrz Gry: **Claude Code** lub **Codex**, wraz z planem i kontem. Zobacz [2.4](#24-connect-your-ai).
-- **Największego modelu**, jaki oferuje twój host. Mały model daje się oszukać: w naszych testach wyjawił sekrety graczowi, który twierdził, że jest prawdziwym Mistrzem Gry.
-- Przeglądarki internetowej, do panelu.
+- Komputera z systemem Windows, macOS lub Linux.
+- **Node.js 22** lub nowszego. Pobierzesz go ze strony [nodejs.org](https://nodejs.org): wersja „LTS" wystarczy. W pakiecie jest `npm`, który instaluje RPG Engine.
+- **Terminala**, czyli okna, w którym wpisujesz polecenia: w Windows to aplikacja Terminal albo PowerShell, w macOS to Terminal. Używasz go, by zainstalować RPG Engine, utworzyć każdą kampanię i uruchomić Claude Code lub Codex.
+- **Hosta AI**, czyli aplikacji, w której działa Mistrz Gry: **Claude Code** lub **Codex**, z planem i logowaniem. Zobacz [2.4](#24-connect-your-ai).
+- **Największego modelu**, jaki oferuje twój host. Mały model daje się oszukać: w naszych testach wyjawił sekrety graczowi, który podał się za prawdziwego Mistrza Gry.
+- Przeglądarki internetowej, dla dashboardu.
 
-Konto, którego używasz w hoście, służy do czegoś jeszcze: RPG Engine korzysta z niego na twoim komputerze, żeby rysować obrazy miejsc i tłumaczyć panel na języki, których nie ma w zestawie. Zobacz [Obrazy](#311-pictures) i [Języki](#72-languages).
+Logowanie, którego używasz w hoście, służy do czegoś jeszcze: RPG Engine korzysta z niego na twoim komputerze, by rysować obrazy miejsc, zadań i twojej postaci oraz by tłumaczyć dashboard na języki, których nie ma w zestawie. Zobacz [Obrazy](#311-pictures) i [Języki](#72-languages).
 
-**Jak otworzyć terminal w folderze.** Wiele kroków mówi „w folderze kampanii". W Windows kliknij folder prawym przyciskiem w Eksploratorze plików i wybierz **Otwórz w Terminalu**. W macOS kliknij folder prawym przyciskiem w Finderze i wybierz **Usługi > Nowy terminal w folderze**. Możesz też w otwartym już terminalu wpisać `cd` i ścieżkę folderu, na przykład `cd "C:\Users\me\Games\The Salt Isles"`.
+**Jak otworzyć terminal w folderze.** Wiele kroków mówi „w folderze kampanii". W Windows kliknij folder prawym przyciskiem w Eksploratorze plików i wybierz **Otwórz w terminalu**. W macOS kliknij folder prawym przyciskiem w Finderze i wybierz **Usługi > Nowy terminal w folderze**. Możesz też w otwartym już terminalu wpisać `cd` i ścieżkę folderu, na przykład `cd "C:\Users\me\Games\The Salt Isles"`.
 
 ### 2.2 Instalacja
 
@@ -78,13 +78,13 @@ Otwórz terminal i wpisz:
 npm install -g rpg-engine
 ```
 
-Dzięki temu masz polecenie `rpg`. Żeby sprawdzić, czy się udało:
+Dzięki temu masz polecenie `rpg`. Aby sprawdzić, czy się udało:
 
 ```text
 rpg --version
 ```
 
-Polecenia `rpg` użyjesz raz na kampanię, żeby ją utworzyć. Potem tylko rozmawiasz z Mistrzem Gry: twój host AI sam uruchamia RPG Engine, tym samym poleceniem `rpg`.
+Polecenia `rpg` użyjesz raz na kampanię, by ją utworzyć. Potem już tylko rozmawiasz z Mistrzem Gry: twój host AI sam uruchamia RPG Engine tym samym poleceniem `rpg`.
 
 ### 2.3 Tworzenie kampanii
 
@@ -94,7 +94,7 @@ Kampania to folder. Otwórz terminal w folderze, w którym trzymasz swoje gry, i
 rpg init "The Salt Isles"
 ```
 
-Powstaje folder `The Salt Isles` z nową kampanią w środku, a terminal mówi, co robić dalej:
+To tworzy folder `The Salt Isles` z nową kampanią w środku i mówi, co robić dalej:
 
 ```text
 Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
@@ -103,101 +103,101 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Wiersze po *For the master* są dla Mistrza Gry, który przeczyta je na czacie: ty nie musisz nic z nimi robić. Zapamiętaj, gdzie jest folder: wracasz do niego za każdym razem, gdy grasz. Bez nazwy folderu `rpg init` zamienia w kampanię folder, w którym jesteś.
+Wiersze po *For the master* są dla Mistrza Gry, który czyta je na czacie: ty nie musisz się nimi zajmować. Zapamiętaj, gdzie jest folder: wracasz do niego przy każdej grze. Bez nazwy folderu `rpg init` zamienia w kampanię folder, w którym jesteś.
 
-`init` tworzy wszystko, czego kampania potrzebuje: jej ustawienia, foldery świata i małe pliki, które każą twojemu hostowi AI używać RPG Engine i nie przechowywać własnej pamięci poza kampanią.
+`init` tworzy wszystko, czego kampania potrzebuje: ustawienia, foldery świata oraz małe pliki, które mówią twojemu hostowi AI, by używał RPG Engine i nie prowadził własnej pamięci poza kampanią.
 
-Nie musisz teraz niczego wybierać. Resztę Mistrz Gry zapyta na czacie albo wybierzesz w panelu. Jeśli znasz już część wyborów, możesz je podać tutaj:
+Nie musisz teraz niczego wybierać. Resztę Mistrz Gry zapyta na czacie albo wybierzesz ją w dashboardzie. Jeśli część wyborów już znasz, możesz je podać od razu:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
 ```
 
-Powstaje folder `salt-isles` z kampanią *The Salt Isles* w środku: nazwa folderu bez spacji, a nazwa kampanii taka, jaką chcesz.
+To tworzy folder `salt-isles` z kampanią *The Salt Isles* w środku: nazwa folderu bez spacji, a nazwa kampanii taka, jaką chcesz.
 
 | Opcja | Co ustawia | Wartości |
 |---|---|---|
-| `--name` | Nazwę kampanii | dowolna; jeśli ją pominiesz, nazwa folderu |
+| `--name` | Nazwę kampanii | dowolna; nazwa folderu, jeśli ją pominiesz |
 | `--language` | Język gry | kod, na przykład `en`, `it`, `fr` |
-| `--system` | System gry | `5e`, dziś jedyny |
+| `--system` | System gry | `5e`, na razie jedyny |
 | `--difficulty` | Jak trudny jest świat | `story`, `easy`, `normal`, `hard`, `brutal` |
 | `--lethality` | Co oznacza upadek w walce | `narrative`, `epic`, `dice` |
 
-`rpg init --help` też je wymienia. Kampania nie może leżeć w folderze innej kampanii.
+`rpg init --help` też je wypisuje. Kampania nie może leżeć w folderze innej kampanii.
 
 Nie możesz poprosić Mistrza Gry o utworzenie kampanii: przed `init` w folderze nie ma niczego, co mówiłoby twojemu hostowi AI, gdzie jest RPG Engine.
 
 ### 2.4 Połączenie z AI
 
-RPG Engine działa z **Claude Code** i **Codex**. Inne aplikacje AI korzystające z narzędzi MCP mogą też działać, ale tego nie gwarantujemy.
+RPG Engine działa z **Claude Code** i **Codex**. Inne aplikacje AI, które używają narzędzi MCP, mogą też działać, ale tego nie gwarantujemy.
 
-**Instalacja hosta.** Claude Code i Codex działają w terminalu: to nie jest aplikacja Claude ani ChatGPT na telefonie. Każdy wymaga własnego planu i konta: Claude Code płatnego planu Claude, Codex konta ChatGPT. Zainstaluj je i zaloguj się według ich własnych stron: [Claude Code](https://code.claude.com/docs/en/setup) i [Codex](https://learn.chatgpt.com/docs/codex/cli). Robisz to raz, dla wszystkich swoich kampanii.
+**Instalacja hosta.** Claude Code i Codex działają w terminalu: to nie jest aplikacja Claude ani ChatGPT na telefonie. Każdy wymaga własnego planu i logowania: Claude Code płatnego planu Claude, Codex logowania do ChatGPT. Instrukcje instalacji i logowania znajdziesz na ich stronach: [Claude Code](https://code.claude.com/docs/en/setup) i [Codex](https://learn.chatgpt.com/docs/codex/cli). Robisz to raz, dla wszystkich swoich kampanii.
 
-**Claude Code.** Otwórz terminal w folderze kampanii i wpisz `claude`. Za pierwszym razem zapyta, czy ufasz folderowi, i powie, że folder zezwala na narzędzia gry (`mcp__rpg`): wybierz **Yes, I trust this folder**. Uwaga: domyślnie zaznaczona odpowiedź to *No, exit*, więc naciśnięcie Enter od razu zamknie Claude Code. To wszystko: kampania już powiedziała Claude Code, żeby używał RPG Engine i jego narzędzi oraz żeby wyłączył swoją pamięć.
+**Claude Code.** Otwórz terminal w folderze kampanii i wpisz `claude`. Za pierwszym razem zapyta, czy ufasz folderowi, i poinformuje, że folder zezwala na narzędzia gry (`mcp__rpg`): wybierz **Yes, I trust this folder**. Uwaga: domyślnie zaznaczona odpowiedź to *No, exit*, więc szybkie wciśnięcie Enter zamyka Claude Code. To wszystko: kampania już powiedziała Claude Code, by używał RPG Engine i jego narzędzi oraz by wyłączył swoją pamięć.
 
-**Codex.** Otwórz terminal w folderze kampanii i wpisz `codex`. Gdy zapyta, czy ufasz folderowi, odpowiedz twierdząco: własne ustawienia kampanii mówią Codexowi, gdzie jest RPG Engine, zezwalają na jego narzędzia i wyłączają jego pamięć, a Codex czyta je tylko w folderze, któremu ufasz. W aplikacji desktopowej sprawdź, czy pamięć jest wyłączona dla czatów gry.
+**Codex.** Otwórz terminal w folderze kampanii i wpisz `codex`. Gdy zapyta, czy ufasz folderowi, zgódź się: własne ustawienia kampanii mówią Codexowi, gdzie jest RPG Engine, zezwalają na jego narzędzia i wyłączają jego pamięć, a Codex czyta je tylko w folderze, któremu ufasz. W aplikacji desktopowej sprawdź, czy wspomnienia są wyłączone dla czatów gry.
 
-**Dlaczego pamięć ma znaczenie.** Kampania żyje w swoich plikach. Gdyby host pamiętał też coś sam z siebie, powrót do zapisu nie byłby prawdziwym powrotem: Mistrz Gry nadal pamiętałby to, co cofnięto.
+**Dlaczego pamięć ma znaczenie.** Kampania żyje w swoich plikach. Gdyby host pamiętał też coś na własną rękę, powrót do zapisu nie byłby prawdziwym powrotem: Mistrz Gry wciąż pamiętałby to, co cofnięto.
 
 ### 2.5 Pierwszy czat
 
 Napisz cokolwiek, na przykład:
 
-> Cześć! Zaczynajmy.
+> Cześć! Zaczynamy.
 
-Mistrz Gry sprawdza, na czym stoi gra, i odpowiada. W pierwszej odpowiedzi każdego czatu podaje **link do twojego panelu** (coś w rodzaju `http://127.0.0.1:4750`). Otwórz go w przeglądarce i trzymaj obok czatu przez całą grę. Każda kampania zachowuje ten sam link z czatu na czat, chyba że zajął go inny program: wtedy Mistrz Gry poda nowy.
+Mistrz Gry czyta, na czym stoi gra, i odpowiada. W pierwszej odpowiedzi każdego czatu podaje **link do twojego dashboardu** (coś takiego jak `http://127.0.0.1:4750`). Otwórz go w przeglądarce i trzymaj obok czatu przez całą grę. Każda kampania zachowuje ten sam link z czatu na czat, chyba że zajął go inny program: wtedy Mistrz Gry poda nowy.
 
-Między wiadomościami Mistrza Gry twój host pokazuje narzędzia, których Mistrz Gry używa, w krótkich wierszach. Nie otwieraj ich szczegółów (w Claude Code ctrl+o): mogą pokazywać to, co pisze Mistrz Gry, razem z sekretami.
+Między wiadomościami Mistrza Gry twój host pokazuje narzędzia, których Mistrz Gry używa, w krótkich wierszach. Nie otwieraj ich szczegółów (w Claude Code: ctrl+o): mogą pokazać to, co pisze Mistrz Gry, razem z sekretami.
 
-Nowa kampania przechodzi trzy etapy, jak gra z prawdziwym Mistrzem Gry. Panel pokazuje je u góry jako *1 Ustawienia · 2 Sesja zero · 3 Gra*:
+Nowa kampania przechodzi trzy etapy, jak gra z ludzkim Mistrzem Gry. Dashboard pokazuje je u góry jako *1 Ustawienia · 2 Sesja zero · 3 Gra*:
 
 1. **Ustawienia**: wybierasz, jak chcesz grać. Poza fabułą.
-2. **Sesja zero**: tworzysz swoją postać, w trakcie gry.
-3. **Gra**: historia.
+2. **Sesja zero**: tworzysz swoją postać, w grze.
+3. **Gra**: fabuła.
 
-### 2.6 Ustawienia: wybór sposobu gry
+### 2.6 Ustawienia: wybór stylu gry
 
-Mistrz Gry pyta tylko o to, czego jeszcze brakuje, po kilka pytań naraz. Jeśli napiszesz „ty decydujesz", Mistrz Gry wybiera i mówi ci, co wybrał. Gdy panel jest otwarty, jego pierwszy krok, **Ustawienia**, pokazuje te same pytania jako karty: jedno pytanie naraz, każda wartość z objaśnieniem, a zwykle wybierana oznaczona jako **Polecane**. Wybierz tam, a Mistrz Gry nie zapyta ponownie na czacie; **Pomiń** zostawia pytanie na później. Czat rozstrzyga to, co da się załatwić tylko słowami: założenie nowego świata, język i obrazy, o które Mistrz Gry pyta tylko wtedy, gdy twój komputer potrafi je tworzyć. Dlatego strona zadaje mniej pytań, niż wymienia tabela poniżej.
+Mistrz Gry pyta tylko o to, czego jeszcze brakuje, po kilka pytań naraz. Jeśli napiszesz „ty zdecyduj", Mistrz Gry wybiera i mówi ci, co wybrał. Gdy dashboard jest otwarty, jego pierwszy krok, **Ustawienia**, pokazuje te same pytania jako karty: jedno pytanie naraz, każda wartość z objaśnieniem, a zwykła oznaczona jako **Polecane**. Wybierz tam, a Mistrz Gry nie zapyta ponownie na czacie; **Pomiń** zostawia pytanie na później. Czat rozstrzyga to, co da się załatwić tylko słowami: założenie nowego świata, język oraz obrazy, o które Mistrz Gry pyta tylko wtedy, gdy twój komputer potrafi je tworzyć. Dlatego strona zadaje mniej pytań, niż wymienia tabela poniżej.
 
-Nie musisz uczyć się tabeli: jest do zaglądania. Każde z tych ustawień możesz zmienić później, na czacie lub w **Ustawieniach** panelu. Zmiana obowiązuje od następnej odpowiedzi Mistrza Gry.
+Nie musisz uczyć się tabeli: jest do zaglądania. Każde z tych ustawień możesz zmienić później, na czacie lub w **Ustawieniach** dashboardu. Zmiana działa od następnej odpowiedzi Mistrza Gry.
 
-| Ustawienie | O czym decyduje | Wartości | Polecane |
+| Ustawienie | Co rozstrzyga | Wartości | Polecane |
 |---|---|---|---|
-| **Mentor** (pytanie brzmi: „Jak dobrze znasz tę grę?") | Ile Mistrz Gry uczy cię zasad, poza fabułą | **wyłączony** (sama historia; pytaj w nawiasach kwadratowych, kiedy chcesz), **wskazówki** (krótka rada przed ważnymi wyborami i gdy umknie jakaś zasada), **samouczek** (każda zasada objaśniona przy pierwszym użyciu, pełne rachunki każdego rzutu, krótkie podsumowanie po walkach) | zależnie od twojej odpowiedzi: nigdy nie grałem → samouczek, trochę → wskazówki, znam grę → wyłączony |
-| **Poziom trudności** | Jak trudny jest świat: walki, taktyka wrogów, wskazówki, skarby, tempo zagrożeń | story, easy, normal, hard, brutal | |
-| **Śmiertelność** | Co oznacza upadek w walce | **narracyjna** (twoja postać nigdy nie ginie), **epicka** (ginie tylko wtedy, gdy ma to znaczenie dla historii), **na kościach** (decydują kości) | zależy od poziomu trudności: story → narracyjna, easy → epicka, normal i wyżej → na kościach |
-| **Zapisy** | Kiedy możesz wrócić | **permadeath** (nigdy; można tylko zacząć kampanię od nowa), **punkt kontrolny** (do ostatniego końca sceny, tylko jeśli twoja postać zginie), **swobodne** (do dowolnego zapisu, a zapisać możesz, kiedy poprosisz) | punkt kontrolny |
-| **Rygor** | Jak ściśle obowiązują zasady dotyczące jedzenia, światła, zmęczenia, udźwigu, składników czarów i podróży | **płynny** (Mistrz Gry pomija je), **zasady** (jak w podręczniku: pochodnie się wypalają, racje się kończą), **symulacja** (ponad zasady: zużycie, psucie się, pogoda) | płynny |
-| **Kości** | Kto rzuca kośćmi twojej postaci | **cyfrowe** (RPG Engine rzuca na stronie), **fizyczne** (rzucasz własnymi i podajesz wyniki) | |
-| **Jednostki** | Odległości i ciężary w historii | metryczne, imperialne | |
-| **Towarzysze** | Kto z tobą podróżuje | brak, stworzeni z tobą na sesji zero, stworzeni przez Mistrza Gry, spotkani w grze | |
-| **Obrazy** | Obrazy miejsc i zadań | brak, na prośbę, nowe miejsca i zadania | pytanie pada raz, tylko jeśli twój komputer potrafi je tworzyć |
+| **Mentor** (pytanie: „Jak dobrze znasz tę grę?") | Jak dużo Mistrz Gry uczy cię zasad, poza fabułą | **wyłączony** (sama fabuła; pytaj w nawiasach, kiedy chcesz), **podpowiedzi** (krótka wskazówka przed ważnymi wyborami i gdy umknie jakaś zasada), **samouczek** (każda zasada objaśniona za pierwszym razem, pełne wyliczenie każdego rzutu, krótkie podsumowanie po walkach) | zależnie od odpowiedzi: nigdy nie grano → samouczek, trochę → podpowiedzi, znam → wyłączony |
+| **Poziom trudności** | Jak trudny jest świat: walki, taktyka wrogów, wskazówki, skarby, tempo zagrożeń | fabuła, łatwy, normalny, trudny, brutalny | |
+| **Śmiertelność** | Co oznacza upadek w walce | **narracyjna** (twoja postać nigdy nie ginie), **epicka** (ginie tylko wtedy, gdy ma to znaczenie dla fabuły), **kości** (decydują kości) | wynika z poziomu trudności: fabuła → narracyjna, łatwy → epicka, normalny i wyżej → kości |
+| **Zapisy** | Kiedy możesz wrócić | **permadeath** (nigdy; można tylko zacząć kampanię od nowa), **checkpoint** (do ostatniego końca sceny, tylko jeśli twoja postać zginie), **swobodne** (do dowolnego zapisu, a zapis robisz, kiedy poprosisz) | checkpoint |
+| **Rygor** | Jak ściśle według zasad liczą się jedzenie, światło, zmęczenie, udźwig, składniki czarów i podróż | **płynny** (Mistrz Gry pomija je ogólnikiem), **zasady** (jak w podręczniku: pochodnie się wypalają, racje się kończą), **symulacja** (ponad zasady: zużycie, psucie się, pogoda) | płynny |
+| **Kości** | Kto rzuca kośćmi twojej postaci | **cyfrowe** (RPG Engine rzuca nimi na stronie), **fizyczne** (rzucasz własnymi i podajesz wyniki) | |
+| **Jednostki** | Odległości i wagi w fabule | metryczne, imperialne | |
+| **Towarzysze** | Kto podróżuje z tobą | brak, stworzeni z tobą na sesji zero, stworzeni przez Mistrza Gry, spotkani w grze | |
+| **Obrazy** | Obrazy miejsc i zadań oraz portret twojej postaci na prośbę | brak, na prośbę, nowe miejsca i zadania | pytanie raz, tylko jeśli twój komputer potrafi je tworzyć |
 | **Linie** | Co nigdy nie pojawia się w grze | lista lub brak | |
 | **Zasłony** | Co może się zdarzyć, ale tylko poza sceną | lista lub brak | |
-| **Język** | Język gry i panelu | dowolny | wybrany po tym, jak piszesz, i potwierdzony |
+| **Język** | Język gry i dashboardu | dowolny | wzięty z tego, jak piszesz, i potwierdzony |
 
-System gry może dodać własne ustawienia. Piąta edycja dodaje **awans**: jak twoja postać zdobywa poziomy, za pomocą **punktów doświadczenia** albo **kamieni milowych** fabuły.
+System gry może dodać własne ustawienia. Piąta edycja dodaje **rozwój**: jak twoja postać zdobywa poziomy, za **punkty doświadczenia** lub na **kamieniach milowych** fabuły.
 
-**Co poziom trudności oznacza w grze.** Story: słabi, naiwni wrogowie, oczywiste wskazówki, wszystkiego pod dostatkiem; Mistrz Gry może łagodzić własne rzuty. Easy: prości wrogowie, hojne zasoby. Normal: rozsądni wrogowie, trzy wskazówki do każdego wniosku, standardowe ceny i skarby. Hard: sprytni wrogowie, subtelne wskazówki, skąpe zasoby, szybko postępujące zagrożenia. Brutal: wrogowie, którzy napadają z zasadzki, wycofują się i dobijają poległych, bardzo skąpe zasoby, najsurowszy odpoczynek. Walki są zawsze dobrane do twojej drużyny w jej obecnym stanie.
+**Co poziom trudności oznacza w grze.** Fabuła: słabi, naiwni wrogowie, oczywiste wskazówki, wszystkiego pod dostatkiem; Mistrz Gry może łagodzić własne rzuty. Łatwy: prości wrogowie, hojne zasoby. Normalny: rozsądni wrogowie, trzy wskazówki do każdego wniosku, standardowe ceny i skarby. Trudny: sprytni wrogowie, subtelne wskazówki, skąpe zasoby, szybko postępujące zagrożenia. Brutalny: wrogowie, którzy napadają z zasadzki, wycofują się i dobijają poległych, bardzo skąpe zasoby, najsurowsze odpoczynki. Walki są zawsze dobrane do twojej drużyny w jej obecnym stanie.
 
-**Gdy nie ma gotowego świata**, ustawienia pytają jeszcze o dwie rzeczy:
+**Bez gotowego świata** przygotowanie pyta o dwie rzeczy więcej:
 
-- **Założenie**: gatunek, ton i kilka elementów świata, twoimi słowami. Na przykład: *„Low fantasy, ponure, ale z nadzieją. Miasteczko nad rzeką, nawiedzony bród, kult na wzgórzach."*
-- **Przygotowanie**: **w locie** (Mistrz Gry tworzy każdą część świata tuż przed tym, jak jej potrzebujesz; polecane) albo **wszystko na początku**.
+- **Założenie**: gatunek, ton i kilka elementów świata, twoimi słowami. Na przykład: *„Niskie fantasy, mroczne, ale z nadzieją. Miasto nad rzeką, nawiedzony bród, kult w górach."*
+- **Przygotowanie**: **na bieżąco** (Mistrz Gry buduje każdą część świata tuż przed tym, jak jej potrzebujesz; polecane) lub **wszystko na początku**.
 
-Następnie Mistrz Gry proponuje nazwę kampanii. Gdy niczego nie brakuje i powiesz, że jesteś gotów, gra przechodzi do sesji zero.
+Potem Mistrz Gry proponuje nazwę kampanii. Gdy niczego nie brakuje i powiesz, że jesteś gotowy lub gotowa, gra przechodzi do sesji zero.
 
 ### 2.7 Sesja zero: twoja postać
 
-Sesja zero to już gra: tworzysz swoją postać razem z Mistrzem Gry, jak przy stole.
+Sesja zero to już gra: tworzysz postać razem z Mistrzem Gry, tak jak przy stole.
 
-- **Każdy wybór należy do ciebie**, chyba że poprosisz Mistrza Gry, żeby go dokonał. Możesz przyjść z pełnym pomysłem („półelfka kapłanka, która opuściła świątynię"), mglistym („ktoś, kto leczy, ale nie jest miły") albo z niczym („zaskocz mnie, potem pozwól mi coś zmienić").
-- **Cechy.** Mistrz Gry mówi ci, jaka jest metoda i siatka bezpieczeństwa, zanim padnie jakikolwiek rzut. W piątej edycji: standardowy zestaw, zakup punktów albo 4k6 z odrzuceniem najniższej. Ustalona metoda zostaje w ustaleniach stołu.
-- **Twoja historia** nigdy nie jest obowiązkowa. Jeśli ją podasz, Mistrz Gry zapisuje ją twoimi słowami, raz ci ją odczytuje i wplata jej osoby i miejsca w świat. Możesz też napisać ją w panelu (zobacz [Drużyna](#party)).
-- **Osobowość** (piąta edycja): cecha, ideał, więź i wada, z tabel twojego pochodzenia albo własne.
-- **Obraz.** Gdy postać jest gotowa, Mistrz Gry prosi cię o jej obraz: plik na twoim komputerze. Jeśli twój host AI potrafi sam rysować obrazy, Mistrz Gry może zaproponować, że jeden stworzy.
+- **Każdy wybór należy do ciebie**, chyba że poprosisz Mistrza Gry, by go dokonał. Możesz przyjść z pełnym pomysłem („półelfi kleryk, który opuścił swoją świątynię"), z mglistym („ktoś, kto leczy, ale nie jest miły") albo z niczym („zaskocz mnie, potem pozwól mi coś zmienić").
+- **Wartości cech.** Mistrz Gry podaje metodę i siatkę bezpieczeństwa, zanim rzucona zostanie jakakolwiek kość. W piątej edycji: zestaw standardowy, kupowanie punktów albo 4k6 z odrzuceniem najniższej. Uzgodniona metoda zostaje w ustaleniach stołu.
+- **Twoja historia** nigdy nie jest obowiązkowa. Jeśli ją podasz, Mistrz Gry zapisze ją twoimi słowami, raz ci ją przeczyta i powiąże jej postaci i miejsca ze światem. Możesz też napisać ją w dashboardzie (zobacz [Drużyna](#party)).
+- **Osobowość** (piąta edycja): cecha, ideał, więź i słabość, z tabel twojego pochodzenia albo własne.
+- **Obraz.** Gdy postać jest gotowa, Mistrz Gry prosi cię o jej obraz: plik z twojego komputera albo portret stworzony na twoim komputerze według twojego opisu (zobacz [obraz twojej postaci](#37-your-characters-story-and-picture)).
 
-Liczby na karcie postaci oblicza RPG Engine na podstawie twoich wyborów: nigdy nie musisz nic liczyć. Gdy postacie są gotowe i potwierdzisz, historia się zaczyna.
+Liczby na karcie postaci wylicza RPG Engine z twoich wyborów: nigdy nie robisz rachunków. Gdy postacie są gotowe i potwierdzisz, zaczyna się fabuła.
 
 ---
 
@@ -205,176 +205,182 @@ Liczby na karcie postaci oblicza RPG Engine na podstawie twoich wyborów: nigdy 
 
 ### 3.1 Rozmowa z Mistrzem Gry
 
-Pisz, co twoja postać robi lub mówi, własnymi słowami. Krótko też jest dobrze.
+Pisz, co twoja postać robi albo mówi, własnymi słowami. Krótko też jest dobrze.
 
 > Pytam karczmarza, kto jeszcze tu dziś przechodził.
 >
-> – Nie szukamy kłopotów – mówię, trzymając rękę z dala od miecza.
+> „Nie przyszliśmy tu po kłopoty" – mówię, trzymając rękę z dala od miecza.
 >
 > Wspinam się na dach i czekam.
 
 **Poza fabułą** pisz w nawiasach kwadratowych:
 
-> [Jak działa chwyt?]
+> [Jak działa chwytanie?]
 >
 > [Czy mogę jeszcze użyć reakcji w tej rundzie?]
 >
-> [Zatrzymajmy się na dziś.]
+> [Kończymy na dziś.]
 
-Mistrz Gry też odpowiada w nawiasach, a potem wraca do historii.
+Mistrz Gry też odpowiada w nawiasach, po czym wraca do fabuły.
 
-**Ty mówisz, co próbujesz; Mistrz Gry mówi, co się dzieje.** To, co łamie logikę świata albo ustalone już fakty, nie dzieje się: Mistrz Gry powie ci o tym w ramach fabuły i zaproponuje, co jest możliwe.
+**Ty mówisz, co próbujesz; Mistrz Gry mówi, co się dzieje.** To, co łamie logikę świata albo ustalone już fakty, się nie dzieje: Mistrz Gry mówi ci o tym w fabule i podsuwa, co jest możliwe.
 
-**Mistrz Gry nigdy nie decyduje za twoją postać.** Nie każe ci mówić, czuć ani wybierać. W razie wątpliwości pyta.
+**Mistrz Gry nigdy nie decyduje za twoją postać.** Nie każe jej mówić, czuć ani wybierać. W razie wątpliwości pyta.
 
-**Mistrz Gry nigdy nie mówi o silniku.** Zapytaj, czy śledzi różne rzeczy, a odpowie jak Mistrz Gry: „Trzymam to wszystko: następnym razem zaczniemy stąd."
+**Mistrz Gry nigdy nie mówi o silniku.** Zapytaj, czy śledzi różne rzeczy, a odpowie jak prowadzący grę: „Wszystko zapisuję: następnym razem zaczniemy stąd."
 
-**Możesz zapytać Mistrza Gry, jak korzystać z panelu.** Zna stronę: „Gdzie zobaczę swoje czary?", „Jak rzucić ręcznie?"
+**Możesz pytać Mistrza Gry, jak używać dashboardu.** Zna stronę: „Gdzie zobaczę swoje czary?", „Jak rzucić ręcznie?"
 
 ### 3.2 Rzuty
 
-**Kiedy pada rzut.** Mistrz Gry prosi o rzut tylko wtedy, gdy wynik jest niepewny i ma znaczenie. W przeciwnym razie mówi „tak" albo „tak, ale". Przed twoim rzutem Mistrz Gry mówi, o co toczy się gra i jakie testy pasują, po czym się zatrzymuje. Rzucasz albo zmieniasz zdanie:
+**Kiedy następuje rzut.** Mistrz Gry prosi o rzut tylko wtedy, gdy wynik jest niepewny i ma znaczenie. W innym razie mówi „tak" albo „tak, ale". Przed twoim rzutem Mistrz Gry mówi, co jest stawką i jakie testy pasują, po czym przerywa. Ty rzucasz albo zmieniasz zdanie:
 
-> **Mistrz Gry:** Półka jest wąska i mokra. Jeśli się poślizgniesz, czeka cię długi upadek do rzeki. Test Zręczności (Akrobatyka) albo możesz wrócić i poszukać schodów.
+> **Mistrz Gry:** Półka jest wąska i mokra. Jeśli się poślizgniesz, czeka cię długi spadek do rzeki. Test Zręczności (Akrobatyka), albo możesz wrócić i poszukać schodów.
 >
 > **Ty:** Spróbuję.
 
-**Rzut w panelu.** Gdy Mistrz Gry o to prosi, u góry strony pojawia się baner z przyciskiem dla każdego testu, na przykład *Akrobatyka +4 · z przewagą*. Kliknij go: kości spadają na stronę, a Mistrz Gry słyszy wynik. Możesz też:
+**Rzut w dashboardzie.** Gdy Mistrz Gry o to prosi, u góry strony pojawia się baner z przyciskiem dla każdego testu, na przykład *Akrobatyka +4 · z przewagą*. Kliknij go: kości spadają na stronie, a Mistrz Gry słyszy wynik. Możesz też:
 
-- kliknąć odpowiedni wiersz swojej karty postaci, który zaświeci się na złoto;
+- kliknąć odpowiedni wiersz na karcie postaci, który zaświeci się na złoto;
 - rzucić odpowiednimi kośćmi z tacki na kości;
-- napisać w banerze własne słowa, jeśli chcesz zrobić coś innego.
+- wpisać w banerze własne słowa, jeśli chcesz zrobić coś innego.
 
-**Rzut ręczny.** Jeśli wolisz sam wybierać kości, włącz **Ręcznie** w rogu banera (albo w **Ustawieniach**). Przycisk testu znika, a baner mówi, co rzucić, jak zrobiłby to Mistrz Gry: *Rzuć samodzielnie Akrobatykę, na karcie postaci albo kośćmi.* Kliknij wiersz karty, który się zaświeci, albo rzuć odpowiednimi kośćmi z tacki: RPG Engine rzuca nimi, dodaje twój bonus, a Mistrz Gry słyszy wynik. Test, którego nie da się wykonać ani z karty, ani z tacki, na przykład obrażenia z przerzucaniem jedynek, zachowuje swój przycisk. Tryb Ręcznie pozostaje włączony w tej przeglądarce, dopóki go nie wyłączysz.
+**Rzut ręczny.** Jeśli wolisz sam wybierać kości, włącz **Ręcznie** w rogu banera (albo w **Ustawieniach**). Przycisk testu znika, a baner mówi, co rzucić, tak jak zrobiłby to Mistrz Gry: *Rzuć Akrobatykę samodzielnie, na karcie postaci lub kośćmi.* Kliknij podświetlony wiersz karty postaci albo rzuć odpowiednimi kośćmi z tacki: RPG Engine rzuca nimi, dodaje twój bonus, a Mistrz Gry słyszy wynik. Test, którego nie da się wykonać ani z karty, ani z tacki, na przykład obrażenia z przerzutem jedynek, zachowuje swój przycisk. Tryb Ręcznie pozostaje włączony w tej przeglądarce, dopóki go nie wyłączysz.
 
-**Fizyczne kości przez całą grę.** Gdy ustawienie **Kości** jest na fizyczne, Mistrz Gry prosi o rzuty słowami, a ty wpisujesz wyniki, które wyrzuciłeś na kościach:
+**Fizyczne kości przez całą grę.** Gdy ustawienie **Kości** ma wartość fizyczne, Mistrz Gry prosi o rzuty słowami, a ty piszesz wyrzucone wyniki:
 
-> [Wyrzucone: 14.]
+> [Wyrzuciłem 14.]
 
 RPG Engine dodaje twoje modyfikatory i odrzuca wynik, którego twoje kości nie mogą pokazać.
 
-**Swobodne rzuty.** Kliknij dowolną liczbę na karcie postaci albo otwórz tackę na kości, żeby rzucić dla zabawy. Swobodne rzuty nigdy się nie liczą, nigdy nie są zapisywane, a Mistrz Gry ich nie widzi. Swobodna dwudziestka nigdy nie zamieni się później w prawdziwą.
+**Swobodne rzuty.** Kliknij dowolną liczbę na karcie postaci albo otwórz tackę na kości, by rzucić dla zabawy. Swobodne rzuty nigdy się nie liczą, nie są zapisywane, a Mistrz Gry ich nie widzi. Swobodna 20 nigdy nie zamieni się później w prawdziwą.
 
-**Rzuty Mistrza Gry.** Mistrz Gry rzuca za wrogów i inne postacie również przez RPG Engine. Większość rzutów widzisz w swojej kolumnie rzutów. Gdy nie wolno ci zobaczyć wyniku, Mistrz Gry rzuca w sekrecie. Zawsze możesz zapytać:
+**Rzuty Mistrza Gry.** Mistrz Gry rzuca za wrogów i innych także przez RPG Engine. Większość rzutów widać w twojej kolumnie rzutów. Gdy nie wolno ci widzieć wyniku, Mistrz Gry rzuca w tajemnicy. Zawsze możesz zapytać:
 
 > [Czy ten rzut był prawdziwy?]
 
-Przy rzucie pokazanym Mistrz Gry podaje liczby i uzasadnienie. Przy sekretnym podaje odcisk, który dowodzi, że rzut wykonano, zanim zapytałeś.
+Przy rzucie pokazanym Mistrz Gry podaje liczby i powód. Przy tajnym podaje odcisk, który dowodzi, że rzut wykonano, zanim zapytałeś lub zapytałaś.
 
-**Rzuty na czacie** pojawiają się w nawiasach, zaraz po chwili, którą rozstrzygają: *[Perswazja 14 + 3 = 17]*. Potem historia opowiada wynik.
+**Rzuty na czacie** pojawiają się w nawiasach, tuż po chwili, którą rozstrzygają: *[Perswazja 14 + 3 = 17]*. Potem fabuła opowiada wynik.
 
 ### 3.3 Sceny i walki
 
-Mistrz Gry prowadzi historię w **scenach**: walka, rozmowa, eksploracja, podróż, odpoczynek, wyzwanie (pościg, wyścig, zagadka). Nie musisz nimi zarządzać: dzięki nim RPG Engine dzieli historię na rozdziały. Na końcu każdej sceny gra sama się zapisuje, a scena trafia do historii w dzienniku.
+Mistrz Gry prowadzi fabułę w **scenach**: walka, rozmowa, zwiedzanie, podróż, odpoczynek, wyzwanie (pościg, wyścig, zagadka). Nie musisz nimi zarządzać: tak RPG Engine dzieli fabułę na rozdziały. Na końcu każdej sceny gra zapisuje się sama, a scena trafia do fabuły w twoim dzienniku.
 
-**W walce** Mistrz Gry opowiada wszystkie tury, które nie są twoje, jedna po drugiej, z każdym rzutem, i **zatrzymuje się tam, gdzie możesz zdecydować**: twoja tura, reakcja, wybór. W swojej turze powiedz, co robisz:
+**W walce** Mistrz Gry opowiada wszystkie tury, które nie są twoje, jedną po drugiej, z każdym rzutem, i **zatrzymuje się tam, gdzie możesz zdecydować**: twoja tura, reakcja, wybór. W swojej turze powiedz, co robisz:
 
-> Rzucam Sacred Flame w tego przy drzwiach.
+> Rzucam Święty płomień na tego przy drzwiach.
 
-Sekcja **Walka** w panelu pokazuje kolejność tur, czyja jest tura, punkty życia twojej drużyny i to, jak ranni wyglądają wrogowie (cali, ranni, broczący krwią, powaleni: słowami, nigdy liczbami). Jeśli twoja postać upadnie, na stronie pojawiają się duże rzuty obronne przeciw śmierci.
+Sekcja **Walka** w dashboardzie pokazuje kolejność tur, czyja jest tura, punkty życia twojej drużyny i to, jak poturbowani wyglądają wrogowie (cali, ranni, krwawiący, powaleni: słowami, nigdy liczbami). Jeśli twoja postać upadnie, zapisy śmierci pojawiają się na stronie w dużym rozmiarze.
 
-**Gdy walka jest już rozstrzygnięta**, Mistrz Gry może zaproponować, że opowie resztę jedną wiadomością.
+**Gdy walka jest już rozstrzygnięta**, Mistrz Gry może zaproponować opowiedzenie reszty jedną wiadomością.
 
-### 3.4 Czas, podróż i świat, który się porusza
+### 3.4 Czas, podróże i świat, który się porusza
 
-**Czas.** Każde działanie zajmuje w historii czas, a RPG Engine prowadzi datę: dzień 3, wczesny ranek. Mistrz Gry podaje czas tak, jak mierzy go świat: świt, trzeci dzwon, zmierzch. Między sesjami czas nie płynie: wracasz tam, gdzie skończyłeś.
+**Czas.** Każde działanie zajmuje czas w fabule, a RPG Engine pilnuje daty: dzień 3, wczesny ranek. Mistrz Gry podaje czas tak, jak mierzy go świat: świt, trzeci dzwon, zmierzch. Między sesjami czas nie płynie: zaczynasz tam, gdzie skończyłeś lub skończyłaś.
 
-**Odpoczynek.** Powiedz, że odpoczywasz, a Mistrz Gry zastosuje to, co odpoczynek przywraca, na przykład punkty życia i miejsca czarów:
+**Odpoczynki.** Powiedz, że odpoczywasz, a Mistrz Gry zastosuje to, co odpoczynek przywraca, na przykład punkty życia i miejsca na czary:
 
 > Rozbijamy obóz i robimy długi odpoczynek.
 
 **Podróż.** Powiedz, dokąd chcesz iść:
 
-> Idziemy drogą na północ, do Rocca.
+> Idziemy drogą na północ do Rocca.
 
-RPG Engine wylicza drogę, dystans i liczbę dni w twoim tempie, i przenosi cię na miejsce. Podróż zatrzymuje się, gdy po drodze zdarza się coś zaplanowanego, na koniec każdego dnia marszu i po dotarciu na miejsce. Przed wyruszeniem możesz zapytać, jak daleko jest dane miejsce:
+RPG Engine wylicza drogę, dystans i dni w twoim tempie i przenosi cię na miejsce. Podróż zatrzymuje się, gdy po drodze dzieje się coś zaplanowanego, na koniec każdego dnia marszu i po dotarciu. Przed wyruszeniem możesz zapytać, jak daleko jest dane miejsce:
 
-> [Jak daleko jest Rocca i ile to zajmie pieszo?]
+> [Jak daleko jest Rocca i ile zajmie droga pieszo?]
 
-**Świat porusza się bez ciebie.** Łotrzy mają plany z terminami i zegarami. Każdego nowego dnia Mistrz Gry przesuwa zagrożenia, które czas posunął naprzód, a ty widzisz ich ślady: plotkę, trop, zmianę w mieście. Nigdy nie widzisz samego zegara, tylko to, co po sobie zostawia.
+**Świat porusza się bez ciebie.** Złoczyńcy mają plany z terminami i zegarami. Każdego nowego dnia Mistrz Gry przesuwa zagrożenia, które czas posunął naprzód, a ty widzisz ich oznaki: plotkę, ślad, zmianę w mieście. Samego zegara nigdy nie widzisz, tylko to, co po sobie zostawia.
 
-**Pieniądze** liczy się w monetach gry. Płać, sprzedawaj, dostawaj zapłatę: resztę wydaje RPG Engine.
+**Pieniądze** liczy się w monetach gry. Płacisz, sprzedajesz, dostajesz zapłatę: resztę wydaje RPG Engine.
 
 ### 3.5 Mapy
 
-**Mapa świata** (panel: **Świat**) pokazuje tylko miejsca, które twoja postać zna, z drogami między nimi, szlakiem, który przeszła, i mgłą nad całą resztą. Kliknij miejsce, żeby zobaczyć, co o nim wiesz i jak daleko jest.
+**Mapa świata** (dashboard: **Świat**) pokazuje tylko miejsca, które zna twoja postać, z drogami między nimi, przebytym szlakiem i mgłą nad całą resztą. Kliknij miejsce, by zobaczyć, co o nim wiesz i jak daleko jest.
 
-**Mapa miejsca** (panel: **Scena**, a w walce **Walka**) pojawia się, gdy Mistrz Gry narysuje ją dla miejsca, w którym jesteś: ściany, drzwi, teren i to, kto gdzie stoi, jako żetony. W walce, w twojej turze, pola, do których nie możesz dotrzeć, są zasłonięte, więc od razu widzisz, dokąd możesz iść. Gdy Mistrz Gry pyta, dokąd idzie twoja postać, strona otwiera mapę, a ty dotykasz pola albo je wpisujesz, na przykład *E4*.
+**Mapa miejsca** (dashboard: **Scena**, a w walce **Walka**) pojawia się, gdy Mistrz Gry narysuje ją dla miejsca, w którym jesteś: ściany, drzwi, teren i to, kto gdzie stoi, jako żetony. W walce, w twojej turze, pola, do których nie dojdziesz, są zasłonięte, więc od razu widać, dokąd możesz iść. Gdy Mistrz Gry pyta, dokąd przesuwa się twoja postać, strona otwiera mapę, a ty dotykasz pola albo je wpisujesz, na przykład *E4*.
 
 ### 3.6 Zadania, dziennik i notatki
 
-**Zadania.** Gdy twoja postać podejmuje się zadania, trafia ono do twojego **Dziennika**: kto je zlecił, gdzie, do kiedy, jego cele w postaci listy i to, co je mierzy (termin z pozostałym czasem, zegar, licznik). Oznacz zadanie gwiazdką, żeby je śledzić: zostaje małe u góry sekcji Scena, razem z następnym celem. Zadanie kończy się wtedy, gdy zakończy je historia, nigdy samo z siebie.
+**Zadania.** Gdy twoja postać podejmuje się zadania, trafia ono do twojego **Dziennika** jako zadanie: kto je zlecił, gdzie, do kiedy, jego cele w postaci listy i to, co mierzy (termin z pozostałym czasem, zegar, licznik). Oznacz zadanie gwiazdką, by je śledzić: zostaje małe u góry sceny, z następnym celem. Zadanie kończy się, gdy kończy je fabuła, nigdy samo z siebie.
 
-**Historia.** Karta Historia w Dzienniku to twoja kampania jako oś czasu: każda scena to rozdział z miejscem, datą i krótkim streszczeniem, ostatnia na początku.
+**Historia.** Karta Historia w Dzienniku to twoja kampania jako oś czasu: każda scena to rozdział z miejscem, datą i krótkim streszczeniem, ostatnia na górze.
 
-**Twoje notatki.** Na karcie Notatki w Dzienniku piszesz własne notatki: teorie, imiona, plany. Zostają na twoim komputerze, a Mistrz Gry ich nie czyta, chyba że **Udostępnij** którąś. Udostępniona notatka dociera do Mistrza Gry przy jego następnej odpowiedzi jako to, co myślisz, nigdy jako fakt. Twoja teoria nie staje się prawdą dlatego, że ją zapisano. Notatka, która prosi o zaprzestanie lub unikanie jakiejś treści, liczy się tak, jakbyś powiedział to przy stole.
+**Twoje notatki.** Na karcie Notatki w Dzienniku piszesz własne notatki: teorie, imiona, plany. Zostają na twoim komputerze, a Mistrz Gry ich nie czyta, chyba że **Udostępnisz** którąś. Udostępniona notatka dociera do Mistrza Gry przy jego następnej odpowiedzi jako to, co myślisz, nigdy jako fakt. Twoja teoria nie staje się prawdą dlatego, że ją zapisano. Notatka, która prosi o zaprzestanie lub unikanie jakiejś treści, liczy się tak, jakbyś powiedział lub powiedziała to przy stole.
 
 ### 3.7 Historia i obraz twojej postaci
 
-Na karcie postaci karta **Opis** ma pole, w którym możesz napisać historię swojej postaci. Wyślij ją, a Mistrz Gry zapisze ją w postaci własnymi słowami, po tym jak się zgodzisz.
+Na karcie postaci karta **Opis** ma pole, w którym możesz napisać historię swojej postaci. Wyślij ją, a Mistrz Gry zapisze ją w postaci własnymi słowami, gdy się na to zgodzisz.
 
-Żeby dodać obraz postaci, podaj Mistrzowi Gry na czacie plik z obrazem wraz z jego położeniem na twoim komputerze (PNG, JPEG, WebP lub SVG, do 5 MB):
+Aby ustawić obraz postaci, podaj Mistrzowi Gry na czacie plik z obrazem wraz z miejscem, gdzie leży na twoim komputerze (PNG, JPEG, WebP lub SVG, do 5 MB):
 
 > [Oto portret mojej postaci: C:\Users\me\Pictures\mira.png]
 
-Mistrz Gry kopiuje go do kampanii, a on pojawia się na żetonie twojej postaci w panelu. Możesz go zmienić w ten sam sposób, kiedy chcesz. Sam RPG Engine rysuje tylko miejsca i zadania (zobacz [Obrazy](#311-pictures)).
+Mistrz Gry kopiuje go do kampanii i pojawia się on na żetonie twojej postaci w dashboardzie. Możesz go zmienić w ten sam sposób, kiedy chcesz.
 
-### 3.8 Zapisy i powrót
+Możesz też zamówić portret tam, gdzie twój komputer tworzy obrazy (zobacz [Obrazy](#311-pictures)): opisz postać Mistrzowi Gry albo pozwól, by to Mistrz Gry ją opisał.
+
+> [Zrób mi portret: siwe włosy w warkoczu, blizna na brodzie, zmęczone oczy.]
+
+Portret pokazuje dokładnie to, kim jest twoja postać w grze, jej lud taki, jaki ma go ten świat, krasnolud górski jako krasnolud górski, z wyglądem, który opisano. Powstaje w mniej więcej minutę, na żetonie twojej postaci. Twoi towarzysze mogą mieć swoje w ten sam sposób.
+
+### 3.8 Zapisy i powroty
 
 RPG Engine zapisuje całą kampanię **na końcu każdej sceny**, samodzielnie. To, co możesz zrobić z tymi zapisami, zależy od ustawienia **Zapisy**:
 
-| Zapisy | Zapis na żądanie | Powrót |
+| Zapisy | Zapis, kiedy chcesz | Powrót |
 |---|---|---|
 | **permadeath** | nie | nigdy; można tylko zacząć kampanię od nowa |
-| **punkt kontrolny** | nie | do ostatniego zapisu, tylko gdy twoja postać zginie |
+| **checkpoint** | nie | do ostatniego zapisu, tylko gdy twoja postać zginie |
 | **swobodne** | tak | do dowolnego zapisu, kiedy chcesz |
 
 W każdym trybie możesz **zacząć od nowa**: od początku gry z tą samą postacią albo od sesji zero z nową.
 
-Wszystko to zrobisz na czacie („[Wróćmy do chwili przed pojedynkiem.]") albo w sekcji **Zapisy** panelu.
+Wszystko to zrobisz na czacie („[Wróćmy do chwili przed pojedynkiem.]") albo w sekcji **Zapisy** dashboardu.
 
-**Po powrocie otwórz nowy czat.** Czat, w którym grałeś, pamięta to, co zostało cofnięte. Otwórz nowy czat z Mistrzem Gry (`/clear` w Claude Code, `/new` w Codex), napisz *kontynuuj*, a potem naciśnij **Nowy czat otwarty** w sekcji Zapisy albo powiedz o tym Mistrzowi Gry w nowym czacie. Nigdy nie wznawiaj starego czatu. Dopóki nie potwierdzisz, Mistrz Gry nie będzie kontynuować.
+**Po powrocie otwórz nowy czat.** Czat, w którym grano, pamięta to, co cofnięto. Otwórz nowy czat z Mistrzem Gry (`/clear` w Claude Code, `/new` w Codex), napisz *kontynuuj*, potem naciśnij **Nowy czat otwarty** w Zapisach albo powiedz o tym Mistrzowi Gry w nowym czacie. Nigdy nie wznawiaj starego czatu. Dopóki nie potwierdzisz, Mistrz Gry nie będzie kontynuować.
 
 ### 3.9 Sesje: przerwa i powrót
 
-**Sesję kończysz**, kiedy chcesz:
+**Sesję kończysz** kiedy chcesz:
 
-> [Zatrzymajmy się na dziś.]
+> [Kończymy na dziś.]
 
 Nie ma „zapisz i wyjdź": wszystko jest już w plikach.
 
-**Żeby zamknąć** czat, wpisz `/exit` w Claude Code albo `/quit` w Codex. Panel cichnie do następnego czatu.
+**Aby zamknąć** czat, wpisz `/exit` w Claude Code albo `/quit` w Codex. Dashboard cichnie do następnego czatu.
 
-**Żeby wrócić**, otwórz terminal w folderze kampanii (tym, który wypisał `init`), uruchom tam swój host i napisz *kontynuuj*. Mistrz Gry sprawdza, na czym stoi gra, daje ci krótkie podsumowanie i zaczyna od czegoś, co się dzieje. Nowy czat niczego nie traci: kampania żyje w swoich plikach, nie w czacie.
+**Aby wrócić**, otwórz terminal w folderze kampanii (tym, który wypisał `init`), uruchom tam swój host i napisz *kontynuuj*. Mistrz Gry czyta, na czym stoi gra, daje krótkie podsumowanie i zaczyna od czegoś, co się dzieje. Nowy czat niczego nie traci: kampania żyje w swoich plikach, nie w czacie.
 
-Mistrz Gry nie zadaje rutynowych pytań na koniec. Tylko jeśli zauważył, że coś nie zadziałało, pyta krótko.
+Mistrz Gry nie zadaje rutynowych pytań na koniec. Pyta krótko tylko wtedy, gdy zauważył, że coś nie zadziałało.
 
 ### 3.10 Nastrój Mistrza Gry
 
-U góry panelu jest awatar Mistrza Gry, mały robot. Jego mina podąża za tonem historii: niepokój, gdy rośnie niebezpieczeństwo, zachwyt przy śmiałym pomyśle, zaskoczenie przy zwrocie akcji. Na chwilę reaguje na naturalną 20 lub naturalną 1. Nigdy nie pokazuje tego, czego jeszcze nie wiesz: żadnego uśmieszku, zanim pułapka się zatrzaśnie. Żetony twojej drużyny też pokazują nastroje. Gdy czat jest zamknięty, robot śpi.
+U góry dashboardu jest awatar Mistrza Gry, mały robot. Jego mina podąża za tonem fabuły: zaniepokojona, gdy rośnie niebezpieczeństwo, zachwycona śmiałym pomysłem, zaskoczona zwrotem akcji. Na chwilę reaguje na naturalne 20 lub naturalną 1. Nigdy nie pokazuje tego, czego jeszcze nie wiesz: żadnego uśmieszku, zanim pułapka się zatrzaśnie. Żetony twojej drużyny też pokazują nastroje. Gdy czat jest zamknięty, robot śpi.
 
 ### 3.11 Obrazy
 
-RPG Engine może zlecić stworzenie obrazu dla każdego miejsca, do którego docierasz, i każdego zadania, które podejmujesz, zgodnie z ustawieniem **Obrazy**. Korzysta z tego, co już jest na twoim komputerze:
+RPG Engine może zamówić obraz dla każdego miejsca, do którego docierasz, i każdego zadania, które podejmujesz, zgodnie z ustawieniem **Obrazy**, oraz portret twojej postaci na prośbę. Korzysta z tego, co już jest na twoim komputerze:
 
-- **Codex**, z twoim kontem ChatGPT: malowany obraz.
-- W przeciwnym razie **Claude Code**, z twoim kontem Claude: rysunek.
+- **Codex**, z twoim logowaniem do ChatGPT: malowany obraz.
+- W przeciwnym razie **Claude Code**, z twoim logowaniem do Claude: rysunek.
 
-Obraz powstaje w ramach twojego planu, nie naszego. Sekcja **Ustawienia** mówi, czy obrazy można tworzyć na twoim komputerze, a jeśli nie, podaje kroki konfiguracji. Bez obrazów strona pokazuje zamiast nich znak każdego rodzaju miejsca. Możesz też dać Mistrzowi Gry własny obraz dowolnego miejsca lub postaci.
+Obraz korzysta z twojego własnego planu, nie z naszego. Sekcja **Ustawienia** mówi, czy obrazy da się tworzyć na twoim komputerze, a jeśli nie, podaje kroki konfiguracji. Bez obrazów strona pokazuje zamiast nich znak każdego rodzaju miejsca. Możesz też dać Mistrzowi Gry własny obraz dla dowolnego miejsca lub postaci.
 
 ### 3.12 Bezpieczeństwo: linie, zasłony i stop
 
-- **Linie**: to, co nigdy nie pojawia się w grze.
-- **Zasłony**: to, co może się zdarzyć, ale tylko poza sceną.
+- **Linie**: co nigdy nie pojawia się w grze.
+- **Zasłony**: co może się zdarzyć, ale tylko poza sceną.
 - **Stop**: w każdej chwili możesz zatrzymać jakąś treść, bez tłumaczenia. Napisz to poza fabułą:
 
 > [stop]
 
-Mistrz Gry natychmiast z niej rezygnuje i dodaje ją do twoich linii, na wszystkie kolejne sesje. Swoje linie i zasłony możesz zobaczyć i zmienić w **Ustawieniach**.
+Mistrz Gry natychmiast z tego rezygnuje i dodaje to do twoich linii, na wszystkie następne sesje. Swoje linie i zasłony możesz zobaczyć i zmienić w **Ustawieniach**.
 
 ### 3.13 Zmiana zdania
 
-Każde ustawienie można zmienić w trakcie kampanii: na czacie („[Zróbmy trudniej.]") albo w **Ustawieniach**. Mistrz Gry dowiaduje się o zmianie przy następnej odpowiedzi. Rozstrzygnięcie, które Mistrz Gry podjął bez podręcznika, staje się **precedensem** i zostaje zapamiętane, więc to samo pytanie dostanie następnym razem tę samą odpowiedź.
+Każde ustawienie można zmienić w trakcie kampanii: na czacie („[Zróbmy trudniej.]") albo w **Ustawieniach**. Mistrz Gry dowiaduje się o zmianie przy następnej odpowiedzi. Rozstrzygnięcie, które Mistrz Gry wydał bez podręcznika, staje się **precedensem** i jest zachowane, więc to samo pytanie następnym razem dostanie tę samą odpowiedź.
 
 ---
 

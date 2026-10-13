@@ -134,7 +134,7 @@ describe("validate", () => {
     });
 });
 
-describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
+describe("pictures of places, quests and the party made from words (D-308, D-408, PIC-1–PIC-4)", () => {
     /** A picture maker that never spends: ready or not, and its picture or a refusal; it keeps the briefs it was given. */
     function maker(ready: true | string, made?: string): PictureMaker & { briefs: string[]; }
     {
@@ -159,7 +159,8 @@ describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
         context = { ...context, pictures: made };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("makes no pictures (pictures: not chosen)");
         await ok("config", "pictures", "new places");
-        expect(await refused("image", "Ennio", "--describe", "Un uomo")).toContain("describe makes pictures of places and quests");
+        await ok("write", "Oste", "--type", "character");
+        expect(await refused("image", "Oste", "--describe", "Un uomo")).toContain("describe makes pictures of places, quests and the party, and Oste is a character out of the party");
         context = { ...context, pictures: maker("Codex is not logged in on this computer") };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("Codex is not logged in on this computer. If your own tools make pictures");
         context = { ...context, pictures: made };
@@ -175,6 +176,16 @@ describe("pictures of places made from words (D-308, PIC-1–PIC-4)", () => {
         expect(made.briefs[1]).toContain("Asset type: wide low banner for a quest card of a tabletop role-playing game, landscape, 16:6");
         expect(made.briefs[1]).toContain("Primary request: the quest Il guado, as an emblem of what it is about: Pellegrini spariti al guado");
         expect(made.briefs[1]).toContain("Never show: ragni");
+        // The portrait of one of the party, as the player described them, for the round token (D-408).
+        // Exactly what the game says they are: the page they derive from, as their people, before the look described.
+        await ok("write", "Nani delle colline", "--type", "creature");
+        await ok("write", "Mira", "--type", "character", "--set", "role=companion", "--set", "creature=[[Nani delle colline]]");
+        expect(await ok("image", "Mira", "--describe", "Una chierica dai capelli grigi, lo sguardo stanco")).toContain("Mira's picture is now images/Mira.png");
+        expect(made.briefs[2]).toContain("Asset type: square portrait for the round token of a character of a tabletop role-playing game, 1:1");
+        expect(made.briefs[2]).toContain("Primary request: a portrait of Mira, Nani delle colline");
+        expect(made.briefs[2]).toContain(": Una chierica dai capelli grigi, lo sguardo stanco");
+        expect(made.briefs[2]).toContain("first their people as this game world has them");
+        expect(made.briefs[2]).toContain("Never show: ragni");
     });
 
     it("goes on without a picture the generator refuses, and never tries again by itself", async () => {

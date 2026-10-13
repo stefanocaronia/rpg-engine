@@ -45,9 +45,24 @@ export function Help()
         }
 
         const target = document.getElementById(sought);
-        target?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-        (target?.closest("details")?.querySelector("summary") ?? undefined)?.focus({ preventScroll: true });
         setSought(undefined);
+
+        if (target === null) {
+            return;
+        }
+
+        // Under the bar that comes while scrolling, which the heading's scroll-margin cannot know before it comes; the focus where the eye goes.
+        const bar = document.querySelector<HTMLElement>(".top-bar");
+        const above = (bar === null || getComputedStyle(bar).display === "none" ? 0 : bar.offsetHeight) + 16;
+        const top = target.getBoundingClientRect().top + window.scrollY - above;
+        window.scrollTo({ top, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        const focused = target instanceof HTMLDetailsElement ? target.querySelector("summary") : target;
+
+        if (focused !== null && focused.tagName !== "SUMMARY") {
+            focused.tabIndex = -1;
+        }
+
+        focused?.focus({ preventScroll: true });
     }, [sought]);
 
     return (
