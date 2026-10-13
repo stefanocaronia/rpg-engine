@@ -118,16 +118,13 @@ interface Saved
 export const scene = defineCommand({
     name: "scene",
     description: "Open, run and close a scene of the story. "
-        + `open starts one: title, type (${sceneTypes.join(", ")}), place (the character's if left out), `
-        + "with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
+        + "open starts one with a title, a type, a place, who is in it and creatures as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
         + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
-        + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; "
-        + "now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. "
-        + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows who is hostile. "
-        + "seen, at open or add, gives what the character sees of those it does not know by name, by the character's or the creature's name, in two or three words, "
-        + "never their kind when it is a secret; the player's dashboard calls them so until the character learns the name. "
-        + "close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. "
-        + "Change a copy's counters with change, as for a page. "
+        + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, after rolling for it if the game does; next passes the turn; "
+        + "now gives the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
+        + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows it. "
+        + "seen, at open or add, gives what the character sees of those it does not know by name; the player's dashboard calls them so until the character learns the name. "
+        + "close ends the scene with a summary: the player may read the title and summary. Change a copy's counters with change, as for a page. "
         + 'Example: action open, title "Scontro all\'ossario", type combat, creatures {"Annegato": 2}.',
     group: "game",
     positionals: ["action"],
@@ -136,14 +133,15 @@ export const scene = defineCommand({
         title: z.string().optional().describe("open: the scene's title"),
         type: z.enum(sceneTypes).optional().describe(`open: ${sceneTypes.join(", ")}`),
         place: z.string().optional().describe("open: the place, such as [[Ossario]]; the character's if left out"),
-        with: textList.optional().describe("open, add: the characters in the scene, such as [[Lena]]"),
+        with: textList.optional().describe("open, add: the characters in the scene, the player character included, such as [[Lena]]; at open, the character and the companions with them if left out"),
         creatures: z.union([textList, z.record(z.string(), z.number().int())]).optional().describe('open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}'),
         who: textList.optional().describe("leave: who leaves the scene; hostile, calm: who attacks the party, or stops; characters or copies, such as Annegato 2"),
         order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none"),
         now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
         seen: z.union([textList, z.record(z.string(), z.string())]).optional().describe(
-            'open, add: what the character sees of one it does not know by name: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}',
+            "open, add: what the character sees of one it does not know by name, by its page or creature, in two or three words, never its kind when that is a secret: "
+                + 'Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}',
         ),
     }),
 

@@ -35,12 +35,11 @@ export type SaveResult =
 
 export const save = defineCommand({
     name: "save",
-    description: "The saves of the campaign: a zip of its files in .saves, made by itself at the end of each scene. "
+    description: "The saves of the campaign, made by themselves at the end of each scene. "
         + "list gives them, with what loading may do under the campaign's saves setting; make saves when the player asks, only with saves free; "
-        + "load goes back to a save, by its number or last: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. "
-        + "reset starts the campaign over, in every mode, permadeath too: to start, the start of play with the same character, or to session zero, before it, "
-        + "the character to make again. "
-        + "Going back removes what happened since, the later saves too: load or reset only when the player has said so. A load that stopped halfway is finished by save load. "
+        + "load goes back to a save: with free to any, with checkpoint only to the last and only once the player character is dead, with permadeath never. "
+        + "reset starts the campaign over, in every mode, permadeath too. Going back removes what happened since, the later saves too: load or reset only when the player has said so. "
+        + "A load that stopped halfway is finished by save load. "
         + "After going back the game goes on only in a new chat: new chat, once the player confirms this chat began after it, never in one that went on before. "
         + "Example: action load, save last.",
     group: "game",

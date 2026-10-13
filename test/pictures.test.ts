@@ -74,7 +74,7 @@ describe("an SVG drawn by a model, cleaned (D-342)", () => {
         );
     });
 
-    it("never lets a quote in a value close it and open another, writes SVG's names and its namespace, and keeps each attribute once (Matteo)", () => {
+    it("never lets a quote in a value close it and open another, writes SVG's names and its namespace, and keeps each attribute once", () => {
         expect(cleanSvg(`<svg viewBox="0 0 1 1"><rect fill='x" onmouseover="alert(1)'/><rect fill='url("#a")' fill="red"/></svg>`)).toBe(
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect fill="x' onmouseover='alert(1)"/><rect fill="url('#a')"/></svg>`,
         );

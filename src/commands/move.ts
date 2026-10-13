@@ -44,16 +44,14 @@ interface MoveResult
 export const move = defineCommand({
     name: "move",
     description: "Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. "
-        + "Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire; it says where they are now, who else is there and what changes around them. "
-        + "Time does not pass: advance does that. "
-        + "With at, the square of the place's map one stands on, such as E6: on the map of the place they are in, a copy of the open scene too, or with to on the map they go into. "
+        + "Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire. Time does not pass: advance does that. "
         + "Example: page [Ettore, Lena], to Ossario.",
     group: "game",
     positionals: ["page"],
     input: z.object({
         page: textList.describe("what moves: one or more characters, items or places, such as [Ettore, Lena]"),
         to: z.string().optional().describe("where: a place; for characters and items also an item, such as a cart; for items also a character who carries them"),
-        at: z.string().optional().describe("the square of the place's map one stands on, such as E6: for one page or one copy of the open scene"),
+        at: z.string().optional().describe("the square one stands on, such as E6: on the map of the place they are in, or with to of the place they go into; for one page or one copy of the open scene"),
     }),
 
     run(input, context): MoveResult

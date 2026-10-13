@@ -111,19 +111,18 @@ interface TravelResult
 export const travel = defineCommand({
     name: "travel",
     description: "Make a journey: whenever the party goes somewhere, use it instead of advance and move. "
-        + "By road it takes the quickest way at the game's pace, or in the vehicle the party is in; off the roads, across goes straight to a place with a position, "
-        + "toward goes one way for a distance or until the day's travel ends, through the regions and their terrain. "
-        + "It moves the travellers, lets the time pass, stops on arrival, at an event that comes due and at the end of the day's travel, and remembers where they are: "
-        + "travel again goes on from there. Name in who the mounts and hirelings who go too. "
+        + "By road it takes the quickest way, in the vehicle the party is in if any; off the roads, across and toward go through the regions and their terrain. "
+        + "It moves the travellers and lets the time pass, stopping on arrival, at an event that comes due and at the end of the day's travel; travel again goes on from there. "
+        + "Name in who the mounts and hirelings who go too. "
         + "Example: to Rocca; or to Torre, across; or toward west, distance 12 km.",
     group: "game",
     positionals: ["to"],
     input: z.object({
         to: z.string().optional().describe("where to: a place; by road, or straight across country with across"),
         across: z.boolean().optional().describe("go to the place straight across country, off the roads; both need a position"),
-        toward: z.string().optional().describe("off the roads, the way to go instead of a place: a point of the compass, such as west or NNE"),
+        toward: z.string().optional().describe("off the roads, one way to go instead of a place: a point of the compass, such as west or NNE"),
         distance: z.string().optional().describe("with toward, how far, such as 12 km; if left out, until the day's travel ends"),
-        who: textList.optional().describe("who travels: characters, mounts and hirelings among them; if left out, the party where the player character is, with the vehicle they are in"),
+        who: textList.optional().describe("who travels; if left out, the party where the player character is, with the vehicle they are in"),
         pace: z.string().optional().describe("one of the game's paces, such as fast or slow, or a speed, such as 4.5 km; if left out, the game's usual pace, or the one the journey had"),
         hours: z.union([z.number(), z.string()]).optional().describe(
             "the hours of travel today, when they differ from the game's: more for a forced march, 24 for a ship with its crew, 8 for a boat the party rows",

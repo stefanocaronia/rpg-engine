@@ -20,7 +20,7 @@ const iconPaths = {
     soundOff: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M16 9.5l5 5 M21 9.5l-5 5",
     minus: "M6 12h12",
     plus: "M12 6v12 M6 12h12",
-    // The world map's tools and ways (D-318), drawn by Joseph.
+    // The world map's tools and ways (D-318).
     locate: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10Z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z",
     fit: "M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5",
     list: "M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01",

@@ -98,7 +98,7 @@ export function creatureBrief(name: string, seen: string, unseen: string[] = [],
 const creatureFraming = "a close-up of the head, its face or muzzle centred and filling most of the picture, only a hint of the neck; "
     + "a plain softly lit background, nothing that matters near the corners, which a circle crops";
 
-// The SVG drawing as Elena's probe proved it (12 October): depth from layers and gradients, a sober palette, and only the elements the engine keeps.
+// The SVG drawing as a probe proved it: depth from layers and gradients, a sober palette, and only the elements the engine keeps.
 const svgOpening = "Draw exactly one picture as SVG code from the brief below. Reply with the SVG alone, from <svg to </svg>: no words, no code fence.";
 const svgStyle = "Style/medium: vector illustration with depth: layered shapes from far to near, gradients for sky, light and water, far layers paler and bluer, "
     + "a few soft blurred shapes for mist and glow; a sober palette of muted natural colours";

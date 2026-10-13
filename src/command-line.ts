@@ -3,6 +3,7 @@ import { z } from "zod";
 import { commands } from "./commands/index.ts";
 import { type Context, defaultContext } from "./core/context.ts";
 import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
+import { firstSentence } from "./core/text.ts";
 import { getVersion } from "./core/version.ts";
 import { hostPictures } from "./pictures/index.ts";
 
@@ -159,12 +160,6 @@ function generalHelp(): string
         "",
         "Run `rpg <command> --help` for its options.",
     ].join("\n");
-}
-
-function firstSentence(text: string): string
-{
-    const end = text.indexOf(". ");
-    return end === -1 ? text : text.slice(0, end + 1);
 }
 
 function commandHelp(command: AnyCommand): string

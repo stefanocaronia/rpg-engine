@@ -203,7 +203,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
     });
 });
 
-describe("what Matteo's round found (TRV-7–TRV-9)", () => {
+describe("what a review found (TRV-7–TRV-9)", () => {
     it("TRV-7: an event due right as the party reaches a stop stops the journey there, and is said", async () => {
         await ok("write", "Agguato", "--type", "event", "--set", "date=day 3, 10:40");
         const output = await ok("travel", "Rocca");

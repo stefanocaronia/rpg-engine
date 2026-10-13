@@ -28,8 +28,8 @@ interface RevealResult
 
 export const reveal = defineCommand({
     name: "reveal",
-    description: "Record what characters learn: a secret, as Page#Secret, or a whole page they did not know; for one or more characters, the player's character if left out. "
-        + "Use it as soon as a character learns it. It adds the links to their knows and answers in one line, without the text: read a secret with show before you tell it. "
+    description: "Record what characters learn: a secret, as Page#Secret, or a whole page they did not know. "
+        + "Use it as soon as a character learns it. It adds the links to their knows and answers without the text: read a secret with show before you tell it. "
         + "Example: page [Coppa#Veleno, Varro], to [Ettore, Bruna].",
     group: "game",
     positionals: ["page"],

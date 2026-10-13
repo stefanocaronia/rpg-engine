@@ -76,19 +76,19 @@ export const change = defineCommand({
     name: "change",
     description: "Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, an event's clock, coins. "
         + "A counter is a field written as a number (20, from 0 up) or as current/max (12/12, from 0 to the maximum); create it with write, then change it only with this command. "
-        + "by adds or takes away and stops at a limit (damage, healing); spend takes what is paid or used up, and is refused when there is not enough; "
-        + "to sets a value, max, or current/max (15/15 changes the maximum too), even outside the limits. "
-        + 'Money is a field written in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
-        + "recipe applies a rest of the game system, such as long rest, once you have advanced its hours: to the page, or without one to the player character and the companions with them. "
+        + 'Money is a field in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
+        + "recipe applies a rest of the game system once you have advanced its hours. "
         + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf"; or recipe "long rest".',
     group: "game",
     positionals: ["page", "field"],
     input: z.object({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
         field: z.string().optional().describe("the counter or the money, such as hp; none with a recipe"),
-        by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; on the command line write --by=-7"),
-        spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins"),
-        to: z.union([z.number().int(), z.string()]).optional().describe("the new value: a number, max, current/max such as 15/15, or coins; on the command line write --to=-3"),
+        by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7"),
+        spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
+        to: z.union([z.number().int(), z.string()]).optional().describe(
+            "the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3",
+        ),
         why: z.string().optional().describe("what the change is for"),
         recipe: z.string().optional().describe("a recipe of the game system, such as long rest"),
     }),

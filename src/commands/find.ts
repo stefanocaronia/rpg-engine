@@ -11,7 +11,7 @@ const listedSystemPages = 10;
 export const find = defineCommand({
     name: "find",
     description: "Find pages of the world. "
-        + "It looks for a text in their names, fields and text, ignoring case, or lists the pages of a type; the game system's pages are found by their names and fields. "
+        + "It looks for a text in their names, fields and text, or lists the pages of a type; the game system's pages only by their names and fields. "
         + "Use it when you do not know a page's exact name, and before creating a page, to check that it does not exist under another name. "
         + 'Example: text "lanterna"; or type place.',
     group: "game",

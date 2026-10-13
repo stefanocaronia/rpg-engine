@@ -1,5 +1,5 @@
 // What the world map draws (D-318, POS-7): a symbol for each kind of place, in four sizes, and for each biome of a region a colour, from the style sheet, and a
-// mark; the same names as the engine's map/looks.ts, which a test checks. A kind or a biome the page does not know is drawn neutral. Drawn by Joseph for
+// mark; the same names as the engine's map/looks.ts, which a test checks. A kind or a biome the page does not know is drawn neutral. Drawn for
 // rpg-engine: lines on a grid of 24, a biome's marks around 0.
 import { t } from "./text.ts";
 

@@ -39,10 +39,9 @@ interface EffectResult
 
 export const effect = defineCommand({
     name: "effect",
-    description:
-        "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form; on a place, such as rain or magical darkness, it holds for all inside by its name, and its values are the place's own. "
-        + "add gives its name, how long it lasts, who keeps it alive if someone must (concentration), and the values it gives meanwhile; what else it does in play is yours to rule. "
-        + "It ends by itself, and advance or scene says so; end takes it away sooner, or every effect someone keeps alive. "
+    description: "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form. "
+        + "On a place, such as rain or magical darkness, it holds for all inside by its name, and its values are the place's own. "
+        + "Beyond the values it gives, what it does in play is yours to rule. It ends by itself, and advance or scene says so; end takes it away sooner. "
         + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set bonus-ac=2.',
     group: "game",
     positionals: ["action", "page", "name"],
@@ -51,12 +50,14 @@ export const effect = defineCommand({
         page: z.string().optional().describe("who has it: a page, or a copy in the open scene such as Annegato 2"),
         name: z.string().optional().describe("the effect's name, such as Benedizione; a condition of the game system always by its name there, such as Frightened"),
         for: z.string().optional().describe(
-            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; or scene, until it ends; or an occasion of the game system, such as long rest, which its recipe brings. Left out, it lasts until it is ended: so for one that ends with something in the story, such as until they breathe clean air; end it then",
+            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as long rest. "
+                + "Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then",
         ),
         until: z.string().optional().describe("add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for"),
-        by: z.string().optional().describe("add: who keeps it alive, such as [[Lena]]; end: take away every effect they keep, on everyone"),
+        by: z.string().optional().describe("add: who keeps it alive, if someone must (concentration), such as [[Lena]]; end: take away every effect they keep, on everyone"),
         set: fieldValues.optional().describe(
-            "add: the values it reads while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. What must outlive it, such as hit points it adds, change on the page instead",
+            "add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. "
+                + "What must outlive it, such as hit points it adds, change on the page instead",
         ),
         why: z.string().optional().describe("what caused it, or ended it"),
     }),

@@ -10,7 +10,7 @@ import { stopTree } from "./stop.ts";
 // The npm package of each program.
 const packages: Record<HelperName, string> = { codex: "@openai/codex", claude: "@anthropic-ai/claude-code" };
 
-// How long the player has to sign in, in the browser that opened (Elena's probe: neither program stops waiting by itself).
+// How long the player has to sign in, in the browser that opened (neither program stops waiting by itself).
 const loginWait = 10 * 60 * 1000;
 
 // How long install waits for the sign-in's link, or its end, before it answers: the probe's printed its link at once.

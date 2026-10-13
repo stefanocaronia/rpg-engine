@@ -32,21 +32,20 @@ interface ImageResult
 export const image = defineCommand({
     name: "image",
     description: "Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. "
-        + "It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; "
-        + "a page without one shows the picture of the page it derives from, such as a goblin's icon. "
-        + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. "
-        + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
-        + "for a quest what the character knows of it, never what they do not know; for the player character or a companion, when the player asks, their portrait as the player described them; "
-        + "for a character or a creature met, what the character sees of them, a disguise as the disguise, once for each kind of creature, whose copies show it. "
+        + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a goblin's icon. "
+        + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. "
+        + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: "
+        + "for the player character or a companion only when the player asks; for a creature once for each kind, whose copies show it. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
     group: "game",
     positionals: ["page", "file"],
     input: z.object({
         page: z.string().describe("the page that gets the picture"),
-        file: z.string().optional().describe("the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
+        file: z.string().optional().describe("the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
         describe: z.string().optional().describe(
-            "instead of file, for a place: what the party sees arriving; for a quest: what the character knows of it; for one of the party: their look, their people as this world has them and the rest as the player described it; "
-                + "for a character or a creature met: what the character sees of them, never what it does not know; in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
+            "instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; "
+                + "for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, "
+                + "a disguise as the disguise; never what the character does not know. The picture is made where it can be, and comes by itself",
         ),
     }),
 

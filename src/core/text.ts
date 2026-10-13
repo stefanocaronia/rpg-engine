@@ -14,6 +14,13 @@ function comparable(text: string): string
     return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
 }
 
+/** The first sentence of a text, up to its first ". ", as the help and the commands' reference give a command's description. */
+export function firstSentence(text: string): string
+{
+    const end = text.indexOf(". ");
+    return end === -1 ? text : text.slice(0, end + 1);
+}
+
 /** A noun with its article, as messages write it: "a character", "an item". */
 export function withArticle(noun: string): string
 {

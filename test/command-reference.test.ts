@@ -11,10 +11,10 @@ describe("commandReference", () => {
         expect(written, "docs/commands.md is out of date: run npm run docs and commit it").toBe(commandReference(commands));
     });
 
-    it("gives each command in its group, read-only or not, its positional parameters and each parameter's type, whether it is optional and its description", () => {
+    it("gives each command in its group with the first sentence of its description, read-only or not, its positional parameters and each parameter's type, whether it is optional and its description", () => {
         const pick = defineCommand({
             name: "pick",
-            description: "Pick something.",
+            description: "Pick something. Use it when the player cannot choose.",
             group: "game",
             readOnly: true,
             positionals: ["what"],

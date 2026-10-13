@@ -22,9 +22,8 @@ type RouteResult =
 export const route = defineCommand({
     name: "route",
     description: "How far a place is by road, and how long the journey takes: the stops and roads of the quickest way, the distance and the days, at the party's pace or another. "
-        + "With across, straight across country to a place with a position, through the regions and their terrain. "
-        + "It moves no one and lets no time pass: to make the journey, use travel. "
-        + "Example: to Rocca; or to Rocca, from Guadoscuro, pace fast; or to Torre, across.",
+        + "With across, straight across country, through the regions and their terrain. It moves no one and lets no time pass: to make the journey, use travel. "
+        + "Example: to Rocca, from Guadoscuro, pace fast; or to Torre, across.",
     group: "game",
     readOnly: true,
     positionals: ["to"],

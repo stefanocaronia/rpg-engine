@@ -13,7 +13,7 @@ import { cleanSvg, svgIn } from "./svg.ts";
 // How long a picture may take before the engine gives it up: the probe's took 18 to 74 seconds.
 const longest = 3 * 60 * 1000;
 
-// Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer (Elena's probe, 12 October).
+// Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer.
 const drawing = (claude: string): string =>
     `${claude} -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
     + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You draw pictures as SVG code from a brief. You reply with the SVG alone."`;

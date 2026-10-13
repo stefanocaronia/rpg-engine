@@ -122,7 +122,11 @@ export function About({ product, system }: { product: string; system?: { name: s
                 </div>
             </details>
             <footer class="about-fine">
-                <p>{`© 2026 Stefano Caronia · ${product}`}</p>
+                <p>
+                    {"© 2026 "}
+                    <a href={footLinks.author} target="_blank" rel="noreferrer">Stefano Caronia</a>
+                    {` · ${product}`}
+                </p>
             </footer>
         </section>
     );

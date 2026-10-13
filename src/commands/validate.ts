@@ -7,7 +7,7 @@ import { campaignProblems } from "./problems.ts";
 export const validate = defineCommand({
     name: "validate",
     description: "Check the whole campaign and say how to fix each problem. "
-        + "It looks for files that cannot be read, standard fields, links to pages, sections or secrets that do not exist, pictures that are missing, things in two places, repeated names, the settings and the log. "
+        + "It checks unreadable files, standard fields, links to missing pages, sections or secrets, missing pictures, things in two places, repeated names, the settings and the log. "
         + "Use it when status reports problems, or after pages were changed by hand. Read-only, no parameters.",
     group: "game",
     readOnly: true,

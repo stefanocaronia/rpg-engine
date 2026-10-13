@@ -11,9 +11,8 @@ import { installedSystemName } from "./game-world.ts";
 export const init = defineCommand({
     name: "init",
     description: "Create a new campaign. "
-        + "It makes the settings, the present, the log, the sessions, the folders of the world, the .mcp.json through which an AI host such as Claude Code finds these tools, "
-        + "and the AGENTS.md and CLAUDE.md that send it to them. "
-        + "Use it once, when the player starts a new campaign; then ask the player for the settings that are still missing and set them with config. "
+        + "It writes the settings, the log, the world's folders, and the .mcp.json, AGENTS.md and CLAUDE.md through which an AI host finds these tools. "
+        + "Use it once, when the player starts a new campaign; then ask the player for the missing settings and set them with config. "
         + 'Example: name "The Salt Isles", language en, system 5e.',
     group: "campaign",
     positionals: ["folder"],

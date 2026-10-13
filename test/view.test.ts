@@ -186,7 +186,7 @@ describe("the player's view", () => {
     });
 });
 
-describe("the player's view, after Matteo's round", () => {
+describe("the player's view, after a review", () => {
     it("D-254: names only who and what the character knows: copies and strangers by the words of the page, unknown places elsewhere", async () => {
         await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
         await ok("write", "Covo segreto", "--type", "place");

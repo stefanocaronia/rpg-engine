@@ -1,4 +1,4 @@
-// The map of the place where the party is (GRD-6, D-323, D-325), in Joseph's ink and washes on light paper in both themes: walls hatched in bundles with a
+// The map of the place where the party is (GRD-6, D-323, D-325), in ink and washes on light paper in both themes: walls hatched in bundles with a
 // shade along them, the floor's outline rounded where it meets rock, the ground by the place's look and its kinds, the things of the legend drawn by kind, by
 // square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting raised off the paper, a foe the master marked glowing (D-415); then the key, and who
 // is where in words, the map's twin.

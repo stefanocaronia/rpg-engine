@@ -10,14 +10,14 @@ import { campaignWorld } from "./game-world.ts";
 
 export const advance = defineCommand({
     name: "advance",
-    description: "Let time pass in the story, whenever it does, before you narrate it: by a duration, such as 10m, 4h or 1d 6h, or to a later game date, such as day 3, 06:00. "
+    description: "Let time pass in the story, whenever it does, before you narrate it: by a duration or to a later game date. "
         + "At the first scene, set the date the game starts on with to, at the scene's hour. Time never goes back. "
-        + "It stops at the first planned event that comes due, names it and says how to play it; on a new day, it lists the events' clocks to move. "
+        + "It stops at the first planned event that comes due and says how to play it; on a new day, it lists the events' clocks to move. "
         + 'Example: by 8h, why "a night at the inn".',
     group: "game",
     input: z.object({
         by: z.string().optional().describe("how much time passes, in days, hours and minutes: 10m, 4h, 1d 6h"),
-        to: z.string().optional().describe("the game date to reach, such as day 3, 06:00 (day 3 alone is its midnight); the first one sets when play starts, at the hour of the first scene, such as day 1, 18:00"),
+        to: z.string().optional().describe("the game date to reach, such as day 3, 06:00 (day 3 alone is its midnight); the first one sets when play starts, such as day 1, 18:00"),
         why: z.string().optional().describe("what the time is spent on"),
     }),
 

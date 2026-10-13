@@ -139,7 +139,7 @@ describe("travel off the roads (TRV-12, TRV-13)", () => {
         expect(await ok("show", "Ettore")).not.toContain("Is in:");
         expect(await ok("status")).toContain("Journey: stopped in the open, 2 km south of Bivio.");
         expect(await ok("view")).toContain("Ettore, in the open");
-        // A companion never put anywhere is in no place too, but not in the open with the party (Matteo's round).
+        // A companion never put anywhere is in no place too, but not in the open with the party.
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("travel", "--toward", "S", "--distance", "1 km")).toContain("Ettore and Lena travel south");
     });

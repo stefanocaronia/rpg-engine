@@ -6,6 +6,7 @@ import { t } from "./text.ts";
 
 /** Where the project lives, and how to support it. */
 export const footLinks = {
+    author: "https://stefanocaronia.it",
     github: "https://github.com/stefanocaronia/rpg-engine",
     npm: "https://www.npmjs.com/package/rpg-engine",
     support: "https://www.paypal.com/paypalme/stefanocaronia",
@@ -17,7 +18,11 @@ export function PageFoot({ product, system }: { product: string; system?: { name
     return (
         <footer class="page-foot">
             <p class="foot-own">
-                <span>{`© 2026 Stefano Caronia · ${product}`}</span>
+                <span>
+                    {"© 2026 "}
+                    <a href={footLinks.author} target="_blank" rel="noreferrer">Stefano Caronia</a>
+                    {` · ${product}`}
+                </span>
                 <a href={footLinks.github} target="_blank" rel="noreferrer" aria-label={t("{product} on GitHub", { product })} data-tip="GitHub">
                     <Icon name="github" />
                 </a>

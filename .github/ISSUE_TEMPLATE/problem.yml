@@ -1,0 +1,43 @@
+name: Something went wrong
+description: A bug, a confusing moment, or something the master got wrong while you played.
+labels: [bug]
+body:
+  - type: textarea
+    id: did
+    attributes:
+      label: What you did
+      description: The steps, or what you wrote to the master. Leave out your campaign's secrets if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you saw, with the exact message if there was one. A screenshot of the dashboard helps.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RPG Engine version
+      description: What `rpg --version` prints.
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Your AI agent and model
+      description: Such as Claude Code with Opus, or Codex with GPT-5.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Your computer
+      description: Windows, macOS or Linux.

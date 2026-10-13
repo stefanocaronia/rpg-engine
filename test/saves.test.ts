@@ -252,7 +252,7 @@ describe("the death of the player character (SAV-7)", () => {
     });
 });
 
-describe("the saves, after Matteo's round", () => {
+describe("the saves, after a review", () => {
     it("SAV-5: a load that stops halfway leaves its mark, status says so, and save load finishes it in any mode", async () => {
         await scene("Uno");
         await ok("write", "Ossario", "--type", "place", "--text", "Ossa.");

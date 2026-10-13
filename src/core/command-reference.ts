@@ -1,11 +1,15 @@
 import { z } from "zod";
 import type { Command } from "./registry.ts";
+import { firstSentence } from "./text.ts";
 
 type Schema = z.core.JSONSchema._JSONSchema;
 
 const generatedNotice = "<!-- Generated from the definitions of the commands: do not edit it by hand. After changing a command, run npm run docs. -->";
 
-/** The reference of the commands in markdown, grouped as the registry groups them, with each parameter as the MCP server offers it: npm run docs writes it to docs/commands.md. */
+/**
+ * The reference of the commands in markdown, grouped as the registry groups them, each with the first sentence of its description and each parameter as the
+ * MCP server offers it: npm run docs writes it to docs/commands.md. The whole description, written for the AI, stays in the command.
+ */
 export function commandReference(commands: Command<any, any>[]): string
 {
     const groups = [...new Set(commands.map((command) => command.group))];
@@ -19,7 +23,7 @@ function commandSection(command: Command<any, any>): string
     const required = schema.required ?? [];
     const parameters = Object.entries(schema.properties ?? {}).map(([name, field]) => parameterLine(name, field, required.includes(name)));
     const positionals = command.positionals?.length ? ` Positional parameters: ${command.positionals.map(code).join(", ")}.` : "";
-    return [`### ${command.name}`, command.description, `Read-only: ${command.readOnly ? "yes" : "no"}.${positionals}`, parameters.length > 0 ? parameters.join("\n") : "No parameters."].join("\n\n");
+    return [`### ${command.name}`, firstSentence(command.description), `Read-only: ${command.readOnly ? "yes" : "no"}.${positionals}`, parameters.length > 0 ? parameters.join("\n") : "No parameters."].join("\n\n");
 }
 
 function parameterLine(name: string, field: Schema, required: boolean): string

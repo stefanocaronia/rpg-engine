@@ -148,9 +148,9 @@ export type ViewResult =
 export const view = defineCommand({
     name: "view",
     description: "What the player may see, without spoilers: use it, not show, when the player asks what their character knows, remembers or carries. "
-        + "Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary of what happened, "
-        + "without your reasons. With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, "
-        + "and the whole sheet of the character and the companions. A page they do not know reads as one that does not exist. "
+        + "Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary, without your reasons. "
+        + "With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, and the whole sheet of the character or a companion; "
+        + "a page they do not know reads as one that does not exist. "
         + "Example: page Varro; or diary 30.",
     group: "game",
     readOnly: true,
@@ -159,11 +159,11 @@ export const view = defineCommand({
         page: z.string().optional().describe("a page as the player character knows it, or Page#Name for one section or discovered secret; none for the whole view"),
         diary: z.string().optional().describe(`how many lines of the diary, from the last; ${diaryLines} if left out; all only when the player asks for the whole story`),
         rolls: z.string().optional().describe(`for the dashboard: how many of the last public rolls; ${rollsShown} if left out`),
-        map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest the party first, with their kind, distance and direction, and the regions"),
-        settings: z.boolean().optional().describe("for the dashboard: the player's settings, with their values and what each means"),
-        saves: z.boolean().optional().describe("for the dashboard: the saves, with what the campaign's saves setting lets the player do with each"),
-        setup: z.boolean().optional().describe("for the dashboard: the setup, with the campaign's mode and name, what the next mode needs, and the setup's questions"),
-        journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with their goals, counters, clock and deadline, and the story by scenes"),
+        map: z.boolean().optional().describe("the world map as the player character knows it: the places it knows, nearest first, with kind, distance and direction, and the regions"),
+        settings: z.boolean().optional().describe("for the dashboard: the player's settings and what each value means"),
+        saves: z.boolean().optional().describe("for the dashboard: the saves, and what the player may do with each"),
+        setup: z.boolean().optional().describe("for the dashboard: the campaign's mode and name, what the next mode needs, and the setup's questions"),
+        journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes"),
     }),
 
     run(input, context): ViewResult

@@ -19,7 +19,7 @@ const programs: Record<HelperName, { name: string; account: string; gives: strin
 export const install = defineCommand({
     name: "install",
     description: "Install Codex or Claude Code on the player's computer, and open their sign-in. "
-        + "Once the player says yes as status offers it: codex for a ChatGPT account, any plan; claude for Claude Pro or Max. It may take half a minute; the sign-in opens in the player's browser. "
+        + "Once the player says yes as status offers it. It may take half a minute; the sign-in opens in the player's browser. "
         + "Call it again once the player says they signed in.",
     group: "campaign",
     positionals: ["program"],

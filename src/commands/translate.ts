@@ -15,8 +15,8 @@ export const translate = defineCommand({
     name: "translate",
     description: "Translate the player's dashboard into the campaign's language yourself, in the chat. "
         + "Once the player says yes as status offers it, or when they ask; only where the page does not ship that language and nothing here translates it in the background. "
-        + "Call it without phrases: it gives the first batch, with how to translate it; call it again with phrases, that batch translated, until it says the page is done. "
-        + 'The page changes language batch by batch; to the player, only that it is being translated. Example: phrases {"p12": "Tung xúc xắc"}.',
+        + "Without phrases it gives the first batch and how to translate it; call it again with each batch translated until it says the page is done. "
+        + 'The page changes language batch by batch; tell the player only that it is being translated. Example: phrases {"p12": "Tung xúc xắc"}.',
     group: "campaign",
     input: z.object({
         phrases: z.union([z.record(z.string(), z.string()), z.string()]).optional().describe("the last batch translated: from each id, such as p12, to its translation"),

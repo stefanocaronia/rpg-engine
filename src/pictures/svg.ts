@@ -1,5 +1,5 @@
 // An SVG picture drawn by a model (D-342, D-390), never trusted: rebuilt from a white list of elements and attributes, everything else dropped with all it
-// holds, as Elena's probe proved it on scripts, events, styles, outer links, foreign objects, nested roots, animation, use and text; Matteo's on quotes.
+// holds, as probes proved it on scripts, events, styles, outer links, foreign objects, nested roots, animation, use, text and quotes.
 
 // The elements kept, by their names in any case, each written as SVG names it.
 const elements = new Map(

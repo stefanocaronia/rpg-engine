@@ -33,24 +33,24 @@ type RollOutput =
 export const roll = defineCommand({
     name: "roll",
     description: "Roll dice and log the roll. "
-        + "Give what the roll is for and, if it belongs to someone, whose it is; for a roll the player sees, check names it for them, such as Bite or Stealth, while why stays yours. "
-        + "When the player rolls physical dice, pass the faces they rolled as values. "
-        + "When the player must not see the result, make it hidden; give the player its fingerprint only if they ask for it. reveal shows a hidden roll's proof later. "
-        + "Notation: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%. "
-        + "With who, a field of their sheet stands for its value, such as 1d20+athletics. "
-        + "keep writes the dice rolled in a field of who that keeps rolls for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
-        + "use takes one of those instead of the die, as field=value, from who or from the page in from, and logs which roll it replaced. "
+        + "Give why and, if it belongs to someone, who; for a roll the player sees, check names it for them, while why stays yours. "
+        + "When the player rolls physical dice, pass their faces as values. Make it hidden when the player must not see the result. "
+        + "keep stores the dice rolled for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
+        + "use takes one of those instead of the die and logs which roll it replaced. "
         + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
     group: "game",
     positionals: ["notation"],
     input: z.object({
-        notation: z.string().optional().describe("dice to roll: 1d20+5, 2d20kh1, 4d6dl1, 2d6ro<=2, 1d6!, 6d10>=8, 4dF, d%; with who, 1d20+athletics takes the value from their sheet"),
+        notation: z.string().optional().describe(
+            "dice to roll: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%; "
+                + "with who, a field of their sheet stands for its value, such as 1d20+athletics",
+        ),
         why: z.string().optional().describe("what the roll is for"),
         check: z.string().optional().describe("what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know"),
         who: z.string().optional().describe("character the roll belongs to, or a copy in the open scene; leave it out for a free roll of the master"),
         values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
         hidden: z.boolean().optional().describe("only the master sees the result; its fingerprint goes to the player only if they ask for it"),
-        reveal: z.string().optional().describe("id of a hidden roll to reveal"),
+        reveal: z.string().optional().describe("id of a hidden roll whose proof to show, later"),
         keep: z.string().optional().describe("a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held"),
         use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
         from: z.string().optional().describe("who keeps the roll that use takes, when it is not who rolls"),
