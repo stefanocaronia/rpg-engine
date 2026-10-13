@@ -305,6 +305,17 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
     };
 }
 
+/**
+ * Who is in the open scene, by the words the page gives them (D-416): a character by name when the character knows them, else by what it sees of them, else
+ * someone; a copy by its name when it knows its creature, else by what it sees of its kind and its number, else creature 1.
+ */
+export function sceneNames(sight: PlaceSight): string[]
+{
+    const { scene } = readOpenScene(sight.root);
+    const names = scene === undefined ? [] : [...scene.with.map((link) => parsePageReference(link).name), ...Object.keys(scene.copies)];
+    return scene === undefined ? [] : names.map((name) => shownTurn(sight, scene, name));
+}
+
 /** Everyone in a fight, in the order of the turns when there is one, else the characters then the copies; those the view cannot name are left out. */
 function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
 {

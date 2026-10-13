@@ -30,7 +30,7 @@ export { everyGoalTicked, goalsIn, introductionText, type Link, links, readSecti
 export { changedFields, type FieldChange, formatFields, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";
-export { type Renamed, renamedLinks, renamePage } from "./rename-page.ts";
+export { applyRename, planRename, type Renamed, renamedLinks, type RenamePlan } from "./rename-page.ts";
 export { readStops, type Stops, stopsHelp } from "./roads.ts";
 export {
     canHold,
@@ -66,6 +66,7 @@ export {
     type PageMatch,
     pageNamed,
     pagesWithName,
+    pagesWithNameOrAlias,
     pageWithPath,
     parsePageReference,
     searchPages,

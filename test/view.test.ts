@@ -187,7 +187,7 @@ describe("the player's view", () => {
 });
 
 describe("the player's view, after Matteo's round", () => {
-    it("D-254: names only who and what the character knows: copies are counted, strangers are someone, unknown places elsewhere", async () => {
+    it("D-254: names only who and what the character knows: copies and strangers by the words of the page, unknown places elsewhere", async () => {
         await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
         await ok("write", "Covo segreto", "--type", "place");
         // A scene Kira is not in: Bran with the witch, whom Kira never met.
@@ -197,7 +197,7 @@ describe("the player's view, after Matteo's round", () => {
         await ok("move", "Bran", "--to", "Covo segreto");
         const view = await ok("view");
         // The scene went with Bran to a place Kira does not know (CON-6): it has no place she can name.
-        expect(view).toContain("Scene: Nel bosco (combat), with Bran, someone and 2 creatures");
+        expect(view).toContain("Scene: Nel bosco (combat), with Bran, someone, creature 1 and creature 2");
         expect(view).toContain("Bran (companion), elsewhere");
         expect(view).toContain("- A creature: 1d20+4 = 8 [4] + 4");
         expect(view).toContain("- Bran to somewhere");
@@ -352,6 +352,22 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         await ok("write", "Kira", "--add", "knows=[[Brunilde]]");
         expect((await names())[1]).toBe("Brunilde");
         expect((await rpg("scene", "add", "--seen", "Oste=oste")).output).toContain("seen Oste: there is no character or creature of that name in the scene. In it: Kira, Brunilde.");
+    });
+
+    it("keeps one given only by what the character sees of them unknown in every scene after, until knows names them (D-416, VIEW-2)", async () => {
+        await ok("scene", "open", "--title", "Uno", "--type", "social", "--place", "Guado", "--with", "Kira", "--with", "Varro", "--seen", "Varro=uomo incappucciato");
+        expect(await ok("view")).toContain("Scene: Uno (social), at Guado, with Kira and uomo incappucciato");
+        await ok("scene", "close", "--summary", "Un incappucciato passa.");
+        await ok("scene", "open", "--title", "Due", "--type", "social", "--place", "Guado", "--with", "Kira", "--with", "Varro");
+        expect(JSON.parse(await ok("view", "Varro", "--json")).kind).toBe("unknown");
+        expect(await ok("scene", "add", "--seen", "Varro=uomo incappucciato")).toBe("Seen: Varro as uomo incappucciato.");
+        expect((await rpg("scene", "add", "--seen", "Kira=una cacciatrice")).output).toBe(
+            "seen Kira: Kira is of the party, whom the character knows by name. Give seen only for those it does not know, such as a stranger or a creature.",
+        );
+        await ok("scene", "close", "--summary", "Ancora lui.");
+        expect(JSON.parse(await ok("view", "Varro", "--json")).kind).toBe("unknown");
+        await ok("write", "Kira", "--add", "knows=[[Varro]]");
+        expect(await ok("view", "Varro")).toContain("Il mugnaio.");
     });
 
     it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, the panel of the dying (D-314)", async () => {

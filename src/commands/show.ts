@@ -12,6 +12,7 @@ import {
     locate,
     namesakes,
     type Page,
+    pageNamed,
     pagesWithName,
     parsePageReference,
     readSection,
@@ -60,7 +61,8 @@ export const show = defineCommand({
         // A scene that cannot be read shows no copies; validate reports it.
         const { scene } = readOpenScene(root);
         const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), reference.name);
-        const found = findPage(world, reference.name);
+        // A renamed page answers to its old name too, among its aliases (D-417).
+        const found = findPage(world, reference.name) ?? (copy === undefined ? pageNamed(world, reference.name) : undefined);
         const page = found ?? (scene !== undefined && copy !== undefined ? copyPage(copy, scene.copies[copy]) : undefined);
 
         // The open scene's title gives what happened in it so far (SCN-10).

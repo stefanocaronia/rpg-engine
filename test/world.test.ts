@@ -164,7 +164,9 @@ describe("pages written by hand", () => {
 
         writeFileSync(join(folder, "world", "items", "La nebbia.md"), "");
         expect((await rpg("find")).output).toBe(`La nebbia (free page)\nLa nebbia (item)\n\nThe system 5e has ${systemPageCount("5e")} more pages, named in English: give part of a name, in English, to find them.`);
-        expect((await rpg("show", "la nebbia")).output).toBe("Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by hand: names must be unique in the campaign.");
+        expect((await rpg("show", "la nebbia")).output).toBe(
+            'Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by its path, such as rename "world/items/La nebbia.md" "a new name": names must be unique in the campaign.',
+        );
         expect((await rpg("write", "La nebbia", "--set", "fitta=true")).exitCode).toBe(1);
     });
 });

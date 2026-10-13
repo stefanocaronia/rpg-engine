@@ -2048,16 +2048,34 @@ a {
     padding-block: 6px;
     padding-inline: 6px 12px;
     border: 1px solid color-mix(in srgb, var(--gold) 60%, var(--rule));
+    position: relative;
     border-radius: var(--radius-l);
     background: color-mix(in srgb, var(--gold) 8%, var(--panel));
 }
 
+/* The whole strip leads to the quest, and lights as one; the star over it keeps its own click. */
 .followed-what {
     display: grid;
+    position: static;
     flex: 1;
     min-width: 0;
     color: inherit;
     text-decoration: none;
+}
+
+.followed-what::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-l);
+}
+
+.followed-what::after {
+    border-radius: var(--radius-l);
+}
+
+.followed-star {
+    z-index: 1;
 }
 
 .followed-name {

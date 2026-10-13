@@ -1,9 +1,10 @@
 // rename (D-417): a page takes a new name, its file moves and every link to it follows, the open scene too; the old name stays among its aliases.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { FileStore } from "../src/core/store.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -89,5 +90,98 @@ describe("rename (D-417)", () => {
         expect(readdirSync(join(folder, "world", "characters"))).toContain("Neve.md");
         expect(page("characters/Neve.md")).toContain("Una bambina.");
         expect(page("characters/Neve.md")).not.toContain("aliases");
+    });
+
+    it("says nothing of aliases when only the case changes", async () => {
+        expect(await ok("rename", "Lupa", "LUPA")).toBe("Renamed Lupa to LUPA (world/characters/LUPA.md). Links renamed in Kira, Guado.");
+    });
+
+    it("keeps what the player character lived under the old names: someone met, the places of its scenes, its diary", async () => {
+        await ok("write", "Varro", "--type", "character", "--text", "Un mugnaio.");
+        await ok("write", "Guado", "--add", "contains=[[Varro]]");
+        await ok("scene", "open", "--title", "Al guado", "--type", "social", "--place", "Guado", "--with", "Kira", "--with", "Varro");
+        await ok("scene", "close", "--summary", "Kira incontra il mugnaio.");
+        await ok("rename", "Varro", "Sandro");
+        expect(await ok("view", "Sandro")).toContain("Sandro (character)");
+        await ok("rename", "Kira", "Kiara");
+        expect(await ok("view", "Sandro")).toContain("Sandro (character)");
+        await ok("rename", "Guado", "Guado Vecchio");
+        expect(await ok("view", "Guado Vecchio")).toContain("Guado Vecchio (place)");
+    });
+
+    it("refuses a name that is an alias of another page, whose links would lead to the renamed one", async () => {
+        await ok("write", "Bianca", "--type", "character", "--add", "aliases=Neve", "--text", "Una bambina detta Neve.");
+        expect((await rpg("rename", "Lupa", "Neve")).output).toBe(
+            "Neve is an alias of Bianca, whose links would lead to Lupa: give Lupa another name, or first take Neve out of the aliases of Bianca with write Bianca --remove aliases=Neve. Nothing changed.",
+        );
+        expect(readdirSync(join(folder, "world", "characters")).sort()).toEqual(["Bianca.md", "Kira.md", "Lupa.md"]);
+    });
+
+    it("refuses a name that would leave a frontmatter written by hand unreadable, writing nothing", async () => {
+        writeFileSync(join(folder, "world", "places", "Bosco.md"), "---\nnotes: '[[Lupa]] corre'\n---\nUn bosco.\n");
+        expect((await rpg("rename", "Lupa", "L'Aquila")).output).toBe(
+            "Renaming Lupa to L'Aquila would leave the frontmatter of world/places/Bosco.md unreadable, as a ' in a link written between '…' quotes: choose a name without ', or rewrite that field of world/places/Bosco.md by hand between \"…\" quotes, then rename again. Nothing changed.",
+        );
+        expect(existsSync(join(folder, "world", "characters", "Lupa.md"))).toBe(true);
+        expect(page("characters/Kira.md")).toContain("[[Lupa]]");
+        expect(await ok("rename", "Lupa", "L’Aquila")).toContain("Renamed Lupa to L’Aquila");
+    });
+
+    it("adds the old name to aliases written by hand as one text", async () => {
+        writeFileSync(join(folder, "world", "characters", "Lupa.md"), "---\n# la lupa di Kira\naliases: Lupetta\n---\nUna lupa grigia.\n");
+        await ok("rename", "Lupa", "Neve");
+        expect(page("characters/Neve.md")).toBe("---\n# la lupa di Kira\naliases:\n  - Lupetta\n  - Lupa\n---\n\nUna lupa grigia.\n");
+        expect(existsSync(join(folder, "world", "characters", "Lupa.md"))).toBe(false);
+        expect(await ok("show", "Lupetta")).toContain("Neve (character)");
+    });
+
+    it("writes the new page first and removes the old one last: a rename stopped half way is finished by calling it again", async () => {
+        class FailingStore extends FileStore
+        {
+            override write(path: string, text: string): void
+            {
+                if (path.endsWith("Guado.md")) {
+                    throw new Error("EPERM: operation not permitted");
+                }
+
+                super.write(path, text);
+            }
+        }
+
+        const failing = await runCommandLine(["rename", "Lupa", "Neve"], { ...context, files: new FailingStore(context.systemFolders) });
+        expect(failing.output).toBe(
+            "Lupa was renamed only in part (EPERM: operation not permitted). Fix what stopped it, such as a file read-only or open in another program, then call rename Lupa Neve again to finish.",
+        );
+        expect(readdirSync(join(folder, "world", "characters")).sort()).toEqual(["Kira.md", "Lupa.md", "Neve.md"]);
+        expect(await ok("rename", "Lupa", "Neve")).toContain("Renamed Lupa to Neve");
+        expect(readdirSync(join(folder, "world", "characters")).sort()).toEqual(["Kira.md", "Neve.md"]);
+        expect(page("places/Guado.md")).toContain("[[Neve#Morso]]");
+        expect(page("characters/Neve.md")).toContain("aliases:\n  - Lupa\n");
+    });
+
+    it("renames one of two pages with the same name by its path, leaving the links to that name to the other", async () => {
+        await ok("write", "Varro", "--type", "character", "--text", "Il mugnaio.");
+        await ok("write", "Kira", "--add", "knows=[[Varro]]");
+        writeFileSync(join(folder, "world", "places", "Varro.md"), "Il mulino di Varro.\n");
+        expect((await rpg("validate")).output).toContain('Fix: rename one of them by its path, such as rename "world/places/Varro.md" "a new name"');
+        expect(await ok("rename", "world/places/Varro.md", "Mulino di Varro")).toBe(
+            "Renamed Varro to Mulino di Varro (world/places/Mulino di Varro.md). Varro stays among its aliases, so that what keeps the old name still finds it. "
+                + "The links to Varro, in the pages and in the open scene, stay as they are and lead to world/characters/Varro.md, which keeps that name: write [[Mulino di Varro]] by hand in those meant for this page.",
+        );
+        expect(page("characters/Kira.md")).toContain("[[Varro]]");
+        expect(await ok("show", "Varro")).toContain("Varro (character)");
+        expect((await rpg("rename", "world/places/Nessuno", "X")).output).toBe(
+            "There is no page at world/places/Nessuno: give the path as validate shows it, such as world/characters/Varro.md, or the page's name. Nothing changed.",
+        );
+    });
+
+    it("finds a renamed page by its old name in show and in the scene, and reads who is hostile written by hand as one text", async () => {
+        await ok("rename", "Lupa", "Neve");
+        expect(await ok("show", "Lupa")).toContain("Neve (character)");
+        expect(await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Lupa", "--creatures", "Bandit=1")).toContain("In it: Kira");
+        expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("[[Neve]]");
+        const state = readFileSync(join(folder, "state.yaml"), "utf8");
+        writeFileSync(join(folder, "state.yaml"), state.replace("  title: Al guado", "  title: Al guado\n  hostile: Bandit 1"));
+        expect(await ok("scene", "calm", "--who", "Bandit 1")).toBe("Calm: Bandit 1. No one is hostile now.");
     });
 });

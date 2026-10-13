@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, linksIn, locate, type Page, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -101,7 +101,7 @@ interface Brought
 
 type SceneResult =
     | ({ action: "open"; title: string; type: string; opened?: string; place?: string; members: Member[]; around: string; part: string; } & Brought)
-    | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; } & Brought)
+    | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; seen?: Record<string, string>; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
     | { action: "now"; title: string; now: string; }
@@ -199,7 +199,9 @@ export const scene = defineCommand({
 
             case "add": {
                 const last = result.ordered ? " They take their turns last: change the order with scene order if needed." : "";
-                return `Added to ${result.title}: ${membersText(result.members)}.${last}${broughtText(result, result.place)}`;
+                const added = result.members.length === 0 ? "" : `Added to ${result.title}: ${membersText(result.members)}.${last}`;
+                const seen = result.seen === undefined ? "" : `Seen: ${Object.entries(result.seen).map(([name, said]) => `${name} as ${said}`).join(", ")}.`;
+                return `${[added, seen].filter((line) => line !== "").join(" ")}${broughtText(result, result.place)}`;
             }
 
             case "leave": {
@@ -356,7 +358,16 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     const system = campaignSystem(root, context);
     const entered = [...characters.map((page) => characterMember(brought.world, page, system)), ...copyMembers(brought.world, copies)];
     const offMap = offMapNote(brought.world, place === undefined ? undefined : pageWithPath(brought.world, place.path), { ...current, copies: { ...current.copies, ...copies } }, added);
-    return { action: "add", title: current.title, place: place?.name, members: entered, ordered: current.order !== undefined, moved: brought.moved, notes: [...brought.notes, ...(offMap === undefined ? [] : [offMap])] };
+    return {
+        action: "add",
+        title: current.title,
+        place: place?.name,
+        members: entered,
+        ordered: current.order !== undefined,
+        ...(seen === undefined ? {} : { seen }),
+        moved: brought.moved,
+        notes: [...brought.notes, ...(offMap === undefined ? [] : [offMap])],
+    };
 }
 
 /**
@@ -836,6 +847,11 @@ function seenOf(world: World, seen: SceneInput["seen"], characters: Page[], copi
             throw new Error(`seen ${name.trim()}: there is no character or creature of that name in the scene. In it: ${names.length === 0 ? "no one" : names.join(", ")}.`);
         }
 
+        // The party knows itself: seen is for those the character does not know by name.
+        if (characters.some((page) => page.name === named && isPartyMember(page))) {
+            throw new Error(`seen ${named}: ${named} is of the party, whom the character knows by name. Give seen only for those it does not know, such as a stranger or a creature.`);
+        }
+
         if (said.trim() === "") {
             throw new Error(`Give what the character sees of ${named}, in two or three words, such as ${named}=uomo incappucciato.`);
         }
@@ -890,7 +906,8 @@ function creaturePage(world: World, name: string): Page
 function characterPage(world: World, name: string): Page
 {
     const reference = parsePageReference(name).name;
-    const page = findPage(world, reference);
+    // A renamed page answers to its old name too, among its aliases (D-417).
+    const page = pageNamed(world, reference);
 
     if (page === undefined) {
         throw new Error(`There is no page named ${reference}. Create the character with write first, or bring in a creature with creatures.`);
@@ -911,7 +928,8 @@ function characterPage(world: World, name: string): Page
 function placePage(world: World, name: string): Page
 {
     const reference = parsePageReference(name).name;
-    const page = findPage(world, reference);
+    // A renamed page answers to its old name too, among its aliases (D-417).
+    const page = pageNamed(world, reference);
 
     if (page?.type !== "place") {
         throw new Error(page === undefined ? `There is no place named ${reference}. Create it with write, type place, or leave place out.` : `${page.name} is ${withArticle(page.type ?? "free page")}, not a place.`);

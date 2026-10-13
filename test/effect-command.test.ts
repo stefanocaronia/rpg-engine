@@ -273,7 +273,7 @@ describe("effects written by hand (EFF-1, EFF-12)", () => {
         await ok("effect", "add", "Ennio", "Scudo della fede", "--for", "10m", "--set", "ac=15");
         writeFileSync(join(folder, "world", "Ennio.md"), "Una nota.\n");
         expect(await ok("advance", "--by", "1h")).toBe(
-            "day 1, 18:00 → day 1, 19:00.\nEnded: Scudo della fede on Ennio: not written, Two pages have the same name: world/Ennio.md and world/characters/Ennio.md. Rename one of them by hand: names must be unique in the campaign..",
+            'day 1, 18:00 → day 1, 19:00.\nEnded: Scudo della fede on Ennio: not written, Two pages have the same name: world/Ennio.md and world/characters/Ennio.md. Rename one of them by its path, such as rename "world/characters/Ennio.md" "a new name": names must be unique in the campaign..',
         );
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("date: day 1, 19:00");
     });

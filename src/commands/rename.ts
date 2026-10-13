@@ -1,11 +1,12 @@
 import { join } from "node:path";
+import { parseDocument } from "yaml";
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
-import { pageNamed, renamedLinks, renamePage, writePage } from "../pages/index.ts";
+import { applyRename, type Page, pageNamed, pageWithPath, planRename, renamedLinks, type World } from "../pages/index.ts";
 import { readOpenScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
@@ -18,6 +19,8 @@ interface RenameResult
     /** How many links now name it, and in which pages. */
     links: number;
     pages: string[];
+    /** The other page that keeps the old name, whose links are left as they are. */
+    kept?: string;
 }
 
 export const rename = defineCommand({
@@ -25,11 +28,12 @@ export const rename = defineCommand({
     description: "Give a page of the campaign a new name, as when the player names their wolf or the character learns a place's true name (D-417). "
         + "Its file moves, and every link to it in the campaign's pages follows, with its section and its words, as does the open scene; "
         + "the old name stays among its aliases, so that the log and the player's notes, which keep it as it was, still find the page. "
-        + "Example: page Lupa, to Neve.",
+        + "Of two pages with the same name, give the one to rename by its path, as validate shows it: the links to that name stay with the other. "
+        + "Example: page Lupa, to Neve; page world/characters/Varro.md, to Varro il vecchio.",
     group: "game",
     positionals: ["page", "to"],
     input: z.object({
-        page: z.string().describe("the page to rename"),
+        page: z.string().describe("the page to rename: its name, or its path, as world/characters/Varro.md"),
         to: z.string().describe("its new name"),
     }),
 
@@ -37,7 +41,7 @@ export const rename = defineCommand({
     {
         const root = requireCampaign(context.folder);
         const world = campaignWorld(root, context);
-        const page = pageNamed(world, input.page);
+        const page = pageAtPath(world, input.page) ?? pageNamed(world, input.page);
         const to = input.to.trim().normalize("NFC");
 
         if (page === undefined) {
@@ -56,37 +60,71 @@ export const rename = defineCommand({
         }
 
         const from = page.name;
-        const renamed = renamePage(world, page, to);
-        renameInState(root, from, to);
+        // Everything is checked before anything is written: the open scene first, then the page's new file, the links, and the old file last.
+        const plan = planRename(world, page, to);
 
-        // The old name stays among its aliases, but for a change of case alone.
-        if (comparableText(from) !== comparableText(to)) {
-            writePage(campaignWorld(root, context), to, undefined, { add: { aliases: [from] } });
+        if (plan.kept === undefined) {
+            renameInState(root, from, to);
         }
 
-        appendLogEntry(root, newDatedLogEntry(root, context, "page-renamed", "public", { from, to, path: renamed.path }));
-        return { from, to, ...renamed };
+        try {
+            applyRename(plan);
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            throw new Error(`${from} was renamed only in part (${reason}). Fix what stopped it, such as a file read-only or open in another program, then call rename ${from} ${to} again to finish.`);
+        }
+
+        appendLogEntry(root, newDatedLogEntry(root, context, "page-renamed", "public", { from, to, path: plan.path }));
+        return { from, to, path: plan.path, links: plan.links, pages: plan.pages, ...(plan.kept === undefined ? {} : { kept: plan.kept }) };
     },
 
     format(result)
     {
         const links = result.pages.length === 0 ? "" : ` Links renamed in ${result.pages.join(", ")}.`;
-        return `Renamed ${result.from} to ${result.to} (${result.path}).${links} ${result.from} stays among its aliases, so that what keeps the old name still finds it.`;
+        const alias = comparableText(result.from) === comparableText(result.to) ? "" : ` ${result.from} stays among its aliases, so that what keeps the old name still finds it.`;
+        const kept = result.kept === undefined
+            ? ""
+            : ` The links to ${result.from}, in the pages and in the open scene, stay as they are and lead to ${result.kept}, which keeps that name: write [[${result.to}]] by hand in those meant for this page.`;
+        return `Renamed ${result.from} to ${result.to} (${result.path}).${links}${alias}${kept}`;
     },
 });
 
-/** The present follows the new name: its links, and the open scene's names, as its order, its turn and who is hostile (D-415, D-416). */
+/** The page at a path of the campaign, as world/characters/Varro.md, with or without .md; undefined for a name. */
+function pageAtPath(world: World, given: string): Page | undefined
+{
+    const path = given.trim().split("\\").join("/").replace(/^\.\//, "");
+
+    if (!path.includes("/")) {
+        return undefined;
+    }
+
+    const page = pageWithPath(world, path.toLowerCase().endsWith(".md") ? path : `${path}.md`);
+
+    if (page === undefined) {
+        throw new Error(`There is no page at ${given}: give the path as validate shows it, such as world/characters/Varro.md, or the page's name. Nothing changed.`);
+    }
+
+    return page;
+}
+
+/**
+ * The present follows the new name: its links, and the open scene's names, as its order, its turn and who is hostile (D-415, D-416). Refused, changing
+ * nothing, when the links renamed would leave state.yaml unreadable.
+ */
 function renameInState(root: string, from: string, to: string): void
 {
     const path = join(root, "state.yaml");
     const text = files().fresh(path);
+    const { renamed, count } = renamedLinks(text ?? "", from, to);
 
-    if (text !== undefined) {
-        const { renamed, count } = renamedLinks(text, from, to);
+    if (count > 0 && parseDocument(text ?? "").errors.length === 0 && parseDocument(renamed).errors.length > 0) {
+        throw new Error(
+            `Renaming ${from} to ${to} would leave state.yaml unreadable, as a ' in a link written between '…' quotes: choose a name without ', or rewrite that line of state.yaml by hand between "…" quotes, then rename again. Nothing changed.`,
+        );
+    }
 
-        if (count > 0) {
-            files().write(path, renamed);
-        }
+    if (count > 0) {
+        files().write(path, renamed);
     }
 
     const { scene } = readOpenScene(root);

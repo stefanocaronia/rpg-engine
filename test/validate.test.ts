@@ -75,9 +75,13 @@ describe("rpg validate", () => {
         expect(output).toContain("- world/items/Lanterna.md: Lanterna is in Ennio and in Cripta; a thing is in one place only. Fix: move Lanterna, to Ennio or wherever it is: it stays there only.");
         expect(output).toContain('- world/characters/Ennio.md: Ennio has two sections or secrets named "Note". Fix: rename one of them by hand, so that Ennio#Note finds one place.');
         expect(output).toContain("- The frontmatter of world/characters/Rotto.md is not valid YAML");
-        expect(output).toContain("- world/items/ennio.md: Two pages have the same name: world/characters/Ennio.md and world/items/ennio.md. Fix: rename one of them by hand: names must be unique in the campaign.");
+        expect(output).toContain(
+            '- world/items/ennio.md: Two pages have the same name: world/characters/Ennio.md and world/items/ennio.md. Fix: rename one of them by its path, such as rename "world/items/ennio.md" "a new name": names must be unique in the campaign.',
+        );
         expect(output).toContain("- log.jsonl: line 2 is not valid JSON. Fix: repair or remove that line by hand.");
-        expect((await rpg("show", "Ennio")).output).toBe("Two pages have the same name: world/characters/Ennio.md and world/items/ennio.md. Rename one of them by hand: names must be unique in the campaign.");
+        expect((await rpg("show", "Ennio")).output).toBe(
+            'Two pages have the same name: world/characters/Ennio.md and world/items/ennio.md. Rename one of them by its path, such as rename "world/items/ennio.md" "a new name": names must be unique in the campaign.',
+        );
         expect((await rpg("show", "Voto")).exitCode).toBe(0);
     });
 

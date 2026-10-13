@@ -50,8 +50,9 @@ const sceneSchema = z.looseObject({
     turn: z.string().optional(),
     left: z.array(z.string()).optional(),
     gone: z.record(z.string(), z.looseObject({ creature: z.string() })).optional(),
-    hostile: z.array(z.string()).optional(),
-    seen: z.record(z.string(), z.string()).optional(),
+    // Written by hand, who is hostile may be one text, a list of one, and what is seen a number, as a text.
+    hostile: z.union([z.array(z.string()), z.string().transform((one) => [one])]).optional(),
+    seen: z.record(z.string(), z.union([z.string(), z.number().transform(String)])).optional(),
     // What the engine counts, never the master: written wrongly by hand it is forgotten, never a scene that cannot be read.
     moved: z.object({ round: z.number().int().positive(), turn: z.string(), squares: z.number().nonnegative() }).optional().catch(undefined),
 });

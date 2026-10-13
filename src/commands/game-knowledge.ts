@@ -1,7 +1,7 @@
 // What the player character knows, as the player's view reads it (D-250, VIEW-2, VIEW-3): the pages it knows and the text of each as it knows it.
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
-import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithName, parsePageReference, readSection, textParts, textsIn, withoutComments, type World } from "../pages/index.ts";
+import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithNameOrAlias, parsePageReference, readSection, textParts, textsIn, withoutComments, type World } from "../pages/index.ts";
 import { readOpenScene } from "./game-scene.ts";
 
 /** What the player character knows: the pages, and the secrets by the page that writes them. */
@@ -28,7 +28,8 @@ export function playerCharacter(world: World): Page | undefined
  */
 export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
 {
-    const named = (name: string): Page[] => pagesWithName(world, parsePageReference(name).name).slice(0, 1);
+    // A name the log or knows keeps finds a renamed page by its old name, among its aliases (D-417).
+    const named = (name: string): Page[] => pagesWithNameOrAlias(world, parsePageReference(name).name).slice(0, 1);
     // A link in knows, to a page or to one of its secrets, read with its secret (REV-1).
     const known = textsIn(pc.fields.knows).flatMap(links);
     const secrets = new Set(known.filter((link) => link.section !== undefined).map((link) => secretKey(link.page, link.section ?? "")));
@@ -46,7 +47,7 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),
         ...locate(world, pc).chain,
         // The places it was in, and those that hold them, as the regions it crossed (D-316).
-        ...livedOf(root, pc).flatMap(named).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
+        ...livedOf(root, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
     ]);
     return { pc, pages, secrets };
 }
@@ -128,27 +129,27 @@ function secretKey(page: string, secret: string): string
 }
 
 /**
- * The names of what the player character lived, as the log keeps it: the characters and places of the scenes it was in, those closed and the open one, and where
- * it was moved from and to.
+ * The pages of what the player character lived, as the log keeps it: the characters and places of the scenes it was in, those closed and the open one, and where
+ * it was moved from and to; never one the master gave only by what the character sees of them, in any scene (D-416, VIEW-2).
  */
-function livedOf(root: string, pc: Page): string[]
+function livedOf(root: string, world: World, pc: Page): Page[]
 {
-    const isPc = (name: string): boolean => comparableText(parsePageReference(name).name) === comparableText(pc.name);
+    const pageOf = (name: string): Page | undefined => pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
+    const isPc = (name: string): boolean => pageOf(name) === pc;
     const log = readLog(root);
     const closed = log.filter((entry) => entry.type === "scene-closed").map((entry) => entry.data as { place?: unknown; with?: unknown; left?: unknown; unnamed?: unknown; });
     const { scene } = readOpenScene(root);
     const scenes = [...closed, ...(scene === undefined ? [] : [{ place: scene.place, with: scene.with, left: scene.left, unnamed: Object.keys(scene.seen ?? {}) }])];
-    const met = scenes.flatMap((seen) => {
-        // Who the master gave only by what the character sees of them stays unnamed (D-416).
-        const unnamed = new Set(textList(seen.unnamed).map(comparableText));
-        const people = [...textList(seen.with), ...textList(seen.left)];
-        return people.some(isPc) ? [...people.filter((name) => !unnamed.has(comparableText(parsePageReference(name).name))), ...textList(seen.place)] : [];
+    const unnamed = new Set(scenes.flatMap((one) => textList(one.unnamed).flatMap((name) => pageOf(name) ?? [])));
+    const met = scenes.flatMap((one) => {
+        const people = [...textList(one.with), ...textList(one.left)];
+        return people.some(isPc) ? [...people, ...textList(one.place)] : [];
     });
     const moved = log.filter((entry) => entry.type === "moved" && textList(entry.data.pages).some(isPc)).flatMap((entry) => {
         const from = entry.data.from !== null && typeof entry.data.from === "object" ? Object.entries(entry.data.from).filter(([name]) => isPc(name)).map(([, holder]) => holder) : [];
         return [...textList(from), ...textList(entry.data.to)];
     });
-    return [...met, ...moved];
+    return [...met, ...moved].flatMap((name) => pageOf(name) ?? []).filter((page) => !unnamed.has(page));
 }
 
 function textList(value: unknown): string[]

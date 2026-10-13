@@ -10,7 +10,7 @@ import { comparableText } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { homeSystemWords } from "../page-words.ts";
-import { declaredKind, locate, type Page, pagesWithName, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { declaredKind, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
@@ -28,7 +28,7 @@ import { readOpenScene } from "./game-scene.ts";
 import { readPresent } from "./game-time.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
-import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
+import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -351,7 +351,7 @@ export const view = defineCommand({
             ...(place === undefined ? {} : { place }),
             ...(openScene === undefined ? {} : { openScene }),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
-            scene: sceneLine(root, named),
+            scene: sceneLine(sight, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
             rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture)),
@@ -502,8 +502,9 @@ function knownNamedPage(world: World, knowledge: Knowledge, name: unknown): Page
         return undefined;
     }
 
+    // The log keeps a renamed page by its old name, among its aliases (D-417).
     const reference = parsePageReference(name).name;
-    const page = pagesWithName(world, reference)[0] ?? systemPageNamed(world, reference);
+    const page = pagesWithNameOrAlias(world, reference)[0] ?? systemPageNamed(world, reference);
     return page !== undefined && knowsPage(knowledge, page) ? page : undefined;
 }
 
@@ -536,25 +537,21 @@ function diaryCount(asked: string | undefined): number
 }
 
 /**
- * "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, someone and 2 creatures": the open scene as the player sees it; who the character does not know
- * is someone, and the copies are counted, never named (D-254).
+ * "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, uomo col coltello, brigante 1 and brigante 2": the open scene as the player sees it, with the words
+ * of the page (D-254, D-416): who the character does not know by what it sees of them, else someone, and two or more of them as others.
  */
-function sceneLine(root: string, named: (name: unknown) => string | undefined): string | undefined
+function sceneLine(sight: PlaceSight, named: (name: unknown) => string | undefined): string | undefined
 {
-    const { scene } = readOpenScene(root);
+    const { scene } = readOpenScene(sight.root);
 
     if (scene === undefined) {
         return undefined;
     }
 
-    const people = scene.with.map((link) => named(link));
-    const strangers = people.filter((name) => name === undefined).length;
-    const copies = Object.keys(scene.copies).length;
-    const present = [
-        ...people.filter((name): name is string => name !== undefined),
-        ...(strangers === 0 ? [] : [strangers === 1 ? "someone" : `${strangers} others`]),
-        ...(copies === 0 ? [] : [copies === 1 ? "1 creature" : `${copies} creatures`]),
-    ];
+    const names = sceneNames(sight);
+    const strangers = names.filter((name) => name === "someone").length;
+    // Who is someone, counted where the first of them stands.
+    const present = names.flatMap((name, index) => (name !== "someone" ? [name] : names.indexOf("someone") === index ? [strangers === 1 ? "someone" : `${strangers} others`] : []));
     const place = named(scene.place);
     const listed = present.length <= 1 ? present.join("") : `${present.slice(0, -1).join(", ")} and ${present.at(-1)}`;
     return `${scene.title} (${scene.type})${place === undefined ? "" : `, at ${place}`}${present.length === 0 ? "" : `, with ${listed}`}`;
@@ -787,7 +784,7 @@ function placeLook(root: string, context: Context, world: World, knowledge: Know
 /** The place a save was made in, with its picture, else that of the nearest place that holds it, as a room of the inn shows the inn. */
 function savedPlace(root: string, context: Context, world: World, name: string): { place: string; kind?: string; picture?: { file: string; version: number; }; }
 {
-    const page = pagesWithName(world, name)[0];
+    const page = pagesWithNameOrAlias(world, name)[0];
     const kind = page?.fields.kind;
     const picture = page === undefined
         ? undefined

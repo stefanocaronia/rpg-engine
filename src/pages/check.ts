@@ -118,7 +118,11 @@ function hidingProblems(world: World, page: Page): Problem[]
 
 function repeatedPageProblem(pages: Page[]): Problem
 {
-    return { path: pages[1].path, message: `Two pages have the same name: ${pages.map((page) => page.path).join(" and ")}.`, fix: "rename one of them by hand: names must be unique in the campaign" };
+    return {
+        path: pages[1].path,
+        message: `Two pages have the same name: ${pages.map((page) => page.path).join(" and ")}.`,
+        fix: `rename one of them by its path, such as rename "${pages[1].path}" "a new name": names must be unique in the campaign`,
+    };
 }
 
 function fieldProblems(page: Page): Problem[]

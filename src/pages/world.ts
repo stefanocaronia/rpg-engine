@@ -141,7 +141,7 @@ export function findPage(world: World, name: string): Page | undefined
     const found = pagesWithName(world, name);
 
     if (found.length > 1) {
-        throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by hand: names must be unique in the campaign.`);
+        throw new Error(`Two pages have the same name: ${found.map((page) => page.path).join(" and ")}. Rename one of them by its path, such as rename "${found[1].path}" "a new name": names must be unique in the campaign.`);
     }
 
     return found[0] ?? systemPageNamed(world, name);
@@ -183,6 +183,20 @@ export function pagesWithName(world: World, name: string): Page[]
 }
 
 const namesByWorld = new WeakMap<World, Map<string, Page[]>>();
+
+/** The pages of the campaign with this name, else the one page with it among its aliases, as a renamed page under its old name (D-417); none when two pages share the alias. */
+export function pagesWithNameOrAlias(world: World, name: string): Page[]
+{
+    const named = pagesWithName(world, name);
+    const aliased = named.length > 0 ? [] : withAlias(world.pages, name);
+    return named.length > 0 ? named : aliased.length === 1 ? aliased : [];
+}
+
+/** The pages of the campaign, but `page`, that have `name` among their aliases. */
+export function otherPagesWithAlias(world: World, page: Page, name: string): Page[]
+{
+    return withAlias(world.pages, name).filter((other) => other !== page);
+}
 
 /** The page of the campaign at this path, from an index built once for each world (D-194). */
 export function pageWithPath(world: World, path: string): Page | undefined
