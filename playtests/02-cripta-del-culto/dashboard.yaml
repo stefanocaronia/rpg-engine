@@ -1,0 +1,22 @@
+# The moments of the run with the dashboard open (start.md, "With the dashboard"): before the player's message `before`, the run does this on the page, as the
+# page's own Settings and Notes do, and tells the player with `tell`. Each one tries a check of the checklist's watch list for the dashboard.
+- before: 3
+  tell: "you have never used this dashboard: ask the master, briefly and out of game, how you roll from it."
+- before: 5
+  note:
+    title: Il culto
+    text: Secondo me Malco non è il vero capo. Qualcuno gli manda ordini da dietro la grata, e la ragazza sull'altare è solo un'esca.
+    share: true
+  tell: "in the dashboard's Journal you have written a note with a theory, «Malco is not the real leader: someone behind the grating gives him orders, and the girl on the altar is only bait», and shared it with the master. Go on playing; speak of it only if you feel like it."
+- before: 8
+  setting:
+    name: dice
+    value: physical
+  tell: "you have found your old dice in a drawer and have just set physical dice in the dashboard's Settings: from now on you roll them yourself and give the master the faces. Invent the faces as real dice would give them: any face can come up."
+- before: 13
+  setting:
+    name: dice
+    value: digital
+  tell: "rolling by hand slows you down: you have set digital dice again in the dashboard's Settings."
+- before: 16
+  tell: "ask the master, briefly and out of game, where on the dashboard you see your quests."

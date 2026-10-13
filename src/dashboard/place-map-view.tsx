@@ -161,7 +161,7 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                         {Array.from({ length: map.rows }, (_, row) => <text key={`r${row}`} x={left - 10} y={Y(row) + size / 2} text-anchor="end" dominant-baseline="middle">{row + 1}</text>)}
                     </g>
                     <g class="lm-tokens">
-                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} hostile={one.hostile === true} x={middle(one)[0]} y={middle(one)[1]} />)}
+                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} hostile={one.hostile === true} x={middle(one)[0]} y={middle(one)[1]} scale={scale} />)}
                     </g>
                     {picking !== undefined && (
                         <g class="lm-picks">
@@ -682,15 +682,24 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
  * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414); anyone the pip of
  * their state at the lower right, and its words in the token's title (D-419).
  */
-function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; })
+function Token({ one, index, acting, hostile, x, y, scale }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; scale: number; })
 {
     const [symbols] = usePref(tokenSymbolsPref);
     const side = one.side ?? 1;
     const r = size * side * 0.43;
     const number = one.stranger ? /[A-Z]?\d+$/.exec(one.name)?.[0] : undefined;
     const pip = symbols ? sideOf(one.role) : undefined;
+    // On a map shown small, as on a phone, the marks grow to stay readable, each toward the token's middle by as much as it grows, its paper too, so that the
+    // box round it keeps its outer edges and two tokens side by side keep their marks apart as at full size.
+    const grow = Math.min(1.4, Math.max(1, 0.65 / scale));
+    // The two pips below share the square's width with their neighbours' on either side: past 1.12 the player's character's, gold-ringed, would touch the
+    // state's pip, on the token or the next one; the number, alone above, grows on.
+    const below = Math.min(grow, 1.12);
+    const inward = (radius: number, paper: number, by = below): number => (by - 1) * (radius + paper);
+    const pipPaper = pip === "you" ? 3 : 1.5;
     return (
-        <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
+        // Whoever acts grows from the middle of their square, which stays where it is seen from above.
+        <g class={`lm-token ${one.role}${acting ? " acting" : ""}`} style={acting ? { transformOrigin: `${x}px ${y}px` } : undefined}>
             <title>{[`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`, ...statusWords(one)].join(" · ")}</title>
             {hostile && (
                 <>
@@ -703,7 +712,7 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
                 <circle class="lm-disc" cx={x} cy={y} r={r} />
                 {/* The coin's dark edge, under the picture: seen only where there is none. */}
                 <circle class="lm-ring" cx={x} cy={y} r={r - 0.5} />
-                {one.image && !one.stranger
+                {one.image
                     ? <image href={`/images/${encodeURIComponent(one.image.file)}?v=${one.image.version}`} x={x - r} y={y - r} width={r * 2} height={r * 2} clip-path={`url(#lm-token-${index})`} />
                     : (
                         // The mark grows with the token, a large creature's too.
@@ -719,31 +728,61 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
                 <path class="lm-bevel-lit" d={crescent(x, y, r, 1.5)} />
                 <path class="lm-bevel-shade" d={crescent(x, y, r, -1.5)} />
             </g>
-            {pip !== undefined && <MapPip side={pip} icon={one.stranger ? undefined : one.icon} x={x - r * 0.725} y={y + r * 0.725} />}
-            {/* A little further in than the side's pip, so that two tokens side by side keep their pips apart. */}
-            <MapStatus one={one} x={x + r * 0.68} y={y + r * 0.68} />
+            {pip !== undefined && <MapPip side={pip} icon={one.stranger ? undefined : one.icon} x={x - r * 0.725 + inward(pipRadius, pipPaper)} y={y + r * 0.725 - inward(pipRadius, pipPaper)} grow={below} />}
+            {one.image !== undefined && number !== undefined && <MapNumber number={number} x={x + r * 0.725 - inward(numberRadius, 1.5, grow)} y={y - r * 0.725 + inward(numberRadius, 1.5, grow)} grow={grow} />}
+            {/* Further in than the side's pip, so that two tokens side by side keep a pixel between their pips, the player's character's gold-ringed one too. */}
+            <MapStatus one={one} x={x + r * 0.56 - inward(statusRadius, 1.5)} y={y + r * 0.56 - inward(statusRadius, 1.5)} grow={below} />
         </g>
     );
 }
 
-/** A token's pip on the map (D-414): as on the page, a disc of the side's colour with its symbol, ringed in the paper's colour; the same size for any creature. */
-function MapPip({ side, icon, x, y }: { side: Side; icon: string | undefined; x: number; y: number; })
+// The marks on a token as on one of 40 pixels on the page: the side's pip of 17, the state's of 12, a number's coin 13 high.
+const pipRadius = size * 0.43 * (17 / 40);
+const statusRadius = size * 0.43 * (12 / 40);
+const numberRadius = size * 0.43 * (13 / 40);
+
+/**
+ * A token's pip on the map (D-414): as on the page, a disc of the side's colour with its symbol, ringed in the paper's colour; the same size for any creature,
+ * larger by `grow` on a map shown small.
+ */
+function MapPip({ side, icon, x, y, grow }: { side: Side; icon: string | undefined; x: number; y: number; grow: number; })
 {
-    // As on a token of 40 pixels, a pip of 17 with a symbol of 12.
-    const radius = size * 0.43 * (17 / 40);
+    const radius = pipRadius * grow;
+    // A symbol of 12 in the pip of 17.
     const scale = (radius * 2 * (12 / 17)) / 24;
     return (
         <g class={`lm-pip ${side}`} aria-hidden="true">
-            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + (side === "you" ? 3 : 1.5)} />
-            {side === "you" && <circle class="lm-pip-gold" cx={x} cy={y} r={radius + 1.5} />}
+            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + (side === "you" ? 3 : 1.5) * grow} />
+            {side === "you" && <circle class="lm-pip-gold" cx={x} cy={y} r={radius + 1.5 * grow} />}
             <circle class="lm-pip-disc" cx={x} cy={y} r={radius} />
             <path class="lm-pip-symbol" d={icon ?? sideIcons[side]} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
         </g>
     );
 }
 
-/** The pip of someone's state on the map (D-419): as on the page, smaller than the side's, a second coin behind when there are more; the same size for any creature. */
-function MapStatus({ one, x, y }: { one: ShownGrid["at"][number]; x: number; y: number; })
+/**
+ * A stranger's number over their picture (D-420): as on the page, a small dark coin at the token's upper right, ringed in the paper's colour; wider for two
+ * letters; larger by `grow` on a map shown small.
+ */
+function MapNumber({ number, x, y, grow }: { number: string; x: number; y: number; grow: number; })
+{
+    // Figures of 8.5 on the coin.
+    const height = numberRadius * 2 * grow;
+    const width = Math.max(height, (number.length * 6 + 4) * grow);
+    return (
+        <g class="lm-number-pip" aria-hidden="true" font-size={8.5 * grow}>
+            <rect class="lm-pip-paper" x={x - width / 2 - 1.5 * grow} y={y - height / 2 - 1.5 * grow} width={width + 3 * grow} height={height + 3 * grow} rx={height / 2 + 1.5 * grow} />
+            <rect class="lm-number-disc" x={x - width / 2} y={y - height / 2} width={width} height={height} rx={height / 2} />
+            <text class="lm-number-small" x={x} y={y + 0.5 * grow} text-anchor="middle" dominant-baseline="middle">{number}</text>
+        </g>
+    );
+}
+
+/**
+ * The pip of someone's state on the map (D-419): as on the page, smaller than the side's, a second coin behind when there are more; the same size for any
+ * creature, larger by `grow` on a map shown small.
+ */
+function MapStatus({ one, x, y, grow }: { one: ShownGrid["at"][number]; x: number; y: number; grow: number; })
 {
     const [shown] = useChoice(conditionsPref);
     const marks = statusMarks(one);
@@ -752,21 +791,22 @@ function MapStatus({ one, x, y }: { one: ShownGrid["at"][number]; x: number; y: 
         return null;
     }
 
-    // As on a token of 40 pixels, a pip of 14 with a symbol of 11.2.
-    const radius = size * 0.43 * (14 / 40);
+    const radius = statusRadius * grow;
+    const paper = 1.5 * grow;
+    // A symbol of 9.6 in the pip of 12.
     const scale = (radius * 2 * (24 / 30)) / 24;
-    // The second coin up more than out, within the token's square.
-    const behind = { x: radius * 0.2, y: radius * 0.45 };
+    // The second coin up more than out, within the token's square: a crescent of about 3 of the token's 40 past the paper round the first (D-420).
+    const behind = { x: radius * 0.3, y: radius * 0.85 };
     const strong = marks[0].kind === "state";
     return (
         <g class={["lm-status", strong ? "strong" : "", shown === "hover" ? "on-hover" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
             {marks.length > 1 && (
                 <>
-                    <circle class="lm-pip-paper" cx={x + behind.x} cy={y - behind.y} r={radius + 1.5} />
+                    <circle class="lm-pip-paper" cx={x + behind.x} cy={y - behind.y} r={radius + paper} />
                     <circle class="lm-status-back" cx={x + behind.x} cy={y - behind.y} r={radius} />
                 </>
             )}
-            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + 1.5} />
+            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + paper} />
             <circle class="lm-status-disc" cx={x} cy={y} r={radius} />
             <path class="lm-status-symbol" d={marks[0].icon} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
         </g>

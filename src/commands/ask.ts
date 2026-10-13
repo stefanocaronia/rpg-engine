@@ -133,7 +133,7 @@ export const ask = defineCommand({
             case "absent":
                 return `The player has no buttons open now: ask them in words this time what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop.`;
             case "physical":
-                return `The player rolls their own dice: ask the roll in words, with what is at stake and the checks: ${result.asked}. Then stop; they will tell the values.`;
+                return `The player rolls their own dice: tell first in the story what happened before this roll, such as the blow that calls for it, then ask it in words, with what is at stake and the checks: ${result.asked}. Then stop; they will tell the values.`;
             default:
                 return `No answer from the buttons: ask the player in words what the call held: ${result.asked}. Then stop.`;
         }

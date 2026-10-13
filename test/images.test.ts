@@ -106,10 +106,13 @@ image: "[[Lupo.png]]"`);
         expect(await refused("image", "Ennio", picture("notes.txt", new TextEncoder().encode("hello")))).toBe(
             "notes.txt is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file. Nothing changed.",
         );
-        expect(await refused("image", "Nessuno", picture("a.png", png))).toBe("There is no page Nessuno: write it first, or look for its name with find.");
+        expect(await refused("image", "Nessuno", picture("a.png", png))).toBe("There is no page Nessuno: write it first, or look for its name with find. Nothing changed.");
+        // A creature of the game system: a creature of the campaign that derives from it takes the picture, and enters the scenes in its place (D-420).
         expect(await refused("image", "Goblin", picture("a.png", png))).toBe(
-            'Goblin is a creature of the game system 5e: read-only. Give the picture to a page of the campaign that derives from it, such as one made with write "Grak", type character, set creature=[[Goblin]]; then image Grak with the file. Nothing changed.',
+            'Goblin is a creature of the game system 5e: read-only. Write a creature of the campaign that derives from it: write "<name>", type creature, set creature=[[Goblin]]; '
+                + 'give that its picture with image, and bring it into scenes in place of Goblin, as creatures "<name>"=2. Nothing changed.',
         );
+        expect(await refused("image", "Dagger", picture("a.png", png))).toContain("Dagger is an item of the game system 5e: read-only. Give the picture to a page of the campaign that derives from it");
         expect(existsSync(join(folder, "images"))).toBe(false);
     });
 });
@@ -134,7 +137,7 @@ describe("validate", () => {
     });
 });
 
-describe("pictures of places, quests and the party made from words (D-308, D-408, PIC-1–PIC-4)", () => {
+describe("pictures of places, quests, the party and those met made from words (D-308, D-408, D-420, PIC-1–PIC-4)", () => {
     /** A picture maker that never spends: ready or not, and its picture or a refusal; it keeps the briefs it was given. */
     function maker(ready: true | string, made?: string): PictureMaker & { briefs: string[]; }
     {
@@ -159,8 +162,8 @@ describe("pictures of places, quests and the party made from words (D-308, D-408
         context = { ...context, pictures: made };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("makes no pictures (pictures: not chosen)");
         await ok("config", "pictures", "new places");
-        await ok("write", "Oste", "--type", "character");
-        expect(await refused("image", "Oste", "--describe", "Un uomo")).toContain("describe makes pictures of places, quests and the party, and Oste is a character out of the party");
+        await ok("write", "Bisaccia", "--type", "item");
+        expect(await refused("image", "Bisaccia", "--describe", "Una bisaccia")).toContain("describe makes pictures of places, quests, characters and creatures, and Bisaccia is an item");
         context = { ...context, pictures: maker("Codex is not logged in on this computer") };
         expect(await refused("image", "Guado", "--describe", "Un guado di pietre")).toContain("Codex is not logged in on this computer. If your own tools make pictures");
         context = { ...context, pictures: made };
@@ -207,15 +210,21 @@ describe("pictures of places, quests and the party made from words (D-308, D-408
 
     it("asks the master to ask the player once where pictures can be made, then for the place the party is in without one", async () => {
         context = { ...context, pictures: maker(true) };
-        expect(await ok("status")).toContain("Pictures: this computer can make the pictures of places and quests");
-        // new places, as campaigns wrote it before quests had pictures, is the value that took its place (D-388).
+        expect(await ok("status")).toContain("Pictures: this computer can make the pictures of places, quests and those met");
+        // new places and new places and quests, as campaigns wrote it before quests and then those met had pictures, are the value that took their place (D-388, D-420).
         await ok("config", "pictures", "new places");
-        expect(await ok("config", "pictures")).toContain("pictures: new places and quests");
+        expect(await ok("config", "pictures")).toContain("pictures: new elements");
+        await ok("config", "pictures", "new places and quests");
+        expect(await ok("config", "pictures")).toContain("pictures: new elements");
         // Written by hand, as campaigns had it, it reads the same, and validate finds nothing wrong with it.
         const settings = join(folder, "campaign.yaml");
-        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^pictures: .*$/m, "pictures: new places"));
-        expect(await ok("config", "pictures")).toContain("pictures: new places and quests");
-        expect(await ok("validate")).not.toContain("pictures");
+
+        for (const old of ["new places", "new places and quests"]) {
+            writeFileSync(settings, readFileSync(settings, "utf8").replace(/^pictures: .*$/m, `pictures: ${old}`));
+            expect(await ok("config", "pictures")).toContain("pictures: new elements");
+            expect(await ok("validate")).not.toContain("pictures");
+        }
+
         expect(await ok("status")).toContain("Guado has no picture: once you have told it, have one made with image, page Guado, describe");
         expect(await ok("move", "Ennio", "--to", "Mulino")).toContain("Mulino has no picture");
         // A quest that opens without a picture asks for one too, once (D-388).
@@ -227,6 +236,107 @@ describe("pictures of places, quests and the party made from words (D-308, D-408
         await ok("config", "pictures", "none");
         expect(await ok("status")).not.toContain("picture");
         expect(await ok("write", "La torre", "--type", "quest", "--set", "status=open")).not.toContain("has no picture");
+    });
+
+    it("has the token of one met made from what the character sees, named and derived only as far as it knows them, one for each kind of creature", async () => {
+        await ok("config", "pictures", "on request");
+        const made = maker(true, picture("made.png", png));
+        context = { ...context, pictures: made };
+        await ok("write", "Brigante", "--type", "creature", "--set", "creature=[[Bandit]]");
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "creature=[[Brigante]]");
+        // Not known: neither the name nor what they derive from reaches the brief, only what is seen.
+        expect(await ok("image", "Varro", "--describe", "Un uomo incappucciato, la barba grigia")).toContain("Varro's picture is now images/Varro.png");
+        expect(made.briefs[0]).toContain("Asset type: square portrait for the round token of a character");
+        expect(made.briefs[0]).toContain("Primary request: a portrait of someone: Un uomo incappucciato, la barba grigia");
+        expect(made.briefs[0]).not.toMatch(/Varro|Brigante|Bandit|Faithfulness/);
+        expect(await ok("image", "Brigante", "--describe", "Un predone col volto coperto")).toContain("Brigante's picture is now images/Brigante.png");
+        expect(made.briefs[1]).toContain("Asset type: square picture of a creature for the round token");
+        expect(made.briefs[1]).toContain("a close-up of the head, its face or muzzle centred");
+        expect(made.briefs[1]).toContain("Primary request: the head of a creature: Un predone col volto coperto");
+        expect(made.briefs[1]).not.toMatch(/Brigante|Bandit/);
+        // Known: by name, with what it knows they derive from.
+        await ok("write", "Ennio", "--add", "knows=[[Varro]]", "--add", "knows=[[Brigante]]");
+        await ok("image", "Varro", "--describe", "Il mugnaio");
+        expect(made.briefs[2]).toContain("Primary request: a portrait of Varro, Brigante: Il mugnaio");
+        expect(made.briefs[2]).not.toContain("Bandit");
+        // A creature of the game system is never in knows: the brief names Brigante alone.
+        await ok("image", "Brigante", "--describe", "Un predone");
+        expect(made.briefs[3]).toContain("Primary request: the head of Brigante: Un predone");
+        // A copy shows its creature's picture; a creature of the game system is read-only.
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--creatures", "Brigante=2", "--creatures", "Goblin");
+        expect(await refused("image", "Brigante 1", "--describe", "Un predone")).toBe(
+            "Brigante 1 is a copy of Brigante in the scene, and shows its creature's picture, one for all its copies. Give it to Brigante: image Brigante, with file or describe. Nothing changed.",
+        );
+        expect(await refused("image", "Goblin 1", "--describe", "Un goblin")).toContain(
+            'Goblin 1 is a copy of Goblin in the scene, and shows its creature\'s picture, one for all its copies. Goblin is a creature of the game system 5e: read-only. Write a creature of the campaign that derives from it: write "<name>", type creature, set creature=[[Goblin]]',
+        );
+    });
+
+    it("shows a stranger's own picture by a name that tells nothing, never one of what they derive from nor the system's (D-420, VIEW-6)", async () => {
+        await ok("write", "Brigante", "--type", "creature", "--set", "creature=[[Bandit]]");
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "creature=[[Brigante]]");
+        await ok("write", "Oste", "--type", "character", "--set", "role=npc");
+        await ok("image", "Brigante", picture("b.png", png));
+        await ok("image", "Oste", picture("o.svg", svg));
+        await ok(
+            "scene",
+            "open",
+            "--title",
+            "Rissa",
+            "--type",
+            "combat",
+            "--with",
+            "Ennio",
+            "--with",
+            "Varro",
+            "--with",
+            "Oste",
+            "--creatures",
+            "Brigante=2",
+            "--creatures",
+            "Goblin",
+            "--seen",
+            "Varro=uomo incappucciato",
+            "--seen",
+            "Oste=uomo col grembiule",
+        );
+        const scene = JSON.parse(await ok("view", "--json")).openScene;
+        const hidden = (file: string) => ({ file: expect.stringMatching(new RegExp(`^[0-9a-f]{24}\\.${file}$`)), version: expect.any(Number) });
+        expect(scene.who).toEqual([
+            expect.objectContaining({ name: "Ennio", role: "pc" }),
+            expect.not.objectContaining({ image: expect.anything() }),
+            expect.objectContaining({ name: "uomo col grembiule", stranger: true, image: hidden("svg") }),
+            expect.objectContaining({ name: "creature A", stranger: true, count: 2, image: hidden("png") }),
+            expect.not.objectContaining({ image: expect.anything() }),
+        ]);
+        expect(scene.fighters.map((fighter: { image?: unknown; }) => fighter.image !== undefined)).toEqual([false, false, true, true, true, false]);
+        // Neither the file's name nor anything else tells who they are.
+        expect(JSON.stringify(scene)).not.toMatch(/Varro|Oste|Brigante|Goblin|Bandit/);
+        // Known, they show it by its own name.
+        await ok("write", "Ennio", "--add", "knows=[[Oste]]");
+        expect(JSON.parse(await ok("view", "--json")).openScene.who[2]).toMatchObject({ name: "Oste", image: { file: "Oste.svg" } });
+    });
+
+    it("reminds the master, as one met without a picture enters a scene, to have theirs made from what the character sees", async () => {
+        await ok("write", "Brigante", "--type", "creature", "--set", "creature=[[Bandit]]");
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc");
+        await ok("write", "Lena", "--type", "character", "--set", "role=companion");
+        await ok("config", "pictures", "on request");
+        expect(await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Varro", "--creatures", "Brigante=2")).not.toContain("picture");
+        await ok("scene", "close", "--summary", "Fuggiti.");
+        await ok("config", "pictures", "new elements");
+        const opened = await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Varro", "--creatures", "Brigante=2", "--creatures", "Goblin");
+        // The party's portraits are made when the player asks (D-408); a kind of creature is named once, whatever its copies.
+        expect(opened).toContain("No picture yet of Varro, Brigante: have each made with image, page and describe, what the character sees, never what it does not know.");
+        expect(opened).toContain('Goblin is of the game system: for a picture, write a creature of the campaign from it, as write "<name>", type creature, set creature=[[Goblin]], and bring that in.');
+        expect(opened).not.toMatch(/No picture yet of [^:]*(Ennio|Lena)/);
+        await ok("image", "Varro", picture("varro.png", png));
+        await ok("image", "Brigante", picture("brigante.png", png));
+        await ok("write", "Oste", "--type", "character", "--set", "role=npc");
+        const added = await ok("scene", "add", "--with", "Oste", "--creatures", "Brigante");
+        expect(added).toContain("No picture yet of Oste: have each made");
+        expect(added).not.toContain("Brigante:");
+        expect(await ok("scene", "add", "--creatures", "Brigante")).not.toContain("picture");
     });
 });
 

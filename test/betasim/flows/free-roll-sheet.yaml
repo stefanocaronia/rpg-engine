@@ -2,7 +2,7 @@ name: A free roll of a skill from the sheet, just to see
 covers: [free-roll-sheet, sheet-read]
 setup: {}
 steps:
-  - phone: {tapOn: Skills}   # on a phone the sheet's cards start closed
+  # Skills is the sheet's first card, open on a phone too.
   - tapOn: Insight
     concept: {name: a line of the sheet rolls its dice, difficulty: 2}
   - advance: 2s

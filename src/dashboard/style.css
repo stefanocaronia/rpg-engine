@@ -3793,10 +3793,53 @@ a {
     bottom: -2px;
 }
 
+/* A stranger's number over their picture (D-420): a small dark coin at the end of the token's upper edge, light figures on the stranger's disc as when there is
+   no picture, ringed in the colour of what it stands on; wider for B1. One place for each mark, so that none covers another: the number above, the side below
+   at the start, the state below at the end. */
+.token .token-number {
+    --pip: 13px;
+    position: absolute;
+    inset-inline-end: -2px;
+    top: -2px;
+    z-index: 3;
+    display: block;
+    width: calc(var(--pip) * var(--wide, 1));
+    height: var(--pip);
+    border-radius: calc(var(--pip) / 2);
+    background: var(--disc);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3), 0 0 0 1.5px var(--pip-ring, var(--panel));
+}
+
+.token .token-number svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: #fff;
+    font: 700 8.5px system-ui, sans-serif;
+}
+
+/* On the large token of whoever acts, a little larger. */
+.turn-now .token-number {
+    --pip: 15px;
+}
+
+/* On the next one's small token, a smaller coin. */
+.next-who .token-number {
+    --pip: 12px;
+    inset-inline-end: -3px;
+    top: -3px;
+}
+
+.token.large .token-number {
+    --pip: 17px;
+    inset-inline-end: 0;
+    top: 0;
+}
+
 /* The pip of someone's state (D-419): at the end of the token's lower edge, smaller than the side's; a condition dark on cream, a state of the engine (dead, at 0,
    kept from acting) cream on dark; a second coin behind it, up and out, when there are more, drawn by its shadows; under the mouse only, when the player asks. */
 .token .status-pip {
-    --pip: 14px;
+    --pip: 12px;
     --pip-paper: #f1e8d3;
     --pip-ink: #1b2233;
     --pip-back: #cfc4ab;
@@ -3855,7 +3898,7 @@ a {
 }
 
 .token.large .status-pip {
-    --pip: 20px;
+    --pip: 17px;
     inset-inline-end: -1px;
     bottom: -1px;
 }
@@ -7000,6 +7043,7 @@ svg.icon {
 .turn-now h2 {
     font-size: 1.9rem;
     line-height: 1.1;
+    text-wrap: balance;
 }
 
 .turn-next {
@@ -7130,6 +7174,8 @@ svg.icon {
     margin: 0;
     font-size: 0.95rem;
     font-weight: 700;
+    /* Two lines of a like length: never a copy's number alone on the second. */
+    text-wrap: balance;
 }
 
 .turn-name .you {
@@ -7892,16 +7938,48 @@ svg.icon {
     stroke-width: 1.6;
 }
 
-/* Whoever acts: a ring of the accent, as on paper, off the token. */
 /* Whoever acts, raised off the paper as a piece taken in hand (D-419): a little up and larger, with its pips, its shadow wide and soft; no ring. */
+/* Lifted, as a piece taken in hand: larger over the middle of its square, its shadow falling lower on the paper. */
 .lm-token.acting {
-    transform-box: fill-box;
-    transform-origin: center;
-    transform: translateY(-4px) scale(1.1);
+    transform-box: view-box;
+    transform: scale(1.1);
 }
 
 .lm-token.acting > g[filter] {
-    filter: drop-shadow(0 2px 1px rgb(42 29 16 / 0.4)) drop-shadow(0 10px 6px rgb(42 29 16 / 0.45));
+    filter: drop-shadow(0 3px 2px rgb(42 29 16 / 0.4)) drop-shadow(0 12px 8px rgb(42 29 16 / 0.42));
+}
+
+/* It breathes in place while it acts, slowly, as if held over the board; still where motion is reduced. */
+@media (prefers-reduced-motion: no-preference) {
+    .lm-token.acting {
+        animation: lm-breathe 2.6s var(--ease) infinite;
+    }
+
+    .lm-token.acting > g[filter] {
+        animation: lm-breathe-shadow 2.6s var(--ease) infinite;
+    }
+}
+
+@keyframes lm-breathe {
+    0%,
+    100% {
+        transform: scale(1.07);
+    }
+
+    50% {
+        transform: scale(1.12);
+    }
+}
+
+@keyframes lm-breathe-shadow {
+    0%,
+    100% {
+        filter: drop-shadow(0 2px 2px rgb(42 29 16 / 0.42)) drop-shadow(0 8px 6px rgb(42 29 16 / 0.38));
+    }
+
+    50% {
+        filter: drop-shadow(0 4px 3px rgb(42 29 16 / 0.36)) drop-shadow(0 14px 10px rgb(42 29 16 / 0.4));
+    }
 }
 
 .lm-wall-under,
@@ -8032,6 +8110,19 @@ svg.icon {
 .lm-number {
     fill: #fff;
     font: 700 19px system-ui, sans-serif;
+}
+
+/* A stranger's number over their picture (D-420), as on the page. */
+.lm-number-disc {
+    fill: #182c4c;
+    stroke: rgb(255 255 255 / 0.3);
+    stroke-width: 0.8;
+}
+
+.lm-number-small {
+    fill: #fff;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
 }
 
 .lm-token.ghost {

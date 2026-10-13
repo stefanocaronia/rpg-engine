@@ -331,11 +331,14 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
 async function makeDemoFight(rpg: (...args: string[]) => Promise<void>): Promise<void>
 {
     const now = "Due incappucciati rovesciano i tavoli e sguainano i coltelli";
-    await rpg("scene", "open", "--title", "Rissa alla locanda", "--type", "combat", "--place", "Locanda del Guado", "--creatures", "Bandit=2", "--seen", "Bandit=brigante incappucciato", "--now", now);
-    await rpg("move", "Bandit 1", "--at", "I4");
-    await rpg("move", "Bandit 2", "--at", "G7");
-    await rpg("scene", "order", "--order", "Ettore", "--order", "Bandit 1", "--order", "Lupa", "--order", "Bandit 2");
-    await rpg("scene", "hostile", "--who", "Bandit 1", "--who", "Bandit 2");
+    // A creature of the campaign over the system's, with its mini (D-420), made once by Codex for the demo.
+    copyFileSync(join(import.meta.dirname, "brigante.webp"), join(demoFolder, "images", "Brigante.webp"));
+    await rpg("write", "Brigante", "--type", "creature", "--set", "creature=[[Bandit]]", "--set", "image=[[Brigante.webp]]", "--text", "Un brigante della Strada del Re.");
+    await rpg("scene", "open", "--title", "Rissa alla locanda", "--type", "combat", "--place", "Locanda del Guado", "--creatures", "Brigante=2", "--seen", "Brigante=brigante incappucciato", "--now", now);
+    await rpg("move", "Brigante 1", "--at", "I4");
+    await rpg("move", "Brigante 2", "--at", "G7");
+    await rpg("scene", "order", "--order", "Ettore", "--order", "Brigante 1", "--order", "Lupa", "--order", "Brigante 2");
+    await rpg("scene", "hostile", "--who", "Brigante 1", "--who", "Brigante 2");
 }
 
 /** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; one on the side; one done and one failed. */

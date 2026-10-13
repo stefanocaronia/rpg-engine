@@ -403,7 +403,7 @@ function PageSettings()
 function SetSwatch({ value }: { value: string; })
 {
     const look = diceLook(value);
-    return <DieSwatch body={look.body} ink={look.ink} picture={look.finish.texture === undefined ? undefined : texturePath(look.finish.texture)} />;
+    return <DieSwatch body={look.swatch ?? look.body} ink={look.ink} picture={look.finish.texture === undefined ? undefined : texturePath(look.finish.texture)} />;
 }
 
 /** A value to choose, with what it means when chosen, and a picture before its name. */
@@ -485,6 +485,11 @@ function diceSetLabel(value: string): string | undefined
         emerald: t("Emerald"),
         sapphire: t("Sapphire"),
         amethyst: t("Amethyst"),
+        "ruby-crystal": t("Crystal ruby"),
+        "sapphire-crystal": t("Crystal sapphire"),
+        "amethyst-crystal": t("Crystal amethyst"),
+        glass: t("Glass"),
+        ice: t("Ice"),
         steel: t("Steel"),
         brass: t("Brass"),
         walnut: t("Walnut"),

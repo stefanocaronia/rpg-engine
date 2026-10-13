@@ -6,6 +6,7 @@ import { shownTheme } from "../theme.ts";
 import { burnAway, crack } from "./burn.ts";
 import { celebrate, type Effect, embers, type Glow, lightInk, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import { floorCrackMaterial } from "./floor-cracks.ts";
+import { frostPicture } from "./frost.ts";
 import type { RareFace, Turn, Vector } from "./models.ts";
 import { diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
@@ -39,7 +40,7 @@ export interface Stage
     /** Leaves the window's foot, this many pixels tall, to the plate of the throw: no die lies under it (D-366). */
     cover(pixels: number): void;
     show(poses: (Pose | undefined)[]): void;
-    /** Sets a die that does not count aside: grey a moment, then burnt away, or faded at once when shown instant (D-358). */
+    /** Sets a die that does not count aside: gone out a moment, darker, then burnt away, or faded at once when shown instant (D-358). */
     dim(die: number, instant: boolean): void;
     celebrate(die: number, rare: RareFace, showing: Showing): void;
     hide(): void;
@@ -99,7 +100,22 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
 
     // A body of the set's material; the grain laid from a different place on each die, once its picture is there, so that no two dice look alike.
     const bodyOf = (finish: Finish, colour: string): THREE.MeshStandardMaterial => {
-        const material = new THREE.MeshStandardMaterial({ name: "body", color: colour, roughness: finish.roughness, metalness: finish.metalness });
+        const kind = { name: "body", color: colour, roughness: finish.roughness, metalness: finish.metalness };
+        // A crystal: a varnish that mirrors on its faces, the page and its far faces seen through it.
+        const material = finish.clarity === undefined
+            ? new THREE.MeshStandardMaterial(kind)
+            : new THREE.MeshPhysicalMaterial({ ...kind, clearcoat: 1, clearcoatRoughness: 0.03, transparent: true, opacity: 1 - finish.clarity, side: THREE.DoubleSide });
+
+        if (finish.glassy === true) {
+            glassy(material, finish.prism ?? 0);
+        }
+
+        if (finish.frosted === true) {
+            const frost = frostPicture();
+            material.bumpMap = frost;
+            material.bumpScale = 6;
+            material.roughnessMap = frost;
+        }
 
         if (finish.shine > 0) {
             room ??= new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
@@ -169,7 +185,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     let primed: { finish: string; materials: THREE.Material[]; } | undefined;
 
     const prime = (die: THREE.Object3D, finish: Finish): void => {
-        const key = `${finish.texture ?? ""} ${finish.shine > 0}`;
+        const key = `${finish.texture ?? ""} ${finish.shine > 0} ${finish.clarity ?? ""} ${finish.engraved === true} ${finish.glassy === true} ${finish.frosted === true} ${finish.prism ?? ""}`;
 
         if (primed?.finish === key) {
             return;
@@ -178,14 +194,23 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         primed?.materials.forEach((material) => material.dispose());
         const copies = new THREE.Group();
 
-        // A copy of the die with materials of its own; its grain the set's picture, or none, as a die set aside loses it once grey.
-        const copy = (grainless: boolean): THREE.MeshStandardMaterial[] => {
+        // A copy of the die with materials of its own, its grain the set's picture.
+        const copy = (): THREE.MeshStandardMaterial[] => {
             const object = die.clone();
             const materials: THREE.MeshStandardMaterial[] = [];
             object.traverse((part) => {
                 if (part instanceof THREE.Mesh) {
                     const material = (part.material as THREE.MeshStandardMaterial).clone();
-                    material.map = material.map === null || grainless || finish.texture === undefined ? null : grain(finish.texture);
+                    material.map = material.map === null || finish.texture === undefined ? null : grain(finish.texture);
+
+                    if (material.userData.engraved === true) {
+                        engrave(material);
+                    }
+
+                    if (material.userData.glassy === true) {
+                        glassy(material, Number(material.userData.prism ?? 0));
+                    }
+
                     part.material = material;
                     materials.push(material);
                 }
@@ -194,11 +219,11 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
             return materials;
         };
 
-        const cracked = copy(false);
+        const cracked = copy();
         crack(cracked, true);
-        const burnt = [copy(false), ...(finish.texture === undefined ? [] : [copy(true)])];
-        burnt.forEach((materials) => burnAway(new THREE.Group(), materials, false, () => undefined));
-        primed = { finish: key, materials: [cracked, ...burnt].flat() };
+        const burnt = copy();
+        burnAway(new THREE.Group(), burnt, false, () => undefined);
+        primed = { finish: key, materials: [...cracked, ...burnt] };
 
         if (pictures === undefined) {
             pictures = makePictures();
@@ -243,6 +268,13 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                     if (part instanceof THREE.Mesh) {
                         const ink = (part.material as THREE.Material).name === "ink";
                         const material = ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body);
+
+                        if (ink && look.finish.engraved === true) {
+                            engrave(material);
+                        }
+
+                        // Through a crystal, its numbers before its body, which veils the far ones.
+                        part.renderOrder = ink ? 0 : 1;
                         part.material = material;
                         part.castShadow = true;
                         materials.push(material);
@@ -285,27 +317,18 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                 shine: material.envMapIntensity,
             }));
 
-            // Out in a blink, not at a stroke (D-358): a metal set aside mirrors little; a wood or a stone loses its grain, which its colour only tinted, once out.
-            const greying = (amount: number): void => {
+            // Out in a blink, not at a stroke (D-358): a metal set aside mirrors little; a wood or a stone keeps its grain, darker, as its colour tints it.
+            const goingOut = (amount: number): void => {
                 turning.forEach(({ material, from, to, shine }) => {
                     material.color.lerpColors(from, to, amount);
                     material.envMapIntensity = shine * (1 - 0.7 * amount);
-
-                    if (amount === 1 && material.map !== null) {
-                        if (![...grains.values()].includes(material.map)) {
-                            material.map.dispose();
-                        }
-
-                        material.map = null;
-                        material.needsUpdate = true;
-                    }
                 });
             };
 
             const dropped = dice[die];
 
             if (dropped !== undefined) {
-                effects.push(burnAway(dropped.object, dropped.materials, instant, greying));
+                effects.push(burnAway(dropped.object, dropped.materials, instant, goingOut));
 
                 if (!moving) {
                     moving = true;
@@ -353,6 +376,72 @@ function seenUnder(middle: THREE.Vector3, eye: THREE.Vector3): THREE.Vector3
 {
     const along = eye.y / Math.max(1e-6, eye.y - middle.y);
     return eye.clone().lerp(middle, along).setY(0);
+}
+
+/** Shows a die's numbers on its far half, seen through a clear die, only as engravings: faint and colourless; the near ones as they are. */
+function engrave(material: THREE.MeshStandardMaterial): void
+{
+    material.transparent = true;
+    material.userData.engraved = true;
+    // Its shaders known apart from a plain ink's, even with a crack or a burn wrapped around this.
+    material.customProgramCacheKey = (): string => `engraved ${material.onBeforeCompile.toString()}`;
+
+    material.onBeforeCompile = (shader) => {
+        // How much the face a number is on is turned away from the camera: 0 facing it or aside, 1 turned away; a number goes from one to the other whole.
+        shader.vertexShader = shader.vertexShader
+            .replace(
+                "#include <common>",
+                `#include <common>
+attribute vec3 dieFace;
+varying float engraving;`,
+            )
+            .replace(
+                "#include <project_vertex>",
+                `#include <project_vertex>
+engraving = smoothstep(0.05, -0.3, dot(normalize(normalMatrix * dieFace), normalize(-mvPosition.xyz)));`,
+            );
+        shader.fragmentShader = shader.fragmentShader
+            .replace(
+                "#include <common>",
+                `#include <common>
+varying float engraving;`,
+            )
+            .replace(
+                "#include <color_fragment>",
+                `#include <color_fragment>
+diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), engraving);
+diffuseColor.a *= mix(1.0, 0.2, engraving);`,
+            );
+    };
+
+    material.needsUpdate = true;
+}
+
+/**
+ * Makes a die all its reflections, as a glass: they add to what is behind it in full, which shows through it but at its edges, where it is seen aslant and
+ * mirrors more; there its light splits into the colours of the rainbow by the share given, as through a prism.
+ */
+function glassy(material: THREE.MeshStandardMaterial, prism: number): void
+{
+    material.blending = THREE.CustomBlending;
+    material.blendSrc = THREE.OneFactor;
+    material.blendDst = THREE.OneMinusSrcAlphaFactor;
+    material.userData.glassy = true;
+    material.userData.prism = prism;
+    material.customProgramCacheKey = (): string => `glassy ${prism} ${material.onBeforeCompile.toString()}`;
+
+    material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+            "#include <opaque_fragment>",
+            `float facing = abs(dot(normalize(normal), normalize(vViewPosition)));
+float edge = pow(1.0 - facing, 3.0);
+outgoingLight += (0.5 + 0.5 * cos(6.2831853 * (vec3(0.0, 0.33, 0.67) + facing * 2.5))) * edge * ${prism.toFixed(2)};
+diffuseColor.a = clamp(diffuseColor.a + 0.8 * edge, 0.0, 1.0);
+#include <opaque_fragment>`,
+        );
+    };
+
+    material.needsUpdate = true;
 }
 
 /** A colour gone out: its grey, as light as it was, then darker by the share given. */

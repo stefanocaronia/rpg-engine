@@ -220,9 +220,9 @@ const playerWords: Record<(typeof playerSettingNames)[number], { about: string; 
     dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
     units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
     pictures: {
-        about: "the pictures of places and quests, made on this computer",
+        about: "the pictures of places, quests and those you meet, made on this computer",
         values: pictureWays,
-        means: { none: "no pictures", "on request": "those you ask for", "new places and quests": "one for each new place and quest" },
+        means: { none: "no pictures", "on request": "those you ask for", "new elements": "one for each new place and quest, and for each one you meet" },
     },
     lines: { about: "what never appears in the game" },
     veils: { about: "what happens only off screen, without details" },

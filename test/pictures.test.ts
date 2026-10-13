@@ -45,6 +45,13 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(portrait).toContain('viewBox="0 0 1024 1024" (1:1)');
         expect(portrait).toContain("Primary request: a portrait of Mira, Hill Dwarf, Dwarf; Level 3 Cleric: una chierica dai capelli grigi");
         expect(portrait).toContain("Faithfulness: exactly what the game says they are (Hill Dwarf, Dwarf; Level 3 Cleric)");
+        // A kind of creature met: its head, as the character sees it (D-420).
+        const creature = svgBrief({ kind: "creature", name: "a creature", seen: "un lupo dal pelo bianco", unseen: ["ragni"] });
+        expect(creature).toContain('Asset type: square picture of a creature for the round token of a tabletop role-playing game, viewBox="0 0 1024 1024" (1:1)');
+        expect(creature).toContain("Primary request: the head of a creature: un lupo dal pelo bianco");
+        expect(creature).toContain("a close-up of the head, its face or muzzle centred");
+        expect(creature).toContain("Never show: ragni");
+        expect(creature).not.toContain("Faithfulness");
     });
 });
 

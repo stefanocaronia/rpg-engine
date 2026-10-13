@@ -65,7 +65,7 @@ RPG Engine is made for any tabletop RPG. Today it ships one game system: **fifth
 - The **largest model** your host offers. A small model gets fooled: in our tests it told secrets to a player who claimed to be the real master.
 - A web browser, for the dashboard.
 
-The login you use for your host does more: RPG Engine uses it, on your computer, to draw pictures of places, quests and your character, and to translate the dashboard into languages it does not ship. See [Pictures](#311-pictures) and [Languages](#72-languages).
+The login you use for your host does more: RPG Engine uses it, on your computer, to draw pictures of places, quests, those you meet and your character, and to translate the dashboard into languages it does not ship. See [Pictures](#311-pictures) and [Languages](#72-languages).
 
 **Getting a terminal into a folder.** Many steps say "in the campaign folder". On Windows, right-click the folder in File Explorer and choose **Open in Terminal**. On macOS, right-click the folder in Finder and choose **Services > New Terminal at Folder**. Or, in a terminal already open, write `cd` and the folder's path, such as `cd "C:\Users\me\Games\The Salt Isles"`.
 
@@ -170,7 +170,7 @@ You do not need to study the table: it is here to look up. You can change every 
 | **Dice** | Who rolls your character's dice | **digital** (RPG Engine rolls them, on the page), **physical** (you roll your own and tell the faces) | |
 | **Units** | Distances and weights in the story | metric, imperial | |
 | **Companions** | Who travels with you | none, made with you in session zero, made by the master, met in play | |
-| **Pictures** | Pictures of places and quests, and your character's portrait when you ask | none, on request, new places and quests | asked once, only if your computer can make them |
+| **Pictures** | Pictures of places, quests and those you meet, and your character's portrait when you ask | none, on request, new places, quests and those you meet | asked once, only if your computer can make them |
 | **Lines** | What never appears in the game | a list, or none | |
 | **Veils** | What may happen, but only off screen | a list, or none | |
 | **Language** | The language of the game and the dashboard | any | taken from how you write, and confirmed |
@@ -360,7 +360,7 @@ At the top of the dashboard sits the master's avatar, a small robot. Its face fo
 
 ### 3.11 Pictures
 
-RPG Engine can have a picture made for each place you reach and each quest you take, as the **pictures** setting says, and your character's portrait when you ask. It uses what is already on your computer:
+RPG Engine can have a picture made for each place you reach, each quest you take and each character or kind of creature you meet, drawn as you see them, as the **pictures** setting says, and your character's portrait when you ask. It uses what is already on your computer:
 
 - **Codex**, with your ChatGPT login: a painted picture.
 - Otherwise **Claude Code**, with your Claude login: a drawing.
@@ -480,6 +480,8 @@ RPG Engine ships **5e**, from the System Reference Document 5.1 (the 2014 rules,
 - rests that bring back what they should; conditions with their rule text; concentration reminders.
 
 **Content beyond the SRD.** You can play fifth edition with content the SRD lacks, such as a class or a monster from a book you own. The master knows the game, can read your manuals and can search the web. It writes what it needs as pages of your campaign, and RPG Engine works the same with them. What we ship is limited by its licence; what your master knows is not.
+
+RPG Engine ships only original or open-licensed content: for fifth edition, the SRD 5.1 under CC BY 4.0. Anything else that appears in your game is written by your AI or by you, as pages of your campaign on your computer: it is not part of RPG Engine, and we do not distribute it.
 
 RPG Engine is compatible with fifth edition.
 

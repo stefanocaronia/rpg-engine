@@ -330,7 +330,9 @@ export const view = defineCommand({
             return page === undefined ? undefined : shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
         };
 
-        const shownLines = readLog(root).filter((entry) => entry.visibility === "public");
+        const log = readLog(root);
+        const seenAt = seenByRoll(log, readOpenScene(root).scene?.seen);
+        const shownLines = log.filter((entry) => entry.visibility === "public");
         const moment = lastMoment(shownLines);
         const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
@@ -354,7 +356,7 @@ export const view = defineCommand({
             scene: sceneLine(sight, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
-            rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture)),
+            rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture, seenAt.get(entry.id))),
             rollsTotal: shownRolls.length,
             problems: campaignProblems(root, world, context).length,
         };
@@ -410,12 +412,21 @@ function wordsOf(system: GameSystem, language: string, context: Context): System
     return systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
 }
 
-/** A public roll of the log as the player sees it: who rolled, for whom as the character knows them, the check, the dice; never the master's why (VIEW-4). */
-function shownRoll(world: World, entry: LogEntry, named: (name: unknown) => string | undefined, picture: (name: unknown) => ShownRoll["image"]): ShownRoll
+/**
+ * A public roll of the log as the player sees it: who rolled, for whom as the character knows them, else as the scene it was rolled in named them (`seen`, D-421),
+ * the check, the dice; never the master's why (VIEW-4).
+ */
+function shownRoll(
+    world: World,
+    entry: LogEntry,
+    named: (name: unknown) => string | undefined,
+    picture: (name: unknown) => ShownRoll["image"],
+    seen: Record<string, string> | undefined,
+): ShownRoll
 {
     const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
-    const who = data.who === undefined ? undefined : known ?? (isCopyName(world, data.who) ? "creature" : "someone");
+    const who = data.who === undefined ? undefined : known ?? strangerOfRoll(world, data.who, named, seen);
     const image = known === undefined ? undefined : picture(data.who);
     const words = notationParts(String(data.notation ?? ""));
     return {
@@ -657,6 +668,53 @@ function nameText(name: string, first = false): string
 {
     const said = name === "creature" ? "a creature" : name;
     return first && (name === "creature" || name === "someone") ? `${said[0].toUpperCase()}${said.slice(1)}` : said;
+}
+
+/**
+ * What the character saw of those it did not know, in the scene each roll was rolled in, by the roll's id: the seen words the log kept since that scene opened,
+ * and for the scene still open its own, which a scene opened before the log kept them has alone.
+ */
+function seenByRoll(log: LogEntry[], open: Record<string, string> | undefined): Map<string, Record<string, string>>
+{
+    const byRoll = new Map<string, Record<string, string>>();
+    let seen: Record<string, string> = {};
+    let inScene: string[] = [];
+
+    for (const entry of log) {
+        if (entry.type === "scene-opened" || entry.type === "scene-closed") {
+            seen = {};
+            inScene = [];
+        } else if (entry.type === "scene-changed" && entry.data.seen !== null && typeof entry.data.seen === "object") {
+            seen = { ...seen, ...(entry.data.seen as Record<string, string>) };
+        } else if (entry.type === "roll") {
+            byRoll.set(entry.id, seen);
+            inScene.push(entry.id);
+        }
+    }
+
+    for (const id of open === undefined ? [] : inScene) {
+        byRoll.set(id, { ...byRoll.get(id), ...open });
+    }
+
+    return byRoll;
+}
+
+/**
+ * Whom a roll is for when the character does not know them by name, as its scene named them (D-416, D-421): a copy by its name when the character knows its
+ * creature, else by what it saw of its kind and its number, else creature; anyone else by what it saw, else someone.
+ */
+function strangerOfRoll(world: World, who: unknown, named: (name: unknown) => string | undefined, seen: Record<string, string> | undefined): string
+{
+    const name = String(who).trim();
+    const said = (key: string): string | undefined => Object.entries(seen ?? {}).find(([seenName]) => comparableText(seenName) === comparableText(key))?.[1];
+
+    if (!isCopyName(world, name)) {
+        return said(name) ?? "someone";
+    }
+
+    const [, kind = "", number = ""] = /^(.+) (\d+)$/.exec(name) ?? [];
+    const kindSeen = said(kind);
+    return named(kind) !== undefined ? name : kindSeen === undefined ? "creature" : `${kindSeen} ${number}`;
 }
 
 /** Whether a name is a copy's in a scene, such as Lupo mannaro 1: a creature's name and a number, with no page of its own. */

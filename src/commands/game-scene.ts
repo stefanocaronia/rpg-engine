@@ -355,8 +355,11 @@ function sceneChangeLine(data: Record<string, unknown>): string
         return `left: ${data.left.map((name) => withNumbers(String(name))).join(", ")}`;
     }
 
-    if (Array.isArray(data.added)) {
-        return `joined: ${namesText(data.added)}`;
+    const seen = data.seen !== null && typeof data.seen === "object" ? Object.entries(data.seen as Record<string, unknown>).map(([name, said]) => `${name} as ${String(said)}`) : [];
+    const joined = Array.isArray(data.added) && data.added.length > 0 ? [`joined: ${namesText(data.added)}`] : [];
+
+    if (joined.length > 0 || seen.length > 0) {
+        return [...joined, ...(seen.length === 0 ? [] : [`seen: ${seen.join(", ")}`])].join("; ");
     }
 
     return Object.keys(copies).length === 0 ? "" : `copies: ${Object.keys(copies).map(withNumbers).join(", ")}`;

@@ -73,9 +73,10 @@ export const sideIcons: Record<Side, string> = {
 
 /**
  * Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe the master marked glows red a little (D-415).
- * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414); with a state, its pip at the end (D-419).
+ * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414); with a state, its pip at the end (D-419); with a
+ * number, a stranger's as Creature 2's or B1's, a small dark coin at the end of its upper edge, off the face (D-420).
  */
-export function Token({ member, large, hostile, side, status }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; status?: TokenStatus; })
+export function Token({ member, large, hostile, side, status, number }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; status?: TokenStatus; number?: string | undefined; })
 {
     const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
     return (
@@ -86,8 +87,31 @@ export function Token({ member, large, hostile, side, status }: { member: Tokene
                 : <img src={`/images/${encodeURIComponent(member.image.file)}?v=${member.image.version}`} alt="" />}
             {side !== undefined && <TokenPip side={side} icon={member.icon} />}
             <StatusPip status={status} />
+            {number !== undefined && <TokenNumber number={number} />}
         </span>
     );
+}
+
+/**
+ * A stranger's number on their token (D-420), drawn as on the map: HTML text snaps to whole pixels and sits half a pixel off in so small a coin, a drawing does
+ * not. On a coin 13 high, wider for B1.
+ */
+function TokenNumber({ number }: { number: string; })
+{
+    const width = Math.max(13, number.length * 6 + 4);
+    return (
+        <span class="token-number" style={{ "--wide": String(width / 13) }}>
+            <svg viewBox={`0 0 ${width} 13`}>
+                <text x={width / 2 + opticalShift(number)} y={7.25} text-anchor="middle" dominant-baseline="middle">{number}</text>
+            </svg>
+        </span>
+    );
+}
+
+/** How far right a number's figures sit from their middle to look centred: a final 1 has its ink left of its box, measured on the page (D-420). */
+function opticalShift(number: string): number
+{
+    return number.endsWith("1") ? 0.35 : 0;
 }
 
 /** A token's pip (D-414): a small disc in the side's colour with a symbol, their class's or the side's; none while the player keeps them off. */

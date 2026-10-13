@@ -1,10 +1,12 @@
 // Where the player character is and the open scene, as data for the dashboard (VIEW-6, D-310): what the player may see of them, as the character knows them.
 import type { Context } from "../core/context.ts";
 import { formatStep } from "../core/length.ts";
+import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect, EffectEnd } from "../effects/index.ts";
 import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../grid/index.ts";
+import { hiddenImageName } from "../images/index.ts";
 import { environmentAt, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
@@ -12,7 +14,7 @@ import { effectsOf } from "./effect-layer.ts";
 import { conditionMark, effectParts, keptEffects, type SeenEffect } from "./game-effects.ts";
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
-import { shownImage } from "./game-images.ts";
+import { imageFile, ownImage, shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
@@ -208,11 +210,11 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
         if (one.copy !== undefined && here !== undefined) {
             const copy = here.copies[one.copy];
             const creature = knownPage(sight, copy?.creature);
-            const image = creature === undefined ? undefined : picture(sight, creature);
+            const image = creature === undefined ? strangerPicture(sight, copy?.creature) : picture(sight, creature);
             const state = copy === undefined ? {} : stateOf(sight, copyPage(one.copy, copy));
             return [
                 creature === undefined
-                    ? { name: strangerName(here, one.copy), role: "other", stranger: true, ...hostileMark(here, one.copy), ...state, ...measured }
+                    ? { name: strangerName(here, one.copy), role: "other", stranger: true, ...(image === undefined ? {} : { image }), ...hostileMark(here, one.copy), ...state, ...measured }
                     : { name: one.copy, role: "other", ...(image === undefined ? {} : { image }), ...hostileMark(here, one.copy), ...state, ...measured },
             ];
         }
@@ -227,8 +229,9 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
             return [{ ...person(sight, page), ...hostileMark(here, page.name), ...stateOf(sight, page), ...measured }];
         }
 
+        const image = strangerPicture(sight, page.name);
         return inScene.has(comparableText(page.name))
-            ? [{ name: seenName(here, page.name), role: "other", stranger: true, ...hostileMark(here, page.name), ...strangerState(sight, here, page), ...measured }]
+            ? [{ name: seenName(here, page.name), role: "other", stranger: true, ...(image === undefined ? {} : { image }), ...hostileMark(here, page.name), ...strangerState(sight, here, page), ...measured }]
             : [];
     });
     const reach = system?.grid === undefined || here === undefined || self === undefined || !isTurnOf(here, self.name) ? [] : reachOf(sight, system.grid, measures, here, self, { ...grid, lines });
@@ -293,7 +296,10 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         const hostile = hostileMark(scene, name);
         const written = pagesWithName(sight.world, name)[0];
         const state = written === undefined ? {} : strangerState(sight, scene, written);
-        return page === undefined ? { name: seenName(scene, name), role: "other" as const, stranger: true as const, ...hostile, ...state } : { ...person(sight, page), ...hostile, ...stateOf(sight, page) };
+        const image = strangerPicture(sight, name);
+        return page === undefined
+            ? { name: seenName(scene, name), role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), ...hostile, ...state }
+            : { ...person(sight, page), ...hostile, ...stateOf(sight, page) };
     });
     const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
         const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
@@ -305,7 +311,10 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         const hostile = Object.keys(scene.copies).some((copy) => scene.copies[copy].creature === creature && hostileMark(scene, copy).hostile === true) ? { hostile: true as const } : {};
         // A kind of one copy shows its state; of more, each shows its own on the map and in Combat.
         const state = count === 1 && first !== undefined ? stateOf(sight, copyPage(first, scene.copies[first])) : {};
-        return page === undefined ? { name, role: "other" as const, stranger: true as const, count, ...hostile, ...state } : { ...person(sight, page), count, ...hostile, ...state };
+        const image = strangerPicture(sight, creature);
+        return page === undefined
+            ? { name, role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), count, ...hostile, ...state }
+            : { ...person(sight, page), count, ...hostile, ...state };
     });
     const turnName = (name: string): string => shownTurn(sight, scene, name);
     return {
@@ -359,7 +368,7 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
     const creature = copy === undefined ? undefined : knownPage(sight, copy[1].creature);
     const stranger = copy === undefined ? !party && !knowsPage(sight.knowledge, page) : creature === undefined;
     const shown = !stranger ? page.name : copy === undefined ? seenName(scene, page.name) : strangerName(scene, copy[0]);
-    const image = stranger ? undefined : picture(sight, creature ?? page);
+    const image = stranger ? strangerPicture(sight, copy === undefined ? page.name : copy[1].creature) : picture(sight, creature ?? page);
     const effects = shownEffects(sight, system, page, party);
     const health = healthOf(sight.world, system, page, party);
     const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
@@ -505,6 +514,19 @@ function person(sight: PlaceSight, page: Page): ShownPerson
 function picture(sight: PlaceSight, page: Page): { file: string; version: number; } | undefined
 {
     return shownImage(sight.root, sight.context, sight.world, page, (base) => knowsPage(sight.knowledge, base));
+}
+
+/**
+ * The picture of one the character does not know, by their name or a copy's creature (D-420): the page's own, of the campaign, made from what is seen; never
+ * one from a page it derives from, nor a game system's, which would tell what it is.
+ */
+function strangerPicture(sight: PlaceSight, name: string | undefined): { file: string; version: number; } | undefined
+{
+    const page = name === undefined ? undefined : pagesWithName(sight.world, parsePageReference(name).name)[0];
+    const file = page === undefined || page.system !== undefined ? undefined : imageFile(sight.root, sight.context, ownImage(page));
+    // By a name of its bytes: the file's own is the page's, which the character does not know.
+    const hidden = file === undefined ? undefined : hiddenImageName(file);
+    return file === undefined || hidden === undefined ? undefined : { file: hidden, version: Math.trunc(files().modified(file) ?? 0) };
 }
 
 /** The page the character knows by a link or a name, of the campaign or of the system. */

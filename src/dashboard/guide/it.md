@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 8b2b048d 7705224a 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 d32a17eb 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**.
@@ -60,15 +60,15 @@ RPG Engine è pensato per qualsiasi gioco di ruolo da tavolo. Oggi include un so
 ### 2.1 Che cosa ti serve
 
 - Un computer con Windows, macOS o Linux.
-- **Node.js 22** o più recente. Scaricalo da [nodejs.org](https://nodejs.org): la versione "LTS" va bene. Include `npm`, che installa RPG Engine.
-- Un **terminale**, la finestra in cui scrivi i comandi: su Windows, l'app Terminale o PowerShell; su macOS, Terminale. Lo usi per installare RPG Engine, per creare ogni campagna e per avviare Claude Code o Codex.
-- Un **host IA**, l'app in cui gira il master: **Claude Code** o **Codex**, con il suo piano e il suo accesso. Vedi [2.4](#24-connect-your-ai).
-- Il **modello più grande** che il tuo host offre. Un modello piccolo si lascia ingannare: nei nostri test ha rivelato segreti a un giocatore che si spacciava per il vero master.
+- **Node.js 22** o più recente. Scaricalo da [nodejs.org](https://nodejs.org): va bene la versione "LTS". Include `npm`, che installa RPG Engine.
+- Un **terminale**, la finestra in cui scrivi i comandi: su Windows, l'app Terminale o PowerShell; su macOS, Terminale. Ti serve per installare RPG Engine, per creare ogni campagna e per avviare Claude Code o Codex.
+- Un **host AI**, l'app in cui gira il master: **Claude Code** o **Codex**, con il suo piano e il suo login. Vedi [2.4](#24-connect-your-ai).
+- Il **modello più grande** che il tuo host offre. Un modello piccolo si lascia ingannare: nei nostri test ha rivelato dei segreti a un giocatore che diceva di essere il vero master.
 - Un browser, per la dashboard.
 
-L'accesso che usi per il tuo host serve anche ad altro: RPG Engine lo usa, sul tuo computer, per disegnare immagini di luoghi, missioni e del tuo personaggio, e per tradurre la dashboard in lingue che non include. Vedi [Immagini](#311-pictures) e [Lingue](#72-languages).
+Il login che usi per l'host serve anche ad altro: RPG Engine lo usa, sul tuo computer, per disegnare immagini di luoghi, missioni, persone che incontri e del tuo personaggio, e per tradurre la dashboard in lingue che non include. Vedi [Immagini](#311-pictures) e [Lingue](#72-languages).
 
-**Aprire un terminale in una cartella.** Molti passaggi dicono "nella cartella della campagna". Su Windows, fai clic destro sulla cartella in Esplora file e scegli **Apri nel Terminale**. Su macOS, fai clic destro sulla cartella nel Finder e scegli **Servizi > Nuovo Terminale nella cartella**. Oppure, in un terminale già aperto, scrivi `cd` e il percorso della cartella, per esempio `cd "C:\Users\me\Games\The Salt Isles"`.
+**Aprire un terminale in una cartella.** Molti passaggi dicono "nella cartella della campagna". Su Windows, fai clic destro sulla cartella in Esplora file e scegli **Apri nel terminale**. Su macOS, fai clic destro sulla cartella nel Finder e scegli **Servizi > Nuovo Terminale nella cartella**. Oppure, in un terminale già aperto, scrivi `cd` e il percorso della cartella, per esempio `cd "C:\Users\me\Games\The Salt Isles"`.
 
 ### 2.2 Installazione
 
@@ -84,17 +84,17 @@ Così ottieni il comando `rpg`. Per controllare che abbia funzionato:
 rpg --version
 ```
 
-Userai `rpg` una volta per campagna, per crearla. Dopo, parli solo con il master: il tuo host IA avvia RPG Engine da sé, con lo stesso comando `rpg`.
+Userai `rpg` una volta per campagna, per crearla. Dopo, parli solo con il master: il tuo host AI avvia RPG Engine da solo, con lo stesso comando `rpg`.
 
 ### 2.3 Creare una campagna
 
-Una campagna è una cartella. Apri un terminale nella cartella in cui tieni i tuoi giochi e scrivi:
+Una campagna è una cartella. Apri un terminale nella cartella dove tieni i tuoi giochi e scrivi:
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Questo crea la cartella `The Salt Isles` con dentro una nuova campagna, e ti dice che cosa fare dopo:
+Questo crea la cartella `The Salt Isles` con dentro una campagna nuova, e ti dice cosa fare dopo:
 
 ```text
 Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
@@ -103,101 +103,101 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Le righe dopo *For the master* sono per il master, che le legge nella chat: tu non devi farci nulla. Ricorda dove si trova la cartella: ci torni ogni volta che giochi. Se non indichi un nome di cartella, `rpg init` trasforma in campagna la cartella in cui ti trovi.
+Le righe dopo *For the master* sono per il master, che le legge nella chat: tu non devi farci nulla. Ricorda dov'è la cartella: ci torni ogni volta che giochi. Senza un nome di cartella, `rpg init` trasforma in campagna la cartella in cui ti trovi.
 
-`init` crea tutto ciò che serve alla campagna: le sue impostazioni, le cartelle del mondo e i piccoli file che dicono al tuo host IA di usare RPG Engine e di non tenere memoria propria fuori dalla campagna.
+`init` crea tutto ciò che serve alla campagna: le impostazioni, le cartelle del mondo e i piccoli file che dicono al tuo host AI di usare RPG Engine e di non tenere memoria propria fuori dalla campagna.
 
-Non devi scegliere nulla adesso. Il master ti chiede il resto nella chat, oppure scegli tu sulla dashboard. Se hai già qualche scelta in mente, puoi indicarla qui:
+Non devi scegliere nulla adesso. Il master ti chiede il resto nella chat, oppure scegli tu nella dashboard. Se hai già in mente qualche scelta, puoi indicarla qui:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
 ```
 
-Questo crea la cartella `salt-isles`, con dentro la campagna *The Salt Isles*: un nome di cartella senza spazi, e il nome della campagna come preferisci.
+Questo crea la cartella `salt-isles`, con dentro la campagna *The Salt Isles*: un nome di cartella senza spazi e il nome della campagna come preferisci.
 
 | Opzione | Che cosa imposta | Valori |
 |---|---|---|
 | `--name` | Il nome della campagna | qualsiasi; se lo ometti, il nome della cartella |
 | `--language` | La lingua del gioco | un codice, come `en`, `it`, `fr` |
-| `--system` | Il sistema di gioco | `5e`, per ora l'unico |
+| `--system` | Il sistema di gioco | `5e`, oggi l'unico |
 | `--difficulty` | Quanto è duro il mondo | `story`, `easy`, `normal`, `hard`, `brutal` |
 | `--lethality` | Che cosa significa cadere in uno scontro | `narrative`, `epic`, `dice` |
 
 Anche `rpg init --help` le elenca. Una campagna non può stare dentro la cartella di un'altra campagna.
 
-Non puoi chiedere al master di creare una campagna: prima di `init`, nella cartella non c'è nulla che dica al tuo host IA dove si trova RPG Engine.
+Non puoi chiedere al master di creare una campagna: prima di `init`, la cartella non contiene nulla che dica al tuo host AI dove si trova RPG Engine.
 
-### 2.4 Collegare la tua IA
+### 2.4 Collegare la tua AI
 
-RPG Engine funziona con **Claude Code** e **Codex**. Altre app IA che usano strumenti MCP potrebbero funzionare, ma non lo garantiamo.
+RPG Engine funziona con **Claude Code** e **Codex**. Altre app AI che usano gli strumenti MCP potrebbero funzionare, ma non lo garantiamo.
 
-**Installare il tuo host.** Claude Code e Codex girano nel terminale: non sono l'app Claude o ChatGPT del telefono. Ognuno ha bisogno del proprio piano e del proprio accesso: Claude Code di un piano Claude a pagamento, Codex di un accesso ChatGPT. Segui le loro pagine per installarli e accedere: [Claude Code](https://code.claude.com/docs/en/setup) e [Codex](https://learn.chatgpt.com/docs/codex/cli). Lo fai una volta sola, per tutte le tue campagne.
+**Installare il tuo host.** Claude Code e Codex girano nel terminale: non sono l'app Claude o ChatGPT del telefono. Ognuno ha bisogno del suo piano e del suo login: Claude Code di un piano Claude a pagamento, Codex di un login ChatGPT. Segui le loro pagine per installarli e accedere: [Claude Code](https://code.claude.com/docs/en/setup) e [Codex](https://learn.chatgpt.com/docs/codex/cli). Lo fai una volta sola, per tutte le tue campagne.
 
-**Claude Code.** Apri un terminale nella cartella della campagna e scrivi `claude`. La prima volta ti chiede se ti fidi della cartella e ti dice che la cartella consente gli strumenti del gioco (`mcp__rpg`): scegli **Yes, I trust this folder**. Attenzione: la risposta già selezionata è *No, exit*, quindi premere subito Invio chiude Claude Code. Fine: la campagna ha già detto a Claude Code di usare RPG Engine e i suoi strumenti, e di tenere spenta la sua memoria.
+**Claude Code.** Apri un terminale nella cartella della campagna e scrivi `claude`. La prima volta ti chiede se ti fidi della cartella e dice che la cartella consente gli strumenti del gioco (`mcp__rpg`): scegli **Yes, I trust this folder**. Attenzione: la risposta già selezionata è *No, exit*, quindi premere subito Invio chiude Claude Code. Tutto qui: la campagna ha già detto a Claude Code di usare RPG Engine e i suoi strumenti, e di tenere spenta la memoria.
 
-**Codex.** Apri un terminale nella cartella della campagna e scrivi `codex`. Quando ti chiede se ti fidi della cartella, rispondi di sì: le impostazioni della campagna dicono a Codex dove si trova RPG Engine, consentono i suoi strumenti e tengono spenta la sua memoria, e Codex le legge solo in una cartella di cui ti fidi. Nell'app desktop, controlla che le memorie siano disattivate per le chat del gioco.
+**Codex.** Apri un terminale nella cartella della campagna e scrivi `codex`. Quando ti chiede se ti fidi della cartella, rispondi di sì: le impostazioni della campagna dicono a Codex dove si trova RPG Engine, consentono i suoi strumenti e tengono spenta la memoria, e Codex le legge solo in una cartella di cui ti fidi. Nell'app desktop, controlla che le memorie siano spente per le chat del gioco.
 
-**Perché la memoria è importante.** La campagna vive nei suoi file. Se l'host ricorda per conto suo, tornare a un salvataggio non sarebbe un vero ritorno: il master ricorderebbe ancora ciò che è stato annullato.
+**Perché la memoria conta.** La campagna vive nei suoi file. Se anche l'host ricorda cose per conto suo, tornare a un salvataggio non sarebbe un vero ritorno: il master ricorderebbe comunque ciò che è stato annullato.
 
 ### 2.5 La prima chat
 
 Scrivi qualsiasi cosa, per esempio:
 
-> Ciao! Cominciamo.
+> Ciao! Iniziamo.
 
-Il master legge a che punto è il gioco e risponde. Nella prima risposta di ogni chat ti dà il **link alla tua dashboard** (qualcosa come `http://127.0.0.1:4750`). Aprilo nel browser e tienilo accanto alla chat per tutta la partita. Ogni campagna conserva lo stesso link da una chat all'altra, a meno che un altro programma non lo abbia preso: in quel caso il master ti dà quello nuovo.
+Il master legge a che punto è il gioco e risponde. Nella prima risposta di ogni chat ti dà il **link della tua dashboard** (qualcosa come `http://127.0.0.1:4750`). Aprilo nel browser e tienilo accanto alla chat per tutta la partita. Ogni campagna mantiene lo stesso link da una chat all'altra, a meno che un altro programma non l'abbia preso: in quel caso il master ti dà quello nuovo.
 
-Tra un messaggio del master e l'altro, il tuo host mostra gli strumenti che il master usa, in righe brevi. Non aprirne i dettagli (in Claude Code, ctrl+o): possono mostrare ciò che il master scrive, segreti compresi.
+Tra un messaggio del master e l'altro, il tuo host mostra gli strumenti che il master usa, in righe brevi. Non aprire i dettagli (in Claude Code, ctrl+o): possono mostrare ciò che il master scrive, segreti compresi.
 
-Una campagna nuova passa per tre fasi, come una partita con un master umano. La dashboard le mostra in alto come *1 Impostazioni · 2 Sessione zero · 3 Gioco*:
+Una campagna nuova passa per tre fasi, come un gioco con un master umano. La dashboard le mostra in alto come *1 Impostazioni · 2 Sessione zero · 3 Gioco*:
 
 1. **Impostazioni**: scegli come vuoi giocare. Fuori dalla storia.
 2. **Sessione zero**: crei il tuo personaggio, giocando.
 3. **Gioco**: la storia.
 
-### 2.6 Impostazioni: scegliere come giochi
+### 2.6 Impostazioni: scegliere come giocare
 
-Il master chiede solo ciò che manca ancora, poche domande alla volta. Se scrivi "decidi tu", il master sceglie e ti dice che cosa ha scelto. Con la dashboard aperta, il suo primo passo, **Impostazioni**, mostra le stesse domande come schede: una domanda alla volta, ogni valore con il suo significato, quello più comune segnato come **Consigliata**. Scegli lì, e il master non lo richiederà nella chat; **Salta** lascia una domanda per dopo. La chat risolve ciò che solo le parole possono risolvere: la premessa di un mondo nuovo, la lingua e le immagini, di cui il master chiede solo se il tuo computer può crearle. Per questo la pagina fa meno domande di quante ne elenca la tabella qui sotto.
+Il master chiede solo ciò che manca ancora, poche domande alla volta. Se scrivi "decidi tu", il master sceglie e ti dice che cosa ha scelto. Con la dashboard aperta, il primo passo, **Impostazioni**, mostra le stesse domande come schede: una domanda alla volta, ogni valore con il suo significato, quello più usuale segnato come **Consigliata**. Scegli lì, e il master non richiederà nella chat; **Salta** lascia una domanda per dopo. La chat risolve ciò che solo le parole possono risolvere: la premessa di un mondo nuovo, la lingua e le immagini, che il master chiede solo se il tuo computer può crearle. Per questo la pagina fa meno domande di quante ne elenchi la tabella qui sotto.
 
-Non devi studiare la tabella: è qui per consultarla. Puoi cambiare ognuna di queste scelte più tardi, nella chat o nelle **Impostazioni** della dashboard. Un cambiamento vale dalla risposta successiva del master.
+Non serve studiare la tabella: è qui da consultare. Puoi cambiare ognuna di queste voci più tardi, nella chat o nelle **Impostazioni** della dashboard. Un cambiamento vale dalla risposta successiva del master.
 
 | Impostazione | Che cosa decide | Valori | Consigliata |
 |---|---|---|---|
-| **Mentore** (chiesta come "Quanto conosci questo gioco?") | Quanto il master ti insegna le regole, fuori dalla storia | **spento** (solo la storia; chiedi tra parentesi quando vuoi), **suggerimenti** (un breve consiglio prima delle scelte importanti e quando sfugge una regola), **tutorial** (ogni regola spiegata la prima volta, la somma completa di ogni tiro, un breve resoconto dopo gli scontri) | dalla tua risposta: mai giocato → tutorial, un po' → suggerimenti, lo conosco → spento |
-| **Difficoltà** | Quanto è duro il mondo: scontri, tattiche dei nemici, indizi, tesoro, velocità delle minacce | storia, facile, normale, difficile, brutale | |
-| **Letalità** | Che cosa significa cadere in uno scontro | **narrativa** (il tuo personaggio non muore mai), **epica** (muore solo quando conta per la storia), **dadi** (decidono i dadi) | segue la difficoltà: storia → narrativa, facile → epica, normale e oltre → dadi |
-| **Salvataggi** | Quando puoi tornare indietro | **permadeath** (mai; puoi solo ricominciare la campagna), **checkpoint** (all'ultima fine di una scena, solo se il tuo personaggio muore), **libero** (a qualsiasi salvataggio, e salvi quando lo chiedi) | checkpoint |
-| **Rigore** | Quanto da vicino si seguono le regole su cibo, luce, fatica, peso trasportato, componenti degli incantesimi e viaggio | **morbido** (il master li sorvola), **regole** (come scritto: le torce si spengono, le razioni finiscono), **simulazione** (oltre le regole: usura, deperimento, meteo) | morbido |
+| **Mentore** (chiesto come "Quanto conosci questo gioco?") | Quanto il master ti insegna le regole, fuori dalla storia | **spento** (solo la storia; chiedi tra parentesi quando vuoi), **suggerimenti** (un breve consiglio prima delle scelte importanti e quando una regola sfugge), **tutorial** (ogni regola spiegata la prima volta, il calcolo completo di ogni tiro, un breve resoconto dopo gli scontri) | dalla tua risposta: mai giocato → tutorial, un po' → suggerimenti, lo conosco → spento |
+| **Difficoltà** | Quanto è duro il mondo: scontri, tattiche dei nemici, indizi, tesori, velocità delle minacce | story, easy, normal, hard, brutal | |
+| **Letalità** | Che cosa significa cadere in uno scontro | **narrativa** (il tuo personaggio non muore mai), **epica** (muore solo quando conta per la storia), **dadi** (decidono i dadi) | segue la difficoltà: story → narrativa, easy → epica, normal e oltre → dadi |
+| **Salvataggi** | Quando puoi tornare indietro | **morte definitiva** (mai; puoi solo ricominciare la campagna), **checkpoint** (all'ultima fine di una scena, solo se il tuo personaggio muore), **libero** (a qualsiasi salvataggio, e salvi quando vuoi) | checkpoint |
+| **Rigore** | Quanto da vicino cibo, luce, fatica, peso trasportato, componenti degli incantesimi e viaggi seguono le regole | **fluido** (il master li sorvola), **regole** (come scritto: le torce si spengono, le razioni finiscono), **simulazione** (oltre le regole: usura, deperimento, meteo) | fluido |
 | **Dadi** | Chi tira i dadi del tuo personaggio | **digitali** (li tira RPG Engine, sulla pagina), **fisici** (li tiri tu e dici le facce) | |
 | **Unità di misura** | Distanze e pesi nella storia | metriche, imperiali | |
-| **Compagni** | Chi viaggia con te | nessuno, creati con te in sessione zero, creati dal master, incontrati in gioco | |
-| **Immagini** | Immagini di luoghi e missioni, e il ritratto del tuo personaggio quando lo chiedi | nessuna, su richiesta, nuovi luoghi e nuove missioni | chiesta una volta, solo se il tuo computer può crearle |
-| **Linee** | Ciò che non appare mai nel gioco | un elenco, o nessuna | |
-| **Veli** | Ciò che può succedere, ma solo fuori scena | un elenco, o nessuno | |
+| **Compagni** | Chi viaggia con te | nessuno, creati con te nella sessione zero, creati dal master, incontrati in gioco | |
+| **Immagini** | Immagini di luoghi, missioni e persone che incontri, e il ritratto del tuo personaggio quando lo chiedi | nessuna, su richiesta, nuovi luoghi, missioni e persone che incontri | chiesta una volta, solo se il tuo computer può crearle |
+| **Linee** | Che cosa non compare mai nel gioco | un elenco, o nessuna | |
+| **Veli** | Che cosa può accadere, ma solo fuori scena | un elenco, o nessuno | |
 | **Lingua** | La lingua del gioco e della dashboard | qualsiasi | ricavata da come scrivi, e confermata |
 
 Il sistema di gioco può aggiungere impostazioni proprie. La quinta edizione aggiunge l'**avanzamento**: come il tuo personaggio sale di livello, con i **punti esperienza** o a **tappe** della storia.
 
-**Che cosa significa la difficoltà in gioco.** Storia: nemici deboli e ingenui, indizi evidenti, abbondanza di tutto; il master può addolcire i propri tiri. Facile: nemici semplici, risorse generose. Normale: nemici sensati, tre indizi per ogni conclusione, prezzi e tesori standard. Difficile: nemici astuti, indizi sottili, risorse scarse, minacce che avanzano in fretta. Brutale: nemici che tendono imboscate, si ritirano e finiscono i caduti, risorse scarsissime, i riposi più duri. Gli scontri sono sempre dimensionati sul tuo gruppo com'è adesso.
+**Che cosa significa la difficoltà in gioco.** Story: nemici deboli e ingenui, indizi evidenti, abbondanza di tutto; il master può ammorbidire i propri tiri. Easy: nemici semplici, risorse generose. Normal: nemici sensati, tre indizi per ogni conclusione, prezzi e tesori standard. Hard: nemici astuti, indizi sottili, risorse scarse, minacce che avanzano in fretta. Brutal: nemici che tendono imboscate, si ritirano e finiscono i caduti, risorse scarsissime, i riposi più duri. Gli scontri sono sempre proporzionati al tuo gruppo così com'è ora.
 
 **Senza un mondo già scritto**, la preparazione chiede altre due cose:
 
-- **Premessa**: il genere, il tono e alcuni elementi del mondo, con le tue parole. Per esempio: *"Fantasy low fantasy, cupo ma con speranza. Un paese sul fiume, un guado infestato, un culto sulle colline."*
-- **Preparazione**: **al volo** (il master costruisce ogni parte del mondo poco prima che ti serva; consigliata) oppure **tutto all'inizio**.
+- **Premessa**: il genere, il tono e qualche elemento del mondo, con le tue parole. Per esempio: *"Low fantasy, cupo ma con speranza. Una città sul fiume, un guado infestato, un culto sulle colline."*
+- **Preparazione**: **al volo** (il master costruisce ogni parte del mondo poco prima che ti serva; consigliata) oppure **tutta all'inizio**.
 
-Il master poi propone un nome per la campagna. Quando non manca nulla e dici di essere pronto o pronta, il gioco passa alla sessione zero.
+Il master propone poi un nome per la campagna. Quando non manca nulla e dici che sei pronto o pronta, il gioco passa alla sessione zero.
 
 ### 2.7 Sessione zero: il tuo personaggio
 
-La sessione zero è gioco: crei il tuo personaggio insieme al master, come faresti a un tavolo.
+La sessione zero è gioco: crei il tuo personaggio insieme al master, come a un tavolo.
 
-- **Ogni scelta è tua**, a meno che tu non chieda al master di farla. Puoi arrivare con un'idea completa ("un mezzelfo devoto che ha lasciato il suo tempio"), una vaga ("qualcuno che cura, ma con modi bruschi") o con niente ("sorprendimi, poi lasciami cambiare le cose").
-- **Punteggi di caratteristica.** Il master ti dice il metodo e la rete di sicurezza prima che venga tirato un solo dado. Nella quinta edizione: la serie standard, l'acquisto a punti o 4d6 scartando il più basso. Il metodo che concordi resta tra gli accordi del tavolo.
-- **La tua storia** non è mai obbligatoria. Se ne fornisci una, il master la scrive con le tue parole, te la rilegge una volta e lega le sue persone e i suoi luoghi al mondo. Puoi anche scriverla sulla dashboard (vedi [Gruppo](#party)).
+- **Ogni scelta è tua**, a meno che tu non chieda al master di farla. Puoi arrivare con un'idea completa ("un chierico mezzelfo che ha lasciato il tempio"), una vaga ("qualcuno che cura, ma non è gentile"), o con niente ("sorprendimi, poi lasciami cambiare le cose").
+- **Punteggi di caratteristica.** Il master ti dice il metodo e la rete di sicurezza prima di tirare qualsiasi dado. Nella quinta edizione: la serie standard, l'acquisto a punti o 4d6 scartando il più basso. Il metodo concordato resta tra gli accordi del tavolo.
+- **La tua storia** non è mai obbligatoria. Se ne dai una, il master la scrive con le tue parole, te la rilegge una volta e lega le sue persone e i suoi luoghi al mondo. Puoi anche scriverla nella dashboard (vedi [Gruppo](#party)).
 - **Personalità** (quinta edizione): un tratto, un ideale, un legame e un difetto, dalle tabelle del tuo background o inventati da te.
-- **Un'immagine.** Quando il tuo personaggio è fatto, il master ti chiede un'immagine: un file sul tuo computer, oppure un ritratto creato sul tuo computer da come lo descrivi (vedi [l'immagine del tuo personaggio](#37-your-characters-story-and-picture)).
+- **Un'immagine.** Quando il tuo personaggio è pronto, il master ti chiede un'immagine: un file sul tuo computer, oppure un ritratto creato sul tuo computer da come lo descrivi (vedi [l'immagine del tuo personaggio](#37-your-characters-story-and-picture)).
 
-I numeri della scheda li calcola RPG Engine dalle tue scelte: non fai mai i conti. Quando i personaggi sono fatti e confermi, la storia comincia.
+I numeri della scheda li calcola RPG Engine in base alle tue scelte: non fai mai i conti. Quando i personaggi sono creati e confermi, la storia comincia.
 
 ---
 
@@ -205,11 +205,11 @@ I numeri della scheda li calcola RPG Engine dalle tue scelte: non fai mai i cont
 
 ### 3.1 Parlare con il master
 
-Scrivi che cosa fa o dice il tuo personaggio, con parole tue. Anche in breve va bene.
+Scrivi che cosa fa o dice il tuo personaggio, con le tue parole. Anche in breve.
 
-> Chiedo all'oste chi altro è passato stanotte.
+> Chiedo all'oste chi altro è passato stasera.
 >
-> "Non siamo qui per guai", dico, con la mano lontana dalla spada.
+> "Non siamo qui per guai," dico, con la mano lontana dalla spada.
 >
 > Salgo sul tetto e aspetto.
 
@@ -221,166 +221,166 @@ Scrivi che cosa fa o dice il tuo personaggio, con parole tue. Anche in breve va 
 >
 > [Fermiamoci qui per stasera.]
 
-Anche il master risponde tra parentesi, poi torna alla storia.
+Il master risponde anch'esso tra parentesi, poi torna alla storia.
 
 **Tu dici che cosa provi a fare; il master dice che cosa succede.** Ciò che rompe la logica del mondo o i fatti già stabiliti non accade: il master te lo dice, dentro la storia, e propone ciò che è possibile.
 
 **Il master non decide mai per il tuo personaggio.** Non ti fa parlare, sentire o scegliere. Nel dubbio, chiede.
 
-**Il master non parla mai del motore.** Chiedigli se tiene traccia delle cose e risponderà da master: "Tengo tutto io: la prossima volta ripartiamo da qui."
+**Il master non parla mai del motore.** Chiedigli se tiene traccia delle cose e risponde come un master: "Tengo tutto io: ripartiamo da qui la prossima volta."
 
 **Puoi chiedere al master come usare la dashboard.** Conosce la pagina: "Dove vedo i miei incantesimi?", "Come tiro a mano?"
 
-### 3.2 Tiri
+### 3.2 I tiri
 
-**Quando c'è un tiro.** Il master chiede un tiro solo quando l'esito è incerto e conta. Altrimenti dice sì, oppure "sì, ma". Prima del tuo tiro, il master dice che cosa è in gioco e quali prove sono adatte, poi si ferma. Tu tiri, oppure cambi idea:
+**Quando c'è un tiro.** Il master chiede un tiro solo quando l'esito è incerto e conta. Altrimenti dice sì, o "sì, ma". Prima del tuo tiro, il master dice che cosa è in gioco e quali prove sono adatte, poi si ferma. Tu tiri, o cambi idea:
 
-> **Master:** La cengia è stretta e bagnata. Se scivoli, è una lunga caduta nel fiume. Una prova di Destrezza (Acrobazia), oppure puoi tornare indietro a cercare le scale.
+> **Master:** La sporgenza è stretta e bagnata. Se scivoli, è una lunga caduta nel fiume. Una prova di Destrezza (Acrobazia), oppure puoi tornare indietro a cercare le scale.
 >
 > **Tu:** Ci provo.
 
-**Tirare sulla dashboard.** Quando il master lo chiede, in cima alla pagina compare un banner con un pulsante per ogni prova, per esempio *Acrobazia +4 · con vantaggio*. Cliccalo: i dadi cadono sulla pagina e il master sente il risultato. Puoi anche:
+**Tirare sulla dashboard.** Quando il master lo chiede, in alto sulla pagina compare un banner con un pulsante per ogni prova, per esempio *Acrobazia +4 · con vantaggio*. Cliccalo: i dadi cadono sulla pagina e il master sente il risultato. Puoi anche:
 
 - cliccare la riga corrispondente della tua scheda, che si illumina d'oro;
 - lanciare i dadi giusti dal vassoio;
-- scrivere nel banner parole tue, se vuoi fare altro.
+- scrivere nel banner le tue parole, se vuoi fare altro.
 
-**Tirare a mano.** Se preferisci scegliere i dadi da te, attiva **A mano** nell'angolo del banner (o nelle **Impostazioni**). Il pulsante della prova sparisce e il banner dice che cosa tirare come farebbe un master: *Tira Acrobazia tu, sulla scheda o con i dadi.* Clicca la riga della scheda che si illumina, oppure lancia i dadi giusti dal vassoio: RPG Engine li tira, aggiunge il tuo bonus e il master sente il risultato. Una prova che né la scheda né il vassoio possono fare, come un danno che ritira gli 1, conserva il suo pulsante. A mano resta attivo in questo browser finché non lo spegni.
+**Tirare a mano.** Se preferisci scegliere tu i dadi, attiva **A mano** nell'angolo del banner (o nelle **Impostazioni**). Il pulsante della prova sparisce e il banner dice che cosa tirare, come farebbe un master: *Tira Acrobazia da te, sulla scheda o con i dadi.* Clicca la riga della scheda che si illumina, oppure lancia i dadi giusti dal vassoio: RPG Engine li tira, aggiunge il tuo bonus e il master sente il risultato. Una prova che né la scheda né il vassoio possono fare, come un danno che ritira gli 1, mantiene il suo pulsante. A mano resta attivo in questo browser finché non lo spegni.
 
-**Dadi fisici per tutta la partita.** Con l'impostazione **Dadi** su fisici, il master ti chiede i tiri a parole e tu scrivi le facce che hai ottenuto:
+**Dadi fisici per tutta la partita.** Con l'impostazione **Dadi** su fisici, il master chiede i tuoi tiri a parole e tu scrivi le facce che hai ottenuto:
 
-> [Ho tirato 14.]
+> [Ho fatto 14.]
 
 RPG Engine aggiunge i tuoi modificatori e rifiuta una faccia che i tuoi dadi non possono mostrare.
 
-**Tiri liberi.** Clicca un numero qualsiasi della tua scheda, oppure apri il vassoio dei dadi, per tirare solo per gioco. I tiri liberi non contano mai, non vengono mai registrati e il master non li vede mai. Un 20 libero non diventa mai un 20 vero in seguito.
+**Tiri liberi.** Clicca un numero qualsiasi della tua scheda, o apri il vassoio dei dadi, per tirare solo per divertimento. I tiri liberi non contano mai, non vengono mai registrati e il master non li vede mai. Un 20 libero non diventa mai un 20 vero dopo.
 
-**I tiri del master.** Anche il master tira per i nemici e per gli altri con RPG Engine. La maggior parte dei tiri compare nella tua colonna dei tiri. Quando non devi vedere un risultato, il master tira in segreto. Puoi sempre chiedere:
+**I tiri del master.** Il master tira per i nemici e per gli altri anche con RPG Engine. La maggior parte dei tiri compare nella tua colonna dei tiri. Quando non devi vedere un risultato, il master tira in segreto. Puoi sempre chiedere:
 
 > [Quel tiro era vero?]
 
-Per un tiro mostrato, il master dà i suoi numeri e il motivo. Per uno segreto, un'impronta che prova che il tiro è stato fatto prima che tu chiedessi.
+Per un tiro mostrato, il master dà i suoi numeri e il motivo. Per uno segreto, un'impronta che prova che il tiro è stato fatto prima della tua domanda.
 
 **I tiri nella chat** compaiono tra parentesi, subito dopo il momento che decidono: *[Persuasione 14 + 3 = 17]*. Poi la storia racconta l'esito.
 
 ### 3.3 Scene e scontri
 
-Il master conduce la storia in **scene**: uno scontro, una conversazione, un'esplorazione, un viaggio, un riposo, una sfida (un inseguimento, una corsa, un enigma). Non devi gestirle tu: sono il modo in cui RPG Engine tiene i capitoli della storia. Alla fine di ogni scena il gioco salva da solo, e la scena entra nella storia del tuo diario.
+Il master conduce la storia per **scene**: uno scontro, una conversazione, un'esplorazione, un viaggio, un riposo, una sfida (un inseguimento, una corsa, un enigma). Non devi gestirle tu: sono il modo in cui RPG Engine tiene i capitoli della storia. Alla fine di ogni scena il gioco salva da solo, e la scena entra nella storia del tuo diario.
 
-**In uno scontro**, il master racconta tutti i turni che non sono tuoi, uno dopo l'altro, con ogni tiro, e **si ferma dove puoi decidere**: il tuo turno, una reazione, una scelta. Al tuo turno, di' che cosa fai:
+**In uno scontro**, il master racconta tutti i turni che non sono tuoi, uno dopo l'altro, con ogni tiro, e **si ferma dove puoi decidere**: il tuo turno, una reazione, una scelta. Nel tuo turno, di' che cosa fai:
 
-> Lancio Fiamma Sacra su quello vicino alla porta.
+> Lancio Fiamma sacra su quello vicino alla porta.
 
-La sezione **Scontro** della dashboard mostra l'ordine dei turni, di chi è il turno, i punti ferita del tuo gruppo e quanto sembrano feriti i nemici (illeso, ferito, sanguinante, a terra: a parole, mai in numeri). Se il tuo personaggio cade, i tiri salvezza contro morte compaiono ben grandi sulla pagina.
+La sezione **Scontro** della dashboard mostra l'ordine dei turni, di chi è il turno, i punti ferita del tuo gruppo e quanto sembrano feriti i nemici (illesi, feriti, malconci, a terra: a parole, mai in numeri). Se il tuo personaggio cade, i tiri salvezza contro morte compaiono in grande sulla pagina.
 
-**Quando lo scontro è già deciso**, il master può offrirsi di raccontare il resto in un solo messaggio.
+**Quando lo scontro è già deciso**, il master può proporre di raccontare il resto in un unico messaggio.
 
 ### 3.4 Tempo, viaggi e il mondo che si muove
 
-**Il tempo.** Ogni azione richiede tempo nella storia, e RPG Engine tiene la data: giorno 3, primo mattino. Il master racconta il tempo come lo misura il mondo: l'alba, la terza campana, il calar della sera. Tra una sessione e l'altra non passa tempo: riparti da dove ti eri fermato.
+**Il tempo.** Ogni azione richiede tempo nella storia, e RPG Engine tiene la data: giorno 3, primo mattino. Il master racconta il tempo come lo misura il mondo: l'alba, la terza campana, il calar della notte. Tra una sessione e l'altra non passa tempo: riparti da dove ti sei fermato o fermata.
 
-**Riposi.** Di' che riposi, e il master applica ciò che un riposo restituisce, come punti ferita e slot incantesimo:
+**I riposi.** Di' che ti riposi, e il master applica ciò che un riposo restituisce, come punti ferita e slot incantesimo:
 
-> Montiamo il campo e facciamo un riposo lungo.
+> Facciamo campo e un riposo lungo.
 
-**Viaggi.** Di' dove vuoi andare:
+**I viaggi.** Di' dove vuoi andare:
 
 > Prendiamo la strada a nord verso Rocca.
 
-RPG Engine calcola la via, la distanza e i giorni al tuo passo, e ti sposta là. Un viaggio si interrompe quando succede qualcosa di previsto lungo la strada, alla fine di ogni giornata di cammino e all'arrivo. Puoi chiedere quanto è lontano un luogo prima di partire:
+RPG Engine calcola il percorso, la distanza e i giorni al tuo passo, e ti sposta lì. Un viaggio si ferma quando sul cammino accade qualcosa di previsto, alla fine di ogni giornata di viaggio e all'arrivo. Puoi chiedere quanto dista un luogo prima di partire:
 
 > [Quanto dista Rocca, e quanto ci vorrebbe a piedi?]
 
-**Il mondo si muove senza di te.** I cattivi hanno piani con scadenze e orologi. Ogni nuovo giorno, il master fa avanzare le minacce che il tempo ha spinto avanti, e tu ne vedi i segni: una voce, una traccia, un cambiamento in città. L'orologio in sé non lo vedi mai, solo ciò che si lascia dietro.
+**Il mondo si muove senza di te.** I cattivi hanno piani con scadenze e orologi. Ogni nuovo giorno, il master fa avanzare le minacce che il tempo ha spinto, e tu ne vedi i segni: una voce, una traccia, un cambiamento in città. Non vedi mai l'orologio in sé, solo ciò che si lascia dietro.
 
-**Il denaro** si conta nelle monete del gioco. Paga, vendi, vieni pagato: RPG Engine dà il resto.
+**Il denaro** si conta nelle monete del gioco. Paga, vendi, vieni pagato o pagata: RPG Engine dà il resto.
 
 ### 3.5 Mappe
 
-**La mappa del mondo** (dashboard: **Mondo**) mostra solo i luoghi che il tuo personaggio conosce, con le strade che li collegano, il sentiero che hai percorso e la nebbia su tutto il resto. Clicca un luogo per vedere che cosa ne sai e quanto è lontano.
+**La mappa del mondo** (dashboard: **Mondo**) mostra solo i luoghi che il tuo personaggio conosce, con le strade tra loro, il sentiero che hai percorso e la nebbia su tutto il resto. Clicca un luogo per vedere che cosa ne sai e quanto dista.
 
-**La mappa di un luogo** (dashboard: **Scena**, e **Scontro** in uno scontro) compare quando il master ne disegna una per dove ti trovi: muri, porte, il terreno e chi sta dove, come segnalini. In uno scontro, al tuo turno, le caselle che non puoi raggiungere sono velate, così vedi a colpo d'occhio dove puoi andare. Quando il master chiede dove si muove il tuo personaggio, la pagina apre la mappa e tu tocchi una casella, oppure la scrivi, per esempio *E4*.
+**La mappa di un luogo** (dashboard: **Scena**, e **Scontro** durante uno scontro) compare quando il master ne disegna una per dove ti trovi: muri, porte, il terreno e chi sta dove, come segnalini. In uno scontro, nel tuo turno, le caselle che non puoi raggiungere sono velate, così vedi a colpo d'occhio dove puoi andare. Quando il master chiede dove si muove il tuo personaggio, la pagina apre la mappa e tu tocchi una casella, oppure la scrivi, per esempio *E4*.
 
 ### 3.6 Missioni, diario e note
 
-**Missioni.** Quando il tuo personaggio accetta un compito, diventa una missione nel tuo **Diario**: chi l'ha data, dove, entro quando, i suoi obiettivi in elenco e ciò che misura (una scadenza con il tempo rimasto, un orologio, un conteggio). Segnane una con la stella per seguirla: resta piccola in cima a Scena, con il suo prossimo obiettivo. La missione finisce quando la storia la conclude, mai da sola.
+**Missioni.** Quando il tuo personaggio accetta un compito, diventa una missione nel tuo **Diario**: chi l'ha data, dove, entro quando, i suoi obiettivi in elenco e ciò che misura (una scadenza con il tempo rimasto, un orologio, un conteggio). Segnane una con la stella per seguirla: resta in piccolo in cima a Scena, con il suo prossimo obiettivo. La missione finisce quando la storia la conclude, mai da sola.
 
-**La storia.** La scheda Storia del Diario è la tua campagna come linea del tempo: ogni scena un capitolo, con il suo luogo, la data e un breve riassunto, l'ultima per prima.
+**La storia.** La scheda Storia del Diario è la tua campagna come linea del tempo: ogni scena è un capitolo, con luogo, data e un breve riassunto, l'ultima per prima.
 
-**Le tue note.** Nella scheda Note del Diario scrivi le tue note: teorie, nomi, piani. Restano sul tuo computer e il master non le legge, a meno che tu non ne **Condividi** una. Una nota condivisa arriva al master alla sua risposta successiva come ciò che pensi, mai come un fatto. La tua teoria non diventa vera perché l'hai scritta. Una nota che chiede di fermare o evitare certi contenuti vale come se l'avessi detto al tavolo.
+**Le tue note.** Nella scheda Note del Diario scrivi le tue note: teorie, nomi, piani. Restano sul tuo computer e il master non le legge, a meno che tu non le **Condividi**. Una nota condivisa arriva al master alla sua risposta successiva come ciò che pensi, mai come un fatto. La tua teoria non diventa vera perché l'hai scritta. Una nota che chiede di fermare o evitare certi contenuti vale come se l'avessi detto al tavolo.
 
 ### 3.7 La storia e l'immagine del tuo personaggio
 
-Sulla scheda del tuo personaggio, la scheda **Descrizione** ha un riquadro dove scrivere la storia del personaggio. Inviala, e il master la scrive nel personaggio con parole sue, dopo che hai detto di sì.
+Sulla scheda del tuo personaggio, la carta **Descrizione** ha una casella per scrivere la storia del personaggio. Inviala, e il master la scrive nel personaggio con le proprie parole, dopo che hai detto di sì.
 
-Per l'immagine del tuo personaggio, dai al master un file immagine nella chat, con il punto in cui si trova sul tuo computer (PNG, JPEG, WebP o SVG, fino a 5 MB):
+Per l'immagine del tuo personaggio, dai al master un file immagine nella chat, con il percorso sul tuo computer (PNG, JPEG, WebP o SVG, fino a 5 MB):
 
 > [Ecco il ritratto del mio personaggio: C:\Users\me\Pictures\mira.png]
 
-Il master lo copia nella campagna, e compare sul segnalino del tuo personaggio nella dashboard. Puoi cambiarlo allo stesso modo quando vuoi.
+Il master lo copia nella campagna, e compare sul segnalino del tuo personaggio nella dashboard. Puoi cambiarlo nello stesso modo quando vuoi.
 
-Oppure fai creare il ritratto, se il tuo computer crea immagini (vedi [Immagini](#311-pictures)): descrivi il tuo personaggio al master, oppure lascia che sia il master a descriverlo.
+Oppure fai creare il ritratto, dove il tuo computer sa creare immagini (vedi [Immagini](#311-pictures)): descrivi il tuo personaggio al master, o lascia che sia il master a descriverlo.
 
 > [Fammi un ritratto: capelli grigi in una treccia, una cicatrice sul mento, occhi stanchi.]
 
-Il ritratto mostra esattamente ciò che il tuo personaggio è nel gioco, la sua gente com'è in questo mondo, un nano delle colline come un nano delle colline, con l'aspetto che hai descritto. Arriva in circa un minuto, sul segnalino del tuo personaggio. Anche i tuoi compagni possono avere il loro allo stesso modo.
+Il ritratto mostra esattamente ciò che il tuo personaggio è nel gioco, il suo popolo com'è in questo mondo, un nano delle colline come un nano delle colline, con l'aspetto che hai descritto. Arriva in circa un minuto, sul segnalino del tuo personaggio. I tuoi compagni possono avere il loro allo stesso modo.
 
 ### 3.8 Salvataggi e tornare indietro
 
-RPG Engine salva l'intera campagna **alla fine di ogni scena**, da solo. Ciò che puoi fare con quei salvataggi dipende dall'impostazione **Salvataggi**:
+RPG Engine salva l'intera campagna **alla fine di ogni scena**, da solo. Che cosa puoi fare con quei salvataggi dipende dall'impostazione **Salvataggi**:
 
-| Salvataggi | Salvare quando vuoi | Tornare indietro |
+| Salvataggi | Salvi quando vuoi | Tornare indietro |
 |---|---|---|
-| **permadeath** | no | mai; puoi solo ricominciare la campagna |
+| **morte definitiva** | no | mai; puoi solo ricominciare la campagna |
 | **checkpoint** | no | all'ultimo salvataggio, solo quando il tuo personaggio muore |
 | **libero** | sì | a qualsiasi salvataggio, quando vuoi |
 
-In ogni modalità puoi **ricominciare**: dall'inizio del gioco con lo stesso personaggio, oppure dalla sessione zero con un personaggio nuovo.
+In ogni modalità puoi **ricominciare**: dall'inizio del gioco con lo stesso personaggio, o dalla sessione zero con uno nuovo.
 
 Puoi fare tutto questo nella chat ("[Torniamo a prima del duello.]") o nella sezione **Salvataggi** della dashboard.
 
 **Dopo essere tornato indietro, apri una chat nuova.** La chat in cui giocavi ricorda ciò che è stato annullato. Apri una chat nuova con il master (`/clear` in Claude Code, `/new` in Codex), scrivi *continua*, poi premi **Ho aperto una chat nuova** in Salvataggi, oppure dillo al master nella chat nuova. Non riprendere mai la vecchia chat. Finché non confermi, il master non va avanti.
 
-### 3.9 Sessioni: fermarsi e tornare
+### 3.9 Sessioni: fermarsi e riprendere
 
 **Chiudi la sessione** quando vuoi:
 
 > [Fermiamoci qui per stasera.]
 
-Non esiste "salva ed esci": è già tutto nei file.
+Non c'è un "salva ed esci": è già tutto nei file.
 
 **Per chiudere** la chat, scrivi `/exit` in Claude Code, o `/quit` in Codex. La dashboard tace fino alla chat successiva.
 
-**Per tornare**, apri un terminale nella cartella della campagna (quella che ha stampato `init`), avvia lì il tuo host e scrivi *continua*. Il master legge a che punto è il gioco, ti fa un breve riassunto e comincia con qualcosa che accade. Una chat nuova non fa perdere nulla: la campagna vive nei suoi file, non nella chat.
+**Per riprendere**, apri un terminale nella cartella della campagna (quella che ha stampato `init`), avvia lì il tuo host e scrivi *continua*. Il master legge a che punto è il gioco, ti dà un breve riassunto e comincia con qualcosa che accade. Una chat nuova non fa perdere nulla: la campagna vive nei suoi file, non nella chat.
 
 Il master non fa domande di routine alla fine. Solo se ha notato che qualcosa non ha funzionato, chiede brevemente.
 
 ### 3.10 L'umore del master
 
-In cima alla dashboard c'è l'avatar del master, un piccolo robot. La sua faccia segue il tono della storia: preoccupata quando il pericolo cresce, felice davanti a un'idea audace, sorpresa per un colpo di scena. Reagisce per un attimo a un 20 naturale o a un 1 naturale. Non mostra mai ciò che ancora non sai: nessun sorriso prima che la trappola scatti. Anche i segnalini del tuo gruppo mostrano i loro umori. Quando la chat è chiusa, il robot dorme.
+In alto nella dashboard c'è l'avatar del master, un piccolo robot. La sua faccia segue il tono della storia: preoccupata quando il pericolo cresce, deliziata da un'idea audace, sorpresa da un colpo di scena. Reagisce per un attimo a un 20 naturale o a un 1 naturale. Non mostra mai ciò che ancora non sai: nessun ghigno prima che la trappola scatti. Anche i segnalini del tuo gruppo mostrano il loro umore. Quando la chat è chiusa, il robot dorme.
 
 ### 3.11 Immagini
 
-RPG Engine può far creare un'immagine per ogni luogo che raggiungi e ogni missione che accetti, come dice l'impostazione **Immagini**, e il ritratto del tuo personaggio quando lo chiedi. Usa ciò che è già sul tuo computer:
+RPG Engine può far creare un'immagine per ogni luogo che raggiungi, ogni missione che accetti e ogni personaggio o tipo di creatura che incontri, disegnati come li vedi, secondo l'impostazione **Immagini**, e il ritratto del tuo personaggio quando lo chiedi. Usa ciò che è già sul tuo computer:
 
-- **Codex**, con il tuo accesso ChatGPT: un'immagine dipinta.
-- Altrimenti **Claude Code**, con il tuo accesso Claude: un disegno.
+- **Codex**, con il tuo login ChatGPT: un'immagine dipinta.
+- Altrimenti **Claude Code**, con il tuo login Claude: un disegno.
 
-L'immagine usa il tuo piano, non il nostro. La sezione **Impostazioni** ti dice se le immagini si possono creare sul tuo computer e, se no, i passaggi per prepararlo. Senza immagini, la pagina mostra il simbolo di ogni tipo di luogo. Puoi anche dare al master un'immagine tua per qualsiasi luogo o personaggio.
+L'immagine usa il tuo piano, non il nostro. La sezione **Impostazioni** ti dice se le immagini possono essere create sul tuo computer e, se no, i passaggi per configurarlo. Senza immagini, la pagina mostra al loro posto il simbolo di ogni tipo di luogo. Puoi anche dare al master un'immagine tua per qualsiasi luogo o personaggio.
 
 ### 3.12 Sicurezza: linee, veli e stop
 
-- **Linee**: ciò che non appare mai nel gioco.
-- **Veli**: ciò che può succedere, ma solo fuori scena.
+- **Linee**: ciò che non compare mai nel gioco.
+- **Veli**: ciò che può accadere, ma solo fuori scena.
 - **Stop**: in qualsiasi momento puoi fermare un contenuto, senza spiegare. Scrivilo fuori dalla storia:
 
 > [stop]
 
-Il master lo abbandona subito e lo aggiunge alle tue linee, per tutte le sessioni future. Puoi vedere e cambiare le tue linee e i tuoi veli nelle **Impostazioni**.
+Il master lo lascia subito e lo aggiunge alle tue linee, per tutte le sessioni future. Puoi vedere e cambiare le tue linee e i tuoi veli nelle **Impostazioni**.
 
 ### 3.13 Cambiare idea
 
-Ogni impostazione può cambiare durante la campagna: nella chat ("[Rendiamolo più difficile.]") o nelle **Impostazioni**. Il master viene a sapere del cambiamento alla sua risposta successiva. Una decisione che il master ha preso senza il manuale diventa un **precedente** e viene conservata, così la stessa domanda riceve la stessa risposta la volta dopo.
+Ogni impostazione può cambiare durante la campagna: nella chat ("[Rendiamolo più difficile.]") o nelle **Impostazioni**. Il master viene a sapere di un cambiamento alla sua risposta successiva. Una decisione che il master ha preso senza il manuale diventa un **precedente** e viene conservata, così la stessa domanda riceve la stessa risposta la volta dopo.
 
 ---
 
@@ -481,6 +481,8 @@ RPG Engine include la **5e**, dal System Reference Document 5.1 (le regole del 2
 - riposi che restituiscono ciò che devono; condizioni con il loro testo di regola; promemoria sulla concentrazione.
 
 **Contenuti oltre l'SRD.** Puoi giocare la quinta edizione con contenuti che l'SRD non ha, come una classe o un mostro di un libro che possiedi. Il master conosce il gioco, può leggere i tuoi manuali e cercare sul web. Scrive ciò che gli serve come pagine della tua campagna, e RPG Engine funziona allo stesso modo con quelle. Ciò che includiamo è limitato dalla sua licenza; ciò che sa il tuo master no.
+
+RPG Engine contiene solo contenuti originali o con licenza aperta: per la quinta edizione, l'SRD 5.1 con licenza CC BY 4.0. Tutto il resto che compare nella tua partita è scritto dalla tua IA o da te, come pagine della tua campagna sul tuo computer: non fa parte di RPG Engine e non lo distribuiamo.
 
 RPG Engine è compatibile con la quinta edizione.
 

@@ -5,7 +5,7 @@
 // Rapier by its default export: its declarations name their files without extension, which the tests' NodeNext cannot follow, so only there it is any;
 // the page's own build reads them whole and checks its types.
 import RAPIER from "@dimforge/rapier3d-compat";
-import { rotate, type Shape, type Turn, type Vector } from "./models.ts";
+import { faceNormals, rotate, type Shape, type Turn, type Vector } from "./models.ts";
 
 /** Where a die is, and how it is turned, in one frame. */
 export interface Frame
@@ -309,18 +309,6 @@ function onTheFloor(shape: Shape | undefined, normals: Vector[], frame: Frame): 
 {
     const lowest = Math.min(...(shape?.vertices ?? []).map((corner) => rotate(frame.quaternion, corner)[1] + frame.position[1]));
     return lowest < floorContact && normals.some((normal) => -rotate(frame.quaternion, normal)[1] > Math.cos(flatAngle) * Math.hypot(...normal));
-}
-
-/** The outward directions of a shape's faces, by Newell's sum, right for a face whose corners are not quite in a plane. */
-function faceNormals(shape: Shape): Vector[]
-{
-    return shape.faces.map((face) =>
-        face.reduce<Vector>((sum, corner, index) => {
-            const here = shape.vertices[corner] ?? [0, 0, 0];
-            const next = shape.vertices[face[(index + 1) % face.length] ?? 0] ?? [0, 0, 0];
-            return [sum[0] + (here[1] - next[1]) * (here[2] + next[2]), sum[1] + (here[2] - next[2]) * (here[0] + next[0]), sum[2] + (here[0] - next[0]) * (here[1] + next[1])];
-        }, [0, 0, 0])
-    );
 }
 
 /** A turn at random, every turn as likely. */

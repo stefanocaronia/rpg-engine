@@ -15,7 +15,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote } from "./game-grids.ts";
-import { picturesNote } from "./game-images.ts";
+import { metPictureNote, picturesNote } from "./game-images.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
@@ -298,6 +298,12 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     };
     saveScene(root, withoutUndefined({ ...created, copies: Object.keys(copies).length === 0 ? undefined : copies } as unknown as Scene));
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-opened", "public", { title: created.title, type: created.type, place: created.place, with: created.with }));
+
+    // What the character sees, kept for the rolls of this scene once it closes (D-421); hidden, as the names it is given by are.
+    if (seen !== undefined) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: created.title, seen }));
+    }
+
     logCopies(root, context, created.title, copies);
     const after = brought.world;
     const system = campaignSystem(root, context);
@@ -308,6 +314,8 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     // A place without a picture, where the campaign wants one for each new place (D-308).
     const picture = picturesNote(root, context, after, place === undefined ? undefined : pageWithPath(after, place.path));
     const offMap = offMapNote(after, place === undefined ? undefined : pageWithPath(after, place.path), created, [...characters.map((page) => page.name), ...Object.keys(copies)]);
+    // Who enters without a picture, where the campaign wants one for each one met (D-420).
+    const met = metPictureNote(root, context, [...characters, ...copyCreatures(world, copies)]);
     return {
         action: "open",
         title: created.title,
@@ -318,7 +326,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
         around,
         part,
         moved: brought.moved,
-        notes: [...brought.notes, ...(picture === undefined ? [] : [picture]), ...(offMap === undefined ? [] : [offMap])],
+        notes: [...brought.notes, ...(picture === undefined ? [] : [picture]), ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap])],
     };
 }
 
@@ -353,11 +361,12 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     }
 
     updateScene(root, changes);
-    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, added }));
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, added, ...(seen === undefined ? {} : { seen }) }));
     logCopies(root, context, current.title, copies);
     const system = campaignSystem(root, context);
     const entered = [...characters.map((page) => characterMember(brought.world, page, system)), ...copyMembers(brought.world, copies)];
     const offMap = offMapNote(brought.world, place === undefined ? undefined : pageWithPath(brought.world, place.path), { ...current, copies: { ...current.copies, ...copies } }, added);
+    const met = metPictureNote(root, context, [...characters, ...copyCreatures(world, copies)]);
     return {
         action: "add",
         title: current.title,
@@ -366,7 +375,7 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
         ordered: current.order !== undefined,
         ...(seen === undefined ? {} : { seen }),
         moved: brought.moved,
-        notes: [...brought.notes, ...(offMap === undefined ? [] : [offMap])],
+        notes: [...brought.notes, ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap])],
     };
 }
 
@@ -821,6 +830,12 @@ function newCopies(world: World, creatures: SceneInput["creatures"], names: stri
     return copies;
 }
 
+/** The creatures of some copies, each once. */
+function copyCreatures(world: World, copies: Record<string, SceneCopy>): Page[]
+{
+    return [...new Set(Object.values(copies).flatMap((copy) => findPage(world, parsePageReference(copy.creature).name) ?? []))];
+}
+
 /**
  * What the character sees of those it does not know by name (D-416), by the name of a character in the scene or of a creature with copies in it: Bandito=brigante
  * incappucciato on the command line, {"Varro": "il mugnaio"} through MCP; none when not given.
@@ -842,6 +857,13 @@ function seenOf(world: World, seen: SceneInput["seen"], characters: Page[], copi
     const names = [...characters.map((page) => page.name), ...kinds];
     return Object.fromEntries(pairs.map(([name, said]) => {
         const named = sameName(names, parsePageReference(name.trim()).name);
+
+        // A copy's name, as Cultista 1: seen is given by its creature, once for all its copies.
+        const kind = sameName(kinds, /^(.*\S)\s+\d+$/.exec(name.trim())?.[1] ?? "");
+
+        if (named === undefined && kind !== undefined) {
+            throw new Error(`seen ${name.trim()}: give it by the creature, ${kind}, once for all its copies, such as ${kind}=${said.trim() || "uomo incappucciato"}: they are numbered from those words.`);
+        }
 
         if (named === undefined) {
             throw new Error(`seen ${name.trim()}: there is no character or creature of that name in the scene. In it: ${names.length === 0 ? "no one" : names.join(", ")}.`);

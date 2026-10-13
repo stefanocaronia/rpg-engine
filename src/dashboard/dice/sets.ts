@@ -1,6 +1,6 @@
 // The look of the dice the player rolls (D-279, D-348, D-352): the theme's, or one of the sets chosen in Settings, as sets of real dice, each a material, a
-// body and the ink of its numbers: resin, metal, wood or stone, the wood and the stone from CC0 pictures of ambientCG (assets/dice/textures). Kept in this
-// browser alone.
+// body and the ink of its numbers: resin, metal, wood, stone or crystal, the wood and the stone from CC0 pictures of ambientCG (assets/dice/textures). Kept in
+// this browser alone.
 import { type Choice, readChoice } from "../prefs.ts";
 import { shownTheme } from "../theme.ts";
 
@@ -12,6 +12,16 @@ export interface Finish
     /** How much of the room around it the die reflects, from 0: the metals and the polished stones. */
     shine: number;
     texture?: string;
+    /** How much of the page shows through the die, as through a crystal, from 0. */
+    clarity?: number;
+    /** Whether the numbers on its far faces, seen through it, show only as engravings, faint and colourless: a clear glass's. */
+    engraved?: boolean;
+    /** Whether the die is all its reflections, as a glass: they add to the page in full, which shows through it but at its edges, seen aslant. */
+    glassy?: boolean;
+    /** Whether its surface is rough with frost, as ice. */
+    frosted?: boolean;
+    /** How much its reflections split into the colours of the rainbow, as through a prism, from 0. */
+    prism?: number;
 }
 
 /** A die's look: its material, its body, which tints the picture of a grain, and the ink of its numbers. */
@@ -20,6 +30,8 @@ export interface DiceLook
     finish: Finish;
     body: string;
     ink: string;
+    /** The colour of its picture in Settings, when its body's would mislead: a clear die's, all reflections. */
+    swatch?: string;
 }
 
 /** A set of dice to choose: its name in Settings, and its look; the theme's has none of its own. */
@@ -32,6 +44,8 @@ export interface DiceSet
 
 const resin: Finish = { roughness: 0.35, metalness: 0.05, shine: 0 };
 const metal: Finish = { roughness: 0.3, metalness: 1, shine: 1 };
+// The gems and the glass: the page and their far faces seen through them (D-418).
+const crystal: Finish = { roughness: 0.02, metalness: 0, shine: 1.5, clarity: 0.3 };
 
 /** The sets, the theme's first, then by material: dark numbers on light bodies and light numbers on dark ones, to be read at a glance. */
 export const diceSets: DiceSet[] = [
@@ -42,12 +56,19 @@ export const diceSets: DiceSet[] = [
     { value: "emerald", label: "Emerald", look: { finish: resin, body: "#1c6b4b", ink: "#f4f0e6" } },
     { value: "sapphire", label: "Sapphire", look: { finish: resin, body: "#1f4c9c", ink: "#f4f0e6" } },
     { value: "amethyst", label: "Amethyst", look: { finish: resin, body: "#5d3590", ink: "#dcdce6" } },
+    { value: "ruby-crystal", label: "Crystal ruby", look: { finish: crystal, body: "#8c0a1e", ink: "#f2c75a" } },
+    { value: "sapphire-crystal", label: "Crystal sapphire", look: { finish: crystal, body: "#173aa6", ink: "#f4f0e6" } },
+    { value: "amethyst-crystal", label: "Crystal amethyst", look: { finish: crystal, body: "#5e22b0", ink: "#f6f1ff" } },
+    // Clear as a drinking glass, and ice, frosted: their far numbers only engraved, so that the near ones are read.
+    { value: "glass", label: "Glass", look: { finish: { roughness: 0, metalness: 0, shine: 0.8, clarity: 0.92, engraved: true, glassy: true, prism: 0.5 }, body: "#0b0d10", ink: "#c9971c", swatch: "#d8e9f0" } },
+    { value: "ice", label: "Ice", look: { finish: { roughness: 0.5, metalness: 0, shine: 0.7, clarity: 0.55, engraved: true, glassy: true, frosted: true }, body: "#3f6276", ink: "#2c6fb5", swatch: "#c4e2f0" } },
     { value: "steel", label: "Steel", look: { finish: metal, body: "#c9ccd2", ink: "#16171a" } },
     { value: "brass", label: "Brass", look: { finish: { ...metal, roughness: 0.35 }, body: "#d2a64a", ink: "#2a1c08" } },
     { value: "walnut", label: "Walnut", look: { finish: { roughness: 0.6, metalness: 0, shine: 0, texture: "walnut" }, body: "#ffffff", ink: "#ecd29a" } },
     { value: "ash", label: "Ash", look: { finish: { roughness: 0.6, metalness: 0, shine: 0, texture: "ash" }, body: "#ffffff", ink: "#2e1c0e" } },
     { value: "marble", label: "Marble", look: { finish: { roughness: 0.15, metalness: 0, shine: 0.4, texture: "marble" }, body: "#ffffff", ink: "#1d1e24" } },
-    { value: "onyx", label: "Onyx", look: { finish: { roughness: 0.15, metalness: 0, shine: 0.4, texture: "onyx" }, body: "#ffffff", ink: "#e7c46a" } },
+    // Black onyx, polished, its bands barely seen (D-418).
+    { value: "onyx", label: "Onyx", look: { finish: { roughness: 0.06, metalness: 0, shine: 0.7, texture: "onyx" }, body: "#3a3a3f", ink: "#e7c46a" } },
     { value: "granite", label: "Granite", look: { finish: { roughness: 0.25, metalness: 0, shine: 0.3, texture: "granite" }, body: "#ffffff", ink: "#141416" } },
 ];
 

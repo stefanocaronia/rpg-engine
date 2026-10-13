@@ -14,14 +14,14 @@ rpg init $campaign --name "La cripta di San Ruffo" --system 5e --language it --d
 Copy-Item -Recurse -Force playtests\02-cripta-del-culto\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement xp
+rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 1, 23:00" --why "Arrivo alla cappella di San Ruffo"
 rpg validate; rpg status
 Pop-Location
 ```
 
-- The settings: lethality epic, so a fall to 0 hit points happens but the fight is not cut short by a death; rigor rules, so light is counted; advancement xp, so `scene close` gives the creatures' experience points; dice digital.
+- The settings: lethality epic, so a fall to 0 hit points happens but the fight is not cut short by a death; rigor rules, so light is counted; advancement xp, so `scene close` gives the creatures' experience points; dice digital; mentor off, as Marco knows the game.
 - `world/`: 26 pages; `rpg validate` finds no problems, and `status` shows Corrado and Viola at 3rd level, the quest and the event at midnight.
 - `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are as `rpg init` writes them.
 
@@ -34,11 +34,15 @@ Pop-Location
 
 The hard cap of session 1 stops it in the third round or so. Each run from it is a new master that knows only the files: as after a summary, it must find again who concentrates on what, the effects and their saves, the temporary hit points and the light. No questionnaire: the checklist's parts A and B on what the fight touches, and the watch list below.
 
+### With the dashboard
+
+The same campaign, made as above and then with `rpg config pictures "new elements"`, played once with the dashboard open (phase 3): session 1 alone, with `--prepared playtests\02-cripta-del-culto\brief.md --max 20 --dashboard --moments playtests\02-cripta-del-culto\dashboard.yaml` and the first message above. The moments ask the master how to roll from the page, share a note, switch to physical dice and back, and ask where the quests are. The checks are the watch list below and the lists of the dashboard's run in the private repo's playtest notes; `page/` holds what the page showed after each master turn.
+
 ## The pages
 
 Each page describes only itself; where a thing is comes from its container's `contains`; every secret is in its block. Creatures and characters derive from pages of 5e.
 
-- **Places** (6): Valdorso (Bertone; Cappella di San Ruffo) › Cappella di San Ruffo (Corrado, Viola; Cripta di San Ruffo) › Cripta di San Ruffo, `luce: buio` (Ossario; Sala del rito, `luce: fioca`, with Malco and Ada; Stanza delle offerte, with the Forziere delle offerte).
+- **Places** (6): Valdorso (Bertone; Cappella di San Ruffo) › Cappella di San Ruffo (Corrado, Viola; Cripta di San Ruffo) › Cripta di San Ruffo, `luce: buio` (Ossario; Sala del rito, `luce: fioca`, with Malco and Ada, and its map: four pillars, the altar, the cage, the grating and the door from the ossuary; Stanza delle offerte, with the Forziere delle offerte).
 - **Characters** (5): Corrado (`pc`, Cleric 3, Life Domain), Viola (`companion`, Bard 3, College of Lore), Malco (Cult Fanatic), Ada and Bertone (Commoner).
 - **Creature**: Cultista (Cultist); the Ghoul is the system's. **Faction**: Figli della Fame. **Event**: Il sacrificio di Ada, day 2, 00:00, by Malco. **Quest**: Salvare Ada, open.
 - **Items** (11): Corrado's chain mail, mace, shield and holy symbol (equipped), healer's kit (7/10), 5 torches, 1 alchemist's fire; Viola's leather armor and rapier (equipped), lute; the chest of offerings, 1200 cp 45 sp.

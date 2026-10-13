@@ -172,7 +172,8 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
     const hostile = fighter.hostile === true;
-    return fighter.stranger
+    // A stranger with a picture of their own, made from what is seen, shows it, with their number in its corner (D-420).
+    return fighter.stranger && fighter.image === undefined
         ? (
             <span class={["token stranger", number === undefined ? "" : "numbered", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {number ?? <Icon name="stranger" />}
@@ -185,6 +186,7 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
                 hostile={hostile}
                 side={pip ? sideOf(fighter.role) : undefined}
                 {...(status === undefined ? {} : { status })}
+                number={number}
             />
         );
 }

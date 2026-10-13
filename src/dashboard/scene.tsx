@@ -152,7 +152,7 @@ function People({ people }: { people: ShownPerson[]; })
         <ul class="present">
             {people.map((person, index) => (
                 <li key={`${person.name} ${index}`} class={person.role === "other" && index > 0 && people[index - 1].role !== "other" ? "after-party" : undefined}>
-                    {person.stranger
+                    {person.stranger && person.image === undefined
                         ? (
                             // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
                             <span class={["token stranger", letterOf(person.name) === undefined ? "" : "numbered", person.hostile === true ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
@@ -166,6 +166,7 @@ function People({ people }: { people: ShownPerson[]; })
                                 hostile={person.hostile === true}
                                 side={sideOf(person.role)}
                                 status={person}
+                                number={person.stranger ? letterOf(person.name) : undefined}
                             />
                         )}
                     <span>

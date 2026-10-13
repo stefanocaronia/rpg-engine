@@ -346,7 +346,18 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(await names()).toEqual(["Kira", "donna incappucciata", "lupo dagli occhi gialli 1", "lupo dagli occhi gialli 2"]);
         // Being in the scene does not make her known, not even once it closes.
         expect(JSON.stringify(JSON.parse(await ok("view", "--json")))).not.toContain("Brunilde");
+        // A copy's name is told to give it by its creature, as a master wrote it in the dashboard's playtest.
+        expect((await rpg("scene", "add", "--seen", "Lupo nero 1=lupo grigio")).output).toContain(
+            "seen Lupo nero 1: give it by the creature, Lupo nero, once for all its copies, such as Lupo nero=lupo grigio: they are numbered from those words.",
+        );
+        // Their rolls are named as the scene named them, and stay so once it closes (D-421).
+        await ok("roll", "1d20+3", "--who", "Lupo nero 1", "--check", "Morso");
+        await ok("roll", "1d20", "--who", "Brunilde", "--check", "Furtività");
+        const rollers = async (): Promise<string[]> => JSON.parse(await ok("view", "--json")).rolls.map((roll: { who?: string; }) => roll.who);
+        expect((await rollers()).slice(-2)).toEqual(["lupo dagli occhi gialli 1", "donna incappucciata"]);
         await ok("scene", "close", "--summary", "La donna sparisce nel bosco.");
+        expect((await rollers()).slice(-2)).toEqual(["lupo dagli occhi gialli 1", "donna incappucciata"]);
+        expect(await ok("view", "--json")).not.toContain("Brunilde");
         expect(JSON.parse(await ok("view", "Brunilde", "--json")).kind).toBe("unknown");
         await ok("scene", "open", "--title", "Ancora nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Brunilde", "--seen", "Brunilde=donna incappucciata");
         await ok("write", "Kira", "--add", "knows=[[Brunilde]]");

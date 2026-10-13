@@ -262,7 +262,7 @@ export function valueLabel(value: string): string
         imperial: t("Imperial"),
         none: t("None"),
         "on request": t("On request"),
-        "new places and quests": t("New places and quests"),
+        "new elements": t("New places, quests and those you meet"),
         "made with the player": t("Made with the player"),
         "made by the master": t("Made by the master"),
         "met in play": t("Met in play"),

@@ -22,7 +22,7 @@ import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationParts } from "./dice/index.ts";
-import { findImage } from "./images/index.ts";
+import { findHiddenImage, findImage } from "./images/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { rollName } from "./systems/index.ts";
@@ -1007,7 +1007,8 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
     const fileName = decoded(name);
     const file = fileName === undefined || /[\\/]/.test(fileName) ? undefined : withFiles(served.session, () => {
         const root = findCampaign(served.context.folder);
-        return root === undefined ? undefined : findImage(imageFolders(root, served.context), fileName);
+        // A stranger's picture comes by a name of its bytes, from the campaign's own (D-420).
+        return root === undefined ? undefined : findImage(imageFolders(root, served.context), fileName) ?? findHiddenImage([root], fileName);
     });
     const type = file === undefined ? undefined : imageTypes[extname(file).toLowerCase()];
     const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));

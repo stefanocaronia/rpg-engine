@@ -1,18 +1,21 @@
 // Plays one session of a playtest: an AI master in Claude Code that knows only the campaign, and an AI player that sees only the master's text.
 // How to prepare and run it: README.md in this folder.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { pagePlayer, readMoments } from "./page-player.mjs";
 
 const usage = [
     "Usage, from the repo (see playtests/README.md):",
     '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50] [--hard 60] [--budget 15]',
     '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
+    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open, and --uncommitted, to test the working tree as it is.",
 ].join("\n");
 const options = readOptions();
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -33,18 +36,19 @@ const playerSchema = JSON.stringify({
 
 try {
     if (options.questionnaire) {
-        askQuestionnaire();
+        await askQuestionnaire();
     } else {
-        playSession();
+        await playSession();
     }
 } catch (error) {
     fail(error.message);
 }
 
 /** Checks the repo, the build, the folders and the campaign, then alternates player and master; end.json and the campaign's copy are written however it ends. */
-function playSession()
+async function playSession()
 {
-    const commit = cleanCommit();
+    const tested = testedCode();
+    const moments = options.dashboard ? readMoments(options.moments) : [];
     const campaign = resolve(options.campaign);
     const folder = join(out, `session-${Number(options.session)}`);
     checkFolders(campaign);
@@ -60,14 +64,20 @@ function playSession()
     checkRestart(folder, campaign);
     mkdirSync(join(folder, "turns"), { recursive: true });
     mkdirSync(playerFolder, { recursive: true });
+
+    if (tested.diff !== undefined) {
+        writeFileSync(join(folder, "tested.diff"), tested.diff);
+    }
+
     const masterSession = { id: randomUUID(), started: false };
     const claudeVersion = claude(["--version"], out, "").stdout.trim();
-    writeJson(join(folder, "meta.json"), { started: new Date().toISOString(), commit, rpg, claude: claudeVersion, node: process.version, campaign, masterSession: masterSession.id, options });
+    const code = { commit: tested.commit, ...(tested.tree === undefined ? {} : { tree: tested.tree, uncommitted: "the working tree, as tested.diff shows it against the commit" }) };
+    writeJson(join(folder, "meta.json"), { started: new Date().toISOString(), ...code, rpg, claude: claudeVersion, node: process.version, campaign, masterSession: masterSession.id, options });
     checkIsolation(campaign, join(folder, "context.md"));
     const progress = { stop: "error", count: 0, masterCost: 0, playerRunCost: 0 };
 
     try {
-        playTurns(campaign, folder, masterSession, progress, memory);
+        await playTurns(campaign, folder, masterSession, progress, memory, moments);
 
         if (progress.stop === "isolation" || progress.stop === "error") {
             throw new Error(`Master turn M${progress.count}: ${progress.detail}. ${progress.stop === "isolation" ? "The run is void: fix the setup and start a new run." : "See the turn in turns/."}`);
@@ -84,7 +94,7 @@ function playSession()
 }
 
 /** After the last session played the player answers the questionnaire in its own chat, which the master never sees; the answers go in that session's folder. */
-function askQuestionnaire()
+async function askQuestionnaire()
 {
     checkFolders();
 
@@ -98,7 +108,7 @@ function askQuestionnaire()
         throw new Error(`${answersFile} already exists: the questionnaire is asked once after a session.`);
     }
 
-    const answers = playerTurn(readFileSync(options.questionnaire, "utf8"), false);
+    const answers = await playerTurn(readFileSync(options.questionnaire, "utf8"), false);
     writeFileSync(answersFile, answers.message + "\n");
 }
 
@@ -114,40 +124,54 @@ function lastSessionFolder()
     return `session-${Math.max(...numbers)}`;
 }
 
-/** Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. A new player of a run from a save gets `memory` with its first turn. */
-function playTurns(campaign, folder, masterSession, progress, memory)
+/**
+ * Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. A new player of a
+ * run from a save gets `memory` with its first turn. With the dashboard, the master's chat and its page live for the whole session.
+ */
+async function playTurns(campaign, folder, masterSession, progress, memory, moments)
 {
     const max = Number(options.max);
     const hard = Number(options.hard ?? max + 10);
     const lateNote = "(Organizer: it is getting late. End the evening at the next good point, in your own words.)";
-    let note = `(Organizer: a new evening begins. You open it by writing «${options.first}»; the master's answer follows.)`;
+    const dashboardNote = "(Organizer: tonight the game's dashboard is open in the browser beside the chat. When the master asks you a roll or a choice there, you get its buttons here, and press one.)";
+    let note = [`(Organizer: a new evening begins. You open it by writing «${options.first}»; the master's answer follows.)`, options.dashboard ? dashboardNote : ""].filter(Boolean).join("\n");
     let player = { message: options.first, endSession: false };
+    const page = options.dashboard ? pagePlayer({ folder, askPlayer: async (prompt, schema) => (await askPlayer(prompt, schema)).answer, moments }) : undefined;
+    const chat = options.dashboard ? masterChat(campaign, masterSession, folder, page) : undefined;
 
-    for (let count = 1;; count++) {
-        progress.count = count;
-        record(folder, `P${count}`, player.message);
-        const master = masterTurn(campaign, masterSession, player.message, join(folder, "turns", `M${count}.jsonl`));
-        record(folder, `M${count}`, master.text);
-        progress.masterCost = master.cost;
-        const stop = stopReason(master, player.endSession, count >= hard);
+    try {
+        for (let count = 1;; count++) {
+            progress.count = count;
+            record(folder, `P${count}`, player.message);
+            page?.turnBegins(count);
+            const streamFile = join(folder, "turns", `M${count}.jsonl`);
+            const master = chat ? await chat.turn(player.message, streamFile) : masterTurn(campaign, masterSession, player.message, streamFile);
+            await page?.turnEnds(count);
+            record(folder, `M${count}`, master.text);
+            progress.masterCost = master.cost;
+            const stop = stopReason(master, player.endSession, count >= hard);
 
-        if (stop) {
-            progress.stop = stop;
-            progress.detail = master.isolation || master.error || undefined;
-            return;
+            if (stop) {
+                progress.stop = stop;
+                progress.detail = master.isolation || master.error || undefined;
+                return;
+            }
+
+            const told = (await page?.momentsBefore(count + 1)) ?? [];
+            note = [note, ...told, count === max ? lateNote : ""].filter(Boolean).join("\n");
+
+            if (note) {
+                record(folder, "Organizer", note);
+            }
+
+            player = await playerTurn([count === 1 ? memory : "", note, master.text].filter(Boolean).join("\n\n"), true);
+            progress.playerRunCost = player.cost;
+            note = "";
         }
-
-        if (count === max) {
-            note = [note, lateNote].filter(Boolean).join("\n");
-        }
-
-        if (note) {
-            record(folder, "Organizer", note);
-        }
-
-        player = playerTurn([count === 1 ? memory : "", note, master.text].filter(Boolean).join("\n\n"), true);
-        progress.playerRunCost = player.cost;
-        note = "";
+    } finally {
+        // The page first: closed after the chat, it would only report the server gone.
+        await page?.close();
+        await chat?.close();
     }
 }
 
@@ -193,12 +217,93 @@ function masterTurn(campaign, session, prompt, streamFile)
     const run = claude(args, campaign, prompt);
     session.started = true;
     writeFileSync(streamFile, run.stdout);
-    const events = run.stdout.split("\n").map(parseJson).filter(Boolean);
+    return turnResult(run.stdout.split("\n").map(parseJson).filter(Boolean), run.status !== 0, run.stderr);
+}
+
+/**
+ * The master's chat as one Claude Code process for the whole session, as in an app (--dashboard): its rpg server, and the dashboard that server serves, live
+ * from one turn to the next, so that a question on the page finds it open. Each turn streams its events to `page` as they come.
+ */
+function masterChat(campaign, session, folder, page)
+{
+    const args = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", ...masterArgs(folder), "--session-id", session.id];
+    const child = spawn("claude", args, { cwd: campaign, env: environment, stdio: ["pipe", "pipe", "pipe"] });
+    session.started = true;
+    let stderr = "";
+    let current;
+    const early = [];
+    child.stderr.on("data", (data) => stderr += data);
+    // A chat that ended on its own is told by its exit; a write after it would only fail.
+    child.stdin.on("error", () => undefined);
+    child.on("error", (error) => current?.end(true, `Could not start claude (${error.message}): install Claude Code and log in.`));
+    child.on("exit", (code) => current?.end(true, `the master's chat ended (exit ${code}): ${stderr.trim()}`));
+
+    createInterface({ input: child.stdout }).on("line", (line) => {
+        const event = parseJson(line);
+
+        if (current === undefined) {
+            early.push(line);
+            return;
+        }
+
+        current.lines.push(line);
+
+        if (event) {
+            current.events.push(event);
+            page?.heard(event);
+        }
+
+        if (event?.type === "result") {
+            current.end(false, "");
+        }
+    });
+
+    return {
+        turn(prompt, streamFile)
+        {
+            return new Promise((done) => {
+                const lines = early.splice(0);
+                const events = lines.map(parseJson).filter(Boolean);
+
+                const end = (failed, problem) => {
+                    current = undefined;
+                    writeFileSync(streamFile, lines.join("\n") + "\n");
+                    done(turnResult(events, failed, problem));
+                };
+
+                current = { lines, events, end };
+
+                if (child.exitCode !== null) {
+                    end(true, `the master's chat had ended (exit ${child.exitCode}): ${stderr.trim()}`);
+                    return;
+                }
+
+                child.stdin.write(JSON.stringify({ type: "user", message: { role: "user", content: prompt } }) + "\n");
+            });
+        },
+        close()
+        {
+            return new Promise((done) => {
+                if (child.exitCode !== null) {
+                    done();
+                    return;
+                }
+
+                child.once("exit", () => done());
+                child.stdin.end();
+            });
+        },
+    };
+}
+
+/** What a master turn's events give: the text the player sees, the session's cost so far, and what went wrong, if anything. */
+function turnResult(events, failed, stderr)
+{
     const result = events.find((event) => event.type === "result");
     const blocks = events.filter((event) => event.type === "assistant" && !event.parent_tool_use_id).flatMap((event) => event.message.content);
     const text = blocks.filter((block) => block.type === "text").map((block) => block.text.trim()).join("\n\n");
-    const failed = run.status !== 0 || !result || result.is_error;
-    return { text, cost: result?.total_cost_usd ?? 0, isolation: turnIsolationProblem(events), error: failed ? (run.stderr || result?.result || "no result").trim() : "" };
+    const error = failed || !result || result.is_error ? (stderr || result?.result || "no result").trim() : "";
+    return { text, cost: result?.total_cost_usd ?? 0, isolation: turnIsolationProblem(events), error };
 }
 
 /** What breaks the master's isolation in this turn, from Claude Code's first event: rpg not connected, another server, another model or permission mode. */
@@ -224,39 +329,72 @@ function turnIsolationProblem(events)
 }
 
 /** One player turn: the player sees only the text given here, and answers with its message and, in play, whether it ends the evening. */
-function playerTurn(prompt, inPlay)
+async function playerTurn(prompt, inPlay)
+{
+    const { answer, cost } = await askPlayer(prompt, inPlay ? playerSchema : undefined);
+    const turn = inPlay ? answer : { message: answer };
+
+    if (!turn?.message) {
+        throw new Error(`The player did not answer: ${JSON.stringify(answer)}`);
+    }
+
+    return { ...turn, cost };
+}
+
+/**
+ * A turn of the player's chat, which sees only the text given here: its answer as `schema` asks, or its text without one, and the run's cost so far. The buttons
+ * on the dashboard are answered in the same chat, so that the player remembers them.
+ */
+async function askPlayer(prompt, schema)
 {
     const resume = existsSync(playerChatFile);
     const id = resume ? readFileSync(playerChatFile, "utf8").trim() : randomUUID();
     const isolation = ["--tools", "", "--setting-sources", "project,local", "--strict-mcp-config"];
-    const answerFormat = inPlay ? ["--output-format", "json", "--json-schema", playerSchema] : ["--output-format", "json"];
+    const answerFormat = ["--output-format", "json", ...(schema === undefined ? [] : ["--json-schema", typeof schema === "string" ? schema : JSON.stringify(schema)])];
     const chat = resume ? ["--resume", id] : ["--session-id", id];
     // Claude Code would keep the profile a chat began with; with no snapshot, a profile changed between sessions reaches the player.
     const profile = ["--system-prompt-file", resolve(options.profile), "--system-prompt-snapshot", "off"];
     const args = ["-p", "--model", options["player-model"], ...profile, ...isolation, ...answerFormat, ...chat];
-    const run = claude(args, playerFolder, prompt);
+    const run = await claudeAsync(args, playerFolder, prompt);
     writeFileSync(playerChatFile, id);
     appendFileSync(join(out, "player-turns.jsonl"), run.stdout.trim() + "\n");
     const result = parseJson(run.stdout);
-    const answer = inPlay ? result?.structured_output : { message: result?.result };
+    const answer = schema === undefined ? result?.result : result?.structured_output;
 
-    if (!result || result.is_error || !answer?.message) {
+    if (!result || result.is_error || !answer) {
         throw new Error(`The player did not answer: ${run.stdout || run.stderr}`);
     }
 
-    return { ...answer, cost: result.total_cost_usd ?? 0 };
+    return { answer, cost: result.total_cost_usd ?? 0 };
 }
 
-/** The commit under test: the run refuses uncommitted changes, so the report can name exactly what it tested. */
-function cleanCommit()
+/**
+ * The code under test, so the report can name exactly what it tested: the commit, refusing uncommitted changes; with --uncommitted, the commit and the working
+ * tree as a git tree, untracked files included, with its diff against the commit, made through an index of its own so that the repo's stays as it is.
+ */
+function testedCode()
 {
+    const commit = git("rev-parse", "HEAD");
     const changes = git("status", "--porcelain");
 
-    if (changes) {
-        throw new Error(`The repo has uncommitted changes, so the run could not name the commit it tests. Commit them, then run again:\n${changes}`);
+    if (!changes) {
+        return { commit };
     }
 
-    return git("rev-parse", "HEAD");
+    if (!options.uncommitted) {
+        throw new Error(`The repo has uncommitted changes, so the run could not name the commit it tests. Commit them, or pass --uncommitted, then run again:\n${changes}`);
+    }
+
+    const folder = mkdtempSync(join(tmpdir(), "rpg-tested-"));
+
+    try {
+        const index = { GIT_INDEX_FILE: join(folder, "index") };
+        copyFileSync(resolve(repo, git("rev-parse", "--git-path", "index")), index.GIT_INDEX_FILE);
+        gitWith(index, "add", "--all");
+        return { commit, tree: gitWith(index, "write-tree"), diff: gitWith(index, "diff", "--cached", "--binary", commit) + "\n" };
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
 }
 
 /** Builds dist/ from the commit and checks that the rpg command the campaign's .mcp.json starts is this build; returns its cli.js. */
@@ -521,6 +659,21 @@ function claude(args, cwd, input)
     return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
 }
 
+/** claude as above, without holding the run: the dashboard's page keeps going while the player thinks. */
+function claudeAsync(args, cwd, input)
+{
+    return new Promise((done, failed) => {
+        const child = spawn("claude", args, { cwd, env: environment, stdio: ["pipe", "pipe", "pipe"] });
+        let stdout = "";
+        let stderr = "";
+        child.stdout.on("data", (data) => stdout += data);
+        child.stderr.on("data", (data) => stderr += data);
+        child.on("error", (error) => failed(new Error(`Could not start claude (${error.message}): install Claude Code and log in.`)));
+        child.on("close", (status) => done({ status, stdout, stderr }));
+        child.stdin.end(input);
+    });
+}
+
 function readOptions()
 {
     try {
@@ -537,6 +690,9 @@ function readOptions()
                 budget: { type: "string", default: "15" },
                 questionnaire: { type: "string" },
                 prepared: { type: "string" },
+                dashboard: { type: "boolean" },
+                moments: { type: "string" },
+                uncommitted: { type: "boolean" },
                 "master-model": { type: "string", default: "claude-opus-5-5" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
             },
@@ -544,7 +700,11 @@ function readOptions()
         const required = values.questionnaire ? ["profile", "out"] : ["campaign", "profile", "out", "first"];
         const missing = required.filter((name) => !values[name]);
         const notCounts = ["session", "max", "hard"].filter((name) => values[name] !== undefined && !(Number.isInteger(Number(values[name])) && Number(values[name]) > 0));
-        const notFiles = ["profile", "questionnaire", "prepared"].filter((name) => values[name] && !existsSync(values[name]));
+        const notFiles = ["profile", "questionnaire", "prepared", "moments"].filter((name) => values[name] && !existsSync(values[name]));
+
+        if (values.moments && !values.dashboard) {
+            throw new Error("--moments are done on the dashboard's page: add --dashboard.");
+        }
 
         if (missing.length > 0) {
             throw new Error(`Missing ${missing.map((name) => `--${name}`).join(", ")}.`);
@@ -589,7 +749,13 @@ function record(folder, label, text)
 
 function git(...args)
 {
-    const run = spawnSync("git", ["-C", repo, ...args], { encoding: "utf8", env: environment });
+    return gitWith({}, ...args);
+}
+
+/** git with some variables of its own, such as another index. */
+function gitWith(variables, ...args)
+{
+    const run = spawnSync("git", ["-C", repo, ...args], { encoding: "utf8", env: { ...environment, ...variables }, maxBuffer: 256 * 1024 * 1024 });
 
     if (run.status !== 0) {
         throw new Error(`git ${args.join(" ")} failed in ${repo}: ${run.stderr || run.error?.message}`);

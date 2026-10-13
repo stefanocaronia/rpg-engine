@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 8b2b048d 7705224a 781d8fc0 89c84229 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: a548216f e7ad3e89 0512df89 d32a17eb 66abc619 781d8fc0 184f88cf 6ce15994 2933c94c ff563f86 069e4295 f9d75ec9. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med en **AI som spilleder**.
@@ -60,17 +60,17 @@ RPG Engine er lavet til alle rollespil ved bordet. I dag følger der ét spilsys
 ### 2.1 Det skal du bruge
 
 - En computer med Windows, macOS eller Linux.
-- **Node.js 22** eller nyere. Hent det på [nodejs.org](https://nodejs.org): "LTS"-versionen er fin. Det kommer med `npm`, som installerer RPG Engine.
-- En **terminal**, det vindue hvor du skriver kommandoer: på Windows appen Terminal eller PowerShell, på macOS Terminal. Du bruger den til at installere RPG Engine, til at oprette hver kampagne og til at starte Claude Code eller Codex.
-- En **AI-vært**, den app som spilleder kører i: **Claude Code** eller **Codex**, med sit abonnement og sit login. Se [2.4](#24-connect-your-ai).
-- Den **største model**, som din vært tilbyder. En lille model lader sig snyde: i vores tests afslørede den hemmeligheder for en spiller, der påstod at være den rigtige spilleder.
+- **Node.js 22** eller nyere. Hent det på [nodejs.org](https://nodejs.org): "LTS"-versionen er fin. Det følger med `npm`, som installerer RPG Engine.
+- En **terminal**, det vindue hvor du skriver kommandoer: På Windows er det appen Terminal eller PowerShell. På macOS er det Terminal. Du bruger den til at installere RPG Engine, til at oprette hver kampagne og til at starte Claude Code eller Codex.
+- En **AI-vært**, den app som spillederen kører i: **Claude Code** eller **Codex**, med abonnement og login. Se [2.4](#24-connect-your-ai).
+- Den **største model** som din vært tilbyder. En lille model lader sig narre: I vores tests røbede den hemmeligheder til en spiller, der påstod at være den rigtige spilleder.
 - En webbrowser til dashboardet.
 
-Det login, du bruger til din vært, kan mere: RPG Engine bruger det på din computer til at tegne billeder af steder, missioner og din karakter, og til at oversætte dashboardet til sprog, det ikke leveres med. Se [Billeder](#311-pictures) og [Sprog](#72-languages).
+Det login, du bruger til din vært, kan mere: RPG Engine bruger det på din computer til at tegne billeder af steder, missioner, de personer du møder, og din karakter. Det bruges også til at oversætte dashboardet til sprog, som det ikke leveres med. Se [Billeder](#311-pictures) og [Sprog](#72-languages).
 
 **Sådan åbner du en terminal i en mappe.** Mange trin siger "i kampagnemappen". På Windows højreklikker du på mappen i Filutforskeren og vælger **Åbn i Terminal**. På macOS højreklikker du på mappen i Finder og vælger **Services > Ny terminal ved mappe**. Eller skriv `cd` og mappens sti i en terminal, der allerede er åben, for eksempel `cd "C:\Users\me\Games\The Salt Isles"`.
 
-### 2.2 Installér
+### 2.2 Installer
 
 Åbn en terminal og skriv:
 
@@ -78,13 +78,13 @@ Det login, du bruger til din vært, kan mere: RPG Engine bruger det på din comp
 npm install -g rpg-engine
 ```
 
-Det giver dig kommandoen `rpg`. Sådan tjekker du, at det virkede:
+Nu har du kommandoen `rpg`. Sådan tjekker du, at det virkede:
 
 ```text
 rpg --version
 ```
 
-Du bruger `rpg` én gang pr. kampagne, når du opretter den. Derefter taler du kun med spilleder: din AI-vært starter selv RPG Engine med den samme kommando, `rpg`.
+Du bruger `rpg` én gang pr. kampagne, når du opretter den. Derefter taler du kun med spillederen: Din AI-vært starter selv RPG Engine med den samme `rpg`-kommando.
 
 ### 2.3 Opret en kampagne
 
@@ -94,7 +94,7 @@ En kampagne er en mappe. Åbn en terminal i den mappe, hvor du gemmer dine spil,
 rpg init "The Salt Isles"
 ```
 
-Det laver mappen `The Salt Isles` med en ny kampagne i, og fortæller dig, hvad du skal gøre bagefter:
+Det laver mappen `The Salt Isles` med en ny kampagne i, og fortæller dig, hvad du skal gøre nu:
 
 ```text
 Created the campaign "The Salt Isles" in C:\Users\me\Games\The Salt Isles.
@@ -103,41 +103,41 @@ To play, open Claude Code or Codex in this folder and say hello: the master asks
 For the master: Still to agree with the player: ...
 ```
 
-Linjerne efter *For the master* er til spilleder, som læser dem i chatten: dem skal du ikke gøre noget ved. Husk, hvor mappen ligger: du vender tilbage til den, hver gang du spiller. Uden et mappenavn gør `rpg init` den mappe, du står i, til kampagnen.
+Linjerne efter *For the master* er til spillederen, som læser dem i chatten. Dem skal du ikke gøre noget ved. Husk, hvor mappen ligger: Du skal tilbage til den, hver gang du spiller. Hvis du ikke angiver et mappenavn, gør `rpg init` den mappe, du står i, til kampagnen.
 
-`init` laver alt, hvad kampagnen har brug for: dens indstillinger, dens verdensmapper og de små filer, der fortæller din AI-vært, at den skal bruge RPG Engine og ikke have nogen hukommelse af sig selv uden for kampagnen.
+`init` laver alt, hvad kampagnen har brug for: dens indstillinger, dens verdensmapper og de små filer, der får din AI-vært til at bruge RPG Engine og til ikke at gemme nogen egen hukommelse uden for kampagnen.
 
-Du behøver ikke vælge noget nu. Spilleder spørger dig om resten i chatten, eller du vælger det på dashboardet. Hvis du allerede kender nogle valg, kan du angive dem her:
+Du behøver ikke vælge noget nu. Spillederen spørger om resten i chatten, eller du vælger det på dashboardet. Hvis du allerede kender nogle valg, kan du angive dem her:
 
 ```text
 rpg init salt-isles --name "The Salt Isles" --language en --system 5e --difficulty normal --lethality dice
 ```
 
-Det laver mappen `salt-isles` med kampagnen *The Salt Isles* i: et mappenavn uden mellemrum og kampagnens navn, som du vil have det.
+Det laver mappen `salt-isles` med kampagnen *The Salt Isles* i: et mappenavn uden mellemrum og et kampagnenavn, som du selv vil have det.
 
-| Valg | Hvad det bestemmer | Værdier |
+| Valgmulighed | Hvad den indstiller | Værdier |
 |---|---|---|
-| `--name` | Kampagnens navn | vilkårligt; mappens navn, hvis du udelader det |
+| `--name` | Kampagnens navn | frit valg; mappens navn, hvis du udelader den |
 | `--language` | Spillets sprog | en kode, for eksempel `en`, `it`, `fr` |
 | `--system` | Spilsystemet | `5e`, i dag det eneste |
-| `--difficulty` | Hvor hård verden er at spille i | `story`, `easy`, `normal`, `hard`, `brutal` |
+| `--difficulty` | Hvor hård verdenen er | `story`, `easy`, `normal`, `hard`, `brutal` |
 | `--lethality` | Hvad det betyder at falde i en kamp | `narrative`, `epic`, `dice` |
 
 `rpg init --help` viser dem også. En kampagne kan ikke ligge inde i en anden kampagnes mappe.
 
-Du kan ikke bede spilleder om at oprette en kampagne: før `init` er der intet i mappen, der fortæller din AI-vært, hvor RPG Engine er.
+Du kan ikke bede spillederen om at oprette en kampagne: Før `init` er der intet i mappen, der fortæller din AI-vært, hvor RPG Engine er.
 
 ### 2.4 Forbind din AI
 
 RPG Engine virker med **Claude Code** og **Codex**. Andre AI-apps, der bruger MCP-værktøjer, virker måske også, men det kan vi ikke garantere.
 
-**Installér din vært.** Claude Code og Codex kører i terminalen: de er ikke Claude- eller ChatGPT-appen på din telefon. Hver af dem skal have sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Følg deres egne sider for at installere dem og logge ind: [Claude Code](https://code.claude.com/docs/en/setup) og [Codex](https://learn.chatgpt.com/docs/codex/cli). Det gør du én gang for alle dine kampagner.
+**Installer din vært.** Claude Code og Codex kører i terminalen: De er ikke Claude- eller ChatGPT-appen på din telefon. Hver af dem kræver sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Følg deres egne sider for at installere dem og logge ind: [Claude Code](https://code.claude.com/docs/en/setup) og [Codex](https://learn.chatgpt.com/docs/codex/cli). Det gør du kun én gang, for alle dine kampagner.
 
-**Claude Code.** Åbn en terminal i kampagnemappen og skriv `claude`. Første gang spørger den, om du stoler på mappen, og siger, at mappen tillader spillets værktøjer (`mcp__rpg`): vælg **Yes, I trust this folder**. Pas på: det svar, der er valgt på forhånd, er *No, exit*, så hvis du bare trykker Enter, lukker Claude Code. Mere er der ikke i det: kampagnen har allerede fortalt Claude Code, at den skal bruge RPG Engine og dens værktøjer, og at hukommelsen skal være slået fra.
+**Claude Code.** Åbn en terminal i kampagnemappen og skriv `claude`. Første gang spørger den, om du stoler på mappen, og siger, at mappen tillader spillets værktøjer (`mcp__rpg`): Vælg **Yes, I trust this folder**. Pas på: Det svar, der er valgt på forhånd, er *No, exit*, så hvis du trykker på Enter med det samme, lukker Claude Code. Mere skal du ikke gøre: Kampagnen har allerede sagt til Claude Code, at den skal bruge RPG Engine og dens værktøjer, og at den ikke må bruge sin hukommelse.
 
-**Codex.** Åbn en terminal i kampagnemappen og skriv `codex`. Når den spørger, om du stoler på mappen, så svar ja: kampagnens egne indstillinger fortæller Codex, hvor RPG Engine er, tillader dens værktøjer og slår dens hukommelse fra, og Codex læser dem kun i en mappe, du stoler på. I skrivebordsappen skal du tjekke, at hukommelser er slået fra for spillets chats.
+**Codex.** Åbn en terminal i kampagnemappen og skriv `codex`. Når den spørger, om du stoler på mappen, så svar ja: Kampagnens egne indstillinger fortæller Codex, hvor RPG Engine er, tillader dens værktøjer og slår dens hukommelse fra, og Codex læser dem kun i en mappe, du stoler på. Tjek i desktop-appen, at hukommelse er slået fra i spillets chats.
 
-**Hvorfor hukommelse betyder noget.** Kampagnen lever i sine filer. Hvis værten også husker ting på egen hånd, ville det ikke rigtigt være at gå tilbage at vende tilbage til et gemt spil: spilleder ville stadig huske det, der blev fortrudt.
+**Hvorfor hukommelse har betydning.** Kampagnen bor i sine filer. Hvis værten også husker ting på egen hånd, ville det ikke rigtigt være at gå tilbage at vende tilbage til et gemt spil: Spillederen ville stadig huske det, der blev fortrudt.
 
 ### 2.5 Den første chat
 
@@ -145,71 +145,71 @@ Skriv hvad som helst, for eksempel:
 
 > Hej! Lad os starte.
 
-Spilleder læser, hvor spillet står, og svarer. I sit første svar i hver chat giver spilleder dig **linket til dit dashboard** (noget i retning af `http://127.0.0.1:4750`). Åbn det i din browser og hav det ved siden af chatten hele spillet igennem. Hver kampagne beholder det samme link fra chat til chat, medmindre et andet program har taget det: så giver spilleder dig det nye.
+Spillederen læser, hvor spillet står, og svarer. I sit første svar i hver chat giver den dig **linket til dit dashboard** (noget i retning af `http://127.0.0.1:4750`). Åbn det i din browser og hav det ved siden af chatten gennem hele spillet. Hver kampagne beholder det samme link fra chat til chat, medmindre et andet program har taget det: Så giver spillederen dig det nye.
 
-Mellem spillederens beskeder viser din vært de værktøjer, spilleder bruger, i korte linjer. Åbn ikke deres detaljer (i Claude Code ctrl+o): de kan vise, hvad spilleder skriver, hemmeligheder inkluderet.
+Mellem spillederens beskeder viser din vært de værktøjer, spillederen bruger, i korte linjer. Åbn ikke deres detaljer (i Claude Code: ctrl+o): De kan vise, hvad spillederen skriver, hemmeligheder inklusive.
 
-En ny kampagne går gennem tre trin, som et spil med en menneskelig spilleder. Dashboardet viser dem øverst som *1 Indstillinger · 2 Session nul · 3 Spil*:
+En ny kampagne gennemgår tre trin, som et spil med en menneskelig spilleder. Dashboardet viser dem øverst som *1 Indstillinger · 2 Session nul · 3 Spil*:
 
-1. **Indstillinger**: du vælger, hvordan du vil spille. Uden for historien.
-2. **Session nul**: du laver din karakter, i spil.
-3. **Spil**: historien.
+1. **Indstillinger**: Du vælger, hvordan du vil spille. Uden for historien.
+2. **Session nul**: Du laver din karakter, i selve spillet.
+3. **Spil**: Historien.
 
 ### 2.6 Indstillinger: vælg, hvordan du spiller
 
-Spilleder spørger kun om det, der stadig mangler, nogle få spørgsmål ad gangen. Hvis du skriver "du bestemmer", vælger spilleder og fortæller dig, hvad der blev valgt. Når dashboardet er åbent, viser dets første trin, **Indstillinger**, de samme spørgsmål som kort: ét spørgsmål ad gangen, hver værdi med sin betydning, og den sædvanlige er markeret **Foreslået**. Vælg dér, så spørger spilleder ikke igen i chatten; **Spring over** gemmer et spørgsmål til senere. Chatten klarer det, kun ord kan klare: præmissen for en ny verden, sproget og billederne, som spilleder kun spørger om, hvis din computer kan lave dem. Derfor stiller siden færre spørgsmål, end tabellen nedenfor viser.
+Spillederen spørger kun om det, der stadig mangler, et par spørgsmål ad gangen. Hvis du skriver "du bestemmer", vælger spillederen og fortæller dig, hvad den valgte. Når dashboardet er åbent, viser dets første trin, **Indstillinger**, de samme spørgsmål som kort: ét spørgsmål ad gangen, hver værdi med sin betydning, og den sædvanlige er markeret **Foreslået**. Vælg dér, så spørger spillederen ikke igen i chatten. **Spring over** gemmer et spørgsmål til senere. Chatten tager sig af det, kun ord kan klare: præmissen for en ny verden, sproget og billederne, som spillederen kun spørger om, hvis din computer kan lave dem. Derfor stiller siden færre spørgsmål, end tabellen nedenfor opregner.
 
-Du behøver ikke studere tabellen: den er her, så du kan slå op. Du kan ændre hvert af disse valg senere, i chatten eller i dashboardets **Indstillinger**. En ændring gælder fra spillerens næste svar.
+Du behøver ikke studere tabellen: Den er til at slå op i. Du kan ændre hver af disse indstillinger senere, i chatten eller i dashboardets **Indstillinger**. En ændring gælder fra spillederens næste svar.
 
-| Indstilling | Hvad den bestemmer | Værdier | Foreslået |
+| Indstilling | Hvad den afgør | Værdier | Foreslået |
 |---|---|---|---|
-| **Mentor** (spurgt som "Hvor godt kender du dette spil?") | Hvor meget spilleder lærer dig reglerne, uden for historien | **fra** (kun historien; spørg i klammer, når du vil), **hints** (et kort tip før valg, der betyder noget, og når en regel slipper forbi), **tutorial** (hver regel forklaret første gang, hele regnestykket for hvert slag, en kort gennemgang efter kampe) | ud fra dit svar: aldrig spillet → tutorial, lidt → hints, jeg kender det → fra |
-| **Sværhedsgrad** | Hvor hård verden er at spille i: kampe, fjendernes taktik, spor, skatte, hvor hurtigt trusler rykker | story, easy, normal, hard, brutal | |
+| **Mentor** (spurgt som "How well do you know this game?") | Hvor meget spillederen lærer dig om reglerne, uden for historien | **off** (kun historien; spørg i klammer, når du vil), **hints** (et kort tip før valg, der betyder noget, og når en regel går forbi), **tutorial** (hver regel forklaret første gang, hele regnestykket for hvert slag, en kort gennemgang efter kampe) | ud fra dit svar: aldrig spillet → tutorial, lidt → hints, jeg kender det → off |
+| **Sværhedsgrad** | Hvor hård verdenen er: kampe, fjendernes taktik, spor, skatte, hvor hurtigt trusler rykker | story, easy, normal, hard, brutal | |
 | **Dødelighed** | Hvad det betyder at falde i en kamp | **narrative** (din karakter dør aldrig), **epic** (dør kun, når det betyder noget for historien), **dice** (terningerne afgør) | følger sværhedsgraden: story → narrative, easy → epic, normal og op → dice |
-| **Gemte spil** | Hvornår du må gå tilbage | **permadeath** (aldrig; kun starte kampagnen forfra), **checkpoint** (tilbage til sidste scenes afslutning, kun hvis din karakter dør), **free** (tilbage til et hvilket som helst gemt spil, og gem når som helst, du beder om det) | checkpoint |
-| **Strenghed** | Hvor nøje mad, lys, træthed, bæreevne, besværgelseskomponenter og rejser følger reglerne | **smooth** (spilleder springer let over dem), **rules** (som skrevet: fakler brænder ud, rationer slipper op), **simulation** (ud over reglerne: slid, fordærv, vejr) | smooth |
-| **Terninger** | Hvem der slår din karakters terninger | **digital** (RPG Engine slår dem, på siden), **physical** (du slår selv og siger, hvad de viste) | |
-| **Enheder** | Afstande og vægt i historien | metric, imperial | |
-| **Følgesvende** | Hvem der rejser med dig | ingen, lavet med dig i session nul, lavet af spilleder, mødt i spillet | |
-| **Billeder** | Billeder af steder og missioner, og din karakters portræt, når du beder om det | ingen, på forespørgsel, nye steder og missioner | spurgt én gang, kun hvis din computer kan lave dem |
+| **Gemte spil** | Hvornår du må gå tilbage | **permadeath** (aldrig; kun starte kampagnen forfra), **checkpoint** (tilbage til sidste scenes slutning, kun hvis din karakter dør), **free** (tilbage til ethvert gemt spil, og gem når som helst, du beder om det) | checkpoint |
+| **Strenghed** | Hvor nøje mad, lys, træthed, bæreevne, magiske komponenter og rejser følger reglerne | **smooth** (spillederen springer let over dem), **rules** (som skrevet: fakler brænder ud, rationer slipper op), **simulation** (ud over reglerne: slid, fordærv, vejr) | smooth |
+| **Terninger** | Hvem slår din karakters terninger | **digital** (RPG Engine slår dem, på siden), **physical** (du slår selv og fortæller, hvad de viser) | |
+| **Enheder** | Afstande og vægte i historien | metric, imperial | |
+| **Følgesvende** | Hvem der rejser med dig | none, lavet sammen med dig i session nul, lavet af spillederen, mødt i spillet | |
+| **Billeder** | Billeder af steder, missioner og de personer du møder, og din karakters portræt, når du beder om det | none, on request, nye steder, missioner og personer du møder | spurgt én gang, kun hvis din computer kan lave dem |
 | **Linjer** | Det, der aldrig optræder i spillet | en liste eller ingen | |
-| **Slør** | Det, der gerne må ske, men kun uden for scenen | en liste eller ingen | |
-| **Sprog** | Spillets og dashboardets sprog | vilkårligt | taget ud fra, hvordan du skriver, og bekræftet |
+| **Slør** | Det, der gerne må ske, men kun uden for skærmen | en liste eller ingen | |
+| **Sprog** | Spillets og dashboardets sprog | alle | udledt af, hvordan du skriver, og bekræftet |
 
-Spilsystemet kan tilføje sine egne indstillinger. Femte udgave tilføjer **advancement**: hvordan din karakter stiger i niveau, med **erfaringspoint** eller ved historiens **milepæle**.
+Spilsystemet kan tilføje sine egne indstillinger. Femte udgave tilføjer **advancement**: hvordan din karakter stiger i niveau, med **erfaringspoint** eller ved **milepæle** i historien.
 
-**Hvad sværhedsgraden betyder i spillet.** Story: svage, naive fjender, åbenlyse spor, rigeligt af alt; spilleder kan gøre sine egne slag mildere. Easy: enkle fjender, gavmilde ressourcer. Normal: fornuftige fjender, tre spor til hver konklusion, almindelige priser og skatte. Hard: kloge fjender, subtile spor, knappe ressourcer, trusler der rykker hurtigt. Brutal: fjender, der lægger baghold, trækker sig tilbage og gør det af med de faldne, meget knappe ressourcer, de hårdeste hvil. Kampe er altid afpasset efter din gruppe, som den er nu.
+**Hvad sværhedsgraden betyder i spillet.** Story: svage, naive fjender, tydelige spor, rigeligt af alt. Spillederen kan gøre sine egne slag mildere. Easy: enkle fjender, gavmilde ressourcer. Normal: fornuftige fjender, tre spor til hver konklusion, almindelige priser og skatte. Hard: kloge fjender, fine spor, knappe ressourcer, trusler der rykker hurtigt. Brutal: fjender der lægger baghold, trækker sig tilbage og giver de faldne dødsstødet, meget knappe ressourcer, de hårdeste hvil. Kampe er altid afpasset efter din gruppe, som den er nu.
 
 **Uden en skrevet verden** spørger opsætningen om to ting mere:
 
-- **Præmis**: genren, tonen og nogle få elementer af verden, med dine egne ord. For eksempel: *"Low fantasy, dyster men med håb. En flodby, et hjemsøgt vadested, en kult i bjergene."*
-- **Opsætning**: **løbende** (spilleder bygger hver del af verden lige før, du får brug for den; foreslået) eller **alt fra start**.
+- **Præmis**: genren, tonen og nogle få elementer i verdenen, med dine egne ord. For eksempel: *"Low fantasy, grim men med håb. En flodby, et hjemsøgt vadested, en kult i bakkerne."*
+- **Opsætning**: **on the fly** (spillederen bygger hver del af verdenen lige før, du får brug for den; foreslået) eller **all at the start**.
 
-Spilleder foreslår derefter et navn til kampagnen. Når intet mangler, og du siger, at du er klar, går spillet videre til session nul.
+Spillederen foreslår derefter et navn til kampagnen. Når intet mangler, og du siger, at du er klar, går spillet videre til session nul.
 
 ### 2.7 Session nul: din karakter
 
-Session nul er spil: du laver din karakter sammen med spilleder, som du ville gøre ved et bord.
+Session nul er spil: Du laver din karakter sammen med spillederen, som du ville gøre det ved et bord.
 
-- **Alle valg er dine**, medmindre du beder spilleder om at tage dem. Du kan komme med en fuld idé ("en halvalvisk præst, der forlod sit tempel"), en vag ("en, der heler, men ikke på den rare måde") eller ingenting ("overrask mig, så lad mig ændre ting").
-- **Egenskabsværdier.** Spilleder fortæller dig metoden og sikkerhedsnettet, før der slås en eneste terning. I femte udgave: standardrækken, point buy eller 4d6, hvor den laveste droppes. Den metode, I bliver enige om, forbliver i bordets aftaler.
-- **Din historie** er aldrig et krav. Hvis du giver en, skriver spilleder den med dine ord, læser den op for dig én gang og væver dens folk og steder ind i verden. Du kan også skrive den på dashboardet (se [Gruppe](#party)).
-- **Personlighed** (femte udgave): et personlighedstræk, et ideal, et bånd og en fejl, fra din baggrunds tabeller eller dine egne.
-- **Et billede.** Når din karakter er lavet, beder spilleder dig om et billede af karakteren: en fil på din computer eller et portræt lavet på din computer ud fra din beskrivelse (se [din karakters billede](#37-your-characters-story-and-picture)).
+- **Alle valg er dine**, medmindre du beder spillederen om at træffe dem. Du kan komme med en fuld idé ("en halvalvisk præst, der forlod sit tempel"), en vag idé ("en der heler, men ikke er flink ved det") eller ingenting ("overrask mig, så lader du mig ændre ting").
+- **Egenskabsværdier.** Spillederen fortæller dig metoden og sikkerhedsnettet, før der slås med nogen terning. I femte udgave: standardrækken, point buy eller 4d6 hvor den laveste droppes. Den metode, I bliver enige om, bliver stående i bordets aftaler.
+- **Din historie** er aldrig et krav. Hvis du giver en, skriver spillederen den med dine ord, læser den op for dig én gang og knytter dens personer og steder ind i verdenen. Du kan også skrive den på dashboardet (se [Gruppe](#party)).
+- **Personlighed** (femte udgave): et træk, et ideal, et bånd og en fejl, fra din baggrunds tabeller eller dine egne.
+- **Et billede.** Når din karakter er lavet, beder spillederen dig om et billede af den: en fil på din computer eller et portræt lavet på din computer ud fra din beskrivelse (se [din karakters billede](#37-your-characters-story-and-picture)).
 
-Karakterarkets tal bliver regnet ud af RPG Engine ud fra dine valg: du laver aldrig regnestykkerne. Når karaktererne er lavet, og du bekræfter, begynder historien.
+Karakterarkets tal regner RPG Engine ud fra dine valg: Du laver aldrig regnestykkerne. Når karaktererne er lavet, og du bekræfter, begynder historien.
 
 ---
 
 ## 3. Spil <!-- icon: chat -->
 
-### 3.1 Tal med spilleder
+### 3.1 Tal med spillederen
 
 Skriv, hvad din karakter gør eller siger, med dine egne ord. Kort er fint.
 
-> Jeg spørger værten, hvem der ellers kom forbi i nat.
+> Jeg spørger værten, hvem der ellers kom forbi i aften.
 >
-> "Vi er ikke ude efter ballade," siger jeg og holder hånden væk fra sværdet.
+> "Vi er ikke ude efter ballade," siger jeg med hånden væk fra sværdet.
 >
 > Jeg klatrer op på taget og venter.
 
@@ -221,125 +221,125 @@ Skriv, hvad din karakter gør eller siger, med dine egne ord. Kort er fint.
 >
 > [Lad os stoppe her for i aften.]
 
-Spilleder svarer også i klammer og går så tilbage til historien.
+Spillederen svarer også i klammer og går så tilbage til historien.
 
-**Du siger, hvad du prøver; spilleder siger, hvad der sker.** Noget, der bryder verdens logik eller de fakta, der allerede er fastlagt, sker ikke: spilleder fortæller dig det inde i historien og tilbyder det, der er muligt.
+**Du siger, hvad du prøver. Spillederen siger, hvad der sker.** Noget, der bryder verdenens logik eller de fakta, der allerede er fastlagt, sker ikke: Spillederen fortæller dig det inde i historien og tilbyder det, der er muligt.
 
-**Spilleder bestemmer aldrig for din karakter.** Spilleder lader ikke din karakter tale, føle eller vælge. Er der tvivl, spørger spilleder.
+**Spillederen beslutter aldrig for din karakter.** Den lader dig ikke tale, føle eller vælge. Er der tvivl, spørger den.
 
-**Spilleder taler aldrig om motoren.** Spørg, om spilleder holder styr på tingene, og svaret kommer som fra en spilleder: "Jeg har det hele: vi tager op herfra næste gang."
+**Spillederen taler aldrig om motoren.** Spørg, om den holder styr på tingene, og den svarer som en spilleder: "Jeg har det hele: Vi tager fat herfra næste gang."
 
-**Du kan spørge spilleder, hvordan dashboardet bruges.** Spilleder kender siden: "Hvor ser jeg mine besværgelser?", "Hvordan slår jeg manuelt?"
+**Du kan spørge spillederen, hvordan dashboardet bruges.** Den kender siden: "Hvor kan jeg se mine fortryllelser?", "Hvordan slår jeg manuelt?"
 
 ### 3.2 Slag
 
-**Hvornår et slag sker.** Spilleder beder kun om et slag, når udfaldet er usikkert og betyder noget. Ellers siger spilleder ja eller "ja, men". Før dit slag fortæller spilleder, hvad der står på spil, og hvilke prøver der passer, og stopper så. Du slår eller ombestemmer dig:
+**Hvornår der slås.** Spillederen beder kun om et slag, når udfaldet er usikkert og har betydning. Ellers siger den ja eller "ja, men". Før dit slag fortæller spillederen, hvad der står på spil, og hvilke prøver der passer, og så stopper den. Du slår, eller du ombestemmer dig:
 
 > **Spilleder:** Afsatsen er smal og våd. Glider du, er det et langt fald ned i floden. En Dexterity (Acrobatics)-prøve, eller du kan gå tilbage og lede efter trappen.
 >
 > **Du:** Jeg prøver det.
 
-**Slå på dashboardet.** Når spilleder beder om det, dukker et banner op øverst på siden med en knap til hver prøve, for eksempel *Acrobatics +4 · med fordel*. Klik på den: terningerne falder på siden, og spilleder hører resultatet. Du kan også:
+**Slå på dashboardet.** Når spilleder beder om det, dukker et banner op øverst på siden med en knap til hver prøve, for eksempel *Acrobatics +4 · with advantage*. Klik på den: Terningerne falder på siden, og spillederen hører resultatet. Du kan også:
 
 - klikke på den tilsvarende linje på dit karakterark, som lyser guld;
 - kaste de rigtige terninger fra terningbakken;
 - skrive dine egne ord i banneret i stedet, hvis du vil gøre noget andet.
 
-**Slå manuelt.** Hvis du hellere selv vil vælge terningerne, så slå **Manuelt** til i bannerets hjørne (eller i **Indstillinger**). Prøvens knap forsvinder, og banneret siger, hvad du skal slå, som en spilleder ville gøre: *Slå Acrobatics selv, på dit karakterark eller med terningerne.* Klik på den linje på dit karakterark, der lyser, eller kast de rigtige terninger fra terningbakken: RPG Engine slår dem, lægger dit bonus til, og spilleder hører resultatet. En prøve, som hverken dit karakterark eller terningbakken kan lave, som skade der slår 1'erne om, beholder sin knap. Manuelt forbliver slået til i denne browser, indtil du slår det fra.
+**Slå manuelt.** Hvis du hellere selv vil vælge terningerne, så slå **Manuelt** til i bannerets hjørne (eller i **Indstillinger**). Prøvens knap forsvinder, og banneret fortæller, hvad du skal slå, som en spilleder ville: *Roll Acrobatics yourself, on your sheet or with the dice.* Klik på den linje på dit karakterark, der lyser, eller kast de rigtige terninger fra terningbakken: RPG Engine slår dem, lægger din bonus til, og spillederen hører resultatet. En prøve, som hverken dit karakterark eller terningbakken kan klare, for eksempel skade der slår 1'erne om, beholder sin knap. Manuelt forbliver slået til i denne browser, indtil du slår det fra.
 
-**Fysiske terninger hele spillet.** Når indstillingen **Terninger** står på physical, beder spilleder om dine slag med ord, og du skriver de øjne, du slog:
+**Fysiske terninger i hele spillet.** Når indstillingen **Terninger** står på physical, beder spillederen om dine slag i ord, og du skriver de øjne, du slog:
 
 > [Jeg slog 14.]
 
-RPG Engine lægger dine modifikatorer til og afviser et tal, dine terninger ikke kan vise.
+RPG Engine lægger dine modifikatorer til og afviser en side, som dine terninger ikke kan vise.
 
-**Frie slag.** Klik på et hvilket som helst tal på dit karakterark, eller åbn terningbakken, for at slå for sjov. Frie slag tæller aldrig, bliver aldrig noteret, og spilleder ser dem aldrig. Et frit 20 bliver aldrig et rigtigt senere.
+**Frie slag.** Klik på et hvilket som helst tal på dit karakterark, eller åbn terningbakken, for at slå bare for sjov. Frie slag tæller aldrig, bliver aldrig noteret, og spillederen ser dem aldrig. Et frit slag på 20 bliver aldrig til et rigtigt senere.
 
-**Spillederens slag.** Spilleder slår også for fjender og andre med RPG Engine. De fleste slag vises i din slagkolonne. Når du ikke må se et resultat, slår spilleder i hemmelighed. Du kan altid spørge:
+**Spillederens slag.** Spillederen slår også for fjender og andre med RPG Engine. De fleste slag vises i din slagkolonne. Når du ikke må se et resultat, slår spillederen i hemmelighed. Du kan altid spørge:
 
 > [Var det slag ægte?]
 
-For et vist slag giver spilleder tallene og begrundelsen. For et hemmeligt slag et fingeraftryk, der beviser, at slaget blev slået, før du spurgte.
+For et vist slag giver spillederen sine tal og sin grund. For et hemmeligt slag giver den et fingeraftryk, der beviser, at slaget blev slået, før du spurgte.
 
-**Slag i chatten** står i klammer, lige efter det øjeblik, de afgør: *[Persuasion 14 + 3 = 17]*. Derefter fortæller historien udfaldet.
+**Slag i chatten** vises i klammer, lige efter det øjeblik, de afgør: *[Persuasion 14 + 3 = 17]*. Derefter fortæller historien udfaldet.
 
 ### 3.3 Scener og kampe
 
-Spilleder fører historien i **scener**: en kamp, en samtale, udforskning, rejse, et hvil, en udfordring (en jagt, et løb, en gåde). Dem skal du ikke styre: de er den måde, RPG Engine holder styr på historiens kapitler. Ved slutningen af hver scene gemmer spillet selv, og scenen kommer ind i din dagbogs historie.
+Spillederen styrer historien i **scener**: en kamp, en samtale, udforskning, rejse, et hvil, en udfordring (en jagt, et kapløb, en gåde). Du behøver ikke styre dem: De er den måde, RPG Engine holder styr på historiens kapitler. Ved slutningen af hver scene gemmer spillet selv, og scenen kommer ind i din dagbogs historie.
 
-**I en kamp** fortæller spilleder alle de ture, der ikke er dine, den ene efter den anden, med hvert slag, og **stopper, hvor du kan beslutte**: din tur, en reaktion, et valg. På din tur siger du, hvad du gør:
+**I en kamp** fortæller spillederen alle de ture, der ikke er dine, den ene efter den anden, med hvert slag, og **stopper der, hvor du kan beslutte**: din tur, en reaktion, et valg. På din tur siger du, hvad du gør:
 
 > Jeg kaster Sacred Flame på den ved døren.
 
-Dashboardets **Kamp**-afsnit viser turrækkefølgen, hvis tur det er, din gruppes hitpoints og hvor såret fjenderne ser ud (uskadt, såret, blodig, nede: med ord, aldrig med tal). Falder din karakter, vises dødsslagene stort på siden.
+Dashboardets **Kamp**-sektion viser rækkefølgen af turene, hvis tur det er, din gruppes hitpoint og hvor såret fjenderne ser ud (uskadt, såret, blødende, nede: i ord, aldrig i tal). Hvis din karakter falder, vises dødsslagene store på siden.
 
-**Når kampen allerede er afgjort,** kan spilleder tilbyde at fortælle resten i én besked.
+**Når kampen allerede er afgjort,** kan spillederen tilbyde at fortælle resten i én besked.
 
-### 3.4 Tid, rejser og den verden, der bevæger sig
+### 3.4 Tid, rejse og verden, der bevæger sig
 
-**Tid.** Hver handling tager tid i historien, og RPG Engine holder datoen: dag 3, tidlig morgen. Spilleder fortæller tiden, som verden måler den: daggry, tredje klokkeslag, nattefald. Mellem sessioner går der ingen tid: du fortsætter, hvor du stoppede.
+**Tid.** Hver handling tager tid i historien, og RPG Engine holder datoen: dag 3, tidlig morgen. Spillederen fortæller tid, som verdenen måler den: daggry, tredje klokkeslag, aftenfald. Mellem sessioner går der ingen tid: Du tager fat, hvor du stoppede.
 
-**Hvil.** Sig, at du hviler, og spilleder anvender det, et hvil giver tilbage, såsom hitpoints og besværgelsespladser:
+**Hvil.** Sig, at du hviler, og spillederen anvender det, et hvil giver tilbage, såsom hitpoint og fortryllelsespladser:
 
 > Vi slår lejr og tager et langt hvil.
 
-**Rejser.** Sig, hvor du vil hen:
+**Rejse.** Sig, hvor du vil hen:
 
 > Vi tager vejen nordpå mod Rocca.
 
-RPG Engine regner vejen, afstanden og dagene ud i dit tempo og flytter dig derhen. En rejse stopper, når noget planlagt sker undervejs, ved slutningen af hver dags rejse og ved ankomsten. Du kan spørge, hvor langt et sted er, før du tager af sted:
+RPG Engine regner vejen, afstanden og dagene ud i dit tempo og flytter jer derhen. En rejse stopper, når noget planlagt sker undervejs, ved slutningen af hver dags rejse og ved ankomsten. Du kan spørge, hvor langt et sted er, før du tager af sted:
 
 > [Hvor langt er der til Rocca, og hvor lang tid tager det til fods?]
 
-**Verden bevæger sig uden dig.** Skurke har planer med frister og ure. Hver ny dag flytter spilleder de trusler, som tiden har rykket frem, og du ser tegnene: et rygte, et spor, en forandring i byen. Du ser aldrig selve uret, kun det, det efterlader.
+**Verden bevæger sig uden dig.** Skurke har planer med frister og ure. Hver ny dag rykker spillederen de trusler frem, som tiden har fremmet, og du ser deres tegn: et rygte, et spor, en forandring i byen. Du ser aldrig selve uret, kun det, det efterlader.
 
-**Penge** tælles i spillets mønter. Betal, sælg, få betaling: RPG Engine veksler.
+**Penge** regnes i spillets mønter. Betal, sælg, få betaling: RPG Engine tager sig af byttepengene.
 
 ### 3.5 Kort
 
-**Verdenskortet** (dashboard: **Verden**) viser kun de steder, din karakter kender, med vejene imellem dem, den sti, du har gået, og tågen over alt andet. Klik på et sted for at se, hvad du ved om det, og hvor langt der er.
+**Verdenskortet** (dashboard: **Verden**) viser kun de steder, din karakter kender, med vejene imellem dem, den sti du har gået, og tågen over alt det andet. Klik på et sted for at se, hvad du ved om det, og hvor langt der er.
 
-**Et steds kort** (dashboard: **Scene**, og **Kamp** i en kamp) dukker op, når spilleder tegner et for det sted, hvor du er: vægge, døre, terrænet og hvem der står hvor, som brikker. I en kamp er de felter, du ikke kan nå, dækket til på din tur, så du ved et blik kan se, hvor du kan gå hen. Når spilleder spørger, hvor din karakter flytter hen, åbner siden kortet, og du rører ved et felt eller skriver det, for eksempel *E4*.
+**Kortet over et sted** (dashboard: **Scene**, og **Kamp** i en kamp) dukker op, når spillederen tegner et over det sted, hvor du er: vægge, døre, terrænet og hvem der står hvor, som brikker. I en kamp er de felter, du ikke kan nå, tilsløret på din tur, så du med et blik kan se, hvor du kan gå hen. Når spillederen spørger, hvor din karakter flytter hen, åbner siden kortet, og du trykker på et felt eller skriver det, for eksempel *E4*.
 
 ### 3.6 Missioner, dagbog og noter
 
-**Missioner.** Når din karakter tager en opgave på sig, bliver den til en mission i din **Dagbog**: hvem der gav den, hvor, inden hvornår, dens mål som en liste og hvad den måler (en frist med tiden tilbage, et ur, et tal). Markér en med dens stjerne for at følge den: den står lille øverst i Scene med sit næste mål. Missionen slutter, når historien afslutter den, aldrig af sig selv.
+**Missioner.** Når din karakter tager en opgave på sig, bliver den til en mission i din **Dagbog**: hvem der gav den, hvor, inden hvornår, dens mål som en liste og det, den måler (en frist med tiden tilbage, et ur, en optælling). Markér en med dens stjerne for at følge den: Den bliver lille øverst i Scene, med sit næste mål. Missionen slutter, når historien afslutter den, aldrig af sig selv.
 
-**Historien.** Dagbogens fane Historie er din kampagne som en tidslinje: hver scene et kapitel med sted, dato og et kort resumé, den seneste først.
+**Historien.** Dagbogens fane Story er din kampagne som en tidslinje: hver scene et kapitel med sted, dato og et kort resumé, den seneste først.
 
-**Dine noter.** I dagbogens fane Noter skriver du dine egne noter: teorier, navne, planer. De bliver på din computer, og spilleder læser dem ikke, medmindre du **Del**er en. En delt note når spilleder ved dennes næste svar som det, du tror, aldrig som et faktum. Din teori bliver ikke sand, fordi du skrev den. En note, der beder om at stoppe eller undgå noget indhold, tæller, som om du havde sagt det ved bordet.
+**Dine noter.** I dagbogens fane Notes skriver du dine egne noter: teorier, navne, planer. De bliver på din computer, og spillederen læser dem ikke, medmindre du **Del**er en. En delt note når spillederen ved dens næste svar som det, du mener, aldrig som et faktum. Din teori bliver ikke sand, fordi du skrev den. En note, der beder om at stoppe eller undgå noget indhold, tæller, som om du havde sagt det ved bordet.
 
 ### 3.7 Din karakters historie og billede
 
-På din karakters karakterark har kortet **Beskrivelse** en boks, hvor du kan skrive din karakters historie. Send den, så skriver spilleder den ind i karakteren med sine egne ord, efter du har sagt ja.
+På din karakters karakterark har kortet **Beskrivelse** en boks, hvor du kan skrive din karakters historie. Send den, så skriver spillederen den ind i karakteren med sine egne ord, efter du har sagt ja.
 
-Til din karakters billede giver du spilleder en billedfil i chatten sammen med, hvor den ligger på din computer (PNG, JPEG, WebP eller SVG, op til 5 MB):
+Til din karakters billede giver du spillederen en billedfil i chatten sammen med, hvor den ligger på din computer (PNG, JPEG, WebP eller SVG, op til 5 MB):
 
 > [Her er min karakters portræt: C:\Users\me\Pictures\mira.png]
 
-Spilleder kopierer den ind i kampagnen, og den vises på din karakters brik på dashboardet. Du kan ændre den på samme måde, når du vil.
+Spillederen kopierer den ind i kampagnen, og den vises på din karakters brik på dashboardet. Du kan ændre den på samme måde, når du vil.
 
-Eller få portrættet lavet, hvis din computer kan lave billeder (se [Billeder](#311-pictures)): beskriv din karakter for spilleder, eller lad spilleder beskrive karakteren.
+Eller lad portrættet blive lavet, hvis din computer kan lave billeder (se [Billeder](#311-pictures)): Beskriv din karakter for spillederen, eller lad spillederen beskrive den.
 
-> [Lav et portræt til mig: gråt hår i en fletning, et ar på hagen, trætte øjne.]
+> [Lav et portræt af mig: gråt hår i en fletning, et ar på hagen, trætte øjne.]
 
-Portrættet viser præcis, hvad din karakter er i spillet, folket som denne verden har det, en bjergdværg som en bjergdværg, med det udseende, du beskrev. Det kommer på omkring et minut, på din karakters brik. Dine følgesvende kan få deres på samme måde.
+Portrættet viser præcis, hvad din karakter er i spillet, med folk som denne verden har dem, en bjergdværg som en bjergdværg, med det udseende, du beskrev. Det er klar om et minut eller deromkring, på din karakters brik. Dine følgesvende kan få deres på samme måde.
 
 ### 3.8 Gemte spil og at gå tilbage
 
-RPG Engine gemmer hele kampagnen **ved slutningen af hver scene**, af sig selv. Hvad du kan gøre med de gemte spil, afhænger af indstillingen **Gemte spil**:
+RPG Engine gemmer hele kampagnen **ved slutningen af hver scene**, af sig selv. Hvad du kan bruge de gemte spil til, afhænger af indstillingen **Gemte spil**:
 
 | Gemte spil | Gem, når du vil | Gå tilbage |
 |---|---|---|
 | **permadeath** | nej | aldrig; du kan kun starte kampagnen forfra |
 | **checkpoint** | nej | til det seneste gemte spil, kun når din karakter dør |
-| **free** | ja | til et hvilket som helst gemt spil, når du vil |
+| **free** | ja | til ethvert gemt spil, når du vil |
 
-I alle tilstande kan du **starte forfra**: fra spillets start med den samme karakter, eller fra session nul med en ny.
+I alle tilstande kan du **starte forfra**: fra spillets begyndelse med den samme karakter eller fra session nul med en ny.
 
-Du kan gøre alt dette i chatten ("[Lad os gå tilbage til før duellen.]") eller i dashboardets afsnit **Gemte spil**.
+Du kan gøre alt dette i chatten ("[Lad os gå tilbage til før duellen.]") eller i dashboardets sektion **Gemte spil**.
 
-**Når du er gået tilbage, så åbn en ny chat.** Den chat, du spillede i, husker det, der blev fortrudt. Åbn en ny chat med spilleder (`/clear` i Claude Code, `/new` i Codex), skriv *fortsæt*, og tryk derefter på **Jeg har åbnet en ny chat** i Gemte spil, eller fortæl det til spilleder i den nye chat. Genoptag aldrig den gamle chat. Indtil du bekræfter, går spilleder ikke videre.
+**Åbn en ny chat, når du er gået tilbage.** Den chat, du spillede i, husker det, der blev fortrudt. Åbn en ny chat med spillederen (`/clear` i Claude Code, `/new` i Codex), skriv *fortsæt*, og tryk derefter på **Jeg har åbnet en ny chat** i Gemte spil, eller fortæl det til spillederen i den nye chat. Genoptag aldrig den gamle chat. Indtil du bekræfter, går spillederen ikke videre.
 
 ### 3.9 Sessioner: at stoppe og vende tilbage
 
@@ -347,40 +347,40 @@ Du kan gøre alt dette i chatten ("[Lad os gå tilbage til før duellen.]") elle
 
 > [Lad os stoppe her for i aften.]
 
-Der er ingen "gem og afslut": alt ligger allerede i filerne.
+Der er ikke noget "gem og afslut": Alt er allerede i filerne.
 
 **For at lukke** chatten skriver du `/exit` i Claude Code eller `/quit` i Codex. Dashboardet bliver stille indtil næste chat.
 
-**For at vende tilbage** åbner du en terminal i kampagnemappen (den, `init` skrev ud), starter din vært dér og skriver *fortsæt*. Spilleder læser, hvor spillet står, giver dig et kort resumé og begynder med, at der sker noget. En ny chat mister intet: kampagnen lever i sine filer, ikke i chatten.
+**For at vende tilbage** åbner du en terminal i kampagnemappen (den, `init` udskrev), starter din vært dér og skriver *fortsæt*. Spillederen læser, hvor spillet står, giver dig en kort opsummering og begynder med, at der sker noget. En ny chat mister intet: Kampagnen bor i sine filer, ikke i chatten.
 
-Spilleder stiller ingen rutinespørgsmål til sidst. Kun hvis spilleder har lagt mærke til, at noget ikke virkede, spørger spilleder kort.
+Spillederen stiller ikke rutinespørgsmål til sidst. Kun hvis den har bemærket, at noget ikke virkede, spørger den kort.
 
 ### 3.10 Spillederens humør
 
-Øverst på dashboardet sidder spillederens avatar, en lille robot. Dens ansigt følger historiens tone: bekymret når faren vokser, henrykt over en dristig idé, overrasket over en vending. Den reagerer et øjeblik på en naturlig 20 eller en naturlig 1. Den viser aldrig det, du endnu ikke ved: intet grin, før fælden er udløst. Din gruppes brikker viser også deres humør. Når chatten er lukket, sover robotten.
+Øverst på dashboardet sidder spillederens avatar, en lille robot. Dens ansigt følger historiens tone: bekymret når faren vokser, henrykt over en dristig idé, overrasket over en drejning. Den reagerer et øjeblik på en naturlig 20 eller en naturlig 1. Den viser aldrig det, du endnu ikke ved: intet grin, før fælden er udløst. Din gruppes brikker viser også deres humør. Når chatten er lukket, sover robotten.
 
 ### 3.11 Billeder
 
-RPG Engine kan få lavet et billede til hvert sted, du når, og hver mission, du tager, som indstillingen **Billeder** siger, og din karakters portræt, når du beder om det. Den bruger det, der allerede er på din computer:
+RPG Engine kan få lavet et billede af hvert sted, du når, hver mission du tager, og hver person eller art af væsen, du møder, tegnet, som du ser dem, som indstillingen **Billeder** siger, og din karakters portræt, når du beder om det. Den bruger det, der allerede er på din computer:
 
 - **Codex**, med dit ChatGPT-login: et malet billede.
 - Ellers **Claude Code**, med dit Claude-login: en tegning.
 
-Billedet bruger dit eget abonnement, ikke vores. Afsnittet **Indstillinger** fortæller dig, om der kan laves billeder på din computer, og hvis ikke, hvordan du sætter det op. Uden billeder viser siden i stedet mærket for hver slags sted. Du kan også give spilleder et billede af dit eget til et hvilket som helst sted eller en hvilken som helst karakter.
+Billedet bruger dit eget abonnement, ikke vores. Sektionen **Indstillinger** fortæller dig, om der kan laves billeder på din computer, og hvis ikke, hvordan du sætter det op. Uden billeder viser siden i stedet mærket for hver slags sted. Du kan også give spillederen et billede af din egen til ethvert sted eller enhver karakter.
 
 ### 3.12 Sikkerhed: linjer, slør og stop
 
 - **Linjer**: det, der aldrig optræder i spillet.
-- **Slør**: det, der gerne må ske, men kun uden for scenen.
-- **Stop**: du kan til enhver tid stoppe et indhold uden at forklare. Skriv det uden for historien:
+- **Slør**: det, der gerne må ske, men kun uden for skærmen.
+- **Stop**: Du kan til enhver tid stoppe et indhold uden at forklare. Skriv det uden for historien:
 
 > [stop]
 
-Spilleder dropper det med det samme og føjer det til dine linjer, for alle kommende sessioner. Du kan se og ændre dine linjer og slør i **Indstillinger**.
+Spillederen dropper det med det samme og føjer det til dine linjer, for alle kommende sessioner. Du kan se og ændre dine linjer og slør i **Indstillinger**.
 
-### 3.13 Ombestem dig
+### 3.13 Hvis du ombestemmer dig
 
-Alle indstillinger kan ændres under kampagnen: i chatten ("[Lad os gøre det sværere.]") eller i **Indstillinger**. Spilleder hører om en ændring ved sit næste svar. En afgørelse, som spilleder traf uden bogen, bliver til en **præcedens** og bliver gemt, så det samme spørgsmål får det samme svar næste gang.
+Hver indstilling kan ændres under kampagnen: i chatten ("[Lad os gøre det hårdere.]") eller i **Indstillinger**. Spillederen hører om en ændring ved sit næste svar. En afgørelse, som spillederen traf uden regelbogen, bliver til en **precedent** og gemmes, så det samme spørgsmål får det samme svar næste gang.
 
 ---
 
@@ -466,45 +466,47 @@ Nogle gange viser siden en meddelelse over sig selv: et problem i kampagnens fil
 
 ### 5.1 Hvad et spilsystem er
 
-Et spilsystem er data for ét spil: dets karakterark, dets tal, dets væsner, genstande, besværgelser og regeltekst. Hver kampagne spiller ét system.
+Et spilsystem er data for ét spil: dets karakterark, dets tal, dets væsner, genstande, besværgelser og regeltekster. Hver kampagne spiller ét system.
 
-RPG Engine regner dit karakterark ud og hvad der bruges og kommer tilbage, såsom hitpoints og besværgelsespladser, som et digitalt karakterark gør. Hvordan en egenskab eller en besværgelse virker, læser spillederen i reglerne og afgør, som ved et bord.
+RPG Engine regner dit karakterark ud og holder styr på det, der bliver brugt og kommer tilbage, såsom hitpoint og besværgelsespladser, ligesom et digitalt karakterark gør. Hvordan en egenskab eller en besværgelse virker, læser spillederen i reglerne og afgør, som ved et bord.
 
-### 5.2 Femte udgave, inkluderet
+### 5.2 Femte udgave, med i pakken
 
-RPG Engine leveres med **5e**, fra System Reference Document 5.1 (reglerne fra 2014, gratis under Creative Commons). Det omfatter:
+RPG Engine leveres med **5e**, fra System Reference Document 5.1 (reglerne fra 2014, frie under Creative Commons). Den indeholder:
 
-- racerne, klasserne, underklasserne, en baggrund og en egenskab fra SRD'en;
-- de 319 besværgelser, våben, rustninger og udstyr, magiske genstande og monstre fra SRD'en;
-- regelkapitlerne, som spillederen slår op efter deres nøjagtige tekst;
-- det fulde karakterark, udregnet: egenskabsmodifikatorer, redningskast, færdigheder, rustningsklasse, angreb, besværgelsernes sværhedsgrad, pladser, hitterninger, egenskaber efter niveau, erfaring og niveaustigning;
+- racerne, klasserne, underklasserne, en baggrund og en feat fra SRD'en;
+- de 319 besværgelser, våben, rustninger og udstyr, de magiske genstande og monstrene fra SRD'en;
+- regelkapitlerne, som spillederen slår op på deres nøjagtige ordlyd;
+- det fulde karakterark, udregnet: egenskabsmodifikatorer, saves, færdigheder, Armor Class, angreb, besværgelsernes sværhedsgrad, pladser, hit dice, egenskaber efter niveau, erfaring og niveaustigning;
 - hvil, der giver tilbage, hvad de skal; tilstande med deres regeltekst; påmindelser om koncentration.
 
-**Indhold ud over SRD'en.** Du kan spille femte udgave med indhold, som SRD'en mangler, såsom en klasse eller et monster fra en bog, du ejer. Spillederen kender spillet, kan læse dine bøger og kan søge på nettet. Den skriver det, den har brug for, som sider i din kampagne, og RPG Engine arbejder på samme måde med dem. Det, vi leverer, er begrænset af sin licens; det, din spilleder ved, er ikke.
+**Indhold ud over SRD'en.** Du kan spille femte udgave med indhold, som SRD'en ikke har, for eksempel en klasse eller et monster fra en bog, du ejer. Spillederen kender spillet, kan læse dine regelbøger og kan søge på nettet. Spillederen skriver det, der skal bruges, som sider i din kampagne, og RPG Engine fungerer på samme måde med dem. Det, vi leverer, er begrænset af sin licens. Det, din spilleder kender, er ikke.
 
-RPG Engine er kompatibelt med femte udgave.
+RPG Engine leverer kun originalt eller åbent licenseret indhold: for femte udgave SRD 5.1 under CC BY 4.0. Alt andet, der dukker op i dit spil, er skrevet af din AI eller af dig som sider i din kampagne på din computer. Det er ikke en del af RPG Engine, og vi distribuerer det ikke.
+
+RPG Engine er kompatibel med femte udgave.
 
 ### 5.3 Husregler og dine egne tilføjelser
 
-Du behøver ikke røre ved nogen fil. Spørg spillederen:
+Du behøver ikke røre ved nogen fil. Bed spillederen:
 
-> [Husregel: Et naturligt 1 på et angreb betyder, at du taber dit våben.]
+> [Husregel: et naturligt 1 på et angreb betyder, at du taber dit våben.]
 >
-> [Jeg vil gerne spille en Blood Hunter. Jeg har bogen: Her er klassens egenskaber.]
+> [Jeg vil gerne spille en Blood Hunter. Jeg har bogen: her er klassens egenskaber.]
 >
-> [I denne kampagne tager et kort hvil 10 minutter.]
+> [I denne kampagne tager en kort hvilepause 10 minutter.]
 
 Spillederen noterer dem i din kampagne på en af disse måder:
 
-- **En aftale ved bordet**, i ord, såsom det tabte våben eller det korte hvil ovenfor. Spillederen gemmer den sammen med kampagnens indstillinger og spiller efter den fra da af. En afgørelse, spillederen træffer uden bogen, gemmes på samme måde, som en **præcedens**.
-- **En ny side**, såsom en klasse, en race eller en genstand. En ny klasse virker som systemets: Dit niveau, dine hitterninger og dine egenskaber tæller den med. En ny race kan bygge på en eksisterende ("som elveren, plus…"); et navngivet sværd kan bygge på langsværdet.
-- **Nye tal til karakterarket**: et felt, en tabel, en formel, en tæller som et hvil giver tilbage. For eksempel en Battle Masters overlegenhedsterninger, der kommer tilbage efter et kort hvil. En husregel kan også erstatte en af systemets formler.
+- **En aftale ved bordet**, i ord, som det tabte våben eller den korte hvilepause ovenfor. Spillederen gemmer den sammen med kampagnens indstillinger og spiller efter den fra da af. En afgørelse, som spillederen træffer uden bogen, gemmes på samme måde som en **præcedens**.
+- **En ny side**, for eksempel en klasse, en race eller en genstand. En ny klasse virker som systemets egne: dit niveau, dine hit dice og dine egenskaber tæller med. En ny race kan bygge på en eksisterende ("som elveren, plus …"). Et sværd med eget navn kan bygge på langsværdet.
+- **Nye tal til karakterarket**: et felt, en tabel, en formel, en tæller, som en hvil giver tilbage. For eksempel en Battle Masters overlegenhedsterninger, der kommer tilbage efter en kort hvil. En husregel kan også erstatte en af systemets formler.
 
-Hvis du allerede har husregler skrevet ned, kan du også lægge dem som tekstfiler i kampagnens mappe `rules` (se [kampagnemappen](#8-for-the-curious-the-campaign-folder)): Spillederen læser dem før bogens regel med samme navn.
+Hvis du allerede har skrevet husregler ned, kan du også lægge dem som tekstfiler i kampagnens mappe `rules` (se [kampagnemappen](#8-for-the-curious-the-campaign-folder)). Spillederen læser dem før bogens regel med samme navn.
 
 ### 5.4 Tilføj eller importér dit eget spilsystem
 
-I dag spiller RPG Engine kun femte udgave. Andre spilsystemer kommer, og det gør en måde at tilføje dit eget på eller at gøre et spil, du ejer, til et system ud fra dets bøger. Se [Kommer senere](#9-coming-later).
+I dag spiller RPG Engine kun femte udgave. Andre spilsystemer kommer, og det gør en måde at tilføje dit eget på eller at gøre et spil, du ejer, til et system ud fra dets regelbøger. Se [Kommer senere](#9-coming-later).
 
 ---
 

@@ -140,6 +140,18 @@ export function landingTurn(model: DieModel, turns: Turn[], turn: Turn, wanted: 
     return fitting.reduce<Turn | undefined>((best, symmetry) => (best === undefined || upright(symmetry) > upright(best) ? symmetry : best), undefined) ?? [0, 0, 0, 1];
 }
 
+/** The outward directions of a shape's faces, by Newell's sum, right for a face whose corners are not quite in a plane. */
+export function faceNormals(shape: Shape): Vector[]
+{
+    return shape.faces.map((face) =>
+        face.reduce<Vector>((sum, corner, index) => {
+            const here = shape.vertices[corner] ?? [0, 0, 0];
+            const next = shape.vertices[face[(index + 1) % face.length] ?? 0] ?? [0, 0, 0];
+            return [sum[0] + (here[1] - next[1]) * (here[2] + next[2]), sum[1] + (here[2] - next[2]) * (here[0] + next[0]), sum[2] + (here[0] - next[0]) * (here[1] + next[1])];
+        }, [0, 0, 0])
+    );
+}
+
 /** A vector turned. */
 export function rotate(turn: Turn, vector: Vector): Vector
 {

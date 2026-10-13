@@ -612,6 +612,10 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(picture.headers).toMatchObject({ "content-type": "image/png", "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" });
         expect((await get("/images/Ettore.png", { "if-none-match": picture.headers.etag ?? "" })).status).toBe(304);
         expect((await get("/images/wolf-head.svg")).headers["content-type"]).toBe("image/svg+xml");
+        // A stranger's picture by a name of its bytes, which tells nothing of its page (D-420); only the campaign's.
+        const hidden = `${createHash("sha256").update(readFileSync(join(folder, "images", "Ettore.png"))).digest("hex").slice(0, 24)}.png`;
+        expect((await get(`/images/${hidden}`)).headers["content-type"]).toBe("image/png");
+        expect((await get(`/images/${"0".repeat(24)}.png`)).status).toBe(404);
         expect((await get("/images/..%2Fcampaign.yaml")).status).toBe(404);
         expect((await get("/images/%E0%A4%A")).status).toBe(404);
     });
@@ -1325,7 +1329,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         writeFileSync(settings, readFileSync(settings, "utf8").replace(/^dice: .*$/m, "dice: physical"));
         const page = await openPage();
         expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe(
-            "The player rolls their own dice: ask the roll in words, with what is at stake and the checks: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Then stop; they will tell the values.",
+            "The player rolls their own dice: tell first in the story what happened before this roll, such as the blow that calls for it, then ask it in words, with what is at stake and the checks: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Then stop; they will tell the values.",
         );
         // The master knows it from the start: the buttons are for choices alone.
         expect((await runCommandLine(["instructions"], served)).output).toContain("The player rolls their own dice: ask every roll of their character in words");

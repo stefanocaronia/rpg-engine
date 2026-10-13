@@ -108,6 +108,18 @@ export function About({ product, system }: { product: string; system?: { name: s
                         </div>
                     </div>
                 )}
+                <div class="about-licence">
+                    <Icon name="journal" />
+                    <div>
+                        <h4>{t("Your game")}</h4>
+                        <p>
+                            {t(
+                                "{product} ships only original or open-licensed content. Anything else that appears in your game is written by your AI or by you, as pages of your campaign on your computer: it is not part of {product}, and we do not distribute it.",
+                                { product },
+                            )}
+                        </p>
+                    </div>
+                </div>
             </details>
             <footer class="about-fine">
                 <p>{`© 2026 Stefano Caronia · ${product}`}</p>

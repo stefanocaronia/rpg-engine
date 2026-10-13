@@ -5,9 +5,12 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
+import { comparableText, withArticle } from "../core/text.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
-import { baseChain, isPartyMember, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
+import { baseChain, findPage, isPartyMember, ownField, type Page, pageNamed, parsePageReference, type World, writePage } from "../pages/index.ts";
 import { imageFile, ownImage } from "./game-images.ts";
+import { knowledgeOf, knowsPage, playerCharacter } from "./game-knowledge.ts";
+import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { sheetHeadline } from "./sheet.ts";
@@ -32,8 +35,9 @@ export const image = defineCommand({
         + "It copies the file (PNG, JPEG, WebP or SVG, up to 5 MB) into the campaign's images folder and links it in the page's image field; "
         + "a page without one shows the picture of the page it derives from, such as a goblin's icon. "
         + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. Without file it removes the page's own picture. "
-        + "For a place, a quest or one of the party, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
-        + "for a quest what the character knows of it, never what they do not know; for the player character or a companion, when the player asks, their portrait as the player described them. "
+        + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: for a place what the party sees arriving, "
+        + "for a quest what the character knows of it, never what they do not know; for the player character or a companion, when the player asks, their portrait as the player described them; "
+        + "for a character or a creature met, what the character sees of them, a disguise as the disguise, once for each kind of creature, whose copies show it. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
     group: "game",
     positionals: ["page", "file"],
@@ -42,7 +46,7 @@ export const image = defineCommand({
         file: z.string().optional().describe("the picture's file, its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
         describe: z.string().optional().describe(
             "instead of file, for a place: what the party sees arriving; for a quest: what the character knows of it; for one of the party: their look, their people as this world has them and the rest as the player described it; "
-                + "in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
+                + "for a character or a creature met: what the character sees of them, never what it does not know; in a few lines, never a victim or wounds; the picture is made where it can be, and comes by itself",
         ),
     }),
 
@@ -53,15 +57,11 @@ export const image = defineCommand({
         const page = pageNamed(world, input.page);
 
         if (page === undefined) {
-            throw new Error(`There is no page ${input.page}: write it first, or look for its name with find.`);
+            throw new Error(`${copyRefusal(root, world, input.page) ?? `There is no page ${input.page}: write it first, or look for its name with find.`} Nothing changed.`);
         }
 
         if (page.system !== undefined) {
-            const [type, base] = page.type === "item" ? ["item", "item"] : ["character", "creature"];
-            throw new Error(
-                `${page.name} is a ${page.type ?? "page"} of the game system ${page.system}: read-only. Give the picture to a page of the campaign that derives from it, `
-                    + `such as one made with write "Grak", type ${type}, set ${base}=[[${page.name}]]; then image Grak with the file. Nothing changed.`,
-            );
+            throw new Error(`${systemRefusal(page)} Nothing changed.`);
         }
 
         if (input.describe !== undefined && input.describe.trim() !== "") {
@@ -116,26 +116,54 @@ function setImage(root: string, context: Context, world: World, page: Page, from
     return { page: page.name, image: shownPath(root, target), from: resolve(target) === from ? undefined : from, changed: true };
 }
 
+/** Why a page of the game system takes no picture, and how to give one: to a page of the campaign that derives from it, which a creature's scenes then bring in. */
+function systemRefusal(page: Page): string
+{
+    const readOnly = `${page.name} is ${withArticle(page.type ?? "page")} of the game system ${page.system}: read-only.`;
+
+    if (page.type === "creature") {
+        return `${readOnly} Write a creature of the campaign that derives from it: write "<name>", type creature, set creature=[[${page.name}]]; `
+            + `give that its picture with image, and bring it into scenes in place of ${page.name}, as creatures "<name>"=2.`;
+    }
+
+    const [type, base] = page.type === "item" ? ["item", "item"] : ["character", "creature"];
+    return `${readOnly} Give the picture to a page of the campaign that derives from it, such as one made with write "Grak", type ${type}, set ${base}=[[${page.name}]]; then image Grak with the file.`;
+}
+
+/** Why a copy in the open scene takes no picture of its own: it shows its creature's, one for all its copies (D-420); undefined when no copy has the name. */
+function copyRefusal(root: string, world: World, name: string): string | undefined
+{
+    const copy = Object.entries(readOpenScene(root).scene?.copies ?? {}).find(([copyName]) => comparableText(copyName) === comparableText(parsePageReference(name).name));
+
+    if (copy === undefined) {
+        return undefined;
+    }
+
+    const creature = findPage(world, parsePageReference(copy[1].creature).name);
+    const kind = creature?.name ?? parsePageReference(copy[1].creature).name;
+    const own = `${copy[0]} is a copy of ${kind} in the scene, and shows its creature's picture, one for all its copies.`;
+    return creature?.system === undefined ? `${own} Give it to ${kind}: image ${kind}, with file or describe.` : `${own} ${systemRefusal(creature)}`;
+}
+
 /**
- * A place's picture made from what the party sees, a quest's from what the character knows of it, or the portrait of one of the party as the player described
- * them (D-308, D-388, D-408, PIC-1–PIC-3), where the campaign's setting allows it and this computer can: in the MCP server it comes by itself while the story
- * goes on; on the command line the command waits for it. A refusal is never tried again.
+ * A place's picture made from what the party sees, a quest's from what the character knows of it, the portrait of one of the party as the player described
+ * them, or the token of a character or a kind of creature met, from what the character sees (D-308, D-388, D-408, D-420, PIC-1–PIC-3), where the campaign's
+ * setting allows it and this computer can: in the MCP server it comes by itself while the story goes on; on the command line the command waits for it. A refusal
+ * is never tried again.
  */
 function madePicture(root: string, context: Context, world: World, page: Page, seen: string): ImageResult | Promise<ImageResult>
 {
-    const kind = page.type === "place" || page.type === "quest" ? page.type : isPartyMember(page) ? "portrait" : undefined;
+    const kind = page.type === "place" || page.type === "quest" || page.type === "creature" ? page.type : page.type === "character" ? "portrait" : undefined;
 
     if (kind === undefined) {
-        throw new Error(
-            `describe makes pictures of places, quests and the party, and ${page.name} is a ${page.type ?? "page"} out of the party: give a picture of it with file. Nothing changed.`,
-        );
+        throw new Error(`describe makes pictures of places, quests, characters and creatures, and ${page.name} is ${withArticle(page.type ?? "free page")}: give a picture of it with file. Nothing changed.`);
     }
 
     const setting = readSettings(root).pictures;
 
     if (setting === undefined || setting === "none") {
         throw new Error(
-            `The campaign makes no pictures (pictures: ${setting ?? "not chosen"}): ask the player whether they want them, then config pictures: new places and quests, on request or none. Nothing changed.`,
+            `The campaign makes no pictures (pictures: ${setting ?? "not chosen"}): ask the player whether they want them, then config pictures: new elements, on request or none. Nothing changed.`,
         );
     }
 
@@ -146,8 +174,8 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
     }
 
     const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
-    const who = kind === "portrait" ? portraitWho(root, context, world, page) : undefined;
-    const making = context.pictures.make({ kind, name: page.name, ...(who === undefined ? {} : { who }), seen, unseen }).then((made) => {
+    const { name, who } = kind === "place" || kind === "quest" ? { name: page.name } : isPartyMember(page) ? { name: page.name, who: portraitWho(root, context, world, page) } : metWho(root, world, page);
+    const making = context.pictures.make({ kind, name, ...(who === undefined ? {} : { who }), seen, unseen }).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));
             throw new Error(`No picture of ${page.name}: ${made.refused}. Go on without, or give one with file.`);
@@ -177,6 +205,19 @@ function portraitWho(root: string, context: Context, world: World, page: Page): 
 {
     const said = [baseChain(world, page).map((base) => base.name).join(", "), sheetHeadline(world, campaignSystem(root, context), page) ?? ""].filter((part) => part !== "");
     return said.length === 0 ? undefined : said.join("; ");
+}
+
+/**
+ * How the brief names one met (D-420): by their name and what they derive from only as far as the player character knows them, so that the picture never tells
+ * what it does not know; else as someone, or a creature, with only what is seen.
+ */
+function metWho(root: string, world: World, page: Page): { name: string; who?: string; }
+{
+    const pc = playerCharacter(world);
+    const knowledge = pc === undefined ? undefined : knowledgeOf(root, world, pc);
+    const known = (one: Page): boolean => knowledge !== undefined && knowsPage(knowledge, one);
+    const bases = baseChain(world, page).filter(known).map((base) => base.name).join(", ");
+    return { name: known(page) ? page.name : page.type === "creature" ? "a creature" : "someone", ...(bases === "" ? {} : { who: bases }) };
 }
 
 function removeImage(root: string, context: Context, world: World, page: Page, old: string | undefined): ImageResult

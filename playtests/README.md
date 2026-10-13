@@ -5,6 +5,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | Path | Content |
 |---|---|
 | `run-playtest.mjs` | plays one session of a scenario, or asks the questionnaire |
+| `page-player.mjs` | the dashboard's page in a run with `--dashboard`: the master's questions there answered by the player and clicked, the scenario's moments, what the page showed |
 | `count-playtest.mjs` | counts the numbers of a run, the same way every time |
 | `checklist.md` | the fixed checklist, filled after every run |
 | `questionnaire.md` | the player's questionnaire, after the last session |
@@ -47,13 +48,15 @@ node playtests/run-playtest.mjs --from F:\sviluppo\runs\rpg-engine\2026-10-03\1\
 
 A scenario may start in play, from a campaign its `start.md` prepares (settings, characters, the date): `--prepared` with the scenario's brief accepts it for session 1, and gives the brief to the player with the first turn, as what they remember of their character. Give it again to every run from a save of that scenario.
 
+With `--dashboard` the session is played with the dashboard open, as in the desktop app (phase 3). The master's chat is one Claude Code process for the whole session, its prompts sent as a stream, so that the rpg server and the page it serves live from turn to turn. The first link to the dashboard in a tool's result opens the page in the Chrome installed, at 1280 in the dark theme. A question the master asks there goes to the player, with the master's words so far, and the player's answer is clicked on the page: a button, their own words, or a square of the map. A question that does not show within 10 s, or that the player or the click fails, is answered through the page's request instead, and said in `page/console.txt`. `--moments` with the scenario's moments file does, before a player's message, what the page's Settings and Notes do (a setting, a note, a note shared) and tells the player. `--uncommitted` tests the working tree as it is, uncommitted changes included: `meta.json` gives the commit and the tree, and `tested.diff` the changes.
+
 Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a subscription. Writing the pages, the trial run and reading the results for the checklist cost extra. `end.json` records the master's cost for the session and the player's for the run so far.
 
 ## Checks
 
 Before the first turn the run stops unless:
 
-- the repo has no uncommitted changes, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
+- the repo has no uncommitted changes, unless `--uncommitted` says to test them, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
 - the campaign's `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are what this commit's `rpg init` writes (the start lines, the import, auto memory off), and it has nothing else in `.claude/` and no `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`; with `--prepared`, no scene opened and no roll;
@@ -85,6 +88,8 @@ Per session, in `session-N/`:
 - `turns/M*.jsonl`: each master turn as Claude Code streamed it, subagents included: tool calls, whole results, `permission_denials`, cost. Every count comes from here.
 - `context.md`, `meta.json` (commit, the `rpg` build, versions, models, the master's chat, options), `end.json` (why it stopped: player, hard cap, budget, error or isolation; messages; costs).
 - `campaign-after/`: the campaign after the session, `log.jsonl` included.
+- With `--dashboard`, `page/`: after each master turn a screenshot and the accessibility tree of Party, Scene and, in a fight, Combat (`M3-scene.png`, `M3-scene.aria.yaml`); those of each moment; `asked.jsonl`, each question on the page with the player's answer and how long it took to show and to be answered; `console.txt`, the page's errors and warnings and what the run had to do itself. In `dialogue.md`, **Page** says what happened on the page.
+- With `--uncommitted`, `tested.diff`.
 - `questionnaire-answers.md`, when the questionnaire followed the session.
 
 Per run: `player-session.txt`, `player-turns.jsonl`.

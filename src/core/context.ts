@@ -68,9 +68,9 @@ export type PicturesReady = { ready: true; maker?: "Codex" | "Claude"; } | { rea
  */
 export interface PictureSubject
 {
-    kind: "place" | "quest" | "portrait";
+    kind: "place" | "quest" | "portrait" | "creature";
     name: string;
-    /** For a portrait, what the game says they are: what their page derives from, as their people, and the line under their name. */
+    /** For a portrait or a creature, what the game says they are, as far as the character knows: what their page derives from, and for the party the line under their name. */
     who?: string;
     seen: string;
     unseen: string[];

@@ -1,4 +1,4 @@
-// A die that does not count burns away (D-358): turning grey in a blink, it stays a moment where it fell, then consumed as paper by a fire, holes opening through it with a glowing,
+// A die that does not count burns away (D-358): going out in a blink (D-414), it stays a moment where it fell, then consumed as paper by a fire, holes opening through it with a glowing,
 // charred edge, until nothing is left; with reduced motion it fades instead. A die that shows its lowest face cracks, dark lines spreading from a point, no
 // fire (D-363, D-382). Its materials, body and ink, burn or crack together, by its own shape.
 import * as THREE from "three";
@@ -6,7 +6,7 @@ import type { Effect } from "./celebration.ts";
 
 // How long a die set aside stays in sight before it burns, how long it burns, and how long it fades with reduced motion, in milliseconds.
 const pause = 350;
-const greying = 120;
+const goingOut = 120;
 const burning = 1300;
 const fading = 400;
 // The colour of the fire at the edge of the holes, and how wide that edge is, and the charred band behind it, in the noise's own measure.
@@ -22,8 +22,8 @@ const crackJagging = "0.12";
 const crackSparseness = "0.42";
 const crackWidth = "0.024";
 
-/** Burns a die away from now: its object and its materials, turned grey by the amount given first; its update says whether it still moves. */
-export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMaterial[], instant: boolean, grey: (amount: number) => void): Effect
+/** Burns a die away from now: its object and its materials, gone out by the amount given first; its update says whether it still moves. */
+export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMaterial[], instant: boolean, goOut: (amount: number) => void): Effect
 {
     const started = performance.now();
     const progress = { value: 0 };
@@ -32,6 +32,9 @@ export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMa
     object.traverse((part) => {
         part.castShadow = false;
     });
+
+    // As much as each material showed: a crystal fades from what it was.
+    const opacities = materials.map((material) => material.opacity);
 
     if (instant) {
         materials.forEach((material) => {
@@ -45,7 +48,7 @@ export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMa
     return {
         update(now)
         {
-            grey(Math.min(1, (now - started) / greying));
+            goOut(Math.min(1, (now - started) / goingOut));
             const elapsed = now - started - pause;
 
             if (elapsed < 0) {
@@ -55,8 +58,8 @@ export function burnAway(object: THREE.Object3D, materials: THREE.MeshStandardMa
             const done = Math.min(1, elapsed / (instant ? fading : burning));
 
             if (instant) {
-                materials.forEach((material) => {
-                    material.opacity = 1 - done;
+                materials.forEach((material, index) => {
+                    material.opacity = (opacities[index] ?? 1) * (1 - done);
                 });
             } else {
                 // Slow at first, as a fire catching, then faster; from where the noise starts to past where it ends.
@@ -82,7 +85,11 @@ export function crack(materials: THREE.MeshStandardMaterial[], instant: boolean)
     const offset = new THREE.Vector3(Math.random(), Math.random(), Math.random()).multiplyScalar(50);
     const origin = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
     materials.forEach((material) => {
-        material.onBeforeCompile = (shader) => {
+        // After what the material does already, as a glass's engraved far numbers.
+        const before = material.onBeforeCompile.bind(material);
+
+        material.onBeforeCompile = (shader, renderer) => {
+            before(shader, renderer);
             shader.uniforms.crackReach = reach;
             shader.uniforms.crackOrigin = { value: origin };
             shader.uniforms.burnOffset = { value: offset };
@@ -136,7 +143,10 @@ function withPlace(vertexShader: string): string
 /** Teaches a material to burn: each point of the die, by a noise of where it is on the die, goes when the fire's progress passes it. */
 function burnable(material: THREE.MeshStandardMaterial, progress: { value: number; }, offset: THREE.Vector3): void
 {
-    material.onBeforeCompile = (shader) => {
+    const before = material.onBeforeCompile.bind(material);
+
+    material.onBeforeCompile = (shader, renderer) => {
+        before(shader, renderer);
         shader.uniforms.burnProgress = progress;
         shader.uniforms.burnFire = { value: fire };
         shader.uniforms.burnOffset = { value: offset };

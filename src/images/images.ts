@@ -1,4 +1,5 @@
-import { basename, join } from "node:path";
+import { createHash } from "node:crypto";
+import { basename, extname, join } from "node:path";
 import { files } from "../core/store.ts";
 
 /** The folder of a campaign or of a game system that holds the pictures of its pages. */
@@ -58,6 +59,25 @@ export function imageFileName(value: unknown): string | undefined
 {
     const match = typeof value === "string" ? /^\s*\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]\s*$/.exec(value) : null;
     return match === null ? undefined : match[1].trim();
+}
+
+/** A name for a picture that tells nothing of its page, as the page asks for a stranger's (D-420): a hash of its bytes, with its extension. */
+export function hiddenImageName(path: string): string | undefined
+{
+    const bytes = files().bytes(path);
+    return bytes === undefined ? undefined : `${createHash("sha256").update(bytes).digest("hex").slice(0, 24)}${extname(path).toLowerCase()}`;
+}
+
+/** The picture a hidden name stands for, among the images folders of `folders`; undefined when the name is not one, or no picture has it. */
+export function findHiddenImage(folders: string[], name: string): string | undefined
+{
+    if (!/^[0-9a-f]{24}\.[a-z]+$/.test(name)) {
+        return undefined;
+    }
+
+    const extension = extname(name);
+    return folders.flatMap((folder) => files().files(join(folder, imagesFolderName), (fileName) => extname(fileName).toLowerCase() === extension))
+        .find((file) => hiddenImageName(file) === name);
 }
 
 /** The link an image field holds for a file name, such as [[ettore.webp]]. */
