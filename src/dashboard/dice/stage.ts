@@ -10,16 +10,16 @@ import type { RareFace, Turn, Vector } from "./models.ts";
 import { diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
 
-// A die that does not count, as the lower of two d20 with advantage, turns grey as its chip in the plate, whatever its set: its body mostly, its ink half way;
-// set aside, not made of glass (D-348).
-const dimmedBody = 0.8;
+// A die that does not count, as the lower of two d20 with advantage, goes out, whatever its set: its colour gone and darker, its body to a third of its
+// light, its ink to some half, still read; never lighter, which on a dark die would look picked (D-348, D-414).
+const dimmedBody = 0.35;
 // How much of the window's foot the plate of the result covers, in pixels, until the plate of a throw is measured: from the window's edge to the plate's
 // top, on a wide screen and on a phone, where it comes out of the bar of the sections.
 const plateOnWide = 150;
 // The window's height up to which the dice grow with it, in pixels: a laptop's or a desktop's; past it they keep their size.
 const commonHeight = 900;
 const plateOnPhone = 220;
-const dimmedInk = 0.5;
+const dimmedInk = 0.55;
 // The fire the highest face's numbers light with, on every set and theme: a gold ink lights brighter, a dark one turns gold.
 const branding = "#ffbf45";
 
@@ -278,16 +278,14 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         },
         dim(die, instant)
         {
-            const grey = new THREE.Color(themeColours().dropped);
             const turning = (dice[die]?.materials ?? []).map((material) => ({
                 material,
                 from: material.color.clone(),
-                to: material.color.clone().lerp(grey, material.name === "ink" ? dimmedInk : dimmedBody),
+                to: goneOut(material.color, material.name === "ink" ? dimmedInk : dimmedBody),
                 shine: material.envMapIntensity,
             }));
 
-            // Grey in a blink, not at a stroke (D-358): a metal set aside mirrors little, grey and not silver; a wood or a stone loses its grain, which its colour
-            // only tinted, once grey.
+            // Out in a blink, not at a stroke (D-358): a metal set aside mirrors little; a wood or a stone loses its grain, which its colour only tinted, once out.
             const greying = (amount: number): void => {
                 turning.forEach(({ material, from, to, shine }) => {
                     material.color.lerpColors(from, to, amount);
@@ -357,16 +355,21 @@ function seenUnder(middle: THREE.Vector3, eye: THREE.Vector3): THREE.Vector3
     return eye.clone().lerp(middle, along).setY(0);
 }
 
-/** By the theme (D-279, D-282): the grey of a die that does not count, and the glow of the rare faces. */
-function themeColours(): { dropped: string; glow: Glow; }
+/** A colour gone out: its grey, as light as it was, then darker by the share given. */
+function goneOut(colour: THREE.Color, share: number): THREE.Color
+{
+    const light = 0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
+    return new THREE.Color(light * share, light * share, light * share);
+}
+
+/** By the theme (D-279, D-282): the glow of the rare faces. */
+function themeColours(): { glow: Glow; }
 {
     return shownTheme() === "dark"
         ? {
-            dropped: "#59606f",
             glow: { lights: true, highest: { halo: "#f5c63e", resting: 0.6, sparks: ["#f5c63e", "#ffefcf"] }, lowest: { crack: "#c2503f", hot: "#ffd2c6", ring: "#ff7a66" } },
         }
         : {
-            dropped: "#b4b8c0",
             glow: { lights: false, highest: { halo: "#d1a61b", resting: 0.85, sparks: ["#c29803", "#254b83"] }, lowest: { crack: "#5e1f17", hot: "#e0442c", ring: "#a73929" } },
         };
 }
