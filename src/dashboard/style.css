@@ -3868,9 +3868,12 @@ a {
     --behind: -4px;
 }
 
-.token .status-pip.on-hover {
-    opacity: 0;
-    transition: opacity var(--quick) linear;
+/* Only a pointer that hovers hides them till then: on a phone they always show. */
+@media (hover: hover) {
+    .token .status-pip.on-hover {
+        opacity: 0;
+        transition: opacity var(--quick) linear;
+    }
 }
 
 :is(.member, .present li, .identity, .turn-now, .next-who, .token):is(:hover, :focus-visible, :focus-within) .status-pip.on-hover {
@@ -7871,9 +7874,11 @@ svg.icon {
     stroke: #f1e8d3;
 }
 
-.lm-status.on-hover {
-    opacity: 0;
-    transition: opacity var(--quick) linear;
+@media (hover: hover) {
+    .lm-status.on-hover {
+        opacity: 0;
+        transition: opacity var(--quick) linear;
+    }
 }
 
 .lm-token:hover .lm-status.on-hover {
