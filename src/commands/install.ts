@@ -23,6 +23,7 @@ export const install = defineCommand({
         + "Call it again once the player says they signed in.",
     group: "campaign",
     positionals: ["program"],
+    slow: true,
     input: z.object({
         program: z.enum(["codex", "claude"]).describe("codex for a ChatGPT account, any plan; claude for Claude Pro or Max"),
     }),

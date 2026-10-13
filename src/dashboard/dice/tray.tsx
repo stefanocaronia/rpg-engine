@@ -121,6 +121,18 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
         };
     }, []);
 
+    // A text field that takes the focus comes whole above this button: the browser brings in only its caret, the page's scroll-padding keeps the button's room.
+    useEffect(() => {
+        const onFocus = (event: FocusEvent): void => {
+            if (event.target instanceof HTMLElement && event.target.matches("textarea, input:not([type=radio], [type=checkbox])")) {
+                event.target.scrollIntoView({ block: "nearest" });
+            }
+        };
+
+        window.addEventListener("focusin", onFocus);
+        return () => window.removeEventListener("focusin", onFocus);
+    }, []);
+
     // The open tray takes the focus to the d20, and closes at a click elsewhere on the page, keeping the dice chosen.
     useEffect(() => {
         if (!open) {

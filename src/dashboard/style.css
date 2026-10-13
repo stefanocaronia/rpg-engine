@@ -6519,6 +6519,11 @@ svg.icon {
         bottom: 84px;
     }
 
+    /* A field that takes the focus is scrolled clear of the bar and of the dice's button over it (84 + 56 + 12 px). */
+    html {
+        scroll-padding-bottom: 152px;
+    }
+
     .dice-tray {
         bottom: 152px;
     }

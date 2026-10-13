@@ -98,7 +98,7 @@ Read-only: no. Positional parameters: `page`.
 
 ### rename
 
-Give a page of the campaign a new name, as when the player names their wolf or the character learns a place's true name (D-417). Its file moves, and every link to it in the campaign's pages follows, with its section and its words, as does the open scene; the old name stays among its aliases, so that the log and the player's notes, which keep it as it was, still find the page. Of two pages with the same name, give the one to rename by its path, as validate shows it: the links to that name stay with the other. Example: page Lupa, to Neve; page world/characters/Varro.md, to Varro il vecchio.
+Give a page of the campaign a new name, as when the player names their wolf or the character learns a place's true name. Its file moves, and every link to it in the campaign's pages follows, with its section and its words, as does the open scene; the old name stays among its aliases, so that the log and the player's notes, which keep it as it was, still find the page. Of two pages with the same name, give the one to rename by its path, as validate shows it: the links to that name stay with the other. Example: page Lupa, to Neve; page world/characters/Varro.md, to Varro il vecchio.
 
 Read-only: no. Positional parameters: `page`, `to`.
 

@@ -151,7 +151,12 @@ export const config = defineCommand({
         // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
         const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
         // And of how the master writes, the parts as they are now (D-395).
-        const part = changed === "mentor" ? mentorPart(root, context, settings.mentor) : styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
+        const style = styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
+        // An author or the player's words taken away: what holds now, as the dashboard's news says it.
+        const cleared = changed !== undefined && input.value?.trim().toLowerCase() === "none" ? wordsOf(changed)?.cleared : undefined;
+        const part = changed === "mentor"
+            ? mentorPart(root, context, settings.mentor)
+            : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
         return {
             settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
             note: campaignNote(root, context),

@@ -7,7 +7,7 @@ import { readCounter } from "../counters/index.ts";
 import type { Effect, EffectEnd } from "../effects/index.ts";
 import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../grid/index.ts";
 import { hiddenImageName } from "../images/index.ts";
-import { environmentAt, locate, type Page, pagesWithName, parsePageReference, placesAround, type World } from "../pages/index.ts";
+import { environmentAt, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
@@ -528,7 +528,8 @@ function strangerPicture(sight: PlaceSight, name: string | undefined): { file: s
 /** The picture of one the character does not know, as strangerPicture gives it, for the scene and for the rolls (D-420, D-421). */
 export function strangerImage(root: string, context: Context, world: World, name: string | undefined): { file: string; version: number; } | undefined
 {
-    const page = name === undefined ? undefined : pagesWithName(world, parsePageReference(name).name)[0];
+    // A roll keeps a renamed page by its old name, among its aliases (D-417).
+    const page = name === undefined ? undefined : pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
     const file = page === undefined || page.system !== undefined ? undefined : imageFile(root, context, ownImage(page));
     // By a name of its bytes: the file's own is the page's, which the character does not know.
     const hidden = file === undefined ? undefined : hiddenImageName(file);

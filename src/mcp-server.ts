@@ -170,7 +170,11 @@ async function runTool(
     outside: { take(): string[]; giveBack(lines: string[]): void; },
 ): Promise<CallToolResult>
 {
-    const keepAlive = command.needsPlayer ? reportProgress(extra, () => context.page?.asking?.() === true) : undefined;
+    const keepAlive = command.needsPlayer
+        ? reportProgress(extra, () => (context.page?.asking?.() === true ? "waiting for the player's click on the dashboard" : "waiting for the player"))
+        : command.slow === true
+        ? reportProgress(extra, () => "still working")
+        : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
     let changedOutside: string[] = [];
     // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
@@ -335,8 +339,8 @@ function formPlayer(server: McpServer, unavailable: () => void): Player
     };
 }
 
-/** Progress notifications while the player decides, when the host asked for them, saying where when the question is on the dashboard; undefined otherwise. */
-function reportProgress(extra: ToolExtra, onPage: () => boolean): ReturnType<typeof setInterval> | undefined
+/** Progress notifications while the player decides or a slow command works, when the host asked for them, saying what it waits for; undefined otherwise. */
+function reportProgress(extra: ToolExtra, saying: () => string): ReturnType<typeof setInterval> | undefined
 {
     const progressToken = extra._meta?.progressToken;
 
@@ -346,7 +350,6 @@ function reportProgress(extra: ToolExtra, onPage: () => boolean): ReturnType<typ
 
     let progress = 0;
     return setInterval(() => {
-        const message = onPage() ? "waiting for the player's click on the dashboard" : "waiting for the player";
-        void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message } }).catch(() => undefined);
+        void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message: saying() } }).catch(() => undefined);
     }, progressEvery);
 }
