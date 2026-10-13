@@ -20,10 +20,11 @@ import { save } from "./save.ts";
 import { scene } from "./scene.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
+import { translate } from "./translate.ts";
 import { travel } from "./travel.ts";
 import { validate } from "./validate.ts";
 import { view } from "./view.ts";
 import { write } from "./write.ts";
 
 /** Every command of rpg-engine. */
-export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, rename, move, reveal, image, show, view, find, rules, roll, ask, change, effect, mood, advance, travel, route, scene, save];
+export const commands: Command<any, any>[] = [init, config, instructions, status, mode, validate, write, rename, move, reveal, image, show, view, find, rules, roll, ask, change, effect, mood, advance, travel, route, scene, save, translate];

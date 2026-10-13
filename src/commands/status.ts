@@ -27,6 +27,7 @@ import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
 import { missingSheetFields, type SheetSummary, sheetSummary } from "./sheet.ts";
+import { translationOffer } from "./translate.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
 const shownNames = 3;
@@ -128,6 +129,8 @@ export const status = defineCommand({
             offerDashboard: offerDashboard(context),
             // Whether to ask for the places' pictures, or to have this one made (D-308).
             pictures: picturesNote(root, context, world, players[0] === undefined ? undefined : locate(world, players[0]).chain.find((holder) => holder.type === "place")),
+            // In the setup, the dashboard translated in the chat where nothing here does it in the background (D-423).
+            translation: mode === "setup" ? translationOffer(root, context) : undefined,
             mood: masterMood(root),
             place,
             alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
@@ -180,6 +183,7 @@ export const status = defineCommand({
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live.`,
             result.pictures ?? "",
+            result.translation ?? "",
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,

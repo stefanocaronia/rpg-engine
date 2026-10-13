@@ -47,6 +47,8 @@ export interface Context
     writer?: TextWriter;
     /** The folder of this player's data on this computer, apart from any campaign: the page's words translated on the fly (D-406). */
     home?: string;
+    /** The folder of the dashboard's built page, whose i18n/ lists every phrase it has (D-423). */
+    pageFolder?: string;
 }
 
 /** What writes text from a brief outside the chat (D-406): whether it can now, and its answer, none when it gave none. */
@@ -136,6 +138,8 @@ export function defaultContext(folder = process.cwd()): Context
         // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up.
         systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url))],
         home: userDataFolder(),
+        // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.
+        pageFolder: fileURLToPath(new URL("../../dist/dashboard/", import.meta.url)),
     };
 }
 

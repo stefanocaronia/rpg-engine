@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { stringify } from "yaml";
 import type { Context } from "./core/context.ts";
+import { files } from "./core/store.ts";
 import { type SystemWords, systemWords } from "./systems/index.ts";
 
 /** What the page has of a language: its phrases so far, whether they are being translated, whether this computer can, and how many it still lacks. */
@@ -107,6 +108,65 @@ export function pageTranslator(context: Context, page: string, notify: () => voi
     };
 }
 
+/** A batch the master translates in the chat (D-423): the page's phrases, then the game system's words, each by a short id, with what the language still lacks. */
+export interface ChatBatch
+{
+    part: "page" | "system";
+    entries: { id: string; english: string; italian: string; kind?: string; }[];
+    /** How many the language still lacks, this batch included. */
+    left: number;
+}
+
+// How many phrases the master translates in one call: the page's in four, the system's in three.
+const chatBatchSize = 160;
+
+/** Whether the built page in `page` ships a language: its own file, its base language's (pt-BR, pt), or English. */
+export function shipsLanguage(page: string, language: string): boolean
+{
+    const base = language.toLowerCase().split("-")[0];
+    return base === "en" || [language.toLowerCase(), base, base === "no" ? "nb" : ""].some((code) => code !== "" && existsSync(join(page, "i18n", `${code}.json`)));
+}
+
+/** The next batch the master translates in the chat, the page's phrases first; undefined once the language lacks none. */
+export function chatBatch(home: string, page: string, language: string, system: WordsSystem | undefined): ChatBatch | undefined
+{
+    const pagePart = missingPhrases(home, page, language);
+    const systemPart = system === undefined ? [] : missingWords(home, language, system);
+    const [part, entries] = pagePart.length > 0 ? ["page" as const, pagePart] : ["system" as const, systemPart];
+    return entries.length === 0 ? undefined : { part, entries: entries.slice(0, chatBatchSize).map(({ key: _key, ...entry }) => entry), left: pagePart.length + systemPart.length };
+}
+
+/** Keeps what the master translated in the chat, by id, as the background work keeps its own; returns how many it kept, and the ids dropped for a lost {name}. */
+export function keepChatAnswer(home: string, page: string, language: string, system: WordsSystem | undefined, answer: Record<string, unknown>): { kept: number; dropped: string[]; }
+{
+    const phrases = missingPhrases(home, page, language).filter((entry) => entry.id in answer);
+    const words = system === undefined ? [] : missingWords(home, language, system).filter((entry) => entry.id in answer);
+    const keptPhrases = keptOf(answer, phrases.map(({ id, english }) => ({ id, source: english })));
+    const keptWords = keptOf(answer, words.map(({ id, italian }) => ({ id, source: italian })));
+
+    if (Object.keys(keptPhrases).length > 0) {
+        const file = join(home, "i18n", `${language}.json`);
+        writeJson(file, { ...readJson(file), ...Object.fromEntries(phrases.filter((entry) => entry.id in keptPhrases).map((entry) => [entry.key, keptPhrases[entry.id]])) });
+    }
+
+    if (system !== undefined && Object.keys(keptWords).length > 0) {
+        writeSystemWords(home, language, system, Object.fromEntries(words.filter((entry) => entry.id in keptWords).map((entry) => [entry.key, keptWords[entry.id]])));
+    }
+
+    const kept = [...Object.keys(keptPhrases), ...Object.keys(keptWords)];
+    return { kept: kept.length, dropped: [...phrases, ...words].map((entry) => entry.id).filter((id) => !kept.includes(id)) };
+}
+
+/** A language's name in English, as Vietnamese for vi; its code where the runtime does not know it. */
+export function languageName(language: string): string
+{
+    try {
+        return new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
+    } catch {
+        return language;
+    }
+}
+
 /** The game system's words in a language translated on the fly, in the player's data folder; none where it has none there. */
 export function homeSystemWords(home: string | undefined, system: WordsSystem, language: string): SystemWords | undefined
 {
@@ -132,10 +192,37 @@ async function translateSystem(writer: NonNullable<Context["writer"]>, home: str
 
     const entries = Object.entries(wordEntries(italian)).map(([id, word]) => ({ id, english: id.includes(": ") ? id.slice(id.indexOf(": ") + 2) : id, italian: word }));
     const kept = keptOf(answerOf(await writer.write(systemBrief(language, entries))), entries.map(({ id, italian: source }) => ({ id, source })));
-    const words = (section: "groups" | "fields" | "words"): Record<string, string> => Object.fromEntries(Object.entries(kept).filter(([id]) => id.startsWith(`${section}: `)).map(([id, word]) => [id.slice(section.length + 2), word]));
-    const file = join(home, "systems", system.name, "words", `${language}.yaml`);
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, stringify({ groups: words("groups"), fields: words("fields"), words: words("words"), ...(kept.headline === undefined ? {} : { headline: kept.headline }) }, { lineWidth: 0 }));
+    writeSystemWords(home, language, system, kept);
+}
+
+/** The game system's words translated, by id ("fields: str"), added to those this computer already has of the language. */
+function writeSystemWords(home: string, language: string, system: WordsSystem, kept: Record<string, string>): void
+{
+    const all = { ...wordEntries(homeSystemWords(home, system, language) ?? { groups: {}, fields: {}, words: {} }), ...kept };
+    const words = (section: "groups" | "fields" | "words"): Record<string, string> => Object.fromEntries(Object.entries(all).filter(([id]) => id.startsWith(`${section}: `)).map(([id, word]) => [id.slice(section.length + 2), word]));
+    // Through the store the words are read with, so that a read after it in the same call finds them.
+    files().write(
+        join(home, "systems", system.name, "words", `${language}.yaml`),
+        stringify({ groups: words("groups"), fields: words("fields"), words: words("words"), ...(all.headline === undefined ? {} : { headline: all.headline }) }, { lineWidth: 0 }),
+    );
+}
+
+/** The page's phrases a language still lacks on this computer, each by a short id from its place in the page's Italian list, which gives its meaning. */
+function missingPhrases(home: string, page: string, language: string): { id: string; key: string; english: string; italian: string; }[]
+{
+    const own = readJson(join(home, "i18n", `${language}.json`));
+    return Object.entries(readJson(join(page, "i18n", "it.json"))).flatMap(([phrase, italian], index) => (phrase in own ? [] : [{ id: `p${index}`, key: phrase, english: phrase, italian }]));
+}
+
+/** The game system's words a language still lacks on this computer, each by a short id from its place in the system's Italian list, with what it is. */
+function missingWords(home: string, language: string, system: WordsSystem): { id: string; key: string; english: string; italian: string; kind: string; }[]
+{
+    const italian = systemWords(system.folder, "it");
+    const own = wordEntries(homeSystemWords(home, system, language) ?? { groups: {}, fields: {}, words: {} });
+    return Object.entries(italian === undefined ? {} : wordEntries(italian)).flatMap(([key, word], index) => {
+        const section = key.includes(": ") ? key.slice(0, key.indexOf(": ")) : key;
+        return key in own ? [] : [{ id: `w${index}`, key, english: key.slice(section.length + 2) || key, italian: word, kind: section.replace(/s$/, "") }];
+    });
 }
 
 /** A system's words by id: "fields: str", "words: Cleric", "headline". */
@@ -181,14 +268,24 @@ function systemBrief(language: string, entries: { id: string; english: string; i
     ].join("\n");
 }
 
-/** The translations of an answer that keep every {name} of what they translate; none of any other. */
+/** The translations of an answer that keep every {name} of what they translate and are not garbled; none of any other. */
 function keptOf(answer: Record<string, unknown>, entries: { id: string; source: string; }[]): Record<string, string>
 {
     const names = (text: string): string => [...text.matchAll(/\{\w+\}/g)].map(String).sort().join();
     return Object.fromEntries(entries.flatMap(({ id, source }) => {
         const own = answer[id];
-        return typeof own === "string" && own.trim() !== "" && names(own) === names(source) ? [[id, own]] : [];
+        return typeof own === "string" && own.trim() !== "" && names(own) === names(source) && !isGarbled(own, source) ? [[id, own]] : [];
     }));
+}
+
+// What UTF-8 read as another encoding leaves, as a model writing a long answer sometimes does: signs no language writes in a word ("Đ·∫øn" for "Đến"), or
+// Ã and Â before a sign of Latin-1 ("Ã©" for "é").
+const garbledMarks = /[√∫∞∑≈∂Ω¬ƒ†∆]|·ª|[ÃÂ][ -¿]/;
+
+/** Whether a translation is garbled: it has what a misread encoding leaves, and what it translates has not. */
+function isGarbled(text: string, source: string): boolean
+{
+    return garbledMarks.test(text) && !garbledMarks.test(source);
 }
 
 /** The JSON object in a writer's answer, whatever came around it; none when there is none. */
@@ -198,15 +295,6 @@ function answerOf(text: string | undefined): Record<string, unknown>
         return text === undefined ? {} : JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as Record<string, unknown>;
     } catch {
         return {};
-    }
-}
-
-function languageName(language: string): string
-{
-    try {
-        return new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
-    } catch {
-        return language;
     }
 }
 

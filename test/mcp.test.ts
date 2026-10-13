@@ -111,7 +111,10 @@ describe("MCP server", () => {
 
     it("lists the commands in two groups, with the first sentence of each description", async () => {
         const help = (await runCommandLine(["--help"], testContext(folder))).output;
-        expect(help).toContain("Campaign:\n  init         Create a new campaign.\n  config       Show or change the campaign settings.\n  mcp          Start the MCP server for an AI host.");
+        expect(help).toContain(
+            "Campaign:\n  init         Create a new campaign.\n  config       Show or change the campaign settings.\n"
+                + "  translate    Translate the player's dashboard into the campaign's language yourself, in the chat.\n  mcp          Start the MCP server for an AI host.",
+        );
         expect(help).toContain("Game:\n  instructions Your instructions as game master, in full: how to run this campaign and use these tools.\n  status       Show where the game stands.\n");
         expect(help).toContain("  validate     Check the whole campaign and say how to fix each problem.\n  write        Create or change a page of the world.");
     });
