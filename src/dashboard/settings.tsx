@@ -9,7 +9,7 @@ import { DieSwatch, Icon } from "./icons.tsx";
 import { settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { PageHead } from "./pages.tsx";
-import { byHandPref, soundPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
+import { byHandPref, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
 import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
@@ -311,7 +311,7 @@ function idOf(name: string): string
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/** The page's own settings, in this browser alone: the theme, the dice's sound, set and edges, rolling by hand. */
+/** The page's own settings, in this browser alone: the theme, the tokens' symbols, the dice's sound, set and edges, rolling by hand. */
 function PageSettings()
 {
     usePrefChange();
@@ -319,6 +319,7 @@ function PageSettings()
     const [diceSet, setDiceSet] = useChoice(diceSetPref);
     const [edges, setEdges] = useChoice(diceEdgesPref);
     const [byHand, setByHand] = usePref(byHandPref);
+    const [symbols, setSymbols] = usePref(tokenSymbolsPref);
     // A row with many values has them under its name.
     const rows: { name: string; about: string; options: Option[]; value: string; pick(value: string): void; under?: boolean; }[] = [
         {
@@ -327,6 +328,13 @@ function PageSettings()
             options: [{ value: "light", label: t("Light") }, { value: "dark", label: t("Dark") }],
             value: shownTheme(),
             pick: (value) => pickTheme(value === "dark" ? "dark" : "light"),
+        },
+        {
+            name: t("Token symbols"),
+            about: t("a mark on each token: you, your companions, your foes"),
+            options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }],
+            value: symbols ? "on" : "off",
+            pick: (value) => setSymbols(value === "on"),
         },
         { name: t("Dice sound"), about: t("the dice as they roll"), options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
         {

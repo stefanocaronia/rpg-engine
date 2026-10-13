@@ -37,7 +37,9 @@ export function GlassDefs({ prefix }: { prefix: string; })
                 <circle cx="0.5" cy="0.5" r="0.5" fill={`url(#${prefix}-rim-fade)`} />
             </mask>
             <filter id={`${prefix}-drop`} x="-40%" y="-40%" width="180%" height="180%">
-                <feDropShadow dx="0" dy="1.5" stdDeviation="1.3" flood-color="#2a1d10" flood-opacity="0.5" />
+                {/* Low, as a coin on paper: a close dark edge, then a soft one (D-414). */}
+                <feDropShadow dx="0" dy="1" stdDeviation="0.5" flood-color="#2a1d10" flood-opacity="0.45" />
+                <feDropShadow dx="0" dy="2.5" stdDeviation="1.8" flood-color="#2a1d10" flood-opacity="0.4" />
             </filter>
         </>
     );

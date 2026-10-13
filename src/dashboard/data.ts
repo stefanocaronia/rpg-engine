@@ -74,6 +74,8 @@ export interface ShownPerson
     name: string;
     role: "pc" | "companion" | "other";
     image?: { file: string; version: number; };
+    /** The icon on the token of one of the party, as their class (D-414). */
+    icon?: string;
     stranger?: true;
     count?: number;
 }
@@ -114,6 +116,8 @@ export interface Fighter
     name: string;
     role: "pc" | "companion" | "other";
     image?: { file: string; version: number; };
+    /** The icon on the token of one of the party, as their class (D-414). */
+    icon?: string;
     stranger?: true;
     health?: string;
     effects: Member["effects"];
@@ -155,6 +159,8 @@ export interface Member
     dead: boolean;
     /** Their picture's file, and when it last changed. */
     image?: { file: string; version: number; };
+    /** The icon on their token, as their class (D-414). */
+    icon?: string;
     /** Where they are: the places that hold them that the character knows, the nearest first; elsewhere, or in the open (D-254, TRV-13). */
     place?: string[] | "elsewhere" | "open";
     counters: SheetValue[];

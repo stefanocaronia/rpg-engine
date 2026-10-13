@@ -7,7 +7,7 @@ import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } f
 import { Icon } from "./icons.tsx";
 import { shownText, strangerLabel } from "./labels.ts";
 import { PageHead } from "./pages.tsx";
-import { Token } from "./party.tsx";
+import { sideOf, Token, TokenPip } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
 import { t } from "./text.ts";
@@ -71,7 +71,7 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
                     <p class="turn-next">
                         <span class="eyebrow">{t("Next")}</span>
                         <span class="next-who">
-                            <FighterToken fighter={next} />
+                            <FighterToken fighter={next} pip={false} />
                             {next.role === "pc" ? t("You") : shownName(next)}
                         </span>
                     </p>
@@ -141,18 +141,26 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
     );
 }
 
-/** A fighter's token; one not of the party glows red a little, as a foe (D-409). */
-function FighterToken({ fighter }: { fighter: Fighter; })
+/** A fighter's token; one not of the party glows red a little, as a foe (D-409); with the pip of their side unless it is too small for one (D-414). */
+function FighterToken({ fighter, pip = true }: { fighter: Fighter; pip?: boolean; })
 {
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
+    const side = pip ? sideOf(fighter.role, true) : undefined;
     return fighter.stranger
         ? (
             <span class={["token stranger", number === undefined ? "" : "numbered", fighter.role === "other" ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {number ?? <Icon name="stranger" />}
+                {side !== undefined && <TokenPip side={side} />}
             </span>
         )
-        : <Token member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }) }} hostile={fighter.role === "other"} />;
+        : (
+            <Token
+                member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
+                hostile={fighter.role === "other"}
+                side={side}
+            />
+        );
 }
 
 /** A fighter's name as the page writes it: Creature 2 for "creature 2", Someone for "someone". */

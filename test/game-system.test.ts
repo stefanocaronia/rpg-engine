@@ -162,6 +162,11 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(() => findSystem([near], "prova")).toThrow("sheet-cards.rail: the sheet has no group Animo; its groups are Corpo.");
         system(near, "prova", `${declared}sheet-headline: "Livello {livello}"\n`);
         expect(() => findSystem([near], "prova")).toThrow("sheet-headline: livello is not declared in fields.");
+        // The icon on a token of the party, by a declared field (D-414).
+        system(near, "prova", `${declared}token-icons: { field: doti, icons: { Guerriero: "M4 4L20 20" } }\n`);
+        expect(findSystem([near], "prova")?.tokenIcons).toEqual({ field: "doti", icons: { Guerriero: "M4 4L20 20" } });
+        system(near, "prova", `${declared}token-icons: { field: mestiere, icons: {} }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("token-icons.field: mestiere is not declared in fields.");
         system(far, "altro", declared);
         expect(findSystem([far], "altro")?.sheetHeadline).toBeUndefined();
     });

@@ -96,6 +96,9 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(data.system).toEqual({ name: "5e", title: expect.stringContaining("SRD 5.1"), attribution: expect.stringContaining("Creative Commons Attribution 4.0") });
         // A companion shows the picture of the creature she derives from (D-267).
         expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: { file: "wolf-head.svg", version: expect.any(Number) } });
+        // On a token of the party, the icon of their class, as the system draws it; none for a wolf, which has no class (D-414).
+        expect(data.party[0].icon).toMatch(/^M[\d. ]/);
+        expect(data.party[1].icon).toBeUndefined();
         expect(await ok("view")).toContain([
             "Ettore, in Locanda: level 3 · xp 900 (1800 to level 4) · hp 20/24 · ac 9 · passive-perception 13 · hit-dice-d8 3/3 · slots-1 4/4 · slots-2 2/2 · channel-divinity 1/1 · Benedizione until day 1, 19:00",
             "Lupa (companion), in Locanda: hp 11/11 · ac 13 · passive-perception 13",

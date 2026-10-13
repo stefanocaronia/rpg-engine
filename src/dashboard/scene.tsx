@@ -7,7 +7,7 @@ import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
 import { biomeLabel } from "./map-symbols.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
-import { Token } from "./party.tsx";
+import { sideOf, Token, TokenPip } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
 import { t } from "./text.ts";
@@ -143,7 +143,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
 
 /**
  * Who is there: their tokens with their names under them, the party first; someone the character does not know as a hood, the copies with how many; in a fight
- * the others glow red a little, as foes (D-409).
+ * the others glow red a little, as foes (D-409); each with the pip of their side (D-414).
  */
 function People({ people, fight }: { people: ShownPerson[]; fight?: boolean; })
 {
@@ -156,9 +156,16 @@ function People({ people, fight }: { people: ShownPerson[]; fight?: boolean; })
                             // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
                             <span class={["token stranger", letterOf(person.name) === undefined ? "" : "numbered", fight === true && person.role === "other" ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                                 {letterOf(person.name) ?? <Icon name="stranger" />}
+                                {fight === true && person.role === "other" && <TokenPip side="foe" />}
                             </span>
                         )
-                        : <Token member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }) }} hostile={fight === true && person.role === "other"} />}
+                        : (
+                            <Token
+                                member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
+                                hostile={fight === true && person.role === "other"}
+                                side={sideOf(person.role, fight)}
+                            />
+                        )}
                     <span>
                         {person.stranger ? strangerLabel(person.name) : person.name}
                         {person.count !== undefined && person.count > 1 && <span class="count">{` ×${person.count}`}</span>}

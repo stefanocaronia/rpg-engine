@@ -7,7 +7,9 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { strangerLabel } from "./labels.ts";
+import { type Side, sideIcons, sideOf } from "./party.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
+import { tokenSymbolsPref, usePref } from "./prefs.ts";
 import { t } from "./text.ts";
 
 // How wide a square is drawn, in pixels.
@@ -118,7 +120,7 @@ export function PlaceMap({ map, place, acting, picking, fight }: { map: ShownGri
                         )}
                         {standing.map((one, index) => (
                             <clipPath key={index} id={`lm-token-${index}`}>
-                                <circle cx={middle(one)[0]} cy={middle(one)[1]} r={size * (one.side ?? 1) * 0.43 - 2} />
+                                <circle cx={middle(one)[0]} cy={middle(one)[1]} r={size * (one.side ?? 1) * 0.43} />
                             </clipPath>
                         ))}
                     </defs>
@@ -669,14 +671,17 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
 }
 
 /**
- * Someone on the map, as a coin (D-409): their picture, or a stranger's number, as Creature 2's, or the hood, under glass, its shadow on the paper; no colour of
- * a side. Whoever acts has a ring of the accent off the token; in a fight a foe glows red a little.
+ * Someone on the map, as a coin (D-409): their picture to its edge, or a stranger's number, as Creature 2's, or the hood, under glass, its edge bevelled, lit
+ * above and shaded below, its shadow low on the paper; no ring of a side. Whoever acts has a ring of the accent off the token; in a fight a foe glows red a
+ * little; the pip of their side at the lower left, with their class's symbol or the side's (D-414).
  */
 function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; })
 {
+    const [symbols] = usePref(tokenSymbolsPref);
     const side = one.side ?? 1;
     const r = size * side * 0.43;
     const number = one.stranger ? /[A-Z]?\d+$/.exec(one.name)?.[0] : undefined;
+    const pip = symbols ? sideOf(one.role, hostile) : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
             <title>{`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`}</title>
@@ -685,6 +690,8 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
             {/* A token under glass, its shadow on the paper. */}
             <g filter="url(#lm-drop)">
                 <circle class="lm-disc" cx={x} cy={y} r={r} />
+                {/* The coin's dark edge, under the picture: seen only where there is none. */}
+                <circle class="lm-ring" cx={x} cy={y} r={r - 0.5} />
                 {one.image && !one.stranger
                     ? <image href={`/images/${encodeURIComponent(one.image.file)}?v=${one.image.version}`} x={x - r} y={y - r} width={r * 2} height={r * 2} clip-path={`url(#lm-token-${index})`} />
                     : (
@@ -698,10 +705,37 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
                         </g>
                     )}
                 <Glass x={x} y={y} r={r} prefix="lm" />
-                <circle class="lm-ring" cx={x} cy={y} r={r - 0.5} />
+                <path class="lm-bevel-lit" d={crescent(x, y, r, 1.5)} />
+                <path class="lm-bevel-shade" d={crescent(x, y, r, -1.5)} />
             </g>
+            {pip !== undefined && <MapPip side={pip} icon={one.stranger ? undefined : one.icon} x={x - r * 0.725} y={y + r * 0.725} />}
         </g>
     );
+}
+
+/** A token's pip on the map (D-414): as on the page, a disc of the side's colour with its symbol, ringed in the paper's colour; the same size for any creature. */
+function MapPip({ side, icon, x, y }: { side: Side; icon: string | undefined; x: number; y: number; })
+{
+    // As on a token of 40 pixels, a pip of 17 with a symbol of 12.
+    const radius = size * 0.43 * (17 / 40);
+    const scale = (radius * 2 * (12 / 17)) / 24;
+    return (
+        <g class={`lm-pip ${side}`} aria-hidden="true">
+            <circle class="lm-pip-paper" cx={x} cy={y} r={radius + (side === "you" ? 3 : 1.5)} />
+            {side === "you" && <circle class="lm-pip-gold" cx={x} cy={y} r={radius + 1.5} />}
+            <circle class="lm-pip-disc" cx={x} cy={y} r={radius} />
+            <path class="lm-pip-symbol" d={icon ?? sideIcons[side]} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
+        </g>
+    );
+}
+
+/** The thin crescent a coin's bevel lights, from its top when `offset` is positive or shades at its bottom when negative: the circle less itself moved by it. */
+function crescent(x: number, y: number, r: number, offset: number): string
+{
+    const half = Math.sqrt(r * r - (offset / 2) ** 2);
+    const middle = y + offset / 2;
+    const [outer, inner] = offset > 0 ? [1, 0] : [0, 1];
+    return `M${x - half} ${middle}A${r} ${r} 0 1 ${outer} ${x + half} ${middle}A${r} ${r} 0 0 ${inner} ${x - half} ${middle}Z`;
 }
 
 /** A thing of the legend drawn small, as on the map, for the key. */

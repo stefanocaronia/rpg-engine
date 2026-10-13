@@ -190,6 +190,27 @@ function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
 }
 
 /**
+ * The icon on the token of one of the party (D-414): the system's for the first item of its field that has one, by its name or by a page it derives from, as a
+ * class of the campaign built on the system's; none when the system gives none.
+ */
+export function tokenIcon(world: World, system: GameSystem | undefined, page: Page): string | undefined
+{
+    const rule = system?.tokenIcons;
+    const value = rule === undefined ? undefined : valueNamed(effectiveFields(world, page), rule.field);
+
+    if (rule === undefined || isEmptyField(value)) {
+        return undefined;
+    }
+
+    const iconOf = (name: string): string | undefined => Object.entries(rule.icons).find(([key]) => comparableText(key) === comparableText(name))?.[1];
+    const item = (name: string): Page | undefined => world.pages.find((candidate) => comparableText(candidate.name) === comparableText(name));
+    return listItemNames(value).flatMap((name) => {
+        const own = item(name);
+        return [name, ...(own === undefined ? [] : baseChain(world, own).map((base) => base.name))];
+    }).map(iconOf).find((icon) => icon !== undefined);
+}
+
+/**
  * The line under a character's name on the dashboard (D-288): the system's headline, each field in braces as the sheet shows it and a list as the names of its
  * items, as Level 3 Cleric, in the campaign's language when the system has its words (D-403); none when the system has none, or when its fields are all empty.
  */

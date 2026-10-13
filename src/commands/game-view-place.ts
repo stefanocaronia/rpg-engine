@@ -18,6 +18,7 @@ import { type Measures, measuresOf } from "./game-roads.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { campaignSystem } from "./game-world.ts";
 import { pageCounters } from "./page-counters.ts";
+import { tokenIcon } from "./sheet.ts";
 
 /** Someone at the place or in the scene as the player sees them: a name, or someone; their role and picture; for copies of a creature, how many. */
 export interface ShownPerson
@@ -25,6 +26,8 @@ export interface ShownPerson
     name: string;
     role: "pc" | "companion" | "other";
     image?: { file: string; version: number; };
+    /** The icon on the token of one of the party, as their class (D-414). */
+    icon?: string;
     /** Someone the character does not know, shown without a name. */
     stranger?: true;
     /** How many copies of a creature, in the open scene. */
@@ -77,6 +80,8 @@ export interface Fighter
     name: string;
     role: "pc" | "companion" | "other";
     image?: { file: string; version: number; };
+    /** The icon on the token of one of the party, as their class (D-414). */
+    icon?: string;
     stranger?: true;
     health?: string;
     effects: SeenEffect[];
@@ -325,10 +330,12 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "copies" | "gone">, nam
     const health = track === undefined ? undefined : party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
     const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
     const dying = party ? dyingOf(sight.world, system, page) : undefined;
+    const icon = party ? tokenIcon(sight.world, system, page) : undefined;
     return {
         name: shown,
         role: page === sight.knowledge.pc ? "pc" : party ? "companion" : "other",
         ...(image === undefined ? {} : { image }),
+        ...(icon === undefined ? {} : { icon }),
         ...(stranger ? { stranger: true as const } : {}),
         ...(health === undefined ? {} : { health }),
         effects: effects.map((effect) => (party ? seenEffect(sight, effect) : { name: effect.name, text: effect.name })),
@@ -393,7 +400,9 @@ function person(sight: PlaceSight, page: Page): ShownPerson
 {
     const role = page === sight.knowledge.pc ? "pc" : sight.party.includes(page) ? "companion" : "other";
     const image = picture(sight, page);
-    return { name: page.name, role, ...(image === undefined ? {} : { image }) };
+    // Only the party's: what the others are, the character may not know.
+    const icon = role === "other" ? undefined : tokenIcon(sight.world, campaignSystem(sight.root, sight.context), page);
+    return { name: page.name, role, ...(image === undefined ? {} : { image }), ...(icon === undefined ? {} : { icon }) };
 }
 
 /** A page's picture, its own or from a base the character knows (D-267, D-277). */

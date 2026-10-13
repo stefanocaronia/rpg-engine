@@ -172,7 +172,7 @@ settings:
 - `player`: what the value means in the player's words, which the dashboard's Settings shows under it when it is chosen (D-341); without it, the value alone.
 - `without`: the fields a value leaves out. They are not in the sheet, the line or what the sheet still lacks, the experience and rewards of that field say nothing, and `write` says so when one is written. Without a value, nothing is left out.
 
-### sheet, sheet-notes, sheet-icons, sheet-headline and sheet-cards
+### sheet, sheet-notes, sheet-icons, sheet-headline, sheet-cards and token-icons
 
 The character sheet, in groups, each with its fields in order:
 
@@ -190,6 +190,10 @@ sheet-cards:
   rail: [Abilities, Saving Throws]
   order: [Skills, Combat, Attacks]
   at-hand: [ac, hp, Attacks]
+token-icons:
+  field: classes
+  icons:
+    Cleric: "M12 4v16 M7 9h10"
 ```
 
 - `field`: a field the character writes; `status` reminds it until it is written, unless the system works it out (`computed`).
@@ -202,6 +206,7 @@ sheet-cards:
 - `sheet-icons`: a group's icon on the dashboard (D-284), the `d` of an SVG path on a grid of 24, drawn as a line 1.5 wide in the page's accent; a group without one gets a plain one. An icon for a group the sheet does not have, or with more than a path's letters and numbers, is refused when the system loads.
 - `sheet-headline`: the line under a character's name on the dashboard (D-288), words with fields in braces: each field as the sheet shows it, a list as the names of its items, so that `Level {level} {classes}` reads `Level 3 Cleric`. With all its fields empty there is no line. A field it names must be declared.
 - `sheet-cards`: where the dashboard puts the groups (D-295). `rail`, those in the narrow column beside the others, in order; `order`, the order of the others, the groups it does not name coming after them as the sheet has them; `at-hand`, what the Combat section shows of the player character beside the order of the turns (D-315): fields of the sheet in a line of boxes, as under a name, and groups as their cards. Without it, the rail holds the groups of a few short numbers, the others keep the sheet's order, and Combat shows nothing at hand. A name must be a group of the sheet, or in `at-hand` a field of it.
+- `token-icons`: the icon in the mark on the token of the player character and the companions (D-414), as their class: the first item of `field` that has an icon, by its name or by a page it derives from, so that a class of the campaign built on the system's takes its icon; the `d` of an SVG path on a grid of 24, as `sheet-icons`. The field must be declared. Without an icon the mark shows their side; the others' tokens never show theirs, which the character may not know.
 
 ### values
 

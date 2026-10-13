@@ -88,6 +88,10 @@ const systemSchema = z.object({
     }).strict().optional(),
     "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
+    "token-icons": z.object({
+        field: z.string().min(1),
+        icons: z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")),
+    }).strict().optional(),
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
     }).optional(),
@@ -299,6 +303,8 @@ export interface GameSystem
     sheetDice: Record<string, string>;
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
+    /** The icon on the token of one of the party (D-414): by the name of the first item of a field that has one, such as a class of classes. */
+    tokenIcons?: { field: string; icons: Record<string, string>; };
     /** The names the game gives some rolls, by their dice as rollName reads them, and by language: 2d20kh1, with advantage (D-399). */
     rollNames: Record<string, Record<string, string>>;
     /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, the order of the others, and the fields and groups at hand in a fight (D-315). */
@@ -559,6 +565,13 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-headline: ${unnamed} is not declared in fields.`);
     }
 
+    // The tokens' icons read a declared field (D-414).
+    const iconField = data["token-icons"]?.field;
+
+    if (iconField !== undefined && kindOf(iconField) === undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: token-icons.field: ${iconField} is not declared in fields.`);
+    }
+
     const experience = data.progression?.experience?.table;
 
     if (experience !== undefined && !Object.keys(formulas.tables).some((table) => comparableText(table) === comparableText(experience))) {
@@ -581,6 +594,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         sheetDice: Object.fromEntries(rolled),
         rollNames: Object.fromEntries(Object.entries(data["roll-names"] ?? {}).map(([dice, names]) => [plainRoll(dice), typeof names === "string" ? { [data.language]: names } : names])),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
+        ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
         ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,
         marks: data.marks ?? [],

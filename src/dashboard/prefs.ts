@@ -1,4 +1,4 @@
-// The page's own preferences, kept in this browser alone (D-341): the dice's sound, their colours and rolling by hand, and the theme's change. A change,
+// The page's own preferences, kept in this browser alone (D-341): the dice's sound, their colours and rolling by hand, the tokens' symbols, and the theme's change. A change,
 // from Settings or from where the switch is, reaches every part of the page that shows it at once.
 import { useEffect, useState } from "preact/hooks";
 
@@ -24,6 +24,9 @@ export const soundPref: Pref = { key: "rpg-engine.dice-sound", on: true };
 
 /** Whether the player rolls by hand, the checks with no button (D-330 (2)). */
 export const byHandPref: Pref = { key: "rpg-engine.rolls-by-hand", on: false };
+
+/** Whether the tokens show the pip of their side, or their class (D-414). */
+export const tokenSymbolsPref: Pref = { key: "rpg-engine.token-symbols", on: true };
 
 // The event that tells the page a preference changed.
 const changed = "rpg-engine:pref";

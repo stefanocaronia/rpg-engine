@@ -32,7 +32,7 @@ import { type DyingCounter, dyingOf, seenEffect, type ShownPlace, shownPlace, ty
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
-import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock } from "./sheet.ts";
+import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock, tokenIcon } from "./sheet.ts";
 import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
@@ -75,6 +75,8 @@ export interface PartyMember
     dead: boolean;
     /** Their picture, their own or from a base the player character knows (D-267, D-277): its file, and when it last changed. */
     image?: { file: string; version: number; };
+    /** The icon on their token, as their class, when the system gives one (D-414). */
+    icon?: string;
     /** Where they are, as far as the player character knows the places: the places that hold them, the nearest first; elsewhere, or in the open (D-254, TRV-13). */
     place?: string[] | "elsewhere" | "open";
     /** The numbers of their line, in its order (DAT-2). */
@@ -303,11 +305,13 @@ export const view = defineCommand({
             const mood = livingMood(page);
             const dying = dyingOf(world, system, page);
             const headline = sheetHeadline(world, system, page, memberWords);
+            const icon = tokenIcon(world, system, page);
             return {
                 name: page.name,
                 role: page === pc ? "pc" : "companion",
                 dead: page.fields.status === "dead",
                 ...(image === undefined ? {} : { image }),
+                ...(icon === undefined ? {} : { icon }),
                 ...(place === undefined ? {} : { place }),
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)),
                 effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),

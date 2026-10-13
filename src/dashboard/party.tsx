@@ -4,6 +4,7 @@ import type { Member } from "./data.ts";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { MoodBadge, moodLabel } from "./mood.tsx";
+import { tokenSymbolsPref, usePref } from "./prefs.ts";
 import { t } from "./text.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
@@ -52,17 +53,36 @@ export function MemberToken({ member, large }: { member: Member; large?: boolean
 {
     return (
         <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
-            <Token member={member} large={large} />
+            <Token member={member} large={large} side={sideOf(member.role)} />
             <MoodBadge mood={member.mood} large={large} />
         </span>
     );
 }
 
 /** Whom a token shows: someone of the party, or anyone else a roll is for (D-286). */
-export type Tokened = Pick<Member, "name" | "image"> & { role: Member["role"] | "other"; dead?: boolean; };
+export type Tokened = Pick<Member, "name" | "image" | "icon"> & { role: Member["role"] | "other"; dead?: boolean; };
 
-/** Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe's glows red a little. */
-export function Token({ member, large, hostile }: { member: Tokened; large?: boolean; hostile?: boolean; })
+/** The side a token's pip says (D-414): the player's character, a companion, a foe in a fight. */
+export type Side = "you" | "ally" | "foe";
+
+/** The side of someone by their role: anyone not of the party has one only in a fight, as a foe. */
+export function sideOf(role: Tokened["role"], fight?: boolean): Side | undefined
+{
+    return role === "pc" ? "you" : role === "companion" ? "ally" : fight === true ? "foe" : undefined;
+}
+
+/** The symbol of each side, for one whose class the view does not give: a star, a shield, a sword (D-414); the d of a path on a grid of 24, drawn as a line. */
+export const sideIcons: Record<Side, string> = {
+    you: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z",
+    ally: "M12 3 19 5.5V11c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V5.5Z",
+    foe: "M20 4l-1 4.5-8.5 8.5-3-3L16 5.5Z M5.5 13l5.5 5.5 M8.2 15.8 4 20",
+};
+
+/**
+ * Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe's glows red a little. With a
+ * side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414).
+ */
+export function Token({ member, large, hostile, side }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; })
 {
     const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
     return (
@@ -71,6 +91,22 @@ export function Token({ member, large, hostile }: { member: Tokened; large?: boo
                 ? <span class="initials" style={{ "--hue": String(nameHue(member.name)) }}>{initials(member.name)}</span>
                 // A new address when the picture changes; the same one comes back as not modified on a reload (D-277).
                 : <img src={`/images/${encodeURIComponent(member.image.file)}?v=${member.image.version}`} alt="" />}
+            {side !== undefined && <TokenPip side={side} icon={member.icon} />}
         </span>
     );
+}
+
+/** A token's pip (D-414): a small disc in the side's colour with a symbol, their class's or the side's; none while the player keeps them off. */
+export function TokenPip({ side, icon }: { side: Side; icon?: string | undefined; })
+{
+    const [shown] = usePref(tokenSymbolsPref);
+    return shown
+        ? (
+            <span class={`side-pip ${side}`}>
+                <svg viewBox="0 0 24 24">
+                    <path d={icon ?? sideIcons[side]} />
+                </svg>
+            </span>
+        )
+        : null;
 }
