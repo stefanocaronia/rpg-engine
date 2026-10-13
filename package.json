@@ -1,6 +1,6 @@
 {
   "name": "rpg-engine",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A toolbox that lets a high-level AI run a tabletop RPG campaign: the AI tells the story, the tool remembers, rolls the dice and keeps the accounts.",
   "type": "module",
