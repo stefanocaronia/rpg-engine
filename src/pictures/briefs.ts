@@ -52,7 +52,7 @@ export function questBrief(name: string, known: string, unseen: string[] = []): 
 }
 
 /**
- * The brief of a portrait of one of the party (D-408): head and shoulders for the round token of the dashboard, exactly what the game says they are, their
+ * The brief of a portrait of one of the party (D-408): the face, close, for the round token of the dashboard, exactly what the game says they are, their
  * people above all, with the look described, alone on a plain background, without writing; never what the table's lines and veils keep out of sight.
  */
 export function portraitBrief(name: string, seen: string, unseen: string[] = [], who?: string): string
@@ -65,7 +65,7 @@ export function portraitBrief(name: string, seen: string, unseen: string[] = [],
         "Asset type: square portrait for the round token of a character of a tabletop role-playing game, 1:1",
         ...portraitRequest(name, seen, who),
         "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork",
-        "Composition/framing: head and shoulders, the face in the middle, a plain softly lit background, nothing that matters near the corners, which a circle crops",
+        "Composition/framing: a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; a plain softly lit background, nothing that matters near the corners, which a circle crops",
         "Constraints: this one figure alone; no text, letters, numbers, signs, captions, logos, watermark or frame",
         ...(unseen.length === 0 ? [] : [`Never show: ${unseen.join("; ")}`]),
     ].join("\n");
@@ -87,7 +87,7 @@ export function svgBrief(subject: PictureSubject): string
         'Asset type: square portrait for the round token of a character of a tabletop role-playing game, viewBox="0 0 1024 1024" (1:1)',
         ...portraitRequest(subject.name, subject.seen, subject.who),
         svgStyle,
-        "Composition/framing: head and shoulders, the face in the middle, a plain softly lit background, nothing that matters near the corners, which a circle crops",
+        "Composition/framing: a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; a plain softly lit background, nothing that matters near the corners, which a circle crops",
         "Constraints: this one figure alone; no text, letters, numbers, signs, logos or frame",
     ];
     const lines = subject.kind === "portrait"

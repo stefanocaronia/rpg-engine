@@ -226,6 +226,12 @@ async function makeDemo(context: Context): Promise<void>
     await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
     await rpg("write", "Ettore", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
+    // Their portraits (D-408), made once by Codex for the demo and cut to the face.
+    for (const name of ["Ettore", "Lupa"]) {
+        copyFileSync(join(import.meta.dirname, `${name.toLowerCase()}.webp`), join(demoFolder, "images", `${name}.webp`));
+        await rpg("write", name, "--set", `image=[[${name}.webp]]`);
+    }
+
     await makeDemoWorld(rpg, (label, why) => makeSave(demoFolder, context, label, why));
     await rpg("effect", "add", "Ettore", "Benedizione", "--for", "1m");
 }
