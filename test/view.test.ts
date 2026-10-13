@@ -298,6 +298,62 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(place.here.map((person: { name: string; }) => person.name)).toEqual(["Kira", "Bran", "Varro"]);
     });
 
+    it("marks who attacks the party only when the master says so, and only in a fight; who stops or leaves is calm again (D-415)", async () => {
+        await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Lupo nero=2");
+
+        const hostile = async (): Promise<string[]> => {
+            const overview = JSON.parse(await ok("view", "--json"));
+            return overview.openScene.fighters.filter((one: { hostile?: true; }) => one.hostile === true).map((one: { name: string; }) => one.name);
+        };
+
+        expect(await hostile()).toEqual([]);
+        expect(await ok("scene", "hostile", "--who", "Lupo nero 1")).toBe("Marked hostile: Lupo nero 1. Hostile now: Lupo nero 1.");
+        expect(await hostile()).toEqual(["creature 1"]);
+        expect(await ok("scene", "calm", "--who", "lupo nero 1")).toBe("Calm: Lupo nero 1. No one is hostile now.");
+        expect(await hostile()).toEqual([]);
+        await ok("scene", "hostile", "--who", "Lupo nero 2");
+        await ok("scene", "leave", "--who", "Lupo nero 2");
+        expect(JSON.parse(await ok("view", "--json")).openScene.fighters.some((one: { hostile?: true; }) => one.hostile)).toBe(false);
+        expect((await rpg("scene", "hostile", "--who", "Oste")).output).toContain("Oste is not in the scene.");
+        await ok("scene", "close", "--summary", "I lupi fuggono.");
+        await ok("scene", "open", "--title", "Al guado", "--type", "social", "--place", "Guado", "--with", "Kira");
+        expect((await rpg("scene", "hostile", "--who", "Kira")).output).toContain("Al guado is a social scene: hostile and calm mark who fights in a combat scene.");
+    });
+
+    it("calls who the character does not know by what it sees of them, as the master said, until it learns their name (D-416)", async () => {
+        await ok("write", "Brunilde", "--type", "character", "--text", "Una donna del bosco.");
+        await ok(
+            "scene",
+            "open",
+            "--title",
+            "Nel bosco",
+            "--type",
+            "combat",
+            "--place",
+            "Guado",
+            "--with",
+            "Kira",
+            "--with",
+            "Brunilde",
+            "--creatures",
+            "Lupo nero=2",
+            "--seen",
+            "Lupo nero=lupo dagli occhi gialli",
+            "--seen",
+            "Brunilde=donna incappucciata",
+        );
+        const names = async (): Promise<string[]> => JSON.parse(await ok("view", "--json")).openScene.fighters.map((one: { name: string; }) => one.name);
+        expect(await names()).toEqual(["Kira", "donna incappucciata", "lupo dagli occhi gialli 1", "lupo dagli occhi gialli 2"]);
+        // Being in the scene does not make her known, not even once it closes.
+        expect(JSON.stringify(JSON.parse(await ok("view", "--json")))).not.toContain("Brunilde");
+        await ok("scene", "close", "--summary", "La donna sparisce nel bosco.");
+        expect(JSON.parse(await ok("view", "Brunilde", "--json")).kind).toBe("unknown");
+        await ok("scene", "open", "--title", "Ancora nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Brunilde", "--seen", "Brunilde=donna incappucciata");
+        await ok("write", "Kira", "--add", "knows=[[Brunilde]]");
+        expect((await names())[1]).toBe("Brunilde");
+        expect((await rpg("scene", "add", "--seen", "Oste=oste")).output).toContain("seen Oste: there is no character or creature of that name in the scene. In it: Kira, Brunilde.");
+    });
+
     it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, the panel of the dying (D-314)", async () => {
         await ok("write", "Kira", "--set", "hp=0/12");
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Lupo nero=2");

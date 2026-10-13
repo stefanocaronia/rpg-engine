@@ -80,6 +80,15 @@ Read-only: no. Positional parameters: `page`.
 - `secret` (`boolean`, optional): with a section: create it, if missing, as a secret block > [!secret] Name
 - `here` (`boolean`, optional): a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it
 
+### rename
+
+Give a page of the campaign a new name, as when the player names their wolf or the character learns a place's true name (D-417). Its file moves, and every link to it in the campaign's pages follows, with its section and its words, as does the open scene; the old name stays among its aliases, so that the log and the player's notes, which keep it as it was, still find the page. Example: page Lupa, to Neve.
+
+Read-only: no. Positional parameters: `page`, `to`.
+
+- `page` (`string`, required): the page to rename
+- `to` (`string`, required): its new name
+
 ### move
 
 Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire; it says where they are now, who else is there and what changes around them. Time does not pass: advance does that. With at, the square of the place's map one stands on, such as E6: on the map of the place they are in, a copy of the open scene too, or with to on the map they go into. Example: page [Ettore, Lena], to Ossario.
@@ -253,20 +262,21 @@ Read-only: yes. Positional parameters: `to`.
 
 ### scene
 
-Open, run and close a scene of the story. open starts one: title, type (combat, social, exploration, travel, rest, challenge, other), place (the character's if left out), with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. Change a copy's counters with change, as for a page. Example: action open, title "Scontro all'ossario", type combat, creatures {"Annegato": 2}.
+Open, run and close a scene of the story. open starts one: title, type (combat, social, exploration, travel, rest, challenge, other), place (the character's if left out), with (everyone in it, the character included: the character and the companions with them, if left out) and creatures, as numbered copies such as Annegato 1: a copy holds only what changes, the rest is read from the creature. Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows who is hostile. seen, at open or add, gives what the character sees of those it does not know by name, by the character's or the creature's name, in two or three words, never their kind when it is a secret; the player's dashboard calls them so until the character learns the name. close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. Change a copy's counters with change, as for a page. Example: action open, title "Scontro all'ossario", type combat, creatures {"Annegato": 2}.
 
 Read-only: no. Positional parameters: `action`.
 
-- `action` (`"open" | "add" | "leave" | "order" | "next" | "now" | "close"`, required): open, add, leave, order, next, now or close
+- `action` (`"open" | "add" | "leave" | "order" | "next" | "now" | "hostile" | "calm" | "close"`, required): open, add, leave, order, next, now, hostile, calm or close
 - `title` (`string`, optional): open: the scene's title
 - `type` (`"combat" | "social" | "exploration" | "travel" | "rest" | "challenge" | "other"`, optional): open: combat, social, exploration, travel, rest, challenge, other
 - `place` (`string`, optional): open: the place, such as [[Ossario]]; the character's if left out
 - `with` (`string | string[]`, optional): open, add: the characters in the scene, such as [[Lena]]
 - `creatures` (`string | string[] | { [key]: integer }`, optional): open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}
-- `who` (`string | string[]`, optional): leave: who leaves the scene, characters or copies, such as Annegato 2
+- `who` (`string | string[]`, optional): leave: who leaves the scene; hostile, calm: who attacks the party, or stops; characters or copies, such as Annegato 2
 - `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none
 - `now` (`string`, optional): open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see
 - `summary` (`string`, optional): close: what happened, in one or two sentences, as the player saw it
+- `seen` (`string | string[] | { [key]: string }`, optional): open, add: what the character sees of one it does not know by name: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}
 
 ### save
 

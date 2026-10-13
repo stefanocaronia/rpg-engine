@@ -62,25 +62,24 @@ export function MemberToken({ member, large }: { member: Member; large?: boolean
 /** Whom a token shows: someone of the party, or anyone else a roll is for (D-286). */
 export type Tokened = Pick<Member, "name" | "image" | "icon"> & { role: Member["role"] | "other"; dead?: boolean; };
 
-/** The side a token's pip says (D-414): the player's character, a companion, a foe in a fight. */
-export type Side = "you" | "ally" | "foe";
+/** The side a token's pip says (D-414): the player's character or a companion; a foe has no pip, only its glow (D-415). */
+export type Side = "you" | "ally";
 
-/** The side of someone by their role: anyone not of the party has one only in a fight, as a foe. */
-export function sideOf(role: Tokened["role"], fight?: boolean): Side | undefined
+/** The side of one of the party by their role; anyone else has none. */
+export function sideOf(role: Tokened["role"]): Side | undefined
 {
-    return role === "pc" ? "you" : role === "companion" ? "ally" : fight === true ? "foe" : undefined;
+    return role === "pc" ? "you" : role === "companion" ? "ally" : undefined;
 }
 
-/** The symbol of each side, for one whose class the view does not give: a star, a shield, a sword (D-414); the d of a path on a grid of 24, drawn as a line. */
+/** The symbol of each side, for one whose class the view does not give: a star, a shield (D-414); the d of a path on a grid of 24, centred on 12, 12, drawn as a line. */
 export const sideIcons: Record<Side, string> = {
-    you: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z",
-    ally: "M12 3 19 5.5V11c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V5.5Z",
-    foe: "M20 4l-1 4.5-8.5 8.5-3-3L16 5.5Z M5.5 13l5.5 5.5 M8.2 15.8 4 20",
+    you: "M12 3.75l2.6 5.3 5.9 .9-4.3 4.1 1 5.8L12 17.15l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9Z",
+    ally: "M12 3.25 19 5.75V11.25c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V5.75Z",
 };
 
 /**
- * Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe's glows red a little. With a
- * side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414).
+ * Someone's round token, as a coin (D-267, D-409): their picture, or their initials on a colour of their own; in a fight a foe the master marked glows red a little (D-415).
+ * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414).
  */
 export function Token({ member, large, hostile, side }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; })
 {
@@ -103,7 +102,8 @@ export function TokenPip({ side, icon }: { side: Side; icon?: string | undefined
     return shown
         ? (
             <span class={`side-pip ${side}`}>
-                <svg viewBox="0 0 24 24">
+                {/* The symbol's 24 within the pip's 34, the same box: no half pixel between them to snap (D-415). */}
+                <svg viewBox="-5 -5 34 34">
                     <path d={icon ?? sideIcons[side]} />
                 </svg>
             </span>

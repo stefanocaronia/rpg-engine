@@ -28,17 +28,19 @@ import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
 import { hasSheet, startingAtZero } from "./worked-out.ts";
 
-const actions = ["open", "add", "leave", "order", "next", "now", "close"] as const;
+const actions = ["open", "add", "leave", "order", "next", "now", "hostile", "calm", "close"] as const;
 type Action = (typeof actions)[number];
 
 // The parameters each action takes; any other is refused, so that nothing given is silently ignored.
 const actionParameters: Record<Action, string[]> = {
-    open: ["title", "type", "place", "with", "creatures", "now"],
-    add: ["with", "creatures"],
+    open: ["title", "type", "place", "with", "creatures", "now", "seen"],
+    add: ["with", "creatures", "seen"],
     leave: ["who"],
     order: ["order"],
     next: [],
     now: ["now"],
+    hostile: ["who"],
+    calm: ["who"],
     close: ["summary"],
 };
 
@@ -60,10 +62,17 @@ interface SceneInput
     order?: string[];
     now?: string;
     summary?: string;
+    seen?: string[] | Record<string, string>;
 }
 
 /** The input as given: a list may come as one text. */
-type GivenInput = Omit<SceneInput, "with" | "creatures" | "who" | "order"> & { with?: string | string[]; creatures?: string | string[] | Record<string, number>; who?: string | string[]; order?: string | string[]; };
+type GivenInput = Omit<SceneInput, "with" | "creatures" | "who" | "order" | "seen"> & {
+    with?: string | string[];
+    creatures?: string | string[] | Record<string, number>;
+    who?: string | string[];
+    order?: string | string[];
+    seen?: string | string[] | Record<string, string>;
+};
 
 /** The order of turns, where the scene has one, and whether the turn is the player's character's. */
 interface Turns
@@ -96,6 +105,7 @@ type SceneResult =
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
     | { action: "now"; title: string; now: string; }
+    | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
     | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
 
 /** The save the end of a scene made, or why it made none (SAV-3). */
@@ -113,22 +123,28 @@ export const scene = defineCommand({
         + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, in order, after rolling for it if the game does; next passes the turn; "
         + "now gives the line of what is happening now, as the player sees it, which their dashboard shows: give it at open too, and change it as the scene turns. "
+        + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows who is hostile. "
+        + "seen, at open or add, gives what the character sees of those it does not know by name, by the character's or the creature's name, in two or three words, "
+        + "never their kind when it is a secret; the player's dashboard calls them so until the character learns the name. "
         + "close ends the scene with a summary of one or two sentences, as the player saw it: the player may read the title and summary. "
         + "Change a copy's counters with change, as for a page. "
         + 'Example: action open, title "Scontro all\'ossario", type combat, creatures {"Annegato": 2}.',
     group: "game",
     positionals: ["action"],
     input: z.object({
-        action: z.enum(actions).describe("open, add, leave, order, next, now or close"),
+        action: z.enum(actions).describe("open, add, leave, order, next, now, hostile, calm or close"),
         title: z.string().optional().describe("open: the scene's title"),
         type: z.enum(sceneTypes).optional().describe(`open: ${sceneTypes.join(", ")}`),
         place: z.string().optional().describe("open: the place, such as [[Ossario]]; the character's if left out"),
         with: textList.optional().describe("open, add: the characters in the scene, such as [[Lena]]"),
         creatures: z.union([textList, z.record(z.string(), z.number().int())]).optional().describe('open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}'),
-        who: textList.optional().describe("leave: who leaves the scene, characters or copies, such as Annegato 2"),
+        who: textList.optional().describe("leave: who leaves the scene; hostile, calm: who attacks the party, or stops; characters or copies, such as Annegato 2"),
         order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none"),
         now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
+        seen: z.union([textList, z.record(z.string(), z.string())]).optional().describe(
+            'open, add: what the character sees of one it does not know by name: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}',
+        ),
     }),
 
     run(given, context): SceneResult
@@ -159,6 +175,9 @@ export const scene = defineCommand({
                 return addTo(root, world, input, context, current);
             case "leave":
                 return withActing(root, context, current, leave(root, world, input.who ?? [], context, current));
+            case "hostile":
+            case "calm":
+                return markHostile(root, input.who ?? [], input.action === "hostile", context, current);
             case "order":
                 return withActing(root, context, current, setOrder(root, world, input.order ?? [], context, current));
             default:
@@ -195,6 +214,10 @@ export const scene = defineCommand({
                 return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             case "now":
                 return `${result.title}: the player's dashboard now shows "${result.now}".`;
+            case "hostile":
+            case "calm":
+                return markedText(result);
+
             default:
                 return closedText(result);
         }
@@ -212,7 +235,7 @@ function asLists(given: GivenInput): SceneInput
         return typeof value === "string" ? [value] : value;
     };
 
-    return { ...given, with: list(given.with), creatures: list(given.creatures), who: list(given.who), order: list(given.order) };
+    return { ...given, with: list(given.with), creatures: list(given.creatures), who: list(given.who), order: list(given.order), seen: list(given.seen) };
 }
 
 /** The line of what is happening now, which the player's dashboard shows (SCN-11): a public line of the log, out of the diary. */
@@ -260,6 +283,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     const brought = bringParty(root, context, world, characters, place, input.type);
     const opened = readPresent(root).date;
     // A scene without copies leaves the key out: an empty {} would be written on one line.
+    const seen = seenOf(world, input.seen, characters, copies);
     const created: Scene = {
         title: input.title.trim(),
         type: input.type,
@@ -268,6 +292,7 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
         now: input.now?.trim() || undefined,
         with: characters.map((page) => `[[${page.name}]]`),
         copies,
+        ...(seen === undefined ? {} : { seen }),
     };
     saveScene(root, withoutUndefined({ ...created, copies: Object.keys(copies).length === 0 ? undefined : copies } as unknown as Scene));
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-opened", "public", { title: created.title, type: created.type, place: created.place, with: created.with }));
@@ -297,8 +322,8 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
 
 function addTo(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult
 {
-    if (input.with === undefined && input.creatures === undefined) {
-        throw new Error("Give who enters the scene: with (characters) or creatures (such as Annegato=1).");
+    if (input.with === undefined && input.creatures === undefined && input.seen === undefined) {
+        throw new Error("Give who enters the scene: with (characters) or creatures (such as Annegato=1); or seen, what the character sees of who is already in it.");
     }
 
     const members = memberNames(current);
@@ -314,6 +339,12 @@ function addTo(root: string, world: World, input: SceneInput, context: Context, 
     const brought = bringParty(root, context, world, characters, place, current.type);
     const added = [...characters.map((page) => page.name), ...Object.keys(copies)];
     const changes: [string[], unknown][] = [[["with"], [...current.with, ...characters.map((page) => `[[${page.name}]]`)]], ...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["copies", name], copy])];
+    const inScene = [...current.with.flatMap((link) => findPage(world, parsePageReference(link).name) ?? []), ...characters];
+    const seen = seenOf(world, input.seen, inScene, { ...current.copies, ...copies });
+
+    if (seen !== undefined) {
+        changes.push([["seen"], { ...current.seen, ...seen }]);
+    }
 
     if (current.order !== undefined) {
         changes.push([["order"], [...current.order, ...added]]);
@@ -351,6 +382,39 @@ function broughtText(result: Brought, place: string | undefined): string
     return [...moved, ...result.notes].map((line) => `\n${line}`).join("");
 }
 
+/**
+ * Marks who attacks the party, or takes the mark off (D-415): only in a fight, and only who is in the scene. The player's dashboard shows it, so that a token
+ * changes only when the master says so.
+ */
+function markHostile(root: string, who: string[], hostile: boolean, context: Context, current: Scene): SceneResult
+{
+    if (current.type !== "combat") {
+        throw new Error(`${current.title} is a ${current.type} scene: hostile and calm mark who fights in a combat scene. When a fight breaks out, close this one and open one of type combat.`);
+    }
+
+    if (who.length === 0) {
+        throw new Error(`Give who ${hostile ? "attacks the party" : "stops attacking"}, such as who "Annegato 2".`);
+    }
+
+    const members = memberNames(current);
+    const marked = [
+        ...new Set(who.map((name) => {
+            const member = sameName(members, parsePageReference(name).name);
+
+            if (member === undefined) {
+                throw new Error(`${name} is not in the scene. In it: ${members.length === 0 ? "no one" : members.join(", ")}.`);
+            }
+
+            return member;
+        })),
+    ];
+    const before = current.hostile ?? [];
+    const now = hostile ? [...before, ...marked.filter((name) => !before.includes(name))] : before.filter((name) => !marked.includes(name));
+    updateScene(root, [[["hostile"], now.length === 0 ? undefined : now]]);
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, [hostile ? "hostile" : "calm"]: marked }));
+    return { action: hostile ? "hostile" : "calm", title: current.title, marked, hostile: now };
+}
+
 /** Takes out who goes (D-114): a copy vanishes with its numbers, a character leaves the scene without changing place. The turn of who leaves passes on. */
 function leave(root: string, world: World, who: string[], context: Context, current: Scene): SceneResult
 {
@@ -385,6 +449,13 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     }
 
     changes.push([["left"], [...(current.left ?? []), ...leaving]]);
+    // Who leaves is hostile no more (D-415).
+    const hostile = current.hostile?.filter((name) => !leaving.includes(name));
+
+    if (current.hostile !== undefined) {
+        changes.push([["hostile"], hostile === undefined || hostile.length === 0 ? undefined : hostile]);
+    }
+
     // A copy that leaves, fallen or fled, is kept as it left, without its effects, which go with it (D-145): closing the scene counts what overcoming it gives (DAT-11).
     changes.push(...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["gone", name], Object.fromEntries(Object.entries(copy).filter(([field]) => field !== "effects"))]));
 
@@ -509,7 +580,9 @@ function close(root: string, world: World, summary: string, context: Context): S
 
     logCopies(root, context, current.title, current.copies);
     const left = current.left?.filter((name) => pagesWithName(world, name).length > 0);
-    const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
+    // Who the character saw without learning their name stays so after the scene (D-416).
+    const unnamed = current.seen === undefined ? undefined : Object.keys(current.seen);
+    const data = { title: current.title, type: current.type, place: current.place, with: current.with, left: left?.length === 0 ? undefined : left, unnamed, opened: current.opened, closed, rounds: current.round, summary: summary.trim() };
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", data));
     // The copies that left during the scene, fled or fallen, end with it too: one that may come back needs a page now, with its wounds (D-246).
     const gone = copyMembers(world, current.gone ?? {});
@@ -652,6 +725,13 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     return acting === "" ? result : { ...result, acting };
 }
 
+/** "Marked hostile: Annegato 1. Hostile now: Annegato 1, Annegato 2." (D-415). */
+function markedText(result: { action: "hostile" | "calm"; marked: string[]; hostile: string[]; }): string
+{
+    const now = result.hostile.length === 0 ? "No one is hostile now." : `Hostile now: ${result.hostile.join(", ")}.`;
+    return `${result.action === "hostile" ? "Marked hostile" : "Calm"}: ${result.marked.join(", ")}. ${now}`;
+}
+
 function actingText(acting: string | undefined): string
 {
     return acting === undefined ? "" : `\n${acting}`;
@@ -728,6 +808,40 @@ function newCopies(world: World, creatures: SceneInput["creatures"], names: stri
     }
 
     return copies;
+}
+
+/**
+ * What the character sees of those it does not know by name (D-416), by the name of a character in the scene or of a creature with copies in it: Bandito=brigante
+ * incappucciato on the command line, {"Varro": "il mugnaio"} through MCP; none when not given.
+ */
+function seenOf(world: World, seen: SceneInput["seen"], characters: Page[], copies: Record<string, SceneCopy>): Record<string, string> | undefined
+{
+    const pairs: [string, string][] = Array.isArray(seen)
+        ? seen.map((entry) => {
+            const separator = entry.indexOf("=");
+            return separator === -1 ? [entry, ""] : [entry.slice(0, separator), entry.slice(separator + 1)];
+        })
+        : Object.entries(seen ?? {});
+
+    if (pairs.length === 0) {
+        return undefined;
+    }
+
+    const kinds = [...new Set(Object.values(copies).map((copy) => parsePageReference(copy.creature).name))];
+    const names = [...characters.map((page) => page.name), ...kinds];
+    return Object.fromEntries(pairs.map(([name, said]) => {
+        const named = sameName(names, parsePageReference(name.trim()).name);
+
+        if (named === undefined) {
+            throw new Error(`seen ${name.trim()}: there is no character or creature of that name in the scene. In it: ${names.length === 0 ? "no one" : names.join(", ")}.`);
+        }
+
+        if (said.trim() === "") {
+            throw new Error(`Give what the character sees of ${named}, in two or three words, such as ${named}=uomo incappucciato.`);
+        }
+
+        return [named, said.trim()];
+    }));
 }
 
 /** Creatures and how many of each, the same creature given twice counted once: Annegato=2 or Annegato on the command line, {"Annegato": 2} through MCP. */

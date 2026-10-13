@@ -65,7 +65,9 @@ export function readLogFile(folder: string): LogEntry[]
 export const fightGuidance = "Tell the turns in order, as story, each roll in brackets where it falls, the order of turns too once the threat is in sight; "
     + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt they look "
     + "and how hard they are to hit, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
-    + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.";
+    + "When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.\n\n"
+    + "Whoever attacks the party turns hostile the moment they do, never before: mark them with `scene hostile`, and with `scene calm` the one who surrenders, "
+    + "flees or parleys. Mark it, never announce it: the story shows it.";
 
 /** What a turn of the player's character says after its name (D-139). */
 export const playerTurn = ", the player's character";

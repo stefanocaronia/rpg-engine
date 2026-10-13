@@ -30,6 +30,10 @@ export interface Scene
     gone?: Record<string, SceneCopy>;
     /** How many squares of a map the one whose turn it is has moved in it (GRD-5): it counts only for that round and turn. */
     moved?: { round: number; turn: string; squares: number; };
+    /** Who attacks the party, as the master marks them, characters or copies by name (D-415): the player's dashboard shows it in a fight. */
+    hostile?: string[];
+    /** What the player character sees of who it does not know by name, by the character's or the creature's name, such as brigante incappucciato (D-416). */
+    seen?: Record<string, string>;
 }
 
 // Loose: keys written by hand in the scene stay.
@@ -46,6 +50,8 @@ const sceneSchema = z.looseObject({
     turn: z.string().optional(),
     left: z.array(z.string()).optional(),
     gone: z.record(z.string(), z.looseObject({ creature: z.string() })).optional(),
+    hostile: z.array(z.string()).optional(),
+    seen: z.record(z.string(), z.string()).optional(),
     // What the engine counts, never the master: written wrongly by hand it is forgotten, never a scene that cannot be read.
     moved: z.object({ round: z.number().int().positive(), turn: z.string(), squares: z.number().nonnegative() }).optional().catch(undefined),
 });

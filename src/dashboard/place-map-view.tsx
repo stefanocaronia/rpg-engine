@@ -1,6 +1,6 @@
 // The map of the place where the party is (GRD-6, D-323, D-325), in Joseph's ink and washes on light paper in both themes: walls hatched in bundles with a
 // shade along them, the floor's outline rounded where it meets rock, the ground by the place's look and its kinds, the things of the legend drawn by kind, by
-// square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting ringed, a foe in a fight glowing (D-409); then the key, and who
+// square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting ringed, a foe the master marked glowing (D-415); then the key, and who
 // is where in words, the map's twin.
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -26,7 +26,7 @@ export interface Picking
     onSelect(square: string): void;
 }
 
-export function PlaceMap({ map, place, acting, picking, fight }: { map: ShownGrid; place: string; acting?: string; picking?: Picking; fight?: boolean; })
+export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; place: string; acting?: string; picking?: Picking; })
 {
     const svg = useRef<SVGSVGElement>(null);
     const scale = useScale(svg);
@@ -104,9 +104,9 @@ export function PlaceMap({ map, place, acting, picking, fight }: { map: ShownGri
                     <defs>
                         <Patterns />
                         <GlassDefs prefix="lm" />
-                        {/* A foe's glow in a fight (D-409): red at the token's edge, fading out past it. */}
+                        {/* A foe's glow (D-415): red, close round the token's edge. */}
                         <radialGradient id="lm-hostile-glow">
-                            <stop offset="0.7" stop-color="#c8321f" stop-opacity="0.55" />
+                            <stop offset="0.75" stop-color="#c8321f" stop-opacity="0.3" />
                             <stop offset="1" stop-color="#c8321f" stop-opacity="0" />
                         </radialGradient>
                         <clipPath id="lm-open">
@@ -155,7 +155,7 @@ export function PlaceMap({ map, place, acting, picking, fight }: { map: ShownGri
                         {Array.from({ length: map.rows }, (_, row) => <text key={`r${row}`} x={left - 10} y={Y(row) + size / 2} text-anchor="end" dominant-baseline="middle">{row + 1}</text>)}
                     </g>
                     <g class="lm-tokens">
-                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} hostile={fight === true && one.role === "other"} x={middle(one)[0]} y={middle(one)[1]} />)}
+                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} hostile={one.hostile === true} x={middle(one)[0]} y={middle(one)[1]} />)}
                     </g>
                     {picking !== undefined && (
                         <g class="lm-picks">
@@ -209,7 +209,7 @@ export function PlaceMap({ map, place, acting, picking, fight }: { map: ShownGri
                 <ul class="lm-where" aria-label={t("Who is where")}>
                     {/* The player's character first, then the companions, then the others, each as the map lists them. */}
                     {standing.toSorted((first, second) => roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
-                        <li key={index} class={`lm-where-${one.role}`}>
+                        <li key={index} class={`lm-where-${one.role}${one.hostile === true ? " hostile" : ""}`}>
                             <span class="lm-where-name">{one.stranger ? strangerLabel(one.name) : one.name}</span>
                             <span class="lm-key-square">{one.square}</span>
                             {one.distance !== undefined
@@ -672,8 +672,8 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
 
 /**
  * Someone on the map, as a coin (D-409): their picture to its edge, or a stranger's number, as Creature 2's, or the hood, under glass, its edge bevelled, lit
- * above and shaded below, its shadow low on the paper; no ring of a side. Whoever acts has a ring of the accent off the token; in a fight a foe glows red a
- * little; the pip of their side at the lower left, with their class's symbol or the side's (D-414).
+ * above and shaded below, its shadow low on the paper; no ring of a side. Whoever acts has a ring of the accent off the token; a foe the master marked glows
+ * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414).
  */
 function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; })
 {
@@ -681,11 +681,16 @@ function Token({ one, index, acting, hostile, x, y }: { one: ShownGrid["at"][num
     const side = one.side ?? 1;
     const r = size * side * 0.43;
     const number = one.stranger ? /[A-Z]?\d+$/.exec(one.name)?.[0] : undefined;
-    const pip = symbols ? sideOf(one.role, hostile) : undefined;
+    const pip = symbols ? sideOf(one.role) : undefined;
     return (
         <g class={`lm-token ${one.role}${acting ? " acting" : ""}`}>
             <title>{`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`}</title>
-            {hostile && <circle class="lm-hostile" cx={x} cy={y} r={r * 1.4} fill="url(#lm-hostile-glow)" />}
+            {hostile && (
+                <>
+                    <circle class="lm-hostile-glow" cx={x} cy={y} r={r + 7} fill="url(#lm-hostile-glow)" />
+                    <circle class="lm-hostile" cx={x} cy={y} r={r + 2.4} />
+                </>
+            )}
             {acting && <circle class="lm-acting" cx={x} cy={y} r={r + 4.5} />}
             {/* A token under glass, its shadow on the paper. */}
             <g filter="url(#lm-drop)">

@@ -135,12 +135,14 @@ function livedOf(root: string, pc: Page): string[]
 {
     const isPc = (name: string): boolean => comparableText(parsePageReference(name).name) === comparableText(pc.name);
     const log = readLog(root);
-    const closed = log.filter((entry) => entry.type === "scene-closed").map((entry) => entry.data as { place?: unknown; with?: unknown; left?: unknown; });
+    const closed = log.filter((entry) => entry.type === "scene-closed").map((entry) => entry.data as { place?: unknown; with?: unknown; left?: unknown; unnamed?: unknown; });
     const { scene } = readOpenScene(root);
-    const scenes = [...closed, ...(scene === undefined ? [] : [{ place: scene.place, with: scene.with, left: scene.left }])];
+    const scenes = [...closed, ...(scene === undefined ? [] : [{ place: scene.place, with: scene.with, left: scene.left, unnamed: Object.keys(scene.seen ?? {}) }])];
     const met = scenes.flatMap((seen) => {
+        // Who the master gave only by what the character sees of them stays unnamed (D-416).
+        const unnamed = new Set(textList(seen.unnamed).map(comparableText));
         const people = [...textList(seen.with), ...textList(seen.left)];
-        return people.some(isPc) ? [...people, ...textList(seen.place)] : [];
+        return people.some(isPc) ? [...people.filter((name) => !unnamed.has(comparableText(parsePageReference(name).name))), ...textList(seen.place)] : [];
     });
     const moved = log.filter((entry) => entry.type === "moved" && textList(entry.data.pages).some(isPc)).flatMap((entry) => {
         const from = entry.data.from !== null && typeof entry.data.from === "object" ? Object.entries(entry.data.from).filter(([name]) => isPc(name)).map(([, holder]) => holder) : [];

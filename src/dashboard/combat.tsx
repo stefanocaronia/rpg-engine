@@ -7,7 +7,7 @@ import type { Fighter, Member, SheetCards, SheetGroup, ShownGrid, ShownScene } f
 import { Icon } from "./icons.tsx";
 import { shownText, strangerLabel } from "./labels.ts";
 import { PageHead } from "./pages.tsx";
-import { sideOf, Token, TokenPip } from "./party.tsx";
+import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
 import { t } from "./text.ts";
@@ -92,7 +92,7 @@ export function CombatView({ scene, lead, own, map, place }: { scene?: ShownScen
                             {order}
                             {atHand}
                         </div>
-                        <PlaceMap map={map} place={place ?? scene.title} acting={scene.turn} fight />
+                        <PlaceMap map={map} place={place ?? scene.title} acting={scene.turn} />
                     </div>
                 )}
         </section>
@@ -141,24 +141,23 @@ function AtHand({ lead, fighter, own }: { lead: Member; fighter: Fighter; own: O
     );
 }
 
-/** A fighter's token; one not of the party glows red a little, as a foe (D-409); with the pip of their side unless it is too small for one (D-414). */
+/** A fighter's token; a foe the master marked glows red a little, with no pip (D-415); one of the party with the pip of their side unless it is too small for one (D-414). */
 function FighterToken({ fighter, pip = true }: { fighter: Fighter; pip?: boolean; })
 {
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
-    const side = pip ? sideOf(fighter.role, true) : undefined;
+    const hostile = fighter.hostile === true;
     return fighter.stranger
         ? (
-            <span class={["token stranger", number === undefined ? "" : "numbered", fighter.role === "other" ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
+            <span class={["token stranger", number === undefined ? "" : "numbered", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {number ?? <Icon name="stranger" />}
-                {side !== undefined && <TokenPip side={side} />}
             </span>
         )
         : (
             <Token
                 member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
-                hostile={fighter.role === "other"}
-                side={side}
+                hostile={hostile}
+                side={pip ? sideOf(fighter.role) : undefined}
             />
         );
 }

@@ -184,7 +184,7 @@ describe("rpg scene", () => {
             [["scene", "close", "--summary", "x"], "No scene is open: there is nothing to close."],
             [["scene", "open", "--title", "X"], "Give the scene a title and a type: combat, social, exploration, travel, rest, challenge, other."],
             [["scene", "open", "--title", "X", "--type", "fight"], 'Invalid input for "scene"'],
-            [["scene", "open", "--title", "X", "--type", "combat", "--summary", "y"], "scene open does not take summary: it takes title, type, place, with, creatures, now."],
+            [["scene", "open", "--title", "X", "--type", "combat", "--summary", "y"], "scene open does not take summary: it takes title, type, place, with, creatures, now, seen."],
             [
                 ["scene", "open", "--title", "X", "--type", "combat", "--creatures", "Annegati=2"],
                 `There is no creature named Annegati. The campaign's creatures are: Annegato, Fuoco fatuo, Lupo. The system 5e has ${systemPageCount("5e", "creatures")} creatures, named in English`,
@@ -212,7 +212,7 @@ describe("rpg scene", () => {
             [["scene", "order", "--order", "Ennio", "--order", "Varro"], "Varro is not in the scene. In it: Ennio, Lena, Annegato 1."],
             [["scene", "order", "--order", "Ennio", "--order", "ennio"], "Ennio is in the order twice: give each one once."],
             [["scene", "add", "--with", "Lena"], "Lena is already in the scene."],
-            [["scene", "add"], "Give who enters the scene: with (characters) or creatures (such as Annegato=1)."],
+            [["scene", "add"], "Give who enters the scene: with (characters) or creatures (such as Annegato=1); or seen, what the character sees of who is already in it."],
             [["scene", "close"], "Give the scene a summary of one or two sentences: what happened, as the player saw it."],
             [["change", "Annegato 1", "creature", "--by=1"], "creature is the creature Annegato 1 copies, not a counter."],
             [["change", "Annegato 1", "mana", "--by=1"], 'Annegato 1 has no field "mana". Its counters: hp 22/22, uses 1/1.'],
@@ -365,7 +365,7 @@ describe("rpg scene leave, and the reminder in advance", () => {
         const refusals: [string[], string][] = [
             [["scene", "leave"], 'Give who leaves the scene, such as who "Annegato 2".'],
             [["scene", "leave", "--who", "Varro"], "Varro is not in the scene. In it: Ennio, Lena."],
-            [["scene", "add", "--who", "Varro"], "scene add does not take who: it takes with, creatures."],
+            [["scene", "add", "--who", "Varro"], "scene add does not take who: it takes with, creatures, seen."],
         ];
 
         for (const [args, message] of refusals) {

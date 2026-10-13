@@ -76,6 +76,8 @@ export interface ShownPerson
     image?: { file: string; version: number; };
     /** The icon on the token of one of the party, as their class (D-414). */
     icon?: string;
+    /** In a fight, marked by the master as attacking the party (D-415): its token glows red. */
+    hostile?: true;
     stranger?: true;
     count?: number;
 }
@@ -118,6 +120,8 @@ export interface Fighter
     image?: { file: string; version: number; };
     /** The icon on the token of one of the party, as their class (D-414). */
     icon?: string;
+    /** In a fight, marked by the master as attacking the party (D-415): its token glows red. */
+    hostile?: true;
     stranger?: true;
     health?: string;
     effects: Member["effects"];
