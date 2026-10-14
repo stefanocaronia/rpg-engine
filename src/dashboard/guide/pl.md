@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -254,11 +254,13 @@ Jeden język na kampanię, język Mistrza Gry, za którym podąża dashboard. Da
 
 ---
 
-## 8. Dla ciekawych: folder kampanii <!-- icon: list -->
+## 8. Dla ciekawskich: folder kampanii <!-- icon: list -->
 
-Nigdy nie musisz go otwierać, a zawiera sekrety Twojej kampanii. Znajdziesz w nim `campaign.yaml` (Twoje ustawienia), `state.yaml` (stan gry), `world/` (jedna strona markdown na każdą postać, miejsce, zadanie i resztę), `rules/` (Twoje zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (Twoje notatki) oraz małe pliki, które mówią agentom AI, gdzie jest RPG Engine. Strony używają formatu Obsidian. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy następnej odpowiedzi.
+Nie musisz go nigdy otwierać, a znajdują się w nim sekrety Twojej kampanii. Są w nim: `campaign.yaml` (ustawienia), `state.yaml` (stan gry), `world/` (po jednej stronie markdown dla każdej postaci, każdego miejsca, każdego zadania i reszty), `rules/` (zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (Twoje notatki) oraz małe pliki, które wskazują agentom AI, gdzie jest RPG Engine. Strony mają format Obsidiana. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy następnej odpowiedzi.
 
-Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` wypisuje je wszystkie. Wiele z nich wypisuje sekrety kampanii.
+RPG Engine zostaje w tym folderze: czyta i zapisuje grę tylko tutaj i nigdy nie rusza Twoich innych plików. Poza nim trzyma tylko własny folder z danymi (tłumaczenia dashboardu oraz Codex lub Claude Code, jeśli pozwolisz je zainstalować) i foldery tymczasowe na czas rysowania obrazu. Wszystko inne, co agent chce zrobić na Twoim komputerze, wymaga wcześniej Twojej zgody.
+
+Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` wyświetla ich listę. Wiele z nich wyświetla sekrety kampanii.
 
 ---
 

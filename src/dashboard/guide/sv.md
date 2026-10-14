@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -254,11 +254,13 @@ Ett språk per kampanj, spelledarens, som dashboarden följer. Dashboarden lever
 
 ---
 
-## 8. För de nyfikna: kampanjmappen <!-- icon: list -->
+## 8. För den nyfikne: kampanjmappen <!-- icon: list -->
 
-Du behöver aldrig öppna den, och den innehåller din kampanjs hemligheter. Den har `campaign.yaml` (dina inställningar), `state.yaml` (var spelet står), `world/` (en markdown-sida för varje rollperson, plats, uppdrag och resten), `rules/` (dina husregler), `images/`, `log.jsonl` (varje ändring), `.saves/`, `.player/` (dina anteckningar) och de små filerna som talar om för AI-agenter var RPG Engine finns. Sidorna använder Obsidians format. Om du ändrar en sida för hand får spelledaren veta det vid sitt nästa svar.
+Du behöver aldrig öppna den, och den innehåller din kampanjs hemligheter. I den finns `campaign.yaml` (dina inställningar), `state.yaml` (hur långt spelet har kommit), `world/` (en markdownsida för varje rollperson, plats, uppdrag och allt annat), `rules/` (dina egna regler), `images/`, `log.jsonl` (varje ändring), `.saves/`, `.player/` (dina anteckningar) och de små filer som talar om för AI-agenter var RPG Engine finns. Sidorna använder Obsidians format. Om du ändrar en sida för hand får spelledaren veta det vid sitt nästa svar.
 
-Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg --help` listar dem. Många skriver ut kampanjens hemligheter.
+RPG Engine håller sig i den här mappen: programmet läser och skriver spelet bara här och rör aldrig dina andra filer. Utanför mappen har det bara en egen datamapp (dashboardens översättningar, samt Codex eller Claude Code om du låter det installera dem) och tillfälliga mappar medan en bild ritas. Allt annat som din agent vill göra på din dator frågar den dig om först.
+
+Alla kommandon som spelledaren använder kan också köras i kampanjmappen: `rpg --help` listar dem. Många av dem skriver ut kampanjens hemligheter.
 
 ---
 

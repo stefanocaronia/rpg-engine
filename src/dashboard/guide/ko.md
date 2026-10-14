@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: 전체 가이드
 
 **RPG Engine**은 **AI 게임 마스터**와 함께 테이블탑 롤플레잉 게임을 즐길 수 있게 해 줘요. **채팅**으로 GM과 대화해요. RPG Engine은 뒤에서 **세계를 기억하고**, **주사위를 굴리고**, **계산을 맡아요**. 채팅 옆에는 브라우저에 페이지를 하나 열어 두어요. 바로 **대시보드**예요. 캐릭터 시트, 주사위, 지도, 일지가 있어요.
@@ -254,11 +254,13 @@ GM에게 말해요: *[하우스 룰이에요. 공격에서 내추럴 1이 나오
 
 ---
 
-## 8. 궁금하다면: 캠페인 폴더 <!-- icon: list -->
+## 8. 궁금한 분을 위한 캠페인 폴더 <!-- icon: list -->
 
-열어 볼 필요는 전혀 없어요. 캠페인의 비밀이 들어 있기 때문이에요. 폴더에는 `campaign.yaml`(설정), `state.yaml`(게임 진행 상태), `world/`(캐릭터, 장소, 퀘스트 등 각각의 마크다운 페이지), `rules/`(하우스 룰), `images/`, `log.jsonl`(모든 변경 기록), `.saves/`, `.player/`(나의 메모), 그리고 AI 에이전트에게 RPG Engine의 위치를 알려 주는 작은 파일들이 있어요. 페이지는 Obsidian 형식을 써요. 페이지를 직접 고치면 GM은 다음 답변 때 그 사실을 알게 돼요.
+폴더를 직접 열어볼 필요는 없어요. 캠페인의 비밀이 들어 있기 때문이에요. 폴더에는 `campaign.yaml`(설정), `state.yaml`(게임의 현재 상태), `world/`(캐릭터, 장소, 퀘스트 등을 한 장씩 적은 마크다운 페이지), `rules/`(하우스 룰), `images/`, `log.jsonl`(모든 변경 기록), `.saves/`, `.player/`(메모), 그리고 AI 에이전트에게 RPG Engine의 위치를 알려 주는 작은 파일들이 있어요. 페이지는 Obsidian 형식을 따라요. 페이지를 직접 고치면 GM이 다음 답변 때 그 내용을 알게 돼요.
 
-GM이 쓰는 모든 명령은 캠페인 폴더에서 직접 실행할 수도 있어요. `rpg --help`에 목록이 나와요. 많은 명령이 캠페인의 비밀을 그대로 출력해요.
+RPG Engine은 이 폴더 안에만 머물러요. 게임을 읽고 쓰는 일은 이곳에서만 하고, 다른 파일은 건드리지 않아요. 폴더 밖에는 자체 데이터 폴더만 두어요. 대시보드의 번역본이 들어 있고, 설치를 허락하면 Codex나 Claude Code도 여기에 설치돼요. 그림을 그리는 동안에는 임시 폴더도 잠시 쓰고요. 그 밖에 에이전트가 컴퓨터에서 하려는 일은 먼저 물어봐요.
+
+GM이 쓰는 명령은 모두 캠페인 폴더에서 직접 실행할 수도 있어요. `rpg --help`를 입력하면 목록이 나와요. 이 중에는 캠페인의 비밀을 보여 주는 명령이 많아요.
 
 ---
 

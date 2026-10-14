@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -256,7 +256,9 @@ O singură limbă pe campanie, cea a maestrului de joc, pe care o urmează dashb
 
 ## 8. Pentru curioși: folderul campaniei <!-- icon: list -->
 
-Nu trebuie să-l deschizi niciodată, iar el conține secretele campaniei tale. Are `campaign.yaml` (setările tale), `state.yaml` (unde a ajuns jocul), `world/` (o pagină markdown pentru fiecare personaj, loc, misiune și restul), `rules/` (regulile tale de casă), `images/`, `log.jsonl` (fiecare schimbare), `.saves/`, `.player/` (notițele tale) și fișierele mici care spun agenților IA unde se află RPG Engine. Paginile folosesc formatul Obsidian. Dacă schimbi o pagină de mână, maestrul de joc află la următorul răspuns.
+Nu ai nevoie niciodată să îl deschizi, iar el conține secretele campaniei tale. Are `campaign.yaml` (setările tale), `state.yaml` (unde a ajuns jocul), `world/` (o pagină markdown pentru fiecare personaj, loc, misiune și restul), `rules/` (regulile tale de casă), `images/`, `log.jsonl` (fiecare schimbare), `.saves/`, `.player/` (notițele tale) și fișierele mici care spun agenților AI unde se află RPG Engine. Paginile folosesc formatul Obsidian. Dacă modifici o pagină manual, maestrul de joc află de asta la următorul răspuns.
+
+RPG Engine rămâne în acest folder: citește și scrie jocul doar aici și nu atinge niciodată celelalte fișiere ale tale. În afara lui, păstrează doar un folder propriu de date (traducerile tabloului de bord și Codex sau Claude Code, dacă îl lași să le instaleze) și foldere temporare cât timp se desenează o imagine. Pentru orice altceva vrea agentul tău să facă pe calculatorul tău, te întreabă mai întâi.
 
 Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în folderul campaniei: `rpg --help` le listează. Multe afișează secretele campaniei.
 

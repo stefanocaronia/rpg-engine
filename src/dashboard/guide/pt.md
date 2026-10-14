@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -256,9 +256,11 @@ Um idioma por campanha, o do mestre, que o painel acompanha. O painel vem com 26
 
 ## 8. Para os curiosos: a pasta da campanha <!-- icon: list -->
 
-Você nunca precisa abri-la, e ela guarda os segredos da sua campanha. Nela estão `campaign.yaml` (suas configurações), `state.yaml` (em que pé está o jogo), `world/` (uma página markdown para cada personagem, local, missão e o resto), `rules/` (suas regras da casa), `images/`, `log.jsonl` (cada mudança), `.saves/`, `.player/` (suas notas) e os pequenos arquivos que dizem aos agentes de IA onde está o RPG Engine. As páginas usam o formato do Obsidian. Se você mudar uma página à mão, o mestre fica sabendo na resposta seguinte.
+Você nunca precisa abrir essa pasta, e ela guarda os segredos da sua campanha. Nela ficam `campaign.yaml` (suas configurações), `state.yaml` (em que ponto o jogo está), `world/` (uma página em markdown para cada personagem, local, missão e o resto), `rules/` (suas regras da casa), `images/`, `log.jsonl` (cada mudança), `.saves/`, `.player/` (suas notas) e os pequenos arquivos que dizem aos agentes de IA onde o RPG Engine está. As páginas usam o formato do Obsidian. Se você mudar uma página à mão, o mestre fica sabendo na próxima resposta.
 
-Todo comando que o mestre usa também pode ser executado na pasta da campanha: `rpg --help` os lista. Muitos mostram os segredos da campanha.
+O RPG Engine fica nesta pasta: ele lê e grava o jogo só aqui e nunca mexe nos seus outros arquivos. Fora dela, guarda apenas uma pasta de dados própria (as traduções do painel, e o Codex ou o Claude Code, se você deixar que ele os instale) e pastas temporárias enquanto uma imagem é desenhada. Para qualquer outra coisa que o seu agente queira fazer no seu computador, ele pergunta antes.
+
+Todo comando que o mestre usa também pode ser executado na pasta da campanha: `rpg --help` lista todos. Muitos mostram os segredos da campanha.
 
 ---
 

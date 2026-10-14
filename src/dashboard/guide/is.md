@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -254,11 +254,13 @@ Eitt tungumál á herferð, tungumál sögumannsins, sem mælaborðið fylgir. M
 
 ---
 
-## 8. Fyrir forvitna: herferðarmappan <!-- icon: list -->
+## 8. Fyrir forvitna: möppa herferðarinnar <!-- icon: list -->
 
-Þú þarft aldrei að opna hana og hún geymir leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (hvar leikurinn stendur), `world/` (ein markdown-síða fyrir hverja persónu, stað, verkefni og annað), `rules/` (húsreglurnar þínar), `images/`, `log.jsonl` (hver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarforritum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu í höndunum heyrir sögumaðurinn af því í næsta svari sínu.
+Þú þarft aldrei að opna hana og í henni eru leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (hvar leikurinn er staddur), `world/` (ein markdown-síða fyrir hverja persónu, hvern stað, hvert verkefni og allt annað), `rules/` (þínar eigin húsreglur), `images/`, `log.jsonl` (sérhver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarforritum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu í höndunum fær sögumaðurinn að vita af því í næsta svari sínu.
 
-Hverja skipun sem sögumaðurinn notar má líka keyra í herferðarmöppunni: `rpg --help` listar þær. Margar prenta leyndarmál herferðarinnar.
+RPG Engine heldur sig í þessari möppu: það les og skrifar leikinn aðeins hér og snertir aldrei aðrar skrár þínar. Utan hennar geymir það aðeins sína eigin gagnamöppu (þýðingar stjórnborðsins, og Codex eða Claude Code ef þú leyfir því að setja þau upp) og tímabundnar möppur á meðan mynd er teiknuð. Allt annað sem gervigreindarforritið vill gera á tölvunni þinni spyr það þig um fyrst.
+
+Sérhverja skipun sem sögumaðurinn notar er líka hægt að keyra í herferðarmöppunni: `rpg --help` sýnir þær allar. Margar þeirra birta leyndarmál herferðarinnar.
 
 ---
 

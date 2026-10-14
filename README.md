@@ -75,6 +75,8 @@ RPG Engine is an MCP server and a command line, `rpg`, made from the same comman
 
 A campaign is a folder of markdown pages with `[[links]]`, the format of Obsidian, with its settings, its state, a log of every change and its saves. It holds the secrets of your story: you never need to open it.
 
+RPG Engine stays in that folder: it reads and writes the game only there, and never touches your other files. Outside it, it keeps only a data folder of its own (the dashboard's translations, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. The master plays through RPG Engine's tools; anything else your agent wants to do on your computer, it asks you first.
+
 For developers: [the architecture](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/architecture.md), [the commands](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/commands.md), [game systems](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/game-systems.md) and [the guide for development agents](https://github.com/stefanocaronia/rpg-engine/blob/main/AGENTS.md).
 
 ## License

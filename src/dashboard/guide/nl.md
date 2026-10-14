@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -256,9 +256,11 @@ Eén taal per campagne, die van de spelleider, die het dashboard volgt. Het dash
 
 ## 8. Voor de nieuwsgierigen: de campagnemap <!-- icon: list -->
 
-Je hoeft hem nooit te openen, en hij bevat de geheimen van je campagne. Hij heeft `campaign.yaml` (je instellingen), `state.yaml` (hoe het spel ervoor staat), `world/` (één markdownpagina voor elk personage, elke plaats, missie en de rest), `rules/` (je huisregels), `images/`, `log.jsonl` (elke wijziging), `.saves/`, `.player/` (je notities) en de kleine bestanden die AI-agenten vertellen waar RPG Engine is. De pagina's gebruiken het formaat van Obsidian. Als je een pagina met de hand verandert, hoort de spelleider het bij zijn volgende antwoord.
+Je hoeft hem nooit te openen, en hij bevat de geheimen van je campagne. Hierin staan `campaign.yaml` (je instellingen), `state.yaml` (waar het spel nu staat), `world/` (één markdownpagina voor elk personage, elke plaats, elke missie en de rest), `rules/` (je huisregels), `images/`, `log.jsonl` (elke wijziging), `.saves/`, `.player/` (je notities) en de kleine bestanden die AI-agents vertellen waar RPG Engine staat. De pagina's gebruiken het formaat van Obsidian. Pas je een pagina met de hand aan? Dan merkt de spelleider dat bij het volgende antwoord.
 
-Elke opdracht die de spelleider gebruikt, kun je ook zelf uitvoeren in de campagnemap: `rpg --help` toont ze. Veel ervan tonen de geheimen van de campagne.
+RPG Engine blijft in deze map: het leest en schrijft het spel alleen hier en raakt je andere bestanden nooit aan. Buiten de map bewaart het alleen een eigen gegevensmap (de vertalingen van het dashboard, en Codex of Claude Code als je toestaat dat het die installeert) en tijdelijke mappen terwijl er een afbeelding wordt getekend. Wil je agent iets anders op je computer doen, dan vraagt die eerst om jouw toestemming.
+
+Elke opdracht die de spelleider gebruikt, kun je ook zelf in de campagnemap uitvoeren: `rpg --help` toont ze allemaal. Veel opdrachten tonen de geheimen van de campagne.
 
 ---
 

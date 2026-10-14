@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine：完全ガイド
 
 **RPG Engine**では、**AIをGM**にして、テーブルトークRPGを遊べます。GMとは**チャット**で会話します。RPG Engineは裏側で動き、**世界を記憶し**、**ダイスを振り**、**数値を管理**します。チャットの横にはブラウザーのページ、**ダッシュボード**を開いておきます。キャラクターシート、ダイス、マップ、ジャーナルが並びます。
@@ -254,11 +254,13 @@ GMに頼みます：*[ハウスルール：攻撃で出目1が出たら、武器
 
 ---
 
-## 8. 興味のある人へ：キャンペーンのフォルダー <!-- icon: list -->
+## 8. 番外編：キャンペーンフォルダ <!-- icon: list -->
 
-開く必要はありません。キャンペーンの秘密が入っています。中身は次のとおりです。`campaign.yaml`（設定）、`state.yaml`（ゲームの現在の状態）、`world/`（キャラクター、場所、クエストなどごとに1つのmarkdownページ）、`rules/`（ハウスルール）、`images/`、`log.jsonl`（すべての変更）、`.saves/`、`.player/`（メモ）、そしてAIエージェントにRPG Engineの場所を伝える小さなファイル。ページはObsidianの形式です。ページを手で変更すると、GMは次の返答で気づきます。
+開く必要はありません。キャンペーンの秘密が入っています。中には次のものがあります。`campaign.yaml`（設定）、`state.yaml`（ゲームの現在の状態）、`world/`（キャラクター、場所、クエストなどを1つずつまとめたマークダウンのページ）、`rules/`（ハウスルール）、`images/`、`log.jsonl`（すべての変更の記録）、`.saves/`、`.player/`（メモ）、そして AI エージェントに RPG Engine の場所を伝える小さなファイルです。ページは Obsidian の形式です。ページを手で変更すると、GM は次の返答で変更に気づきます。
 
-GMが使うコマンドは、すべてキャンペーンのフォルダーでも実行できます。`rpg --help`で一覧できます。多くはキャンペーンの秘密を表示します。
+RPG Engine はこのフォルダの中だけで動きます。ゲームの読み書きはここだけで行い、ほかのファイルには触れません。フォルダの外に置くのは、専用のデータフォルダ（ダッシュボードの翻訳や、許可した場合の Codex や Claude Code）と、絵を描いている間の一時フォルダだけです。ほかにエージェントがパソコンで何かをしたいときは、先に確認します。
+
+GM が使うコマンドは、キャンペーンフォルダでも実行できます。`rpg --help` で一覧を見られます。多くのコマンドはキャンペーンの秘密を表示します。
 
 ---
 

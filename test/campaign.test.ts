@@ -114,7 +114,7 @@ describe("rpg init", () => {
             }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(JSON.parse(readFileSync(join(folder, "nuova", ".gemini", "settings.json"), "utf8"))).toEqual({
-            mcpServers: { rpg },
+            mcpServers: { rpg: { ...rpg, trust: true } },
             context: { fileName: ["AGENTS.md"] },
             tools: { exclude: ["write_file", "replace"] },
         });
@@ -128,10 +128,20 @@ describe("rpg init", () => {
         await runCommandLine(["init", "mia"], context);
         expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
         expect(JSON.parse(readFileSync(join(folder, "mia", ".gemini", "settings.json"), "utf8"))).toMatchObject({
-            mcpServers: { altro: { command: "x" }, rpg: expect.any(Object) },
+            mcpServers: { altro: { command: "x" }, rpg: expect.objectContaining({ trust: true }) },
             context: { fileName: ["AGENTS.md"] },
             tools: { exclude: [] },
         });
+
+        // A server written before trust existed gains it; a trust the player set stays.
+        mkdirSync(join(folder, "vecchia", ".gemini"), { recursive: true });
+        writeFileSync(join(folder, "vecchia", ".gemini", "settings.json"), '{ "mcpServers": { "rpg": { "command": "rpg-dev" } } }');
+        await runCommandLine(["init", "vecchia"], context);
+        expect(JSON.parse(readFileSync(join(folder, "vecchia", ".gemini", "settings.json"), "utf8")).mcpServers).toEqual({ rpg: { command: "rpg-dev", trust: true } });
+        mkdirSync(join(folder, "prudente", ".gemini"), { recursive: true });
+        writeFileSync(join(folder, "prudente", ".gemini", "settings.json"), '{ "mcpServers": { "rpg": { "command": "rpg", "trust": false } } }');
+        await runCommandLine(["init", "prudente"], context);
+        expect(JSON.parse(readFileSync(join(folder, "prudente", ".gemini", "settings.json"), "utf8")).mcpServers).toEqual({ rpg: { command: "rpg", trust: false } });
 
         mkdirSync(join(folder, "scelta", ".codex"), { recursive: true });
         writeFileSync(join(folder, "scelta", ".codex", "config.toml"), "[memories]\nuse_memories = true\n");

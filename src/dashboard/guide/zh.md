@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -254,11 +254,13 @@ SRD 5.1 的种族、职业、子职业、一个背景和一个专长；319 个�
 
 ---
 
-## 8. 好奇者专区：战役文件夹 <!-- icon: list -->
+## 8. 写给好奇的你：战役文件夹 <!-- icon: list -->
 
-你从不需要打开它，而且它存放着你战役的秘密。里面有 `campaign.yaml`（你的设置）、`state.yaml`（游戏进行到哪里）、`world/`（每个角色、地点、任务等各一个 markdown 页面）、`rules/`（你的家规）、`images/`、`log.jsonl`（每一次改动）、`.saves/`、`.player/`（你的笔记），以及告诉 AI 智能体 RPG Engine 在哪里的几个小文件。这些页面采用 Obsidian 的格式。如果你手动修改了某个页面，主持人会在下一次回复时得知。
+你完全不需要打开它，而且里面藏着战役的秘密。文件夹里有：`campaign.yaml`（你的设置）、`state.yaml`（游戏进行到哪里）、`world/`（每个角色、地点、任务等各有一页 markdown）、`rules/`（你的房规）、`images/`、`log.jsonl`（每一次改动）、`.saves/`、`.player/`（你的笔记），以及一些小文件，用来告诉 AI 代理 RPG Engine 在哪里。这些页面使用 Obsidian 的格式。如果你手动改了某一页，主持人会在下一次回答时得知。
 
-主持人用的每条命令，你也可以在战役文件夹里运行：`rpg --help` 会列出它们。许多命令会打印出战役的秘密。
+RPG Engine 只在这个文件夹里工作：它只在这里读写游戏，绝不会碰你的其他文件。在文件夹之外，它只保留自己的一个数据文件夹（存放仪表盘的翻译，以及你允许安装时的 Codex 或 Claude Code），还有画图时用到的临时文件夹。你的代理在电脑上想做其他任何事，都会先问你。
+
+主持人用的每一条命令，你也可以在战役文件夹里运行：`rpg --help` 会列出全部命令。很多命令会打印出战役的秘密。
 
 ---
 

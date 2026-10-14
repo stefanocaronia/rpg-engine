@@ -257,6 +257,8 @@ One language per campaign, the master's, which the dashboard follows. The dashbo
 
 You never need to open it, and it holds the secrets of your campaign. It has `campaign.yaml` (your settings), `state.yaml` (where the game stands), `world/` (one markdown page for each character, place, quest and the rest), `rules/` (your house rules), `images/`, `log.jsonl` (every change), `.saves/`, `.player/` (your notes), and the small files that tell AI agents where RPG Engine is. The pages use Obsidian's format. If you change a page by hand, the master hears of it at its next answer.
 
+RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files. Outside it, it keeps only a data folder of its own (the dashboard's translations, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first.
+
 Every command the master uses can be run in the campaign folder too: `rpg --help` lists them. Many print the campaign's secrets.
 
 ---

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -256,7 +256,9 @@ Un idioma por campaña, el del máster, que el panel sigue. El panel incluye 26 
 
 ## 8. Para curiosos: la carpeta de la campaña <!-- icon: list -->
 
-Nunca necesitas abrirla, y contiene los secretos de tu campaña. Tiene `campaign.yaml` (tus ajustes), `state.yaml` (cómo está la partida), `world/` (una página markdown por cada personaje, lugar, misión y el resto), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los pequeños archivos que le dicen a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster se entera en su siguiente respuesta.
+No necesitas abrirla nunca, y guarda los secretos de tu campaña. Contiene `campaign.yaml` (tus ajustes), `state.yaml` (cómo va el juego), `world/` (una página markdown por cada personaje, lugar, misión y el resto), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los archivos pequeños que indican a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster lo sabrá en su siguiente respuesta.
+
+RPG Engine se queda en esta carpeta: solo lee y escribe la partida aquí, y nunca toca tus otros archivos. Fuera de ella, solo guarda una carpeta de datos propia (las traducciones del panel, y Codex o Claude Code si dejas que los instale) y carpetas temporales mientras se dibuja una imagen. Para cualquier otra cosa que tu agente quiera hacer en tu equipo, antes te lo pregunta.
 
 Todos los comandos que usa el máster se pueden ejecutar también en la carpeta de la campaña: `rpg --help` los enumera. Muchos muestran los secretos de la campaña.
 

@@ -119,8 +119,9 @@ function codexConfigFile(root: string, platform: string): HostFile | undefined
 }
 
 /**
- * Gemini CLI's settings for the campaign, read when the player trusts the folder: the rpg server, AGENTS.md as the file it reads, and write_file and replace
- * excluded, so that the master writes only through rpg's tools and keeps no memory in files; what the player already wrote there stays.
+ * Gemini CLI's settings for the campaign, read when the player trusts the folder: the rpg server, trusted so that its tools ask no confirmation, AGENTS.md as
+ * the file it reads, and write_file and replace excluded, so that the master writes only through rpg's tools and keeps no memory in files; what the player
+ * already wrote there stays, a trust they set included.
  */
 function geminiSettingsFile(root: string, platform: string): HostFile | undefined
 {
@@ -134,9 +135,11 @@ function geminiSettingsFile(root: string, platform: string): HostFile | undefine
         return key in part ? part : { ...part, [key]: value };
     };
 
+    const servers = isObject(settings.mcpServers) ? settings.mcpServers : {};
+    const rpg = isObject(servers.rpg) ? servers.rpg : rpgServer(platform);
     const wanted = {
         ...settings,
-        mcpServers: withDefault("mcpServers", "rpg", rpgServer(platform)),
+        mcpServers: { ...servers, rpg: "trust" in rpg ? rpg : { ...rpg, trust: true } },
         context: withDefault("context", "fileName", ["AGENTS.md"]),
         tools: withDefault("tools", "exclude", ["write_file", "replace"]),
     };

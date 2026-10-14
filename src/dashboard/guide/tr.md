@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -254,11 +254,13 @@ Kampanya başına bir dil vardır: oyun yöneticisinin dili; gösterge paneli on
 
 ---
 
-## 8. Meraklısı için: kampanya klasörü <!-- icon: list -->
+## 8. Merak edenler için: kampanya klasörü <!-- icon: list -->
 
-Onu hiç açman gerekmez ve kampanyanın sırlarını içerir. İçinde `campaign.yaml` (ayarların), `state.yaml` (oyunun durduğu yer), `world/` (her karakter, yer, görev ve gerisi için bir markdown sayfası), `rules/` (ev kuralların), `images/`, `log.jsonl` (her değişiklik), `.saves/`, `.player/` (notların) ve yapay zekâ ajanlarına RPG Engine'in nerede olduğunu söyleyen küçük dosyalar vardır. Sayfalar Obsidian'ın biçimini kullanır. Bir sayfayı elle değiştirirsen oyun yöneticisi bir sonraki yanıtında bunu duyar.
+Klasörü açmana hiç gerek yok. Kampanyanın sırlarını da içerir. Klasörde şunlar var: `campaign.yaml` (ayarların), `state.yaml` (oyunun geldiği nokta), `world/` (her karakter, yer, görev ve diğer her şey için bir markdown sayfası), `rules/` (ev kuralların), `images/`, `log.jsonl` (her değişiklik), `.saves/`, `.player/` (notların) ve yapay zekâ ajanlarına RPG Engine'in nerede olduğunu söyleyen küçük dosyalar. Sayfalar Obsidian'ın biçimini kullanır. Bir sayfayı elle değiştirirsen oyun yöneticisi bunu bir sonraki cevabında öğrenir.
 
-Oyun yöneticisinin kullandığı her komut kampanya klasöründe sen de çalıştırılabilir: `rpg --help` hepsini listeler. Çoğu kampanyanın sırlarını yazdırır.
+RPG Engine bu klasörde kalır: oyunu yalnızca burada okur ve yazar, diğer dosyalarına hiç dokunmaz. Klasörün dışında yalnızca kendi veri klasörünü tutar (panelin çevirileri ve izin verirsen kurduğu Codex ya da Claude Code) ve bir resim çizilirken geçici klasörler kullanır. Ajanın bilgisayarında başka bir şey yapmak isterse önce sana sorar.
+
+Oyun yöneticisinin kullandığı her komutu kampanya klasöründe sen de çalıştırabilirsin: `rpg --help` hepsini listeler. Çoğu, kampanyanın sırlarını yazdırır.
 
 ---
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -256,9 +256,11 @@ Eine Sprache pro Kampagne, die der Spielleitung, der das Dashboard folgt. Das Da
 
 ## 8. Für Neugierige: der Kampagnenordner <!-- icon: list -->
 
-Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er hat `campaign.yaml` (deine Einstellungen), `state.yaml` (wo das Spiel steht), `world/` (eine Markdown-Seite für jeden Charakter, Ort, jede Quest und den Rest), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine ist. Die Seiten nutzen das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung davon bei ihrer nächsten Antwort.
+Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er enthält `campaign.yaml` (deine Einstellungen), `state.yaml` (der aktuelle Stand des Spiels), `world/` (eine Markdown-Seite für jeden Charakter, jeden Ort, jede Quest und alles Weitere), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine liegt. Die Seiten nutzen das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung bei der nächsten Antwort davon.
 
-Jeder Befehl, den die Spielleitung benutzt, lässt sich auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele geben die Geheimnisse der Kampagne aus.
+RPG Engine bleibt in diesem Ordner: Es liest und schreibt das Spiel nur hier und fasst deine anderen Dateien nie an. Außerhalb davon legt es nur einen eigenen Datenordner an (die Übersetzungen des Dashboards sowie Codex oder Claude Code, wenn du sie installieren lässt) und temporäre Ordner, während ein Bild gezeichnet wird. Alles andere, was dein Agent auf deinem Computer tun will, fragt er vorher bei dir an.
+
+Jeden Befehl, den die Spielleitung nutzt, kannst du auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele davon zeigen die Geheimnisse der Kampagne an.
 
 ---
 

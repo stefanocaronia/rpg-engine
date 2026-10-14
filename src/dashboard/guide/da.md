@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -254,11 +254,13 @@ En kampagne spilles én gang: for at spille det samme eventyr igen skal du opret
 
 ---
 
-## 8. For de nysgerrige: kampagnemappen <!-- icon: list -->
+## 8. For nysgerrige: kampagnemappen <!-- icon: list -->
 
-Du behøver aldrig at åbne den, og den rummer din kampagnes hemmeligheder. Den har `campaign.yaml` (dine indstillinger), `state.yaml` (hvor spillet står), `world/` (én markdown-side for hver karakter, hvert sted, hver mission og resten), `rules/` (dine husregler), `images/`, `log.jsonl` (alle ændringer), `.saves/`, `.player/` (dine noter) og de små filer, der fortæller AI-agenter, hvor RPG Engine er. Siderne bruger Obsidians format. Hvis du ændrer en side manuelt, hører spillederen om det ved sit næste svar.
+Du behøver aldrig at åbne den, og den gemmer på din kampagnes hemmeligheder. Den indeholder `campaign.yaml` (dine indstillinger), `state.yaml` (hvor spillet står), `world/` (én markdown-side til hver karakter, hvert sted, hver mission og resten), `rules/` (dine husregler), `images/`, `log.jsonl` (alle ændringer), `.saves/`, `.player/` (dine noter) og de små filer, der fortæller AI-agenter, hvor RPG Engine er. Siderne bruger Obsidians format. Hvis du ændrer en side i hånden, får spilleder det at vide ved sit næste svar.
 
-Hver kommando, som spillederen bruger, kan også køres i kampagnemappen: `rpg --help` viser dem. Mange udskriver kampagnens hemmeligheder.
+RPG Engine bliver i denne mappe: Programmet læser og skriver kun spillet her og rører aldrig dine andre filer. Uden for mappen har det kun sin egen datamappe (dashboardets oversættelser, samt Codex eller Claude Code, hvis du lader det installere dem) og midlertidige mapper, mens et billede bliver tegnet. Alt andet, din agent vil gøre på din computer, spørger den dig om først.
+
+Alle de kommandoer, spilleder bruger, kan også køres i kampagnemappen: `rpg --help` viser dem. Mange af dem udskriver kampagnens hemmeligheder.
 
 ---
 

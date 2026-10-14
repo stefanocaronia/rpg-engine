@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -257,6 +257,8 @@ Una lingua per campagna, quella del master, che la dashboard segue. La dashboard
 ## 8. Per curiosi: la cartella della campagna <!-- icon: list -->
 
 Non devi mai aprirla, e contiene i segreti della tua campagna. Ha `campaign.yaml` (le tue impostazioni), `state.yaml` (a che punto è il gioco), `world/` (una pagina markdown per ogni personaggio, luogo, missione e il resto), `rules/` (le tue regole della casa), `images/`, `log.jsonl` (ogni cambiamento), `.saves/`, `.player/` (le tue note) e i piccoli file che dicono agli agenti IA dov'è RPG Engine. Le pagine usano il formato di Obsidian. Se cambi una pagina a mano, il master lo sente alla sua risposta successiva.
+
+RPG Engine resta in questa cartella: legge e scrive il gioco solo qui, e non tocca mai gli altri tuoi file. Fuori, tiene solo una cartella di dati sua (le traduzioni della dashboard, e Codex o Claude Code se gli permetti di installarli) e cartelle temporanee mentre disegna un'immagine. Qualsiasi altra cosa il tuo agente voglia fare sul tuo computer, te la chiede prima.
 
 Ogni comando che usa il master si può lanciare anche nella cartella della campagna: `rpg --help` li elenca. Molti stampano i segreti della campagna.
 

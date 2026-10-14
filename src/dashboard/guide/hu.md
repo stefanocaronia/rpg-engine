@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -254,11 +254,13 @@ Kampányonként egy nyelv van, a mesélőé, amelyet a vezérlőpult követ. A v
 
 ---
 
-## 8. Kíváncsiaknak: a kampány mappája <!-- icon: list -->
+## 8. A kíváncsiaknak: a kampánymappa <!-- icon: list -->
 
-Sosem kell megnyitnod, és a kampányod titkait tartalmazza. Van benne `campaign.yaml` (a beállításaid), `state.yaml` (hol tart a játék), `world/` (karakterenként, helyszínenként, küldetésenként és minden mást illetően egy markdown oldal), `rules/` (a házszabályaid), `images/`, `log.jsonl` (minden változás), `.saves/`, `.player/` (a jegyzeteid), és az apró fájlok, amelyek megmondják az MI-ügynököknek, hol van az RPG Engine. Az oldalak az Obsidian formátumát használják. Ha egy oldalt kézzel módosítasz, a mesélő a következő válaszánál értesül róla.
+Soha nem kell megnyitnod, és a kampányod titkait őrzi. Ezek vannak benne: `campaign.yaml` (a beállításaid), `state.yaml` (hol tart a játék), `world/` (egy markdown oldal minden karakterhez, helyszínhez, küldetéshez és a többihez), `rules/` (a házi szabályaid), `images/`, `log.jsonl` (minden változás), `.saves/`, `.player/` (a jegyzeteid), valamint a kis fájlok, amelyek megmutatják az AI-ügynököknek, hol van az RPG Engine. Az oldalak az Obsidian formátumát használják. Ha kézzel módosítasz egy oldalt, a mesélő a következő válaszánál értesül róla.
 
-A mesélő minden parancsa a kampány mappájában is futtatható: az `rpg --help` felsorolja őket. Sok közülük kiírja a kampány titkait.
+Az RPG Engine ebben a mappában marad: a játékot csak itt olvassa és írja, a többi fájlodhoz soha nem nyúl. Rajta kívül csak egy saját adatmappát tart (a dashboard fordításait, valamint a Codexet és a Claude Code-ot, ha engeded, hogy telepítse őket), meg ideiglenes mappákat, amíg egy kép készül. Ha az ügynököd bármi mást akar tenni a számítógépeden, előbb megkérdez.
+
+A mesélő minden parancsa kiadható a kampánymappában is: az `rpg --help` felsorolja őket. Sok közülük kiírja a kampány titkait.
 
 ---
 

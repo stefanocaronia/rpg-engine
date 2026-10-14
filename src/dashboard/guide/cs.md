@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 4eb17899 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -256,9 +256,11 @@ Jeden jazyk na kampaň, jazyk Pána jeskyně, který dashboard následuje. Dashb
 
 ## 8. Pro zvídavé: složka kampaně <!-- icon: list -->
 
-Nikdy ji nemusíš otevírat a obsahuje tajemství tvé kampaně. Najdeš v ní `campaign.yaml` (tvá nastavení), `state.yaml` (kde hra stojí), `world/` (jedna stránka markdown pro každou postavu, místo, úkol a zbytek), `rules/` (tvá vlastní pravidla), `images/`, `log.jsonl` (každá změna), `.saves/`, `.player/` (tvé poznámky) a malé soubory, které říkají AI agentům, kde RPG Engine je. Stránky používají formát Obsidian. Pokud stránku změníš ručně, Pán jeskyně se to dozví při své další odpovědi.
+Nikdy ji nemusíš otevírat a obsahuje tajemství tvé kampaně. Najdeš v ní `campaign.yaml` (tvoje nastavení), `state.yaml` (aktuální stav hry), `world/` (jedna markdown stránka pro každou postavu, místo, úkol a další věci), `rules/` (tvá domácí pravidla), `images/`, `log.jsonl` (každá změna), `.saves/`, `.player/` (tvoje poznámky) a malé soubory, které AI agentům říkají, kde je RPG Engine. Stránky používají formát Obsidianu. Pokud stránku změníš ručně, Pán jeskyně se o tom dozví při své další odpovědi.
 
-Každý příkaz, který Pán jeskyně používá, lze spustit i ve složce kampaně: `rpg --help` je vypíše. Mnohé vypisují tajemství kampaně.
+RPG Engine zůstává v této složce: hru čte a zapisuje jen tady a nikdy se nedotkne tvých ostatních souborů. Mimo ni si ponechává jen vlastní složku s daty (překlady dashboardu a Codex nebo Claude Code, pokud dovolíš jejich instalaci) a dočasné složky, dokud se kreslí obrázek. Cokoli dalšího chce tvůj agent na počítači udělat, nejdřív se zeptá tebe.
+
+Každý příkaz, který Pán jeskyně používá, můžeš spustit i ve složce kampaně: `rpg --help` je vypíše. Mnohé z nich vypisují tajemství kampaně.
 
 ---
 
