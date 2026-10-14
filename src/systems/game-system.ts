@@ -1,10 +1,10 @@
 import { existsSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
-import { parse } from "yaml";
+import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
+import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
@@ -353,13 +353,6 @@ export interface GameSystem
     parts: Record<string, InstructionPart>;
 }
 
-/** A part of the master's instructions as a layer gives it: its text, and whether it takes the place of the layers below instead of adding to them (D-121). */
-export interface InstructionPart
-{
-    text: string;
-    replace: boolean;
-}
-
 /**
  * The system as a campaign plays it, with the values its settings have (DAT-10): the fields a value leaves out are gone from the sheet, the line, the experience
  * and the rewards. A setting without a value, or with one the system lacks, leaves out nothing.
@@ -645,7 +638,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             const [counter, value] = reward.overcome.split(" ");
             return { field, from: reward.from, counter, value: Number(value) };
         }),
-        parts: readParts(folder, name),
+        parts: readParts(folder, `The game system ${name}`),
     });
 }
 
@@ -699,40 +692,6 @@ function progressionRule(data: NonNullable<z.infer<typeof systemSchema>["progres
 {
     const { skip, ...rule } = data;
     return { ...rule, skip: skip ?? [] };
-}
-
-/** The system's parts of the master's instructions, from the files of its instructions folder: a part is named after its file (D-121). */
-function readParts(folder: string, name: string): Record<string, InstructionPart>
-{
-    const parts: Record<string, InstructionPart> = {};
-
-    for (const path of files().files(join(folder, "instructions"), (file) => file.endsWith(".md"))) {
-        parts[basename(path, ".md")] = partOf(files().text(path) ?? "", name, path);
-    }
-
-    return parts;
-}
-
-/** A part from its file: the text after its frontmatter, which says only whether it takes the place of the core's part, replace: true (D-121). */
-function partOf(file: string, system: string, path: string): InstructionPart
-{
-    const text = file.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
-    const frontmatter = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
-    let settings: unknown;
-
-    try {
-        settings = frontmatter === null ? {} : (parse(frontmatter[1]) ?? {});
-    } catch {
-        settings = undefined;
-    }
-
-    const parsed = z.object({ replace: z.boolean().optional() }).strict().safeParse(settings);
-
-    if (!parsed.success) {
-        throw new Error(`The game system ${system} cannot be read, because ${path} is not valid: a part's frontmatter says only replace: true, for a part that takes the place of the core's.`);
-    }
-
-    return { text: (frontmatter === null ? text : text.slice(frontmatter[0].length)).trim(), replace: parsed.data.replace === true };
 }
 
 /** The progression without its experience, when a setting leaves its field out (DAT-10). */

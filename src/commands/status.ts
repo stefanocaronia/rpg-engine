@@ -6,12 +6,14 @@ import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
-import { formatGameDate, type GameDate } from "../time/index.ts";
+import type { GameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
+import { extensionsLine } from "./game-extension-list.ts";
+import { extensionCodeProblems } from "./game-extensions.ts";
 import { picturesNote } from "./game-images.ts";
 import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
@@ -21,7 +23,7 @@ import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
-import { problemText, readPresent } from "./game-time.ts";
+import { datedText, problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
@@ -59,9 +61,10 @@ export const status = defineCommand({
     alwaysLoad: true,
     input: z.object({}),
 
-    run(input, context)
+    async run(input, context)
     {
         const root = requireCampaign(context.folder);
+        const codeProblems = await extensionCodeProblems(root, context, []);
         const settings = readSettings(root);
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
@@ -128,6 +131,8 @@ export const status = defineCommand({
             veils: settings.veils ?? [],
             table: settings.table ?? [],
             precedents: settings.precedents ?? [],
+            // The extensions it uses, each with what it brings (D-28).
+            extensions: extensionsLine(root, context),
             houseRules: bookTitles(readRuleBook(join(root, houseRulesFolderName), "house rules")),
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
@@ -147,13 +152,13 @@ export const status = defineCommand({
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
             openQuests: openQuests(world, now),
-            now: now === undefined ? undefined : formatGameDate(now),
+            now: now === undefined ? undefined : datedText(root, context, now),
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
             dueEvents: due.map(dueText),
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
-            problems: campaignProblems(root, world, context).length,
+            problems: campaignProblems(root, world, context).length + codeProblems.length,
             // A load that stopped halfway leaves the campaign between two times (SAV-5).
             halfLoaded: interruptedLoad(root)?.number,
             sheet: system === undefined ? undefined : sheetSummary(system),
@@ -184,6 +189,7 @@ export const status = defineCommand({
             boundariesLine(result.lines, result.veils),
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,
+            result.extensions,
             result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),

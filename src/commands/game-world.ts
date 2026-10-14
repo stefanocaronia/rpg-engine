@@ -6,6 +6,7 @@ import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
 import { findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemSetting, withSettings } from "../systems/index.ts";
+import { campaignExtensions, extensionSources, layeredParts } from "./game-extension-list.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
@@ -35,11 +36,13 @@ export function campaignSystem(root: string, context: Context): GameSystem | und
  */
 function systemOf(root: string, context: Context): { system?: GameSystem; problem?: string; }
 {
-    const settings = resolve(join(root, campaignFileName));
-    return files().remember(`system ${resolve(root)}`, (path) => path === settings, () => {
+    // campaign.yaml, and the extensions' packages, whose parts it gives.
+    return files().remember(`system ${resolve(root)}`, extensionSources(root, context), () => {
         const name = readTextSetting(root, "system");
         const found = name === undefined ? {} : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
-        return found.system === undefined ? found : { ...found, system: withSettings(found.system, (setting) => readTextSetting(root, setting)) };
+        // And the parts of the instructions of its extensions over its own (D-121).
+        const played = found.system === undefined ? undefined : withSettings(found.system, (setting) => readTextSetting(root, setting));
+        return played === undefined ? found : { ...found, system: { ...played, parts: layeredParts(played.parts, campaignExtensions(root, context).extensions) } };
     });
 }
 

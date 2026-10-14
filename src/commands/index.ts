@@ -12,6 +12,7 @@ import { instructions } from "./instructions.ts";
 import { mode } from "./mode.ts";
 import { mood } from "./mood.ts";
 import { move } from "./move.ts";
+import { packageCommand } from "./package.ts";
 import { rename } from "./rename.ts";
 import { reveal } from "./reveal.ts";
 import { roll } from "./roll.ts";
@@ -56,4 +57,5 @@ export const commands: Command<any, any>[] = [
     save,
     translate,
     install,
+    packageCommand,
 ];

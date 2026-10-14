@@ -1,0 +1,50 @@
+name: Publish an extension to npm
+
+# A tag <name>-v<version>, such as weather-v0.1.0, equal to extensions/<name>/package.json's version, publishes that extension (D-436). Nothing else does.
+on:
+  push:
+    tags:
+      - "*-v[0-9]*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install -g npm@11
+
+      - name: Find the extension and check the tag against its package.json
+        run: |
+          name="${GITHUB_REF_NAME%-v*}"
+          folder="extensions/${name}"
+          if [ ! -f "${folder}/package.json" ]; then
+            echo "The tag ${GITHUB_REF_NAME} names no extension: there is no ${folder}/package.json."
+            exit 1
+          fi
+          version=$(node -p "require('./${folder}/package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "${name}-v${version}" ]; then
+            echo "The tag ${GITHUB_REF_NAME} does not match ${folder}'s version ${version}: tag ${name}-v${version}, or change the version first."
+            exit 1
+          fi
+          echo "FOLDER=${folder}" >> "$GITHUB_ENV"
+
+      # The engine's checks run as for its own release: the extension is built and tested with it.
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+      # npm's Trusted Publisher for this workflow and its release environment: no token, the job's OIDC identity publishes, with provenance.
+      - run: npm publish --provenance --access public
+        working-directory: ${{ env.FOLDER }}

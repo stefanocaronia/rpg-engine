@@ -1,0 +1,10 @@
+{
+  "name": "@rpgengine/omens",
+  "version": "1.2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "rpg-engine": {
+    "kind": "extension",
+    "api": 1
+  }
+}

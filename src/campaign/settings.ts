@@ -134,6 +134,8 @@ export const settingsSchema = z.object({
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
+    // Checked by the time module against the calendar (TIM-8).
+    "calendar-start": z.string().min(1).optional().describe("when the story starts: day 1 to count only the days, or the day of the world's calendar that is day 1, such as 14 April 1491"),
     // new places and new places and quests, as campaigns wrote it before quests and then those met had pictures, are read as the value that took their place (D-388, D-420).
     pictures: z.preprocess((value) => (value === "new places" || value === "new places and quests" ? "new elements" : value), z.enum(pictureWays)).optional().describe(
         "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
@@ -146,6 +148,8 @@ export const settingsSchema = z.object({
     learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
+    // Checked by the time module (TIM-8): a mistake there never stops the game, whose date stays day N.
+    calendar: z.unknown().optional().describe("the months of the campaign's own calendar, in place of the real ones and an extension's: months: [{name: January, days: 31, season: winter}, ...]"),
     // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
     // other settings.
     fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as portent: rolls"),
@@ -169,8 +173,8 @@ export const listSettingNames: SettingName[] = ["lines", "veils", "table", "prec
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel"];
 
-/** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, and the lines and veils, which "none" answers too. */
-export const setupSettingNames: SettingName[] = ["mentor", "companions", "lines", "veils"];
+/** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, when the story starts, and the lines and veils, which "none" answers too. */
+export const setupSettingNames: SettingName[] = ["mentor", "companions", "calendar-start", "lines", "veils"];
 
 /** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
 export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
@@ -179,7 +183,7 @@ export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 // The pictures: status asks for them once, only where they can be made (D-308).
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
-const optionalSettingNames: SettingName[] = ["coins", "pictures", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -353,6 +357,20 @@ export function changeListSettingToNone(root: string, name: string): boolean
 
     saveSettings(root, document);
     return true;
+}
+
+/** Writes the extensions the campaign uses, by package with the version each was added with (D-27), keeping the rest of campaign.yaml; none takes the key away. */
+export function changeExtensions(root: string, extensions: Record<string, string>): void
+{
+    const document = readSettingsDocument(root);
+
+    if (Object.keys(extensions).length === 0) {
+        document.delete("extensions");
+    } else {
+        document.set("extensions", document.createNode(extensions, { flow: false }));
+    }
+
+    saveSettings(root, document);
 }
 
 /** What campaign.yaml adds to the game system, as it writes it, read even when another setting breaks the file (CAM-1); empty when it cannot be read. */

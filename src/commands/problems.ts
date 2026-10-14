@@ -6,6 +6,7 @@ import { checkWorld, type World } from "../pages/index.ts";
 import { effectProblems } from "./game-effects.ts";
 import { eventProblems } from "./game-events.ts";
 import { experienceProblems } from "./game-experience.ts";
+import { campaignExtensions } from "./game-extension-list.ts";
 import { gridProblems } from "./game-grids.ts";
 import { imageProblems } from "./game-images.ts";
 import { mapProblems } from "./game-maps.ts";
@@ -41,7 +42,8 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...mapProblems(world),
         ...gridProblems(world, readOpenScene(root).scene),
         ...shortRoadProblems(world),
-        ...timeProblems(root),
+        ...timeProblems(root, context),
+        ...campaignExtensions(root, context).problems,
         ...modeProblems(root),
         ...eventProblems(world),
         ...questProblems(world),

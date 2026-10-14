@@ -6,8 +6,8 @@
 import type { RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
-import type { Moment, Mood } from "./data.ts";
-import { gameDateLabel } from "./game-words.ts";
+import type { CalendarDay, Moment, Mood } from "./data.ts";
+import { calendarDayLabel, gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
 import { usePrefChange } from "./prefs.ts";
@@ -21,6 +21,8 @@ interface TopOf
     product: string;
     system?: string;
     now?: string;
+    /** The day of the game's calendar, when the campaign has one (TIM-8). */
+    calendar?: CalendarDay;
     /** Where the party is, from the largest place that holds it to its own (D-333). */
     path?: string[];
     live: boolean;
@@ -88,7 +90,7 @@ export function Top(top: TopOf)
                         </p>
                     )}
                 </div>
-                <StatusChips now={top.now} live={top.live} />
+                <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
                 <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
@@ -105,7 +107,7 @@ export function Top(top: TopOf)
                     )}
                 </span>
                 <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} hidden />
-                <StatusChips now={top.now} live={top.live} />
+                <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
             </div>
         </>
     );
@@ -324,8 +326,8 @@ function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" 
     );
 }
 
-/** The game's time and whether the game is live, each a chip. */
-function StatusChips({ now, live }: { now?: string; live: boolean; })
+/** The game's time, its day of the calendar, and whether the game is live, each a chip. */
+function StatusChips({ now, calendar, live }: { now?: string; calendar?: CalendarDay; live: boolean; })
 {
     // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355).
     return (
@@ -338,6 +340,12 @@ function StatusChips({ now, live }: { now?: string; live: boolean; })
                 <span class="status-chip">
                     <Icon name="clock" />
                     {gameDateLabel(now)}
+                </span>
+            )}
+            {now && calendar && (
+                <span class="status-chip">
+                    <Icon name="calendar" />
+                    {calendarDayLabel(calendar)}
                 </span>
             )}
         </div>

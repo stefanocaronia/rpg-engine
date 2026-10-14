@@ -4,6 +4,7 @@ export { campaignFileName, findCampaign, houseRulesFolderName, requireCampaign }
 export { hostFileNames, refreshHostFiles } from "./host-files.ts";
 export {
     type CampaignSettings,
+    changeExtensions,
     changeListSetting,
     changeListSettingToNone,
     changeMapSetting,

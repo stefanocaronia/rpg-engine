@@ -1,0 +1,11 @@
+# A test extension without code, for one game system: its own months, in place of the real ones (TIM-8).
+title: four long seasons, a test extension
+about: a year of four months of ninety days
+language: en
+needs: {system: 5e}
+calendar:
+  months:
+    - {name: Thaw, days: 90, season: spring}
+    - {name: Bloom, days: 90, season: summer}
+    - {name: Ember, days: 90, season: autumn}
+    - {name: Frost, days: 95, season: winter}

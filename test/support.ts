@@ -8,6 +8,9 @@ import type { LogEntry } from "../src/core/log.ts";
 /** The game systems the tests see: those of the package, such as 5e, and the test system ironsworn. */
 export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url)), fileURLToPath(new URL("./systems/", import.meta.url))];
 
+/** The extensions the tests see: ours of the repository, such as weather, and the test ones. */
+export const testExtensionFolders = [fileURLToPath(new URL("../extensions/", import.meta.url)), fileURLToPath(new URL("./extensions/", import.meta.url))];
+
 /** How many pages a game system the tests see has, in a folder of its world if given: "The system 5e has 22 more pages". */
 export function systemPageCount(system: string, folder?: string): number
 {
@@ -28,6 +31,7 @@ export function testContext(folder: string): Context
         actor: "master",
         platform: "linux",
         systemFolders: testSystemFolders,
+        extensionFolders: testExtensionFolders,
     };
 }
 

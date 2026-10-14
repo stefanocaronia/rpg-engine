@@ -12,7 +12,7 @@ import { readEffect } from "../effects/index.ts";
 import { homeSystemWords } from "../page-words.ts";
 import { declaredKind, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
-import { formatGameDate } from "../time/index.ts";
+import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, type SeenEffect } from "./game-effects.ts";
@@ -25,7 +25,7 @@ import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-mood
 import { type Measures, measuresOf } from "./game-roads.ts";
 import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { readPresent } from "./game-time.ts";
+import { calendarDayOf, readPresent } from "./game-time.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
@@ -104,6 +104,8 @@ export type ViewResult =
         /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
+        /** The day of the calendar it is now, when the campaign has one (TIM-8). */
+        calendar?: CalendarDay;
         /** The master's mood, which the robot shows, and their last moment, which the dashboard shows for a few seconds when it is new (MOOD-4, MOOD-6). */
         master: { mood: Mood; moment?: MoodMoment; };
         party: PartyMember[];
@@ -343,6 +345,7 @@ export const view = defineCommand({
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
         const settings = readSettings(root);
+        const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
         const words = system === undefined || settings.language === undefined ? undefined : wordsOf(system, settings.language, context);
         return {
             kind: "overview",
@@ -351,6 +354,7 @@ export const view = defineCommand({
             ...(words === undefined ? {} : { words }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
+            ...(today === undefined ? {} : { calendar: today }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },
             party: [pc, ...companions].map(member),
             ...(place === undefined ? {} : { place }),

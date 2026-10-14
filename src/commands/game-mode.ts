@@ -37,6 +37,7 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     dice: `dice (${diceWays.join(", ")})`,
     units: `units (${unitSystems.join(", ")})`,
     companions: `companions (${companionWays.join(", ")})`,
+    "calendar-start": "calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491)",
     lines: 'lines ("none" is an answer)',
     veils: 'veils ("none" is an answer)',
 };
@@ -121,7 +122,7 @@ export function checklistLine(mode: Mode, root: string, context: Context, world:
     const name = unnamed ? ` The campaign is still named after its folder, ${settings.name}: propose a name that fits the premise, and set it with config name once the player likes it.` : "";
     // With the dashboard open, the setup's closed choices are made there, one at a time (D-370).
     const page = mode === "setup" && context.dashboard !== undefined
-        ? " The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the premise and the language. "
+        ? " The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the premise, the language and when the story starts. "
             + "Ask the rest only when they leave it to you, or once they say they are ready."
         : "";
     return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}. When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.${name}${page}`;

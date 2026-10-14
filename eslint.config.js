@@ -3,7 +3,7 @@ import typescriptParser from "@typescript-eslint/parser";
 
 // Only the layout rules dprint cannot apply: braces always, a blank line around block statements, at most one blank line.
 export default [
-    { ignores: ["dist/", "node_modules/", "sandbox/", "tmp/"] },
+    { ignores: ["**/dist/", "node_modules/", "sandbox/", "tmp/"] },
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.mjs"],
         languageOptions: { parser: typescriptParser },

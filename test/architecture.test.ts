@@ -33,7 +33,7 @@ describe("architecture", () => {
 
     it("reads and writes the campaign only through the store of the call, so that the MCP server can keep it (D-137, D-194)", () => {
         // The store itself, and what reads the package rather than a campaign: its version, its instructions, its game systems; init looks for campaigns below;
-        // Codex's own folders, outside the campaign, where a picture is made (D-308); the player's data folder, where the page's words translated on the fly are (D-406); the engine's own folder of programs, Codex and Claude Code (D-425).
+        // the installed extensions (D-436); Codex's own folders, outside the campaign, where a picture is made (D-308); the player's data folder, where the page's words translated on the fly are (D-406); the engine's own folder of programs, Codex and Claude Code (D-425).
         const allowed = [
             "core/files.ts",
             "core/session-store.ts",
@@ -41,6 +41,8 @@ describe("architecture", () => {
             "core/version.ts",
             "instructions/index.ts",
             "systems/game-system.ts",
+            "extensions/extension.ts",
+            "extensions/packages.ts",
             "systems/words.ts",
             "campaign/create-campaign.ts",
             "pictures/claude.ts",

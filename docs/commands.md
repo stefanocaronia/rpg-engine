@@ -23,7 +23,7 @@ Show or change the campaign settings.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, pictures, lines, veils, table, precedents, learned, coins, fields, tables, computed, counters, recipes, status-line, travel, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, calendar-start, pictures, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, learned, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, learned, status-line), repeatable
@@ -43,6 +43,16 @@ Install Codex or Claude Code on the player's computer, and open their sign-in.
 Read-only: no. Positional parameters: `program`.
 
 - `program` (`"codex" | "claude"`, required): codex for a ChatGPT account, any plan; claude for Claude Pro or Max
+
+### package
+
+Install, list or remove the packages of the campaign: extensions such as weather, from npm.
+
+Read-only: no. Positional parameters: `action`, `name`.
+
+- `action` (`"list" | "install" | "remove"`, required): list, install or remove
+- `name` (`string`, optional): the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder on this computer
+- `accept-risk` (`boolean`, optional): on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk
 
 ## Game
 

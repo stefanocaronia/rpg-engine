@@ -6,7 +6,7 @@ import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { CombatView } from "./combat.tsx";
-import type { Asked, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
+import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
@@ -41,6 +41,7 @@ interface Shown
     campaign?: string;
     system?: { name: string; title: string; attribution?: string; };
     now?: string;
+    calendar?: CalendarDay;
     party: Member[];
     chosen?: string;
     /** The line under the chosen one's name, such as Level 3 Cleric. */
@@ -141,6 +142,7 @@ function App()
                     campaign: overview.kind === "overview" ? overview.campaign : undefined,
                     system: overview.kind === "overview" ? overview.system : undefined,
                     now: overview.kind === "overview" ? overview.now : undefined,
+                    calendar: overview.kind === "overview" ? overview.calendar : undefined,
                     party,
                     chosen: member?.name,
                     headline: page?.kind === "page" ? page.headline : undefined,
@@ -259,6 +261,7 @@ function App()
                         product={productName}
                         system={shown.system?.name}
                         now={shown.now}
+                        calendar={shown.calendar}
                         path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
                         live={live}
                         mood={shown.masterMood}

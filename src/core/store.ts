@@ -250,6 +250,16 @@ export class FileStore
         }
     }
 
+    /** Forgets what it keeps of a folder's files and listings, and the values remembered from them, as after another program wrote there, npm installing a package (D-436). */
+    refresh(folder: string): void
+    {
+        const root = resolve(folder);
+        const within = (path: string): boolean => path === root || isInside(root, path);
+        [...this.kept.keys()].filter(within).forEach((path) => this.kept.delete(path));
+        [...this.listings.keys()].filter((path) => within(path) || isInside(path, root)).forEach((path) => this.listings.delete(path));
+        this.forgetBuiltFrom(root);
+    }
+
     /** Forgets the values remembered from a file. */
     protected forgetBuiltFrom(path: string): void
     {

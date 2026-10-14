@@ -7,7 +7,6 @@ export {
     type GameSystem,
     type GridRules,
     installedSystems,
-    type InstructionPart,
     type Recipe,
     type Reward,
     rollName,

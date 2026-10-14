@@ -3,8 +3,9 @@ import { changeState, requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
-import { nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./game-advance.ts";
+import { calendarText, nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./game-advance.ts";
 import { dueEvents, dueText, isDated, plannedEvents } from "./game-events.ts";
+import { timePassedLines } from "./game-extensions.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
@@ -21,7 +22,7 @@ export const advance = defineCommand({
         why: z.string().optional().describe("what the time is spent on"),
     }),
 
-    run(input, context): TimePassed
+    async run(input, context): Promise<TimePassed>
     {
         const root = requireCampaign(context.folder);
         const request = readRequest(input);
@@ -38,7 +39,23 @@ export const advance = defineCommand({
             changeState(root, { date: start });
             appendLogEntry(root, newDatedLogEntry(root, context, "time-advanced", "public", { to: start, why }));
             const next = nextAfter(plannedEvents(world).filter(isDated), request.to);
-            return { to: start, passed: 0, wanted: 0, due: [], stillDue: dueEvents(world, request.to).map(dueText), next, ended: [], newDays: 0, clocks: [], newDayPart: "", ...unreadNotes(world) };
+            const calendar = calendarText(root, context, request.to);
+            const extensionLines = await timePassedLines(root, context, request.to, request.to);
+            return {
+                to: start,
+                passed: 0,
+                wanted: 0,
+                due: [],
+                stillDue: dueEvents(world, request.to).map(dueText),
+                next,
+                ended: [],
+                newDays: 0,
+                clocks: [],
+                newDayPart: "",
+                calendar,
+                extensionLines,
+                ...unreadNotes(world),
+            };
         }
 
         const end = "by" in request ? addDuration(now, request.by) : request.to;
@@ -53,7 +70,8 @@ export const advance = defineCommand({
             throw new Error(`${formatGameDate(end)} is before now, ${formatGameDate(now)}: time never goes back.`);
         }
 
-        return passTime(root, context, world, now, wanted, why, input.by ?? input.to ?? "");
+        const passed = passTime(root, context, world, now, wanted, why, input.by ?? input.to ?? "");
+        return passed.passed === 0 ? passed : { ...passed, extensionLines: await timePassedLines(root, context, now, addDuration(now, passed.passed)) };
     },
 
     format(result)
@@ -92,13 +110,15 @@ function readRequest(input: { by?: string; to?: string; }): { by: number; } | { 
 /** The first line: where time went, and where it stopped short of what was asked. */
 function movedLine(result: TimePassed, rest: number): string
 {
+    const to = result.calendar === undefined ? result.to : `${result.to} (${result.calendar})`;
+
     if (result.from === undefined) {
-        return `The game starts on ${result.to}.`;
+        return `The game starts on ${to}.`;
     }
 
     if (result.passed === 0) {
-        return `Nothing changed: it is already ${result.to}.`;
+        return `Nothing changed: it is already ${to}.`;
     }
 
-    return `${result.from} → ${result.to}${rest > 0 ? `: stopped after ${formatDuration(result.passed)} of ${formatDuration(result.wanted)}` : ""}.`;
+    return `${result.from} → ${to}${rest > 0 ? `: stopped after ${formatDuration(result.passed)} of ${formatDuration(result.wanted)}` : ""}.`;
 }

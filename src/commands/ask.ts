@@ -144,7 +144,7 @@ export const ask = defineCommand({
 async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
-    const chosen = await choose(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] });
+    const chosen = await chooseAnswer(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] });
 
     const asked = askedText(question, "checks", checks);
 
@@ -239,7 +239,7 @@ function standingOn(world: World, who: string): { place?: Page; map?: ReturnType
 async function answer(root: string, context: Context, question: string, options: Option[], words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = options.map((option) => option.label);
-    const chosen = await choose(context, question, words.choice, labels);
+    const chosen = await chooseAnswer(context, question, words.choice, labels);
     const asked = askedText(question, "answers", options);
 
     if (chosen === "absent" || context.signal?.aborted === true) {
@@ -282,7 +282,7 @@ function askedText(question: string, what: "checks" | "answers", options: Option
  * The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). A form that does not show, while
  * the dashboard runs, is only absent this time: a page may open.
  */
-async function choose(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">
+export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">
 {
     const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal, rows);
 

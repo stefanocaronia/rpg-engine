@@ -339,6 +339,8 @@ export type View =
         /** The game system: its name, what it is, and what its source asks to say. */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
+        /** The day of the calendar it is now, when the campaign has one (TIM-8). */
+        calendar?: CalendarDay;
         /** The master's mood, and their last moment (MOOD-6). */
         master?: { mood: Mood; moment?: Moment; };
         party: Member[];
@@ -449,6 +451,15 @@ export interface PlayerSetting
     note?: { text: string; fix?: true; };
     /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
     most?: number;
+}
+
+/** A day of the game's calendar: the day of its month, the month, its season and its year, when the calendar has them (TIM-8). */
+export interface CalendarDay
+{
+    day: number;
+    month: string;
+    season?: string;
+    year?: number;
 }
 
 /** A game system's words in the campaign's language (D-403): its groups by their names, its fields' labels by their ids, other words and texts by their English. */

@@ -8,6 +8,7 @@ import { environmentAt, locate, type Page, pageNamed, parsePageReference, type P
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
+import { timePassedLines } from "./game-extensions.ts";
 import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
 import { playerCharacter } from "./game-knowledge.ts";
 import { mapKey, mapOf } from "./game-maps.ts";
@@ -129,7 +130,7 @@ export const travel = defineCommand({
         ),
     }),
 
-    run(input, context): TravelResult
+    async run(input, context): Promise<TravelResult>
     {
         const root = requireCampaign(context.folder);
         let world = campaignWorld(root, context);
@@ -187,7 +188,8 @@ export const travel = defineCommand({
         const around = point === undefined || plan.from === undefined ? [] : aroundLines(world, roads, plan.from, point, measures, plan.map?.path);
         const merged = mergedTimes(walked.times);
         // What holds around the player character where the journey ended, not where the last hour passed (ENV-5).
-        const time = merged === undefined ? undefined : { ...merged, around: merged.passed >= 60 ? aroundLead(world) : undefined };
+        const extensionLines = merged === undefined ? [] : await timePassedLines(root, context, now, addDuration(now, merged.passed));
+        const time = merged === undefined ? undefined : { ...merged, around: merged.passed >= 60 ? aroundLead(world) : undefined, extensionLines };
         // A passage's conditions are its page's text, the master's to judge (ROA-8).
         const passages = (plan.passages ?? []).map((name) => `The way goes through ${name}, a passage to another map: read its page for when and how it opens.`);
         return { ...told, reached: walked.reached, date: formatGameDate(date), travelled, hoursLeft: Math.max(0, plan.hours * 60 - travelled), ending, around, time, notes: [...passages, ...walked.notes] };

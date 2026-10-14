@@ -3,16 +3,18 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
+import { extensionCommands } from "./commands/game-extensions.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
-import { type Context, defaultContext, type Player } from "./core/context.ts";
+import { type Context, defaultContext, packagesFolder, type Player } from "./core/context.ts";
 import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
-import { withFiles } from "./core/store.ts";
+import { FileStore, withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
+import { npmPackages } from "./extensions/index.ts";
 import { startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
 import { computerHelpers, hostPictures, hostWriter } from "./pictures/index.ts";
@@ -60,8 +62,12 @@ export function createMcpServer(context: Context = defaultContext(), environment
         }
     };
 
+    // The tools of the campaign's extensions, kept in step after every call, as one that installs an extension or makes the campaign (D-63).
+    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside).finally(extensions));
+    firstExtensions.set(server, extensions());
+
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside));
+        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside).finally(extensions));
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -104,10 +110,12 @@ export async function startMcpServer(): Promise<void>
     // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
-    const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host), helpers: computerHelpers() };
+    const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host), helpers: computerHelpers(), packages: npmPackages(packagesFolder()), host };
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
     server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
+    // The extensions' tools are there in the first list the host asks for.
+    await firstExtensions.get(server);
     await server.connect(new StdioServerTransport());
 }
 
@@ -152,6 +160,53 @@ async function preload(context: Context, session: SessionStore): Promise<void>
     } catch {
         // The call that needs the campaign reads it again, and says what is wrong.
     }
+}
+
+// The first loading of each server's extension tools, which the server started for a host waits for.
+const firstExtensions = new WeakMap<McpServer, Promise<void>>();
+
+/**
+ * Keeps the tools of the campaign's extensions in step with campaign.yaml (D-63, D-428): a tool is registered once its code is loaded, and enabled only while
+ * the campaign uses its extension; hosts hear the list changed. What does not load stays out: status and validate say why.
+ */
+function extensionTools(server: McpServer, context: Context, handler: (command: AnyCommand) => (input: unknown, extra: ToolExtra) => Promise<CallToolResult>): () => Promise<void>
+{
+    // Each tool with the package and version that give it: another one in its place is registered anew.
+    const registered = new Map<string, { tool: RegisteredTool; source: string; }>();
+    const taken = commands.map((command) => command.name);
+    let running = Promise.resolve();
+
+    const sync = async (): Promise<void> => {
+        const store = context.files ?? new FileStore(context.systemFolders);
+        const own = await withFiles(store, async () => {
+            const root = findCampaign(context.folder);
+            return root === undefined ? { commands: [], sources: {} as Record<string, string> } : await extensionCommands(root, context, taken);
+        });
+
+        for (const command of own.commands) {
+            const kept = registered.get(command.name);
+            const source = own.sources[command.name] ?? "";
+
+            if (kept !== undefined && kept.source !== source) {
+                kept.tool.remove();
+            }
+
+            if (kept === undefined || kept.source !== source) {
+                registered.set(command.name, { tool: server.registerTool(command.name, toolConfig(command), handler(command)), source });
+            } else if (!kept.tool.enabled) {
+                kept.tool.enable();
+            }
+        }
+
+        for (const [name, kept] of registered) {
+            if (kept.tool.enabled && !own.commands.some((command) => command.name === name)) {
+                kept.tool.disable();
+            }
+        }
+    };
+
+    // One at a time, and never failing the call it follows.
+    return () => (running = running.then(sync).catch(() => undefined));
 }
 
 function toolConfig(command: AnyCommand)

@@ -1,1 +1,3 @@
 export { getVersion } from "./core/version.ts";
+// What an extension's code is given and gives back (D-436): extensions import these types from rpg-engine.
+export type { CalendarDay, ExtensionCode, ExtensionCommand, ExtensionEntry, ExtensionKit, Game, GameMoment, TimePassage } from "./extensions/index.ts";

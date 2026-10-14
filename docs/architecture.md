@@ -15,6 +15,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server |
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
 | [systems/](../systems/) | Built-in game systems: [5e](../systems/5e/) |
+| [extensions/](../extensions/) | Our extensions, each an npm package of its own: [weather](../extensions/weather/); see [extensions.md](extensions.md) |
 | [instructions/](../instructions/) | The game master's instructions |
 | [test/](../test/) | Tests and the Ironsworn-based test system |
 
@@ -23,12 +24,13 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | `pages` | Page files, frontmatter, sections and secrets, links, inheritance, containers, environment, checks |
 | `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml` |
 | `systems` | The installed game systems and their `system.yaml` |
+| `extensions` | The installed extensions and their `extension.yaml`; the API their code is given; npm for the packages |
 | `dice` | Dice notation, digital or physical faces, proofs for hidden rolls |
 | `counters` | Counters such as `5/12` |
 | `money` | Coins and amounts, paying with change |
 | `effects` | Effect lines: name, keeper, values, end |
 | `scene` | The open scene: participants, numbered copies, turn order |
-| `time` | Game dates and durations |
+| `time` | Game dates and durations; the calendar that shows a date as a day of a month |
 | `rules` | Rules as text: sections, word search |
 | `triggers` | Event conditions such as `party in [[Ossario]]` |
 | `instructions` | Reads `instructions/` from the package |
@@ -101,13 +103,14 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 | Pictures | A page's `image`; pictures drawn by the player's Codex or Claude | [images/](../src/images/), [pictures/](../src/pictures/), [commands/image.ts](../src/commands/image.ts) |
 | Moods | The master's and the characters' moods, from a closed list | [core/mood.ts](../src/core/mood.ts), [commands/mood.ts](../src/commands/mood.ts) |
 | The player's view | What the player may see, never a secret: party, place, scene, map, journal, settings, saves | [commands/view.ts](../src/commands/view.ts), [commands/game-knowledge.ts](../src/commands/game-knowledge.ts) |
-| Time | The game date; `advance` stops at the first event due and ends effects | [time/](../src/time/), [commands/advance.ts](../src/commands/advance.ts) |
+| Time | The game date, `day N`; with `calendar-start` also a day of the calendar, the real months unless the campaign gives its own; `advance` stops at the first event due and ends effects | [time/](../src/time/), [commands/advance.ts](../src/commands/advance.ts) |
 | Events | Planned events, due by date, clock or condition | [triggers/](../src/triggers/), [commands/game-events.ts](../src/commands/game-events.ts) |
 | Environment | A place's `environment` holds for everything inside it | [pages/environment.ts](../src/pages/environment.ts) |
 | Travel | Roads as places with `stops`, positions, travel on and off roads, maps of places | [map/](../src/map/), [grid/](../src/grid/), [commands/travel.ts](../src/commands/travel.ts) |
 | Rules | House rules, then the system's chapters, then precedents | [rules/](../src/rules/), [commands/rules.ts](../src/commands/rules.ts) |
 | Problems | What `validate` lists; most never stop other commands | [commands/problems.ts](../src/commands/problems.ts), [pages/check.ts](../src/pages/check.ts) |
-| Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
+| Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions' | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
+| Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
 | Translation | The dashboard's phrases and a system's words in the campaign's language | [page-words.ts](../src/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |
 
 ### The dashboard
@@ -116,7 +119,7 @@ The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's f
 
 ## 6. Tests
 
-`npm test` runs vitest on `test/` and `systems/*/test/`. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds; [test/systems/](../test/systems/) has an Ironsworn-based system so the core stays generic; [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system.
+`npm test` runs vitest on `test/`, `systems/*/test/` and `extensions/*/test/`. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds; [test/systems/](../test/systems/) has an Ironsworn-based system so the core stays generic; [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system.
 
 ## 7. How to add things
 

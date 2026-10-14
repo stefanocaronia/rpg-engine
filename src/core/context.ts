@@ -28,6 +28,14 @@ export interface Context
     signal?: AbortSignal;
     /** The folders that hold the installed game systems, nearest first (SYS-1). */
     systemFolders: string[];
+    /** The folders that hold the installed extensions, each a package folder or npm's node_modules (D-436); none where missing. */
+    extensionFolders?: string[];
+    /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */
+    host?: () => string | undefined;
+    /** The command was typed by the player in their own terminal: their own hands, as the yes to a package not ours needs (D-441). */
+    terminal?: boolean;
+    /** npm on this computer, which installs the packages in the engine's own folder (D-436); missing where nothing installs, as in most tests. */
+    packages?: PackageManager;
     /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
@@ -51,6 +59,29 @@ export interface Context
     pageFolder?: string;
     /** Codex and Claude Code on this computer, installed and signed in with the player's yes (D-424); missing outside the MCP server, as in tests. */
     helpers?: Helpers;
+}
+
+/** A package for rpg-engine as npm or its folder describes it (D-439): its name, version and kind, and what it is. */
+export interface PackageInfo
+{
+    name: string;
+    version: string;
+    /** What its package.json says it is for rpg-engine: extension, system…; undefined for a package that is not one. */
+    kind?: string;
+    /** The version of the extensions' API it is made for (D-441). */
+    api?: number;
+    description?: string;
+}
+
+/** npm for the packages (D-436): what one is before it is installed, installing it in the engine's folder without running its scripts, and the search. */
+export interface PackageManager
+{
+    /** A package by its npm name, with a version or not, or by its folder; why not when there is none. */
+    describe(spec: string): Promise<PackageInfo | { failed: string; missing?: true; }>;
+    /** Installs it: undefined once it is installed, else why not. */
+    install(spec: string): Promise<string | undefined>;
+    /** The packages for rpg-engine npm has, by their keyword and what their package.json says. */
+    search(): Promise<PackageInfo[] | { failed: string; }>;
 }
 
 /** A program of this computer that writes and draws outside the chat, with the player's own login (D-424). */
@@ -158,10 +189,25 @@ export function defaultContext(folder = process.cwd()): Context
         platform: process.platform,
         // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up.
         systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url))],
+        extensionFolders: [join(packagesFolder(), "node_modules")],
         home: userDataFolder(),
         // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.
         pageFolder: fileURLToPath(new URL("../../dist/dashboard/", import.meta.url)),
     };
+}
+
+/** Where the engine installs the packages, with npm, on this computer (D-436): the player's local data, beside the programs it installs (D-425). */
+export function packagesFolder(): string
+{
+    const home = homedir();
+
+    if (process.platform === "win32") {
+        return join(process.env.LOCALAPPDATA || join(home, "AppData", "Local"), "rpg-engine", "packages");
+    }
+
+    return process.platform === "darwin"
+        ? join(home, "Library", "Application Support", "rpg-engine", "packages")
+        : join(process.env.XDG_DATA_HOME || join(home, ".local", "share"), "rpg-engine", "packages");
 }
 
 /** Where this player's data is kept on this computer (D-406): the folder the system gives a program's data. */

@@ -1,6 +1,6 @@
 // What the engine gives as data, written in the page's language (D-403): game dates, the ends of effects, where places are, what the points say of the levels,
 // the facts of the story, dice in words, where someone is. The chat has its own English words for the same data.
-import type { DiceCondition, EffectEnd, JournalFact, Member, NotationPart, SheetValue } from "./data.ts";
+import type { CalendarDay, DiceCondition, EffectEnd, JournalFact, Member, NotationPart, SheetValue } from "./data.ts";
 import { fieldLabel, phraseLabel } from "./labels.ts";
 import { isolated, listText, systemWord, t } from "./text.ts";
 
@@ -9,6 +9,34 @@ export function gameDateLabel(date: string): string
 {
     const read = readDate(date);
     return read === undefined ? date : read.time === undefined ? t("day {day}", read) : t("day {day}, {time}", read);
+}
+
+/** A day of the game's calendar in the page's language, its month and season in the words of who brought them: 1 maggio, primavera (TIM-8). */
+export function calendarDayLabel(date: CalendarDay): string
+{
+    const real = realMonths.indexOf(date.month);
+    const day = real >= 0 ? realDayLabel(date, real) : date.year === undefined
+        ? t("{day} {month}", { day: date.day, month: systemWord("words", date.month) ?? date.month })
+        : t("{day} {month} {year}", { day: date.day, month: systemWord("words", date.month) ?? date.month, year: date.year });
+    const seasons: Record<string, string> = { winter: t("winter"), spring: t("spring"), summer: t("summer"), autumn: t("autumn") };
+    const season = date.season === undefined ? undefined : (seasons[date.season] ?? systemWord("words", date.season) ?? date.season);
+    return season === undefined ? day : t("{date}, {season}", { date: day, season });
+}
+
+// The core's real months (TIM-8), which the page's language names on its own, as it bends them: 1 мая, 1. května.
+const realMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** A day of a real month as the page's language writes it, with its year when the story has one. */
+function realDayLabel(date: CalendarDay, month: number): string
+{
+    const at = new Date(Date.UTC(2001, month, date.day));
+
+    if (date.year !== undefined) {
+        at.setUTCFullYear(date.year);
+    }
+
+    const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", timeZone: "UTC", ...(date.year === undefined ? {} : { year: "numeric" }) };
+    return new Intl.DateTimeFormat(document.documentElement.lang || "en", options).format(at);
 }
 
 // A date within a phrase is put in it by its day and hour, which each language bends as the phrase needs: до дня 3, jusqu'au jour 3.

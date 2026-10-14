@@ -19,11 +19,10 @@
     "systems",
     "!systems/*/test",
     "!systems/*/build",
-    "extensions",
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\"",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p extensions/weather",
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",

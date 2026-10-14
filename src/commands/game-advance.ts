@@ -3,12 +3,12 @@ import { changeState } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { isEmptyField, type World } from "../pages/index.ts";
-import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
+import { addDuration, formatCalendarDay, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { endedByDate, endEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { newDatedLogEntry } from "./game-time.ts";
+import { calendarDayOf, newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { shortList, skippedPagesNote } from "./notes.ts";
 import { situationPart } from "./parts.ts";
@@ -40,6 +40,10 @@ export interface TimePassed
     newDays: number;
     clocks: string[];
     newDayPart: string;
+    /** The day of the calendar reached, when the campaign has one (TIM-8): 15 April, spring. */
+    calendar?: string;
+    /** What the campaign's extensions said of the time passed, such as the weather of a new morning (D-436). */
+    extensionLines?: string[];
 }
 
 // An hour or more passing usually ends a scene: then advance reminds that one is still open.
@@ -67,6 +71,7 @@ export function passTime(root: string, context: Context, world: World, now: Game
         openScene: passed >= sceneReminderMinutes ? openSceneText(root) : undefined,
         newDays: reached.day - now.day,
         clocks: reached.day > now.day ? clocksToMove(world, reached) : [],
+        calendar: calendarText(root, context, reached),
         ...unreadNotes(world),
     };
 
@@ -98,6 +103,7 @@ export function passedLines(result: TimePassed, then: string): string[]
         result.around === undefined ? "" : `Around ${result.around}.`,
         clocksLine(result.newDays, result.to, result.clocks),
         result.newDayPart,
+        ...(result.extensionLines ?? []),
         result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
         skippedPagesNote(result.skipped),
     ].filter((line) => line !== "");
@@ -108,6 +114,13 @@ export function unreadNotes(world: World): { unreadable: string[]; skipped: stri
 {
     const events = plannedEvents(world);
     return { unreadable: events.filter((event) => !isDated(event) && !isEmptyField(event.page.fields.date)).map((event) => event.page.name), skipped: world.problems };
+}
+
+/** The day of the calendar a date falls on, as outputs write it after the date: 15 April, spring; undefined without a calendar (TIM-8). */
+export function calendarText(root: string, context: Context, date: GameDate): string | undefined
+{
+    const day = calendarDayOf(root, context, date.day);
+    return day === undefined ? undefined : formatCalendarDay(day);
 }
 
 /** The first events after `date`: all those at the same moment. */

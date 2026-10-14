@@ -45,10 +45,11 @@ import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
+import { readCalendar, readCalendarStart } from "../time/index.ts";
 import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { newDatedLogEntry } from "./game-time.ts";
+import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
@@ -143,10 +144,15 @@ export const config = defineCommand({
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
         }
 
+        // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.
+        if (input.setting?.trim() === "calendar" && input.value !== undefined) {
+            replaced = [...replaced, ...campaignCalendar(root, context).problems.map((problem) => `${problem.message.replace(/\.$/, "")}: ${problem.fix ?? "fix it"}.`)];
+        }
+
         const settings = readSettings(root);
         // Listed all together, what the campaign adds to its system only when it adds something.
         const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
-        const listed = input.setting === undefined ? shown.filter((name) => !added(name) || settings[name] !== undefined) : shown;
+        const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar") || settings[name] !== undefined) : shown;
         const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
         // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
         const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
@@ -173,7 +179,7 @@ export const config = defineCommand({
 });
 
 // The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
-const freeSettingNames: SettingName[] = ["author", "style"];
+const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
 const styleSettingNames = ["prose", "story", "author", "style"];
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
@@ -562,7 +568,33 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
 /** A setting's value as config writes it: an installed system by the name it is installed under (D-167), the coins read and checked (MON-1), anything else as given. */
 function settingValue(root: string, setting: string, value: string, context: Context): unknown
 {
+    if (setting === "calendar") {
+        const read = yamlValue(value, "the calendar", "months: [{name: January, days: 31, season: winter}, ...]");
+
+        try {
+            return readCalendar(read);
+        } catch (error) {
+            throw new Error(`${error instanceof Error ? error.message : String(error)} Nothing changed.`);
+        }
+    }
+
+    if (setting === "calendar-start") {
+        return calendarStartValue(root, context, value);
+    }
+
     return setting === "coins" ? newCoins(root, value, context) : setting === "system" ? installedSystemName(value, context, "config") : value;
+}
+
+/** When the story starts, day 1 or a day of the campaign's calendar (TIM-8), checked and written as given. */
+function calendarStartValue(root: string, context: Context, value: string): string
+{
+    try {
+        readCalendarStart(value, campaignCalendar(root, context).calendar);
+    } catch (error) {
+        throw new Error(`${error instanceof Error ? error.message : String(error)} Nothing changed.`);
+    }
+
+    return value.trim().replace(/\s+/g, " ");
 }
 
 /** The system as config shows it: what it is and which version brings it (D-173); missing or not installed, with those that are (D-167). */
@@ -626,19 +658,23 @@ function formatValue(value: unknown): string
 /** The entries given to a setting that holds them, read as YAML, such as "superiority-dice: {max: 4, refill: short rest}" (CAM-1). */
 function entriesOf(setting: string, text: string): Record<string, unknown>
 {
-    let value: unknown;
-
-    try {
-        value = parse(text);
-    } catch (error) {
-        throw new Error(`"${text}" does not read: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}. Write the entries as in system.yaml, such as name: value. Nothing changed.`);
-    }
+    const value = yamlValue(text, "the entries", "name: value");
 
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(`${setting} takes entries by name, written as in system.yaml, such as ${setting === "counters" ? `'${counterExample}'` : '"name: value"'}. Nothing changed.`);
     }
 
     return value as Record<string, unknown>;
+}
+
+/** A value given as YAML text, read; what does not read says how to write it. */
+function yamlValue(text: string, what: string, example: string): unknown
+{
+    try {
+        return parse(text) as unknown;
+    } catch (error) {
+        throw new Error(`"${text}" does not read: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}. Write ${what} as in system.yaml, such as ${example}. Nothing changed.`);
+    }
 }
 
 /**

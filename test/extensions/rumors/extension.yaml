@@ -1,0 +1,4 @@
+# A test extension of someone else's (D-441): its code must not run, and its part must not take the place of the core's.
+title: rumors in taverns, a test extension
+about: a rumor in each tavern
+language: en

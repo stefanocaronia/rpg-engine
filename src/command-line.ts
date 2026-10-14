@@ -1,10 +1,14 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { findCampaign } from "./campaign/index.ts";
+import { extensionCommands } from "./commands/game-extensions.ts";
 import { commands } from "./commands/index.ts";
-import { type Context, defaultContext } from "./core/context.ts";
+import { type Context, defaultContext, packagesFolder } from "./core/context.ts";
 import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
+import { FileStore, withFiles } from "./core/store.ts";
 import { firstSentence } from "./core/text.ts";
 import { getVersion } from "./core/version.ts";
+import { npmPackages } from "./extensions/index.ts";
 import { hostPictures } from "./pictures/index.ts";
 
 export interface CommandLineResult
@@ -19,12 +23,15 @@ type AnyCommand = Command<any, any>;
 const mcpDescription = "Start the MCP server for an AI host. Through it the host uses these commands as tools; the host starts it, with no options.";
 
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
-export async function runCommandLine(argv: string[], context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined) }): Promise<CommandLineResult>
+export async function runCommandLine(
+    argv: string[],
+    context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined), packages: npmPackages(packagesFolder()), terminal: true },
+): Promise<CommandLineResult>
 {
     const [commandName, ...args] = argv;
 
     if (commandName === undefined || commandName === "--help" || commandName === "-h") {
-        return success(generalHelp());
+        return success(generalHelp(await campaignCommands(context)));
     }
 
     if (commandName === "--version" || commandName === "-v") {
@@ -35,10 +42,11 @@ export async function runCommandLine(argv: string[], context: Context = { ...def
         return success(`rpg mcp\n\n${mcpDescription}`);
     }
 
-    const command = commands.find((candidate) => candidate.name === commandName);
+    const own = commands.some((candidate) => candidate.name === commandName) ? [] : await campaignCommands(context);
+    const command = [...commands, ...own].find((candidate) => candidate.name === commandName);
 
     if (!command) {
-        return failure(`Unknown command "${commandName}".\n\n${generalHelp()}`);
+        return failure(`Unknown command "${commandName}".\n\n${generalHelp(own)}`);
     }
 
     if (command.needsPlayer) {
@@ -142,10 +150,23 @@ function inputFields(command: AnyCommand): [string, z.ZodType][]
     return Object.entries(command.input.shape as Record<string, z.ZodType>);
 }
 
-/** The commands in two groups, each with the first sentence of its description. */
-function generalHelp(): string
+/** The commands of the extensions of the campaign in the folder, if there is one (D-63): none where they do not load, which status says. */
+async function campaignCommands(context: Context): Promise<AnyCommand[]>
 {
-    const width = Math.max(...commands.map((command) => command.name.length));
+    try {
+        return await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
+            const root = findCampaign(context.folder);
+            return root === undefined ? [] : (await extensionCommands(root, context, commands.map((command) => command.name))).commands;
+        });
+    } catch {
+        return [];
+    }
+}
+
+/** The commands in two groups, each with the first sentence of its description, and those of the campaign's extensions. */
+function generalHelp(own: AnyCommand[]): string
+{
+    const width = Math.max(...[...commands, ...own].map((command) => command.name.length));
     const line = (name: string, description: string): string => `  ${name.padEnd(width)} ${firstSentence(description)}`;
     const groupLines = (group: string): string[] => commands.filter((command) => command.group === group && !command.needsPlayer).map((command) => line(command.name, command.description));
     return [
@@ -158,6 +179,7 @@ function generalHelp(): string
         "Game:",
         ...groupLines("game"),
         "",
+        ...(own.length === 0 ? [] : ["The campaign's extensions:", ...own.map((command) => line(command.name, command.description)), ""]),
         "Run `rpg <command> --help` for its options.",
     ].join("\n");
 }
