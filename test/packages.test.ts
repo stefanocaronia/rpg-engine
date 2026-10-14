@@ -38,6 +38,9 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
     };
 }
 
+// The weather's version, as its package.json gives it.
+const weatherVersion = (JSON.parse(readFileSync(join(testExtensionFolders[0], "weather", "package.json"), "utf8")) as { version: string; }).version;
+
 /** A player who answers on the dashboard's page with this button. */
 function pageAnswering(button: number): Player
 {
@@ -72,14 +75,14 @@ describe("rpg package install", () => {
     it("installs one of ours by its name alone, adds it to the campaign with its version, logs it, and gives the part for now (D-27, D-436)", async () => {
         const result = await rpg("package", "install", "weather");
         expect(result.output).toMatch(
-            /^Installed weather 0\.1\.0, verified, and the campaign uses it: the sky changes each dawn by a roll, with the seasons, hot deserts, polar cold and fog\. Its commands: weather, weather-set\. Its parts of your instructions are given when they apply: play, setup\.\n\nIts part for now:\n\nThe weather changes by itself each dawn/,
+            /^Installed weather \d+\.\d+\.\d+, verified, and the campaign uses it: the sky changes each dawn by a roll, with the seasons, hot deserts, polar cold and fog\. Its commands: weather, weather-set\. Its parts of your instructions are given when they apply: play, setup\.\n\nIts part for now:\n\nThe weather changes by itself each dawn/,
         );
         expect(npm.installed).toEqual(["@rpgengine/weather"]);
-        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain('\nextensions:\n  "@rpgengine/weather": 0.1.0\n');
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", visibility: "public", data: { package: "@rpgengine/weather", version: "0.1.0", verified: true } });
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain(`\nextensions:\n  "@rpgengine/weather": ${weatherVersion}\n`);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", visibility: "public", data: { package: "@rpgengine/weather", version: weatherVersion, verified: true } });
         expect((await rpg("status")).output).toContain("\nExtensions: weather (the sky changes each dawn");
 
-        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather 0\.1\.0, verified: the sky/);
+        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified: the sky/);
         expect(npm.installed).toEqual(["@rpgengine/weather"]);
     });
 
@@ -157,7 +160,7 @@ describe("rpg package install", () => {
     it("installs again a copy on this computer that no longer reads", async () => {
         await rpg("package", "install", "weather");
         writeFileSync(join(modules, "@rpgengine", "weather", "extension.yaml"), "title: [broken\n");
-        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather 0\.1\.0, verified|^Installed weather 0\.1\.0, verified/);
+        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified|^Installed weather \d+\.\d+\.\d+, verified/);
         expect(npm.installed).toEqual(["@rpgengine/weather", "@rpgengine/weather"]);
     });
 });
@@ -168,7 +171,7 @@ describe("rpg package list and remove", () => {
         await rpg("package", "install", "omens");
         writeFileSync(join(modules, "@rpgengine", "omens", "extension.yaml"), "title: [broken\n");
         expect((await rpg("package", "list")).output).toMatch(
-            /^On this computer: omens \(broken: .*; install it again\); weather 0\.1\.0, used by the campaign\.\nOn npm: rumors 2\.0\.0 \(not verified\): a test package; seasons-of-the-test 0\.1\.0 \(not verified\): a test package\.$/,
+            /^On this computer: omens \(broken: .*; install it again\); weather \d+\.\d+\.\d+, used by the campaign\.\nOn npm: rumors 2\.0\.0 \(not verified\): a test package; seasons-of-the-test 0\.1\.0 \(not verified\): a test package\.$/,
         );
     });
 
@@ -181,6 +184,6 @@ describe("rpg package list and remove", () => {
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
         expect((await rpg("weather")).output).toMatch(/^Unknown command "weather"/);
         expect((await rpg("package", "remove", "weather")).output).toBe("The campaign does not use weather: it uses no package. Nothing changed.");
-        expect((await rpg("package", "list")).output).toMatch(/^On this computer: weather 0\.1\.0\.\n/);
+        expect((await rpg("package", "list")).output).toMatch(/^On this computer: weather \d+\.\d+\.\d+\.\n/);
     });
 });
