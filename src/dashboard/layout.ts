@@ -47,7 +47,8 @@ export function groupLayout(group: SheetGroup): GroupLayout
         return "table";
     }
 
-    return group.values.length <= mostTiles && group.values.every((value) => widgetOf(value) === "number") ? "tiles" : "rows";
+    // Words the system declares as text, as the eyes or the hair, are rows even when short: a tile is drawn for a number.
+    return group.values.length <= mostTiles && group.values.every((value) => widgetOf(value) === "number" && value.kind !== "text") ? "tiles" : "rows";
 }
 
 /**

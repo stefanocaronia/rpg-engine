@@ -64,7 +64,7 @@ describe("rpg status", () => {
             "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
-            "PC: Ennio, in Laboratorio › Cripta: hp 5/12 · arrows 18",
+            "PC: Ennio, in Laboratorio › Cripta: hp 5/12",
             "Companions: Lena, with Ennio: hp 7/7",
             "Ennio's sheet still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.",
             "Lena's sheet still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.",

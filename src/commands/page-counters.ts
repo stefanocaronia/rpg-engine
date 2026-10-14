@@ -5,6 +5,7 @@ import { declaredKind, isDeclaredUncounted, isEmptyField, isStandardField, type 
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { experienceOf, experienceText } from "./game-experience.ts";
+import { counterOf } from "./sheet.ts";
 import { signedText } from "./worked-out.ts";
 
 /**
@@ -73,8 +74,10 @@ export function lineCounters(world: World, page: Page, coins: Coin[] | undefined
 
     for (const [field, value] of Object.entries(counters)) {
         const counter = readCounter(value);
+        // A number written without a maximum, as age: 30, is not something spent: only money, a counter the system declares or one with limits shows (D-430).
+        const resource = counter === undefined || counterOf(world, fields, field, value) !== undefined;
 
-        if (!used.has(field) && !leftOut(field) && !(declaredKind(world, field) === "counter" && counter?.max === undefined && counter?.value === 0)) {
+        if (resource && !used.has(field) && !leftOut(field) && !(declaredKind(world, field) === "counter" && counter?.max === undefined && counter?.value === 0)) {
             shown[field] = value;
         }
     }

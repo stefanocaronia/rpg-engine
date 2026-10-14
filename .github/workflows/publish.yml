@@ -37,7 +37,5 @@ jobs:
       - run: npm run build
       - run: npm test
 
-      # With the token for the first version; once npm's Trusted Publisher is set for this workflow, the token is deleted and publishing goes through OIDC.
+      # npm's Trusted Publisher for this workflow and its release environment: no token, the job's OIDC identity publishes, with provenance.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

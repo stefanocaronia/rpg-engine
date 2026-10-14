@@ -183,9 +183,9 @@ describe("what derives, and what it shows", () => {
     it("shows all the counters a page holds, and of those it inherits only the current/max ones", async () => {
         await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11", "--set", "difesa=13", "--set", "speed=12");
         await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "fiuto=3");
-        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11 · fiuto 3");
+        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11");
         expect(await ok("change", "Zanna", "difesa", "--by=-1")).toBe("Zanna: difesa 13 → 12.");
-        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11 · difesa 12 · fiuto 3");
+        expect(await ok("status")).toContain("Companions: Zanna: hp 11/11");
     });
 
     it("says where a field comes from when it cannot be removed from the page", async () => {

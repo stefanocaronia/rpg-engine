@@ -255,7 +255,7 @@ describe("notes on values (EFF-3, EFF-4)", () => {
 describe("effects written by hand (EFF-1, EFF-12)", () => {
     it("reads lines written without quotes, and an Effects field in any case", async () => {
         writeFileSync(join(folder, "world", "characters", "Lena.md"), "---\nrole: companion\nhp: 9/9\nEffects:\n  - Maledetta (fiuto: 6) until day 9, 06:00\n---\n");
-        expect(await ok("status")).toContain("Companions: Lena, with Ennio: hp 9/9 · fiuto 6 · Maledetta until day 9, 06:00");
+        expect(await ok("status")).toContain("Companions: Lena, with Ennio: hp 9/9 · Maledetta until day 9, 06:00");
         expect(await ok("effect", "add", "Lena", "Prona")).toBe("Lena: Prona, until it is ended.");
         expect(page("characters/Lena.md")).toBe('---\nrole: companion\nhp: 9/9\nEffects:\n  - "Maledetta (fiuto: 6) until day 9, 06:00"\n  - Prona\n---\n');
     });

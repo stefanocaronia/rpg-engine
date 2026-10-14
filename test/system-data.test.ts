@@ -58,17 +58,19 @@ describe("the coins of the system (DAT-1)", () => {
 });
 
 describe("the character sheet (DAT-2)", () => {
-    it("orders the status line as the system says, with its numbers, hides what is marked at zero, and keeps the other counters after", async () => {
-        await ok("write", "Ennio", "--set", "temp-hp=0", "--set", "exhaustion=0/6", "--set", "death-failures=0/3", "--set", "xp=0", "--set", "frecce=18", "--set", "passive-perception=12");
-        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · xp 0 · hp 5/12 · ac 14 · passive-perception 12 · frecce 18");
+    it("orders the status line as the system says, with its numbers, hides what is marked at zero, and keeps after it the other counters with a maximum", async () => {
+        await ok("write", "Ennio", "--set", "temp-hp=0", "--set", "exhaustion=0/6", "--set", "death-failures=0/3", "--set", "xp=0", "--set", "frecce=18/20", "--set", "anni=30", "--set", "passive-perception=12");
+        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · xp 0 · hp 5/12 · ac 14 · passive-perception 12");
         await ok("change", "Ennio", "exhaustion", "--by", "1");
-        expect(await ok("status")).toContain("ac 14 · passive-perception 12 · exhaustion 1/6 · frecce 18");
+        expect(await ok("status")).toContain("ac 14 · passive-perception 12 · exhaustion 1/6 · frecce 18/20");
+        // A number written without a maximum is not something spent: it stays out of the line (D-430).
+        expect(await ok("status")).not.toContain("anni");
     });
 
     it("shows a value written by hand as it reads, never one written as a map, and a counter the system does not declare even at zero", async () => {
         const path = join(folder, "world", "characters", "Ennio.md");
         writeFileSync(path, readFileSync(path, "utf8").replace("ac: 14\n", "ac:\n  base: 14\n  shield: 2\ntemp-hp: molti\nslots-1: 2\nfrecce: 0\n"));
-        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · hp 5/12 · temp-hp molti · slots-1 2 · frecce 0\n");
+        expect(await ok("status")).toContain("PC: Ennio, in Locanda: level 1 · hp 5/12 · temp-hp molti · slots-1 2\n");
         expect(await ok("change", "--recipe", "long rest")).toContain("\nEnnio: hp 5/12 → 12/12.\nLena:");
     });
 
@@ -78,7 +80,7 @@ describe("the character sheet (DAT-2)", () => {
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
-                + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, inspiration, personality-traits, ideal, bond, flaw, save-notes, equipped, temp-hp, "
+                + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
                 + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, expertise, "
                 + "armor-proficiencies, tool-proficiencies, fighting-styles, spells, prepared. It works out "
                 + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
@@ -110,7 +112,7 @@ describe("the character sheet (DAT-2)", () => {
         await ok("effect", "add", "Rosa", "Benedetta", "--for", "1h");
         await ok("write", "Locanda", "--add", "contains=[[Gaspare]]", "--add", "contains=[[Rosa]]");
         expect(await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Gaspare", "--with", "Rosa")).toContain(
-            "In it: Ennio: level 1 · hp 5/12 · ac 14 · frecce 18 · Poisoned until day 1, 19:00; Lena: hp 2/4 · ac 10 · passive-perception 10; Gaspare: hp 3/4; "
+            "In it: Ennio: level 1 · hp 5/12 · ac 14 · Poisoned until day 1, 19:00; Lena: hp 2/4 · ac 10 · passive-perception 10; Gaspare: hp 3/4; "
                 + "Rosa: Benedetta until day 1, 19:00.",
         );
     });

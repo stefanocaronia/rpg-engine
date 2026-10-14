@@ -68,7 +68,7 @@ describe("rpg scene", () => {
     it("opens a scene where the character is, with the party there and numbered copies with the creature's counters", async () => {
         await ok("advance", "--to", "day 2, 14:10");
         expect(await ok("scene", "open", "--title", "Scontro all'ossario", "--type", "combat", "--creatures", "Annegato=2")).toBe(
-            `Scene opened, day 2, 14:10: Scontro all'ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7; Annegato 1: hp 22/22 · uses 1/1; Annegato 2: hp 22/22 · uses 1/1.\n${fightGuidance}`,
+            `Scene opened, day 2, 14:10: Scontro all'ossario (combat) at Ossario. In it: Ennio: hp 12/12; Lena: hp 7/7; Annegato 1: hp 22/22 · uses 1/1; Annegato 2: hp 22/22 · uses 1/1.\n${fightGuidance}`,
         );
         expect(stateFile()).toContain(
             'scene:\n  title: Scontro all\'ossario\n  type: combat\n  place: "[[Ossario]]"\n  opened: day 2, 14:10\n  with:\n    - "[[Ennio]]"\n    - "[[Lena]]"\n  copies:\n    Annegato 1:\n      creature: "[[Annegato]]"\n    Annegato 2:\n      creature: "[[Annegato]]"\n',
@@ -308,7 +308,7 @@ describe("rpg scene, after the second review", () => {
 
     it("counts empty texts, lists and objects from MCP as left out", async () => {
         const opened = await scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: [], creatures: "", order: "" }), context);
-        expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.\n${fightGuidance}`);
+        expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Ennio: hp 12/12; Lena: hp 7/7.\n${fightGuidance}`);
         expect(() => scene.run(scene.input.parse({ action: "next", title: "", with: "", creatures: "", order: "", summary: "" }), context)).toThrow("The scene has no order of turns");
     });
 
@@ -404,7 +404,7 @@ describe("the party where the scene is (D-152, CON-6)", () => {
         await ok("write", "Mulino", "--type", "place", "--add", "environment=light: dim");
         await ok("write", "I dormienti si alzano", "--type", "event", "--set", "when=party in [[Mulino]]");
         const opened = await ok("scene", "open", "--title", "Il mulino", "--type", "exploration", "--place", "[[Mulino]]");
-        expect(opened).toContain("Scene opened: Il mulino (exploration) at Mulino. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.\nMoved into Mulino: Ennio, Lena.\nNow due: I dormienti si alzano");
+        expect(opened).toContain("Scene opened: Il mulino (exploration) at Mulino. In it: Ennio: hp 12/12; Lena: hp 7/7.\nMoved into Mulino: Ennio, Lena.\nNow due: I dormienti si alzano");
         expect(opened).toContain("\nHere: light: dim (Mulino).");
         expect(await ok("show", "Ennio")).toContain("Is in: Mulino");
         expect(readFileSync(join(folder, "world", "places", "Ossario.md"), "utf8")).not.toContain("Ennio");
@@ -413,14 +413,14 @@ describe("the party where the scene is (D-152, CON-6)", () => {
 
         await ok("scene", "close", "--summary", "Niente.");
         await ok("scene", "open", "--title", "All'ossario", "--type", "social", "--place", "Ossario", "--with", "Varro");
-        expect(await ok("scene", "add", "--with", "Ennio")).toBe("Added to All'ossario: Ennio: hp 12/12 · arrows 18.\nMoved into Ossario: Ennio.");
+        expect(await ok("scene", "add", "--with", "Ennio")).toBe("Added to All'ossario: Ennio: hp 12/12.\nMoved into Ossario: Ennio.");
         expect(await ok("show", "Ennio")).toContain("Is in: Ossario › Cripta");
         expect(await ok("show", "Lena")).toContain("Is in: Mulino");
     });
 
     it("moves no one in a travel scene, and status gives the calls when a change by hand put the party elsewhere", async () => {
         await ok("write", "Strada", "--type", "place");
-        expect(await ok("scene", "open", "--title", "In viaggio", "--type", "travel", "--place", "Strada")).toBe("Scene opened: In viaggio (travel) at Strada. In it: Ennio: hp 12/12 · arrows 18; Lena: hp 7/7.");
+        expect(await ok("scene", "open", "--title", "In viaggio", "--type", "travel", "--place", "Strada")).toBe("Scene opened: In viaggio (travel) at Strada. In it: Ennio: hp 12/12; Lena: hp 7/7.");
         expect(await ok("show", "Ennio")).toContain("Is in: Ossario");
         expect(await ok("status")).not.toContain("in the files");
         await ok("scene", "close", "--summary", "In marcia.");

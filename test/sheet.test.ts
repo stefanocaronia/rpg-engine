@@ -163,7 +163,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
-            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Attacks, Spells.',
+            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Appearance, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Attacks, Spells.',
         );
     });
 
