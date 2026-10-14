@@ -46,11 +46,11 @@ Read-only: no. Positional parameters: `program`.
 
 ### package
 
-Install, list or remove the packages of the campaign: extensions such as weather, from npm.
+The packages of the campaign: extensions such as weather, from npm.
 
 Read-only: no. Positional parameters: `action`, `name`.
 
-- `action` (`"list" | "install" | "remove"`, required): list, install or remove
+- `action` (`"list" | "available" | "install" | "remove" | "uninstall"`, required): list, available, install, remove or uninstall
 - `name` (`string`, optional): the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder on this computer
 - `accept-risk` (`boolean`, optional): on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk
 

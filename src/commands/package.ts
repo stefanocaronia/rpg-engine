@@ -14,24 +14,41 @@ import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
 type PackageResult =
-    | { kind: "list"; installed: Listed[]; listedMissing: string[]; available: PackageInfo[]; searchFailed?: string; }
+    | { kind: "list"; installed: Installed[]; missing: string[]; }
+    | { kind: "available"; packages: Available[]; failed?: string; }
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
-    | { kind: "removed"; name: string; };
+    | { kind: "removed"; name: string; }
+    | { kind: "uninstalled"; name: string; wasUsed: boolean; };
 
-/** A package on this computer as package list gives it; broken when it does not read. */
-type Listed = { name: string; version: string; verified: boolean; used: boolean; } | { name: string; broken: string; };
+/** A package on this computer, as list gives it to the master and to the dashboard; broken when it does not read (D-442). */
+type Installed =
+    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
+    | { name: string; package: string; broken: string; };
+
+/** A package on npm for this rpg-engine, with the version installed here, if any, and whether it is newer (D-442). */
+interface Available
+{
+    name: string;
+    package: string;
+    version: string;
+    description?: string;
+    author?: string;
+    verified: boolean;
+    installed?: string;
+    update: boolean;
+}
 
 export const packageCommand = defineCommand({
     name: "package",
-    description: "Install, list or remove the packages of the campaign: extensions such as weather, from npm. "
-        + "list says those on this computer, those the campaign uses and those npm has. install adds one to this computer and to the campaign, only once the player wants it; "
-        + "one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked on their dashboard or in a form, or installs it from their terminal. "
-        + "remove takes one out of the campaign. Example: package install weather.",
+    description: "The packages of the campaign: extensions such as weather, from npm. "
+        + "list says those on this computer and those the campaign uses; available, those npm has, and updates. install adds or updates one, on this computer and in the campaign, "
+        + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked on their dashboard or in a form, or installs it from their terminal. "
+        + "remove takes one out of the campaign; uninstall takes it off this computer. Example: package install weather.",
     group: "campaign",
     positionals: ["action", "name"],
     slow: true,
     input: z.object({
-        action: z.enum(["list", "install", "remove"]).describe("list, install or remove"),
+        action: z.enum(["list", "available", "install", "remove", "uninstall"]).describe("list, available, install, remove or uninstall"),
         name: z.string().optional().describe("the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder on this computer"),
         "accept-risk": z.boolean().optional().describe("on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk"),
     }),
@@ -41,7 +58,11 @@ export const packageCommand = defineCommand({
         const root = requireCampaign(context.folder);
 
         if (input.action === "list") {
-            return await listed(root, context);
+            return listed(root, context);
+        }
+
+        if (input.action === "available") {
+            return await available(context);
         }
 
         const name = input.name?.trim();
@@ -50,13 +71,21 @@ export const packageCommand = defineCommand({
             throw new Error(`Give the package to ${input.action}, such as package ${input.action} weather.`);
         }
 
-        return input.action === "install" ? await installed(root, context, name, context.terminal === true && input["accept-risk"] === true) : removed(root, context, name);
+        if (input.action === "install") {
+            return await installed(root, context, name, context.terminal === true && input["accept-risk"] === true);
+        }
+
+        return input.action === "remove" ? removed(root, context, name) : await uninstalled(root, context, name);
     },
 
     format(result)
     {
         if (result.kind === "removed") {
             return `The campaign no longer uses ${result.name}: its commands and its parts of your instructions are gone; what it kept in the campaign stays, and comes back if it is installed again.`;
+        }
+
+        if (result.kind === "uninstalled") {
+            return `${result.name} is off this computer${result.wasUsed ? ", and the campaign no longer uses it" : ""}: another campaign that lists it asks to install it again.`;
         }
 
         if (result.kind === "installed") {
@@ -71,39 +100,87 @@ export const packageCommand = defineCommand({
             return result.part === undefined ? said : `${said}\n\nIts part for now:\n\n${result.part}`;
         }
 
+        if (result.kind === "available") {
+            if (result.failed !== undefined) {
+                return `npm could not be asked: ${result.failed}.`;
+            }
+
+            const lines = result.packages.map((one) => {
+                const here = one.installed === undefined ? "" : one.update ? `, installed ${one.installed}: an update` : ", installed";
+                const by = one.author === undefined ? "" : ` by ${one.author}`;
+                return `${one.name} ${one.version}${one.verified ? "" : " (not verified)"}${by}${here}${one.description === undefined ? "" : `: ${one.description.replace(/\.$/, "")}`}`;
+            });
+            return `On npm: ${lines.length === 0 ? "none" : lines.join("; ")}.`;
+        }
+
         const installedLines = result.installed.map((one) =>
             "broken" in one ? `${one.name} (broken: ${one.broken}; install it again)` : `${one.name} ${one.version}${one.verified ? "" : " (not verified)"}${one.used ? ", used by the campaign" : ""}`
         );
-        const available = result.available.map((one) => `${shortName(one.name)} ${one.version}${one.name.startsWith(verifiedScope) ? "" : " (not verified)"}${one.description === undefined ? "" : `: ${one.description}`}`);
         return [
             `On this computer: ${installedLines.length === 0 ? "none" : installedLines.join("; ")}.`,
-            result.listedMissing.length === 0 ? "" : `The campaign lists, not installed here: ${result.listedMissing.join(", ")}; install each with package install.`,
-            result.searchFailed === undefined ? `On npm: ${available.length === 0 ? "none more" : available.join("; ")}.` : `npm could not be asked: ${result.searchFailed}.`,
+            result.missing.length === 0 ? "" : `The campaign lists, not installed here: ${result.missing.join(", ")}; install each with package install.`,
+            "package available says those npm has, and updates.",
         ].filter((line) => line !== "").join("\n");
     },
 });
 
-/** The packages on this computer, those the campaign lists and does not find, and those npm has besides, for this rpg-engine. */
-async function listed(root: string, context: Context): Promise<PackageResult>
+/** The packages on this computer, and those the campaign lists and does not find there: at once, without npm (D-442). */
+function listed(root: string, context: Context): PackageResult
 {
     const used = Object.keys(listedExtensions(root));
-    const here = installedExtensions(context.extensionFolders ?? []).map((found): Listed => {
+    const here = installedExtensions(context.extensionFolders ?? []).map((found): Installed => {
         try {
             const extension = readExtension(found.folder);
-            return { name: extension.name, version: extension.version, verified: isVerified(extension.package, extension.linked), used: used.includes(extension.package) };
+            return {
+                name: extension.name,
+                package: extension.package,
+                version: extension.version,
+                title: extension.title,
+                about: extension.about,
+                verified: isVerified(extension.package, extension.linked),
+                used: used.includes(extension.package),
+            };
         } catch (error) {
-            return { name: shortName(found.package), broken: error instanceof Error ? error.message : String(error) };
+            return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error) };
         }
     });
+    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)) };
+}
+
+/** The extensions npm has for this rpg-engine's API, ours first, each with the version installed here and whether npm has a newer one (D-442). */
+async function available(context: Context): Promise<PackageResult>
+{
     const searched = context.packages === undefined ? { failed: "only the game's server and the command line reach npm" } : await context.packages.search();
-    const isHere = (name: string): boolean => here.some((one) => one.name === shortName(name));
-    return {
-        kind: "list",
-        installed: here,
-        listedMissing: used.filter((name) => !isHere(name)),
-        available: "failed" in searched ? [] : searched.filter((one) => !isHere(one.name) && one.kind === "extension" && one.api === extensionApi),
-        ...("failed" in searched ? { searchFailed: searched.failed } : {}),
-    };
+
+    if ("failed" in searched) {
+        return { kind: "available", packages: [], failed: searched.failed };
+    }
+
+    const here = installedExtensions(context.extensionFolders ?? []);
+    const packages = searched.filter((one) => one.kind === "extension" && one.api === extensionApi).map((one): Available => {
+        const installed = here.find((found) => found.package === one.name);
+        const version = installed === undefined ? undefined : usable(context, one.name)?.version;
+        return {
+            name: shortName(one.name),
+            package: one.name,
+            version: one.version,
+            ...(one.description === undefined ? {} : { description: one.description }),
+            ...(one.author === undefined ? {} : { author: one.author }),
+            verified: one.name.startsWith(verifiedScope),
+            ...(installed === undefined ? {} : { installed: version ?? "broken" }),
+            update: version !== undefined && newer(one.version, version),
+        };
+    });
+    return { kind: "available", packages: packages.sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name)) };
+}
+
+/** Whether a version is newer than another, by its numbers: 0.2.0 after 0.1.10. */
+function newer(version: string, than: string): boolean
+{
+    const numbers = (text: string): number[] => text.split(/[.+-]/).slice(0, 3).map((part) => Number.parseInt(part, 10) || 0);
+    const [one, other] = [numbers(version), numbers(than)];
+    const differs = one.findIndex((part, index) => part !== other[index]);
+    return differs !== -1 && one[differs] > other[differs];
 }
 
 /** Installs a package on this computer and adds it to the campaign (D-27, D-428, D-441): ours, or another once the player wants it; an extension, for this game. */
@@ -285,4 +362,37 @@ function removed(root: string, context: Context, name: string): PackageResult
     changeExtensions(root, rest);
     appendLogEntry(root, newDatedLogEntry(root, context, "package-removed", "public", { package: found }));
     return { kind: "removed", name: shortName(found) };
+}
+
+/** Takes a package off this computer with npm, and out of the campaign when it uses it (D-442); other campaigns that list it ask to install it again. */
+async function uninstalled(root: string, context: Context, name: string): Promise<PackageResult>
+{
+    const packages = context.packages;
+    const found = installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name));
+
+    if (found === undefined) {
+        const here = installedExtensions(context.extensionFolders ?? []).map((one) => shortName(one.package));
+        throw new Error(`${name} is not on this computer${here.length === 0 ? ": no package is" : `; these are: ${here.join(", ")}`}. Nothing changed.`);
+    }
+
+    if (packages === undefined) {
+        throw new Error("Packages are uninstalled only by the game's server or the command line, which reach npm.");
+    }
+
+    const why = await packages.uninstall(found.package);
+
+    if (why !== undefined) {
+        throw new Error(`${found.package} could not be uninstalled: ${why}. Nothing changed.`);
+    }
+
+    (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
+    const listed = listedExtensions(root);
+    const wasUsed = Object.hasOwn(listed, found.package);
+
+    if (wasUsed) {
+        changeExtensions(root, Object.fromEntries(Object.entries(listed).filter(([candidate]) => candidate !== found.package)));
+    }
+
+    appendLogEntry(root, newDatedLogEntry(root, context, "package-uninstalled", "public", { package: found.package }));
+    return { kind: "uninstalled", name: shortName(found.package), wasUsed };
 }

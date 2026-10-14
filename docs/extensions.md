@@ -51,7 +51,17 @@ export default weather;
 
 ## 4. Installing
 
-`package install <name>` installs a package with npm, without running its scripts, in rpg-engine's own folder of this computer, checks it, and adds it to the campaign's `campaign.yaml` with its version; `package remove` takes it out of the campaign; `package list` says what is installed, used, and published on npm for this API.
+The `package` command, which the dashboard will call too:
+
+| Action | What it does |
+|---|---|
+| `list` | the packages on this computer and those the campaign uses, at once, without npm |
+| `available` | those npm has for this API, ours first, with author and description, and the updates of those installed |
+| `install <name>` | installs or updates one with npm, without running its scripts, in rpg-engine's own folder of this computer; checks it, and adds it to `campaign.yaml` with its version |
+| `remove <name>` | takes it out of the campaign; it stays on this computer for other campaigns |
+| `uninstall <name>` | takes it off this computer, and out of this campaign |
+
+With `--json`, each gives its result as data.
 
 - A name alone is one of ours, under `@rpgengine/`, installed from npm: those are verified. Another's is named with its scope, or as `npm:name` without one; a folder of this computer is never verified.
 - A package not ours is installed only with the player's own yes: a button on their dashboard or in the host's form, or `--accept-risk` typed in their terminal; never the master's word.

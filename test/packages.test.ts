@@ -1,6 +1,6 @@
 // The package command (D-27, D-428, D-436, D-439, D-441): installing an extension on this computer with npm, ours or another with the player's own yes, adding it to
 // the campaign, listing and removing; npm itself is a fake here, which copies the test extensions as it would install them.
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -34,7 +34,11 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
             installed.push(spec);
             return Promise.resolve(undefined);
         },
-        search: () => Promise.resolve(Object.keys(known).flatMap((name) => info(name) ?? []).map((found) => ({ ...found, description: "a test package" }))),
+        uninstall: (name) => {
+            rmSync(join(modules, ...name.split("/")), { recursive: true, force: true });
+            return Promise.resolve(undefined);
+        },
+        search: () => Promise.resolve(Object.keys(known).flatMap((name) => info(name) ?? []).map((found) => ({ ...found, description: "a test package", author: "Ada" }))),
     };
 }
 
@@ -165,14 +169,39 @@ describe("rpg package install", () => {
     });
 });
 
-describe("rpg package list and remove", () => {
-    it("lists what is on this computer, what the campaign uses, and what npm has besides, a broken one with how to fix it", async () => {
+describe("rpg package list, available, remove and uninstall (D-442)", () => {
+    it("lists at once what is on this computer and what the campaign uses, a broken one with how to fix it, and one the campaign lists that is missing", async () => {
         await rpg("package", "install", "weather");
         await rpg("package", "install", "omens");
         writeFileSync(join(modules, "@rpgengine", "omens", "extension.yaml"), "title: [broken\n");
+        writeFileSync(join(folder, "campaign.yaml"), `${readFileSync(join(folder, "campaign.yaml"), "utf8")}  "@other/tarot": 1.0.0\n`);
+        npm.search = () => Promise.reject(new Error("list never asks npm"));
         expect((await rpg("package", "list")).output).toMatch(
-            /^On this computer: omens \(broken: .*; install it again\); weather \d+\.\d+\.\d+, used by the campaign\.\nOn npm: rumors 2\.0\.0 \(not verified\): a test package; seasons-of-the-test 0\.1\.0 \(not verified\): a test package\.$/,
+            /^On this computer: omens \(broken: .*; install it again\); weather \d+\.\d+\.\d+, used by the campaign\.\nThe campaign lists, not installed here: @other\/tarot; install each with package install\.\npackage available says those npm has, and updates\.$/,
         );
+        const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; };
+        expect(listed.installed.find((one) => one.name === "weather")).toMatchObject({ package: "@rpgengine/weather", about: expect.stringMatching(/^the sky changes/), verified: true, used: true });
+    });
+
+    it("gives what npm has for this API, ours first, with its author and the updates of those installed", async () => {
+        await rpg("package", "install", "weather");
+        const installed = join(modules, "@rpgengine", "weather", "package.json");
+        writeFileSync(installed, readFileSync(installed, "utf8").replace(/"version": "[^"]+"/, '"version": "0.0.1"'));
+        expect((await rpg("package", "available")).output).toBe(
+            `On npm: omens 1.2.0 by Ada: a test package; weather ${weatherVersion} by Ada, installed 0.0.1: an update: a test package; `
+                + "rumors 2.0.0 (not verified) by Ada: a test package; seasons-of-the-test 0.1.0 (not verified) by Ada: a test package.",
+        );
+        npm.search = () => Promise.resolve({ failed: "npm's registry could not be reached: offline" });
+        expect((await rpg("package", "available")).output).toBe("npm could not be asked: npm's registry could not be reached: offline.");
+    });
+
+    it("uninstalls one from this computer, and takes it out of the campaign", async () => {
+        await rpg("package", "install", "weather");
+        expect((await rpg("package", "uninstall", "weather")).output).toBe("weather is off this computer, and the campaign no longer uses it: another campaign that lists it asks to install it again.");
+        expect(existsSync(join(modules, "@rpgengine", "weather"))).toBe(false);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-uninstalled", visibility: "public", data: { package: "@rpgengine/weather" } });
+        expect((await rpg("package", "uninstall", "weather")).output).toBe("weather is not on this computer: no package is. Nothing changed.");
     });
 
     it("removes one from the campaign, keeping it on this computer and what it kept in the campaign", async () => {

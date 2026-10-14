@@ -71,6 +71,8 @@ export interface PackageInfo
     /** The version of the extensions' API it is made for (D-441). */
     api?: number;
     description?: string;
+    /** Who wrote it, as npm gives it. */
+    author?: string;
 }
 
 /** npm for the packages (D-436): what one is before it is installed, installing it in the engine's folder without running its scripts, and the search. */
@@ -80,6 +82,8 @@ export interface PackageManager
     describe(spec: string): Promise<PackageInfo | { failed: string; missing?: true; }>;
     /** Installs it: undefined once it is installed, else why not. */
     install(spec: string): Promise<string | undefined>;
+    /** Takes an installed package off this computer, by its name: undefined once it is gone, else why not. */
+    uninstall(name: string): Promise<string | undefined>;
     /** The packages for rpg-engine npm has, by their keyword and what their package.json says. */
     search(): Promise<PackageInfo[] | { failed: string; }>;
 }

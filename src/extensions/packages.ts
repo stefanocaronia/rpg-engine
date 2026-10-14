@@ -26,11 +26,20 @@ export function npmPackages(folder: string): PackageManager
             const ran = await npm(`install --prefix ${quotedFolder(folder)} ${what} --ignore-scripts --save-exact --no-audit --no-fund --json --loglevel=error`);
             return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
         },
+        uninstall: async (name) => {
+            const ran = await npm(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
+            return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
+        },
         search: async () => {
             try {
-                const found = await json(`${registry}/-/v1/search?text=keywords:${packageKeyword}&size=250`) as { objects?: { package: { name: string; }; }[]; } | undefined;
+                const found = await json(`${registry}/-/v1/search?text=keywords:${packageKeyword}&size=250`) as { objects?: { package: Manifest; }[]; } | undefined;
                 // The keyword is only a hint: each package's latest package.json must say what it is for rpg-engine.
-                const described = await Promise.all((found?.objects ?? []).map(async (object) => await registryPackage(object.package.name)));
+                const described = await Promise.all((found?.objects ?? []).map(async ({ package: listed }) => {
+                    const read = await registryPackage(listed.name ?? "");
+                    // Who wrote it, as its package.json says; never who published it, which may be a workflow.
+                    const author = authorOf(listed);
+                    return "failed" in read || read.author !== undefined || author === undefined ? read : { ...read, author };
+                }));
                 return described.filter((one): one is PackageInfo => !("failed" in one) && one.kind !== undefined);
             } catch (error) {
                 return { failed: `npm's registry could not be reached: ${error instanceof Error ? error.message : String(error)}` };
@@ -82,6 +91,8 @@ interface Manifest
     name?: string;
     version?: string;
     description?: string;
+    // A string as package.json writes it, or a name as the registry gives it back.
+    author?: string | { name?: string; };
     "rpg-engine"?: { kind?: unknown; api?: unknown; };
 }
 
@@ -94,7 +105,14 @@ function infoOf(read: Manifest): PackageInfo
         ...(typeof marker?.kind === "string" ? { kind: marker.kind } : {}),
         ...(typeof marker?.api === "number" ? { api: marker.api } : {}),
         ...(read.description === undefined ? {} : { description: read.description }),
+        ...(authorOf(read) === undefined ? {} : { author: authorOf(read) }),
     };
+}
+
+/** Who wrote a package, as its package.json or the registry gives it. */
+function authorOf(read: Manifest): string | undefined
+{
+    return typeof read.author === "string" ? read.author : read.author?.name;
 }
 
 /** A JSON answer of the registry; undefined when it has none, 404. */
