@@ -219,6 +219,10 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         expect(pageText("Ettore")).toBe(before);
         await ok("write", "Ettore", "--set", "save-proficiencies=wis");
         expect(pageText("Ettore")).toContain("save-proficiencies:\n  - wis\n");
+        // A text with closed names is one name whole: an alignment, in the system's words, which the page shows in the campaign's.
+        expect(await refused("write", "Ettore", "--set", "alignment=Neutrale Buono")).toMatch(/^"Neutrale Buono" is not one of the names alignment takes in the system 5e: lawful good, /);
+        await ok("write", "Ettore", "--set", "alignment=Neutral Good");
+        expect(pageText("Ettore")).toContain("alignment: Neutral Good\n");
     });
 
     it("reports in validate a name written by hand that the system does not take, and lets write remove it", async () => {

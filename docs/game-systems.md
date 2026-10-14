@@ -121,7 +121,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-cards`: where the dashboard puts the groups.
 - `sheet-dice`: the dice of the dashboard's free roll for each number.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
-- `values`: the names a closed list takes. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
+- `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 
 ### roll-names
 

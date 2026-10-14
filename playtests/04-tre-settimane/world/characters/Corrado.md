@@ -6,7 +6,7 @@ classes:
 subclasses:
   - "[[Life Domain]]"
 background: Soldato
-alignment: neutrale buono
+alignment: neutral good
 age: trentaquattro anni
 xp: 1250
 str: 14

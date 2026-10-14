@@ -498,10 +498,11 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     const sheet = sheetOf(data, name, path);
     const values = data.values ?? {};
     const kindOf = (field: string): string | undefined => Object.entries(data.fields ?? {}).find(([declared]) => comparableText(declared) === comparableText(field))?.[1];
-    const notList = Object.keys(values).find((field) => kindOf(field) !== "list");
+    // Closed names for a list, as the skills, or for a text, as an alignment.
+    const notList = Object.keys(values).find((field) => kindOf(field) !== "list" && kindOf(field) !== "text");
 
     if (notList !== undefined) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list in fields, or give no values to it.`);
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list or a text in fields, or give no values to it.`);
     }
 
     // What breaks what someone keeps, and what a counter shields, read counters (EFF-14, DAT-14).

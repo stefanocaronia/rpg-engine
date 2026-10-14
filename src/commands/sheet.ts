@@ -625,7 +625,15 @@ function linkText(text: string): string
 function wrongValues(system: GameSystem | undefined, field: string, value: unknown): string[]
 {
     const allowed = allowedValues(system, field);
-    return allowed === undefined ? [] : listItemNames(value).filter((name) => !allowed.some((item) => comparableText(item) === comparableText(name)));
+    // A text with closed names, as an alignment, is one name whole, commas and all.
+    const names = isTextField(system, field) ? (isEmptyField(value) ? [] : [String(value).trim()]) : listItemNames(value);
+    return allowed === undefined ? [] : names.filter((name) => !allowed.some((item) => comparableText(item) === comparableText(name)));
+}
+
+/** A field the system declares as text, such as alignment. */
+function isTextField(system: GameSystem | undefined, field: string): boolean
+{
+    return Object.entries(system?.fields ?? {}).some(([name, kind]) => kind === "text" && comparableText(name) === comparableText(field));
 }
 
 /** The names a list field takes in the game system (SYS-8); undefined for a field without values. */

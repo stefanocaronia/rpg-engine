@@ -7,7 +7,7 @@ classes:
 subclasses:
   - "[[College of Lore]]"
 background: Cantastorie
-alignment: caotica buona
+alignment: chaotic good
 age: ventisei anni
 xp: 900
 str: 9
