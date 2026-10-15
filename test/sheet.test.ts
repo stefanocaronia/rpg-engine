@@ -368,7 +368,7 @@ describe("what the review of 7 October put right", () => {
         await ok("effect", "add", "Ettore", "Cloak of Protection", "--set", "bonus-saves=1");
         expect(await ok("show", "Ettore")).toContain("wis-save +7");
         expect(await refused("effect", "add", "Ettore", "Aid", "--set", "hp=25/31")).toBe(
-            "The maximum of hp on Ettore is worked out by the system 5e: 24, from hp-base, classes, con, hp-per-level, subclasses. Give the effect the current value alone, such as hp=25, "
+            "The maximum of hp on Ettore is worked out by the system 5e: 24, from hp-base, classes, con, hp-per-level, subclasses, exhaustion. Give the effect the current value alone, such as hp=25, "
                 + "or one of those fields, such as hp-base. Nothing changed.",
         );
     });

@@ -7486,7 +7486,7 @@ svg.icon {
 }
 
 .place-env .k {
-    margin-inline-end: 6px;
+    margin-inline-end: 2px;
     color: var(--muted);
     font-size: 0.7rem;
     font-weight: 650;

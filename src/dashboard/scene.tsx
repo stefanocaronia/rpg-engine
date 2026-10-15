@@ -263,6 +263,8 @@ function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name:
                 <>
                     {biome !== undefined && <BiomeSwatch look={biome} />}
                     {entry?.name !== "" && <span class={biome === undefined ? "k" : "visually-hidden"}>{entry?.name}</span>}
+                    {/* A real space, which right-to-left keeps between two words in Latin letters, where a margin goes to the wrong side. */}
+                    {entry?.name !== "" && biome === undefined && " "}
                     {entry?.value}
                 </>
             )}

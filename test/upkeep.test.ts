@@ -61,6 +61,14 @@ describe("the day's food", () => {
     });
 });
 
+describe("exhaustion", () => {
+    it("halves the hit point maximum from level 4 (p. 358)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
+        await ok("change", "Ettore", "exhaustion", "--to", "4");
+        expect(await ok("show", "Ettore")).toContain("hp 6/6");
+    });
+});
+
 describe("what burns", () => {
     it("spends a torch as it is lit, and ends it after an hour (UPK-3)", async () => {
         const lit = await ok("effect", "add", "Ettore", "Torch");
