@@ -44,22 +44,25 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 | `number` | a number, never counted |
 | `modifier` | a number shown with its sign |
 | `bonus` | a number effects add up; missing reads 0 |
+| `factor` | a number effects multiply; missing reads 1 |
+| `length` | a length worked out, shown in `length-unit` and in metres for a metric player |
 | `text` | text, or `true`/`false` |
 | `list` | a list |
 | `rolls` | dice kept for later, as a diviner's Portent |
 
 A field not declared is free; written as a number or `current/max`, it counts as a counter.
 
-### coins, round, imperial, load
+### coins, round, imperial, load, length-unit
 
 ```yaml
 coins: gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1
 round: 6 seconds
 imperial: {mile: 1.5 km, foot: 0.3 m, pound: 0.5 kg}
-load: {field: weight, limit: str * 15, coins: 50, size: size, sizes: {Tiny: 0.5, Large: 2, Huge: 4, Gargantuan: 8}}
+load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15], coins: 50}
+length-unit: ft
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula on the sheet, times the factor in `sizes` of the size in the field `size` (written, or from the creature it derives from), and `status` says when a character goes over it under the rigor `rules`.
+Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules`; formulas read them as `load` and `load-limit`. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
 
 ### travel
 
@@ -81,10 +84,10 @@ Paces per hour, the hours of a day's travel and the rule past them, what terrain
 ### grid
 
 ```yaml
-grid: {square: 1.5 m, diagonal: 1, difficult: 2, speed: speed, size: size, footprints: {Large: 2, Huge: 3}, leaving: Opportunity Attacks}
+grid: {square: 1.5 m, diagonal: 1, difficult: 2, speed: speed, walking: walking, size: size, footprints: {Large: 2, Huge: 3}, leaving: Opportunity Attacks}
 ```
 
-How the map of a place counts: a square's size, a diagonal's cost, difficult ground, the fields of speed and size, and the rule for leaving someone's side.
+How the map of a place counts: a square's size, a diagonal's cost, difficult ground, the fields of speed and size, and the rule for leaving someone's side. `walking` names the computed speed a move counts with, in the unit of `speed`; where it has no value, the written `speed`.
 
 ### settings
 
@@ -120,7 +123,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-icons`, `token-icons`: SVG path data on a 24 grid, for a group's card and for a token's mark by class.
 - `sheet-headline`: the line under a name on the dashboard.
 - `sheet-cards`: where the dashboard puts the groups.
-- `sheet-dice`: the dice of the dashboard's free roll for each number.
+- `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-dice-when`: other dice for a number while a formula is above 0, as `stealth: {when: "count(equipped, stealth-disadvantage = true)", dice: 2d20kl1}`.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
 - `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 
@@ -144,6 +147,15 @@ recipes:
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
 - `recipes`: what a rest does: counters `set` or partly `regain`ed, the occasions it `ends`, the rules it leaves to the master.
+
+### upkeep, burning
+
+```yaml
+upkeep: {daily: Rations, short: days-without-food, grace: 3 + con-mod, worsens: exhaustion, water: "a gallon each", rules: Food and Water}
+burning: {Torch: {lasts: 1h}, Lamp: {lasts: 6h, spends: Oil}}
+```
+
+Under the rigor rules, each midnight `advance` passes, a party member with a sheet outside a settlement (a place of kind city, town, village or inn, or one inside it) spends a piece of `daily`; without one it counts a day in `short`, and past the days `grace` gives raises `worsens` by one; `water` is said, never counted. An effect named after something in `burning` spends one of it, or of what it `spends`, from what the holder carries, and lasts as long as it burns.
 
 ### bonds
 
@@ -226,6 +238,8 @@ always-in: {equipped: [Unarmed Strike]}
 
 - Names are ASCII letters, digits and single hyphens: `level-1` is a field; write `level - 1`.
 - A list item is a name with an optional number: `"[[Fighter]] 3"`, `Perception +3`.
+- A field reads as a number when it is one, a counter, `+2`, or a measure such as `25 ft` (a number and a word of up to three letters).
+- Besides the fields, a formula reads `effects` as the names of the page's effects (`has(effects, Grappled)`), `rigor` as the campaign's, and `load` and `load-limit` (see `load`).
 - A formula has no value when a field it reads is missing; then the page's own value is read.
 - A page is read in layers: its bases (`creature`, `item`), the page, its effects, then what the system works out.
 

@@ -81,9 +81,9 @@ describe("the character sheet (DAT-2)", () => {
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
                 + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
-                + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, expertise, "
+                + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, days-without-food, expertise, "
                 + "armor-proficiencies, tool-proficiencies, fighting-styles, money, attuned, inventory, spells, prepared. It works out "
-                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
+                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
                 + "caster-level, spell-save-dc, spell-attack, max-prepared: never write them. Only its names go in alignment (such as lawful good, neutral good), size (Tiny, Small, Medium, Large, Huge, Gargantuan), save-proficiencies "
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), languages (such as Common, Dwarvish), "
                 + "tool-proficiencies (such as alchemist's supplies, brewer's supplies), damage-resistances (such as acid, bludgeoning), as it writes them: "

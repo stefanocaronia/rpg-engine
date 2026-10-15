@@ -4399,7 +4399,7 @@ a {
 /* The sheet: a rail of tiles beside columns of boxes, with no holes. */
 .sheet-body {
     display: grid;
-    grid-template-columns: 236px minmax(0, 1fr);
+    grid-template-columns: 260px minmax(0, 1fr);
     gap: var(--gap);
     align-items: start;
 }
@@ -4432,6 +4432,11 @@ a {
 
     .sheet-body > .rail > .group {
         margin-bottom: 0;
+    }
+
+    /* A card left alone on its row takes the whole row, as the cards under it. */
+    .sheet-body > .rail > .group:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
     }
 }
 

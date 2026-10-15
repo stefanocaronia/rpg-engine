@@ -22,7 +22,7 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
-import { declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
+import { carriedWeight, declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
 /** A computed field that has a value, and the values it came from (FOR-8); a field the rows of the classes give may hold text, such as martial-arts 1d6 (PRO-2). */
@@ -132,6 +132,8 @@ export function withEffectValues(world: World, page: Page): Record<string, unkno
 }
 
 const layeredByWorld = new WeakMap<World, WeakMap<Page, Record<string, unknown>>>();
+// Where a character's fields keep what it carries weighs, for its formulas alone.
+const carriedKey = Symbol("carried weight");
 
 function effectValuesOver(world: World, page: Page): Record<string, unknown>
 {
@@ -141,8 +143,18 @@ function effectValuesOver(world: World, page: Page): Record<string, unknown>
     for (const effect of "effects" in read ? read.effects : []) {
         for (const [field, value] of effect.values) {
             const key = keyOf(fields, field) ?? field;
-            fields[key] = declaredKind(world, field) === "bonus" ? (numberOf(fields[key]) ?? 0) + (numberOf(effectValue(value)) ?? 0) : effectValue(value);
+            const kind = declaredKind(world, field);
+            fields[key] = kind === "bonus"
+                ? (numberOf(fields[key]) ?? 0) + (numberOf(effectValue(value)) ?? 0)
+                : kind === "factor"
+                ? (numberOf(fields[key]) ?? 1) * (numberOf(effectValue(value)) ?? 1)
+                : effectValue(value);
         }
+    }
+
+    // What a character carries weighs, for the formulas that read it as load, as a speed; under a key no list of fields shows (FOR-2, LOAD-1).
+    if (page.type === "character" && world.system?.load !== undefined) {
+        (fields as Record<string | symbol, unknown>)[carriedKey] = carriedWeight(world, world.system.load, page);
     }
 
     return fields;
@@ -233,7 +245,8 @@ function itemFields(world: World, scope: ReturnType<typeof formulaScope>, explai
 {
     return Object.values(world.system?.itemFormulas ?? {}).flat().flatMap((field) => {
         const worked = scope.each(field, explained);
-        return worked === undefined ? [] : [worked];
+        // A bonus an item gives as nothing, as the speed a heavy armor takes from who has its Strength, says nothing (FOR-8).
+        return worked === undefined || (worked.value === 0 && declaredKind(world, field) === "bonus") ? [] : [worked];
     });
 }
 
@@ -562,6 +575,12 @@ export function itemSource(world: World, fields: Record<string, unknown>, field:
 export function signedText(world: World, field: string, value: number | string): string
 {
     const kind = declaredKind(world, field);
+
+    // A length in the system's unit, at most one decimal: 12.5 ft (SPD-1).
+    if (typeof value === "number" && kind === "length") {
+        return `${Math.round(value * 10) / 10}${world.system?.lengthUnit === undefined ? "" : ` ${world.system.lengthUnit}`}`;
+    }
+
     return typeof value === "number" && (kind === "modifier" || kind === "bonus") && value >= 0 ? `+${value}` : String(value);
 }
 
@@ -588,7 +607,9 @@ export function workedParts(world: World, reads: FormulaRead[]): string
         }
 
         if ("field" in read) {
-            return read.value === 0 && declaredKind(world, read.field) === "bonus" ? [] : [`${read.field} ${signedText(world, read.field, read.value)}`];
+            // A bonus of 0 and a factor of 1 change nothing (FOR-5).
+            const kind = declaredKind(world, read.field);
+            return (read.value === 0 && kind === "bonus") || (read.value === 1 && kind === "factor") ? [] : [`${read.field} ${signedText(world, read.field, read.value)}`];
         }
 
         if ("item" in read) {
@@ -698,6 +719,10 @@ function itemFormulaProblems(world: World, page: Page, fields: Record<string, un
         ...Object.values(system?.itemFormulas ?? {}).flat(),
         ...(scope.progression()?.values.map((value) => value.field) ?? []),
         ...Object.keys(fields),
+        // What every formula reads besides the fields (FOR-2).
+        "effects",
+        "rigor",
+        ...(system?.load === undefined ? [] : ["load", "load-limit"]),
     ].map(comparableText));
     return Object.entries(system?.itemFormulas ?? {}).flatMap(([list, names]) =>
         listItems(keyOf(fields, list) === undefined ? undefined : fields[keyOf(fields, list) ?? ""]).flatMap((item) => {
@@ -785,6 +810,34 @@ function formulaGap(world: World, known: Set<string>, item: Record<string, unkno
     return unknown === undefined ? undefined : `reads ${unknown}, which neither the system nor the character has`;
 }
 
+/**
+ * What a formula reads for a field the page lacks (FOR-2, FOR-4, FOR-5): a bonus as 0, a factor as 1, the effects by their names, the campaign's rigor; the
+ * page's own value, as always-in lists give it, for anything else.
+ */
+function missingValue(world: World, fields: Record<string, unknown>, name: string): unknown
+{
+    const kind = declaredKind(world, name);
+
+    if (kind === "bonus" || kind === "factor") {
+        return kind === "bonus" ? 0 : 1;
+    }
+
+    if (comparableText(name) === "rigor") {
+        return world.rigor;
+    }
+
+    // What a character carries weighs, and its limit by the system's formula (LOAD-1, LOAD-4).
+    if (comparableText(name) === "load") {
+        return (fields as Record<string | symbol, unknown>)[carriedKey];
+    }
+
+    if (comparableText(name) === "load-limit" && world.system?.load !== undefined) {
+        return formulaValue(world, fields, world.system.load.limit);
+    }
+
+    return withAlwaysIn(world, fields, name, undefined);
+}
+
 /** The scope a formula reads on these fields: computed fields by their formulas, each worked out once; a bonus field the page lacks as 0 (FOR-4, FOR-5). */
 function formulaScope(
     world: World,
@@ -864,7 +917,14 @@ function formulaScope(
 
             const key = keys.get(comparableText(name));
             const value = key === undefined ? undefined : fields[key];
-            return value === undefined && declaredKind(world, name) === "bonus" ? 0 : withAlwaysIn(world, fields, name, value);
+
+            // The effects read by their names, as has(effects, Grappled) (FOR-2).
+            if (comparableText(name) === "effects") {
+                const read = readEffects(value);
+                return "effects" in read ? read.effects.map((effect) => effect.name) : [];
+            }
+
+            return value === undefined ? missingValue(world, fields, name) : withAlwaysIn(world, fields, name, value);
         },
         table: (name) => index?.tables.get(comparableText(name)),
         // The page an item names, of the campaign or of the system, with its effects, as a class with its hit die (D-215) or a weapon under Magic Weapon.

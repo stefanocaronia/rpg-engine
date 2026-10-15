@@ -17,7 +17,13 @@ export function campaignWorld(root: string, context: Context): World
     return files().remember(`world ${resolve(root)}`, dependsOn, () => {
         const named = readTextSetting(root, "system");
         const system = campaignSystem(root, context);
-        return loadWorld(root, { system, language: readTextSetting(root, "language"), missingSystem: system === undefined ? named : undefined, noSystem: named === undefined });
+        return loadWorld(root, {
+            system,
+            language: readTextSetting(root, "language"),
+            missingSystem: system === undefined ? named : undefined,
+            noSystem: named === undefined,
+            rigor: readTextSetting(root, "rigor"),
+        });
     });
 }
 

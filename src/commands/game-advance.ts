@@ -9,6 +9,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { calendarDayOf, newDatedLogEntry } from "./game-time.ts";
+import { dailyUpkeep } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { shortList, skippedPagesNote } from "./notes.ts";
 import { situationPart } from "./parts.ts";
@@ -40,6 +41,8 @@ export interface TimePassed
     newDays: number;
     clocks: string[];
     newDayPart: string;
+    /** What the party used up at each midnight passed, under the rigor «rules» (UPK-1, UPK-2). */
+    upkeep?: string[];
     /** The day of the calendar reached, when the campaign has one (TIM-8): 15 April, spring. */
     calendar?: string;
     /** What the campaign's extensions said of the time passed, such as the weather of a new morning (D-436). */
@@ -85,7 +88,8 @@ export function passTime(root: string, context: Context, world: World, now: Game
     const around = passed >= sceneReminderMinutes ? aroundLead(ended.length === 0 ? world : campaignWorld(root, context)) : undefined;
     // A new day with clocks to move is the world's turn: its part of the instructions says how (EVT-8, D-134).
     const newDayPart = result.clocks.length === 0 ? "" : situationPart("new-day", context, campaignSystem(root, context));
-    return { ...result, ended, around, newDayPart };
+    const upkeep = passed > 0 ? dailyUpkeep(root, context, campaignSystem(root, context), result.newDays) : [];
+    return { ...result, ended, around, newDayPart, ...(upkeep.length === 0 ? {} : { upkeep }) };
 }
 
 /**
@@ -103,6 +107,7 @@ export function passedLines(result: TimePassed, then: string): string[]
         result.around === undefined ? "" : `Around ${result.around}.`,
         clocksLine(result.newDays, result.to, result.clocks),
         result.newDayPart,
+        ...(result.upkeep ?? []),
         ...(result.extensionLines ?? []),
         result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
         skippedPagesNote(result.skipped),

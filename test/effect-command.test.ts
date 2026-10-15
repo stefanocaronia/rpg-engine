@@ -138,7 +138,7 @@ describe("the layer of values (EFF-3, EFF-6, EFF-7, EFF-10)", () => {
         expect(page("characters/Ennio.md")).toContain("hp: 12/12");
         expect(await ok("status")).toContain("PC: Ennio, in Ossario: hp 24/34 · ac 13 · Forma d'orso");
         expect(await ok("show", "Ennio")).toContain("While they last: hp 24/34 (12/12 without), speed 40 ft (none without)");
-        expect(await ok("effect", "end", "Ennio", "Forma d'orso")).toBe("Ennio: Forma d'orso ended; hp 24/34 → 12/12, speed 40 ft → none.");
+        expect(await ok("effect", "end", "Ennio", "Forma d'orso")).toBe("Ennio: Forma d'orso ended; hp 24/34 → 12/12, speed 40 ft → none, walking 40 ft → none.");
     });
 
     it("refuses to change effects with write, on pages and copies", async () => {

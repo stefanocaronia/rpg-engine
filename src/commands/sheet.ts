@@ -3,7 +3,26 @@ import { listItemNames, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
-import { baseChain, containerFieldOf, declaredKind, entryKind, entryPage, inheritedFields, isEmptyField, isStandardField, linksIn, type Page, readEntry, stackName, stacksOf, textsIn, validHoldersOf, type World } from "../pages/index.ts";
+import {
+    baseChain,
+    carriedWeight,
+    containerFieldOf,
+    declaredKind,
+    entryKind,
+    entryPage,
+    inheritedFields,
+    isEmptyField,
+    isStandardField,
+    linksIn,
+    type Page,
+    readEntry,
+    stackName,
+    stacksOf,
+    textsIn,
+    validHoldersOf,
+    weightUnit,
+    type World,
+} from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
@@ -200,7 +219,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
             }
 
             const beside = besideValue(world, fields, entry);
-            const roll = sheetRoll(system, fields, entry);
+            const roll = sheetRoll(world, system, fields, entry);
             const progress = experienceProgress(world, fields, entry.field);
             const need = experienceNeed(world, fields, entry.field);
             return isEmptyField(value) ? [] : [{
@@ -574,8 +593,8 @@ export function overLoad(world: World, system: GameSystem | undefined, page: Pag
     }
 
     const fields = effectiveFields(world, page);
-    const load = carriedLoad(world, system.load.field, page) + coinsWeight(fields, system.load.coins);
-    const limit = loadLimit(world, system.load, fields);
+    const load = carriedWeight(world, system.load, page);
+    const limit = formulaValue(world, fields, system.load.limit);
     const value = loadValue(world, system, page, fields);
     return limit === undefined || load <= limit || value === undefined ? undefined : `load ${value.text}, over the limit`;
 }
@@ -598,90 +617,18 @@ function loadValue(world: World, system: GameSystem, page: Page, fields: Record<
         return undefined;
     }
 
-    const load = carriedLoad(world, system.load.field, page) + coinsWeight(fields, system.load.coins);
+    const load = carriedWeight(world, system.load, page);
 
     // Empty hands, no line: a character who carries nothing has no Equipment to show.
     if (load === 0) {
         return undefined;
     }
 
-    const limit = loadLimit(world, system.load, fields);
+    // The limit is the system's formula, which reads the size's factor as the system says (LOAD-4).
+    const limit = formulaValue(world, fields, system.load.limit);
     const unit = weightUnit(world, system.load.field);
     const text = `${weightText(load)}${limit === undefined ? "" : ` / ${weightText(limit)}`}${unit === undefined ? "" : ` ${unit}`}`;
     return { field: "load", text, marks: 0 };
-}
-
-/** The limit of a character's load: the system's formula, times the factor of its size, written or from its race (LOAD-4). */
-function loadLimit(world: World, load: NonNullable<GameSystem["load"]>, fields: Record<string, unknown>): number | undefined
-{
-    const limit = formulaValue(world, fields, load.limit);
-    const size = load.size === undefined ? undefined : valueNamed(fields, load.size);
-    const factor = typeof size === "string" ? Object.entries(load.sizes).find(([name]) => comparableText(name) === comparableText(size))?.[1] : undefined;
-    return limit === undefined ? undefined : limit * (factor ?? 1);
-}
-
-/** The weight a holder carries (LOAD-1): each stack by its pieces, at its kind's weight over its bundle; each item at its own weight or its base's, and what it holds. */
-export function carriedLoad(world: World, field: string, holder: Page, seen = new Set<Page>()): number
-{
-    const container = containerFieldOf(holder.type);
-    const stacks = stacksOf(world, holder);
-    const counted = new Set<Page>();
-
-    return (container === undefined ? [] : textsIn(holder.fields[container])).reduce((total, entry) => {
-        const kind = entryKind(world, entry)?.kind;
-        const stack = kind === undefined ? undefined : stacks.find((candidate) => candidate.kind === kind);
-
-        if (stack !== undefined) {
-            const first = !counted.has(stack.kind);
-            counted.add(stack.kind);
-            const bundle = Number(stack.kind.fields.bundle);
-            return first ? total + (weightOf(world, field, stack.kind) * stack.count) / (Number.isSafeInteger(bundle) && bundle > 1 ? bundle : 1) : total;
-        }
-
-        const read = readEntry(entry);
-        const page = read.shape === "text" ? undefined : entryPage(world, read.page);
-
-        if (page === undefined || page.type !== "item" || seen.has(page) || validHoldersOf(world, page)[0] !== holder) {
-            return total;
-        }
-
-        seen.add(page);
-        return total + weightOf(world, field, page) + carriedLoad(world, field, page, seen);
-    }, 0);
-}
-
-/** A page's weight as a number of the system's unit, its own or its base's: 1 lb, 1/2 lb, 1½ lb, 1,000 lb; 0 when it has none. */
-function weightOf(world: World, field: string, page: Page): number
-{
-    const value = valueNamed(inheritedFields(world, page), field);
-    const match = typeof value === "string" ? /^\s*([\d,]*)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*$/u.exec(value) : null;
-
-    if (typeof value === "number") {
-        return value;
-    }
-
-    if (match === null || (match[1] === "" && match[2] === undefined)) {
-        return 0;
-    }
-
-    const whole = match[1] === "" ? 0 : Number(match[1].replace(/,/g, ""));
-    const part = match[2] === undefined ? 0 : ({ "½": 0.5, "¼": 0.25, "¾": 0.75 } as Record<string, number>)[match[2]] ?? Number(match[2].split("/")[0]) / Number(match[2].split("/")[1]);
-    return whole + part;
-}
-
-/** The unit the system's weights are written in, as lb; undefined when no page says. */
-function weightUnit(world: World, field: string): string | undefined
-{
-    const written = (world.system?.pages ?? []).map((page) => page.fields[field]).find((value) => typeof value === "string" && /\p{L}/u.test(value));
-    return typeof written === "string" ? /(\p{L}[\p{L}.]*)\s*$/u.exec(written)?.[1] : undefined;
-}
-
-/** What the coins of a purse weigh, as many coins as the system says make one unit of weight; 0 when it says none. */
-function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefined): number
-{
-    const money = valueNamed(fields, "money");
-    const coins = typeof money === "string" ? [...money.matchAll(/(\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1]), 0) : 0;
-    return perUnit === undefined ? 0 : coins / perUnit;
 }
 
 /** A weight as the sheet writes it: whole, or with one decimal. */
@@ -761,17 +708,22 @@ export function experienceNeed(world: World, fields: Record<string, unknown>, fi
     return experience === undefined ? undefined : levelNeed(experience);
 }
 
-/** The free roll of an entry of the sheet (D-280): the dice the system rolls its number with, or the number beside it, as str-mod by str; none for a text. */
-function sheetRoll(system: GameSystem, fields: Record<string, unknown>, entry: SheetEntry): SheetRoll | undefined
+/**
+ * The free roll of an entry of the sheet (D-280): the dice the system rolls its number with, or the number beside it, as str-mod by str; none for a text. Other
+ * dice when the system's formula says so, as Stealth with disadvantage in heavy armor (D-445).
+ */
+function sheetRoll(world: World, system: GameSystem, fields: Record<string, unknown>, entry: SheetEntry): SheetRoll | undefined
 {
     for (const field of [entry.field, entry.beside].filter((candidate) => candidate !== undefined)) {
-        const dice = Object.entries(system.sheetDice).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+        const usual = Object.entries(system.sheetDice).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+        const change = Object.entries(system.sheetDiceWhen).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+        const dice = usual !== undefined && change !== undefined && (formulaValue(world, fields, change.when) ?? 0) > 0 ? change.dice : usual;
         const number = dice === undefined ? undefined : numberOf(valueNamed(fields, field));
 
         if (dice !== undefined && number !== undefined) {
             const sides = dice.split("+").flatMap((term) => {
                 const [count, faces] = term.split("d");
-                return Array.from({ length: count === "" ? 1 : Number(count) }, () => Number(faces));
+                return Array.from({ length: count === "" ? 1 : Number(count) }, () => Number.parseInt(faces, 10));
             });
             return { notation: number === 0 ? dice : `${dice}${number > 0 ? "+" : "-"}${Math.abs(number)}`, dice: sides, modifier: number };
         }

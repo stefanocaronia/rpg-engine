@@ -209,7 +209,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
             /^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\nDifficulty normal: .+\nRigor smooth: .+\n(?!Still)/,
         );
         // config gives the chosen value with what it means in play, and status follows a change (D-263).
-        expect(await ok("config", "rigor", "rules")).toMatch(/^rigor: rules: as written: charge with change what is used up, food and water each day, light as it burns .+ the rule applies$/m);
+        expect(await ok("config", "rigor", "rules")).toMatch(/^rigor: rules: as written: charge with change what is used up; advance spends the day's food outside a settlement, .+ the rule applies$/m);
         expect(await ok("config", "difficulty")).toMatch(/^difficulty: normal: fights moderate to high; .+$/m);
         expect(await ok("status")).toContain("\nRigor rules: as written: charge with change what is used up");
     });

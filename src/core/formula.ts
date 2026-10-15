@@ -357,7 +357,7 @@ export function listItems(value: unknown): { name: string; number?: number; }[]
     return itemsOf(value);
 }
 
-/** A field's value read as a number (FOR-2): a number, a counter's current value, or text such as +2. Undefined for anything else. */
+/** A field's value read as a number (FOR-2): a number, a counter's current value, text such as +2, or a measure such as 25 ft. Undefined for anything else. */
 export function numberOf(value: unknown): number | undefined
 {
     if (typeof value === "number") {
@@ -368,7 +368,8 @@ export function numberOf(value: unknown): number | undefined
         return undefined;
     }
 
-    const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:\/\s*\d+\s*)?$/.exec(value);
+    // A unit is a short word, as ft, m, km or lb: "3 bludgeoning" is no measure.
+    const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:\/\s*\d+\s*|\p{L}{1,3}\.?\s*)?$/u.exec(value);
     return match === null ? undefined : Number(match[1]);
 }
 

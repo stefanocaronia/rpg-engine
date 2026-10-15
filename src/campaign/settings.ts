@@ -36,8 +36,9 @@ export const difficultyMeanings: Record<(typeof difficulties)[number], string> =
 /** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
 export const rigorMeanings: Record<(typeof rigors)[number], string> = {
     smooth: "you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them",
-    rules: "as written: charge with change what is used up, food and water each day, light as it burns (the count, and an effect for as long as it lasts), lifestyle and wages; "
-        + "encumbrance, fatigue and spell components as the rules say; warn before something runs out, and once it has, the rule applies",
+    rules: "as written: charge with change what is used up; advance spends the day's food outside a settlement, and an effect named after what burns, such as Torch, spends "
+        + "it as it is lit; water, lifestyle and wages are yours to charge; encumbrance, fatigue and spell components as the rules say; warn before something runs out, "
+        + "and once it has, the rule applies",
     simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
 };
 

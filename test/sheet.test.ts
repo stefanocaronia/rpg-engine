@@ -118,7 +118,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 ● · intimidation +1 · investigation +0 · "
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
             // The armor class from the chain mail and the shield he wears (D-231).
-            "Combat: ac 18 · initiative -1 · speed 25 ft. · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
+            "Combat: ac 18 · initiative -1 · walking 25 ft (25 ft.) · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
@@ -153,7 +153,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         expect(await ok("show", "Ettore#combat")).toBe([
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
-            "ac 18: armor-class 16, armor-class-bonus +2\ninitiative -1: dex-mod -1\nspeed 25 ft.\nequipped Cotta di Ettore, Scudo di Ettore\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes, hit-die d8",
+            "ac 18: armor-class 16, armor-class-bonus +2\ninitiative -1: dex-mod -1\nwalking 25 ft: speed 25\nequipped Cotta di Ettore, Scudo di Ettore\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes, hit-die d8",
             "passive-perception 13: perception +3\npassive-insight 15: insight +5\npassive-investigation 10: investigation +0",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
@@ -313,14 +313,14 @@ describe("rolls from the sheet (DAT-8)", () => {
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
         expect(subtraction).toMatch(
-            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+5\./,
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, walking 25 ft, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+5\./,
         );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");
         expect(await refused("roll", "1d20+str", "--who", "Ettore")).toBe(
             "str 14 is a score: the system 5e works out str-mod +2 from it, which is what a roll adds, such as 1d20+str-mod. Nothing rolled.",
         );
-        expect(await refused("roll", "1d20+speed", "--who", "Ettore")).toBe('speed on Ettore is "25 ft.", not a whole number: give the number in the notation.');
+        expect(await refused("roll", "1d20+umore", "--who", "Ettore")).toBe('umore on Ettore is "sereno", not a whole number: give the number in the notation.');
         expect(readLogFile(folder)).toHaveLength(logged);
         expect(await ok("roll", "1d20+3", "--who", "la guardia")).toMatch(/^\S+ la guardia: 1d20\+3 = 7 \[4\] \+ 3$/);
         expect(await ok("roll", "d20+2d6", "--who", "Ettore")).toContain("d20+2d6 = 12 [4] + [4, 4]");
@@ -398,7 +398,7 @@ describe("races and subraces of the SRD (D-201, SYS-2)", () => {
         const shown = await ok("show", "Bruna");
         expect(shown).toContain("Derives from: Hill Dwarf (5e) › Dwarf (5e)");
         expect(shown).toContain("Saving Throws: con-save +2 · save-notes advantage on saving throws against poison");
-        expect(shown).toContain("Combat: speed 25 ft · hp-base 18 · hp 27/27 · darkvision 60 ft · damage-resistances poison");
+        expect(shown).toContain("Combat: walking 25 ft (25 ft) · hp-base 18 · hp 27/27 · darkvision 60 ft · damage-resistances poison");
         expect(shown).toContain("From Hill Dwarf (5e): Ability Score Increase (Hill Dwarf), Dwarven Toughness.");
         expect(shown).toContain("From Dwarf (5e): Ability Score Increase, Age,");
         expect(shown).not.toContain("You have advantage on saving throws against poison");

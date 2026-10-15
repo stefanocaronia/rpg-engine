@@ -770,8 +770,10 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     // The load in kilograms for a player who counts in metric, with the system's pound (LOAD-2).
     const pound = system?.pound;
     const kilograms = (text: string): string => text.replace(/[\d.]+/g, (number) => String(Math.round(Number(number) * (pound ?? 1) * 10) / 10)).replace(/\s*\p{L}[\p{L}.]*\s*$/u, " kg");
+    // The speeds the system works out are lengths too (SPD-1).
+    const length = (name: string): boolean => Object.entries(system?.fields ?? {}).some(([declared, kind]) => kind === "length" && comparableText(declared) === comparableText(name));
     const told = (value: SheetValue): SheetValue =>
-        field !== undefined && comparableText(value.field) === comparableText(field)
+        (field !== undefined && comparableText(value.field) === comparableText(field)) || length(value.field)
             ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
             : value.field === "load" && measures.units === "metric" && pound !== undefined
             ? { ...value, text: kilograms(value.text) }

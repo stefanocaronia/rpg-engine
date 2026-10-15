@@ -25,6 +25,7 @@ export {
     uniquePage,
     writtenFieldName,
 } from "./inheritance.ts";
+export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
 export { type MapField, mapHelp, readMapField } from "./maps.ts";
 export { everyGoalTicked, goalsIn, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";

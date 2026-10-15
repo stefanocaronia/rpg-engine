@@ -1,6 +1,6 @@
 import { basename, join, relative, resolve, sep } from "node:path";
 import type { FieldKind } from "../core/field-kind.ts";
-import type { SystemFormulas } from "../core/formula.ts";
+import type { Formula, SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
@@ -53,6 +53,8 @@ export interface World
     missingSystem?: string;
     /** Whether campaign.yaml names no game system yet (D-167): a link may be to a page of the one it will name. */
     noSystem?: boolean;
+    /** The campaign's rigor, which formulas read as rigor (FOR-2, SPD-3). */
+    rigor?: string;
 }
 
 /** What a game system says of itself, as the world reads it (SYS-1, SYS-8). */
@@ -78,6 +80,10 @@ export interface SystemInfo
     uses?: string[];
     /** The fields the line of the player character and the companions shows, in order (DAT-2). */
     statusLine?: { field: string; whenSet: boolean; }[];
+    /** How it weighs what a character carries, which its formulas read as load (LOAD-1). */
+    load?: { field: string; limit: Formula; coins?: number; };
+    /** The unit its computed lengths are in, as ft (SPD-1). */
+    lengthUnit?: string;
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -112,24 +118,25 @@ export function createWorld(root: string): void
  * The pages of the campaign in `root`, and those of its game system, if one is installed: `system` says where it is and what it declares (SYS-1).
  * `language` is the campaign's; `missingSystem` the system it names that is not installed, and `noSystem` whether it names none yet, for messages.
  */
-export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; noSystem?: boolean; } = {}): World
+export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {}): World
 {
     const campaign = readPages(root);
-    const { system, language, missingSystem, noSystem } = options;
+    const { system, language, missingSystem, noSystem, rigor } = options;
 
     if (system === undefined) {
-        return frozen({ root, ...campaign, language, missingSystem, noSystem });
+        return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
     }
 
     const systemPages = packagePages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
         root,
         pages: campaign.pages,
         problems,
-        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, pages: systemPages.pages },
+        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, pages: systemPages.pages },
         language,
+        ...(rigor === undefined ? {} : { rigor }),
     });
 }
 

@@ -287,7 +287,7 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         await ok("scene", "leave", "--who", "Bandit 1");
         expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "E2" }));
         const sheet = JSON.parse(await ok("view", "Kira", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
-        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "speed")?.text).toBe("3 m");
+        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "walking")?.text).toBe("3 m");
     });
 
     it("draws the ground by the place: a building's floor, a cave's rock and its walls round, a village's paving, the forest it is in (D-325)", async () => {

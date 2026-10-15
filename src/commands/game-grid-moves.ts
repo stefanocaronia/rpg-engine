@@ -10,6 +10,7 @@ import { effectiveFields } from "./effect-layer.ts";
 import type { Standing } from "./game-grids.ts";
 import type { Measures } from "./game-roads.ts";
 import { copyPage } from "./game-scene.ts";
+import { signedText, workedFields } from "./worked-out.ts";
 
 /** A move on a place's map: who moves, as the place's `at` names them, from where to where, and the others on it as they stood before. */
 export interface MapMove
@@ -89,11 +90,16 @@ export function movedThisTurn(scene: Scene): number
     return counted ? (scene.moved?.squares ?? 0) : 0;
 }
 
-/** One's walking speed (GRD-5): the field the system names as written, and its first length in metres, when it gives one. */
+/**
+ * One's walking speed (GRD-5, SPD-1): the one the system works out now, in its unit, where it has a value; else the field the system names as written. With its
+ * first length in metres, when it gives one.
+ */
 export function walkingSpeed(world: World, rules: GridRules, measures: Measures, scene: Scene | undefined, one: Standing): { written: unknown; metres?: number; }
 {
     const page = standingPage(scene, one);
-    const written = page === undefined ? undefined : valueNamed(effectiveFields(world, page), rules.speed);
+    const fields = page === undefined ? undefined : effectiveFields(world, page);
+    const worked = fields === undefined || rules.walking === undefined ? undefined : workedFields(world, fields).find((field) => comparableText(field.field) === comparableText(rules.walking ?? ""));
+    const written = typeof worked?.value === "number" ? signedText(world, worked.field, worked.value) : fields === undefined ? undefined : valueNamed(fields, rules.speed);
     const metres = readFirstLength(written, measures.imperial);
     return { written, ...(metres === undefined ? {} : { metres }) };
 }

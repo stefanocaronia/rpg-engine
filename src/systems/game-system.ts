@@ -64,6 +64,7 @@ const gridSchema = z.object({
     diagonal: z.number().positive(),
     difficult: z.number().positive(),
     speed: z.string().min(1),
+    walking: z.string().min(1).optional(),
     size: z.string().min(1).optional(),
     footprints: z.record(z.string().min(1), z.number().int().min(1)).optional(),
     leaving: z.string().min(1).optional(),
@@ -78,15 +79,13 @@ const systemSchema = z.object({
     "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
     imperial: z.object({ mile: lengthSchema, foot: lengthSchema, pound: z.string().regex(/^\d+(\.\d+)? kg$/, { error: "write it in kilograms, such as 0.5 kg" }).optional() }).strict().optional(),
+    "length-unit": z.string().min(1).optional(),
     load: z.object({
         field: z.string().min(1),
-        limit: z.string().min(1),
+        limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
         coins: z.number().int().positive().optional(),
-        size: z.string().min(1).optional(),
-        sizes: z.record(z.string().min(1), z.number().positive()).optional(),
     }, {
-        error: "write it as the field of an item's weight, the formula of the limit, how many coins weigh one unit, and the factor of each size on the limit, "
-            + "such as {field: weight, limit: str * 15, coins: 50, size: size, sizes: {Tiny: 0.5, Large: 2}}",
+        error: "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}",
     }).strict().optional(),
     travel: travelSchema.optional(),
     grid: gridSchema.optional(),
@@ -106,6 +105,9 @@ const systemSchema = z.object({
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
     }).optional(),
+    "sheet-dice-when": z.record(z.string().min(1), z.object({ when: z.string().min(1), dice: z.string().regex(rollNamePattern) }).strict(), {
+        error: "write it as the field of the sheet, the formula that changes its dice when above 0, and the dice, such as stealth: {when: count(equipped, stealth-disadvantage = true), dice: 2d20kl1}",
+    }).optional(),
     "roll-names": z.record(z.string().regex(rollNamePattern), z.union([z.string().min(1), z.record(z.string().min(2), z.string().min(1))]), {
         error: "write it as dice with the highest or the lowest kept or dropped, and the name the game gives such a roll, by language, such as 2d20kh1: {en: with advantage, it: con vantaggio}",
     }).optional(),
@@ -117,6 +119,20 @@ const systemSchema = z.object({
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
     "condition-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
+    upkeep: z.object({
+        daily: z.string().min(1),
+        short: z.string().min(1),
+        grace: z.string().min(1),
+        worsens: z.string().min(1),
+        water: z.string().min(1).optional(),
+        rules: z.string().min(1),
+    }, {
+        error: "write it as the kind spent each day, the field that counts the days without it, the formula of the days one goes without, the counter they then raise, "
+            + "a word on water, and the rules, such as {daily: Rations, short: days-without-food, grace: 3 + con-mod, worsens: exhaustion, rules: Food and Water}",
+    }).strict().optional(),
+    burning: z.record(z.string().min(1), z.object({ lasts: z.string().min(1), spends: z.string().min(1).optional() }).strict(), {
+        error: "write each thing that burns with how long it lasts, and what it spends when not itself, such as Lamp: {lasts: 6 hours, spends: Oil}",
+    }).optional(),
     bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), rules: z.string().min(1) }).strict(), {
         error: "write each list with the most items it holds, the field an item that asks for it has, and the rules to read, such as attuned: {most: 3, needs: attunement, rules: Attunement}",
     }).optional(),
@@ -283,6 +299,8 @@ export interface GridRules
     diagonal: number;
     difficult: number;
     speed: string;
+    /** The computed field of the walking speed now, in the unit the speed is written in, which a move counts with when it has a value (SPD-1). */
+    walking?: string;
     size?: string;
     footprints: Record<string, number>;
     leaving?: string;
@@ -312,7 +330,9 @@ export interface GameSystem
     /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
     imperial?: ImperialUnits;
     /** What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight. */
-    load?: { field: string; limit: Formula; coins?: number; size?: string; sizes: Record<string, number>; };
+    load?: { field: string; limit: Formula; coins?: number; };
+    /** The unit its computed lengths are in, as ft, which the sheet writes after them (SPD-1). */
+    lengthUnit?: string;
     /** The kilograms of the system's unit of weight, for a player who counts in metric, such as 0.5 for the pound of the 5e (LOAD-2). */
     pound?: number;
     /** How one travels, when the game says so (D-261, TRV-1). */
@@ -323,6 +343,8 @@ export interface GameSystem
     sheet: SheetGroup[];
     /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
     sheetDice: Record<string, string>;
+    /** By field of the sheet, the dice it is rolled with instead when a formula is above 0, as Stealth in heavy armor (D-445). */
+    sheetDiceWhen: Record<string, { when: Formula; dice: string; }>;
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
     /** The icon on the token of one of the party (D-414): by the name of the first item of a field that has one, such as a class of classes. */
@@ -348,6 +370,10 @@ export interface GameSystem
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
     /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
     bonds: Record<string, { most: number; needs: string; rules: string; }>;
+    /** What each party member uses up a day under the rigor «rules» (UPK-1, UPK-2). */
+    upkeep?: { daily: string; short: string; grace: string; worsens: string; water?: string; rules: string; };
+    /** What burns, by the effect named after it: how long it lasts, and the kind it spends when not itself, such as Oil (UPK-3). */
+    burning: Record<string, { lasts: string; spends?: string; }>;
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
     combat?: CombatData;
@@ -616,19 +642,22 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.imperial?.pound === undefined ? {} : { pound: Number.parseFloat(data.imperial.pound) }),
+        ...(data["length-unit"] === undefined ? {} : { lengthUnit: data["length-unit"] }),
         ...(data.load === undefined ? {} : {
             load: {
                 field: data.load.field,
-                limit: parseFormula(data.load.limit),
+                // Formulas in order, the first with a value counts, as a computed field's (D-210).
+                limit: Array.isArray(data.load.limit)
+                    ? { kind: "first", options: data.load.limit.map((option) => parseFormula(String(option))) }
+                    : parseFormula(data.load.limit),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
-                ...(data.load.size === undefined ? {} : { size: data.load.size }),
-                sizes: data.load.sizes ?? {},
             },
         }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
         ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
+        sheetDiceWhen: Object.fromEntries(Object.entries(data["sheet-dice-when"] ?? {}).map(([field, change]) => [field, { when: parseFormula(change.when), dice: change.dice }])),
         rollNames: Object.fromEntries(Object.entries(data["roll-names"] ?? {}).map(([dice, names]) => [plainRoll(dice), typeof names === "string" ? { [data.language]: names } : names])),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
@@ -651,6 +680,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         conditions: data.conditions ?? [],
         conditionIcons: data["condition-icons"] ?? {},
         bonds: data.bonds ?? {},
+        ...(data.upkeep === undefined ? {} : { upkeep: data.upkeep }),
+        burning: data.burning ?? {},
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),

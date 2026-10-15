@@ -16,6 +16,7 @@ import { keepingConditionNote, secondKeptNote } from "./game-reminders.ts";
 import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
+import { burning, burnOne } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
 import { computedField, counterLimits, effectBonuses, itemSource, maximumSources } from "./worked-out.ts";
 
@@ -140,7 +141,10 @@ export const effect = defineCommand({
         const keeper = input.by === undefined ? undefined : keeperLink(world, open.scene, input.by);
         const system = campaignSystem(root, context);
         checkNotCounter(system, holder.page, name);
-        const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, input.for, input.until, system, inScene(open.scene, holder), missingSystemHint(world)) };
+        // Something that burns, as a torch, spends one of what the holder carries and lasts as long as it burns, unless told otherwise (UPK-3).
+        const lit = holder.copy ? undefined : burning(system, world, holder.page, name);
+        const lasting = input.for ?? (input.until === undefined ? lit?.lasts : undefined);
+        const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, lasting, input.until, system, inScene(open.scene, holder), missingSystemHint(world)) };
         checkLine(added);
         const replaced = effectNamed(current, name);
         const effects = withEffect(current, added);
@@ -150,7 +154,8 @@ export const effect = defineCommand({
         const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system), ...keeping];
         saveEffects(root, context, world, holder, effects);
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
-        const instead = replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`];
+        const burnt = lit === undefined ? [] : [burnOne(root, context, holder.page.name, lit.kind)].filter((note) => note !== "");
+        const instead = [...(replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`]), ...burnt];
         return { action: "add", page: holder.page.name, effect: added.name, end: added.end === undefined ? undefined : formatEnd(added.end), values: changed, ended: [], notes: [...instead, ...notes] };
     },
 
