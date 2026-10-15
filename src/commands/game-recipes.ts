@@ -59,7 +59,13 @@ export function recipeTargets(world: World, recipe: Recipe, page: Page): { field
         const amount = counter?.max === undefined ? undefined : refillAmount(world, fields, field, recipe.ends, counter.max);
         return counter?.max === undefined || amount === undefined || amount === 0 || counter.value >= counter.max ? [] : [{ field, target: Math.min(counter.max, counter.value + amount) }];
     });
-    return [...named, ...refilled, ...regainsOf(world, recipe, fields).flatMap((pool) => pool.targets)];
+    // What it lowers, as exhaustion after a long rest, never below 0 (D-449).
+    const lowered = Object.entries(fields).flatMap(([field, value]) => {
+        const amount = Object.entries(recipe.lower).find(([name]) => matches(name, field))?.[1];
+        const counter = amount === undefined || isDeclaredUncounted(world, field) ? undefined : readCounter(value);
+        return amount === undefined || counter === undefined || counter.value <= 0 ? [] : [{ field, target: Math.max(0, counter.value - amount) }];
+    });
+    return [...named, ...refilled, ...lowered, ...regainsOf(world, recipe, fields).flatMap((pool) => pool.targets)];
 }
 
 /**

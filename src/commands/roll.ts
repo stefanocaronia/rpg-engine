@@ -54,6 +54,7 @@ export const roll = defineCommand({
         keep: z.string().optional().describe("a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held"),
         use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
         from: z.string().optional().describe("who keeps the roll that use takes, when it is not who rolls"),
+        double: z.boolean().optional().describe("roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3"),
     }),
 
     run(input, context): RollOutput
@@ -83,7 +84,7 @@ export const roll = defineCommand({
         const physical = input.values !== undefined;
         const system = campaignSystem(root, context);
         const roller = rollerOf(root, context, input.who, hasNames(input.notation));
-        const named = withSheetValues(input.notation, roller, input.who, system);
+        const named = withSheetValues(input.double === true ? doubledDice(input.notation) : input.notation, roller, input.who, system);
         const keeper = input.keep === undefined ? undefined : keptField(root, context, input.who, input.keep);
         const used = input.use === undefined ? undefined : keptRoll(root, context, input.from ?? input.who, input.use);
         const diceRoll = rollWith(named.notation, used, input.values ? { values: input.values } : { random: context.random });
@@ -136,6 +137,12 @@ interface KeptField
     page: Page;
     field: string;
     values: number[];
+}
+
+/** A notation with twice its dice and the same numbers, as a critical hit's damage (D-449): 1d8+3 is 2d8+3, d6+1d4 is 2d6+2d4. */
+function doubledDice(notation: string): string
+{
+    return notation.replace(/(^|[^\w-])(\d*)d(\d+|%|F)/g, (_whole, before: string, count: string, faces: string) => `${before}${(count === "" ? 1 : Number(count)) * 2}d${faces}`);
 }
 
 /** The field of who rolls that keep writes to (KEP-2): a page's, declared as kept rolls. */

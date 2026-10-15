@@ -84,6 +84,8 @@ export interface SystemInfo
     load?: { field: string; limit: Formula; coins?: number; };
     /** The unit its computed lengths are in, as ft (SPD-1). */
     lengthUnit?: string;
+    /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
+    bonusLists?: string[];
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -128,13 +130,13 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = packagePages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
         root,
         pages: campaign.pages,
         problems,
-        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, pages: systemPages.pages },
+        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, pages: systemPages.pages },
         language,
         ...(rigor === undefined ? {} : { rigor }),
     });

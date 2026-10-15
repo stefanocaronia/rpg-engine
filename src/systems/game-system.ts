@@ -28,6 +28,7 @@ const iconPattern = /^[Mm][MmLlHhVvCcSsQqTtAaZz\d.,\s+-]*$/;
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
     regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
+    lower: z.record(z.string(), z.number().int().positive()).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
 }).strict();
@@ -80,6 +81,7 @@ const systemSchema = z.object({
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
     imperial: z.object({ mile: lengthSchema, foot: lengthSchema, pound: z.string().regex(/^\d+(\.\d+)? kg$/, { error: "write it in kilograms, such as 0.5 kg" }).optional() }).strict().optional(),
     "length-unit": z.string().min(1).optional(),
+    "bonus-lists": z.array(z.string().min(1)).optional(),
     load: z.object({
         field: z.string().min(1),
         limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
@@ -194,6 +196,8 @@ export interface Recipe
     set: Record<string, "max" | number>;
     /** By field, or by fields that begin so, how many come back in all, such as half the hit dice (DAT-4). */
     regain: Record<string, Formula>;
+    /** By field, how much a counter goes down, never below 0, as exhaustion after a long rest (D-449). */
+    lower: Record<string, number>;
     ends: string[];
     rules: string[];
 }
@@ -338,6 +342,8 @@ export interface GameSystem
     load?: { field: string; limit: Formula; coins?: number; };
     /** The unit its computed lengths are in, as ft, which the sheet writes after them (SPD-1). */
     lengthUnit?: string;
+    /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
+    bonusLists: string[];
     /** The kilograms of the system's unit of weight, for a player who counts in metric, such as 0.5 for the pound of the 5e (LOAD-2). */
     pound?: number;
     /** How one travels, when the game says so (D-261, TRV-1). */
@@ -651,6 +657,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.imperial?.pound === undefined ? {} : { pound: Number.parseFloat(data.imperial.pound) }),
         ...(data["length-unit"] === undefined ? {} : { lengthUnit: data["length-unit"] }),
+        bonusLists: data["bonus-lists"] ?? [],
         ...(data.load === undefined ? {} : {
             load: {
                 field: data.load.field,
@@ -692,6 +699,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             name: recipe,
             set: value.set ?? {},
             regain: regainOf(value.regain ?? {}, name, path, recipe),
+            lower: value.lower ?? {},
             ends: value.ends ?? [],
             rules: value.rules ?? [],
         })),
@@ -909,7 +917,7 @@ function recipeWith(own: unknown, added: unknown, name: string): Record<string, 
         return items.length === 0 ? undefined : items.filter((item, index) => items.findIndex((other) => comparableText(String(other)) === comparableText(String(item))) === index);
     };
 
-    const merged = { ...base, ...added, set: map("set"), regain: map("regain"), ends: list("ends"), rules: list("rules") };
+    const merged = { ...base, ...added, set: map("set"), regain: map("regain"), lower: map("lower"), ends: list("ends"), rules: list("rules") };
     return Object.fromEntries(Object.entries(merged).filter(([, value]) => value !== undefined));
 }
 

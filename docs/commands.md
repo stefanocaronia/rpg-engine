@@ -215,6 +215,7 @@ Read-only: no. Positional parameters: `notation`.
 - `keep` (`string`, optional): a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held
 - `use` (`string`, optional): a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die
 - `from` (`string`, optional): who keeps the roll that use takes, when it is not who rolls
+- `double` (`boolean`, optional): roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3
 
 ### ask
 

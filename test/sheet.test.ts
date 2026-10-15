@@ -118,7 +118,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Skills: acrobatics -1 · animal-handling +3 · arcana +0 · athletics +2 · deception +1 · history +0 · insight +5 ● · intimidation +1 · investigation +0 · "
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
             // The armor class from the chain mail and the shield he wears (D-231).
-            "Combat: ac 18 · initiative -1 · walking 25 ft (25 ft.) · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10",
+            "Combat: ac 18 · initiative -1 · walking 25 ft (25 ft.) · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10 · long-jump 14 ft · high-jump 5 ft · push-drag 420 · hold-breath 3",
             "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
@@ -154,7 +154,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Ettore#Combat (character) · world/characters/Ettore.md",
             "",
             "ac 18: armor-class 16, armor-class-bonus +2\ninitiative -1: dex-mod -1\nwalking 25 ft: speed 25\nequipped Cotta di Ettore, Scudo di Ettore\nhp-base 18\nhp 20/24: the maximum from hp-base 18, level 3, con-mod +2\nhit-dice-d8 3/3: the maximum from 3 in classes, hit-die d8",
-            "passive-perception 13: perception +3\npassive-insight 15: insight +5\npassive-investigation 10: investigation +0",
+            "passive-perception 13: perception +3\npassive-insight 15: insight +5\npassive-investigation 10: investigation +0\nlong-jump 14 ft: str 14\nhigh-jump 5 ft: str-mod +2\npush-drag 420: str 14\nhold-breath 3: con-mod +2",
         ].join("\n"));
         expect(await ok("show", "Ettore#Abilities")).toContain("str 14 (+2)\ndex 8 (-1)\ncon 15 (+2)\nint 10 (+0)\nwis 16 (+3)\ncha 12 (+1)\nproficiency +2: level 3, proficiency-by-level 2");
         await ok("write", "Ettore#Combat", "--text", "Combatte con la mazza del padre.");
@@ -313,7 +313,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
         expect(subtraction).toMatch(
-            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, walking 25 ft, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+5\./,
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, long-jump 14 ft, high-jump 5 ft, push-drag 420, hold-breath 3, walking 25 ft, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+5\./,
         );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");

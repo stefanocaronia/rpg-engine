@@ -67,6 +67,12 @@ describe("exhaustion", () => {
         await ok("change", "Ettore", "exhaustion", "--to", "4");
         expect(await ok("show", "Ettore")).toContain("hp 6/6");
     });
+
+    it("goes down a level with a long rest, never below 0 (D-449)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
+        await ok("change", "Ettore", "exhaustion", "--to", "2");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("Ettore: exhaustion 2 → 1.");
+    });
 });
 
 describe("what burns", () => {

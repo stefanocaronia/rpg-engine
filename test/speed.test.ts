@@ -124,3 +124,11 @@ async function ok(...args: string[]): Promise<string>
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
 }
+
+describe("jumping, pushing and holding one's breath (D-449)", () => {
+    it("works them out for a character with classes, from Strength, size and Constitution", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=15", "--set", "con=14");
+        const shown = await ok("show", "Ettore");
+        expect(shown).toContain("long-jump 15 ft · high-jump 5 ft · push-drag 450 · hold-breath 3");
+    });
+});

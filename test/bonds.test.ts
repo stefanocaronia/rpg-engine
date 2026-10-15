@@ -60,3 +60,19 @@ async function ok(...args: string[]): Promise<string>
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
 }
+
+describe("what attuned items and feats give (D-449)", () => {
+    it("adds up the bonuses of every item one is attuned to and every feat, with the effects", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "dex=10", "--set", "wis=10", "--set", "hp-base=10");
+        const ac = async (): Promise<string> => /(?<![-\w])ac \d+/.exec(await ok("show", "Ettore"))?.[0] ?? "";
+        expect(await ac()).toBe("ac 10");
+        await ok("write", "Ettore", "--add", "attuned=[[Ring of Protection]]", "--add", "attuned=[[Cloak of Protection]]");
+        expect(await ac()).toBe("ac 12");
+        await ok("write", "Fortunato", "--type", "topic", "--set", "category=feat", "--set", "bonus-ac=1");
+        await ok("write", "Ettore", "--add", "feats=[[Fortunato]]");
+        expect(await ac()).toBe("ac 13");
+        await ok("effect", "add", "Ettore", "Shield of Faith", "--set", "bonus-ac=2");
+        expect(await ac()).toBe("ac 15");
+        expect(await ok("show", "Ettore")).toContain("wis-save +2");
+    });
+});

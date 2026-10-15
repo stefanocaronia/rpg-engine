@@ -19,10 +19,10 @@ import {
     workOut,
 } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
-import { carriedWeight, declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
+import { carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
 /** A computed field that has a value, and the values it came from (FOR-8); a field the rows of the classes give may hold text, such as martial-arts 1d6 (PRO-2). */
@@ -139,6 +139,15 @@ function effectValuesOver(world: World, page: Page): Record<string, unknown>
 {
     const fields = { ...inheritedFields(world, page) };
     const read = readEffects(Object.entries(page.fields).find(([field]) => comparableText(field) === "effects")?.[1]);
+
+    // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449).
+    for (const page of (world.system?.bonusLists ?? []).flatMap((list) => linksIn(valueNamed(fields, list)).flatMap((name) => findPage(world, name) ?? []))) {
+        for (const [field, value] of Object.entries(inheritedFields(world, page))) {
+            const amount = declaredKind(world, field) === "bonus" ? numberOf(value) : undefined;
+            const key = keyOf(fields, field) ?? field;
+            fields[key] = amount === undefined ? fields[key] : (numberOf(fields[key]) ?? 0) + amount;
+        }
+    }
 
     for (const effect of "effects" in read ? read.effects : []) {
         for (const [field, value] of effect.values) {

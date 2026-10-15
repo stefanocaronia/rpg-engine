@@ -146,7 +146,7 @@ recipes:
 
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
-- `recipes`: what a rest does: counters `set` or partly `regain`ed, the occasions it `ends`, the rules it leaves to the master.
+- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount, never below 0 (`lower: {exhaustion: 1}`), the occasions it `ends`, the rules it leaves to the master.
 
 ### upkeep, burning
 
@@ -222,6 +222,7 @@ always-in: {equipped: [Unarmed Strike]}
 
 - `item-formulas`: fields whose formula each item's page gives, worked out on the character once per item: a weapon's `attack: "str-mod + proficiency + bonus"`. A formula of an item may begin with dice and end with words: `"1d8 + str-mod slashing"`, or `dice(1d6, martial-arts)` for the largest of several.
 - `always-in`: pages every character with a sheet has in a list without writing them.
+- `bonus-lists`: lists whose pages give their `bonus` fields to who lists them, added up as effects are, as `bonus-lists: [attuned, feats]` with a Ring of Protection's `bonus-ac: 1`.
 
 ## 3. Formulas
 

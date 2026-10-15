@@ -83,7 +83,7 @@ describe("the character sheet (DAT-2)", () => {
                 + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
                 + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, days-without-food, expertise, "
                 + "armor-proficiencies, tool-proficiencies, fighting-styles, money, attuned, inventory, spells, prepared. It works out "
-                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
+                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, passive-perception, passive-insight, passive-investigation, long-jump, high-jump, push-drag, hold-breath, Features, Attacks, "
                 + "caster-level, spell-save-dc, spell-attack, max-prepared: never write them. Only its names go in alignment (such as lawful good, neutral good), size (Tiny, Small, Medium, Large, Huge, Gargantuan), save-proficiencies "
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), languages (such as Common, Dwarvish), "
                 + "tool-proficiencies (such as alchemist's supplies, brewer's supplies), damage-resistances (such as acid, bludgeoning), as it writes them: "
@@ -185,9 +185,10 @@ describe("recipes (DAT-4, DAT-5)", () => {
         const rested = await ok("change", "--recipe", "long rest", "--why", " ");
         // Temporary hit points that go are named with their rule (DAT-3, D-268).
         expect(rested).toContain('temp-hp is at 0: read rules "Temporary Hit Points".');
-        expect(rested.replace('\ntemp-hp is at 0: read rules "Temporary Hit Points".', "")).toBe([
+        // A long rest takes a level of exhaustion, and the rule of exhaustion follows (D-449).
+        expect(rested.replace('\ntemp-hp is at 0: read rules "Temporary Hit Points".', "").split("\n\nexhaustion changed")[0]).toBe([
             "Long rest (a recipe of the system 5e):",
-            'Ennio: Prosciugato ended; Ombra ended; hp 5/12 → 12/12; temp-hp 4 → 0; slots-1 0/2 → 2/2. Not brought back: hit-dice 0/1, exhaustion 1/6 (rules "Exhaustion").',
+            "Ennio: Prosciugato ended; Ombra ended; hp 5/12 → 12/12; temp-hp 4 → 0; slots-1 0/2 → 2/2; exhaustion 1/6 → 0/6. Not brought back: hit-dice 0/1.",
             "Lena: hp 2/4 → 4/4 (again as Commoner).",
             'For the rest, read rules "Long Rest".',
             "The game date did not move: advance the hours of the rest, if you have not yet.",
@@ -201,6 +202,7 @@ describe("recipes (DAT-4, DAT-5)", () => {
             ["counter-changed", "Ennio", "hp", "public"],
             ["counter-changed", "Ennio", "temp-hp", "public"],
             ["counter-changed", "Ennio", "slots-1", "public"],
+            ["counter-changed", "Ennio", "exhaustion", "public"],
             ["counter-changed", "Lena", "hp", "public"],
         ]);
     });
