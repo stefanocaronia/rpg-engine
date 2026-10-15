@@ -1,5 +1,5 @@
 // The character sheet of the game system (D-204, D-207, DAT-2): its groups as show gives them, the fields a character still lacks, and the names a list takes (SYS-8).
-import { listItemNames, numberOf } from "../core/formula.ts";
+import { type Formula, listItemNames, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
@@ -716,8 +716,7 @@ function sheetRoll(world: World, system: GameSystem, fields: Record<string, unkn
 {
     for (const field of [entry.field, entry.beside].filter((candidate) => candidate !== undefined)) {
         const usual = Object.entries(system.sheetDice).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
-        const change = Object.entries(system.sheetDiceWhen).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
-        const dice = usual !== undefined && change !== undefined && (formulaValue(world, fields, change.when) ?? 0) > 0 ? change.dice : usual;
+        const dice = usual === undefined ? undefined : oddsDice(world, system, fields, field) ?? usual;
         const number = dice === undefined ? undefined : numberOf(valueNamed(fields, field));
 
         if (dice !== undefined && number !== undefined) {
@@ -730,6 +729,17 @@ function sheetRoll(world: World, system: GameSystem, fields: Record<string, unkn
     }
 
     return undefined;
+}
+
+/** The dice of a better or a worse roll of a field, when the system's formulas make it one and not both, which cancel out (D-445); undefined otherwise. */
+function oddsDice(world: World, system: GameSystem, fields: Record<string, unknown>, field: string): string | undefined
+{
+    const odds = system.sheetOdds;
+    const when = (odds?.when ?? []).filter((entry) => entry.fields.some((listed) => comparableText(listed) === comparableText(field)));
+    const above = (formula: Formula | undefined): boolean => formula !== undefined && (formulaValue(world, fields, formula) ?? 0) > 0;
+    const better = when.some((entry) => above(entry.better));
+    const worse = when.some((entry) => above(entry.worse));
+    return odds === undefined || better === worse ? undefined : better ? odds.better : odds.worse;
 }
 
 /** A list with what the parts of the character add to it (PRO-7): the names written, then those given, apart and not counted with it. */

@@ -123,7 +123,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-icons`, `token-icons`: SVG path data on a 24 grid, for a group's card and for a token's mark by class.
 - `sheet-headline`: the line under a name on the dashboard.
 - `sheet-cards`: where the dashboard puts the groups.
-- `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-dice-when`: other dice for a number while a formula is above 0, as `stealth: {when: "count(equipped, stealth-disadvantage = true)", dice: 2d20kl1}`.
+- `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)"}]}`.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
 - `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 

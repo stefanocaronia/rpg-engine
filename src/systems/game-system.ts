@@ -105,9 +105,14 @@ const systemSchema = z.object({
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
     }).optional(),
-    "sheet-dice-when": z.record(z.string().min(1), z.object({ when: z.string().min(1), dice: z.string().regex(rollNamePattern) }).strict(), {
-        error: "write it as the field of the sheet, the formula that changes its dice when above 0, and the dice, such as stealth: {when: count(equipped, stealth-disadvantage = true), dice: 2d20kl1}",
-    }).optional(),
+    "sheet-odds": z.object({
+        better: z.string().regex(rollNamePattern),
+        worse: z.string().regex(rollNamePattern),
+        when: z.array(z.object({ fields: z.array(z.string().min(1)).min(1), better: z.string().min(1).optional(), worse: z.string().min(1).optional() }).strict()),
+    }, {
+        error: "write it as the dice of a better and a worse roll, and when: fields of the sheet with the formulas that make them better or worse above 0, "
+            + "such as {better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: count(equipped, stealth-disadvantage = true)}]}",
+    }).strict().optional(),
     "roll-names": z.record(z.string().regex(rollNamePattern), z.union([z.string().min(1), z.record(z.string().min(2), z.string().min(1))]), {
         error: "write it as dice with the highest or the lowest kept or dropped, and the name the game gives such a roll, by language, such as 2d20kh1: {en: with advantage, it: con vantaggio}",
     }).optional(),
@@ -343,8 +348,11 @@ export interface GameSystem
     sheet: SheetGroup[];
     /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
     sheetDice: Record<string, string>;
-    /** By field of the sheet, the dice it is rolled with instead when a formula is above 0, as Stealth in heavy armor (D-445). */
-    sheetDiceWhen: Record<string, { when: Formula; dice: string; }>;
+    /**
+     * The dice of a better and a worse free roll, and the fields of the sheet that formulas make better or worse above 0, as Stealth in heavy armor or a check
+     * at exhaustion 1; both cancel out (D-445).
+     */
+    sheetOdds?: { better: string; worse: string; when: { fields: string[]; better?: Formula; worse?: Formula; }[]; };
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
     /** The icon on the token of one of the party (D-414): by the name of the first item of a field that has one, such as a class of classes. */
@@ -657,7 +665,17 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
-        sheetDiceWhen: Object.fromEntries(Object.entries(data["sheet-dice-when"] ?? {}).map(([field, change]) => [field, { when: parseFormula(change.when), dice: change.dice }])),
+        ...(data["sheet-odds"] === undefined ? {} : {
+            sheetOdds: {
+                better: data["sheet-odds"].better,
+                worse: data["sheet-odds"].worse,
+                when: data["sheet-odds"].when.map((when) => ({
+                    fields: when.fields,
+                    ...(when.better === undefined ? {} : { better: parseFormula(when.better) }),
+                    ...(when.worse === undefined ? {} : { worse: parseFormula(when.worse) }),
+                })),
+            },
+        }),
         rollNames: Object.fromEntries(Object.entries(data["roll-names"] ?? {}).map(([dice, names]) => [plainRoll(dice), typeof names === "string" ? { [data.language]: names } : names])),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
