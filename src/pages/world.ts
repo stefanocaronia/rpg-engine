@@ -8,6 +8,7 @@ import { comparableText } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
+import { readEntry } from "./stack-entry.ts";
 import { canHold, containerFieldOf } from "./standard-fields.ts";
 
 const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;
@@ -345,11 +346,36 @@ export function locate(world: World, page: Page): { chain: Page[]; alsoIn: Page[
     return { chain, alsoIn };
 }
 
-/** The containers that list a page and can hold it, itself left out, in the order of the world's pages. A page of the game system is in none (SYS-6). */
+/**
+ * The containers that list a page and can hold it, itself left out, in the order of the world's pages. A page of the game system is in none (SYS-6), nor an item of the campaign
+ * that an entry counts, a kind (STK-3).
+ */
 export function validHoldersOf(world: World, page: Page): Page[]
 {
-    return page.system !== undefined ? [] : holdersOf(world, page.name).filter((holder) => holder !== page && canHold(holder.type, page.type));
+    return page.system !== undefined || isCountedItem(world, page) ? [] : holdersOf(world, page.name).filter((holder) => holder !== page && canHold(holder.type, page.type));
 }
+
+/** Whether an item of the campaign is counted by some entry of a container, as [[Lembas]] 3: a kind, which is nowhere (STK-1, STK-3). */
+export function isCountedItem(world: World, page: Page): boolean
+{
+    let counted = countedByWorld.get(world);
+
+    if (counted === undefined) {
+        const names = world.pages.flatMap((holder) => {
+            const field = containerFieldOf(holder.type);
+            return field === undefined ? [] : textsIn(holder.fields[field]).flatMap((entry) => {
+                const read = readEntry(entry);
+                return read.shape === "stack" ? [comparableText(read.page)] : [];
+            });
+        });
+        counted = new Set(names);
+        countedByWorld.set(world, counted);
+    }
+
+    return page.system === undefined && page.type === "item" && counted.has(comparableText(page.name));
+}
+
+const countedByWorld = new WeakMap<World, Set<string>>();
 
 /** Whether a page is one of the player's party: their character or a companion. */
 export function isPartyMember(page: Page): boolean
@@ -391,11 +417,11 @@ export function holdersOf(world: World, name: string): Page[]
     return index.get(comparableText(name)) ?? [];
 }
 
-/** The names a page lists in its container field, by its type (CON-1): none for a type that holds nothing. */
+/** The names a page lists in its container field, by its type (CON-1), but those it counts in a stack, which holds no page (STK-3): none for a type that holds nothing. */
 export function heldNames(page: Page): string[]
 {
     const field = containerFieldOf(page.type);
-    return field === undefined ? [] : linksIn(page.fields[field]);
+    return field === undefined ? [] : textsIn(page.fields[field]).filter((entry) => readEntry(entry).shape !== "stack").flatMap(linkedPages);
 }
 
 /**

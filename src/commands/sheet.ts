@@ -3,7 +3,7 @@ import { listItemNames, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
-import { baseChain, declaredKind, isEmptyField, isStandardField, type Page, type World } from "../pages/index.ts";
+import { baseChain, containerFieldOf, declaredKind, entryKind, entryPage, isEmptyField, isStandardField, linksIn, type Page, readEntry, stackName, stacksOf, textsIn, validHoldersOf, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
@@ -94,6 +94,8 @@ export interface SheetValue
     always?: { from: string[]; items: string[]; };
     /** How many marks it earns: one for each list of the system's marks it reads, as a proficiency (D-217). */
     marks: number;
+    /** For money, its coins from the largest, each with its metal when the game names it, as the dashboard draws them (D-431). */
+    coins?: { coin: string; count: number; metal?: string; }[];
     /** What the sheet shows beside it, such as +2 by str, or how many points the next level needs (PRO-6). */
     beside?: string;
     /** The field shown beside it, such as str-mod by str: a check that names it is rolled from this value too (ASK-12). */
@@ -122,14 +124,32 @@ export interface SheetRoll
     modifier: number;
 }
 
-/** A group of a character's sheet as data: its values, or for a group that the items of one list give, each item with its values, as the attacks (PRO-5). */
+/**
+ * A group of a character's sheet as data: its values, or for a group that the items of one list give, each item with its values, as the attacks (PRO-5); for what a
+ * character carries, each thing with how many, how deep inside another it is, and whether it is equipped (D-431).
+ */
 export interface SheetGroupData
 {
     name: string;
     /** Its icon on the dashboard, when the system gives one (D-284). */
     icon?: string;
     values: SheetValue[];
-    items?: { item: string; values: SheetValue[]; }[];
+    items?: SheetItem[];
+}
+
+/** An item of a group: its name and values; for what is carried, how deep inside another thing, and whether it is equipped (D-431). */
+export interface SheetItem
+{
+    item: string;
+    values: SheetValue[];
+    depth?: number;
+    /** The thing it is inside, for what the screen reader says of a row a step in. */
+    inside?: string;
+    /** The page it is, or the kind it is counted by, whose icon the row shows (D-431). */
+    page?: string;
+    /** That icon, as the dashboard reads a picture; none for text, or a page without one. */
+    image?: { file: string; version: number; };
+    equipped?: boolean;
 }
 
 /**
@@ -145,6 +165,16 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
     const fields = effectiveFields(world, page);
     const marks = markCounts(world, system, fields);
     return system.sheet.flatMap((group): SheetGroupData[] => {
+        // The group of what a character carries (D-431): its purse and the other values, then a row for each thing, stack or text, with what each item holds below it.
+        if (group.entries.some((entry) => comparableText(entry.field) === "inventory")) {
+            const values = group.entries.filter((entry) => comparableText(entry.field) !== "inventory").flatMap((entry) => {
+                const value = valueNamed(fields, entry.field);
+                return isEmptyField(value) ? [] : [sheetValue(world, fields, entry.field, value)];
+            });
+            const items = carriedRows(world, page, equippedPages(world, page));
+            return values.length + items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values, ...(items.length === 0 ? {} : { items }) }];
+        }
+
         const list = itemGroupList(world, group);
 
         // A group of what the items of one list give is shown item by item, as the attacks of the weapons equipped (PRO-5).
@@ -270,10 +300,12 @@ export function statBlock(world: World, system: GameSystem | undefined, page: Pa
 export function sheetText(groups: SheetGroupData[]): string[]
 {
     return groups.map((group) => {
-        const shown = group.items === undefined
-            ? group.values.map((value) => `${value.field} ${value.text}${value.marks === 0 ? "" : ` ${"●".repeat(value.marks)}`}${value.beside === undefined ? "" : ` (${value.beside})`}`)
-            : group.items.map((item) => `${item.item} ${item.values.map((value) => value.text).join(", ")}`);
-        return `${group.name}: ${shown.join(" · ")}`;
+        const values = group.values.map((value) => `${value.field} ${value.text}${value.marks === 0 ? "" : ` ${"●".repeat(value.marks)}`}${value.beside === undefined ? "" : ` (${value.beside})`}`);
+        const items = (group.items ?? []).map((item) => {
+            const text = `${item.item}${item.values.map((value) => value.text).filter((text) => text !== "").map((text) => ` ${text}`).join(",")}${item.equipped === true ? " (equipped)" : ""}`;
+            return (item.depth ?? 0) > 0 ? `${"› ".repeat(item.depth ?? 0)}${text}` : text;
+        });
+        return `${group.name}: ${[...values, ...items].join(" · ")}`;
     });
 }
 
@@ -482,6 +514,63 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
         isUse(world, field) && !listed.has(comparableText(field)) && !rows.some((row) => comparableText(row) === comparableText(field)) && !isEmptyField(valueNamed(fields, field))
     );
     return [...group.entries, ...[...rows, ...uses].map((field) => ({ field, optional: true }))];
+}
+
+/**
+ * What a holder carries, as rows of the sheet (D-431): a stack with its count (STK-1), an item with a story of its own, 1, and below it what it holds, one level deeper, and
+ * text as written; marked when equipped. Pages that are elsewhere, or not items, are left out.
+ */
+function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, seen = new Set<Page>()): SheetItem[]
+{
+    const field = containerFieldOf(holder.type);
+    const stacks = stacksOf(world, holder);
+    const shown = new Set<Page>();
+    const row = (item: string, count: string, on: boolean, page?: Page): SheetItem => ({
+        item,
+        ...(page === undefined ? {} : { page: page.name }),
+        values: [{ field: "quantity", text: count, marks: 0 }],
+        ...(depth === 0 ? {} : { depth, inside: holder.name }),
+        ...(on ? { equipped: true } : {}),
+    });
+
+    return (field === undefined ? [] : textsIn(holder.fields[field])).flatMap((entry): SheetItem[] => {
+        const counted = entryKind(world, entry);
+        const stack = counted === undefined ? undefined : stacks.find((candidate) => candidate.kind === counted.kind);
+
+        if (stack !== undefined) {
+            // Two entries of a kind are one stack, shown once (STK-3).
+            const first = !shown.has(stack.kind);
+            shown.add(stack.kind);
+            return first ? [row(stackName(stack), quantity(stack.count), equipped.includes(stack.kind), stack.kind)] : [];
+        }
+
+        const read = readEntry(entry);
+
+        if (read.shape === "text") {
+            return [row(entry.trim(), "", false)];
+        }
+
+        const page = entryPage(world, read.page);
+
+        if (page === undefined || page.type !== "item" || seen.has(page) || validHoldersOf(world, page)[0] !== holder) {
+            return [];
+        }
+
+        seen.add(page);
+        return [row(page.name, "", equipped.includes(page), page), ...carriedRows(world, page, equipped, depth + 1, seen)];
+    });
+}
+
+/** How many there are, as the sheet shows it: blank for one, which goes without saying (Stefano, 14 October). */
+function quantity(count: number): string
+{
+    return count === 1 ? "" : String(count);
+}
+
+/** The pages a character has equipped, items or kinds (CON-12, STK-11). */
+function equippedPages(world: World, page: Page): Page[]
+{
+    return linksIn(page.fields.equipped).flatMap((name) => entryPage(world, name) ?? []);
 }
 
 /** The list whose items' formulas give every field of a group, as equipped for the attacks; undefined for any other group (PRO-5). */

@@ -124,11 +124,13 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
             // The unarmed strike every character has ready, with no weapon equipped (D-235).
             "Attacks: Unarmed Strike +4, 3 bludgeoning",
+            // What he carries, the equipped marked (D-431).
+            "Equipment: Cotta di Ettore (equipped) · Scudo di Ettore (equipped)",
             // A cleric's spellcasting, worked out from the cleric's page and the slots of its level (D-227).
             "Spells: caster-level 3 · spell-save-dc 13 · spell-attack +5 · slots-1 4/4 · slots-2 2/2 · max-prepared 6",
             "show Ettore#Spellcasting gives the text of a feature.",
             "",
-            '---\nrole: pc\numore: sereno\ninventory:\n  - "[[Cotta di Ettore]]"\n  - "[[Scudo di Ettore]]"\n---',
+            "---\nrole: pc\numore: sereno\n---",
         ].join("\n"));
         expect(shown).not.toContain("Worked out by the system");
         // The result keeps every field as written and every value with what it came from, for whoever reads it as data.
@@ -163,7 +165,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion");
         expect(await ok("show", "Mira#Skills")).toContain("Mira has nothing in Skills yet.");
         expect(await refused("show", "Ettore#Incantesimi")).toBe(
-            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Appearance, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Attacks, Spells.',
+            'Ettore has no section or secret "Incantesimi". It has no sections or secrets. The groups of its sheet are: Character, Personality, Appearance, Abilities, Saving Throws, Skills, Combat, Proficiencies, Features, Attacks, Equipment, Spells.',
         );
     });
 

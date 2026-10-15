@@ -326,7 +326,7 @@ function sceneLogLine(type: string, data: Record<string, unknown>): string
             return `time to ${String(data.to)}${why}`;
         case "page-created":
         case "page-updated":
-            return `wrote ${String(data.page)}`;
+            return `wrote ${String(data.page)}${why}`;
         case "scene-changed":
             return sceneChangeLine(data);
         case "scene-now":

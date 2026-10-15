@@ -10,6 +10,12 @@ export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set(
     return systemWord("fields", field) ?? words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
 }
 
+/** A field's name in full, as a roll says it: the system's long name where its label is short, as Charisma for CHA; else its label. */
+export function rollLabel(field: string, fields: ReadonlySet<string> = new Set()): string
+{
+    return systemWord("names", field) ?? phraseLabel(fieldLabel(field, fields));
+}
+
 /**
  * The dice of a notation, by their sides, with how many of each, in the order they come: 2d20kh1+5 is two d20, 1d20+1d4+3 a d20 and a d4, d% a d% (100), 4dF
  * four dF; numbers alone are not dice.

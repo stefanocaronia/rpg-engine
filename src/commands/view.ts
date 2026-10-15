@@ -9,8 +9,9 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
+import { type Coin, readAmount } from "../money/index.ts";
 import { homeSystemWords } from "../page-words.ts";
-import { declaredKind, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { declaredKind, entryPage, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
@@ -267,7 +268,12 @@ export const view = defineCommand({
             }
 
             // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
-            const sheet = speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system));
+            const sheet = withItemImages(
+                root,
+                context,
+                world,
+                withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
+            );
             const language = readSettings(root).language;
             const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : wordsOf(system, language, context)) : undefined;
             const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
@@ -315,7 +321,7 @@ export const view = defineCommand({
                 ...(image === undefined ? {} : { image }),
                 ...(icon === undefined ? {} : { icon }),
                 ...(place === undefined ? {} : { place }),
-                counters: lineValues(world, page, lineCounters(world, page, coins, system)),
+                counters: lineValues(world, page, lineCounters(world, page, coins, system)).map((value) => valueCoins(value, coins, system)),
                 effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
                 ...(mood === "neutral" ? {} : { mood }),
                 ...(dying === undefined ? {} : { dying }),
@@ -607,7 +613,7 @@ function storyFact(world: World, entry: LogEntry, named: (name: unknown) => stri
             case "roll-revealed":
                 return { kind: "roll-revealed" };
             case "counter-changed":
-                return { kind: "counter", who: who(data.page), field: text(data.field), before: text(data.before), after: text(data.after) };
+                return { kind: "counter", who: who(data.page), field: text(data.field), before: text(data.before), after: text(data.after), ...(data.stack === true ? { stack: true } : {}) };
             case "time-advanced":
                 return { kind: "time", ...(data.from === undefined ? {} : { from: text(data.from) }), to: text(data.to) };
             case "moved":
@@ -763,6 +769,44 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const field = system?.grid?.speed;
     const told = (value: SheetValue): SheetValue => (field !== undefined && comparableText(value.field) === comparableText(field) ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) } : value);
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
+}
+
+/** The groups of a sheet with the icon of every thing carried, its page's or the kind's it derives from (D-431); the page's name is the engine's, not the page's to show. */
+function withItemImages(root: string, context: Context, world: World, groups: SheetGroupData[]): SheetGroupData[]
+{
+    return groups.map((group) => ({
+        ...group,
+        ...(group.items === undefined ? {} : {
+            items: group.items.map(({ page, ...item }) => {
+                const found = page === undefined ? undefined : entryPage(world, page);
+                const image = found === undefined ? undefined : shownImage(root, context, world, found);
+                return image === undefined ? item : { ...item, image };
+            }),
+        }),
+    }));
+}
+
+/** The groups of a sheet with the coins of every value that is money, as the dashboard draws them (D-431). */
+function withCoins(groups: SheetGroupData[], coins: Coin[] | undefined, system: GameSystem | undefined): SheetGroupData[]
+{
+    return groups.map((group) => ({ ...group, values: group.values.map((value) => valueCoins(value, coins, system)) }));
+}
+
+/** A value with its coins when it is money (MON-2), from the coin worth most, each with its metal when the game names it; as it was otherwise. */
+function valueCoins(value: SheetValue, coins: Coin[] | undefined, system: GameSystem | undefined): SheetValue
+{
+    const purse = coins === undefined || value.counter !== undefined ? undefined : readAmount(value.text, coins);
+
+    if (purse === undefined || coins === undefined) {
+        return value;
+    }
+
+    const metalOf = (coin: Coin): string | undefined => coin.names.map((name) => system?.coinMetals[name]).find((metal) => metal !== undefined);
+    const shown = [...coins].sort((first, second) => second.value - first.value).filter((coin) => (purse[coin.name] ?? 0) > 0).map((coin) => {
+        const metal = metalOf(coin);
+        return { coin: coin.name, count: purse[coin.name] ?? 0, ...(metal === undefined ? {} : { metal }) };
+    });
+    return shown.length === 0 ? value : { ...value, coins: shown };
 }
 
 /** A setting of the player's in the chat: a list's items, none for an empty one, or its value; not chosen while it has none. */

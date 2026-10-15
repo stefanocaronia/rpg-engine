@@ -40,6 +40,10 @@ const iconPaths = {
     npm: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73Z M12 22V12 M3.29 7 12 12l8.71-5 M7.5 4.27l9 5.15",
     heart: "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z",
     check: "M5 12.5l4.5 4.5L19 7.5",
+    // What opens and closes the things a container holds, pointing at them (D-431).
+    fold: "M9.5 6.5l5.5 5.5-5.5 5.5",
+    // Any thing carried that the game has no drawing for: a parcel tied with string (D-431).
+    thing: "M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4Z M3.5 7.5 12 11.5l8.5-4 M12 11.5v9 M7.8 5.5l8.4 4v3",
     undo: "M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11",
     pencil: "M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3 M13.5 8.5l3 3",
     alert: "M12 3.5 21.5 20h-19Z M12 9.5v5 M12 17.2v.3",
@@ -95,7 +99,7 @@ export const cardIcons = {
 export type IconName = keyof typeof iconPaths;
 
 // The icons that point a way, which turn in a language written from right to left.
-const turning = new Set<IconName>(["send", "undo", "aside"]);
+const turning = new Set<IconName>(["send", "undo", "aside", "fold"]);
 
 /** A die's picture, by its sides; nothing for a die the page does not draw. */
 export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean; })

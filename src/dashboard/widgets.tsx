@@ -1,5 +1,6 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
+import { Coins } from "./coins.tsx";
 import type { DyingCounter, Member, SheetValue } from "./data.ts";
 import { besideLabel, effectEndLabel, effectLabel } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
@@ -27,7 +28,8 @@ export function ValueDrawing({ value, label, fields }: { value: SheetValue; labe
         case "list":
             return <Chips value={value} fields={fields} />;
         default:
-            return <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text)}</span>;
+            // Money as its coins (D-431).
+            return value.coins !== undefined && value.coins.length > 0 ? <Coins coins={value.coins} /> : <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text)}</span>;
     }
 }
 

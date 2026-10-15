@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, linkListItems, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -224,15 +224,17 @@ export const scene = defineCommand({
     },
 });
 
-/** Lists as lists: one text is a list of one, and an empty text, list or object counts as left out. */
+/** Lists as lists: one text is a list of one, or of its links when it gives them separated by commas; an empty text, list or object counts as left out (SCN-8). */
 function asLists(given: GivenInput): SceneInput
 {
+    const items = (texts: string[]): string[] => texts.flatMap((text) => linkListItems(text) ?? [text]);
+
     const list = <Value extends object>(value: string | Value | undefined): Value | string[] | undefined => {
         if (isEmptyField(value) || (typeof value === "object" && Object.keys(value as object).length === 0)) {
             return undefined;
         }
 
-        return typeof value === "string" ? [value] : value;
+        return typeof value === "string" ? items([value]) : Array.isArray(value) ? items(value) : value;
     };
 
     return { ...given, with: list(given.with), creatures: list(given.creatures), who: list(given.who), order: list(given.order), seen: list(given.seen) };

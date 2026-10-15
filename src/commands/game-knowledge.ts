@@ -1,7 +1,7 @@
 // What the player character knows, as the player's view reads it (D-250, VIEW-2, VIEW-3): the pages it knows and the text of each as it knows it.
 import { readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
-import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithNameOrAlias, parsePageReference, readSection, textParts, textsIn, withoutComments, type World } from "../pages/index.ts";
+import { baseChain, inheritedByBase, introductionText, links, locate, type Page, pagesWithNameOrAlias, parsePageReference, readSection, stacksOf, textParts, textsIn, withoutComments, type World } from "../pages/index.ts";
 import { readOpenScene } from "./game-scene.ts";
 
 /** What the player character knows: the pages, and the secrets by the page that writes them. */
@@ -45,6 +45,8 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         // The quests the player took (D-250).
         ...world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))),
         ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),
+        // The kinds of the stacks it carries, as the campaign's Lembas (STK-12).
+        ...[pc, ...world.pages.filter((page) => locate(world, page).chain.includes(pc))].flatMap((holder) => stacksOf(world, holder).map((stack) => stack.kind)).filter((kind) => kind.system === undefined),
         ...locate(world, pc).chain,
         // The places it was in, and those that hold them, as the regions it crossed (D-316).
         ...livedOf(root, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),

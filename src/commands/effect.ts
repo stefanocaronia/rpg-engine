@@ -6,7 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readRounds, withEffect } from "../effects/index.ts";
-import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
+import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKind, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
@@ -85,6 +85,17 @@ export const effect = defineCommand({
         }
 
         const found = pageOrCopy(world, open, input.page, (page) => `effects are on the whole page, such as page ${page}`);
+
+        // An effect goes on one thing, never on a kind counted in stacks (STK-5).
+        if (found.copy === undefined && isKind(world, found.page)) {
+            const kind = found.page.name;
+            throw new Error(
+                `${kind} is a kind, counted in stacks: an effect goes on one thing, an item of the campaign derived from it. Take one from its stack, change <who has it>, ${kind}, spend 1; `
+                    + `create it, write "<name>", type item, set item=[[${kind}]]; then move, page "<name>", to <who has it>. What lasts a short while on a few pieces, as a poison's `
+                    + `minute on some arrows, is an effect on who holds them. Nothing changed.`,
+            );
+        }
+
         checkNotSystemPage(world, open, found.page);
         const holder: EffectHolder = { page: found.page, copy: found.copy !== undefined };
         checkEffectsReadable(holder.page);

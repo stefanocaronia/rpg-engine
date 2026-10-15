@@ -14,7 +14,7 @@ beforeEach(async () => {
     context = testContext(folder);
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
-    await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "arrows=18");
+    await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--add", "inventory=[[Arrows]] 18");
     await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=7/7");
     await rpg("write", "Varro", "--type", "character", "--set", "role=npc");
     await rpg("write", "Livia", "--type", "character", "--set", "role=npc", "--set", "status=dead");
@@ -176,6 +176,21 @@ describe("rpg scene", () => {
         expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Lena: hp 7/7; Lupo 1: hp 11/11; Lupo 2: hp 11/11.\n${fightGuidance}`);
         expect(scene.format(await scene.run(scene.input.parse({ action: "order", order: "Lena" }), context))).toBe("Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.");
         expect(scene.format(await scene.run(scene.input.parse({ action: "close", summary: "Fuggono.", creatures: {}, with: [] }), context))).toContain("Scene closed after 1 round: Ossario.");
+    });
+
+    it("takes links separated by commas in one text as their list, as a model may send them (SCN-8)", async () => {
+        const opened = await scene.run(scene.input.parse({ action: "open", title: "Al molo", type: "social", with: "[[Ennio]], [[Lena]], [[Varro]]" }), context);
+        expect(scene.format(opened)).toContain("In it: Ennio: hp 12/12; Lena: hp 7/7; Varro.");
+        expect(await ok("scene", "order", "--order", "[[Varro]], [[Ennio]]")).toContain("Order: Varro · Ennio. No turn: Lena.");
+        expect(await ok("scene", "leave", "--who", "[[Lena]],[[Varro]]")).toContain("Lena, Varro left the scene.");
+    });
+
+    it("gives in the open scene's log why a page was written, and keeps it for a copy too", async () => {
+        await ok("scene", "open", "--title", "Al molo", "--type", "combat", "--creatures", "Lupo=1");
+        await ok("write", "Varro", "--set", "attitude=wary", "--why", "ha visto il lupo");
+        await ok("write", "Lupo 1", "--set", "frightened=true", "--why", "il fuoco");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", visibility: "hidden", data: { page: "Lupo 1", copy: true, why: "il fuoco" } });
+        expect(await ok("show", "Al molo")).toContain("wrote Varro (ha visto il lupo)");
     });
 
     it("says what is wrong, and how to fix it", async () => {

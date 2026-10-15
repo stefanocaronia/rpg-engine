@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type Square, squareName } from "../grid/index.ts";
-import { isInParty, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, type World, writePage } from "../pages/index.ts";
+import { canHold, isInParty, kindNamed, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, stackName, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
 import { moveFacts } from "./game-grid-moves.ts";
@@ -14,12 +14,15 @@ import { picturesNote } from "./game-images.ts";
 import { movePages } from "./game-moves.ts";
 import { measuresOf, roadsOf, sameSpot, stopOf } from "./game-roads.ts";
 import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
+import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./game-stacks.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { shortList, skippedPagesNote } from "./notes.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);
+// A whole number, as text from a command line or as a number through MCP.
+const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]?\d+$/.test(value.trim()) ? Number(value) : value), z.number().int());
 
 /** What move did, as its output tells it (CON-8, ENV-5). */
 interface MoveResult
@@ -45,13 +48,15 @@ export const move = defineCommand({
     name: "move",
     description: "Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. "
         + "Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire. Time does not pass: advance does that. "
-        + "Example: page [Ettore, Lena], to Ossario.",
+        + "Pieces of a stack go with from and count. Example: page [Ettore, Lena], to Ossario; or page Torch, from Ettore, to Lena, count 3.",
     group: "game",
     positionals: ["page"],
     input: z.object({
         page: textList.describe("what moves: one or more characters, items or places, such as [Ettore, Lena]"),
         to: z.string().optional().describe("where: a place; for characters and items also an item, such as a cart; for items also a character who carries them"),
         at: z.string().optional().describe("the square one stands on, such as E6: on the map of the place they are in, or with to of the place they go into; for one page or one copy of the open scene"),
+        from: z.string().optional().describe("for a kind counted in stacks, such as Torch: the character, item or place it is taken from"),
+        count: wholeNumber.optional().describe("for a kind: how many pieces move; without it, the whole stack"),
     }),
 
     run(input, context): MoveResult
@@ -66,6 +71,10 @@ export const move = defineCommand({
         }
 
         if (input.at !== undefined) {
+            if (input.from !== undefined || input.count !== undefined) {
+                throw new Error("from and count move pieces of a stack, which stand on no square: give at alone, or to without at. Nothing moved.");
+            }
+
             return moveOnMap(root, context, world, scene, names, input.at, input.to);
         }
 
@@ -73,7 +82,7 @@ export const move = defineCommand({
             throw new Error("Give where they go, to, such as to Ossario; or the square of the map they stand on, at, such as E6. Nothing moved.");
         }
 
-        return moveInto(root, context, world, scene, names, input.to);
+        return moveInto(root, context, world, scene, names, input.to, { from: input.from, count: input.count });
     },
 
     format(result)
@@ -104,22 +113,45 @@ export function placeOnMap(root: string, context: Context, name: string, square:
     return move.format(moveOnMap(root, context, campaignWorld(root, context), scene, [name], square, undefined));
 }
 
-/** Moves pages into a place, an item or a character (CON-4), and says what changed around them (CON-8, ENV-5). */
-function moveInto(root: string, context: Context, world: World, scene: Scene | undefined, names: string[], to: string, placing = false): MoveResult
+/**
+ * Moves pages into a place, an item or a character (CON-4), and pieces of stacks from a container (STK-6), and says what changed around them (CON-8, ENV-5). The stacks
+ * are checked before anything moves.
+ */
+function moveInto(
+    root: string,
+    context: Context,
+    world: World,
+    scene: Scene | undefined,
+    names: string[],
+    to: string,
+    pieces: { from?: string; count?: number; } = {},
+    placing = false,
+): MoveResult
 {
-    const pages = names.map((name) => pageOf(world, scene, name, "what")).filter((page, index, all) => all.indexOf(page) === index);
+    const source = pieces.from === undefined ? undefined : pageOf(world, scene, pieces.from, "where");
+    const kinds = names.flatMap((name) => kindNamed(world, source, parsePageReference(name).name) ?? []).filter((page, index, all) => all.indexOf(page) === index);
+    const pages = names.filter((name) => kindNamed(world, source, parsePageReference(name).name) === undefined).map((name) => pageOf(world, scene, name, "what"))
+        .filter((page, index, all) => all.indexOf(page) === index);
     const destination = pageOf(world, scene, to, "where");
+    const stacks = planStacks(world, kinds, pages, source, destination, pieces.count);
+
+    if (pages.length === 0) {
+        return stacksMoved(root, context, world, stacks, destination, kinds);
+    }
+
     // The characters who go, by themselves or inside a place that goes, such as a cart or a ship (CON-8, ENV-5).
     const riders = world.pages.filter((page) => page.type === "character" && (pages.includes(page) || locate(world, page).chain.some((holder) => pages.includes(holder))));
     const before = new Map(riders.map((page) => [page.path, surroundings(world, page)]));
     const journey = journeyNote(world, riders, destination);
-    const done = movePages(root, context, world, pages, destination);
+    const moved = movePages(root, context, world, pages, destination);
+    const counted = stacks.length === 0 ? undefined : writeStacks(root, context, moved.world, stackMoveSteps(world, stacks));
+    const done = counted === undefined ? moved : { ...moved, world: counted.world, notes: [...moved.notes, ...counted.notes] };
     const after = done.world;
     const now = (page: Page): Page => after.pages.find((other) => other.path === page.path) ?? page;
     const target = now(destination);
-    const moved = new Set(done.moved.map((page) => page.path));
+    const wentThere = new Set(done.moved.map((page) => page.path));
     const changes = riders.map((page) => surroundingsChange(before.get(page.path) ?? [], surroundings(after, now(page))));
-    const went = riders.filter((page) => moved.has(page.path) || locate(world, page).chain.some((holder) => moved.has(holder.path)));
+    const went = riders.filter((page) => wentThere.has(page.path) || locate(world, page).chain.some((holder) => wentThere.has(holder.path)));
     const sceneNote = scene === undefined ? undefined : followParty(root, context, after, scene, went, target);
     // Who else is there matters to characters who arrive (CON-8), not to things.
     // The party's player character arrives where the campaign wants pictures: the place gets one (D-308).
@@ -128,8 +160,8 @@ function moveInto(root: string, context: Context, world: World, scene: Scene | u
     // Who is put on a square at once needs no word on where they came in.
     const squares = placing ? undefined : squaresNote(after, target, done.moved);
     return {
-        moved: done.moved.map((page) => page.name),
-        already: pages.filter((page) => !moved.has(page.path)).map((page) => page.name),
+        moved: [...done.moved.map((page) => page.name), ...stacks.map(movedPieces)],
+        already: pages.filter((page) => !wentThere.has(page.path)).map((page) => page.name),
         to: target.name,
         chain: [target, ...locate(after, target).chain].map((page) => page.name),
         there: there.map((page) => (page.fields.status === "dead" ? `${page.name} (dead)` : page.name)),
@@ -194,7 +226,7 @@ function moveOnMap(root: string, context: Context, world: World, scene: Scene | 
         throw new Error(`${closed}: ${who} cannot stand there. Give a square of the floor. Nothing moved.`);
     }
 
-    const moved = to === undefined ? undefined : moveInto(root, context, world, scene, names, to, true);
+    const moved = to === undefined ? undefined : moveInto(root, context, world, scene, names, to, {}, true);
     const now = moved === undefined ? world : campaignWorld(root, context);
     const fresh = page === undefined ? undefined : now.pages.find((other) => other.path === page.path);
     const here = now.pages.find((other) => other.path === place.path) ?? place;
@@ -228,6 +260,74 @@ function moveOnMap(root: string, context: Context, world: World, scene: Scene | 
             ...(facts?.distance === undefined || from === undefined ? {} : { distance: facts.distance, from: cameIn ? `${squareName(from)}, where ${who} came in` : squareName(from) }),
         },
     };
+}
+
+/**
+ * The pieces of stacks a move takes (STK-6), checked before anything moves: a kind wants from, the container it is taken from, and count at most what it holds;
+ * count goes with one kind alone. With from, the pages that move must be inside it.
+ */
+function planStacks(world: World, kinds: Page[], pages: Page[], source: Page | undefined, destination: Page, count: number | undefined): StackMove[]
+{
+    if (count !== undefined && (kinds.length !== 1 || pages.length > 0)) {
+        const what = kinds.length === 0 ? `${pages[0]?.name ?? "a page"} is a page, which moves whole` : `give one kind at a time with count`;
+        throw new Error(`count moves pieces of one kind counted in stacks: ${what}. Nothing moved.`);
+    }
+
+    for (const page of source === undefined ? [] : pages.filter((candidate) => !locate(world, candidate).chain.includes(source))) {
+        throw new Error(`${page.name} is not in ${source?.name ?? ""}: move it without from, or from where it is. Nothing moved.`);
+    }
+
+    if (kinds.length === 0) {
+        return [];
+    }
+
+    if (source === undefined) {
+        throw new Error(`${kinds[0].name} is a kind, counted in stacks in many places: give from, the container it is taken from, such as page ${kinds[0].name}, from <who has it>, to ${destination.name}. Nothing moved.`);
+    }
+
+    if (destination.system !== undefined || !canHold(destination.type, "item")) {
+        throw new Error(`${destination.name} holds no items, so no stack goes there: give a character, an item or a place. Nothing moved.`);
+    }
+
+    if (count !== undefined && count < 1) {
+        throw new Error(`Give count as a whole number above 0, or leave it out to move the whole stack. Nothing moved.`);
+    }
+
+    return kinds.flatMap((kind) => {
+        const held = heldStack(world, source, kind, (container) => `move, page ${kind.name}, from ${container.name}, to ${destination.name}`, count ?? 1);
+        const pieces = count ?? held.stack.count;
+
+        if (pieces > held.stack.count) {
+            throw new Error(`${held.container.name} has ${held.stack.count} ${stackName(held.stack)}: cannot move ${pieces}. Nothing moved.`);
+        }
+
+        // Pieces already in the destination's own stack stay where they are.
+        return held.container === destination ? [] : [{ kind, from: held, to: destination, count: pieces }];
+    });
+}
+
+/** What a move of stacks alone did (STK-6), as move tells it. */
+function stacksMoved(root: string, context: Context, world: World, moves: StackMove[], destination: Page, kinds: Page[]): MoveResult
+{
+    const written = writeStacks(root, context, world, stackMoveSteps(world, moves));
+    const target = written.world.pages.find((page) => page.path === destination.path) ?? destination;
+    return {
+        moved: moves.map(movedPieces),
+        already: kinds.filter((kind) => !moves.some((move) => move.kind === kind)).map((kind) => kind.name),
+        to: target.name,
+        chain: [target, ...locate(written.world, target).chain].map((page) => page.name),
+        there: [],
+        here: [],
+        noLonger: [],
+        notes: written.notes,
+        problems: world.problems,
+    };
+}
+
+/** "3 torce": the pieces a move takes, by the name their stack goes by. */
+function movedPieces(move: StackMove): string
+{
+    return `${move.count} ${stackName(move.from.stack)}`;
 }
 
 /** A word to the master on the square one now stands on (GRD-5): what it is, when it is difficult or hidden from the player. */

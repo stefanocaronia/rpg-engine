@@ -114,7 +114,7 @@ values: {save-proficiencies: [str, dex, con, int, wis, cha]}
 marks: [save-proficiencies, skill-proficiencies, expertise]
 ```
 
-- `sheet`: groups of fields in order. `field?` is written only when it applies; `field (beside)` shows a field beside it. The player character keeps a sheet, and so does a companion with a `level` or no `creature`.
+- `sheet`: groups of fields in order. `field?` is written only when it applies; `field (beside)` shows a field beside it. The player character keeps a sheet, and so does a companion with a `level` or no `creature`. A group with `inventory` shows what the character carries, a row for each stack or item, what a container holds below it and what is equipped marked, after the group's other fields, such as `money`.
 - `sheet-notes`: what `write` says of a group when a character joins the party.
 - `sheet-icons`, `token-icons`: SVG path data on a 24 grid, for a group's card and for a token's mark by class.
 - `sheet-headline`: the line under a name on the dashboard.
@@ -221,7 +221,7 @@ always-in: {equipped: [Unarmed Strike]}
 
 ## 4. Pages, rules, words and instructions
 
-**Pages.** `world/<folder>/<Name>.md`, the folder giving the type: `characters`, `places`, `factions`, `quests`, `items`, `events`, `topics`, `creatures`. Names are unique, with straight apostrophes. Fields are those declared plus the standard ones; quote signed numbers (`"+2"`) and links (`"[[Dwarf]]"`); no final period in text. The introduction is the text before the first heading; each heading is a section, found as `[[Page#Section]]`. A system's pages hold no secrets and derive only from pages of the same system; `aliases` give other names.
+**Pages.** `world/<folder>/<Name>.md`, the folder giving the type: `characters`, `places`, `factions`, `quests`, `items`, `events`, `topics`, `creatures`. Names are unique, with straight apostrophes. Fields are those declared plus the standard ones; quote signed numbers (`"+2"`) and links (`"[[Dwarf]]"`); no final period in text. The introduction is the text before the first heading; each heading is a section, found as `[[Page#Section]]`. A system's pages hold no secrets and derive only from pages of the same system; `aliases` give other names. An item is a kind, unless its page has a counter, such as `uses: 10/10` or `charges: 7/7`, or the system gives it to every sheet (`always-in`): a container counts it in a stack, `"[[Torch]] 7"`, in the units the system sells it in, or in pieces where the page declares `bundle: number`, as `bundle: 20` for arrows, whose cost and weight are the bundle's. An item with a counter is one thing, which a campaign's item derived from it holds.
 
 **Rules.** `rules/*.md`, each chapter opening with a heading. Sections are headings, bold paragraph titles and table captions. A campaign's house rules come first. Titles hold no `›`, `>` or `/`.
 

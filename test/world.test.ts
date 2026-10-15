@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { commands } from "../src/commands/index.ts";
+import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { readFieldValue } from "../src/pages/index.ts";
 import { makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
@@ -115,6 +116,15 @@ describe("rpg write", () => {
             { id: "id2", at: "2026-10-02T10:00:00.000Z", type: "page-created", by: "master", visibility: "hidden", data: { page: "Varro", type: "character", set: { role: "npc" }, text: "Un alchimista.", mode: "replace" } },
             { id: "id3", at: "2026-10-02T10:00:00.000Z", type: "page-updated", by: "master", visibility: "hidden", data: { page: "Varro", type: "character", section: "Il motivo", text: "La figlia.", mode: "append" } },
         ]);
+    });
+
+    it("takes why, as the commands that change the world do, and keeps it in its hidden log line", async () => {
+        expect(write.input.strict().safeParse({ page: "Varro", type: "character", why: "l'alchimista del villaggio" }).success).toBe(true);
+        await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--why", "l'alchimista del villaggio");
+        await rpg("write", "Varro", "--set", "attitude=calm", "--why", " ");
+        const [created, updated] = readLogFile(folder).slice(-2);
+        expect(created).toMatchObject({ type: "page-created", visibility: "hidden", data: { page: "Varro", why: "l'alchimista del villaggio" } });
+        expect(updated.data.why).toBeUndefined();
     });
 
     it("writes nothing, and logs nothing, when the page already reads like that", async () => {

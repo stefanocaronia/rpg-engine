@@ -82,7 +82,7 @@ describe("the character sheet (DAT-2)", () => {
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
                 + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
                 + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, expertise, "
-                + "armor-proficiencies, tool-proficiencies, fighting-styles, spells, prepared. It works out "
+                + "armor-proficiencies, tool-proficiencies, fighting-styles, money, inventory, spells, prepared. It works out "
                 + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, passive-perception, passive-insight, passive-investigation, Features, Attacks, "
                 + "caster-level, spell-save-dc, spell-attack, max-prepared: never write them. Only its names go in alignment (such as lawful good, neutral good), save-proficiencies "
                 + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), as it writes them: "

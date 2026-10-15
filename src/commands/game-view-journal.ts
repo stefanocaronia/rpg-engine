@@ -60,7 +60,7 @@ export type StoryFact =
         | { kind: "scene-closed"; title: string; type: string; summary: string; }
         | { kind: "roll"; who?: string; result: string; }
         | { kind: "roll-revealed"; }
-        | { kind: "counter"; who: string; field: string; before: string; after: string; }
+        | { kind: "counter"; who: string; field: string; before: string; after: string; stack?: boolean; }
         | { kind: "time"; from?: string; to: string; }
         | { kind: "moved"; who: string[]; to?: string; }
         | { kind: "learned"; who: string; what: string[]; }

@@ -18,6 +18,8 @@ export interface SheetValue
     items?: string[];
     always?: { from: string[]; items: string[]; };
     marks: number;
+    /** For money, its coins from the largest, each with its metal when the game names it, as the dashboard draws them (D-431). */
+    coins?: { coin: string; count: number; metal?: string; }[];
     beside?: string;
     /** The field shown beside it, such as str-mod by str, which a check may name (ASK-12). */
     besideField?: string;
@@ -37,13 +39,16 @@ export interface SheetRoll
     modifier: number;
 }
 
-/** A group of a sheet: its icon, the d of an SVG path, its values, or each item of a list with its values, as the attacks. */
+/**
+ * A group of a sheet: its icon, the d of an SVG path, its values, or each item of a list with its values, as the attacks; for what a character carries, each thing
+ * with how deep inside another it is and whether it is equipped (D-431).
+ */
 export interface SheetGroup
 {
     name: string;
     icon?: string;
     values: SheetValue[];
-    items?: { item: string; values: SheetValue[]; }[];
+    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; image?: { file: string; version: number; }; }[];
 }
 
 /** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295); those at hand in a fight (D-315). */
@@ -421,7 +426,7 @@ export interface ShownChapter
 export type JournalFact =
     & { date?: string; }
     & (
-        | { kind: "counter"; who: string; field: string; before: string; after: string; }
+        | { kind: "counter"; who: string; field: string; before: string; after: string; stack?: boolean; }
         | { kind: "time"; from?: string; to: string; }
         | { kind: "moved"; who: string[]; to?: string; }
         | { kind: "learned"; who: string; what: string[]; }
@@ -468,5 +473,7 @@ export interface SystemWords
     groups: Record<string, string>;
     fields: Record<string, string>;
     words: Record<string, string>;
+    /** A field's name in full where its label is short, as a roll says it: Charisma for CHA, Charisma saving throw for CHA save. */
+    names?: Record<string, string>;
     headline?: string;
 }

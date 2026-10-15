@@ -505,7 +505,7 @@ function PlateContent({ plate }: { plate: Plate; })
                     {/* The dice say themselves as pictures, never as their notation. */}
                     {plate.free && (
                         <span class="plate-under">
-                            <span class="plate-tag">Free roll · not logged</span>
+                            <span class="plate-tag">{t("Free roll · not logged")}</span>
                         </span>
                     )}
                 </span>

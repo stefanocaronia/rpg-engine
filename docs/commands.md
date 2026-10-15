@@ -105,6 +105,7 @@ Read-only: no. Positional parameters: `page`.
 - `append` (`boolean`, optional): add the text at the end instead of replacing
 - `secret` (`boolean`, optional): with a section: create it, if missing, as a secret block > [!secret] Name
 - `here` (`boolean`, optional): a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it
+- `why` (`string`, optional): what the change is for, kept in the master's log
 
 ### rename
 
@@ -124,6 +125,20 @@ Read-only: no. Positional parameters: `page`.
 - `page` (`string | string[]`, required): what moves: one or more characters, items or places, such as [Ettore, Lena]
 - `to` (`string`, optional): where: a place; for characters and items also an item, such as a cart; for items also a character who carries them
 - `at` (`string`, optional): the square one stands on, such as E6: on the map of the place they are in, or with to of the place they go into; for one page or one copy of the open scene
+- `from` (`string`, optional): for a kind counted in stacks, such as Torch: the character, item or place it is taken from
+- `count` (`integer`, optional): for a kind: how many pieces move; without it, the whole stack
+
+### trade
+
+Buy, sell or barter in one go: what page gives and what it gets, items and money both ways, with the change in coins.
+
+Read-only: no. Positional parameters: `page`.
+
+- `page` (`string`, required): who trades, usually the player character
+- `with` (`string`, required): the other side: a merchant, or a shop, a place that holds its goods
+- `gives` (`string | string[]`, optional): what page gives: money such as "2 gp", kinds with how many such as Torch 5, items such as Mazza di Matteo
+- `gets` (`string | string[]`, optional): what page gets, written the same way
+- `why` (`string`, optional): what the trade is, such as bought torches at the market
 
 ### reveal
 
@@ -214,12 +229,12 @@ Read-only: no.
 
 ### change
 
-Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, an event's clock, coins.
+Change a counter, money or a stack of goods on a page: hit points, uses, a progress track, an event's clock, coins, torches.
 
 Read-only: no. Positional parameters: `page`, `field`.
 
 - `page` (`string`, optional): page that holds the counter or the money; with a recipe, left out for the player character and the companions with them
-- `field` (`string`, optional): the counter or the money, such as hp; none with a recipe
+- `field` (`string`, optional): the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe
 - `by` (`integer | string`, optional): how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7
 - `spend` (`integer | string`, optional): how much is paid or used up, or coins; refused when there is not enough
 - `to` (`integer | string`, optional): the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3

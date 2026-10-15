@@ -17,6 +17,8 @@ import {
     changedFields,
     checkFieldChange,
     concernsPlayer,
+    containerFieldOf,
+    countedText as countInText,
     declaredKind,
     derivedPages,
     environmentAt,
@@ -25,6 +27,7 @@ import {
     findPage,
     followersOf,
     formatEnvironmentEntry,
+    goodsFieldProblems,
     hidingMessage,
     holdsField,
     inheritedFields,
@@ -51,6 +54,7 @@ import {
     type PageType,
     pageTypeNames,
     parsePageReference,
+    readEntry,
     readEnvironment,
     readFieldValue,
     readOnlyMessage,
@@ -62,6 +66,7 @@ import {
     systemPageNamed,
     type TextMode,
     textParts,
+    textsIn,
     withPage,
     type World,
     writePage,
@@ -148,6 +153,7 @@ export const write = defineCommand({
         append: z.boolean().optional().describe("add the text at the end instead of replacing"),
         secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
         here: z.boolean().optional().describe("a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it"),
+        why: z.string().optional().describe("what the change is for, kept in the master's log"),
     }),
 
     run(input, context): WriteResult
@@ -165,6 +171,7 @@ export const write = defineCommand({
             throw new Error("Give the text to write.");
         }
 
+        const why = input.why?.trim() === "" ? undefined : input.why;
         const { coins, problem: coinsProblem } = campaignCoins(root, context);
         const world = campaignWorld(root, context);
         const system = campaignSystem(root, context);
@@ -192,7 +199,7 @@ export const write = defineCommand({
 
         if (open.scene !== undefined && copy !== undefined) {
             checkNoEffects(fields, copyPage(copy, open.scene.copies[copy]));
-            const written = writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section }, fields, coins);
+            const written = writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section, why }, fields, coins);
             return { ...written, notes: [...written.notes, ...moneyNotes] };
         }
 
@@ -247,7 +254,7 @@ export const write = defineCommand({
         const { created, changed, mode, retyped } = written;
 
         if (changed) {
-            const data = { page: written.page.name, type: written.page.type, was: retyped?.type, ...fields, section, secret: input.secret, text: input.text, mode };
+            const data = { page: written.page.name, type: written.page.type, was: retyped?.type, ...fields, section, secret: input.secret, text: input.text, mode, why };
             appendLogEntry(root, newDatedLogEntry(root, context, created ? "page-created" : "page-updated", "hidden", data));
         }
 
@@ -303,6 +310,8 @@ export const write = defineCommand({
         // What a character has equipped and does not carry, as after its armor left its inventory (CON-12); what a formula reads of two items (PRO-5).
         const carried = changed && page.type === "character" && changedFieldNames(fields).some((field) => ["inventory", "equipped"].includes(comparableText(field))) ? equippedNotes(now, page) : [];
         const firsts = changed && page.type === "character" ? firstItemNotes(world, now, existing, page) : [];
+        // A count inside a text, or a field named as goods, as torches: 7: what a stack counts (STK-10, STK-13).
+        const counts = changed ? [...countedTextNotes(existing, page), ...goodsFieldProblems(now, page, changedFieldNames(fields)).map((problem) => `${problem.message} Fix: ${problem.fix}.`)] : [];
         const map = changed
             ? [
                 ...positioned.placed.notes,
@@ -318,7 +327,7 @@ export const write = defineCommand({
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...map, ...sheet, ...death, ...moneyNotes],
+            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...counts, ...map, ...sheet, ...death, ...moneyNotes],
             problems: world.problems,
         };
     },
@@ -341,6 +350,18 @@ export const write = defineCommand({
     },
 });
 
+/** "torce 7" written in an inventory: a count inside a text, which nothing counts, and how goods are counted instead (STK-10). */
+function countedTextNotes(existing: Page | undefined, page: Page): string[]
+{
+    const field = containerFieldOf(page.type);
+    const before = field === undefined ? [] : textsIn(existing?.fields[field]).map((entry) => entry.trim());
+    const added = field === undefined ? [] : textsIn(page.fields[field]).filter((entry) => !before.includes(entry.trim()));
+    return added.filter((entry) => readEntry(entry).shape === "text" && countInText(entry) !== undefined).map((entry) =>
+        `"${entry}" is a count inside a text, which nothing counts: goods are a stack, a kind and how many. The system's kinds go by their English names, as find shows them: `
+        + `write the one it has with your word as its label, such as [[Torch|torcia]] 3; only what the system lacks becomes a kind of the campaign, made first with write "<name>", type item.`
+    );
+}
+
 /** A type as the parameter names it, with what tells a place from an item (D-155, D-156). */
 function typeText(type: PageType): string
 {
@@ -348,7 +369,7 @@ function typeText(type: PageType): string
 }
 
 /** Writes the fields of a copy in the open scene (INH-14): only what differs from its creature, never its text, the creature it copies or fixed fields. */
-function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; }, requested: FieldChange, coins: Coin[] | undefined): WriteResult
+function writeCopy(root: string, world: World, context: Context, scene: Scene, name: string, input: { type?: PageType; text?: string; section?: string; why?: string; }, requested: FieldChange, coins: Coin[] | undefined): WriteResult
 {
     const creature = copyLink(scene.copies[name]);
 
@@ -391,7 +412,7 @@ function writeCopy(root: string, world: World, context: Context, scene: Scene, n
 
     if (changed.length > 0) {
         updateScene(root, changed.map((field) => [["copies", name, field], after[field]]));
-        appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: name, copy: true, ...requested }));
+        appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: name, copy: true, ...requested, why: input.why }));
     }
 
     const result = { page: name, type: before.type, path: "state.yaml", created: false, changed: changed.length > 0, ...writtenNames(world, before, requested, copyPage(name, { creature, ...after })) };

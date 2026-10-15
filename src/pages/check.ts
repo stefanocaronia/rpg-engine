@@ -5,9 +5,12 @@ import { readEnvironment } from "./environment.ts";
 import { baseChain, baseFieldOf, baseProblem, derivedPages, shownPart } from "./inheritance.ts";
 import { type Link, links, readSection, repeatedNames, unreadSecretLines } from "./markdown.ts";
 import { readStops } from "./roads.ts";
+import { countedText, entryOfKind, readEntry } from "./stack-entry.ts";
+import { missingKindMessage } from "./stack-writes.ts";
+import { carriesKind, entryPage, goodsNamed, isKind, notKindReason, stacksOf } from "./stacks.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
-import { alwaysInList, alwaysInMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
-import { linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
+import { alwaysInList, alwaysInMessage, declaredKind, systemKnowsReason, systemLabel } from "./system-pages.ts";
+import { isCountedItem, linksIn, locate, type Page, pageNamed, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -50,6 +53,7 @@ function worldProblems(world: World): Problem[]
             ...publicKnowsProblems(world, pagesByName, page),
             ...containerProblems(world, pagesByName, listingsByName, page),
             ...equippedProblems(world, pagesByName, page),
+            ...stackProblems(world, page),
             ...stopProblems(world, pagesByName, page),
             ...pageAlone.environment(page),
             ...pageAlone.sections(page),
@@ -153,7 +157,11 @@ function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page
     const inFields = Object.entries(page.fields).flatMap(([field, value]) => textsIn(value).flatMap((entry) => links(entry).map((link) => ({ link, field, entry, inList: Array.isArray(value) }))));
     const inText = links(page.body).map((link) => ({ link, field: undefined, entry: undefined, inList: false }));
 
-    return [...inFields, ...inText].flatMap((found) => {
+    const stackOfAlias = (entry: string | undefined, field: string | undefined): boolean =>
+        entry !== undefined && field === containerFieldOf(page.type) && readEntry(entry).shape === "stack" && entryPage(world, links(entry)[0]?.page ?? "") === undefined
+        && goodsNamed(world, links(entry)[0]?.page ?? "") !== undefined;
+
+    return [...inFields.filter((found) => !stackOfAlias(found.entry, found.field)), ...inText].flatMap((found) => {
         const broken = brokenLink(world, pagesByName, found.link);
         // While the campaign's system is missing, the link may be to one of its pages: removing it would break what derives from it.
         const missing = broken === "which does not exist";
@@ -256,7 +264,8 @@ function containerProblems(world: World, pagesByName: Map<string, Page[]>, listi
     const self = listings.find((listing) => listing.holder === page);
     const problems: Problem[] = [];
 
-    if (holders.length > 1) {
+    // A kind counted in stacks is in no place, however many count it (STK-3).
+    if (holders.length > 1 && !isCountedItem(world, page)) {
         const where = holders.map((listing) => listing.holder.name).join(" and in ");
         problems.push({ path: page.path, message: `${page.name} is in ${where}; a thing is in one place only.`, fix: `move ${page.name}, to ${holders[0].holder.name} or wherever it is: it stays there only` });
     }
@@ -310,8 +319,14 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
                 }];
             }
 
+            // A kind of the system is counted in stacks, a link alone being 1 (STK-1).
+            if (system !== undefined && isKind(world, system)) {
+                return [];
+            }
+
             if (system !== undefined) {
-                const instead = system.type === "item" ? `; one that ${holder.name} has is an item of the campaign with item=[[${system.name}]], or text` : "";
+                const reason = notKindReason(world, system);
+                const instead = system.type === "item" ? `; ${reason ?? "it is no kind to count"}: one that ${holder.name} has is an item of the campaign with item=[[${system.name}]]` : "";
                 return [{
                     path: holder.path,
                     message: `${holder.name} lists ${system.name} in ${listing.field}, but ${system.name} is ${systemLabel(system)}, a kind, which is nowhere${instead}.`,
@@ -329,6 +344,109 @@ function heldProblems(world: World, pagesByName: Map<string, Page[]>, holder: Pa
             return [{ path: holder.path, message, fix: `move ${page.name}, to a container that holds it, such as a place; or write ${holder.name}, remove ${listing.field}=${listing.entry}` }];
         })
     );
+}
+
+/**
+ * The stacks a container lists, as validate checks them (STK-13): a count inside a text, an entry beside a kind that is no stack, a count beside what is no kind, a kind of the
+ * campaign without its count, a kind listed twice, and a number named as goods, as torches: 7, that should be a stack.
+ */
+function stackProblems(world: World, holder: Page): Problem[]
+{
+    const field = containerFieldOf(holder.type);
+
+    if (field === undefined) {
+        return [];
+    }
+
+    const entries = textsIn(holder.fields[field]);
+    const remove = (entry: string): string => `write ${holder.name}, remove ${field}=${entry.includes(" ") ? `"${entry}"` : entry}`;
+    const problems = entries.flatMap((entry): Problem[] => {
+        const read = readEntry(entry);
+        const page = read.shape === "text" ? undefined : entryPage(world, read.page);
+
+        if (read.shape === "text") {
+            const counted = countedText(entry);
+            const kind = counted === undefined ? undefined : pageNamedQuietly(world, counted.name);
+            const stack = counted !== undefined && kind !== undefined && isKind(world, kind) ? `"[[${kind.name}]] ${counted.count}"` : `"[[<kind>]] ${counted?.count ?? 1}"`;
+            return counted === undefined ? [] : [{
+                path: holder.path,
+                message: `${holder.name} lists "${entry}" in ${field}: a count inside a text, which nothing counts.`,
+                fix: `${remove(entry)}, add ${field}=${stack}, with a kind of the system or of the campaign`,
+            }];
+        }
+
+        if (read.shape === "other" && page !== undefined && isKind(world, page)) {
+            return [{ path: holder.path, message: `${holder.name} lists "${entry}" in ${field}: no stack, so it counts nothing.`, fix: `${remove(entry)}, add ${field}="[[${page.name}]] <how many>"` }];
+        }
+
+        if (read.shape === "stack" && page === undefined && goodsNamed(world, read.page) !== undefined) {
+            return [{ path: holder.path, message: `${holder.name} counts [[${read.page}]] in ${field}, which counts nothing: ${missingKindMessage(world, holder, field, read)}`, fix: remove(entry) + ", then the stack above" }];
+        }
+
+        if (read.shape === "stack" && page !== undefined && !isKind(world, page)) {
+            const reason = notKindReason(world, page) ?? `${page.name} is one thing with a story of its own`;
+            return [{ path: holder.path, message: `${holder.name} counts ${page.name} in ${field}, but it is no kind to count: ${reason}.`, fix: `${remove(entry)}, and give ${holder.name} the thing itself with move` }];
+        }
+
+        if (read.shape === "link" && read.section === undefined && page !== undefined && page.system === undefined && isKind(world, page)) {
+            return [{
+                path: holder.path,
+                message: `${holder.name} lists ${page.name} in ${field} without a count, while other entries count it, so it is a kind, read here as 1.`,
+                fix: `if ${page.name} is a kind, ${remove(entry)}, add ${field}="[[${page.name}]] 1"; if it is one thing with a story of its own, take its counts away where others count it`,
+            }];
+        }
+
+        return [];
+    });
+
+    const twice = stacksOf(world, holder).filter((stack) => entries.filter((entry) => entryOfKind(entry, stack.kind.name)).length > 1);
+    return [
+        ...problems,
+        ...twice.map((stack) => ({
+            path: holder.path,
+            message: `${holder.name} lists ${stack.kind.name} more than once in ${field}: a container has one stack of each kind, read as ${stack.count}.`,
+            fix: `${remove(`[[${stack.kind.name}]]`)}, add ${field}="[[${stack.kind.name}]] ${stack.count}"`,
+        })),
+        ...goodsFieldProblems(world, holder),
+    ];
+}
+
+/**
+ * A number without a maximum named as goods in the plural, as torches: 7 or crossbow-bolts: 20: what a stack counts, written as a field nothing spends (STK-13); `names` are
+ * the fields to look at, all of them when left out. A name in the singular, as lock: 15, is some other number.
+ */
+export function goodsFieldProblems(world: World, page: Page, names?: string[]): Problem[]
+{
+    const field = containerFieldOf(page.type);
+
+    if (field === undefined) {
+        return [];
+    }
+
+    return Object.entries(page.fields).filter(([name]) => names === undefined || names.some((wanted) => comparableText(wanted) === comparableText(name))).flatMap(([name, value]): Problem[] => {
+        const count = typeof value === "number" ? value : typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : undefined;
+
+        if (count === undefined || !Number.isSafeInteger(count) || !/s$/i.test(name) || isStandardField(page.type, name) || declaredKind(world, name) !== undefined) {
+            return [];
+        }
+
+        const kind = goodsNamed(world, name);
+        return kind === undefined ? [] : [{
+            path: page.path,
+            message: `${page.name} counts ${name}: ${count} as a number, which no command spends: goods are a stack of ${kind.name} in ${field}.`,
+            fix: `write ${page.name}, unset ${name}, add ${field}="[[${kind.name}]] ${count}"`,
+        }];
+    });
+}
+
+/** The page with a name or alias, or none, without stopping at a name two pages share. */
+function pageNamedQuietly(world: World, name: string): Page | undefined
+{
+    try {
+        return pageNamed(world, name);
+    } catch {
+        return undefined;
+    }
 }
 
 /** What a character has equipped and does not hold (CON-12), as write says it after a change of its inventory or of what it has equipped. */
@@ -374,6 +492,17 @@ function equippedProblems(world: World, pagesByName: Map<string, Page[]>, charac
 
             if (system !== undefined && alwaysInList(world, system) !== undefined) {
                 return [{ path: character.path, message: `${character.name} has ${system.name} in equipped: ${alwaysInMessage(system, alwaysInList(world, system) ?? "")}`, fix: `write ${character.name}, remove equipped=${entry}` }];
+            }
+
+            const counted = system ?? (held?.length === 1 ? held[0] : undefined);
+
+            // A kind is equipped while the character carries a stack of it (STK-11).
+            if (counted !== undefined && isKind(world, counted)) {
+                return carriesKind(world, character, counted) ? [] : [{
+                    path: character.path,
+                    message: `${character.name} has ${counted.name} in equipped, but carries none: a character wears or wields only what it holds.`,
+                    fix: `move ${counted.name}, from where some is, to ${character.name}, count 1; or write ${character.name}, remove equipped=${entry}`,
+                }];
             }
 
             if (system !== undefined) {

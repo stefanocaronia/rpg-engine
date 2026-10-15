@@ -174,14 +174,131 @@ a {
 /* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the time and whether the game is live
    as chips, clear of the theme's corner; under the name the sections and the pages, the menu at the row's end (D-309); under them all, where the party is. */
 /* The title first, never wrapped; the chips in what is left of its line (D-355). */
+/* The top's room in the page, as tall as the top whole (top.tsx), with the two marks that tell the top to draw itself together and to open again. */
+/* How tall the top is drawn together, which what stays on top under it, the master's question and the rolls, keeps clear of. */
+:root {
+    --top-space: 87px;
+}
+
+@media (max-width: 600px) {
+    :root {
+        --top-space: 52px;
+    }
+}
+
+/* A page with no top, as the setup's, keeps nothing clear. */
+.page:not(:has(.top)) {
+    --top-space: 0px;
+}
+
+.top-room {
+    position: relative;
+    margin-block: calc(-1 * var(--gap)) 18px;
+    margin-inline: calc(-1 * var(--gap));
+}
+
+.top-mark {
+    position: absolute;
+    inset-inline-start: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.top-mark.near {
+    top: 8px;
+}
+
+.top-mark.far {
+    top: 40px;
+}
+
 .top {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 21;
     display: grid;
     grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
     grid-template-areas: "robot titles chips" "robot nav nav" "place place place";
     align-items: center;
     column-gap: 20px;
     row-gap: 4px;
-    margin-bottom: 18px;
+    /* To the window's edges, over the page that scrolls under it, out of its flow. */
+    padding-block: var(--gap) 0;
+    padding-inline: var(--gap);
+    background: var(--paper);
+    transition: padding var(--top-time) var(--top-ease), box-shadow var(--top-time) var(--top-ease);
+    --top-time: 240ms;
+    --top-ease: var(--ease);
+}
+
+/* Down the page, the same top drawn together (D-295): the master and the name smaller, the product and the place folded away, the sections and the chips
+   still there, a line under it. */
+.top.compact {
+    padding-block: 8px 0;
+    box-shadow: 0 1px 0 var(--rule), var(--raise);
+}
+
+.top :is(.master, .titles h1, .product, .top-place, .status-chip, .sections a) {
+    transition-duration: var(--top-time);
+    transition-timing-function: var(--top-ease);
+}
+
+.top .master {
+    transition-property: width, height;
+}
+
+.top .titles h1 {
+    transition-property: font-size;
+}
+
+.top .product {
+    max-height: 2em;
+    transition-property: max-height, margin, opacity;
+}
+
+.top .top-place {
+    max-height: 3em;
+    transition-property: max-height, padding, margin, opacity, border-color;
+}
+
+.top :is(.status-chip, .sections a) {
+    transition-property: height;
+}
+
+.top.compact .master {
+    width: 64px;
+    height: 64px;
+}
+
+.top.compact .titles h1 {
+    font-size: 1.6rem;
+}
+
+.top.compact :is(.product, .top-place) {
+    max-height: 0;
+    margin-block: 0;
+    padding-block: 0;
+    overflow: hidden;
+    border-color: transparent;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.top.compact .status-chip {
+    height: 30px;
+}
+
+@media (min-width: 601px) {
+    .top.compact .sections a {
+        height: 36px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .top,
+    .top :is(.master, .titles h1, .product, .top-place, .status-chip, .sections a) {
+        transition: none;
+    }
 }
 
 .top > .master-home {
@@ -209,10 +326,10 @@ a {
     min-width: 0;
 }
 
+/* The chips to the right edge, in line with what the master asks and the cards under them. */
 .top > .status-chips {
     grid-area: chips;
-    margin-block: 0;
-    margin-inline: 0 30px;
+    margin: 0;
 }
 
 .top > .nav-row {
@@ -2982,7 +3099,7 @@ a {
 
 .help-card.group {
     margin: 0;
-    scroll-margin-top: calc(var(--top-space, 0px) + var(--gap));
+    scroll-margin-top: calc(var(--top-space) + var(--gap));
 }
 
 /* A part's title is long: it wraps, the chevron stays in sight. */
@@ -3036,7 +3153,7 @@ a {
     color: var(--accent);
     font-size: 1rem;
     font-weight: 650;
-    scroll-margin-top: calc(var(--top-space, 0px) + var(--gap));
+    scroll-margin-top: calc(var(--top-space) + var(--gap));
 }
 
 .guide > h4:first-child {
@@ -3374,7 +3491,7 @@ a {
     position: fixed;
     top: 0;
     inset-inline-end: 0;
-    z-index: 19;
+    z-index: 22;
     width: 52px;
     height: 52px;
     padding: 0;
@@ -3389,6 +3506,16 @@ a {
     clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+/* Down the page the top drawn together keeps the chips to its edge: the corner waits at the top of the page. */
+.theme-corner {
+    transition: opacity var(--short) var(--ease), visibility var(--short);
+}
+
+.top.compact ~ .theme-corner {
+    opacity: 0;
+    visibility: hidden;
+}
+
 .theme-corner svg.icon {
     position: absolute;
     top: 6px;
@@ -3396,82 +3523,6 @@ a {
     width: 18px;
     height: 18px;
     color: var(--ink);
-}
-
-/* Past the top, a bar that stays on top: the robot, the campaign's name, the chips, small. */
-.top-bar {
-    position: fixed;
-    inset: 0 0 auto;
-    z-index: 18;
-    display: grid;
-    grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    /* The sections rest on the bar's line, as on top. */
-    align-content: end;
-    column-gap: 14px;
-    height: 88px;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--rule);
-    background: color-mix(in srgb, var(--paper) 92%, transparent);
-    backdrop-filter: blur(6px);
-    pointer-events: none;
-    transform: translateY(-100%);
-    transition: transform var(--short) var(--ease);
-}
-
-.top-bar.shown {
-    box-shadow: var(--raise);
-    pointer-events: auto;
-    transform: none;
-}
-
-/* The master whole, a little smaller, still moving: its moods are seen there too; the name over the sections, the chips at the right. */
-.top-bar > .master-home {
-    grid-row: 1 / span 2;
-}
-
-.top-bar .master {
-    width: 72px;
-    height: 72px;
-}
-
-.top-bar > .top-bar-title {
-    grid-column: 2;
-    grid-row: 1;
-    line-height: 1.1;
-}
-
-.top-bar > .nav-row {
-    grid-column: 2 / span 2;
-    grid-row: 2;
-    margin-inline-start: -14px;
-}
-
-.top-bar .sections a {
-    height: 36px;
-    font-size: 0.9rem;
-}
-
-/* As on top: the title, then the chips in what is left of its line; the sections under them, the whole width (D-355). */
-.top-bar > .status-chips {
-    grid-column: 3;
-    grid-row: 1;
-    height: 30px;
-    margin-block: 0;
-    margin-inline: 0 40px;
-}
-
-.top-bar-title {
-    font-family: var(--serif);
-    font-size: 1.6rem;
-    font-weight: 600;
-    font-variant: small-caps;
-    letter-spacing: 0.04em;
-}
-
-.top-bar .status-chip {
-    height: 30px;
-    font-size: 0.8rem;
 }
 
 /* The game system the campaign plays, beside the product's name; what it is and its source's credit at the foot of the page (D-284). */
@@ -3490,15 +3541,6 @@ a {
     line-height: 1.3;
     text-transform: none;
     vertical-align: 1px;
-}
-
-/* In the bar that stays the product and the system sit beside the campaign's name. */
-.top-bar-title .product {
-    margin-block: 0;
-    margin-inline: 0.8em 0;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-weight: 400;
-    vertical-align: 0.35em;
 }
 
 /* The page's foot, under a line across the whole page as the head's: who made it and where it lives, support, and the system's credits. */
@@ -4793,12 +4835,118 @@ button.row,
     text-align: start;
 }
 
+.items td.num {
+    font-weight: 700;
+}
+
+/* What is inside another thing (D-431): a step in for each level, a lighter weight, no rule between it and its container, which opens and closes it with
+   the chevron in the lane of the marks before the names, as the equipped mark; then room for the thing's picture, so that a step in puts a line's chevron
+   under its container's picture, as in a tree of files. */
 .items tbody th {
+    --mark-lane: 0px;
+    --picture: 0px;
+    position: relative;
+    padding-inline-start: calc(8px + var(--mark-lane) + var(--depth, 0) * var(--picture));
     font-weight: 600;
 }
 
-.items td.num {
-    font-weight: 700;
+.items.marked tbody th {
+    --mark-lane: 1.25em;
+    --picture: 1.35em;
+    /* A long name goes on under itself, its picture hanging before it. */
+    padding-inline-start: calc(8px + var(--mark-lane) + (var(--depth, 0) + 1) * var(--picture));
+    text-indent: calc(-1 * var(--picture));
+}
+
+.items tbody tr.inside > * {
+    border-top-color: transparent;
+}
+
+.items tbody tr.inside th {
+    font-weight: 450;
+}
+
+.item-picture {
+    display: inline-block;
+    width: 1.1em;
+    height: 1.1em;
+    margin-inline-end: 0.25em;
+    vertical-align: -0.2em;
+    text-indent: 0;
+}
+
+/* The game's drawing, white on clear, painted in the colour of the words. */
+.item-picture.drawn {
+    background: currentColor;
+    mask: var(--picture-url) center / contain no-repeat;
+}
+
+.item-picture svg.icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    stroke-width: 1.9;
+}
+
+/* A container's name is its toggle, the chevron in the lane: down while what it holds shows. */
+.items .fold {
+    display: inline-grid;
+    grid-template-columns: var(--mark-lane) var(--picture) auto;
+    align-items: baseline;
+    margin: -2px 0 -2px calc(-1 * var(--mark-lane));
+    padding: 2px 4px 2px 0;
+    text-indent: 0;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.items .fold:hover {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.items .fold svg.icon {
+    width: 1em;
+    height: 1em;
+    align-self: start;
+    margin-top: calc((1lh - 1em) / 2);
+    color: var(--muted);
+    vertical-align: -0.14em;
+    stroke-width: 2.25;
+    transition: rotate 0.15s ease;
+}
+
+.items .fold[aria-expanded="true"] svg.icon {
+    rotate: 90deg;
+}
+
+[dir="rtl"] .items .fold[aria-expanded="true"] svg.icon {
+    rotate: -90deg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .items .fold svg.icon {
+        transition: none;
+    }
+}
+
+/* What is equipped is marked before its name, in the lane of the marks. */
+.items .equipped-mark {
+    display: inline-block;
+    text-indent: 0;
+    width: 1.375em;
+    margin-inline-start: -1.375em;
+    color: var(--accent);
+    font-size: 0.8em;
+}
+
+/* The group's values, as the money, above its table. */
+.rows + .items {
+    margin-top: 12px;
 }
 
 .items thead th {
@@ -4809,6 +4957,122 @@ button.row,
     font-weight: 650;
     letter-spacing: 0.07em;
     text-transform: uppercase;
+}
+
+/* Money as its coins (D-431): a disc of the coin's metal, the count, the coin's short name; a coin without a metal the page knows has a plain disc. */
+.coins {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px 0.7em;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.coin {
+    --coin-face: color-mix(in srgb, var(--muted) 22%, transparent);
+    --coin-rim: var(--muted);
+    display: inline-flex;
+    gap: 0.25em;
+    align-items: baseline;
+    white-space: nowrap;
+}
+
+.coin-disc {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    align-self: center;
+}
+
+.coin-face {
+    fill: var(--coin-face);
+    stroke: var(--coin-rim);
+    stroke-width: 1.4;
+}
+
+.coin-ring {
+    fill: none;
+    stroke: var(--coin-rim);
+    stroke-opacity: 0.5;
+    stroke-width: 0.9;
+}
+
+.coin-glint {
+    fill: none;
+    stroke: #fff;
+    stroke-linecap: round;
+    stroke-opacity: 0.75;
+    stroke-width: 1.1;
+}
+
+.coin:not([data-metal]) .coin-glint {
+    display: none;
+}
+
+.coin .num {
+    min-width: 0;
+}
+
+.coin-name {
+    color: var(--muted);
+    font-size: 0.72em;
+    font-weight: 600;
+}
+
+/* The metals, as the game systems name them: a face and a darker rim, which stays clear of the paper in both themes. */
+.coin[data-metal="gold"] {
+    --coin-face: #e2a922;
+    --coin-rim: light-dark(#8a5d06, #a8730c);
+}
+
+.coin[data-metal="silver"] {
+    --coin-face: #c6ccd5;
+    --coin-rim: light-dark(#5f6876, #7d8796);
+}
+
+.coin[data-metal="copper"] {
+    --coin-face: #c9703a;
+    --coin-rim: light-dark(#7c3b17, #93481f);
+}
+
+.coin[data-metal="platinum"] {
+    --coin-face: #e3ebf5;
+    --coin-rim: light-dark(#5a6c88, #8394b0);
+}
+
+.coin[data-metal="electrum"] {
+    --coin-face: #cfc576;
+    --coin-rim: light-dark(#6c6420, #8a8130);
+}
+
+.coin[data-metal="bronze"] {
+    --coin-face: #b0793a;
+    --coin-rim: light-dark(#5f3c14, #75491b);
+}
+
+.coin[data-metal="brass"] {
+    --coin-face: #d2b04c;
+    --coin-rim: light-dark(#76601a, #8f7520);
+}
+
+.coin[data-metal="iron"] {
+    --coin-face: #858b93;
+    --coin-rim: light-dark(#40454c, #555b63);
+}
+
+.coin[data-metal="steel"] {
+    --coin-face: #a4afbc;
+    --coin-rim: light-dark(#4f5a68, #66717f);
+}
+
+.coin[data-metal="lead"] {
+    --coin-face: #767b84;
+    --coin-rim: light-dark(#3b3f46, #4c5058);
+}
+
+.coin[data-metal="tin"] {
+    --coin-face: #b8bcc2;
+    --coin-rim: light-dark(#5b6068, #757a82);
 }
 
 /* A page's text, as a companion's traits and actions, in a card of its own: its sections as small headings. */
@@ -4902,7 +5166,6 @@ button.row,
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .top-bar,
     .rolls-card,
     .chevron,
     .bar .fill,
@@ -4921,7 +5184,8 @@ button.row,
 /* What the master asks (D-279): a banner over the page, in sight while it scrolls, with the question and a button for each check or answer. */
 .asked {
     position: sticky;
-    top: calc(var(--top-space, 0px) + var(--gap));
+    overflow-anchor: none;
+    top: calc(var(--top-space) + var(--gap));
     z-index: 15;
     display: flex;
     align-items: flex-start;
@@ -4965,6 +5229,118 @@ button.row,
         padding-bottom: 0;
         border-width: 0;
         opacity: 0;
+    }
+}
+
+/* The button in its corner that folds the question to a bar the whole width, and opens it again: by the player, or while the page scrolls under it. */
+.asked-fold {
+    position: absolute;
+    top: 10px;
+    inset-inline-end: 10px;
+    color: var(--muted);
+}
+
+.asked:not(.folded) :is(.asked-turn, .asked-title) {
+    padding-inline-end: 36px;
+}
+
+/* Folded: one line, the robot, the question as far as it goes, the checks' buttons, the button that opens it. */
+.asked.folded {
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px 8px 14px;
+}
+
+.asked.folded .asked-robot {
+    width: 30px;
+    height: 30px;
+}
+
+.asked-bar-question {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.asked.folded .asked-buttons {
+    flex-wrap: nowrap;
+}
+
+.asked.folded .asked-buttons button {
+    min-height: 40px;
+    padding: 4px 14px 4px 10px;
+}
+
+/* The whole bar is the button that opens it, under the checks' buttons: its state layer and its focus on the whole bar. */
+.asked.folded .asked-fold {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    border-radius: var(--radius-xl);
+}
+
+.asked.folded .asked-buttons {
+    position: relative;
+    z-index: 1;
+}
+
+.asked.folded .asked-fold:focus-visible {
+    outline: none;
+}
+
+.asked.folded:has(.asked-fold:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* As it folds or opens, its height eases (asked.tsx) and its content fades in. */
+@media (prefers-reduced-motion: no-preference) {
+    .asked.folding > :not(.asked-fold) {
+        animation: asked-fold 220ms var(--ease-in);
+    }
+
+    .asked.opening > :not(.asked-fold) {
+        animation: asked-fold 220ms var(--ease-out);
+    }
+}
+
+@keyframes asked-fold {
+    from {
+        opacity: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    /* On a phone the question has its own line, the buttons under it. */
+    .asked.folded {
+        flex-wrap: wrap;
+        gap: 6px 10px;
+    }
+
+    .asked.folded .asked-robot {
+        display: none;
+    }
+
+    .asked-bar-question {
+        flex-basis: 100%;
+        font-size: 0.95rem;
+    }
+
+    .asked.folded .asked-buttons {
+        flex: 1;
+        min-width: 0;
+        order: 3;
+    }
+
+    .asked.folded .asked-buttons button {
+        flex: 1;
+        justify-content: center;
     }
 }
 
@@ -5277,7 +5653,7 @@ button.row,
 
     .rolls-card {
         position: sticky;
-        top: calc(var(--gap) + var(--top-space, 0px) + var(--asked-space, 0px));
+        top: calc(var(--gap) + var(--top-space) + var(--asked-space, 0px));
         transition: top var(--short) var(--ease);
     }
 
@@ -6379,39 +6755,21 @@ svg.icon {
         gap: 12px;
     }
 
-    .top-bar {
-        align-content: center;
-        height: 68px;
+    .top.compact .master {
+        width: 44px;
+        height: 44px;
     }
 
-    .top-bar .master {
-        width: 52px;
-        height: 52px;
-    }
-
-    .top-bar-title {
+    .top.compact .titles h1 {
         font-size: 1.2rem;
     }
 
-    /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. In the bar that stays, the product under the name. */
+    /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. */
     .status-chip:not(.live) {
         display: none;
     }
 
-    .top-bar > .top-bar-title {
-        grid-row: 1 / span 2;
-        align-self: center;
-    }
-
-    .top-bar-title .product {
-        display: block;
-        margin-block: 2px 0;
-        margin-inline: 0;
-        font-size: 0.7rem;
-        vertical-align: baseline;
-    }
-
-    :is(.top, .top-bar) .status-chip.live {
+    .top .status-chip.live {
         justify-content: center;
         width: 34px;
         padding: 0;
@@ -6439,30 +6797,8 @@ svg.icon {
 
     .top-place,
     .top .sections a.page-link,
-    .theme-corner,
-    .top-bar .sections {
+    .theme-corner {
         display: none;
-    }
-
-    /* The bar that stays keeps the menu at its right, as on top; its sections are at the bottom. */
-    .top-bar {
-        grid-template-columns: auto minmax(0, 1fr) auto auto;
-    }
-
-    .top-bar > .nav-row {
-        display: contents;
-    }
-
-    .top-bar > .status-chips {
-        grid-column: 3;
-        grid-row: 1 / span 2;
-        align-self: center;
-        margin-inline-end: 0;
-    }
-
-    .top-bar .menu {
-        grid-column: 4;
-        grid-row: 1 / span 2;
     }
 
     .menu-pop .menu-theme {
@@ -9352,4 +9688,17 @@ svg.icon {
     from {
         scale: 0.8;
     }
+}
+
+/* How many of a thing, after its name (D-431). */
+.items .item-count {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* What is carried is a list, not a table: no lines between its things, closer together (D-431). */
+.items.carried th,
+.items.carried td {
+    padding-block: 5px;
+    border-top: 0;
 }

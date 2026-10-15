@@ -45,7 +45,7 @@ describe("rpg status", () => {
         await rpg("config", "lethality", "epic");
         await rpg("config", "lines", "--add", "harm to children");
         await rpg("config", "table", "--add", "rolls shown as they fall");
-        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=5/12", "--set", "arrows=18");
+        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=5/12", "--add", "inventory=[[Arrows]] 18");
         await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=7/7");
         await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "status=dead");
         await rpg("write", "Gaspare", "--type", "character", "--set", "role=npc");

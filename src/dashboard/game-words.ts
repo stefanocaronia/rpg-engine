@@ -153,7 +153,8 @@ export function factLabel(fact: JournalFact): string
     const told = ((): string => {
         switch (fact.kind) {
             case "counter":
-                return t("{who}: {field} {before} → {after}", { who: subjectLabel(fact.who), field: fieldLabel(fact.field), before: fact.before, after: fact.after });
+                // A stack goes by the name its entry gives it (STK-12), never a field's word.
+                return t("{who}: {field} {before} → {after}", { who: subjectLabel(fact.who), field: fact.stack === true ? fact.field : fieldLabel(fact.field), before: fact.before, after: fact.after });
             case "time":
                 return fact.from === undefined
                     ? storyStartLabel(fact.to)

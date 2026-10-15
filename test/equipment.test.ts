@@ -275,13 +275,12 @@ describe("the unarmed strike and the Martial Arts die (D-235)", () => {
 });
 
 describe("what a character has equipped (CON-12)", () => {
-    it("is only what it carries: write refuses a page of the system, says what it no longer carries, and moving an item away takes it off", async () => {
+    it("is only what it carries: write says what it no longer carries, a kind too, and moving an item away takes it off", async () => {
         await character("Gara", "classes=[[Fighter]] 1");
         await carry("Gara", { Spada: "Longsword", Cotta: "Chain Mail" }, ["Spada", "Cotta"]);
-        expect(await refused("write", "Gara", "--add", "equipped=[[Longsword]]")).toBe(
-            "Longsword is an item of the system 5e, a kind: no one wears or wields it. To equip Gara with one, create it under a name in the campaign's language: "
-                + 'write "<name>", type item, set item=[[Longsword]]; then move, page "<name>", to Gara, and add it to equipped. Nothing changed.',
-        );
+        // A kind is equipped while a stack of it is carried (STK-11).
+        expect(await ok("write", "Gara", "--add", "equipped=[[Longsword]]")).toContain("Gara has Longsword in equipped, but carries none: a character wears or wields only what it holds.");
+        await ok("write", "Gara", "--remove", "equipped=[[Longsword]]");
         expect(await ok("write", "Gara", "--remove", "inventory=[[Cotta]]")).toContain(
             "Gara has Cotta in equipped, but does not carry it: a character wears or wields only what it holds. Fix: move Cotta, to Gara; or write Gara, remove equipped=[[Cotta]].",
         );

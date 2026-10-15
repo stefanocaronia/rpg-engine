@@ -205,6 +205,7 @@ async function makeDemo(context: Context): Promise<void>
     makeSave(demoFolder, context, "session zero", "session zero");
     const ettore = [
         "role=pc",
+        "alignment=lawful good",
         "creature=[[Hill Dwarf]]",
         "classes=[[Cleric]] 3",
         "subclasses=[[Life Domain]]",
@@ -225,6 +226,13 @@ async function makeDemo(context: Context): Promise<void>
     ];
     await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
     await rpg("write", "Ettore", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
+    // What a cleric carries (D-431, D-429): kinds of the system in stacks, a pack with what it holds, the arms worn, the coins.
+    // A pouch in the pack, with something in it: two levels inside.
+    await rpg("write", "Borsa di Ettore", "--type", "item", "--set", "item=[[Pouch]]", "--add", "contains=[[Chalk|gessetti]] 3", "--add", "contains=[[Tinderbox|acciarino]] 1");
+    await rpg("write", "Zaino di Ettore", "--type", "item", "--set", "item=[[Backpack]]", "--add", "contains=[[Rations|razioni]] 5", "--add", "contains=[[Torch|torce]] 6", "--add", "contains=[[Borsa di Ettore]]");
+    await rpg("write", "Ettore", "--add", "inventory=[[Mace]] 1", "--add", "inventory=[[Chain Mail]] 1", "--add", "inventory=[[Shield]] 1", "--add", "inventory=[[Zaino di Ettore]]");
+    await rpg("write", "Ettore", "--add", "inventory=[[Hempen Rope|corda di canapa]] 1", "--add", "inventory=simbolo sacro d'argento", "--set", "money=15 gp 7 sp");
+    await rpg("write", "Ettore", "--set", "equipped=[[Mace]], [[Chain Mail]], [[Shield]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
 
     // Their portraits (D-408), made once by Codex for the demo and cut to the face.

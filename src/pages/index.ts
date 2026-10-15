@@ -1,6 +1,6 @@
 // The pages of the world: one markdown file with a YAML frontmatter for each thing with a name.
-export { checkWorld, equippedNotes } from "./check.ts";
-export { applyMove, type MovePlan, planLeave, planMove } from "./containers.ts";
+export { checkWorld, equippedNotes, goodsFieldProblems } from "./check.ts";
+export { applyMove, type MovePlan, MoveStopped, planLeave, planMove, type StackCount } from "./containers.ts";
 export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
 export {
     baseChain,
@@ -27,11 +27,13 @@ export {
 } from "./inheritance.ts";
 export { type MapField, mapHelp, readMapField } from "./maps.ts";
 export { everyGoalTicked, goalsIn, introductionText, type Link, links, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
-export { changedFields, type FieldChange, formatFields, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
+export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";
 export { applyRename, planRename, type Renamed, renamedLinks, type RenamePlan } from "./rename-page.ts";
 export { readStops, type Stops, stopsHelp } from "./roads.ts";
+export { countedText, entryOfKind, type EntryReading, isStackEntry, readEntry, stackEntry, withStackCount } from "./stack-entry.ts";
+export { canCount, carriesKind, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, isKind, kindNamed, notKindReason, ownStack, type Stack, stackName, stacksOf } from "./stacks.ts";
 export {
     canHold,
     containerFieldOf,
@@ -55,6 +57,7 @@ export {
     createWorld,
     findPage,
     heldNames,
+    isCountedItem,
     isInParty,
     isPartyMember,
     linksIn,

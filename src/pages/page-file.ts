@@ -1,6 +1,7 @@
 import { Document, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml";
 import { comparableText } from "../core/text.ts";
 import { links, trimBlankLines } from "./markdown.ts";
+import { readEntry } from "./stack-entry.ts";
 import { isEmptyField } from "./standard-fields.ts";
 
 const singleLink = /^\[\[[^\]]+\]\]$/;
@@ -121,8 +122,10 @@ export function readFieldValue(text: string): unknown
         return value;
     }
 
-    if (linkList.test(value)) {
-        return [...value.matchAll(linkItem)].map((match) => match[0]);
+    const items = linkListItems(value);
+
+    if (items !== undefined) {
+        return items;
     }
 
     if (/^-?\d+(\.\d+)?$/.test(value)) {
@@ -142,6 +145,13 @@ export function readFieldValue(text: string): unknown
     }
 
     return parsed;
+}
+
+/** The links of a text that gives two or more separated by commas, such as [[A]], [[B]], each with its number if any; undefined for any other text. */
+export function linkListItems(text: string): string[] | undefined
+{
+    const value = text.trim();
+    return linkList.test(value) ? [...value.matchAll(linkItem)].map((match) => match[0]) : undefined;
 }
 
 function addToList(document: Document, name: string, values: unknown[]): void
@@ -182,11 +192,29 @@ function removeFromList(document: Document, name: string, values: unknown[]): vo
     }
 }
 
-/** Whether a list's item is the value: the same, or the same link however written, as [[bruna]] and [[Bruna]], or [[items/Lanterna.md|la lanterna]] and [[Lanterna]]. */
+/**
+ * Whether a list's item is the value: the same, or the same link however written, as [[bruna]] and [[Bruna]], or [[items/Lanterna.md|la lanterna]] and [[Lanterna]]; a stack is
+ * its link alone, or its link with its own count (STK-10).
+ */
 function sameValue(item: unknown, value: unknown): boolean
 {
     const written = isScalar(item) ? item.value : item;
-    return written === value || sameLink(written, value);
+    return written === value || sameLink(written, value) || sameStack(written, value);
+}
+
+function sameStack(item: unknown, value: unknown): boolean
+{
+    if (typeof item !== "string" || typeof value !== "string") {
+        return false;
+    }
+
+    const [stack, given] = [readEntry(item), readEntry(value)];
+
+    if (stack.shape !== "stack" || (given.shape !== "stack" && (given.shape !== "link" || given.section !== undefined))) {
+        return false;
+    }
+
+    return comparableText(stack.page) === comparableText(given.page) && (given.shape === "link" || given.count === stack.count);
 }
 
 function sameLink(first: unknown, second: unknown): boolean
@@ -220,7 +248,10 @@ function parseFrontmatter(frontmatter: string, path: string): Document
 
     if (document.errors.length > 0) {
         // Only the first line of the parser's message: the rest quotes the file, which may hold secrets.
-        throw new Error(`The frontmatter of ${path} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`);
+        const message = `The frontmatter of ${path} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`;
+        // A stack written by hand without quotes, - [[Torch]] 7, reads as a list inside a list (STK-13).
+        const stack = /(?:^\s*-\s*|\[)\[\[[^\]]+\]\][ \t]+\d/m.test(frontmatter) ? ` A stack in a list goes in quotes, such as - "[[Torch]] 7".` : "";
+        throw new Error(`${message}${stack}`);
     }
 
     return document;

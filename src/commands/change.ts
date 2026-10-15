@@ -14,14 +14,18 @@ import {
     declaredKind,
     findPage,
     followersOf,
+    goodsNamed,
     inheritedFields,
     isCounterField,
     isDeclaredUncounted,
     isPartyMember,
     isStandardField,
     keepersOf,
+    kindNamed,
     ownField,
     type Page,
+    stackName,
+    stacksOf,
     systemPageNamed,
     withPage,
     type World,
@@ -36,6 +40,7 @@ import { campaignCoins } from "./game-money.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
+import { changeStack } from "./game-stacks.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -74,16 +79,17 @@ const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]
 
 export const change = defineCommand({
     name: "change",
-    description: "Change a counter or money on a page: hit points, uses, ammunition, supply, a progress track, an event's clock, coins. "
+    description: "Change a counter, money or a stack of goods on a page: hit points, uses, a progress track, an event's clock, coins, torches. "
         + "A counter is a field written as a number (20, from 0 up) or as current/max (12/12, from 0 to the maximum); create it with write, then change it only with this command. "
         + 'Money is a field in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
+        + "A stack of goods by its kind in place of the field, such as page Ettore, field Torch, spend 1. "
         + "recipe applies a rest of the game system once you have advanced its hours. "
         + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf"; or recipe "long rest".',
     group: "game",
     positionals: ["page", "field"],
     input: z.object({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
-        field: z.string().optional().describe("the counter or the money, such as hp; none with a recipe"),
+        field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7"),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
         to: z.union([z.number().int(), z.string()]).optional().describe(
@@ -108,6 +114,17 @@ export const change = defineCommand({
 
         const holder = holderNamed(root, world, input.page);
         const fields = withDeclaredStart(world, holder, effectiveFields(world, holder.page), input.field);
+        // A name that is no field of the page, nor one the system declares, may be a kind the page holds a stack of (STK-5).
+        const kind = holdsField(world, fields, input.field) ? undefined : kindNamed(world, holder.kind === "page" ? holder.page : undefined, input.field) ?? countable(world, input.field);
+
+        if (kind !== undefined && holder.kind === "copy") {
+            throw new Error(`${holder.page.name} is a copy in the scene, which holds no stacks: what it carries is the master's to tell. Nothing changed.`);
+        }
+
+        if (kind !== undefined) {
+            return { ...changeStack(root, context, world, holder.page, kind, input), problems: world.problems };
+        }
+
         const { coins, problem } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
@@ -525,7 +542,8 @@ function moneyStep(input: { by?: number | string; spend?: number | string; to?: 
         throw new Error('Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 sp".');
     }
 
-    const asked = given[0];
+    // Coins in quotes, as a model may send "\"5 sp\"", are the coins.
+    const asked = typeof given[0] === "string" ? given[0].trim().replace(/^"(.*)"$/s, "$1") : given[0];
     const parameter = input.by !== undefined ? "by" : input.spend !== undefined ? "spend" : "to";
     const signed = typeof asked === "string" ? readSignedAmount(asked, coins) : undefined;
 
@@ -711,7 +729,25 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
         throw new Error(`${page.name} has no ${given}: the system ${world.system?.name ?? ""} gives it from ${whence}, and ${page.name} has none from them. ${listed}`);
     }
 
-    throw new Error(`${page.name} has no field "${name}". ${listed} ${howToAdd(world, holder, name, example)}`);
+    // Goods are stacks, never a field: the stacks the page holds, and the call for the kind the name means (STK-5).
+    const stacks = holder.kind === "page" ? stacksOf(world, page).map((stack) => `${stackName(stack)} ${stack.count}`) : [];
+    const goods = goodsNamed(world, name);
+    const counted = stacks.length === 0 ? "" : `Its stacks: ${stacks.join(", ")}. `;
+    const how = goods === undefined ? howToAdd(world, holder, name, example) : `Goods are a stack, changed by its kind, such as change ${page.name}, ${goods.name}, spend 1.`;
+    throw new Error(`${page.name} has no field "${name}". ${counted}${listed} ${how}`);
+}
+
+/** An item a name means that may be counted though no stack counts it yet, as a kind of the campaign spent to 0 everywhere: change says how to write its stack (STK-5). */
+function countable(world: World, name: string): Page | undefined
+{
+    const page = goodsNamed(world, name);
+    return page !== undefined && comparableText(page.name) === comparableText(name.trim()) ? page : undefined;
+}
+
+/** Whether a name is a field of the page, one the game system declares or works out (CNT-8): a field before a kind of the same name (STK-5). */
+function holdsField(world: World, fields: Record<string, unknown>, name: string): boolean
+{
+    return Object.keys(fields).some((key) => comparableText(key) === comparableText(name.trim())) || declaredKind(world, name.trim()) !== undefined || computedField(world, name, fields) !== undefined;
 }
 
 /** The value a page reads for a field, written in any case. */

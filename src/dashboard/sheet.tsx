@@ -11,7 +11,7 @@ import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
-import { fieldLabel, groupLabels, phraseLabel, readableIds, shownNotation, shownText } from "./labels.ts";
+import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { Markdown, plainLine } from "./markdown.tsx";
 import { MoodFace, moodLabel } from "./mood.tsx";
@@ -209,6 +209,11 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
     const lit = values.some((value) => answersOf(value) !== undefined);
     return (
         <Card name={group.name} title={systemWord("groups", group.name)} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
+            {layout === "table" && values.length > 0 && (
+                <div class="rows" onKeyDown={onKeyDown}>
+                    {values.map((value) => <Row key={value.field} {...line(value)} />)}
+                </div>
+            )}
             {layout === "table" && <ItemsTable group={group} fields={fields} />}
             {layout === "tiles" && (
                 <div class="tiles" onKeyDown={onKeyDown}>
@@ -309,7 +314,7 @@ function Row(props: Line)
  * else, when it has a tooltip, a box the keyboard reaches. Its tooltip says how it is made (FOR-8), shown when pointed at or reached, and read to a screen
  * reader as its description.
  */
-function NumberBox({ value, label, tip, tabIndex, onRoll, answers, kind, said, children }: Omit<Line, "fields"> & { kind: string; said: string; children: ComponentChildren; })
+function NumberBox({ value, label, fields, tip, tabIndex, onRoll, answers, kind, said, children }: Line & { kind: string; said: string; children: ComponentChildren; })
 {
     const described = useId();
     const shared = {
@@ -333,7 +338,7 @@ function NumberBox({ value, label, tip, tabIndex, onRoll, answers, kind, said, c
                 type="button"
                 {...shared}
                 aria-label={answers === undefined ? said : t("{said}: answer the master", { said })}
-                onClick={() => (answers === undefined ? value.roll && onRoll(value.roll, label) : answers.answer())}
+                onClick={() => (answers === undefined ? value.roll && onRoll(value.roll, rollLabel(value.field, fields)) : answers.answer())}
             >
                 {children}
                 {description}
@@ -351,32 +356,111 @@ function RollMark({ roll }: { roll: SheetRoll; })
     );
 }
 
-/** A group the items of a list give, as the attacks: a head with the labels of their values, then an item a line, with its values. */
+/**
+ * A group the items of a list give, as the attacks: a head with the labels of their values, then an item a line, with its values. What is inside another
+ * thing stands under it, a step in for each level, and its container opens and closes it, as a tree of files (D-431).
+ */
 function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<string>; })
 {
+    const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
     const items = group.items ?? [];
     const columns = items[0]?.values.map((value) => value.field) ?? [];
     const labels = groupLabels(columns, fields);
+    const depths = items.map((item) => item.depth ?? 0);
+    const holds = (index: number): boolean => (depths[index + 1] ?? 0) > depths[index];
+    const key = (index: number): string => `${depths[index]} ${items[index].inside ?? ""} ${items[index].item}`;
+    const toggle = (index: number): void => setClosed((before) => (before.has(key(index)) ? new Set([...before].filter((one) => one !== key(index))) : new Set([...before, key(index)])));
+    const shown = shownLines(depths, (index) => closed.has(key(index)));
+    // When something is equipped or holds other things, every name keeps a lane for the marks, so that a step in reads as being inside, never as a mark.
+    const marked = items.some((item, index) => item.equipped === true || holds(index));
+    // What is carried tells how many after its name, as Torce (6), with no column of its own (Stefano, 15 October).
+    const carried = columns.length === 1 && columns[0] === "quantity";
+    const count = (item: typeof items[number]): string => (carried ? item.values[0]?.text ?? "" : "");
     return (
-        <table class="items">
-            <thead>
+        <table class={["items", marked ? "marked" : "", carried ? "carried" : ""].filter((name) => name !== "").join(" ")}>
+            <thead class={carried ? "visually-hidden" : undefined}>
                 <tr>
                     <th scope="col">
                         <span class="visually-hidden">{t("Name")}</span>
                     </th>
-                    {columns.map((field) => <th key={field} scope="col">{phraseLabel(labels.get(field) ?? fieldLabel(field, fields))}</th>)}
+                    {!carried && columns.map((field) => <th key={field} scope="col">{phraseLabel(labels.get(field) ?? fieldLabel(field, fields))}</th>)}
                 </tr>
             </thead>
             <tbody>
-                {items.map((item) => (
-                    <tr key={item.item}>
-                        <th scope="row">{item.item}</th>
-                        {item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
-                    </tr>
-                ))}
+                {items.map((item, index) => {
+                    if (!shown[index]) {
+                        return null;
+                    }
+
+                    const name = itemName(item.item);
+                    const said = [
+                        item.inside === undefined ? undefined : t("in {container}", { container: itemName(item.inside) }),
+                        item.equipped === true ? t("Equipped") : undefined,
+                    ].filter((part) => part !== undefined).map((part) => `, ${part}`).join("");
+                    const words = (
+                        <>
+                            {/* The thing's own picture, in the colour of its words, else a thing's (D-431). */}
+                            {marked && <ItemPicture image={item.image} />}
+                            <span>{name}</span>
+                            {count(item) !== "" && <span class="item-count">{` (${count(item)})`}</span>}
+                            {said !== "" && <span class="visually-hidden">{said}</span>}
+                        </>
+                    );
+                    return (
+                        <tr key={key(index)} class={item.depth === undefined ? undefined : "inside"}>
+                            <th scope="row" style={item.depth === undefined ? undefined : { "--depth": item.depth }}>
+                                {holds(index)
+                                    ? (
+                                        <button type="button" class="fold" aria-expanded={!closed.has(key(index))} onClick={() => toggle(index)}>
+                                            <Icon name="fold" />
+                                            {words}
+                                        </button>
+                                    )
+                                    : (
+                                        <>
+                                            {item.equipped === true && <span class="equipped-mark" title={t("Equipped")} aria-hidden="true">◆</span>}
+                                            {words}
+                                        </>
+                                    )}
+                            </th>
+                            {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
+                        </tr>
+                    );
+                })}
             </tbody>
         </table>
     );
+}
+
+/** A thing's picture, one colour as the words beside it: the game's drawing of its kind as a mask, or the page's own of any thing. */
+function ItemPicture({ image }: { image?: { file: string; version: number; } | undefined; })
+{
+    return image === undefined
+        ? (
+            <span class="item-picture" aria-hidden="true">
+                <Icon name="thing" />
+            </span>
+        )
+        : <span class="item-picture drawn" aria-hidden="true" style={{ "--picture-url": `url("/images/${encodeURIComponent(image.file)}?v=${image.version}")` }} />;
+}
+
+/** Which lines of a list show: those whose containers are all open, by the lines' depths. */
+function shownLines(depths: number[], isClosed: (index: number) => boolean): boolean[]
+{
+    // The containers above the line, as the index of each, from the outermost.
+    const above: number[] = [];
+    return depths.map((depth, index) => {
+        above.splice(depth);
+        const shown = above.every((container) => !isClosed(container));
+        above[depth] = index;
+        return shown;
+    });
+}
+
+/** A thing's name as the page writes it, with a capital, whatever the page that has it says: "torce" as "Torce". */
+function itemName(name: string): string
+{
+    return name.charAt(0).toLocaleUpperCase() + name.slice(1);
 }
 
 /** Flashes its content once when its text changes, as when a number goes down. */
@@ -405,7 +489,8 @@ function sheetFields(member: Member, sheet: SheetGroup[]): ReadonlySet<string>
 function preview(group: SheetGroup, label: (field: string) => string): string
 {
     if (group.items !== undefined) {
-        return group.items.map((item) => item.item).join(" · ");
+        // The group's own values first, as the money above the things carried: their text alone, as the card is narrow.
+        return [...group.values.map((value) => shownText(value.text)), ...group.items.map((item) => itemName(item.item))].join(" · ");
     }
 
     return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(besideLabel(value) ?? value.text)}`).join(" · ");

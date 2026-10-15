@@ -90,6 +90,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 | World | All pages of the campaign and its system in a frozen `World`; campaign pages first, system pages read-only | [pages/world.ts](../src/pages/world.ts), [commands/game-world.ts](../src/commands/game-world.ts) |
 | Inheritance | A character derives from its `creature`, an item from its `item`; a page keeps only its differences | [pages/inheritance.ts](../src/pages/inheritance.ts) |
 | Containers | A page never records where it is: its container lists it; `locate` climbs the chain | [pages/containers.ts](../src/pages/containers.ts), [commands/move.ts](../src/commands/move.ts) |
+| Stacks | Goods counted where they are held, `[[Torch]] 7`: a kind is in no place; `change` spends, `move` takes pieces, `trade` swaps goods and money in one go | [pages/stacks.ts](../src/pages/stacks.ts), [pages/stack-entry.ts](../src/pages/stack-entry.ts), [commands/game-stacks.ts](../src/commands/game-stacks.ts), [commands/trade.ts](../src/commands/trade.ts) |
 | Links | Links in fields and text, backlinks, `rename` that follows them | [pages/markdown.ts](../src/pages/markdown.ts), [pages/rename-page.ts](../src/pages/rename-page.ts) |
 | Secrets | Only characters know, in `knows`; `reveal` adds | [commands/reveal.ts](../src/commands/reveal.ts) |
 | Counters and money | `current/max` within limits; coins with change | [counters/](../src/counters/), [money/](../src/money/), [commands/change.ts](../src/commands/change.ts) |

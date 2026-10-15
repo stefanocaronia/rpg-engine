@@ -75,6 +75,7 @@ const systemSchema = z.object({
     attribution: z.string().min(1).optional(),
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
+    "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
     imperial: z.object({ mile: lengthSchema, foot: lengthSchema }).strict().optional(),
     travel: travelSchema.optional(),
@@ -290,6 +291,8 @@ export interface GameSystem
     fields: Record<string, FieldKind>;
     /** Its coins, as config takes them, "gp 100, sp 10, cp 1", or as campaign.yaml writes them (D-182, DAT-1). */
     coins?: string | Record<string, unknown>;
+    /** The metal of each coin, as the dashboard draws it, such as gold for gp (D-431). */
+    coinMetals: Record<string, string>;
     /** How long a round lasts, in seconds (D-187, DAT-7). */
     roundSeconds?: number;
     /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
@@ -586,6 +589,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         attribution: data.attribution,
         fields: data.fields ?? {},
         coins: data.coins,
+        coinMetals: data["coin-metals"] ?? {},
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),

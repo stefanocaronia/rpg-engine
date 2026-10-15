@@ -112,8 +112,11 @@ export function hidingMessage(page: Page, type: PageType | undefined, fields: st
     return `${page.name} is ${systemLabel(page)}: a page of the campaign with that name would hide it.${derived} Nothing changed.`;
 }
 
-/** Why a page of the game system goes into no container (SYS-6), and what to do instead; `holder` is where it was to go. */
-export function heldSystemPageMessage(page: Page, holder: { name: string; type?: PageType; }, world?: World): string
+/**
+ * Why a page of the game system goes into no container but as a stack (SYS-6, STK-1), and what to do instead; `holder` is where it was to go, `notKind` why an item is no kind
+ * to count, if it is not one.
+ */
+export function heldSystemPageMessage(page: Page, holder: { name: string; type?: PageType; }, world?: World, notKind?: string): string
 {
     const always = world === undefined ? undefined : alwaysInList(world, page);
 
@@ -121,10 +124,14 @@ export function heldSystemPageMessage(page: Page, holder: { name: string; type?:
         return alwaysInMessage(page, always);
     }
 
+    if (page.type === "item" && notKind === undefined) {
+        const list = holder.type === "character" ? "inventory" : "contains";
+        return `${page.name} is ${systemLabel(page)}, a kind counted in stacks: write ${holder.name}, add ${list}="[[${page.name}]] 1", with how many.`;
+    }
+
     if (page.type === "item") {
-        const list = holder.type === "character" ? "the inventory" : "the contents";
-        return `${page.name} is ${systemLabel(page)}, a kind: no one holds it. To give ${holder.name} one, create it under a name in the campaign's language: `
-            + `write "<name>", type item, set item=[[${page.name}]]; then move, page "<name>", to ${holder.name}. An item that matters little can stay text in ${list}.`;
+        return `${page.name} is ${systemLabel(page)}, and ${notKind}. To give ${holder.name} one, create it under a name in the campaign's language: `
+            + `write "<name>", type item, set item=[[${page.name}]]; then move, page "<name>", to ${holder.name}.`;
     }
 
     return page.type === "creature" ? kindMessage(page) : `${page.name} is ${systemLabel(page)}, which is nowhere.`;

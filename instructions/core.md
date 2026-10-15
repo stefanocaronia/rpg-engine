@@ -21,7 +21,7 @@ For every campaign and game, in every mode; the part of the mode and the game sy
 - `write`: record every new fact at once.
 - `reveal`: as soon as a character learns a secret, or of a page they did not know.
 - `roll`: every roll, with its reason and whose it is.
-- `change`: every change to a counter (damage, healing, what is spent or used up), to money (paid, received) and to an event's clock.
+- `change`: every change to a counter (damage, healing, what is spent or used up), to money (paid, received), to a stack (a torch burnt) and to an event's clock; `trade` for every purchase, sale or barter.
 - `mood`: yours when the story's tone turns; a moment when what the player has just seen strikes you, never ahead of what they do not know. A character's when it changes for a while; the player character's only as the player plays them.
 
 ## 3. The world's pages
@@ -30,7 +30,7 @@ For every campaign and game, in every mode; the part of the mode and the game sy
 - A page describes only itself. Whoever holds something lists it: a place `contains` places, characters and items, and its `environment` (`light: dark`) holds for all of them; a character has an `inventory` of items; an item `contains` items and characters (a cart); a quest has its goals as checkboxes. `show` works out where a thing is.
 - Fixed fields: `role` (pc; companion, who travels with the party, recruited, made in session zero or met along the way; npc), `creature` (the creature a character or creature is a kind of, never a form taken for a while) and `item` (the item an item is a kind of): the page holds only what differs, the rest is read from there; `factions`, `knows`, `status` (alive/dead; planned/open/done/failed for a quest, open once the player takes it; planned/happened/cancelled for an event; a new quest or event starts planned), `tags`. Any other field is free, on the page it belongs to.
 - A planned event comes with the first of: its `date` (`day 3, 06:00`); its `clock`, when full (`0/4`, with what moves it written on the event); its `when` (`party in [[Place]]`, `[[Item]] in party`, `[[Page]] dead`, or a list of them). With none, it comes when its situation does. `by` names who makes it happen, `place` where. Whoever carries a plan lists its events; when the story stops or changes a plan, write its events at once.
-- What is counted is a field on whoever has it, such as `uses: 1/1` or `arrows: 20`, and money in the campaign's coins; never a count inside a text. Change it with `change`, never with `write`.
+- What is counted is a field on whoever has it, such as `uses: 1/1`, and money in the campaign's coins; goods are stacks in the list of whoever holds them, a kind and how many, as `[[Torch]] 7`, one for each kind; never a count inside a text or a field. `write` adds a new stack, then only `change` counts it and `move` hands its pieces over.
 - Links: `[[Name]]`, `[[Name#Section]]`.
 - Text: an introduction, sections, and secrets (`> [!secret] Name`). Knowing a page is not knowing its secrets.
 

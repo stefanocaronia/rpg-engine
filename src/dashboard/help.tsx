@@ -51,11 +51,10 @@ export function Help()
             return;
         }
 
-        // Under the bar that comes while scrolling, which the heading's scroll-margin cannot know before it comes; the focus where the eye goes.
-        const bar = document.querySelector<HTMLElement>(".top-bar");
-        const above = (bar === null || getComputedStyle(bar).display === "none" ? 0 : bar.offsetHeight) + 16;
-        const top = target.getBoundingClientRect().top + window.scrollY - above;
-        window.scrollTo({ top, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        // Under the top, drawn together down the page, as tall as the style sheet says; the focus where the eye goes.
+        const above = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--top-space")) + 16;
+        const to = target.getBoundingClientRect().top + window.scrollY - above;
+        window.scrollTo({ top: to, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
         const focused = target instanceof HTMLDetailsElement ? target.querySelector("summary") : target;
 
         if (focused !== null && focused.tagName !== "SUMMARY") {

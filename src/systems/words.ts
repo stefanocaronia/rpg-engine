@@ -11,11 +11,13 @@ export interface SystemWords
     groups: Record<string, string>;
     fields: Record<string, string>;
     words: Record<string, string>;
+    /** The whole name of a field whose label is short, as a roll tells it: Charisma for cha, Charisma saving throw for cha-save. */
+    names?: Record<string, string>;
     headline?: string;
 }
 
 const named = z.record(z.string().min(1), z.string().min(1));
-const wordsSchema = z.object({ groups: named.optional(), fields: named.optional(), words: named.optional(), headline: z.string().min(1).optional() }, {
+const wordsSchema = z.object({ groups: named.optional(), fields: named.optional(), words: named.optional(), names: named.optional(), headline: z.string().min(1).optional() }, {
     error: "write it as groups, fields and words, each from the English to the language's own, and the headline, such as {groups: {Skills: Abilità}, fields: {str: FOR}}",
 }).strict();
 
@@ -34,6 +36,6 @@ export function systemWords(folder: string, language: string): SystemWords | und
         throw new Error(`The words of the game system in ${file} cannot be read: ${parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ")}. Fix the file.`);
     }
 
-    const { groups = {}, fields = {}, words = {}, headline } = parsed.data;
-    return { groups, fields, words, ...(headline === undefined ? {} : { headline }) };
+    const { groups = {}, fields = {}, words = {}, names, headline } = parsed.data;
+    return { groups, fields, words, ...(names === undefined ? {} : { names }), ...(headline === undefined ? {} : { headline }) };
 }

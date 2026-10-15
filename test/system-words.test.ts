@@ -26,7 +26,8 @@ describe("a game system's words (D-403)", () => {
             const italian = systemWords(folder, "it");
             const languages = readdirSync(join(folder, "words")).map((file) => file.replace(/\.yaml$/, ""));
 
-            for (const language of languages) {
+            // English, the system's own language, has only the whole names of short fields (D-431).
+            for (const language of languages.filter((code) => code !== "en")) {
                 const words = systemWords(folder, language);
                 expect(Object.keys(words?.fields ?? {}).filter((field) => !(field in (italian?.fields ?? {}))), `${system} ${language}`).toEqual([]);
                 expect([...(words?.headline ?? "").matchAll(/\{\w+\}/g)].map(String).sort(), `${system} ${language}`).toEqual([...(italian?.headline ?? "").matchAll(/\{\w+\}/g)].map(String).sort());

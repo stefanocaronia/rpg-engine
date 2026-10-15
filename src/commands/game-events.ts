@@ -7,6 +7,7 @@ import { formatCounter, readCounter } from "../counters/index.ts";
 import {
     backlinks,
     containerFieldOf,
+    isCountedItem,
     isEmptyField,
     isInParty,
     linksIn,
@@ -358,13 +359,19 @@ function whenProblem(world: World, when: unknown): string | undefined
     return "problem" in read ? read.problem : read.triggers.map((trigger) => statusProblem(world, trigger) ?? systemConditionProblem(world, trigger)).find((problem) => problem !== undefined);
 }
 
-/** A condition on a page of the game system, which no page of the campaign hides: it can never hold (SYS-2). */
+/** A condition on a page of the game system, which no page of the campaign hides, or on a kind counted in stacks: it can never hold (SYS-2, STK-3). */
 function systemConditionProblem(world: World, trigger: Trigger): string | undefined
 {
     const system = namedPages(trigger)
         .filter((name) => pagesWithName(world, name).length === 0)
         .map((name) => systemPageNamed(world, name))
         .find((page) => page !== undefined);
+    const kind = namedPages(trigger).flatMap((name) => pagesWithName(world, name).slice(0, 1)).find((page) => isCountedItem(world, page));
+
+    if (system === undefined && kind !== undefined) {
+        return `[[${kind.name}]] is a kind, counted in stacks: never anywhere, so the condition on it can never hold. Name a thing with a story of its own instead.`;
+    }
+
     return system === undefined ? undefined : systemConditionText(system);
 }
 

@@ -2,7 +2,7 @@
 // words, as Obsidian does; the old name stays among its aliases, so that what keeps it as it was, as the log, still finds it.
 import { dirname, join } from "node:path";
 import { files } from "../core/store.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, linkTargetName } from "../core/text.ts";
 import { changeFields, type FieldChange, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { checkPageName, otherPagesWithAlias, type Page, pagesWithName, systemPageNamed, textsIn, type World } from "./world.ts";
 
@@ -117,7 +117,8 @@ export function renamedLinks(text: string, from: string, to: string): { renamed:
 {
     let count = 0;
     const renamed = text.replace(/\[\[([^\][|#^]+?)(\s*[#^][^\][|]*)?(\|[^\][]*)?\]\]/g, (link: string, name: string, section: string | undefined, words: string | undefined) => {
-        if (comparableText(name.trim()) !== comparableText(from)) {
+        // A link with its folder, [[items/Spada.md]], leads to the page as its name alone does (LNK-1).
+        if (comparableText(linkTargetName(name)) !== comparableText(from)) {
             return link;
         }
 

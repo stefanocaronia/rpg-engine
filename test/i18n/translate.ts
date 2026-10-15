@@ -56,7 +56,7 @@ const batchSize = 130;
 const together = 6;
 const curated = "it";
 const systemsFolder = fileURLToPath(new URL("../../systems/", import.meta.url));
-const sections = ["groups", "fields", "words"] as const;
+const sections = ["groups", "fields", "words", "names"] as const;
 
 const glossary = JSON.parse(readFileSync(new URL("glossary.json", import.meta.url), "utf8")) as { voice: Record<string, string>; terms: Record<string, Term>; };
 const only = listAfter("--only");
@@ -142,17 +142,18 @@ function systemTargets(): Target[]
         const read = (language: string): Record<string, string> => (existsSync(file(language)) ? wordEntries(parse(readFileSync(file(language), "utf8")) as Words) : {});
         const italian = read(curated);
         const system = parse(readFileSync(join(systemsFolder, name, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
+        const englishNames = read("en");
 
         const english = (id: string): string => {
             const [section, key] = splitId(id);
-            return section === "headline" ? system["sheet-headline"] ?? "" : section === "fields" ? fieldLabel(key) : key;
+            return section === "headline" ? system["sheet-headline"] ?? "" : section === "fields" ? fieldLabel(key) : section === "names" ? englishNames[id] ?? key : key;
         };
 
         return {
             name: `systems/${name}`,
             entries: Object.keys(italian).map((id) => ({ id, english: english(id), italian: italian[id] })),
             batch: Math.max(1, Object.keys(italian).length),
-            languages: shippedLanguages.filter((language) => language !== curated),
+            languages: shippedLanguages.filter((language) => language !== curated && language !== "en"),
             read,
             write: (language, translations) => {
                 const words: Words = Object.fromEntries(sections.map((section) => [section, Object.fromEntries(Object.entries(translations).filter(([id]) => splitId(id)[0] === section).map(([id, word]) => [splitId(id)[1], word]))]));
@@ -169,7 +170,8 @@ function systemTargets(): Target[]
                 `  German, Italian and Spanish); else the words its players use in ${label}.`,
                 "- Each entry has an id: group (a heading of the character sheet), field (the label of a value of the sheet, short; an ability score as the translation",
                 "  abbreviates it, as FOR for Strength in Italian), word (a name the game uses: races, classes, conditions, damage types, sizes, languages, armor and",
-                "  weapons a character is proficient in, the words of a setting), headline (the line under a character's name, as Level 3 Cleric).",
+                "  weapons a character is proficient in, the words of a setting), name (the whole name of a field whose label is short, as a roll tells it:",
+                "  Charisma for cha, Charisma saving throw for cha-save), headline (the line under a character's name, as Level 3 Cleric).",
                 "- One concept, one term in every entry: a skill, a condition, an armor or a rest is written the same as a field, as a word, alone or in a list,",
                 "  only its case following the entry's. An entry such as until long rest or difficult terrain is a whole phrase: bend the words as the language needs.",
                 "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",

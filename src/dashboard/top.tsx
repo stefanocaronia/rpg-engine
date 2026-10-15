@@ -1,8 +1,8 @@
 // The page's top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time and
 // whether the game is live; under the name the sections, then the saves, the settings and About at the row's end, what does not fit in a menu there; under them
-// all, where the party is. Past it, a bar that stays on top with the same things but where, the master whole and moving, a little smaller, for its moods to be
-// seen (D-295); what the master asks and the rolls stay in sight under it. In both the robot shows the master's mood, a moment's face, and sleeps while the
-// chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
+// all, where the party is. It stays on top: down the page it draws itself together, the master and the name smaller, the product and the place folded away,
+// the sections still there (D-295); what the master asks and the rolls stay in sight under it. The robot shows the master's mood, a moment's face, and sleeps
+// while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
 import type { RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
@@ -45,9 +45,9 @@ const menuRoom = 48;
 
 export function Top(top: TopOf)
 {
+    const room = useRef<HTMLDivElement>(null);
     const header = useRef<HTMLElement>(null);
-    const bar = useRef<HTMLDivElement>(null);
-    const [past, setPast] = useState(false);
+    const compact = useCompact(room, header);
     // The robot's face when the robot or the campaign's name leads back to the party.
     const [poke, setPoke] = useState<Moment>();
 
@@ -56,28 +56,14 @@ export function Top(top: TopOf)
         setPoke({ id: String(Date.now()), mood: pokedMoods[Date.now() % pokedMoods.length] ?? "happy" });
     };
 
-    // The bar comes when the top has gone out of sight.
-    useEffect(() => {
-        const element = header.current;
-
-        if (element === null) {
-            return;
-        }
-
-        const watcher = new IntersectionObserver(([entry]) => setPast(!entry.isIntersecting));
-        watcher.observe(element);
-        return () => watcher.disconnect();
-    }, []);
-
-    // While the bar is there, what stays on top under it knows how tall it is.
-    useEffect(() => {
-        document.documentElement.style.setProperty("--top-space", past ? `${bar.current?.offsetHeight ?? 0}px` : "0px");
-    }, [past]);
-
     const title = top.campaign ?? top.product;
     return (
         <>
-            <header ref={header} class="top">
+            <div ref={room} class="top-room">
+                <span class="top-mark far" aria-hidden="true" />
+                <span class="top-mark near" aria-hidden="true" />
+            </div>
+            <header ref={header} class={compact ? "top compact" : "top"}>
                 <MasterHome top={top} poke={poke} onHome={home} />
                 <div class="titles">
                     <h1>
@@ -95,30 +81,15 @@ export function Top(top: TopOf)
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
-            <div ref={bar} class={past ? "top-bar shown" : "top-bar"} aria-hidden="true" inert={!past}>
-                <MasterHome top={top} poke={poke} onHome={home} />
-                <span class="top-bar-title">
-                    <a class="title-home" href={sectionAddress("party")} onClick={home}>{title}</a>
-                    {top.campaign !== undefined && (
-                        <span class="product">
-                            {top.product}
-                            {top.system && <span class="system-chip">{top.system}</span>}
-                        </span>
-                    )}
-                </span>
-                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} hidden />
-                <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
-            </div>
         </>
     );
 }
 
 /**
  * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, Help, the settings and About as icons at the row's end (D-333, D-409): what does not
- * fit goes into the menu, those three first, then the sections from the last. In the bar that stays a copy out of the keyboard's way, as the bar is hidden
- * from a screen reader.
+ * fit goes into the menu, those three first, then the sections from the last.
  */
-function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hidden?: boolean; fight?: boolean; yourTurn?: boolean; })
+function Navigation({ current, fight, yourTurn }: { current: Section; fight?: boolean; yourTurn?: boolean; })
 {
     // Combat only while a fight is open; on the player's turn, from another section, its name pulses in gold, the same name (D-315, D-349, D-351).
     const shown = sections.filter((section) => section !== "combat" || fight === true);
@@ -128,7 +99,7 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
     const away = [...shown.slice(fitting.sections), ...(fitting.pages ? [] : menuPages)];
     return (
         <div ref={row} class="nav-row">
-            <nav class={hidden ? "sections" : "sections main-nav"} aria-label={hidden ? undefined : t("Sections")}>
+            <nav class="sections main-nav" aria-label={t("Sections")}>
                 {[...shown, ...menuPages].map((section, index) => {
                     const gone = away.includes(section);
                     const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link tip-below" : "", gone ? "away" : ""];
@@ -141,7 +112,7 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
                             data-tip={index >= shown.length ? sectionLabel(section) : undefined}
                             aria-current={section === current ? "page" : undefined}
                             aria-hidden={gone ? true : undefined}
-                            tabIndex={hidden || gone ? -1 : undefined}
+                            tabIndex={gone ? -1 : undefined}
                         >
                             <span class="section-mark">
                                 <Icon name={section} />
@@ -153,9 +124,61 @@ function Navigation({ current, hidden, fight, yourTurn }: { current: Section; hi
                     );
                 })}
             </nav>
-            <Menu current={current} away={away} hidden={hidden} />
+            <Menu current={current} away={away} />
         </div>
     );
+}
+
+/**
+ * Whether the top is drawn together, down the page: two marks in its room, one this far down and one near the very top, tell it, with no work while the page
+ * scrolls. The top stays on top out of the page's flow, and its room keeps its whole height, so that drawing it together moves nothing under it.
+ */
+function useCompact(room: RefObject<HTMLDivElement>, header: RefObject<HTMLElement>): boolean
+{
+    const [compact, setCompact] = useState(false);
+
+    useEffect(() => {
+        const holder = room.current;
+        const element = header.current;
+
+        if (holder === null || element === null) {
+            return;
+        }
+
+        const far = holder.querySelector<HTMLElement>(".top-mark.far");
+        const near = holder.querySelector<HTMLElement>(".top-mark.near");
+        const seen = new Map<Element, boolean>();
+        const watcher = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => seen.set(entry.target, entry.isIntersecting));
+            setCompact((now) => (now ? seen.get(near!) !== true : seen.get(far!) === false));
+        });
+
+        if (far !== null && near !== null) {
+            watcher.observe(far);
+            watcher.observe(near);
+        }
+
+        // Its room as tall as the top whole, measured while it is whole and still: its transitions are asked for, as their events come a frame late.
+        const measure = (): void => {
+            if (!element.classList.contains("compact") && !element.getAnimations({ subtree: true }).some((running) => running instanceof CSSTransition)) {
+                holder.style.height = `${element.offsetHeight}px`;
+            }
+        };
+
+        const sizes = new ResizeObserver(measure);
+        sizes.observe(element);
+        element.addEventListener("transitionend", measure);
+        element.addEventListener("transitioncancel", measure);
+
+        return () => {
+            watcher.disconnect();
+            sizes.disconnect();
+            element.removeEventListener("transitionend", measure);
+            element.removeEventListener("transitioncancel", measure);
+        };
+    }, []);
+
+    return compact;
 }
 
 /** How many sections fit in the row, and whether the saves, the settings and About fit after them; on a phone the sections are at the bottom, the rest in the menu. */
@@ -197,7 +220,7 @@ function useFitting(row: RefObject<HTMLElement>, count: number, shape: string): 
 }
 
 /** The menu (D-309, D-333): what does not fit in the row, and on a phone the theme too, which has no switch of its own there; none when all fits. */
-function Menu({ current, away, hidden }: { current: Section; away: Section[]; hidden?: boolean; })
+function Menu({ current, away }: { current: Section; away: Section[]; })
 {
     const [open, setOpen] = useState(false);
     const holder = useRef<HTMLDivElement>(null);
@@ -242,7 +265,6 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
                 aria-label={t("Menu: {pages}", { pages: pagesList(away) })}
                 data-tip={t("Menu: {pages}", { pages: pagesList(away) })}
                 aria-expanded={open}
-                tabIndex={hidden ? -1 : undefined}
                 onClick={() => setOpen(!open)}
             >
                 <Icon name="menu" />
@@ -250,7 +272,7 @@ function Menu({ current, away, hidden }: { current: Section; away: Section[]; hi
             {open && (
                 <div class="menu-pop">
                     {away.map((page) => (
-                        <a key={page} href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} tabIndex={hidden ? -1 : undefined} onClick={() => setOpen(false)}>
+                        <a key={page} href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
                             <Icon name={page} />
                             {sectionLabel(page)}
                         </a>

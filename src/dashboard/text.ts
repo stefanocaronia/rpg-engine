@@ -122,9 +122,10 @@ export function setSystemWords(words: SystemWords | undefined): void
 }
 
 /** A group's name, a field's label or another word of the game system in the campaign's language; undefined where the system has none. */
-export function systemWord(kind: "groups" | "fields" | "words", english: string): string | undefined
+export function systemWord(kind: "groups" | "fields" | "words" | "names", english: string): string | undefined
 {
-    return Object.hasOwn(system[kind], english) ? system[kind][english] : undefined;
+    const words = system[kind] ?? {};
+    return Object.hasOwn(words, english) ? words[english] : undefined;
 }
 
 /**

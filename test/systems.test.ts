@@ -126,8 +126,8 @@ describe("SYS-2, SYS-3: the system's pages, found after the campaign's", () => {
     it("finds a page by its name before any alias, the campaign's aliases before the system's", async () => {
         await ok("write", "Spada nera", "--type", "item", "--set", "aliases=[Longsword, Lama]");
         expect(await ok("move", "Lama", "--to", "Ennio")).toBe("Moved Spada nera: now in Ennio › Ossario.");
-        expect(await refused("move", "Longsword", "--to", "Ennio")).toContain("Longsword is an item of the system 5e, a kind: no one holds it.");
-        expect(await refused("move", "Leather", "--to", "Ennio")).toContain("Leather Armor is an item of the system 5e, a kind: no one holds it.");
+        expect(await refused("move", "Longsword", "--to", "Ennio")).toContain("Longsword is a kind, counted in stacks in many places: give from");
+        expect(await refused("move", "Leather", "--to", "Ennio")).toContain("Leather Armor is a kind, counted in stacks in many places: give from");
     });
 });
 
@@ -183,21 +183,28 @@ describe("SYS-6: the system's pages are read-only, and in no place", () => {
         expect(await ok("status")).toContain("copies: Wolf 1: hp 8/11; Wolf 2: hp 11/11");
     });
 
-    it("keeps an item of the system out of every inventory and container: one that matters is an item of the campaign, the rest is text", async () => {
-        const kind = 'Longsword is an item of the system 5e, a kind: no one holds it. To give Ennio one, create it under a name in the campaign\'s language: write "<name>", type item, '
-            + 'set item=[[Longsword]]; then move, page "<name>", to Ennio. An item that matters little can stay text in the inventory.';
-        expect(await refused("write", "Ennio", "--add", "inventory=[[Longsword]]")).toBe(`${kind} Nothing changed.`);
-        expect(await refused("move", "Longsword", "--to", "Ennio")).toBe(`${kind} Nothing moved.`);
+    it("counts an item of the system only in stacks: one with a story or uses of its own is an item of the campaign (STK-1)", async () => {
+        expect(await ok("write", "Ennio", "--add", "inventory=[[Longsword]]")).toContain("added to inventory");
+        expect(await refused("move", "Longsword", "--to", "Ennio")).toContain("Longsword is a kind, counted in stacks in many places: give from");
+        const uses = "Healer's Kit has uses 10/10 of its own, which goes with one thing: such a thing is an item of the campaign derived from it";
+        expect(await refused("write", "Ennio", "--add", "inventory=[[Healer's Kit]]")).toBe(
+            `Healer's Kit is an item of the system 5e, and ${uses}. To give Ennio one, create it under a name in the campaign's language: write "<name>", type item, `
+                + `set item=[[Healer's Kit]]; then move, page "<name>", to Ennio. Nothing changed.`,
+        );
+        expect(await refused("write", "Ennio", "--add", "inventory=[[Healer's Kit]] 2")).toBe(`Healer's Kit is no kind to count: ${uses}. Nothing changed.`);
+        await ok("write", "Ennio", "--remove", "inventory=[[Longsword]]");
         await ok("write", "Spada di Ennio", "--type", "item", "--set", "item=[[Longsword]]");
         expect(await refused("move", "Spada di Ennio", "--to", "Wolf")).toBe("Wolf is a creature of the system 5e, a kind, which holds nothing: Spada di Ennio goes into a page of the campaign. Nothing moved.");
         expect(await ok("move", "Spada di Ennio", "--to", "Ennio")).toBe("Moved Spada di Ennio: now in Ennio › Ossario.");
         expect(await ok("write", "Ennio", "--add", "inventory=corda di canapa")).toContain("added to inventory");
         expect(await ok("validate")).toBe("No problems.");
 
-        handWrite("world/characters/Lena.md", '---\nrole: companion\ninventory: ["[[Torch]]"]\n---\n');
+        // A link alone to a kind is a stack of 1; one to a thing with uses of its own is nowhere.
+        handWrite("world/characters/Lena.md", `---\nrole: companion\ninventory: ["[[Torch]]", "[[Healer's Kit]]"]\n---\n`);
         expect(await ok("validate")).toContain(
-            "world/characters/Lena.md: Lena lists Torch in inventory, but Torch is an item of the system 5e, a kind, which is nowhere; one that Lena has is an item of the campaign with item=[[Torch]], or text.",
+            "world/characters/Lena.md: Lena lists Healer's Kit in inventory, but Healer's Kit is an item of the system 5e, a kind, which is nowhere; Healer's Kit has uses 10/10 of its own",
         );
+        expect(await ok("validate")).not.toContain("Lena lists Torch");
         expect(await ok("show", "Torch")).not.toContain("Is in:");
     });
 });
@@ -328,7 +335,7 @@ describe("after the round on the code: the system missing, and the remedies (SYS
         expect(await refused("write", "Ennio", "--add", "knows=[[Wolf]]")).toBe(
             "Wolf is a creature of the system 5e, whose numbers are the master's, never shown in the player's view (what a character learns of it goes in a secret of a page of the campaign): knows lists pages and secrets of the campaign. Nothing changed.",
         );
-        expect(await refused("write", "Ossario", "--add", "contains=[[Torch]]")).toContain("An item that matters little can stay text in the contents. Nothing changed.");
+        expect(await refused("write", "Ossario", "--add", "contains=[[Healer's Kit]]")).toContain(`To give Ossario one, create it under a name in the campaign's language: write "<name>", type item`);
     });
 
     it("never takes a field the system declares for money when the coins change", async () => {

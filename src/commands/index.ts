@@ -22,6 +22,7 @@ import { save } from "./save.ts";
 import { scene } from "./scene.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
+import { trade } from "./trade.ts";
 import { translate } from "./translate.ts";
 import { travel } from "./travel.ts";
 import { validate } from "./validate.ts";
@@ -39,6 +40,7 @@ export const commands: Command<any, any>[] = [
     write,
     rename,
     move,
+    trade,
     reveal,
     image,
     show,

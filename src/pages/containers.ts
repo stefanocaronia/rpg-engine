@@ -5,16 +5,31 @@ import { comparableText, withArticle } from "../core/text.ts";
 import { links } from "./markdown.ts";
 import { changeFields, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import type { PageType } from "./page-types.ts";
+import { countOf, doubledKinds, entryOfKind, stackEntry, withStackCount } from "./stack-entry.ts";
+import { notKindReason } from "./stacks.ts";
 import { canHold, containerFieldOf, isEmptyField } from "./standard-fields.ts";
 import { heldSystemPageMessage, systemLabel } from "./system-pages.ts";
 import { linksIn, locate, type Page, readPage, withPage, type World } from "./world.ts";
 
-/** A planned move: the containers to write, in order, each with the entries it loses, as written, and those it gains; the destination comes last. */
+/** A stack to set in a container's list (STK-3): the kind's name, its new count, 0 to take it away, and its label. */
+export interface StackCount
+{
+    kind: string;
+    count: number;
+    label?: string;
+}
+
+/**
+ * A planned move: the containers to write, in order, each with the entries it loses, as written, those it gains, the stacks it sets (STK-6) and the fields it sets, as a
+ * purse paid from (STK-8); the destination comes last.
+ */
 export interface MovePlan
 {
-    edits: { holder: Page; field: string; remove: string[]; add: string[]; }[];
+    edits: { holder: Page; field: string; remove: string[]; add: string[]; stacks?: StackCount[]; set?: Record<string, string>; }[];
     /** The pages that change place; the others were already only in the destination. */
     moving: Page[];
+    /** Whether doing it again would hand things over twice, as a trade (STK-9): stopped halfway, it says what is left call by call. */
+    once?: boolean;
 }
 
 /**
@@ -109,11 +124,13 @@ export function applyMove(world: World, plan: MovePlan): World
     const changed = holders.map((holder) => {
         const fullPath = join(world.root, holder.path);
         const file = splitPageFile(files().fresh(fullPath) ?? "");
-        const frontmatter = plan.edits.filter((edit) => edit.holder === holder).reduce((text, { field, remove, add }) => {
+        const frontmatter = plan.edits.filter((edit) => edit.holder === holder).reduce((text, { field, remove, add, stacks, set }) => {
             const removed = remove.length === 0 ? text : changeFields(text, { remove: { [field]: remove } }, holder.path);
+            const added = add.length === 0 ? removed : changeFields(removed, { add: { [field]: add } }, holder.path);
+            const stacked = stacks === undefined || stacks.length === 0 ? added : withStacks(added, field, stacks, holder.path);
+            const counted = set === undefined ? stacked : changeFields(stacked, { set }, holder.path);
             // A container left with nothing loses the field, as if it had never held anything.
-            const emptied = add.length === 0 && isEmptyList(readFields(removed, holder.path)[field]) ? changeFields(removed, { unset: [field] }, holder.path) : removed;
-            return add.length === 0 ? emptied : changeFields(emptied, { add: { [field]: add } }, holder.path);
+            return isEmptyList(readFields(counted, holder.path)[field]) ? changeFields(counted, { unset: [field] }, holder.path) : counted;
         }, file.frontmatter);
         return { holder, fullPath, text: joinPageFile({ frontmatter, body: file.body }) };
     });
@@ -123,15 +140,64 @@ export function applyMove(world: World, plan: MovePlan): World
         try {
             files().write(fullPath, text);
         } catch (error) {
-            const written = changed.slice(0, index).map((file) => file.holder.name);
-            const done = written.length === 0 ? "Nothing moved" : `Written already: ${written.join(", ")}`;
-            throw new Error(`${holder.path} could not be written (${error instanceof Error ? error.message : String(error)}). ${done}: fix it, then run the same move again, which finishes it.`);
+            const written = changed.slice(0, index).map((file) => file.holder);
+            const done = written.length === 0 ? "Nothing moved" : `Written already: ${written.map((page) => page.name).join(", ")}`;
+            const why = `${holder.path} could not be written (${error instanceof Error ? error.message : String(error)}). ${done}`;
+            const left = plan.edits.filter((edit) => changed.slice(index).some((file) => file.holder === edit.holder));
+            const paths = written.map((page) => page.path);
+
+            // Doing a move of stacks or a trade again would hand things over twice (STK-9): what is left to write is said call by call.
+            if (written.length > 0 && (plan.once === true || plan.edits.some((edit) => (edit.stacks ?? []).length > 0))) {
+                throw new MoveStopped(`${why}: fix it, then finish with ${finishingCalls(left).join("; ")}.`, paths);
+            }
+
+            throw new MoveStopped(`${why}: fix it, then run the same move again, which finishes it.`, paths);
         }
 
         after = withPage(after, after.pages.find((page) => page.path === holder.path), readPage(world.root, fullPath));
     }
 
     return after;
+}
+
+/** A move stopped by a file that could not be written: the paths of the pages written before it, whose lines in the log the caller still writes (STK-9). */
+export class MoveStopped extends Error
+{
+    readonly written: string[];
+
+    constructor(message: string, written: string[])
+    {
+        super(message);
+        this.written = written;
+    }
+}
+
+/** A frontmatter with stacks set in a container's list, each written once in the place of its first entry (STK-3). */
+function withStacks(frontmatter: string | undefined, field: string, stacks: StackCount[], path: string): string
+{
+    const value = readFields(frontmatter, path)[field];
+    const set = stacks.reduce<unknown[]>((entries, stack) => withStackCount(entries, stack.kind, stack.count, stack.label), Array.isArray(value) ? value : []);
+    // A list the engine writes holds one stack of each kind: the doubles written by hand become one, with their sum (STK-3).
+    const list = doubledKinds(set).reduce((entries, kind) => withStackCount(entries, kind, entries.filter((entry) => entryOfKind(entry, kind)).reduce<number>((sum, entry) => sum + countOf(entry), 0)), set);
+    return changeFields(frontmatter, list.length === 0 ? { unset: [field] } : { set: { [field]: list } }, path);
+}
+
+/** The calls that finish the edits of a move stopped halfway, without doing again what is written (STK-9). */
+function finishingCalls(edits: MovePlan["edits"]): string[]
+{
+    return edits.flatMap((edit) => [
+        ...(edit.stacks ?? []).map((stack) => {
+            const had = entriesOf(edit.holder, edit.field).some((entry) => entryOfKind(entry, stack.kind));
+            return stack.count === 0
+                ? `write ${edit.holder.name}, remove ${edit.field}=[[${stack.kind}]]`
+                : had
+                ? `change ${edit.holder.name}, ${stack.kind}, to ${stack.count}`
+                : `write ${edit.holder.name}, add ${edit.field}="${stackEntry(stack.kind, stack.count, stack.label)}"`;
+        }),
+        ...edit.remove.map((entry) => `write ${edit.holder.name}, remove ${edit.field}=${entry}`),
+        ...edit.add.map((entry) => `write ${edit.holder.name}, add ${edit.field}=${entry}`),
+        ...Object.entries(edit.set ?? {}).map(([field, value]) => `change ${edit.holder.name}, ${field}, to "${value}"`),
+    ]);
 }
 
 /** Why a container cannot hold a page (CON-1), with the way out: where the page goes instead. */
@@ -162,7 +228,7 @@ export function holdRefusal(holder: { name: string; type?: PageType; }, held: { 
 function checkMove(world: World, page: Page, destination: Page): void
 {
     if (page.system !== undefined) {
-        throw new Error(`${heldSystemPageMessage(page, destination, world)} Nothing moved.`);
+        throw new Error(`${heldSystemPageMessage(page, destination, world, notKindReason(world, page))} Nothing moved.`);
     }
 
     if (destination.system !== undefined) {

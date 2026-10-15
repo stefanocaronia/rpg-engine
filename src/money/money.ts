@@ -175,6 +175,12 @@ export function addCoins(purse: Purse, added: Purse): Purse
     return result;
 }
 
+/** The purse with coins taken out of it, as a payment hands them over. */
+export function takeCoins(purse: Purse, taken: Purse): Purse
+{
+    return withoutEmpty(addCoins(purse, negate(taken)));
+}
+
 /** Whether every count of a purse is a whole number that can be counted exactly. */
 export function isSafePurse(purse: Purse, coins: Coin[]): boolean
 {
@@ -218,6 +224,15 @@ export function payCoins(purse: Purse, price: Purse, coins: Coin[]): Payment | u
     const handed = totalOf(given, coins);
     const back = change(handed - rest, ordered.filter((coin) => !coin.rare));
     return { purse: withoutEmpty(addCoins(addCoins(result, negate(given)), back)), given: withoutEmpty(given), back: withoutEmpty(back) };
+}
+
+/**
+ * The change one gives from a purse of one's own (STK-8): `amount` in coins it holds, never rare ones, from the largest; undefined when they do not make it exactly.
+ */
+export function changeFrom(purse: Purse, amount: number, coins: Coin[]): Purse | undefined
+{
+    const given = exactly(purse, byValue(coins).filter((coin) => !coin.rare), amount);
+    return given === undefined ? undefined : withoutEmpty(given);
 }
 
 /** The value and rarity of a coin as the list writes them: 100, or "1000 rare". */

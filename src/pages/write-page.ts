@@ -6,9 +6,11 @@ import { baseChain, baseValue, derivedPages, ownFieldChange, sameAsBase } from "
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
+import { checkStackEdits, checkStacks, isKindNamed } from "./stack-writes.ts";
+import { isKind, notKindReason } from "./stacks.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
-import { checkPageName, findPage, heldNames, holdersOf, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
+import { checkPageName, findPage, heldNames, holdersOf, isCountedItem, linksIn, locate, type Page, pageNamed, readPage, textsIn, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
 export interface PageChange extends FieldChange
@@ -44,6 +46,7 @@ export function writePage(world: World, name: string, type: PageType | undefined
     }
 
     const pageType = type ?? existing?.type;
+    checkStackEdits(world, existing, requested);
     const fields = existing === undefined ? requested : { ...requested, ...ownFieldChange(world, existing, requested) };
     checkUnset(world, existing, requested.unset ?? [], fields.unset ?? []);
     const change = existing === undefined && type !== undefined ? { ...fields, set: { ...newPageFields(type), ...fields.set } } : fields;
@@ -90,6 +93,10 @@ function checkRetype(world: World, page: Page, type: PageType): void
     if (derived.length > 0) {
         const kind = page.type ?? "page";
         throw new Error(`${page.name} is the ${kind} that ${derived.join(", ")} ${derived.length === 1 ? "derives" : "derive"} from: as ${withArticle(type)} it would leave them deriving from nothing. Give them another ${kind} first.`);
+    }
+
+    if (isCountedItem(world, page)) {
+        throw new Error(`${page.name} is a kind, counted in stacks: as ${withArticle(type)} those stacks would count nothing. Give the stacks another kind first.`);
     }
 
     const holder = validHoldersOf(world, page)[0];
@@ -336,8 +343,12 @@ function checkContainers(world: World, existing: Page | undefined, page: { name:
             continue;
         }
 
-        for (const target of added) {
-            const problem = holdProblem(world, existing ?? { ...page, path: "", fields: {}, body: "" }, target);
+        const holder = existing ?? { ...page, path: "", fields: {}, body: "" };
+        checkStacks(world, holder, field, existing?.fields[field], fields[field]);
+
+        // A link alone to a kind is a stack of 1 (STK-1), never a page in this container.
+        for (const target of added.filter((name) => !isKindNamed(world, name))) {
+            const problem = holdProblem(world, holder, target);
 
             if (problem !== undefined) {
                 throw new Error(problem);
@@ -346,7 +357,7 @@ function checkContainers(world: World, existing: Page | undefined, page: { name:
     }
 }
 
-/** What a character equips is an item of the campaign, never a page of the game system, a kind that no one holds (CON-12, SYS-6). */
+/** What a character equips is an item of the campaign or a kind it carries a stack of (CON-12, STK-11), never another page of the game system, which no one holds (SYS-6). */
 function checkEquipped(world: World, existing: Page | undefined, name: string, fields: Record<string, unknown>, changedFields: string[]): void
 {
     if (!changedFields.includes("equipped")) {
@@ -354,7 +365,7 @@ function checkEquipped(world: World, existing: Page | undefined, name: string, f
     }
 
     const before = new Set(linksIn(existing?.fields.equipped).map(comparableText));
-    const kind = linksIn(fields.equipped).filter((link) => !before.has(comparableText(link))).map((link) => findPage(world, link)).find((page) => page?.system !== undefined);
+    const kind = linksIn(fields.equipped).filter((link) => !before.has(comparableText(link))).map((link) => findPage(world, link)).find((page) => page?.system !== undefined && !isKind(world, page));
 
     // The unarmed strike is in every sheet's equipped without writing it (DAT-13): a page of the campaign derived from it would count twice.
     if (kind !== undefined && alwaysInList(world, kind) !== undefined) {
@@ -378,7 +389,7 @@ function holdProblem(world: World, holder: Page, target: string): string | undef
     const page = findPage(world, target);
 
     if (page?.system !== undefined) {
-        return `${heldSystemPageMessage(page, holder, world)} Nothing changed.`;
+        return `${heldSystemPageMessage(page, holder, world, notKindReason(world, page))} Nothing changed.`;
     }
 
     if (page !== undefined && !canHold(holder.type, page.type)) {
