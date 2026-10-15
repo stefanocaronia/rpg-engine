@@ -146,7 +146,7 @@ recipes:
 
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
-- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount, never below 0 (`lower: {exhaustion: 1}`), the occasions it `ends`, the rules it leaves to the master.
+- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`), the occasions it `ends`, the rules it leaves to the master.
 
 ### upkeep, burning
 

@@ -75,6 +75,18 @@ describe("exhaustion", () => {
     });
 });
 
+describe("hit dice in a short rest (D-449)", () => {
+    it("spends them in one step: each die with the Constitution modifier, the hit points healed, the dice taken; never more than one has", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
+        const spent = await ok("change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest");
+        expect(spent).toMatch(/^Ettore spends 2 hit-dice-d10: 2d10 = \[\d+, \d+\] \+ 2 each, \d+; hp 5\/26 → \d+\/26; hit-dice-d10 3\/3 → 1\/3\.$/);
+        const refused = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest"], context);
+        expect(refused.output).toBe("Ettore has 1 hit-dice-d10: spend a whole number of them, from 1 up to that. Nothing changed.");
+        const long = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "long rest"], context);
+        expect(long.output).toBe("long rest spends no dice, not hit-dice-d10. Nothing changed.");
+    });
+});
+
 describe("what burns", () => {
     it("spends a torch as it is lit, and ends it after an hour (UPK-3)", async () => {
         const lit = await ok("effect", "add", "Ettore", "Torch");

@@ -36,6 +36,7 @@ import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-la
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
+import { spendDice } from "./game-hit-dice.ts";
 import { campaignCoins } from "./game-money.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
@@ -96,7 +97,7 @@ export const change = defineCommand({
             "the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3",
         ),
         why: z.string().optional().describe("what the change is for"),
-        recipe: z.string().optional().describe("a recipe of the game system, such as long rest"),
+        recipe: z.string().optional().describe("a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest"),
     }),
 
     run(input, context)
@@ -147,7 +148,7 @@ export const change = defineCommand({
     format(result)
     {
         if ("recipe" in result) {
-            return recipeText(result);
+            return result.spent ?? recipeText(result);
         }
 
         const note = result.note === "" ? "" : `: ${result.note}`;
@@ -331,11 +332,18 @@ function recipeResult(
     context: Context,
     world: World,
     input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; },
-): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; }
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; spent?: string; }
 {
     const named = campaignSystem(root, context);
     const page = input.page?.trim() === "" ? undefined : input.page;
     checkQuotedRecipe(named, input.recipe, [page, input.field]);
+
+    // Dice the rest lets one spend, as hit dice in a short rest (D-449).
+    if (input.field !== undefined && input.spend !== undefined && input.by === undefined && input.to === undefined && page !== undefined) {
+        const { system, recipe } = recipeNamed(named, input.recipe);
+        const why = input.why === undefined || input.why.trim() === "" ? recipe.name : input.why;
+        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, recipe, page, input.field, input.spend, why) };
+    }
 
     if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined) {
         throw new Error('A recipe changes by itself the fields it names: give it with the page, or alone for the player character and the companions with them, such as recipe "long rest". Nothing changed.');

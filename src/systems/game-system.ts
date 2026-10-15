@@ -29,6 +29,7 @@ const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
     regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
     lower: z.record(z.string(), z.number().int().positive()).optional(),
+    spend: z.record(z.string(), z.object({ gives: z.string().min(1), adds: z.union([z.string().min(1), z.number()]).optional() }).strict()).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
 }).strict();
@@ -198,6 +199,8 @@ export interface Recipe
     regain: Record<string, Formula>;
     /** By field, how much a counter goes down, never below 0, as exhaustion after a long rest (D-449). */
     lower: Record<string, number>;
+    /** By counter named after its die, or counters that begin so, what spending one gives and adds to each die, as hit dice healing (D-449). */
+    spend: Record<string, { gives: string; adds: Formula; }>;
     ends: string[];
     rules: string[];
 }
@@ -700,6 +703,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             set: value.set ?? {},
             regain: regainOf(value.regain ?? {}, name, path, recipe),
             lower: value.lower ?? {},
+            spend: Object.fromEntries(Object.entries(value.spend ?? {}).map(([field, rule]) => [field, { gives: rule.gives, adds: parseFormula(String(rule.adds ?? 0)) }])),
             ends: value.ends ?? [],
             rules: value.rules ?? [],
         })),
