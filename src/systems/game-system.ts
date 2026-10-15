@@ -87,8 +87,10 @@ const systemSchema = z.object({
         field: z.string().min(1),
         limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
         coins: z.number().int().positive().optional(),
+        weightless: z.string().min(1).optional(),
     }, {
-        error: "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}",
+        error:
+            "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing",
     }).strict().optional(),
     travel: travelSchema.optional(),
     grid: gridSchema.optional(),
@@ -341,8 +343,11 @@ export interface GameSystem
     roundSeconds?: number;
     /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
     imperial?: ImperialUnits;
-    /** What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight. */
-    load?: { field: string; limit: Formula; coins?: number; };
+    /**
+     * What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight, and the
+     * field of an item whose contents weigh nothing.
+     */
+    load?: { field: string; limit: Formula; coins?: number; weightless?: string; };
     /** The unit its computed lengths are in, as ft, which the sheet writes after them (SPD-1). */
     lengthUnit?: string;
     /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
@@ -669,6 +674,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                     ? { kind: "first", options: data.load.limit.map((option) => parseFormula(String(option))) }
                     : parseFormula(data.load.limit),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
+                ...(data.load.weightless === undefined ? {} : { weightless: data.load.weightless }),
             },
         }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
@@ -743,7 +749,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
 }
 
 /**
- * "counters.superiority-dice: unknown key "Combat Superiority)", a formula with commas goes in quotes": the problems of a system's data, one after the other on
+ * "counters.bulwark-dice: unknown key "Bulwark)", a formula with commas goes in quotes": the problems of a system's data, one after the other on
  * a line, each at its place.
  */
 function issuesText(error: z.ZodError): string
@@ -909,7 +915,7 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
 function recipeWith(own: unknown, added: unknown, name: string): Record<string, unknown>
 {
     if (!isMap(added)) {
-        throw new Error(`recipes.${name}: give it as what it sets, regains, ends and the rules to read, such as {set: {superiority-dice: max}}.`);
+        throw new Error(`recipes.${name}: give it as what it sets, regains, ends and the rules to read, such as {set: {bulwark-dice: max}}.`);
     }
 
     const base = isMap(own) ? own : {};
@@ -933,7 +939,7 @@ function mapOf(value: unknown, key: string): Record<string, unknown> | undefined
     }
 
     if (!isMap(value)) {
-        throw new Error(`${key}: give it as a map by name, such as {superiority-dice: ...}.`);
+        throw new Error(`${key}: give it as a map by name, such as {bulwark-dice: ...}.`);
     }
 
     return value;

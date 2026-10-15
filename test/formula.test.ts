@@ -79,6 +79,10 @@ describe("what a formula counts (FOR-2)", () => {
     it("reads a field as a number: a number, a counter's current value, or text such as +2", () => {
         expect([12, "5/12", "+2", "-1", "-3/10", " 7 ", "dex", "[[Wolf]]", true, ["1"]].map(numberOf)).toEqual([12, 5, 2, -1, -3, 7, undefined, undefined, undefined, undefined]);
     });
+
+    it("reads a measure with a note in brackets after its unit, and nothing else with brackets (FOR-2)", () => {
+        expect(["40 ft (hover)", "30 ft (40 ft in wolf form)", "25 ft.", "3 (1d6)", "3 bludgeoning", "40 ft (hover) extra"].map(numberOf)).toEqual([40, 30, 25, undefined, undefined, undefined]);
+    });
 });
 
 describe("where a formula has no value (FOR-4)", () => {

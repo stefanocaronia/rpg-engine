@@ -63,6 +63,14 @@ describe("the load a character carries", () => {
         expect(refused.output).toMatch(/^"Grande" is not one of the names size takes in the system 5e: Tiny, Small, Medium, Large, Huge, Gargantuan/);
     });
 
+    it("weighs a container whose weightless field is true without what it holds, as a Bag of Holding (LOAD-1)", async () => {
+        await ok("write", "Borsa di Ettore", "--type", "item", "--set", "item=[[Bag of Holding]]", "--add", "contains=[[Torch]] 10");
+        await ok("write", "Ettore", "--add", "inventory=[[Borsa di Ettore]]");
+        await ok("move", "Cotta di Ettore", "--to", "Borsa di Ettore");
+        // The chain mail moved into the bag: 70.5 - 55 for it, + 15 for the bag, and nothing for the ten torches.
+        expect(await ok("show", "Ettore")).toContain("load 30.5 / 210 lb");
+    });
+
     it("asks a weight for an item written without one, its own or its base's", async () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no weight, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set weight="2 lb".');
         expect(await ok("write", "Spada di Ettore", "--type", "item", "--set", "item=[[Longsword]]")).not.toContain("has no weight");

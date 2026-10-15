@@ -6,17 +6,18 @@ import { entryKind, entryPage, stacksOf } from "./stacks.ts";
 import { containerFieldOf } from "./standard-fields.ts";
 import { type Page, textsIn, validHoldersOf, type World } from "./world.ts";
 
-/** How a system weighs what one carries: the field of an item's weight, and how many coins make one unit of weight. */
+/** How a system weighs what one carries: the field of an item's weight, how many coins make one unit of weight, and the field of an item whose contents weigh nothing. */
 export interface LoadRule
 {
     field: string;
     coins?: number;
+    weightless?: string;
 }
 
 /** The weight a holder carries, coins included (LOAD-1). */
 export function carriedWeight(world: World, rule: LoadRule, holder: Page): number
 {
-    return carriedLoad(world, rule.field, holder) + coinsWeight(inheritedFields(world, holder), rule.coins);
+    return carriedLoad(world, rule, holder) + coinsWeight(inheritedFields(world, holder), rule.coins);
 }
 
 /** The unit the system's weights are written in, as lb; undefined when no page says. */
@@ -26,8 +27,11 @@ export function weightUnit(world: World, field: string): string | undefined
     return typeof written === "string" ? /(\p{L}[\p{L}.]*)\s*$/u.exec(written)?.[1] : undefined;
 }
 
-/** The weight a holder carries (LOAD-1): each stack by its pieces, at its kind's weight over its bundle; each item at its own weight or its base's, and what it holds. */
-function carriedLoad(world: World, field: string, holder: Page, seen = new Set<Page>()): number
+/**
+ * The weight a holder carries (LOAD-1): each stack by its pieces, at its kind's weight over its bundle; each item at its own weight or its base's, and what it
+ * holds, unless the system's weightless field is true on it, as on a Bag of Holding.
+ */
+function carriedLoad(world: World, rule: LoadRule, holder: Page, seen = new Set<Page>()): number
 {
     const container = containerFieldOf(holder.type);
     const stacks = stacksOf(world, holder);
@@ -41,7 +45,7 @@ function carriedLoad(world: World, field: string, holder: Page, seen = new Set<P
             const first = !counted.has(stack.kind);
             counted.add(stack.kind);
             const bundle = Number(stack.kind.fields.bundle);
-            return first ? total + (weightOf(world, field, stack.kind) * stack.count) / (Number.isSafeInteger(bundle) && bundle > 1 ? bundle : 1) : total;
+            return first ? total + (weightOf(world, rule.field, stack.kind) * stack.count) / (Number.isSafeInteger(bundle) && bundle > 1 ? bundle : 1) : total;
         }
 
         const read = readEntry(entry);
@@ -52,7 +56,8 @@ function carriedLoad(world: World, field: string, holder: Page, seen = new Set<P
         }
 
         seen.add(page);
-        return total + weightOf(world, field, page) + carriedLoad(world, field, page, seen);
+        const weightless = rule.weightless !== undefined && isTrue(valueNamed(inheritedFields(world, page), rule.weightless));
+        return total + weightOf(world, rule.field, page) + (weightless ? 0 : carriedLoad(world, rule, page, seen));
     }, 0);
 }
 
@@ -81,4 +86,10 @@ function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefine
     const money = valueNamed(fields, "money");
     const coins = typeof money === "string" ? [...money.matchAll(/(\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1]), 0) : 0;
     return perUnit === undefined ? 0 : coins / perUnit;
+}
+
+/** Whether a field is true, as YAML reads it or as text written by hand. */
+function isTrue(value: unknown): boolean
+{
+    return value === true || (typeof value === "string" && value.trim().toLowerCase() === "true");
 }

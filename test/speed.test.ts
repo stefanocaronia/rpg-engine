@@ -104,6 +104,11 @@ describe("the speed a sheet works out", () => {
         const shown = await ok("show", "Ettore");
         expect(shown).toContain("walking 60 ft (30 ft) · flying 120 ft");
     });
+
+    it("reads a speed with a note in brackets after it, as a ghost's fly 40 ft (hover) (FOR-2, SPD-1)", async () => {
+        await ok("write", "Fantasma", "--type", "character", "--set", "role=npc", "--set", "creature=[[Ghost]]");
+        expect(await ok("show", "Fantasma")).toContain("flying 40 ft");
+    });
 });
 
 /** The walking speed on a character's sheet, with the written one beside it. */

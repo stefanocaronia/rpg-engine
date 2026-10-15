@@ -55,7 +55,7 @@ import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
-const counterExample = 'superiority-dice: {max: "4 * has(features, Combat Superiority)", refill: short rest}';
+const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: short rest}';
 
 export const config = defineCommand({
     name: "config",
@@ -655,7 +655,7 @@ function formatValue(value: unknown): string
     return value === undefined ? "(missing)" : String(value);
 }
 
-/** The entries given to a setting that holds them, read as YAML, such as "superiority-dice: {max: 4, refill: short rest}" (CAM-1). */
+/** The entries given to a setting that holds them, read as YAML, such as "bulwark-dice: {max: 4, refill: short rest}" (CAM-1). */
 function entriesOf(setting: string, text: string): Record<string, unknown>
 {
     const value = yamlValue(text, "the entries", "name: value");

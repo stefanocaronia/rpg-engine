@@ -140,12 +140,15 @@ function effectValuesOver(world: World, page: Page): Record<string, unknown>
     const fields = { ...inheritedFields(world, page) };
     const read = readEffects(Object.entries(page.fields).find(([field]) => comparableText(field) === "effects")?.[1]);
 
-    // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449).
+    // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449); an at-least
+    // field rises to theirs, as Gauntlets of Ogre Power's str 19, and stays when higher.
     for (const page of (world.system?.bonusLists ?? []).flatMap((list) => linksIn(valueNamed(fields, list)).flatMap((name) => findPage(world, name) ?? []))) {
         for (const [field, value] of Object.entries(inheritedFields(world, page))) {
-            const amount = declaredKind(world, field) === "bonus" ? numberOf(value) : undefined;
+            const kind = declaredKind(world, field);
+            const amount = kind === "bonus" || kind === "at-least" ? numberOf(value) : undefined;
             const key = keyOf(fields, field) ?? field;
-            fields[key] = amount === undefined ? fields[key] : (numberOf(fields[key]) ?? 0) + amount;
+            const current = numberOf(fields[key]);
+            fields[key] = amount === undefined ? fields[key] : kind === "bonus" ? (current ?? 0) + amount : Math.max(current ?? amount, amount);
         }
     }
 
@@ -470,7 +473,7 @@ export function startingAtZero(world: World, field: string): string | undefined
  * The game system's computed field with this name, in any case, and the fields it comes from, when its formula has a value with these fields (FOR-7):
  * where it has none, as on a creature without a level, the field is written like any other.
  */
-export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number | string; from: string[]; } | undefined
+export function computedField(world: World, field: string, fields: Record<string, unknown>): { name: string; value: number | string; from: string[]; direct?: string[]; } | undefined
 {
     const entry = world.system?.formulas?.computed.find(([name]) => comparableText(name) === comparableText(field.trim()));
     const scope = formulaScope(world, fields);
@@ -482,7 +485,7 @@ export function computedField(world: World, field: string, fields: Record<string
 
     // Of several formulas, the one that gave the value says what it comes from (D-210).
     const used = entry[1].kind === "first" ? (entry[1].options.find((option) => workOut(option, scope).value !== undefined) ?? entry[1]) : entry[1];
-    return { name: entry[0], value, from: writtenSources(world, used, scope) };
+    return { name: entry[0], value, from: writtenSources(world, used, scope), direct: fieldsRead(used) };
 }
 
 /** The written fields the maximum of a counter comes from with these fields, as hp-base, level and con for hp (FOR-6); none when the system works out no maximum. */
@@ -543,9 +546,9 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
 }
 
 /** Why a computed field is not written or changed, and what to change instead: the fields it comes from, or an effect on a bonus among them (FOR-7). */
-export function computedMessage(world: World, computed: { name: string; value: number | string; from: string[]; }, page: string): string
+export function computedMessage(world: World, computed: { name: string; value: number | string; from: string[]; direct?: string[]; }, page: string): string
 {
-    const bonuses = effectBonuses(world, computed.from);
+    const bonuses = directBonuses(world, computed);
     const instead = bonuses.length === 0 ? "change one of those" : `change one of those, or give ${bonuses.join(" or ")} with an effect`;
     return `${computed.name} on ${page} is ${signedText(world, computed.name, computed.value)}, worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: ${instead}`;
 }
@@ -557,6 +560,12 @@ export function computedMessage(world: World, computed: { name: string; value: n
 export function effectBonuses(world: World, from: string[]): string[]
 {
     return from.filter((field) => declaredKind(world, field) === "bonus" && itemList(world, field) === undefined);
+}
+
+/** The bonus fields an effect gives to change a computed field that its formula reads itself, as bonus-skills for insight, not bonus-proficiency through proficiency. */
+export function directBonuses(world: World, computed: { from: string[]; direct?: string[]; }): string[]
+{
+    return effectBonuses(world, computed.from).filter((field) => computed.direct?.some((name) => comparableText(name) === comparableText(field)) === true);
 }
 
 /**
@@ -795,7 +804,7 @@ function withoutDiceField(text: string, field: string): string
 /** Whether a field is a number for the system: declared as one, or read by one of its computed fields, as an armor's armor-class by ac. */
 function isReadAsNumber(world: World, field: string): boolean
 {
-    return ["number", "modifier", "bonus"].includes(declaredKind(world, field) ?? "")
+    return ["number", "at-least", "modifier", "bonus"].includes(declaredKind(world, field) ?? "")
         || (world.system?.formulas?.computed ?? []).some(([, formula]) => fieldsRead(formula).some((name) => comparableText(name) === comparableText(field)));
 }
 

@@ -154,10 +154,10 @@ export const settingsSchema = z.object({
     // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
     // other settings.
     fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as portent: rolls"),
-    tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as superiority-dice-by-level: {3: 4, 7: 5, 15: 6}"),
+    tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as bulwark-dice-by-level: {3: 4, 7: 5, 15: 6}"),
     computed: z.unknown().optional().describe("formulas the campaign adds to its game system or puts in place of its own, as a house rule, by field"),
     counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
-    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {superiority-dice: max}}"),
+    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {bulwark-dice: max}}"),
     "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
     travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
     values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),

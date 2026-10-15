@@ -368,8 +368,8 @@ export function numberOf(value: unknown): number | undefined
         return undefined;
     }
 
-    // A unit is a short word, as ft, m, km or lb: "3 bludgeoning" is no measure.
-    const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:\/\s*\d+\s*|\p{L}{1,3}\.?\s*)?$/u.exec(value);
+    // A unit is a short word, as ft, m, km or lb: "3 bludgeoning" is no measure. A note in brackets may follow a unit, as 40 ft (hover).
+    const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:\/\s*\d+\s*|\p{L}{1,3}\.?\s*(?:\([^()]*\)\s*)?)?$/u.exec(value);
     return match === null ? undefined : Number(match[1]);
 }
 

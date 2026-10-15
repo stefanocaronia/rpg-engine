@@ -75,4 +75,15 @@ describe("what attuned items and feats give (D-449)", () => {
         expect(await ac()).toBe("ac 15");
         expect(await ok("show", "Ettore")).toContain("wis-save +2");
     });
+
+    it("raises an ability score to what an attuned item sets, and keeps it when higher (FOR-5)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=8", "--set", "hp-base=10");
+        await ok("write", "Ettore", "--add", "attuned=[[Gauntlets of Ogre Power]]");
+        expect(await ok("show", "Ettore")).toContain("str 19 (+4)");
+        await ok("write", "Ettore", "--set", "str=20");
+        expect(await ok("show", "Ettore")).toContain("str 20 (+5)");
+        // An effect sets the score, whatever the gauntlets give.
+        await ok("effect", "add", "Ettore", "Feeblemind", "--set", "str=1");
+        expect(await ok("show", "Ettore")).toContain("str 1 (-5)");
+    });
 });

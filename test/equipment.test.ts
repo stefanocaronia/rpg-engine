@@ -241,7 +241,7 @@ describe("the unarmed strike and the Martial Arts die (D-235)", () => {
         expect(await refused("write", "Pugno", "--type", "item", "--set", "item=[[Unarmed Strike]]")).toContain(reason);
         // No effect goes on a page of the system: one changes what its formula reads on the character, and not the dice of a monk.
         expect(await refused("effect", "add", "Gara", "Furia", "--set", "attack=7")).toBe(
-            "attack on Gara is worked out by the system 5e from str, dex, classes, subclasses, equipped: give the effect one of the fields it comes from instead, such as str. Nothing changed.",
+            "attack on Gara is worked out by the system 5e from str, dex, classes, subclasses, bonus-proficiency, equipped: give the effect one of the fields it comes from instead, such as str. Nothing changed.",
         );
         expect(await refused("effect", "add", "Gara", "Furia", "--set", "damage-roll=5")).toContain("such as str. Nothing changed.");
         const page = join(folder, "world", "characters", "Gara.md");

@@ -13,7 +13,7 @@ import { effectiveFields, effectsField, effectsOf, valuesChanged, withEffects } 
 import { copyPage, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { shortList } from "./notes.ts";
-import { computedField, effectBonuses } from "./worked-out.ts";
+import { computedField, directBonuses } from "./worked-out.ts";
 
 /** Who holds effects: a page, or a copy in the open scene seen as a page (INH-14). */
 export interface EffectHolder
@@ -265,7 +265,7 @@ function computedValueProblems(world: World, page: Page, path: string, effect: E
     const fields = effectiveFields(world, page);
     return effect.values.flatMap(([field]): Problem[] => {
         const computed = computedField(world, field, fields);
-        const instead = computed === undefined ? [] : [...effectBonuses(world, computed.from), ...computed.from];
+        const instead = computed === undefined ? [] : [...directBonuses(world, computed), ...computed.from];
         return computed === undefined ? [] : [{
             path,
             message: `${effect.name} on ${page.name} gives ${computed.name}, which the system ${world.system?.name ?? ""} works out, so it does not count.`,

@@ -81,6 +81,7 @@ describe("the installed game systems", () => {
             it("gives every declared field a value of its kind, without a final period (SYS-8)", () => {
                 const fits: Record<string, (value: unknown) => boolean> = {
                     number: (value) => typeof value === "number",
+                    "at-least": (value) => typeof value === "number",
                     modifier: (value) => typeof value === "number",
                     bonus: (value) => typeof value === "number",
                     // Text, or true and false, which write reads as such: a spell's ritual.

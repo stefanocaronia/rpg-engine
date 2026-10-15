@@ -18,7 +18,7 @@ import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { burning, burnOne } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
-import { computedField, counterLimits, effectBonuses, itemSource, maximumSources } from "./worked-out.ts";
+import { computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./worked-out.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -382,7 +382,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     }
 
     // What an item of a list gives, as a shield's armor-class-bonus, changes with an effect on the item, through what its formula reads of it (PRO-5).
-    const source = computed === undefined || effectBonuses(world, computed.from).length > 0 ? undefined : itemSource(world, fields, computed.name);
+    const source = computed === undefined || directBonuses(world, computed).length > 0 ? undefined : itemSource(world, fields, computed.name);
 
     if (computed !== undefined && source !== undefined) {
         const through = source.own.length === 0 ? "" : `, through ${source.own.join(" or ")}, such as effect add, page ${source.item}, set ${source.own[0]}=1`;
@@ -391,7 +391,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
 
     if (computed !== undefined) {
         // A bonus field of the page first, which is what an effect is for; else a field the page writes.
-        const from = [...effectBonuses(world, computed.from), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
+        const from = [...directBonuses(world, computed), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
         throw new Error(
             `${computed.name} on ${page.name} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: give the effect one of the fields it comes from instead, such as ${
                 from[0] ?? computed.from[0]
@@ -405,7 +405,7 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
     }
 
     // A field the game system declares as a number takes a number; a counter stays a counter (SYS-8, EFF-3).
-    if (["number", "modifier"].includes(declaredKind(world, field) ?? "") && typeof value !== "number" && !(declaredKind(world, field) === "modifier" && numberOf(text) !== undefined)) {
+    if (["number", "at-least", "modifier"].includes(declaredKind(world, field) ?? "") && typeof value !== "number" && !(declaredKind(world, field) === "modifier" && numberOf(text) !== undefined)) {
         throw new Error(`${field} on ${page.name} is a number, ${String(current ?? "none")}: give the value it reads while the effect lasts, such as ${field}=${exampleValue(current, text)}, not "${text}". Nothing changed.`);
     }
 

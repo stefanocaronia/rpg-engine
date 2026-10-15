@@ -42,6 +42,7 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 |---|---|
 | `counter` | `12` or `current/max`, changed with `change` |
 | `number` | a number, never counted |
+| `at-least` | a number the pages of `bonus-lists` raise to at least theirs, never lowering it; an effect sets it |
 | `modifier` | a number shown with its sign |
 | `bonus` | a number effects add up; missing reads 0 |
 | `factor` | a number effects multiply; missing reads 1 |
@@ -58,11 +59,11 @@ A field not declared is free; written as a number or `current/max`, it counts as
 coins: gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1
 round: 6 seconds
 imperial: {mile: 1.5 km, foot: 0.3 m, pound: 0.5 kg}
-load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15], coins: 50}
+load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15], coins: 50, weightless: extradimensional}
 length-unit: ft
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules`; formulas read them as `load` and `load-limit`. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
+Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules`; formulas read them as `load` and `load-limit`. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
 
 ### travel
 
@@ -222,7 +223,7 @@ always-in: {equipped: [Unarmed Strike]}
 
 - `item-formulas`: fields whose formula each item's page gives, worked out on the character once per item: a weapon's `attack: "str-mod + proficiency + bonus"`. A formula of an item may begin with dice and end with words: `"1d8 + str-mod slashing"`, or `dice(1d6, martial-arts)` for the largest of several.
 - `always-in`: pages every character with a sheet has in a list without writing them.
-- `bonus-lists`: lists whose pages give their `bonus` fields to who lists them, added up as effects are, as `bonus-lists: [attuned, feats]` with a Ring of Protection's `bonus-ac: 1`.
+- `bonus-lists`: lists whose pages give their `bonus` fields to who lists them, added up as effects are, as `bonus-lists: [attuned, feats]` with a Ring of Protection's `bonus-ac: 1`, and raise their `at-least` fields, as Gauntlets of Ogre Power's `str: 19`.
 
 ## 3. Formulas
 
@@ -239,7 +240,7 @@ always-in: {equipped: [Unarmed Strike]}
 
 - Names are ASCII letters, digits and single hyphens: `level-1` is a field; write `level - 1`.
 - A list item is a name with an optional number: `"[[Fighter]] 3"`, `Perception +3`.
-- A field reads as a number when it is one, a counter, `+2`, or a measure such as `25 ft` (a number and a word of up to three letters).
+- A field reads as a number when it is one, a counter, `+2`, or a measure such as `25 ft` (a number and a word of up to three letters), even with a note in brackets after it, as `40 ft (hover)`.
 - Besides the fields, a formula reads `effects` as the names of the page's effects (`has(effects, Grappled)`), `rigor` as the campaign's, and `load` and `load-limit` (see `load`).
 - A formula has no value when a field it reads is missing; then the page's own value is read.
 - A page is read in layers: its bases (`creature`, `item`), the page, its effects, then what the system works out.
@@ -268,7 +269,7 @@ A campaign's pages work as a system's: a class in `world/topics/` counts in `sum
 `campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel` and `values`, with `config`; an entry with a system's name replaces it, but the names in `values` join the system's list, as a language of the campaign's world:
 
 ```text
-config counters "superiority-dice: {max: 'has(subclasses, Battle Master) * 4', refill: short rest}"
+config counters "bulwark-dice: {max: 'has(subclasses, Shield Oath) * 4', refill: short rest}"
 ```
 
 ## 6. Checks

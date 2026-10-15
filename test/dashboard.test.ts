@@ -113,7 +113,7 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(data.headline).toBe("Chierico di 3° livello");
         expect(data.cards).toEqual({ rail: ["Abilities", "Saving Throws", "Skills"], order: expect.arrayContaining(["Combat", "Personality"]), atHand: ["ac", "initiative", "walking", "hp", "temp-hp", "Attacks", "Spells"] });
         // A score rolls the modifier beside it, for fun (D-280).
-        expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "number", text: "14", marks: 0, beside: "+2", besideField: "str-mod", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
+        expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "at-least", text: "14", marks: 0, beside: "+2", besideField: "str-mod", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
         expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
         expect(group("Combat").values).toContainEqual({ field: "hit-dice-d8", kind: "counter", text: "3/3", counter: { value: 3, max: 3 }, marks: 0 });
         expect(group("Proficiencies").values).toContainEqual({ field: "languages", kind: "list", text: "Common, Dwarvish", items: ["Common", "Dwarvish"], marks: 0 });
@@ -129,7 +129,7 @@ describe("view as data (VIEW-1, D-272)", () => {
 
     it("gives a companion who keeps no sheet the stat block of her creature, and the player character the traits and picture of its race (D-275, D-277)", async () => {
         const lupa = JSON.parse(await ok("view", "Lupa", "--json"));
-        expect(lupa.sheet).toEqual([{ name: "Wolf", values: expect.arrayContaining([{ field: "str", kind: "number", text: "12", marks: 0, beside: "+1" }]) }]);
+        expect(lupa.sheet).toEqual([{ name: "Wolf", values: expect.arrayContaining([{ field: "str", kind: "at-least", text: "12", marks: 0, beside: "+1" }]) }]);
         expect(lupa.text).toContain("### Bite");
         // A challenge rating of 1/4 is text, not a counter of 1 out of 4.
         expect(lupa.sheet[0].values).toContainEqual({ field: "cr", kind: "text", text: "1/4", marks: 0 });

@@ -94,7 +94,7 @@ import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { partText, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes, weightlessNote } from "./sheet.ts";
-import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
+import { computedField, counterLimits, directBonuses, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult
@@ -1133,7 +1133,7 @@ function withoutComputed(world: World, target: Page | undefined, set: Record<str
         return `${found.name} ${value}${numberOf(found.given) === found.value ? ", as you gave it" : ` (you gave ${String(found.given)})`}`;
     });
     const sources = [...new Set(computed.flatMap((found) => found.from))];
-    const bonuses = sources.filter((field) => declaredKind(world, field) === "bonus");
+    const bonuses = [...new Set(computed.flatMap((found) => directBonuses(world, found)))];
     const bonus = bonuses.length === 0 ? "" : ` A bonus such as ${bonuses[0]} comes from an effect, for what gives one, such as a magic item.`;
     const note = `Not written, the system ${world.system?.name ?? ""} works ${computed.length === 1 ? "it" : "them"} out: ${values.join("; ")}. They come from ${sources.join(", ")}.${bonus}`;
     return { set: kept, note };

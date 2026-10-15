@@ -46,24 +46,24 @@ function campaignFile(): string
 
 describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
     it("adds a subclass's uses with their table, brings them back with the system's rest, and keeps them in campaign.yaml", async () => {
-        await ok("config", "tables", "superiority-dice-by-level: {0: 0, 3: 4, 7: 5, 15: 6}");
-        await ok("config", "counters", 'superiority-dice: {max: "has(subclasses, Battle Master) * table(superiority-dice-by-level, item(classes, Fighter))", refill: short rest}');
-        expect(campaignFile()).toContain("superiority-dice:\n    max: has(subclasses, Battle Master) * table(superiority-dice-by-level, item(classes, Fighter))\n    refill: short rest");
-        expect(await fighter("Gara", "classes=[[Fighter]] 7", "subclasses=[[Battle Master]]")).toContain("superiority-dice 5/5");
-        await ok("change", "Gara", "superiority-dice", "--by=-3");
-        expect(await ok("change", "--recipe", "short rest")).toContain("superiority-dice 2/5 → 5/5");
-        expect(await ok("config", "counters")).toContain("counters: { superiority-dice: { max:");
+        await ok("config", "tables", "bulwark-dice-by-level: {0: 0, 3: 4, 7: 5, 15: 6}");
+        await ok("config", "counters", 'bulwark-dice: {max: "has(subclasses, Shield Oath) * table(bulwark-dice-by-level, item(classes, Fighter))", refill: short rest}');
+        expect(campaignFile()).toContain("bulwark-dice:\n    max: has(subclasses, Shield Oath) * table(bulwark-dice-by-level, item(classes, Fighter))\n    refill: short rest");
+        expect(await fighter("Gara", "classes=[[Fighter]] 7", "subclasses=[[Shield Oath]]")).toContain("bulwark-dice 5/5");
+        await ok("change", "Gara", "bulwark-dice", "--by=-3");
+        expect(await ok("change", "--recipe", "short rest")).toContain("bulwark-dice 2/5 → 5/5");
+        expect(await ok("config", "counters")).toContain("counters: { bulwark-dice: { max:");
     });
 
     it("puts a house rule's formula in place of the system's (D-200), and adds to the system's recipe instead of replacing it", async () => {
         await ok("config", "computed", '"passive-perception": "10 + perception + 5 * has(feats, Observant)"');
         await fighter("Gara", "classes=[[Fighter]] 1", "feats=[Observant]");
         expect(await ok("status")).toContain("passive-perception 17");
-        await ok("config", "recipes", "long rest: {rules: [Superiority Dice]}");
+        await ok("config", "recipes", "long rest: {rules: [Bulwark Dice]}");
         await ok("change", "Gara", "hp", "--by=-5");
         const rest = await ok("change", "--recipe", "long rest");
         expect(rest).toContain("hp 37/42 → 42/42");
-        expect(rest).toContain('For the rest, read rules "Long Rest" and rules "Superiority Dice".');
+        expect(rest).toContain('For the rest, read rules "Long Rest" and rules "Bulwark Dice".');
     });
 
     it("adds fields to the line of the player character, and removes an entry by name", async () => {
@@ -135,11 +135,11 @@ describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
     });
 
     it("refuses a refill no recipe brings back, a recipe that sets kept rolls or names what it does not know, and says when a formula needs quotes (CAM-3, DAT-9, KEP-4)", async () => {
-        expect(await refused("config", "counters", "superiority-dice: {max: 4, refill: short-rest}")).toBe(
-            "With this, the system 5e would not read: counters.superiority-dice.refill: short-rest is no occasion a recipe ends, so it would never come back; the occasions are long rest, short rest. Nothing changed.",
+        expect(await refused("config", "counters", "bulwark-dice: {max: 4, refill: short-rest}")).toBe(
+            "With this, the system 5e would not read: counters.bulwark-dice.refill: short-rest is no occasion a recipe ends, so it would never come back; the occasions are long rest, short rest. Nothing changed.",
         );
-        expect(await refused("config", "counters", "superiority-dice: {max: 4 * has(features, Combat Superiority), refill: short rest}")).toContain(
-            'counters.superiority-dice: unknown key "Combat Superiority)": a formula with commas goes in quotes.',
+        expect(await refused("config", "counters", "bulwark-dice: {max: 4 * has(features, Bulwark), refill: short rest}")).toContain(
+            'counters.bulwark-dice: unknown key "Bulwark)": a formula with commas goes in quotes.',
         );
         expect(await refused("config", "recipes", "long rest: {sett: {hp: max}}")).toContain('recipes.long rest: unknown key "sett".');
         await ok("config", "fields", "portent: rolls");

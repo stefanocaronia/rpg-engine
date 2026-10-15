@@ -802,7 +802,7 @@ function uncountedMessage(world: World, page: string, field: string, suggested: 
 {
     const system = world.system?.name ?? "";
 
-    if (declaredKind(world, field) !== "number") {
+    if (!["number", "at-least"].includes(declaredKind(world, field) ?? "")) {
         const kind = declaredKind(world, field) === "text" ? "text" : "a list";
         return `${field} is ${kind} in the system ${system}, never counted: write it instead, such as write "${page}", set ${field}=${suggested}. Nothing changed.`;
     }
