@@ -7,8 +7,8 @@
 - {id: sheet-read, area: Party, name: "The sheet: hit points, resources, abilities, skills", decision: D-270}
 - {id: story-propose, area: Party, name: "The character's story proposed to the master", decision: D-386}
 - {id: scene-where, area: Scene, name: "Where the party is: the place, its map, who is where", decision: D-325}
-- {id: combat-turn, area: Combat, name: "Combat: the order, whose turn, the wounds in words", decision: D-315}
-- {id: quest-follow, area: Journal, name: "Follow a quest: its next goal in Scene and Combat", decision: D-367}
+- {id: combat-turn, area: Scene, name: "A fight in the Scene: the order, whose turn, the wounds in words", decision: D-444}
+- {id: quest-follow, area: Journal, name: "Follow a quest: its next goal beside the page, or in Scene on a phone", decision: D-367}
 - {id: note-write, area: Journal, name: "A note of the player's, kept in their browser's campaign", decision: D-371}
 - {id: note-share, area: Journal, name: "Share a note with the master, and take it back", decision: D-378}
 - {id: save-back, area: Saves, name: "Go back to a save, with free saves", decision: D-359}

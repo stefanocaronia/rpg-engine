@@ -1,5 +1,5 @@
 // How the page draws the values of any game (D-272, D-273): from the kind of each value, never from the names of one game's fields.
-import type { Member, SheetCards, SheetGroup, SheetValue, ShownRoll } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetValue, ShownQuest, ShownRoll } from "./data.ts";
 
 /**
  * How a value is drawn: a number on its way from one mark to the next, as the experience toward the next level, with a bar under it (D-284); a counter as pips up
@@ -83,6 +83,25 @@ export function columnsByHeight(heights: number[], count: number): number[]
 }
 
 /**
+ * The quests the player follows (D-369), as a video game tracks them: those open of the names this browser kept, in the order they were followed, or of the one
+ * name an older page kept; until the player chooses, the main open quest or the only open one; none once they chose none.
+ */
+export function followedQuests(kept: string | undefined, quests: Pick<ShownQuest, "name" | "status" | "main">[]): string[]
+{
+    const open = quests.filter((quest) => quest.status === "open");
+    const usual = open.find((quest) => quest.main)?.name ?? (open.length === 1 ? open[0].name : undefined);
+    const names = kept === undefined ? (usual === undefined ? [] : [usual]) : keptNames(kept);
+    return [...new Set(names)].filter((name) => open.some((quest) => quest.name === name));
+}
+
+/** What the browser keeps once the player follows a quest or no longer does: the names followed, the new one last, as a list. */
+export function keptFollowed(followed: string[], name: string, follow: boolean): string
+{
+    const others = followed.filter((one) => one !== name);
+    return JSON.stringify(follow ? [...others, name] : others);
+}
+
+/**
  * The rolls the page shows (D-302): of those read, the ones of the last half hour since the player last cleared the list, and as many older ones as they asked
  * for; how many older ones the page has read, and whether there are more, read or still in the log, unless the list was cleared before them.
  */
@@ -135,4 +154,24 @@ function rollTime(roll: ShownRoll): number
 {
     const time = Date.parse(roll.at);
     return Number.isNaN(time) ? 0 : time;
+}
+
+/** The names a browser kept: a list, or the one name an older page kept, or none. */
+function keptNames(kept: string): string[]
+{
+    if (kept === "") {
+        return [];
+    }
+
+    try {
+        const read: unknown = JSON.parse(kept);
+
+        if (Array.isArray(read) && read.every((name) => typeof name === "string")) {
+            return read;
+        }
+    } catch {
+        // One name, as an older page kept it.
+    }
+
+    return [kept];
 }

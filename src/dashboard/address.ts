@@ -1,10 +1,10 @@
 // Where the page is (D-276, D-309): a section by its address, as #/scene, and for the sheet whom it shows, as #/party/Ettore; the sheet when the address says
-// nothing. #/character/Ettore, the sheet's first address, still leads there (D-310). The page never changes section by itself.
+// nothing. #/character/Ettore, the sheet's first address, still leads there (D-310), and #/combat to the Scene, which shows the turns now (D-444). The page
+// never changes section by itself.
 import { t } from "./text.ts";
 
 /** The sections, in the order the page shows them. */
-// Combat is there only while a fight is open (D-314).
-export const sections = ["party", "scene", "combat", "journal", "world"] as const;
+export const sections = ["party", "scene", "journal", "world"] as const;
 
 /** The pages at the row's end, as icons, in the menu on a phone: the saves, played with, then what is read, as Help and the settings are (D-356, D-409). */
 export const menuPages = ["saves", "help", "settings", "about"] as const;
@@ -21,7 +21,8 @@ export interface Address
 /** The address a hash says, as #/party/Ettore; the sheet for none or one the page does not know. */
 export function readAddress(hash: string): Address
 {
-    const [, first = "", ...rest] = hash.replace(/^#/, "").split("/");
+    const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
+    const first = written === "combat" ? "scene" : written;
     const section = [...sections, ...menuPages].find((candidate) => candidate === first) ?? "party";
     const name = first === "party" || first === "character" ? decoded(rest.join("/")) : "";
     return name === "" ? { section } : { section, name };
@@ -39,7 +40,6 @@ export function sectionLabel(section: Section): string
     const labels: Record<Section, string> = {
         party: t("Party"),
         scene: t("Scene"),
-        combat: t("Combat"),
         journal: t("Journal"),
         world: t("World"),
         help: t("Help"),

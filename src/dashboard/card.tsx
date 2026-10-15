@@ -2,6 +2,7 @@
 // or closed as the player left it, in this browser.
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { t } from "./text.ts";
 
 // Up to this width the cards start closed.
 const narrow = "(max-width: 600px)";
@@ -11,11 +12,11 @@ const chevronPath = "M6 9.5l6 6 6-6";
 
 /**
  * Whether a card is open, and what opens and closes it: only the player's click, which the browser remembers by the card's name; the page setting it is not.
- * Until then a card starts closed on a phone, but the one that is `first`.
+ * Until then a card starts closed on a phone, but the one that is `first`, or as `start` says.
  */
-export function useOpen(name: string, first = false): [boolean, (event: MouseEvent) => void]
+export function useOpen(name: string, first = false, start?: boolean): [boolean, (event: MouseEvent) => void]
 {
-    const [open, setOpen] = useState(() => storedOpen(name, first));
+    const [open, setOpen] = useState(() => storedOpen(name, first, start));
 
     const toggle = (event: MouseEvent): void => {
         event.preventDefault();
@@ -42,10 +43,12 @@ export function useMedia(query: string): boolean
 }
 
 /**
- * A card's header, all of it the toggle: its icon, its title, what it holds while closed, for the eye alone, and the chevron; a card that stays open has no
- * chevron and does not close.
+ * A card's header, all of it the toggle: its icon, its title, what it holds while closed, for the eye alone, a note that stays, and the chevron, whose tooltip
+ * says what a click does; a card that stays open has no chevron and does not close.
  */
-export function CardHeader({ icon, title, preview, open, onToggle, fixed }: { icon: string; title: ComponentChildren; preview?: string; open: boolean; onToggle: (event: MouseEvent) => void; fixed?: boolean; })
+export function CardHeader(
+    { icon, title, preview, note, open, onToggle, fixed }: { icon: string; title: ComponentChildren; preview?: string; note?: string; open: boolean; onToggle: (event: MouseEvent) => void; fixed?: boolean; },
+)
 {
     return (
         <summary class={fixed ? "fixed" : undefined} onClick={fixed ? (event) => event.preventDefault() : onToggle}>
@@ -54,17 +57,20 @@ export function CardHeader({ icon, title, preview, open, onToggle, fixed }: { ic
             </svg>
             {title}
             {!open && preview !== undefined && <span class="preview" aria-hidden="true">{preview}</span>}
+            {note !== undefined && <span class="card-head-note">{note}</span>}
             {!fixed && (
-                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d={chevronPath} />
-                </svg>
+                <span class="chevron-tip tip-left" aria-hidden="true" data-tip={open ? t("Close") : t("Open")}>
+                    <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d={chevronPath} />
+                    </svg>
+                </span>
             )}
         </summary>
     );
 }
 
-/** The header of a card that is always open, as Combat's (D-419): the look of a card's header, its icon, its title, and a note at its end; no toggle. */
-export function CardHead({ icon, title, note }: { icon: string; title: ComponentChildren; note?: ComponentChildren; })
+/** The header of a card that is always open (D-419): the look of a card's header, its icon, its title, a note at its end, and its own buttons after it; no toggle. */
+export function CardHead({ icon, title, note, children }: { icon: string; title: ComponentChildren; note?: ComponentChildren; children?: ComponentChildren; })
 {
     return (
         <header class="card-head">
@@ -73,11 +79,12 @@ export function CardHead({ icon, title, note }: { icon: string; title: Component
             </svg>
             {title}
             {note !== undefined && <span class="card-head-note">{note}</span>}
+            {children}
         </header>
     );
 }
 
-function storedOpen(name: string, first: boolean): boolean
+function storedOpen(name: string, first: boolean, start: boolean | undefined): boolean
 {
     try {
         const stored = localStorage.getItem(`rpg-group:${name}`);
@@ -89,7 +96,7 @@ function storedOpen(name: string, first: boolean): boolean
         // No storage, as in a private window: the default.
     }
 
-    return first || !matchMedia(narrow).matches;
+    return start ?? (first || !matchMedia(narrow).matches);
 }
 
 function storeOpen(name: string, open: boolean): void

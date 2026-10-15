@@ -159,6 +159,7 @@ export const settingsSchema = z.object({
     recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {superiority-dice: max}}"),
     "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
     travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
+    values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
 }).loose();
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;
@@ -171,7 +172,7 @@ export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
-export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel"];
+export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values"];
 
 /** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, when the story starts, and the lines and veils, which "none" answers too. */
 export const setupSettingNames: SettingName[] = ["mentor", "companions", "calendar-start", "lines", "veils"];

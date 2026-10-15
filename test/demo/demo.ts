@@ -20,6 +20,10 @@ export const demoQuestions: { question: string; options: string[]; }[] = [
     { question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+insight"] },
     { question: "La passerella si spezza sotto di te: da che parte salti?", options: ["Verso la riva", "Verso la barca"] },
     { question: "La mazza cala sullo scheletro: quanto fa male?", options: ["Danni, rilanciando 1 e 2 una volta 2d6ro<=2+2"] },
+    {
+        question: "Il capitano delle guardie vi sbarra la strada del ponte",
+        options: ["Gli mostro il sigillo del vescovo", "Provo a corromperlo con le monete d'argento", "Torniamo indietro e cerchiamo il guado", "Lo sfido a duello davanti ai suoi uomini"],
+    },
 ];
 
 /**
@@ -349,7 +353,7 @@ async function makeDemoFight(rpg: (...args: string[]) => Promise<void>): Promise
     await rpg("scene", "hostile", "--who", "Brigante 1", "--who", "Brigante 2");
 }
 
-/** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; one on the side; one done and one failed. */
+/** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; two on the side; one done and one failed. */
 async function makeDemoQuests(rpg: (...args: string[]) => Promise<void>): Promise<void>
 {
     const quest = (name: string, fields: string[], text: string): Promise<void> => rpg("write", name, "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", text);
@@ -373,6 +377,11 @@ async function makeDemoQuests(rpg: (...args: string[]) => Promise<void>): Promis
             "",
             "- [ ] Trovare tre botti al Mulino Rosso",
         ].join("\n"),
+    );
+    await quest(
+        "La lanterna del traghettatore",
+        ["status=open", "giver=Il traghettatore", "place=[[Locanda del Guado]]"],
+        "Il traghettatore ha perso la sua lanterna nella rissa: senza, di notte non attraversa.\n\n- [ ] Ritrovare la lanterna nella locanda",
     );
     await quest("La scorta al mercato", ["status=done", "giver=Mastro Ivo"], "Ettore ha scortato il carro di Mastro Ivo fino al mercato della Rocca.\n\n- [x] Arrivare al mercato");
     await quest("Il carro rovesciato", ["status=failed"], "Il carro nella radura era vuoto quando Ettore è arrivato.\n\n- [ ] Trovare il carrettiere");

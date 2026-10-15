@@ -76,6 +76,7 @@ import { featureParts, mergedFeatures } from "../progression/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsField } from "./effect-layer.ts";
+import { bondNotes, checkBonds } from "./game-bonds.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game-events.ts";
 import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { gridNotes } from "./game-grids.ts";
@@ -92,7 +93,7 @@ import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, miss
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { partText, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
-import { checkListValues, joiningNotes } from "./sheet.ts";
+import { checkListValues, joiningNotes, weightlessNote } from "./sheet.ts";
 import { computedField, counterLimits, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
@@ -233,8 +234,11 @@ export const write = defineCommand({
         checkFieldChange(type, fields);
         environmentAsSet(world, existing, type, reference.name, fields);
         checkValues(fields);
-        checkListValues(system, fields.set ?? {});
-        checkListValues(system, fields.add ?? {});
+        // A page that keeps the sheet, as it will be written, takes only the names the sheet closes (D-435).
+        const asWritten: Page = { name: reference.name, path: existing?.path ?? "", body: existing?.body ?? "", ...(type === undefined ? {} : { type }), fields: { ...existing?.fields, ...fields.set } };
+        const onSheet = hasSheet(world, asWritten);
+        checkListValues(system, fields.set ?? {}, onSheet);
+        checkListValues(system, fields.add ?? {}, onSheet);
         checkKnows(world, fields);
 
         if (existing !== undefined) {
@@ -249,6 +253,7 @@ export const write = defineCommand({
         }
 
         checkBase(world, existing?.name ?? reference.name, type, fields.set);
+        checkBonds(world, system, existing, existing?.name ?? reference.name, fields);
         checkEventFields(world, existing, type, fields);
         const written = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
         const { created, changed, mode, retyped } = written;
@@ -279,8 +284,12 @@ export const write = defineCommand({
             logCounterChanges(root, context, world, now, [...self, ...followers.pages.map((follower): [Page, Page] => [follower, follower])], coins);
         }
 
-        const notes = !changed ? [] : existing === undefined ? [...derivesFromNothingNote(now, page), ...noBaseNote(now, page)] : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
-        const dropped = changed ? droppedFromBaseNotes(now, page, fields.set) : [];
+        const notes = !changed
+            ? []
+            : existing === undefined
+            ? baseNotesOrWeight(system, now, page)
+            : [...keepersNotes(now, existing, page), ...ownValuesNote(now, existing, page, coins)];
+        const dropped = changed ? [...droppedFromBaseNotes(now, page, fields.set), ...bondNotes(now, system, existing, page)] : [];
         const story = changed && changedFieldNames(fields).length > 0 ? storyNotes(root, context, world, now, existing, page) : [];
         const was = retyped === undefined ? undefined : `${retyped.type ?? "free page"} (${retyped.path})`;
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
@@ -821,6 +830,13 @@ function droppedFromBaseNotes(now: World, page: Page, set: Record<string, unknow
         const them = missing.length === 1 ? "it" : "them";
         return missing.length === 0 ? [] : [`${field} on ${page.name} leaves out ${missing.join(", ")}, which it read from ${base.base.name}: if the character keeps ${them}, add ${them}, such as add ${field}=${missing[0]}.`];
     });
+}
+
+/** What a new page is told of its base; a weight is asked only of an item with no base to look for, which would give one (LOAD-1). */
+function baseNotesOrWeight(system: GameSystem | undefined, now: World, page: Page): string[]
+{
+    const notes = [...derivesFromNothingNote(now, page), ...noBaseNote(now, page)];
+    return notes.length > 0 ? notes : weightlessNote(system, now, page);
 }
 
 /** A page created with a name that other pages give as their creature or item, though it is not one: they derive from nothing (INH-2). */

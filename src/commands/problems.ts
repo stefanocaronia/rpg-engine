@@ -3,6 +3,7 @@ import type { Context } from "../core/context.ts";
 import { checkLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { checkWorld, type World } from "../pages/index.ts";
+import { bondProblems } from "./game-bonds.ts";
 import { effectProblems } from "./game-effects.ts";
 import { eventProblems } from "./game-events.ts";
 import { experienceProblems } from "./game-experience.ts";
@@ -35,6 +36,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         // While what campaign.yaml adds does not read, what the pages hold is not judged by the system alone: that fix comes first (CAM-3).
         ...(system.length === 0 ? workedOutProblems(world) : []),
         ...listValueProblems(world, campaignSystem(root, context)),
+        ...bondProblems(world, campaignSystem(root, context)),
         ...experienceProblems(world),
         ...imageProblems(root, context, world),
         ...roadProblems(world, campaignSystem(root, context)),

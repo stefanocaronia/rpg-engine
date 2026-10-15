@@ -32,9 +32,9 @@ interface TopOf
     asleep?: boolean;
     /** The section the page shows. */
     section: Section;
-    /** A fight is open: Combat is among the sections (D-314). */
+    /** The open scene goes by turns: the Scene's name in gold (D-444). */
     fight?: boolean;
-    /** It is the player's character's turn in the fight (D-315). */
+    /** It is the player's character's turn (D-315). */
     yourTurn?: boolean;
 }
 
@@ -91,9 +91,10 @@ export function Top(top: TopOf)
  */
 function Navigation({ current, fight, yourTurn }: { current: Section; fight?: boolean; yourTurn?: boolean; })
 {
-    // Combat only while a fight is open; on the player's turn, from another section, its name pulses in gold, the same name (D-315, D-349, D-351).
-    const shown = sections.filter((section) => section !== "combat" || fight === true);
-    const turn = yourTurn === true && current !== "combat";
+    // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
+    const shown = [...sections];
+    const turns = fight === true && current !== "scene";
+    const turn = yourTurn === true && current !== "scene";
     const row = useRef<HTMLDivElement>(null);
     const fitting = useFitting(row, shown.length, `${shown.join()} ${turn}`);
     const away = [...shown.slice(fitting.sections), ...(fitting.pages ? [] : menuPages)];
@@ -102,7 +103,7 @@ function Navigation({ current, fight, yourTurn }: { current: Section; fight?: bo
             <nav class="sections main-nav" aria-label={t("Sections")}>
                 {[...shown, ...menuPages].map((section, index) => {
                     const gone = away.includes(section);
-                    const kinds = [section === "combat" && turn ? "your-turn" : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link tip-below" : "", gone ? "away" : ""];
+                    const kinds = [section === "scene" && turns ? (turn ? "your-turn" : "in-turns") : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link tip-below" : "", gone ? "away" : ""];
                     return (
                         <a
                             key={section}
@@ -119,7 +120,7 @@ function Navigation({ current, fight, yourTurn }: { current: Section; fight?: bo
                             </span>
                             {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
                             {index < shown.length && sectionLabel(section)}
-                            {section === "combat" && turn && <span class="visually-hidden">{`, ${t("your turn")}`}</span>}
+                            {section === "scene" && turn && <span class="visually-hidden">{`, ${t("your turn")}`}</span>}
                         </a>
                     );
                 })}

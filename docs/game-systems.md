@@ -50,15 +50,16 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 
 A field not declared is free; written as a number or `current/max`, it counts as a counter.
 
-### coins, round, imperial
+### coins, round, imperial, load
 
 ```yaml
 coins: gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1
 round: 6 seconds
-imperial: {mile: 1.5 km, foot: 0.3 m}
+imperial: {mile: 1.5 km, foot: 0.3 m, pound: 0.5 kg}
+load: {field: weight, limit: str * 15, coins: 50, size: size, sizes: {Tiny: 0.5, Large: 2, Huge: 4, Gargantuan: 8}}
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units.
+Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula on the sheet, times the factor in `sizes` of the size in the field `size` (written, or from the creature it derives from), and `status` says when a character goes over it under the rigor `rules`.
 
 ### travel
 
@@ -121,7 +122,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-cards`: where the dashboard puts the groups.
 - `sheet-dice`: the dice of the dashboard's free roll for each number.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
-- `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
+- `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 
 ### roll-names
 
@@ -143,6 +144,15 @@ recipes:
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
 - `recipes`: what a rest does: counters `set` or partly `regain`ed, the occasions it `ends`, the rules it leaves to the master.
+
+### bonds
+
+```yaml
+bonds:
+  attuned: {most: 3, needs: attunement, rules: Attunement}
+```
+
+The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read.
 
 ### conditions, keeping, combat, dying
 
@@ -240,7 +250,7 @@ headline: "{classes} di livello {level}"
 
 A campaign's pages work as a system's: a class in `world/topics/` counts in `sum(classes)`, a creature with `creature: "[[Elf]]"` is a new race, an item with `item: "[[Longsword]]"` a named sword. A campaign page cannot take a system page's name.
 
-`campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line` and `travel`, with `config`; an entry with a system's name replaces it:
+`campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel` and `values`, with `config`; an entry with a system's name replaces it, but the names in `values` join the system's list, as a language of the campaign's world:
 
 ```text
 config counters "superiority-dice: {max: 'has(subclasses, Battle Master) * 4', refill: short rest}"

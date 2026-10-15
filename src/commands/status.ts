@@ -28,7 +28,7 @@ import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, syst
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
-import { missingSheetFields, type SheetSummary, sheetSummary } from "./sheet.ts";
+import { missingSheetFields, overLoad, type SheetSummary, sheetSummary } from "./sheet.ts";
 import { translationOffer } from "./translate.ts";
 
 // Lists in the status show this many names, then say how many more there are and how to find them.
@@ -81,7 +81,11 @@ export const status = defineCommand({
                 name: characterName(page),
                 where: locate(world, page).chain.map((holder) => holder.name),
                 withLead: withLead(page),
-                counters: Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
+                // Under the rigor «rules», a load over the limit (LOAD-3).
+                counters: [
+                    ...Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
+                    ...(settings.rigor === "rules" ? [overLoad(world, system, page) ?? ""].filter((text) => text !== "") : []),
+                ],
                 effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
                 ...(mood === "neutral" ? {} : { mood }),
             };

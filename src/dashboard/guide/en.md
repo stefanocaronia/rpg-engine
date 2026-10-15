@@ -137,7 +137,7 @@ The master asks for a roll only when the outcome is uncertain and matters, and s
 
 The story runs in **scenes**: a fight, a conversation, exploring, travelling, a rest. At the end of each scene the game saves by itself, and the scene goes into your journal.
 
-In a fight the master tells every turn that is not yours, and stops where you can decide. The **Combat** section shows the order of the turns, your party's hit points and how hurt the enemies look, in words. If your character falls, the death saves appear large on the page.
+In a fight the master tells every turn that is not yours, and stops where you can decide. The **Scene** shows on top whose turn it is and who comes next, and your character's card beside the map; the order of the turns, your party's hit points and how hurt the enemies look, in words, stay beside the page. If your character falls, the death saves appear large on the page.
 
 ### 3.4 Time, travel and the world that moves
 
@@ -198,8 +198,7 @@ Every setting can change, in the chat or in **Settings**. A ruling the master ma
 A page on your own computer, open only in that computer's browser, live while the chat is open. When the chat closes, it shows *Not connected*; it comes back by itself with the next chat.
 
 - **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from. Beside it, the rolls.
-- **Scene**: where you are, its picture and map, who is there, what is happening.
-- **Combat**: only in a fight: the turns, the fighters, what you have at hand.
+- **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
 - **Journal**: quests, the story, your notes.
 - **World**: the world map as your character knows it.
 - **The dice tray**: choose dice and a modifier, and throw.

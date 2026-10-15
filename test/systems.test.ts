@@ -366,7 +366,10 @@ describe("after the round on the code: the system missing, and the remedies (SYS
     });
 
     it("says a new item may be a kind of one of the system only when it writes a field of the system, and never sends magic to item", async () => {
-        expect(await ok("write", "Diario di Varro", "--type", "item", "--text", "Pagine fitte di formule.")).toBe("Created Diario di Varro (item, world/items/Diario di Varro.md): wrote the introduction.");
+        expect(await ok("write", "Diario di Varro", "--type", "item", "--text", "Pagine fitte di formule.")).toBe(
+            "Created Diario di Varro (item, world/items/Diario di Varro.md): wrote the introduction.\n"
+                + 'Diario di Varro has no weight, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set weight="2 lb".',
+        );
         expect(await ok("write", "Lama fiammeggiante", "--type", "item", "--set", "magic=[[Weapon, +1, +2, or +3]]", "--set", "bonus=1")).toContain(
             "Lama fiammeggiante derives from no item: if it is a kind of one of the system 5e",
         );

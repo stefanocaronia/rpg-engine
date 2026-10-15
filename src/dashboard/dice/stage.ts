@@ -37,8 +37,8 @@ export interface Stage
     tray: Tray;
     /** Puts dice of these kinds, by the meshes given for each kind. */
     place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
-    /** Leaves the window's foot, this many pixels tall, to the plate of the throw: no die lies under it (D-366). */
-    cover(pixels: number): void;
+    /** Leaves the window's foot, this many pixels tall, to the plate of the throw, and its head to the page's header: no die lies under them (D-366). */
+    cover(foot: number, head: number): void;
     show(poses: (Pose | undefined)[]): void;
     /** Sets a die that does not count aside: gone out a moment, darker, then burnt away, or faded at once when shown instant (D-358). */
     dim(die: number, instant: boolean): void;
@@ -151,6 +151,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
 
     const tray: Tray = { width: 7, depth: 4.5 };
     let covering: number | undefined;
+    let heading = 0;
     // The dice lie on a table that moves up the window as the tray ends above the plate.
     const table = new THREE.Group();
     scene.add(table);
@@ -171,9 +172,10 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         sun.shadow.camera.updateProjectionMatrix();
         // The tray fills what the camera sees on the floor, but for the window's foot the plate covers: no die lies under it (D-366).
         const seen = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
-        const far = Math.max(3, seen / 2 - 1.2);
+        const edge = seen / 2 - 1.2;
+        const far = Math.max(3, edge - heading / height * seen);
         const covered = (covering ?? (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide)) / height * seen;
-        const front = Math.max(6 - far, far - covered);
+        const front = Math.max(6 - far, edge - covered);
         tray.depth = (front + far) / 2;
         tray.width = Math.max(3, far * camera.aspect);
         table.position.z = (front - far) / 2;
@@ -290,9 +292,10 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                 prime(first.object, look.finish);
             }
         },
-        cover(pixels)
+        cover(foot, head)
         {
-            covering = pixels;
+            covering = foot;
+            heading = head;
             resize();
         },
         show(poses)

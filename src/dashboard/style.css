@@ -31,6 +31,17 @@
     --low: light-dark(#a73929, #ff9381);
     --warn: light-dark(#8a5a00, #f5c63e);
     --disc: #182c4c;
+    /* The land of the map's paper, the same in both themes: each biome's colour and the ink of its marks, on the map and wherever a biome is named. */
+    --m-mark: #6b4a5c;
+    --bio-forest: #bcd3a8;
+    --bio-swamp: #b3c9b4;
+    --bio-moor: #d9c4d7;
+    --bio-hills: #e3d7a8;
+    --bio-mountains: #cdc5ba;
+    --bio-plains: #e6ebc2;
+    --bio-desert: #f0dfb0;
+    --bio-snow: #f2f5f8;
+    --bio-water: #b5d1ea;
     /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
     --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), rgb(0 0 0 / 0.3)), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
     --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
@@ -2317,6 +2328,155 @@ a {
     }
 }
 
+/* On the table the quests followed are one card, as a video game's quest tracker, closing to its header: a line for each, all of them, which opens where it
+   stands into its goals. The way to the Journal in the header, left of the chevron. */
+.quest-tracker {
+    position: relative;
+    min-width: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.tracker-journal {
+    position: absolute;
+    top: 6px;
+    inset-inline-end: 44px;
+}
+
+.quest-tracker .preview {
+    margin-inline-end: 40px;
+}
+
+.tracker-list {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 8px 12px 10px;
+    list-style: none;
+}
+
+/* A quest's line: its mark at the top of it, beside the name; the name in bold, whole; the next goal on one line; the clock and the time left at the end. */
+.tracked {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 10px;
+    padding-block: 4px;
+}
+
+/* A quest's mark, the flag of the quests: filled for the main one, drawn for the others, in the accent of the cards' icons. */
+.tracked-mark {
+    display: inline-grid;
+    margin-top: 1px;
+}
+
+.tracked-mark svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.tracked-mark svg.main {
+    fill: var(--accent);
+}
+
+/* The name and next goal open the quest: a button that reads as the line, with no ground on hover; the focus a ring. */
+.tracked-what {
+    display: grid;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.tracked-what::after {
+    display: none;
+}
+
+.tracked-what:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.tracked .followed-name {
+    font-size: 0.9rem;
+    white-space: normal;
+}
+
+.tracked .followed-next {
+    font-size: 0.8rem;
+}
+
+.tracked-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tracked-time .quest-deadline {
+    padding: 1px 6px;
+    font-size: 0.8rem;
+}
+
+.tracked-time .quest-deadline-left {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.clock-tip {
+    display: inline-grid;
+}
+
+.tracked-more {
+    display: grid;
+    grid-column: 2 / -1;
+    gap: 6px;
+    padding-top: 6px;
+}
+
+.tracked .quest-goals {
+    gap: 4px;
+    font-size: 0.85rem;
+}
+
+.tracked .quest-tick {
+    width: 16px;
+    height: 16px;
+}
+
+/* Stop following: a small button of words, under the goals. */
+.tracked-unfollow {
+    justify-self: start;
+    padding: 4px 6px;
+    margin-inline-start: -6px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 /* The story as a timeline (D-384): Now at the top, the chapters the last first, each with its place's picture or the mark of its kind, The start at the bottom. */
 .story {
     position: relative;
@@ -4318,7 +4478,7 @@ a {
 }
 
 /* A card's header, all of it the toggle (D-284): its icon and title on the left, what it holds while closed, the chevron on the right. */
-:is(.group, .rolls-card) > summary {
+:is(.group, .rolls-card, .table-card) > summary {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -4331,18 +4491,28 @@ a {
     list-style: none;
 }
 
-:is(.group, .rolls-card) > summary::-webkit-details-marker {
+:is(.group, .rolls-card, .table-card) > summary::-webkit-details-marker {
     display: none;
 }
 
-:is(.group, .rolls-card)[open] > summary {
+:is(.group, .rolls-card, .table-card)[open] > summary {
     margin-bottom: 12px;
     border-bottom: 1px solid var(--rule);
     border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
 }
 
-summary :is(h3, .rolls-title) {
+summary :is(h3, .rolls-title),
+.table-card > summary h2 {
     white-space: nowrap;
+}
+
+/* A card of the table: no padding of its own, so its header runs to its edges, and its list touches the header's rule. */
+.table-card > summary {
+    margin: 0;
+}
+
+.table-card[open] > summary {
+    margin-bottom: 0;
 }
 
 .card-icon {
@@ -4367,11 +4537,17 @@ summary :is(h3, .rolls-title) {
 }
 
 /* Down while the card is closed, turned up once it is open. */
+/* The chevron in its holder, which carries its tooltip. */
+.chevron-tip {
+    display: inline-grid;
+    flex: none;
+    margin-inline-start: auto;
+}
+
 .chevron {
     flex: none;
     width: 24px;
     height: 24px;
-    margin-inline-start: auto;
     fill: none;
     stroke: var(--muted);
     stroke-width: 1.75;
@@ -4380,11 +4556,11 @@ summary :is(h3, .rolls-title) {
     transition: rotate var(--short) var(--ease);
 }
 
-[open] > summary > .chevron {
+[open] > summary > .chevron-tip > .chevron {
     rotate: 180deg;
 }
 
-.preview + .chevron {
+:is(.preview, .card-head-note) + .chevron-tip {
     margin-inline-start: 0;
 }
 
@@ -4840,8 +5016,7 @@ button.row,
 }
 
 /* What is inside another thing (D-431): a step in for each level, a lighter weight, no rule between it and its container, which opens and closes it with
-   the chevron in the lane of the marks before the names, as the equipped mark; then room for the thing's picture, so that a step in puts a line's chevron
-   under its container's picture, as in a tree of files. */
+   its chevron where the picture of a thing at its level stands, its own picture after it; so what is inside stands under its container's picture. */
 .items tbody th {
     --mark-lane: 0px;
     --picture: 0px;
@@ -4850,8 +5025,11 @@ button.row,
     font-weight: 600;
 }
 
+.items.marked tbody th.holds {
+    --mark-lane: var(--picture);
+}
+
 .items.marked tbody th {
-    --mark-lane: 1.25em;
     --picture: 1.35em;
     /* A long name goes on under itself, its picture hanging before it. */
     padding-inline-start: calc(8px + var(--mark-lane) + (var(--depth, 0) + 1) * var(--picture));
@@ -4879,6 +5057,11 @@ button.row,
 .item-picture.drawn {
     background: currentColor;
     mask: var(--picture-url) center / contain no-repeat;
+}
+
+/* What is equipped has its picture in gold, dark enough on the light page. */
+.item-picture.equipped {
+    color: light-dark(#8a5a00, var(--gold));
 }
 
 .item-picture svg.icon {
@@ -4932,16 +5115,6 @@ button.row,
     .items .fold svg.icon {
         transition: none;
     }
-}
-
-/* What is equipped is marked before its name, in the lane of the marks. */
-.items .equipped-mark {
-    display: inline-block;
-    text-indent: 0;
-    width: 1.375em;
-    margin-inline-start: -1.375em;
-    color: var(--accent);
-    font-size: 0.8em;
 }
 
 /* The group's values, as the money, above its table. */
@@ -5167,6 +5340,7 @@ button.row,
 
 @media (prefers-reduced-motion: reduce) {
     .rolls-card,
+    .play-table-stick,
     .chevron,
     .bar .fill,
     .track .fill,
@@ -5638,27 +5812,30 @@ button.row,
 
 @media (min-width: 900px) {
     .body {
-        grid-template-columns: minmax(0, 1fr) 340px;
+        /* The table grows a little with the screen: 340 pixels up to 1280, 380 at 1600, 420 from 1920 on. */
+        grid-template-columns: minmax(0, 1fr) clamp(340px, 340px + (100vw - 1280px) / 8, 420px);
         align-items: start;
     }
 
-    /* The column runs the sheet's height without making the page taller (D-304); its card stays in sight in it as the page scrolls, under what the master
-       asks while it is there (D-291), its title still, its list scrolling under it without a bar, as tall as the window leaves it (useListRoom). */
-    .rolls:not(.away) {
+    /* The table runs the sheet's height, or makes the page as tall as it is; what it holds stays in sight in it as the page scrolls, under what the master
+       asks while it is there (D-291): the turns, the followed quests, the rolls, their list growing with them up to twelve, then scrolling without a bar.
+       Taller than the window, its top goes up so that it stays by its foot (useTableFit). */
+    .play-table {
         align-self: stretch;
-        /* Room for six or seven rolls, when the window has it (D-310). */
-        min-height: 45rem;
-        contain: size;
+        /* Its own layer, drawn before it slides: at its first frame the slide would otherwise wait for it. */
+        will-change: transform, opacity;
     }
 
-    .rolls-card {
+    .play-table-stick {
         position: sticky;
-        top: calc(var(--gap) + var(--top-space) + var(--asked-space, 0px));
+        top: var(--table-top, calc(var(--gap) + var(--top-space) + var(--asked-space, 0px)));
+        display: grid;
+        gap: 12px;
         transition: top var(--short) var(--ease);
     }
 
     .roll-scroll {
-        max-height: var(--list-room, calc(100vh - 180px));
+        max-height: var(--list-room, 72rem);
         overflow-y: auto;
         scrollbar-width: none;
     }
@@ -5745,17 +5922,56 @@ summary.fixed {
     cursor: pointer;
 }
 
-/* Beside the sheet, the rolls can be put away into a tab on the window's edge (D-293). */
-.body:has(.rolls.away) {
+/* The table folds into a tab on the window's edge (D-293), the marks of what it holds in it; open, a narrow tab in the same place folds it, in a margin of the
+   page kept for it. */
+.body:has(> .table-away) {
     grid-template-columns: minmax(0, 1fr);
 }
 
-.rolls.away {
+.table-away {
     position: fixed;
     top: 50%;
     inset-inline-end: 0;
     z-index: 17;
     translate: 0 -50%;
+}
+
+.table-fold {
+    position: fixed;
+    top: 50%;
+    inset-inline-end: 0;
+    z-index: 17;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 56px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-inline-end: 0;
+    border-start-start-radius: var(--radius-m);
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+    border-end-start-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--muted);
+    translate: 0 -50%;
+    cursor: pointer;
+}
+
+.table-fold svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
+@media (min-width: 900px) {
+    .page:has(.play-table) {
+        padding-inline-end: calc(var(--gap) + 16px);
+    }
+
+    /* Folded, the tab's width, so that it never covers the page's right edge. */
+    .page:has(.table-away) {
+        padding-inline-end: calc(var(--gap) + 40px);
+    }
 }
 
 .rolls-tab {
@@ -5776,16 +5992,6 @@ summary.fixed {
     cursor: pointer;
 }
 
-.rolls-tab svg.die {
-    width: 20px;
-    height: 20px;
-    color: var(--accent);
-}
-
-.rolls-tab span {
-    writing-mode: vertical-rl;
-    letter-spacing: 0.06em;
-}
 
 .rolls-none {
     margin: 0 0 8px;
@@ -7023,6 +7229,170 @@ svg.icon {
     overflow: hidden;
 }
 
+/* The picture and the name over it, the text under them (D-444). */
+.place-shot {
+    position: relative;
+}
+
+.place-band.compact > .place-shot {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+/* The text under the picture starts where the name over it does. */
+.place-about {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    padding: 14px 22px 16px;
+}
+
+.place-band.compact .place-about {
+    padding: 12px 0 0;
+}
+
+.place-about-text > :first-child {
+    margin-top: 0;
+}
+
+.place-about-text > :last-child {
+    margin-bottom: 0;
+}
+
+/* Three lines, the rest at a click. */
+.place-about-text.clamped {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+}
+
+.place-about-text.clamped > * {
+    display: inline;
+}
+
+.place-about-more {
+    padding: 2px 6px;
+    margin-inline-start: -6px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* While the scene goes by turns, the place in one line: its mark, name and what holds there; its text opens under it. */
+.place-line {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.place-line-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 8px 12px 8px 16px;
+}
+
+.place-line-mark {
+    display: inline-grid;
+    color: var(--accent);
+}
+
+.place-line-mark svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.place-line h2 {
+    font-size: 1.05rem;
+}
+
+.place-line .place-env {
+    margin: 0;
+}
+
+.place-line-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-start: auto;
+    padding: 4px 4px 4px 10px;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.place-line-toggle[aria-expanded="true"] .chevron {
+    rotate: 180deg;
+}
+
+/* The text starts where the place's name does, after its mark. */
+.place-line-text {
+    padding-block: 12px 14px;
+    padding-inline: 48px 16px;
+    border-top: 1px solid var(--rule);
+}
+
+.place-line-text > :first-child {
+    margin-top: 0;
+}
+
+.place-line-text > :last-child {
+    margin-bottom: 0;
+}
+
+/* While the scene goes by turns the place's picture is a low strip, its name and what holds there over it in one line, the button that opens it at the end;
+   open, the whole band, as the Scene's, and its text under it. */
+.place-band.folding .place-caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+}
+
+.place-band.folding .place-path {
+    flex-basis: 100%;
+}
+
+.place-band.folding .place-env {
+    margin: 0;
+}
+
+.place-band.folding .place-line-toggle {
+    align-self: flex-end;
+}
+
+.place-view .place-band.low .place-image {
+    height: 112px;
+}
+
+.place-band.over.low .place-caption {
+    padding-block: 28px 12px;
+    padding-inline: 22px 18px;
+}
+
+.place-band.low .place-path {
+    display: none;
+}
+
+.place-band.low h2 {
+    font-size: 1.3rem;
+}
+
 .place-image {
     width: 100%;
     max-height: 380px;
@@ -7117,6 +7487,18 @@ svg.icon {
     font-weight: 650;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+/* A biome by its picture, as on the map, in place of its word. */
+.place-env li.biome {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.place-env .key-swatch {
+    width: 22px;
+    height: 16px;
 }
 
 .place-env .from {
@@ -7295,6 +7677,22 @@ svg.icon {
         height: 120px;
     }
 
+    .place-view .place-band.low .place-image {
+        height: 72px;
+    }
+
+    .place-band.over.low .place-caption {
+        padding: 10px 14px 12px;
+    }
+
+    .place-band.over .place-about {
+        padding: 12px 14px 14px;
+    }
+
+    .place-line-text {
+        padding-inline: 16px;
+    }
+
     .place-band.over .place-caption {
         --muted: light-dark(#586174, #a8b1c6);
         --rule: light-dark(#dfd3bd, #36425c);
@@ -7328,12 +7726,12 @@ svg.icon {
         margin-inline-start: 0;
     }
 
-    .place-view {
+    .place-view > .scene-body {
         display: flex;
         flex-direction: column;
     }
 
-    .place-view .scene-now {
+    .scene-body > .scene-now {
         order: -1;
     }
 
@@ -7353,15 +7751,76 @@ svg.icon {
     }
 }
 
-/* The Combat section (D-314, D-315): the turn's band on top, gold on the player's turn; the order of the turns, fixed, whoever acts
-   marked by side, the foes red, the companions green, the player gold, as the tokens' rings; beside it what the player has at hand. */
-.combat {
-    display: grid;
-    gap: var(--gap);
+/* The Scene while it goes by turns (D-314, D-315, D-444): the turn's band on top, gold on the player's turn, whoever acts marked by side, the foes red, the
+   companions green, the player gold, as the tokens' rings; the place in a line; the player's character's card beside the map. */
+.place-view {
     container: combat / inline-size;
 }
 
-.combat .eyebrow {
+.in-turns > .scene-body {
+    display: grid;
+    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--gap);
+}
+
+.in-turns > .scene-body > * {
+    margin: 0;
+}
+
+.in-turns > .scene-body > :is(.turn-band, .place-line, .place-band) {
+    grid-column: 1 / -1;
+}
+
+.turn-side {
+    display: grid;
+    gap: var(--gap);
+    min-width: 0;
+}
+
+/* Without a map, the cards side by side over the whole width. */
+.in-turns > .scene-body:not(:has(> .lm)) > .turn-side {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Where the map beside the card would be too small to read (D-335): the map over the whole width under the place, the cards side by side under it. */
+@media (min-width: 601px) {
+    @container combat (max-width: 860px) {
+        .in-turns > .scene-body > * {
+            grid-column: 1 / -1;
+        }
+
+        .in-turns > .scene-body > .lm {
+            order: 1;
+        }
+
+        .in-turns > .scene-body > .turn-side {
+            order: 2;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+    }
+}
+
+/* The band comes in from above as the turns start, and goes as they end, as the master's question folds (D-444); without motion it is simply there. */
+@media (prefers-reduced-motion: no-preference) {
+    .turn-band.band-in {
+        animation: band-in 220ms var(--ease-out);
+    }
+
+    .turn-band.band-out {
+        animation: band-in 220ms var(--ease-in) reverse forwards;
+    }
+}
+
+@keyframes band-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+.turn-band .eyebrow {
     margin: 0;
     color: var(--muted);
     font-size: 0.7rem;
@@ -7460,11 +7919,10 @@ svg.icon {
     border-top: 1px solid var(--rule);
 }
 
-.combat-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
-    align-items: start;
-    gap: var(--gap);
+/* The scene's title in the band, upright and bold, before its line of now. */
+.scene-line-title {
+    font-style: normal;
+    font-weight: 700;
 }
 
 .turns-card {
@@ -7596,6 +8054,57 @@ svg.icon {
 
 .turn-facts:empty {
     display: none;
+}
+
+/* On the table beside the page the order is compact: a smaller token, the name over the bar of one of the party, a foe's look and the state's icons at the
+   end of the name's line; past eight or so the list scrolls inside, whoever acts kept in sight. */
+.turns-card.on-table .turn-order {
+    /* Each row its own height: the list scrolls, its rows never shrink. */
+    grid-auto-rows: max-content;
+    gap: 6px;
+    max-height: min(30rem, 42vh);
+    padding: 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.turns-card.on-table .turn-row {
+    grid-template-columns: 26px auto minmax(0, 1fr);
+}
+
+.turns-card.on-table .turn-row .token {
+    --size: 32px;
+    margin: 6px 8px;
+}
+
+.turns-card.on-table .turn-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 8px;
+    row-gap: 3px;
+    padding-block: 6px;
+    padding-inline-end: 8px;
+}
+
+.turns-card.on-table .turn-name {
+    grid-column: 1;
+    gap: 6px;
+    font-size: 0.875rem;
+}
+
+.turns-card.on-table .turn-main > .bar-line {
+    grid-column: 1;
+    font-size: 0.8rem;
+}
+
+.turns-card.on-table .turn-facts {
+    grid-row: 1;
+    grid-column: 2;
+    justify-content: end;
+}
+
+.turns-card.on-table .turn-main > :is(.keeping, .death-saves) {
+    grid-column: 1 / -1;
 }
 
 /* Someone's state as icons, each with its words (D-419): the engine's states in the colour of danger, the conditions in the accent, other effects muted. */
@@ -7782,8 +8291,12 @@ svg.icon {
     padding: 8px;
 }
 
-/* The player's turn from another section (D-315, D-349, D-351): Combat's name and picture pulse in gold, never a fill that looks like the section chosen;
-   and a notice on top that leads there. Without motion, gold still. */
+/* While the scene goes by turns the Scene's name and picture are gold (D-444); on the player's turn, from another section, they pulse, never a fill that
+   looks like the section chosen; and a notice on top that leads there (D-315, D-349, D-351). Without motion, gold still. */
+.sections a.in-turns {
+    color: var(--warn);
+}
+
 .sections a.your-turn {
     animation: turn-pulse 1.6s ease-in-out infinite;
 }
@@ -7847,12 +8360,37 @@ svg.icon {
         --size: 48px;
     }
 
-    .combat-body {
-        grid-template-columns: minmax(0, 1fr);
+    /* On a phone the band, the place, the order, the map, then the character's card; on the player's turn the card comes up under the place. */
+    .in-turns > .scene-body {
+        display: flex;
+        flex-direction: column;
     }
 
-    /* On the player's turn what they have at hand comes up under the band. */
-    .combat:has(.turn-band.mine) .at-hand {
+    .in-turns > .scene-body > .turn-band {
+        order: -3;
+    }
+
+    .in-turns > .scene-body > :is(.place-line, .place-band) {
+        order: -2;
+    }
+
+    .turn-side {
+        display: contents;
+    }
+
+    .in-turns .turns-card {
+        order: 1;
+    }
+
+    .in-turns > .scene-body > .lm {
+        order: 2;
+    }
+
+    .in-turns .at-hand {
+        order: 3;
+    }
+
+    .in-turns:has(.turn-band.mine) .at-hand {
         order: -1;
     }
 
@@ -8620,57 +9158,6 @@ svg.icon {
     font-size: 0.8125rem;
 }
 
-/* In Combat: the order and at hand in a column, the map beside them. */
-.combat-body.with-map {
-    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
-}
-
-.lm-side {
-    display: grid;
-    gap: var(--gap);
-    min-width: 0;
-}
-
-/* Where the map beside them would be too small to read (D-335): the map over the whole width under the band, the order and at hand side by side under it. */
-@media (min-width: 601px) {
-    @container combat (max-width: 860px) {
-        .combat-body.with-map {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .combat-body.with-map > .lm {
-            order: -1;
-        }
-
-        .lm-side {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            align-items: start;
-        }
-    }
-}
-
-@media (max-width: 600px) {
-    .combat-body.with-map {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .lm-side {
-        display: contents;
-    }
-
-    .combat-body.with-map .turns-card {
-        order: 1;
-    }
-
-    .combat-body.with-map .lm {
-        order: 2;
-    }
-
-    .combat-body.with-map .at-hand {
-        order: 3;
-    }
-}
-
 /* The ground's look, from the place's kind or its biome (D-325). */
 /* The ground's look, from the biome or the place's kind. */
 .lm-look-paving .lm-floor-fill {
@@ -8793,17 +9280,7 @@ svg.icon {
     --m-halo: #f1e6cc;
     --m-river: #3a6d96;
     --m-trail: #b2361f;
-    --m-mark: #6b4a5c;
     --m-region-ink: #5a3f4f;
-    --bio-forest: #bcd3a8;
-    --bio-swamp: #b3c9b4;
-    --bio-moor: #d9c4d7;
-    --bio-hills: #e3d7a8;
-    --bio-mountains: #cdc5ba;
-    --bio-plains: #e6ebc2;
-    --bio-desert: #f0dfb0;
-    --bio-snow: #f2f5f8;
-    --bio-water: #b5d1ea;
 }
 
 .map-head {
@@ -9601,6 +10078,13 @@ svg.icon {
     grid-area: kind;
     color: var(--muted);
     font-size: 0.8rem;
+}
+
+.pr-kind .key-swatch {
+    width: 18px;
+    height: 13px;
+    margin-inline-end: 5px;
+    vertical-align: -0.2em;
 }
 
 .pr-far {

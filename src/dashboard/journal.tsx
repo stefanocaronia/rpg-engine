@@ -1,13 +1,15 @@
 // The Journal section (D-367, D-369, D-371, D-384, D-388): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
-// goals, its counters as bars and its clock with its name, the main ones first and in gold; the one the player follows, the main one until they choose, shown
-// small in Scene and Combat too; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
+// goals, its counters as bars and its clock with its name, the main ones first and in gold; the ones the player follows, the main one until they choose, shown
+// small beside the page, or in Scene and Combat on a narrow screen; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
+import { CardHeader, useOpen } from "./card.tsx";
 import type { JournalFact, ShownChapter, ShownQuest } from "./data.ts";
 import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
-import { Icon } from "./icons.tsx";
+import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
+import { followedQuests, keptFollowed } from "./layout.ts";
 import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
@@ -69,21 +71,97 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
     );
 }
 
-/** The quest the player follows, shown small at the top of Scene and Combat, with its next goal, its clock and the time left; nothing when it is none. */
-export function FollowedQuest({ version, campaign }: { version: number; campaign?: string; })
+/**
+ * The quests the player follows (D-369), the main ones first, then the others, each group in the order they were followed. Beside the page one card, as a video
+ * game's quest tracker, that closes to its header: for each its mark, its name, its next goal, its clock and time left, with no command; a click opens it where
+ * it stands into its goals, done ones ticked, and a button that stops following it. On a narrow screen the first, as a strip at the top of Scene and Combat.
+ * A quest done or failed leaves by itself.
+ */
+export function FollowedQuests({ version, campaign, beside = false }: { version: number; campaign?: string; beside?: boolean; })
 {
     const journal = useJournal(version);
-    const [followed, setFollowed] = useFollowed(campaign, journal.read?.quests);
-    const quest = journal.read?.quests.find((one) => one.name === followed && one.status === "open");
+    const [followed, follow] = useFollowed(campaign, journal.read?.quests);
+    const quests = followed.flatMap((name) => journal.read?.quests.find((quest) => quest.name === name) ?? []).toSorted((first, second) => Number(second.main) - Number(first.main));
 
-    if (quest === undefined) {
+    if (quests.length === 0) {
         return null;
     }
 
+    return beside ? <QuestTracker quests={quests} onUnfollow={(name) => follow(name, false)} /> : <FollowedStrip quest={quests[0]} onUnfollow={() => follow(quests[0].name, false)} />;
+}
+
+/** The card of the quests followed, beside the page: a line for each, which opens where it stands; the way to the Journal in its header. */
+function QuestTracker({ quests, onUnfollow }: { quests: ShownQuest[]; onUnfollow(name: string): void; })
+{
+    const [open, toggle] = useOpen("Quests followed");
+    return (
+        <section class="quest-tracker" aria-labelledby="tracker-title">
+            <details class="table-card" open={open}>
+                <CardHeader icon={iconPath("journal")} title={<h2 id="tracker-title">{t("Quests")}</h2>} preview={quests.map((quest) => quest.name).join(" · ")} open={open} onToggle={toggle} />
+                <ul class="tracker-list">
+                    {quests.map((quest) => <TrackedQuest key={quest.name} quest={quest} onUnfollow={() => onUnfollow(quest.name)} />)}
+                </ul>
+            </details>
+            <a class="icon-button tracker-journal tip-left" href={sectionAddress("journal")} aria-label={t("Journal")} data-tip={t("Journal")}>
+                <Icon name="journal" />
+            </a>
+        </section>
+    );
+}
+
+/**
+ * A followed quest on the table: its mark, main or not; its name, the button that opens it into its goals, open or closed as the player left it, and while
+ * closed its next goal; its clock and time left; open, its goals and the button that stops following it.
+ */
+function TrackedQuest({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow(): void; })
+{
+    const [open, toggle] = useOpen(`Quest ${quest.name}`, false, false);
+    const next = quest.goals.find((goal) => !goal.done);
+    const id = `tracked-${quest.name.replace(/[^\p{L}\p{N}]+/gu, "-")}`;
+    const kind = quest.main ? t("Main") : t("Side quest");
+    return (
+        <li class={open ? "tracked open" : "tracked"}>
+            <span class="tracked-mark" role="img" aria-label={kind} data-tip={kind}>
+                <svg class={quest.main ? "main" : undefined} viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={questFlag} />
+                </svg>
+            </span>
+            <button type="button" class="tracked-what" aria-expanded={open} aria-controls={id} onClick={toggle}>
+                <span class="followed-name">{quest.name}</span>
+                {!open && next !== undefined && <span class="followed-next">{plainText(next.text)}</span>}
+            </button>
+            <span class="tracked-time">
+                {quest.clock !== undefined && <ClockTip clock={quest.clock} />}
+                {quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
+            </span>
+            {open && (
+                <div class="tracked-more" id={id}>
+                    <Goals quest={quest} />
+                    <button type="button" class="tracked-unfollow" onClick={onUnfollow}>{t("Stop following")}</button>
+                </div>
+            )}
+        </li>
+    );
+}
+
+/** A quest's clock, small, with its name and count as its tooltip. */
+function ClockTip({ clock }: { clock: NonNullable<ShownQuest["clock"]>; })
+{
+    const label = clockLabel(clock);
+    return (
+        <span class="clock-tip" role="img" aria-label={label} data-tip={label}>
+            <ClockFace clock={clock} small hidden />
+        </span>
+    );
+}
+
+/** One followed quest as a strip, on a narrow screen: its star, which stops following it, its picture, its name and next goal leading to the Journal, its clock and time left. */
+function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow(): void; })
+{
     const next = quest.goals.find((goal) => !goal.done);
     return (
         <aside class="followed" aria-label={t("The quest you follow")}>
-            <button type="button" class="followed-star on" aria-label={`Follow ${quest.name}`} aria-pressed={true} onClick={() => setFollowed(undefined)}>
+            <button type="button" class="followed-star on" aria-label={t("Follow {quest}", { quest: quest.name })} aria-pressed={true} onClick={onUnfollow}>
                 <Star />
             </button>
             <QuestFace quest={quest} small />
@@ -97,8 +175,27 @@ export function FollowedQuest({ version, campaign }: { version: number; campaign
     );
 }
 
+/** A quest's goals, done ones ticked; a failed quest's undone ones marked missed. */
+function Goals({ quest }: { quest: ShownQuest; })
+{
+    const open = quest.status === "open";
+    return (
+        <ul class="quest-goals" aria-label={t("Goals")}>
+            {quest.goals.map((goal, index) => (
+                <li key={index} class={goal.done ? "done" : quest.status === "failed" ? "missed" : undefined}>
+                    <span class="quest-tick" aria-hidden="true">{goal.done ? "✓" : quest.status === "failed" ? "–" : ""}</span>
+                    <span>
+                        <Markdown text={goal.text} />
+                    </span>
+                    <span class="visually-hidden">{goal.done ? t("done") : open ? t("to do") : t("not done")}</span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 /** The quests in three groups, open ones whole, done and failed ones folded. */
-function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; followed?: string; onFollow(name: string | undefined): void; })
+function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; followed: string[]; onFollow(name: string, follow: boolean): void; })
 {
     const open = quests.filter((quest) => quest.status === "open");
     const done = quests.filter((quest) => quest.status === "done");
@@ -108,7 +205,7 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
         return <p class="journal-none">{t("No quests yet: the ones your character takes come here.")}</p>;
     }
 
-    const card = (quest: ShownQuest) => <QuestCard key={quest.name} quest={quest} followed={quest.name === followed} onFollow={onFollow} />;
+    const card = (quest: ShownQuest) => <QuestCard key={quest.name} quest={quest} followed={followed.includes(quest.name)} onFollow={onFollow} />;
     return (
         <div class="quest-log">
             <h3 class="quest-group">
@@ -136,7 +233,7 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
 }
 
 /** A quest as its card shows it: the star that follows it, its name, its badge and the time left; who gave it, where and by when; its text, goals and measures. */
-function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed: boolean; onFollow(name: string | undefined): void; })
+function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed: boolean; onFollow(name: string, follow: boolean): void; })
 {
     const id = `quest-${quest.name.replace(/[^\p{L}\p{N}]+/gu, "-")}`;
     const open = quest.status === "open";
@@ -157,8 +254,8 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                             class={followed ? "followed-star on" : "followed-star"}
                             aria-pressed={followed}
                             aria-label={t("Follow {quest}", { quest: quest.name })}
-                            data-tip={t("Shown in Scene and Combat")}
-                            onClick={() => onFollow(followed ? undefined : quest.name)}
+                            data-tip={t("Follow {quest}", { quest: quest.name })}
+                            onClick={() => onFollow(quest.name, !followed)}
                         >
                             <Star />
                         </button>
@@ -174,19 +271,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                     <Markdown text={quest.text} />
                 </div>
             )}
-            {quest.goals.length > 0 && (
-                <ul class="quest-goals" aria-label={t("Goals")}>
-                    {quest.goals.map((goal, index) => (
-                        <li key={index} class={goal.done ? "done" : quest.status === "failed" ? "missed" : undefined}>
-                            <span class="quest-tick" aria-hidden="true">{goal.done ? "✓" : quest.status === "failed" ? "–" : ""}</span>
-                            <span>
-                                <Markdown text={goal.text} />
-                            </span>
-                            <span class="visually-hidden">{goal.done ? t("done") : open ? t("to do") : t("not done")}</span>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {quest.goals.length > 0 && <Goals quest={quest} />}
             {(quest.counters.length > 0 || quest.clock !== undefined) && (
                 <div class="quest-measures">
                     {quest.counters.map((counter) => <QuestBar key={counter.field} counter={counter} />)}
@@ -264,7 +349,7 @@ function ClockFace({ clock, small = false, hidden = false }: { clock: NonNullabl
         return `${centre + radius * Math.cos(angle)} ${centre + radius * Math.sin(angle)}`;
     };
 
-    const label = `${clock.name ?? t("Clock")}: ${t("{value} of {max}", { value: clock.value, max: clock.max })}`;
+    const label = clockLabel(clock);
     return (
         <svg class="clock-face" width={size} height={size} viewBox={`0 0 ${size} ${size}`} {...(hidden ? { "aria-hidden": "true" } : { role: "img", "aria-label": label })}>
             {Array.from({ length: slices }, (_, index) => (
@@ -423,15 +508,20 @@ function useJournal(version: number): { read?: Journal; problem?: string; done: 
 }
 
 /**
- * The quest the player follows in this campaign, kept in this browser (D-369): until they choose, the main open quest, or the only open one; none once they
- * chose none.
+ * The quests the player follows in this campaign, kept in this browser (D-369), in the order they were followed; until they choose, the main open quest, or the
+ * only open one; none once they chose none. A list kept by an older page, a name alone, is read as it was.
  */
-function useFollowed(campaign: string | undefined, quests: ShownQuest[] | undefined): [string | undefined, (name: string | undefined) => void]
+function useFollowed(campaign: string | undefined, quests: ShownQuest[] | undefined): [string[], (name: string, follow: boolean) => void]
 {
     const [kept, keep] = useKeptText(`rpg-engine.followed-quest.${campaign ?? ""}`);
-    const open = (quests ?? []).filter((quest) => quest.status === "open");
-    const usual = open.find((quest) => quest.main)?.name ?? (open.length === 1 ? open[0].name : undefined);
-    return [kept === undefined ? usual : kept === "" ? undefined : kept, (name) => keep(name ?? "")];
+    const followed = followedQuests(kept, quests ?? []);
+    return [followed, (name, follow) => keep(keptFollowed(followed, name, follow))];
+}
+
+/** A clock's name and count, as a screen reader and a tooltip say it. */
+function clockLabel(clock: NonNullable<ShownQuest["clock"]>): string
+{
+    return `${clock.name ?? t("Clock")}: ${t("{value} of {max}", { value: clock.value, max: clock.max })}`;
 }
 
 /** A picture's address, with when its file last changed, so that it comes again only when it changes. */

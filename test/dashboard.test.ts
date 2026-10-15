@@ -16,7 +16,7 @@ import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { arrangedGroups, columnsByHeight, groupLayout, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { arrangedGroups, columnsByHeight, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -795,6 +795,8 @@ describe("the page's reading of a sheet (D-273)", () => {
         // The sheet's first address still leads to it (D-310).
         expect(readAddress("#/character/Ettore")).toEqual({ section: "party", name: "Ettore" });
         expect(readAddress("#/scene")).toEqual({ section: "scene" });
+        // Combat's address leads to the Scene, which shows the turns (D-444).
+        expect(readAddress("#/combat")).toEqual({ section: "scene" });
         expect(readAddress("#/about")).toEqual({ section: "about" });
         expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
         expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
@@ -815,6 +817,28 @@ describe("the page's reading of a sheet (D-273)", () => {
         const cleared = now - 10 * 60_000;
         expect(shown({ cleared, older: 5, unread: true })).toEqual(["d"]);
         expect(rollWindow(rolls, { now, cleared, older: 5, unread: true })).toMatchObject({ before: 0, more: false });
+    });
+
+    it("follows several open quests in the order followed, reads the one name an older page kept, and lets one go alone (D-369)", () => {
+        const quests = [
+            { name: "Main", status: "open" as const, main: true },
+            { name: "Side", status: "open" as const, main: false },
+            { name: "Wine", status: "open" as const, main: false },
+            { name: "Done", status: "done" as const, main: false },
+        ];
+        // Until the player chooses, the main open quest; once they chose none, none.
+        expect(followedQuests(undefined, quests)).toEqual(["Main"]);
+        expect(followedQuests("", quests)).toEqual([]);
+        // The one name an older page kept, or a list; a quest done or no longer there leaves by itself.
+        expect(followedQuests("Side", quests)).toEqual(["Side"]);
+        expect(followedQuests(JSON.stringify(["Wine", "Done", "Gone", "Main"]), quests)).toEqual(["Wine", "Main"]);
+        // Following adds at the end; letting one go keeps the others in their order.
+        const three = keptFollowed(["Main", "Side"], "Wine", true);
+        expect(followedQuests(three, quests)).toEqual(["Main", "Side", "Wine"]);
+        expect(followedQuests(keptFollowed(followedQuests(three, quests), "Side", false), quests)).toEqual(["Main", "Wine"]);
+        expect(followedQuests(keptFollowed(["Main"], "Main", false), quests)).toEqual([]);
+        // The only open quest is followed until the player chooses, when there is no main one.
+        expect(followedQuests(undefined, [{ name: "Alone", status: "open" as const, main: false }])).toEqual(["Alone"]);
     });
 
     it("draws a number on its way to the next mark with a bar, among the numbers (D-284)", () => {

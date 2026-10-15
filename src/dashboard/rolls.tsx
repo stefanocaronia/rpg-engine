@@ -1,32 +1,25 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. The player's free rolls come in too, dashed and dimmed, from this browser alone (D-330 (4)). A card like the sheet's, which shows the
-// newest roll while it is closed (D-284); beside the sheet, it is always open (D-289). Those of the last half hour, older ones at a click at the end of the
+// newest roll while it is closed (D-284), on the table beside the sheet too. Those of the last half hour, older ones at a click at the end of the
 // list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304).
 import { useEffect, useRef, useState } from "preact/hooks";
-import { CardHeader, useMedia, useOpen } from "./card.tsx";
+import { CardHeader, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
 import { DiceFaces } from "./faces.tsx";
 import type { PageRoll } from "./free-rolls.ts";
 import { gameDateLabel, notationLabel } from "./game-words.ts";
-import { cardIcons, DieIcon, Icon } from "./icons.tsx";
+import { cardIcons, Icon } from "./icons.tsx";
 import { notationModifier, strangerLabel } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
 import { t } from "./text.ts";
 
-// From this width the rolls are a column beside the sheet, as in the style sheet; where the browser remembers that the player put it away, and when they last
-// cleared the list of a campaign; how many older rolls each Load more shows.
-const besideSheet = "(min-width: 900px)";
-const awayKey = "rpg-engine.rolls-away";
+// Where the browser remembers when the player last cleared the list of a campaign; how many older rolls each Load more shows.
 const clearedKey = "rpg-engine.rolls-cleared";
 const moreRolls = 10;
 
 // How long a new roll keeps its mark, which the style sheet fades at the end (D-303).
 const markLength = 9000;
-
-// Beside the sheet, the gap between the rolls' card and the window's foot, and the least room their list keeps (D-304).
-const windowMargin = 12;
-const leastRoom = 160;
 
 export function RollLog(
     { rolls, free, unread, campaign, party, fresh, onMore, onClearFree }: {
@@ -43,21 +36,17 @@ export function RollLog(
 {
     const lead = party.find((member) => member.role === "pc");
     const [chosen, toggle] = useOpen("Rolls");
-    const beside = useMedia(besideSheet);
-    const [away, setAway] = useState(readAway);
     const [cleared, setCleared] = useState(() => readCleared(campaign));
     const [older, setOlder] = useState(0);
     // The rolls already drawn: a new one comes in only the first time, not again when the column comes back.
     const greeted = useRef(new Set<string>());
-    const [track, setTrack] = useState<HTMLElement | null>(null);
     const [scroller, setScroller] = useState<HTMLElement | null>(null);
-    const open = beside || chosen;
+    const open = chosen;
     // The log's rolls and the free ones, by when each was rolled.
     const all = [...rolls, ...free].toSorted((first, second) => Date.parse(first.at) - Date.parse(second.at));
     const listed = rollWindow(all, { now: Date.now(), cleared, older, unread });
     const newest = listed.shown.at(-1);
     const below = useMoreBelow(scroller);
-    useListRoom(track, beside);
 
     const clear = (): void => {
         const now = Date.now();
@@ -83,24 +72,8 @@ export function RollLog(
         }
     };
 
-    const putAway = (now: boolean): void => {
-        setAway(now);
-        writeAway(now);
-    };
-
-    if (beside && away) {
-        return (
-            <aside class="rolls away" aria-label={t("Rolls")}>
-                <button type="button" class="rolls-tab" aria-label={t("Show the rolls")} onClick={() => putAway(false)}>
-                    <DieIcon sides={20} />
-                    <span>{t("Rolls")}</span>
-                </button>
-            </aside>
-        );
-    }
-
     return (
-        <aside class="rolls" aria-labelledby="rolls-title" ref={setTrack}>
+        <aside class="rolls" aria-labelledby="rolls-title">
             <details class="rolls-card" open={open}>
                 <CardHeader
                     icon={cardIcons.rolls}
@@ -108,17 +81,11 @@ export function RollLog(
                     preview={newest === undefined ? undefined : `${[nameOf(newest, lead), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
                     open={open}
                     onToggle={toggle}
-                    fixed={beside}
                 />
-                <div class={beside ? "rolls-tools" : "rolls-tools folding"}>
+                <div class="rolls-tools folding">
                     {(listed.shown.length > 0 || listed.more) && (
                         <button type="button" class="icon-button tip-left" aria-label={t("Clear the rolls")} data-tip={t("Clear the list")} onClick={clear}>
                             <Icon name="clearAll" />
-                        </button>
-                    )}
-                    {beside && (
-                        <button type="button" class="icon-button tip-left" aria-label={t("Hide the rolls")} data-tip={t("Hide")} onClick={() => putAway(true)}>
-                            <Icon name="aside" />
                         </button>
                     )}
                 </div>
@@ -222,24 +189,6 @@ function tokenOf(roll: ShownRoll, party: Member[], lead: Member | undefined): To
     return { name: roll.stranger ? "?" : roll.who, role: "other", ...(roll.image === undefined ? {} : { image: roll.image }) };
 }
 
-function readAway(): boolean
-{
-    try {
-        return localStorage.getItem(awayKey) === "away";
-    } catch {
-        return false;
-    }
-}
-
-function writeAway(away: boolean): void
-{
-    try {
-        localStorage.setItem(awayKey, away ? "away" : "beside");
-    } catch {
-        // The page forgets it at the next reload.
-    }
-}
-
 function readCleared(campaign: string | undefined): number
 {
     try {
@@ -299,58 +248,6 @@ function useMoreBelow(scroller: HTMLElement | null): boolean
     }, [scroller]);
 
     return below;
-}
-
-/**
- * Beside the sheet, how tall the rolls' list may be (D-304): from where their card stands, under the page's top, to the window's foot or the sheet's end,
- * whichever comes first, so that the card never leaves the window, slides under the page's top or makes the page taller.
- */
-function useListRoom(track: HTMLElement | null, beside: boolean): void
-{
-    useEffect(() => {
-        if (track === null || !beside) {
-            return;
-        }
-
-        let asked = 0;
-
-        const measure = (): void => {
-            asked = 0;
-            const card = track.querySelector<HTMLElement>(".rolls-card");
-            const list = track.querySelector<HTMLElement>(".roll-scroll");
-
-            if (card === null || list === null) {
-                return;
-            }
-
-            const box = track.getBoundingClientRect();
-            const top = Math.max(Number.parseFloat(getComputedStyle(card).top) || 0, box.top);
-            const bottom = Math.min(window.innerHeight - windowMargin, box.bottom);
-            const around = card.offsetHeight - list.offsetHeight;
-            track.style.setProperty("--list-room", `${Math.max(leastRoom, Math.floor(bottom - top - around))}px`);
-        };
-
-        const update = (): void => {
-            asked ||= requestAnimationFrame(measure);
-        };
-
-        const sizes = new ResizeObserver(update);
-        sizes.observe(track);
-        window.addEventListener("scroll", update, { passive: true });
-        window.addEventListener("resize", update);
-        // The card's place changes as the page's top or what the master asks come and go.
-        track.addEventListener("transitionend", update);
-        update();
-
-        return () => {
-            cancelAnimationFrame(asked);
-            sizes.disconnect();
-            window.removeEventListener("scroll", update);
-            window.removeEventListener("resize", update);
-            track.removeEventListener("transitionend", update);
-            track.style.removeProperty("--list-room");
-        };
-    }, [track, beside]);
 }
 
 /** When a roll was made: the game's day and hour, and the real time, as "day 1, 18:00 in the game · rolled at 18:15". */

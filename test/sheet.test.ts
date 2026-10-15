@@ -124,8 +124,8 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
             // The unarmed strike every character has ready, with no weapon equipped (D-235).
             "Attacks: Unarmed Strike +4, 3 bludgeoning",
-            // What he carries, the equipped marked (D-431).
-            "Equipment: Cotta di Ettore (equipped) · Scudo di Ettore (equipped)",
+            // What he carries, the equipped marked, and its weight against his limit (D-431, D-432).
+            "Equipment: load 61 / 210 lb · Cotta di Ettore (equipped) · Scudo di Ettore (equipped)",
             // A cleric's spellcasting, worked out from the cleric's page and the slots of its level (D-227).
             "Spells: caster-level 3 · spell-save-dc 13 · spell-attack +5 · slots-1 4/4 · slots-2 2/2 · max-prepared 6",
             "show Ettore#Spellcasting gives the text of a feature.",
@@ -225,6 +225,21 @@ describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
         expect(await refused("write", "Ettore", "--set", "alignment=Neutrale Buono")).toMatch(/^"Neutrale Buono" is not one of the names alignment takes in the system 5e: lawful good, /);
         await ok("write", "Ettore", "--set", "alignment=Neutral Good");
         expect(pageText("Ettore")).toContain("alignment: Neutral Good\n");
+    });
+
+    it("takes on a sheet only the system's languages, tools and damage types, and those the campaign adds; a stat block keeps its words (D-435)", async () => {
+        expect(await refused("write", "Ettore", "--add", "languages=Elfico")).toMatch(
+            /^"Elfico" is not one of the names languages takes in the system 5e: Common, .* A name of the campaign's own world joins them with config values "languages: \[Elfico\]"\. Nothing changed\.$/,
+        );
+        expect(await refused("write", "Ettore", "--add", "damage-resistances=fuoco")).toMatch(/^"fuoco" is not one of the names damage-resistances takes in the system 5e: acid, /);
+        await ok("write", "Ettore", "--add", "languages=Elvish", "--add", "damage-resistances=fire", "--add", "tool-proficiencies=vehicles (land)");
+        // A language of the campaign's world joins the system's.
+        await ok("config", "values", "languages: [Lingua dei Guadi]");
+        await ok("write", "Ettore", "--add", "languages=Lingua dei Guadi");
+        expect(pageText("Ettore")).toContain("- Lingua dei Guadi\n");
+        // A creature's stat block, as the SRD writes them, keeps its own words.
+        await ok("write", "Spettro del guado", "--type", "creature", "--set", "languages=[telepathy 60 ft]", "--set", "damage-resistances=[slashing from nonmagical attacks]");
+        expect(await ok("validate")).not.toContain("Spettro del guado");
     });
 
     it("reports in validate a name written by hand that the system does not take, and lets write remove it", async () => {

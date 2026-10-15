@@ -17,6 +17,8 @@ import { t, tParts } from "./text.ts";
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 16;
 const mostWords = 500;
+// How much of the question a folded bar keeps in sight beside its answers, in pixels, on a wide screen.
+const questionRoom = 240;
 // The question is whole at the very top of the page. It folds once the player has scrolled down, from the highest point since it was whole, its own height
 // and this share of the window more: the page they read has gone past it, not a nudge.
 const topOfPage = 8;
@@ -58,6 +60,32 @@ export function AskedBanner(
     const banner = useRef<HTMLElement>(null);
     const checks = asked.labels.map((label) => checkOf(label, asked.title));
     const roll = checks.some((check) => check !== undefined);
+    // Folded, every answer stays in the bar while they all fit in a line beside the question; else only the checks. Their width, measured while all shown.
+    const [roomy, setRoomy] = useState(true);
+    const needed = useRef(0);
+
+    useLayoutEffect(() => {
+        const element = banner.current;
+
+        if (folded === false || element === null) {
+            return;
+        }
+
+        const measure = (): void => {
+            const buttons = element.querySelector<HTMLElement>(".asked-buttons");
+
+            if (roomy && buttons !== null) {
+                needed.current = buttons.scrollWidth;
+            }
+
+            setRoomy(needed.current <= foldedRoom(element));
+        };
+
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [folded, asked.id, roomy]);
     // By hand, the note names the checks the sheet or the tray answer; the others keep their buttons (D-380).
     const named = checks.flatMap((check, index) => (check !== undefined && byHandAnswers(asked, index) ? [check] : []));
     // Answered from the sheet or the tray, the banner folds away as after a click.
@@ -375,12 +403,13 @@ export function AskedBanner(
     );
 
     if (folded !== false) {
-        // Folded, a bar the whole width: the question in a line, the checks' buttons still there, and the button that opens it again.
+        // Folded, a bar the whole width: the question in a line, its answers when they fit or else the checks' buttons, and the button that opens it again.
+        const shown = asked.labels.map((label, index) => answerButton(label, index, !roomy)).filter((button) => button !== null);
         return (
             <section ref={banner} class={classes} aria-label={t("What the master asks")}>
                 <img class="asked-robot" src="/assets/favicon.svg" alt="" />
                 <p class="asked-bar-question">{asked.question}</p>
-                {roll && <div class="asked-buttons">{asked.labels.map((label, index) => answerButton(label, index, true))}</div>}
+                {shown.length > 0 && <div class="asked-buttons">{shown}</div>}
                 {toggle}
             </section>
         );
@@ -460,6 +489,17 @@ export function AskedBanner(
             {picking && map !== undefined && <MapSheet map={map} place={place ?? ""} question={asked.question} onPick={(square) => void reply({ square })} onClose={() => setPicking(false)} />}
         </section>
     );
+}
+
+/** The width the folded bar leaves its answers: beside the robot and some of the question on a wide screen; a line of their own on a phone. */
+function foldedRoom(element: HTMLElement): number
+{
+    const style = getComputedStyle(element);
+    const inner = element.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+    const robot = element.querySelector<HTMLElement>(".asked-robot");
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    const beside = matchMedia("(max-width: 600px)").matches ? 0 : (robot?.offsetWidth ?? 0) + questionRoom + 2 * gap;
+    return inner - beside;
 }
 
 /** Tells what stays on top beside the page, the rolls, how much room the question takes. */

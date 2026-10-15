@@ -371,7 +371,8 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
     const key = (index: number): string => `${depths[index]} ${items[index].inside ?? ""} ${items[index].item}`;
     const toggle = (index: number): void => setClosed((before) => (before.has(key(index)) ? new Set([...before].filter((one) => one !== key(index))) : new Set([...before, key(index)])));
     const shown = shownLines(depths, (index) => closed.has(key(index)));
-    // When something is equipped or holds other things, every name keeps a lane for the marks, so that a step in reads as being inside, never as a mark.
+    // When something is equipped or holds other things, every name has its picture, golden on what is equipped; a container's chevron stands where the
+    // picture of a thing at its level would, so that only what is inside steps in (Stefano, 15 October).
     const marked = items.some((item, index) => item.equipped === true || holds(index));
     // What is carried tells how many after its name, as Torce (6), with no column of its own (Stefano, 15 October).
     const carried = columns.length === 1 && columns[0] === "quantity";
@@ -399,8 +400,8 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                     ].filter((part) => part !== undefined).map((part) => `, ${part}`).join("");
                     const words = (
                         <>
-                            {/* The thing's own picture, in the colour of its words, else a thing's (D-431). */}
-                            {marked && <ItemPicture image={item.image} />}
+                            {/* The thing's own picture, in the colour of its words, else a thing's; in gold when it is equipped (D-431). */}
+                            {marked && <ItemPicture image={item.image} equipped={item.equipped === true} />}
                             <span>{name}</span>
                             {count(item) !== "" && <span class="item-count">{` (${count(item)})`}</span>}
                             {said !== "" && <span class="visually-hidden">{said}</span>}
@@ -408,7 +409,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                     );
                     return (
                         <tr key={key(index)} class={item.depth === undefined ? undefined : "inside"}>
-                            <th scope="row" style={item.depth === undefined ? undefined : { "--depth": item.depth }}>
+                            <th scope="row" class={holds(index) ? "holds" : undefined} style={item.depth === undefined ? undefined : { "--depth": item.depth }}>
                                 {holds(index)
                                     ? (
                                         <button type="button" class="fold" aria-expanded={!closed.has(key(index))} onClick={() => toggle(index)}>
@@ -416,12 +417,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                                             {words}
                                         </button>
                                     )
-                                    : (
-                                        <>
-                                            {item.equipped === true && <span class="equipped-mark" title={t("Equipped")} aria-hidden="true">◆</span>}
-                                            {words}
-                                        </>
-                                    )}
+                                    : words}
                             </th>
                             {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
                         </tr>
@@ -432,16 +428,18 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
     );
 }
 
-/** A thing's picture, one colour as the words beside it: the game's drawing of its kind as a mask, or the page's own of any thing. */
-function ItemPicture({ image }: { image?: { file: string; version: number; } | undefined; })
+/** A thing's picture, one colour as the words beside it, gold when equipped: the game's drawing of its kind as a mask, or the page's own of any thing. */
+function ItemPicture({ image, equipped }: { image?: { file: string; version: number; } | undefined; equipped: boolean; })
 {
+    const kind = ["item-picture", image === undefined ? "" : "drawn", equipped ? "equipped" : ""].filter((name) => name !== "").join(" ");
+    const title = equipped ? t("Equipped") : undefined;
     return image === undefined
         ? (
-            <span class="item-picture" aria-hidden="true">
+            <span class={kind} title={title} aria-hidden="true">
                 <Icon name="thing" />
             </span>
         )
-        : <span class="item-picture drawn" aria-hidden="true" style={{ "--picture-url": `url("/images/${encodeURIComponent(image.file)}?v=${image.version}")` }} />;
+        : <span class={kind} title={title} aria-hidden="true" style={{ "--picture-url": `url("/images/${encodeURIComponent(image.file)}?v=${image.version}")` }} />;
 }
 
 /** Which lines of a list show: those whose containers are all open, by the lines' depths. */

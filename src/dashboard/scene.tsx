@@ -1,20 +1,35 @@
-// The Scene section (D-309, VIEW-6): where the party is, its picture with the places around it, its name and what holds there; the open scene, who is in it and
-// whose turn it is; outside a scene who is there of those the character knows; then the place's text.
-import { sectionAddress } from "./address.ts";
-import type { ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+// The Scene section (D-309, VIEW-6, D-444): where the party is, its picture with the places around it, its name, what holds there and its text; the open
+// scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
+import { useEffect, useRef, useState } from "preact/hooks";
+import type { Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
-import { biomeLabel } from "./map-symbols.ts";
-import { Markdown, plainLine } from "./markdown.tsx";
+import { biomeLabel, biomes } from "./map-symbols.ts";
+import { Markdown } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
 import { StatusPip } from "./status.tsx";
 import { t } from "./text.ts";
+import { CharacterCard, hasTurns, type OwnSheet, TurnBand, TurnsCard, type TurnScene } from "./turns.tsx";
+import { BiomeSwatch } from "./world.tsx";
 
-export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownScene; })
+// How long the band takes to come in or go out, as the style sheet has it, as the master's question folds.
+const bandTime = 220;
+
+/**
+ * The Scene (D-309, D-444), the one page of where the party is. Outside turns the place, its picture with its text under it, the open scene and the map; while
+ * the scene goes by turns the band of the turns on top, the place closed to a line, the player's character's card beside the map, and on a narrow screen the
+ * order of the turns. The map is the same through both, never drawn anew; only the band moves, coming and going.
+ */
+export function SceneView(
+    { place, scene, lead, party, own, turnsBeside = false }: { place?: ShownPlace; scene?: ShownScene; lead?: Member; party: Member[]; own: OwnSheet; turnsBeside?: boolean; },
+)
 {
+    const turns = hasTurns(scene) ? scene : undefined;
+    const band = useBandMotion(turns);
+
     if (place === undefined && scene === undefined) {
         return (
             <section class="upcoming" aria-labelledby="place-name">
@@ -24,32 +39,164 @@ export function SceneView({ place, scene }: { place?: ShownPlace; scene?: ShownS
         );
     }
 
+    const kinds = ["place-view", turns === undefined ? "" : "in-turns", scene === undefined && place?.map === undefined ? "" : "with-scene"];
     return (
-        // With a map the place's picture is the low strip it is with a scene, and the map rises (D-325).
-        <section class={scene === undefined && place?.map === undefined ? "place-view" : "place-view with-scene"} aria-labelledby="place-name">
-            {place && <PlaceBand place={place} />}
-            {scene && <SceneCard scene={scene} />}
-            {place?.map && <PlaceMap map={place.map} place={place.name} />}
-            <div class="groups">
-                {/* Who is here: under the map, who is where says it (D-325). */}
-                {scene === undefined && place && place.here.length > 0 && place.map === undefined && (
-                    <Card name="Here" title={t("Here")} icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>
-                        <People people={place.here} />
-                    </Card>
+        <section class={kinds.filter((kind) => kind !== "").join(" ")} aria-labelledby={turns === undefined ? "place-name" : "turn-title"}>
+            <div class="scene-body">
+                {band && <TurnBand key="band" scene={band.scene} lead={lead} {...(band.motion === undefined ? {} : { motion: band.motion })} />}
+                {place && (turns === undefined ? <PlaceBand key="place" place={place} /> : <PlaceLine key={`line ${turns.title}`} place={place} />)}
+                {scene && turns === undefined && <SceneCard key="scene" scene={scene} />}
+                {turns && (
+                    <div key="side" class="turn-side">
+                        {!turnsBeside && <TurnsCard scene={turns} party={party} />}
+                        <CharacterCard lead={lead} scene={turns} own={own} />
+                    </div>
                 )}
-                {place && place.text.trim() !== "" && (
-                    <Card name="Description" title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(place.text)}>
-                        <Markdown text={place.text} />
-                    </Card>
+                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} />}
+                {/* Who is here: under the map, who is where says it (D-325). */}
+                {turns === undefined && scene === undefined && place && place.here.length > 0 && place.map === undefined && (
+                    <div key="groups" class="groups">
+                        <Card name="Here" title={t("Here")} icon={cardIcons.here} layout="lore" preview={place.here.map((person) => person.name).join(" · ")}>
+                            <People people={place.here} />
+                        </Card>
+                    </div>
                 )}
             </div>
         </section>
     );
 }
 
-/** The place's band (D-309): its picture with its name over it, or without one a compact band; the places that hold it, and what holds there. */
-function PlaceBand({ place }: { place: ShownPlace; })
+/**
+ * The band while it comes and goes (D-444): with a scene that goes by turns, coming in when it starts while the page is open; kept a moment when they end, going
+ * out. None at the first drawing: the page is simply as it is.
+ */
+function useBandMotion(turns: TurnScene | undefined): { scene: TurnScene; motion?: "in" | "out"; } | undefined
 {
+    const last = useRef(turns);
+    const was = useRef(turns !== undefined);
+    const [motion, setMotion] = useState<"in" | "out">();
+    const now = turns !== undefined;
+
+    if (turns !== undefined) {
+        last.current = turns;
+    }
+
+    useEffect(() => {
+        if (now === was.current) {
+            return;
+        }
+
+        was.current = now;
+        setMotion(now ? "in" : "out");
+
+        if (now) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => setMotion(undefined), bandTime);
+        return () => window.clearTimeout(timer);
+    }, [now]);
+
+    if (turns !== undefined) {
+        return motion === "in" ? { scene: turns, motion } : { scene: turns };
+    }
+
+    return motion === "out" && last.current !== undefined ? { scene: last.current, motion } : undefined;
+}
+
+/**
+ * The place while the scene goes by turns (D-444): a low strip of its picture with its name and what holds there over it, or without a picture its mark, name
+ * and what holds there in one line; it opens where it stands into the whole band and its text, closed at each new scene.
+ */
+function PlaceLine({ place }: { place: ShownPlace; })
+{
+    const [open, setOpen] = useState(false);
+    const text = place.text.trim();
+
+    if (place.image !== undefined) {
+        return <PlaceBand place={place} fold={{ open, onToggle: () => setOpen(!open) }} />;
+    }
+
+    return (
+        <section class="place-line" aria-labelledby="place-name">
+            <div class="place-line-head">
+                <span class="place-line-mark" role="img" aria-label={t("Place")} data-tip={t("Place")}>
+                    <Icon name="scene" />
+                </span>
+                <h2 id="place-name">{place.name}</h2>
+                {place.around.length > 0 && (
+                    <ul class="place-env" aria-label={t("Around")}>
+                        {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} />)}
+                    </ul>
+                )}
+                {text !== "" && <DescriptionToggle open={open} controls="place-line-text" onToggle={() => setOpen(!open)} />}
+            </div>
+            {open && (
+                <div id="place-line-text" class="place-line-text">
+                    <Markdown text={text} />
+                </div>
+            )}
+        </section>
+    );
+}
+
+/** The button that opens a place's text where it stands, its chevron saying which way. */
+function DescriptionToggle({ open, controls, onToggle }: { open: boolean; controls: string; onToggle(): void; })
+{
+    return (
+        <button type="button" class="place-line-toggle" aria-expanded={open} aria-controls={controls} onClick={onToggle}>
+            {t("Description")}
+            <span class="chevron-tip tip-left" aria-hidden="true" data-tip={open ? t("Close") : t("Open")}>
+                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9.5l6 6 6-6" />
+                </svg>
+            </span>
+        </button>
+    );
+}
+
+/** A place's text under its picture (D-444): three lines, and the rest at a click, which closes it again. */
+function PlaceAbout({ text }: { text: string; })
+{
+    const [open, setOpen] = useState(false);
+    const [long, setLong] = useState(false);
+    const body = useRef<HTMLDivElement>(null);
+
+    // Whether three lines cut it: measured as it or the page's width changes, never as the page scrolls.
+    useEffect(() => {
+        const element = body.current;
+
+        if (element === null || open) {
+            return;
+        }
+
+        const check = (): void => setLong(element.scrollHeight > element.clientHeight + 1);
+        const sizes = new ResizeObserver(check);
+        sizes.observe(element);
+        return () => sizes.disconnect();
+    }, [text, open]);
+
+    return (
+        <div class="place-about">
+            <div ref={body} id="place-about-text" class={open ? "place-about-text" : "place-about-text clamped"}>
+                <Markdown text={text} />
+            </div>
+            {(long || open) && (
+                <button type="button" class="place-about-more" aria-expanded={open} aria-controls="place-about-text" onClick={() => setOpen(!open)}>
+                    {open ? t("less") : t("more")}
+                </button>
+            )}
+        </div>
+    );
+}
+
+/**
+ * The place's band (D-309, D-444): its picture with its name over it, or without one a compact band; the places that hold it, what holds there; its text under
+ * it. While the scene goes by turns, `fold` makes it a low strip of its picture, which opens where it stands into the whole band and the whole text.
+ */
+function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean; onToggle(): void; }; })
+{
+    const text = place.text.trim();
     const caption = (
         <div class="place-caption">
             {place.within.length > 0 && (
@@ -63,24 +210,38 @@ function PlaceBand({ place }: { place: ShownPlace; })
                     {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} />)}
                 </ul>
             )}
+            {fold && text !== "" && <DescriptionToggle open={fold.open} controls="place-band-text" onToggle={fold.onToggle} />}
         </div>
     );
 
     return place.image === undefined
         ? (
             <header class="place-band compact">
-                <div class="place-disc">
-                    <Icon name="house" />
+                <div class="place-shot">
+                    <div class="place-disc">
+                        <Icon name="house" />
+                    </div>
+                    {caption}
                 </div>
-                {caption}
+                {text !== "" && <PlaceAbout text={text} />}
             </header>
         )
         : (
-            <header class="place-band over">
-                <figure class="place-image">
-                    <img src={`/images/${encodeURIComponent(place.image.file)}?v=${place.image.version}`} alt="" />
-                </figure>
-                {caption}
+            <header class={fold === undefined ? "place-band over" : `place-band over folding${fold.open ? "" : " low"}`}>
+                <div class="place-shot">
+                    <figure class="place-image">
+                        <img src={`/images/${encodeURIComponent(place.image.file)}?v=${place.image.version}`} alt="" />
+                    </figure>
+                    {caption}
+                </div>
+                {fold === undefined && text !== "" && <PlaceAbout text={text} />}
+                {fold?.open === true && text !== "" && (
+                    <div class="place-about" id="place-band-text">
+                        <div class="place-about-text">
+                            <Markdown text={text} />
+                        </div>
+                    </div>
+                )}
             </header>
         );
 }
@@ -93,11 +254,15 @@ function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name:
 {
     const from = item.place === undefined || item.place === name ? undefined : item.place;
     const entry = "effect" in item ? undefined : environmentLabel(item.name, item.value);
+    // A biome the page draws has its picture, as on the map, for the word before it.
+    const look = "effect" in item || item.name.trim().toLowerCase() !== "biome" ? undefined : item.value.trim().toLowerCase();
+    const biome = look !== undefined && biomes[look] !== undefined ? look : undefined;
     return (
-        <li>
+        <li class={biome === undefined ? undefined : "biome"}>
             {"effect" in item ? effectLabel({ name: item.effect, end: item.end }) : (
                 <>
-                    {entry?.name !== "" && <span class="k">{entry?.name}</span>}
+                    {biome !== undefined && <BiomeSwatch look={biome} />}
+                    {entry?.name !== "" && <span class={biome === undefined ? "k" : "visually-hidden"}>{entry?.name}</span>}
                     {entry?.value}
                 </>
             )}
@@ -113,7 +278,7 @@ function environmentLabel(name: string, value: string): { name: string; value: s
     return known === "biome" ? { name: t("biome"), value: biomeLabel(value)?.toLowerCase() ?? value } : known === "terrain" ? { name: "", value: phraseLabel(terrainLabel(value)) } : { name, value };
 }
 
-/** The open scene (D-309): its title, type and since when, who is in it, and in a fight the round and whose turn it is. */
+/** The open scene (D-309): its title, type and since when, who is in it, and the round and whose turn it is when it has them. */
 function SceneCard({ scene }: { scene: ShownScene; })
 {
     const turn = scene.turn === undefined
@@ -129,15 +294,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
             </header>
             {scene.now && <p class="scene-line">{scene.now}</p>}
             <People people={scene.who} />
-            {/* In a fight, the line leads to Combat, where the turns are (D-314). */}
-            {scene.type === "combat"
-                ? (
-                    <p class="scene-turn">
-                        {turn && `${turn} · `}
-                        <a href={sectionAddress("combat")}>{t("Turn order")}</a>
-                    </p>
-                )
-                : turn && <p class="scene-turn">{turn}</p>}
+            {turn && <p class="scene-turn">{turn}</p>}
         </section>
     );
 }

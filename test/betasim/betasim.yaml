@@ -22,7 +22,6 @@ features: features.yaml
 screens:
   "^#/party": Party
   "^#/scene": Scene
-  "^#/combat": Combat
   "^#/journal": Journal
   "^#/world": World
   "^#/help": Help

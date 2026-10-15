@@ -767,7 +767,15 @@ function seenEffectOf(world: World, line: string, named: (name: unknown) => stri
 function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, measures: Measures): SheetGroupData[]
 {
     const field = system?.grid?.speed;
-    const told = (value: SheetValue): SheetValue => (field !== undefined && comparableText(value.field) === comparableText(field) ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) } : value);
+    // The load in kilograms for a player who counts in metric, with the system's pound (LOAD-2).
+    const pound = system?.pound;
+    const kilograms = (text: string): string => text.replace(/[\d.]+/g, (number) => String(Math.round(Number(number) * (pound ?? 1) * 10) / 10)).replace(/\s*\p{L}[\p{L}.]*\s*$/u, " kg");
+    const told = (value: SheetValue): SheetValue =>
+        field !== undefined && comparableText(value.field) === comparableText(field)
+            ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
+            : value.field === "load" && measures.units === "metric" && pound !== undefined
+            ? { ...value, text: kilograms(value.text) }
+            : value;
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
 }
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -110,103 +110,102 @@ Tworzysz postać razem z Mistrzem Gry, jak przy stole. Każdy wybór należy do 
 
 ---
 
-## 3. Gra <!-- icon: chat -->
+## 3. Granie <!-- icon: chat -->
 
 ### 3.1 Rozmowa z Mistrzem Gry
 
-Pisz, co Twoja postać robi lub mówi, własnymi słowami:
+Pisz, co robi lub mówi Twoja postać, własnymi słowami:
 
-> Pytam karczmarza, kto jeszcze tu dziś przechodził.
+> Pytam karczmarza, kto jeszcze tu dziś zaglądał.
 
-Poza opowieścią pisz w nawiasach kwadratowych: *[Jak działa chwytanie?]* Mistrz Gry odpowiada również w nawiasach.
+Poza fabułą pisz w nawiasach kwadratowych: *[Jak działa chwytanie?]* Mistrz Gry też odpowiada w nawiasach.
 
-Ty mówisz, co próbujesz zrobić, a Mistrz Gry mówi, co się dzieje. Mistrz Gry nigdy nie decyduje za Twoją postać i nigdy nie mówi o silniku. Możesz go zapytać, jak korzystać z dashboardu.
+Ty mówisz, co próbujesz zrobić. Mistrz Gry mówi, co się dzieje. Mistrz Gry nigdy nie decyduje za Twoją postać i nigdy nie mówi o silniku gry. Możesz zapytać go, jak korzystać z dashboardu.
 
 ### 3.2 Rzuty
 
-Mistrz Gry prosi o rzut tylko wtedy, gdy wynik jest niepewny i ma znaczenie, a najpierw mówi, o co toczy się stawka. Potem:
+Mistrz Gry prosi o rzut tylko wtedy, gdy wynik jest niepewny i ma znaczenie. Najpierw mówi, o co toczy się gra. Potem:
 
-- **Na dashboardzie** baner pokazuje przycisk dla każdego testu, na przykład *Akrobatyka +4 · z przewagą*. Kliknij go: kości spadną na stronie, a Mistrz Gry usłyszy wynik. Możesz też kliknąć podświetlony wiersz karty postaci, rzucić kośćmi z tacki na kości albo napisać coś innego w banerze.
-- **Ręcznie**, w rogu banera albo w **Ustawieniach**: baner mówi, co rzucić, a Ty rzucasz z karty postaci lub z tacki na kości.
-- **Fizyczne kości**, gdy ustawienie kości ma wartość physical: wpisujesz wyrzucone oczka, *[Wyrzucono 14.]*, a RPG Engine dodaje Twoje modyfikatory.
+- **Na dashboardzie** baner pokazuje przycisk dla każdego testu, na przykład *Acrobatics +4 · with advantage*. Kliknij go: kości spadną na stronę, a Mistrz Gry usłyszy wynik. Możesz też kliknąć podświetlony wiersz karty postaci, rzucić kośćmi z tacki na kości albo napisać w banerze coś innego.
+- **Ręcznie**, w rogu banera lub w **Ustawieniach**: baner podpowiada, czym rzucić, a Ty rzucasz z karty postaci lub z tacki na kości.
+- **Fizyczne kości**, gdy w ustawieniach kości są ustawione jako fizyczne: wpisujesz wyniki, które wypadły, *[Wyrzucono 14.]*, a RPG Engine dodaje Twoje modyfikatory.
 
 **Swobodne rzuty**: kliknij dowolną liczbę na karcie postaci albo otwórz tackę na kości, aby rzucić dla zabawy. Nigdy się nie liczą, a Mistrz Gry ich nie widzi.
 
-**Rzuty Mistrza Gry** pojawiają się w Twojej kolumnie rzutów, oprócz tajnych. Zawsze możesz zapytać *[Czy ten rzut był prawdziwy?]*: przy tajnym rzucie Mistrz Gry podaje odcisk, który dowodzi, że rzut wykonano, zanim zapytałeś.
+**Rzuty Mistrza Gry** widać w kolumnie rzutów, oprócz tajnych. Zawsze możesz zapytać *[Czy ten rzut był prawdziwy?]*: przy tajnym rzucie Mistrz Gry podaje odcisk, który dowodzi, że rzut wykonano, zanim padło pytanie.
 
 ### 3.3 Sceny i walki
 
-Historia toczy się w **scenach**: walka, rozmowa, zwiedzanie, podróż, odpoczynek. Na końcu każdej sceny gra zapisuje się sama, a scena trafia do Twojego dziennika.
+Historia toczy się w **scenach**: walka, rozmowa, zwiedzanie, podróż, odpoczynek. Na końcu każdej sceny gra zapisuje się sama, a scena trafia do dziennika.
 
-W walce Mistrz Gry opowiada każdą turę, która nie jest Twoja, i zatrzymuje się tam, gdzie możesz podjąć decyzję. Sekcja **Walka** pokazuje kolejność tur, punkty życia drużyny i to, jak ranni wyglądają przeciwnicy, opisane słowami. Jeśli Twoja postać upadnie, zapisy przed śmiercią pojawiają się na stronie w dużym rozmiarze.
+W walce Mistrz Gry opowiada każdą turę, która nie jest Twoja, i zatrzymuje się tam, gdzie możesz zdecydować. **Scena** pokazuje na górze, czyja jest tura i kto jest następny, a obok mapy kartę Twojej postaci. Kolejność tur, punkty życia drużyny i to, jak ranni wyglądają przeciwnicy (opisane słowami), zostają z boku strony. Jeśli postać upadnie, rzuty obronne przeciw śmierci pojawiają się dużo większe na stronie.
 
-### 3.4 Czas, podróże i świat w ruchu
+### 3.4 Czas, podróże i świat, który się zmienia
 
-RPG Engine prowadzi datę; między sesjami czas nie płynie. Powiedz, że odpoczywacie, *Robimy długi odpoczynek*, a odpoczynek przywróci to, co trzeba. Powiedz, dokąd idziesz, *Ruszamy drogą na północ do Rocca*, a RPG Engine wyliczy drogę, odległość i dni, zatrzymując się, gdy coś wydarzy się po drodze. Pieniądze liczone są w monetach gry, z resztą włącznie.
+RPG Engine pilnuje daty; między sesjami czas nie płynie. Powiedz, że odpoczywacie, *Robimy długi odpoczynek*, a odpoczynek przywróci to, co powinien. Powiedz, dokąd idziecie, *Ruszamy drogą na północ do Rocca*, a RPG Engine wyliczy trasę, odległość i liczbę dni, zatrzymując się, gdy coś wydarzy się po drodze. Pieniądze liczy się w monetach gry, łącznie z resztą.
 
-Złoczyńcy mają plany z terminami. Każdego nowego dnia Mistrz Gry porusza zagrożenia, które czas posunął naprzód, a Ty widzisz ich znaki, nigdy zaś samego zegara.
+Złoczyńcy mają plany z terminami. Każdego nowego dnia Mistrz Gry posuwa naprzód zagrożenia, którym czas dał przewagę. Widać ich znaki, ale nigdy sam zegar.
 
 ### 3.5 Mapy
 
-**Świat** pokazuje miejsca, które zna Twoja postać, drogi między nimi i szlak, którym szliście, a resztę przykrywa mgła. **Scena** pokazuje mapę miejsca, w którym jesteś, jeśli ją ma, z tym, kto gdzie stoi. W walce, w Twojej turze, pola, do których nie dotrzesz, są zasłonięte. Gdy Mistrz Gry pyta, dokąd się ruszasz, dotknij pola albo je wpisz, na przykład *E4*.
+**Świat** pokazuje miejsca, które zna Twoja postać, drogi między nimi i przebytą trasę, a resztę przykrywa mgła. **Scena** pokazuje mapę miejsca, w którym jesteś, jeśli je ma, wraz z tym, kto gdzie stoi. W walce, w Twojej turze, pola poza zasięgiem są zasłonięte. Gdy Mistrz Gry zapyta, dokąd się ruszasz, dotknij pola albo je wpisz, na przykład *E4*.
 
 ### 3.6 Zadania, dziennik i notatki
 
-Zadanie, które podejmuje Twoja postać, trafia do **Dziennika** jako zadanie, z jego celami, terminem i tym, co mierzy. Oznacz je gwiazdką, aby widzieć je na górze Sceny. Dziennik opowiada też Twoją **historię**, scena po scenie, i przechowuje Twoje **notatki**: są prywatne, chyba że **Udostępnisz** którąś. Mistrz Gry usłyszy ją wtedy jako Twoje przemyślenie, nigdy jako fakt.
+Zadanie, które podejmuje postać, trafia do **Dziennika** jako zadanie, razem z celami, terminem i tym, co mierzy. Oznacz je gwiazdką, aby zostało na widoku u góry Sceny. Dziennik opowiada też Twoją **historię**, scena po scenie, i przechowuje Twoje **notatki**: są prywatne, chyba że **Udostępnisz** którąś. Mistrz Gry odbierze ją jako to, co myślisz, nigdy jako fakt.
 
-### 3.7 Historia i obraz Twojej postaci
+### 3.7 Historia i obraz postaci
 
-Na karcie postaci karta **Opis** ma pole na historię Twojej postaci: Mistrz Gry wpisuje ją tam, gdy się zgodzisz. Jeśli chcesz obraz, podaj Mistrzowi Gry plik (PNG, JPEG, WebP lub SVG, do 5 MB) wraz z miejscem, w którym leży na Twoim komputerze, albo zamów portret ([3.11](#311-pictures)): *[Zrób mi portret: siwe włosy w warkoczu, blizna na brodzie.]*
+Na karcie postaci karta **Opis** ma pole na historię postaci: Mistrz Gry wpisuje ją tam po Twojej zgodzie. Jeśli chcesz obraz, daj Mistrzowi Gry plik (PNG, JPEG, WebP lub SVG, do 5 MB) wraz z informacją, gdzie leży na komputerze, albo zamów portret ([3.11](#311-pictures)): *[Zrób mi portret: siwe włosy w warkoczu, blizna na brodzie.]*
 
-### 3.8 Zapisy i cofanie się
+### 3.8 Zapisy i powroty
 
-RPG Engine zapisuje całą kampanię na końcu każdej sceny. Resztę określa ustawienie **Zapisy**:
+RPG Engine zapisuje całą kampanię na końcu każdej sceny. Resztę określa ustawienie **zapisów**:
 
-| Zapisy | Zapis, kiedy chcesz | Cofnięcie |
+| Zapisy | Zapisz, kiedy chcesz | Powrót |
 |---|---|---|
 | **permadeath** | nie | nigdy |
-| **checkpoint** | nie | do ostatniego zapisu, tylko gdy Twoja postać zginie |
+| **checkpoint** | nie | do ostatniego zapisu, tylko gdy postać zginie |
 | **free** | tak | do dowolnego zapisu |
 
-W każdym trybie możesz **zacząć od nowa**, od początku gry albo od sesji zero. Zrób to na czacie albo w **Zapisach**.
+W każdym trybie można **zacząć od nowa**: od początku gry albo od sesji zero. Zrób to na czacie lub w **Zapisach**.
 
-Po cofnięciu się **otwórz nowy czat**: stary pamięta to, co cofnięto. Napisz *kontynuuj* w nowym czacie, a potem naciśnij **Nowy czat otwarty** w Zapisach.
+Po powrocie **otwórz nowy czat**: stary pamięta to, co cofnięto. Napisz w nowym czacie *kontynuuj*, a potem naciśnij **Nowy czat otwarty** w Zapisach.
 
 ### 3.9 Sesje: przerwa i powrót
 
-Przerwij, kiedy chcesz: *[Kończymy na dziś.]* Wszystko jest już zapisane w plikach. Aby wrócić, uruchom agenta w folderze kampanii i napisz *kontynuuj*: Mistrz Gry da Ci krótkie podsumowanie i pójdzie dalej.
+Przerwij, kiedy chcesz: *[Zatrzymajmy się na dziś.]* Wszystko jest już zapisane w plikach. Aby wrócić, uruchom agenta w folderze kampanii i napisz *kontynuuj*: Mistrz Gry krótko przypomni, co było, i ruszy dalej.
 
 ### 3.10 Nastrój Mistrza Gry
 
-Robot u góry dashboardu to Mistrz Gry: jego twarz podąża za tonem historii i nigdy nie zdradza tego, czego jeszcze nie wiesz. Gdy czat jest zamknięty, robot śpi.
+Robot na górze dashboardu to Mistrz Gry: jego twarz podąża za tonem historii i nigdy nie zdradza tego, czego jeszcze nie wiesz. Gdy czat jest zamknięty, robot śpi.
 
 ### 3.11 Obrazy
 
-RPG Engine może zamawiać obrazy miejsc, do których docierasz, zadań, które podejmujesz, i napotkanych postaci, zależnie od ustawienia **Obrazy**, a także portret Twojej postaci, gdy o niego poprosisz. Korzysta z tego, co jest na Twoim komputerze, z Twoim własnym logowaniem: **Codex** maluje, a w przeciwnym razie rysuje **Claude Code**. **Ustawienia** mówią, czy ten komputer potrafi je tworzyć, a jeśli nie, jak to skonfigurować. Zawsze możesz dać Mistrzowi Gry własny obraz.
+RPG Engine może tworzyć obrazy miejsc, do których docierasz, zadań, które podejmujesz, i osób, które spotykasz, zgodnie z ustawieniem **obrazów**, a także portret postaci na życzenie. Korzysta z tego, co jest na Twoim komputerze, z Twojego własnego logowania: **Codex** maluje je, a w przeciwnym razie rysuje je **Claude Code**. **Ustawienia** pokazują, czy ten komputer może je tworzyć, a jeśli nie, jak go skonfigurować. Zawsze możesz dać Mistrzowi Gry własny obraz.
 
 ### 3.12 Bezpieczeństwo: linie, zasłony i stop
 
-**Linie** nigdy nie pojawiają się w grze, a **zasłony** dzieją się tylko poza ekranem. W każdej chwili napisz *[stop]*: Mistrz Gry natychmiast porzuca tę treść i dodaje ją do Twoich linii.
+**Linie** nigdy nie pojawiają się w grze; **zasłony** oznaczają, że coś dzieje się tylko poza ekranem. W każdej chwili napisz *[stop]*: Mistrz Gry natychmiast porzuci tę treść i doda ją do Twoich linii.
 
 ### 3.13 Zmiana zdania
 
-Każde ustawienie można zmienić, na czacie albo w **Ustawieniach**. Rozstrzygnięcie, które Mistrz Gry podejmuje bez podręcznika, staje się **precedensem**, więc to samo pytanie następnym razem dostanie tę samą odpowiedź.
+Każde ustawienie można zmienić, na czacie lub w **Ustawieniach**. Rozstrzygnięcie, które Mistrz Gry podejmie bez podręcznika, staje się **precedensem**, więc na to samo pytanie następnym razem padnie ta sama odpowiedź.
 
 ---
 
 ## 4. Dashboard <!-- icon: party -->
 
-Strona na Twoim komputerze, otwierana tylko w przeglądarce tego komputera, aktywna, dopóki czat jest otwarty. Gdy czat się zamyka, pokazuje *Not connected*, a przy następnym czacie wraca sama.
+Strona na Twoim komputerze, otwierana tylko w przeglądarce tego komputera, działa, dopóki czat jest otwarty. Gdy czat się zamyka, pokazuje *Not connected*; wraca sama przy następnym czacie.
 
-- **Drużyna**: Twoja karta postaci i karty towarzyszy. Kliknij liczbę, aby nią rzucić. Najedź na nią, aby zobaczyć, skąd się bierze. Obok są rzuty.
-- **Scena**: gdzie jesteś, jej obraz i mapa, kto tam jest, co się dzieje.
-- **Walka**: tylko w walce: tury, walczący, to, co masz pod ręką.
+- **Drużyna**: Twoja karta postaci i karty towarzyszy. Kliknij liczbę, aby nią rzucić; najedź na nią, aby zobaczyć, skąd się bierze. Obok są rzuty.
+- **Scena**: gdzie jesteś, jej obraz i mapa, kto tam jest, co się dzieje. W walce: tury i karta Twojej postaci.
 - **Dziennik**: zadania, historia, Twoje notatki.
-- **Świat**: mapa świata, jaką zna Twoja postać.
+- **Świat**: mapa świata taka, jaką zna Twoja postać.
 - **Tacka na kości**: wybierz kości i modyfikator, a potem rzuć.
-- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**, jako ikony na końcu rzędu. Ustawienia zawierają też preferencje samej strony: motyw, dźwięk kości, zestaw kości.
+- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**, jako ikony na końcu rzędu. W Ustawieniach są też preferencje samej strony: motyw, dźwięk kości, zestaw kości.
 
-Gdy Mistrz Gry o coś pyta, jego baner zostaje u góry, niezależnie od tego, w jakiej sekcji jesteś.
+Gdy Mistrz Gry o coś zapyta, jego baner zostaje na górze, w której części strony byś nie był.
 
 ---
 

@@ -121,6 +121,17 @@ export function WorldView({ version, lead }: { version: number; lead?: Member; }
  * The map's card: its head, with the maps the character knows as tabs; the map with its tools and the card of the chosen place; the key under it. `map` is what
  * the current map draws, `full` the whole world map, for the ways that lead to other maps.
  */
+/** A biome's own picture, as the map draws its land: a tile in its colour with its mark, or the bare land for one the page does not know. */
+export function BiomeSwatch({ look }: { look: string; })
+{
+    return (
+        <svg class="key-swatch" viewBox="0 0 22 16" aria-hidden="true">
+            <rect class={`hex lit ${look}`} x={1} y={1} width={20} height={14} rx={3} />
+            {biomes[look] !== undefined && <path class={`tuft ${look}`} transform="translate(11 9)" d={biomes[look].mark} />}
+        </svg>
+    );
+}
+
 function MapCard(
     { map, full, part, layout, lead, chosen, focus, onChoose, onGo }: {
         map: WorldMap;
@@ -752,10 +763,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                     <ul>
                         {lands.map((look) => (
                             <li key={look}>
-                                <svg class="key-swatch" viewBox="0 0 22 16" aria-hidden="true">
-                                    <rect class={`hex lit ${look}`} x={1} y={1} width={20} height={14} rx={3} />
-                                    {biomes[look] !== undefined && <path class={`tuft ${look}`} transform="translate(11 9)" d={biomes[look].mark} />}
-                                </svg>
+                                <BiomeSwatch look={look} />
                                 {biomeLabel(look) ?? t("Other land")}
                             </li>
                         ))}
@@ -834,6 +842,7 @@ function RegionRow({ region, unit }: { region: Area; unit: WorldMap["unit"]; })
             <span class="place-row static">
                 <span class="pr-name">{region.name}</span>
                 <span class="pr-kind">
+                    {region.biome !== undefined && biomes[region.biome] !== undefined && <BiomeSwatch look={region.biome} />}
                     {[t("Region"), biomeLabel(region.biome), region.terrain === undefined ? undefined : terrainLabel(region.terrain)].filter((part) => part !== undefined).join(" · ")}
                 </span>
                 <span class="pr-far num" dir="auto">{t("{length} across", { length: lengthText(region.radius * 2, unit) })}</span>

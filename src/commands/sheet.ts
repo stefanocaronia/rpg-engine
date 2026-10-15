@@ -3,13 +3,13 @@ import { listItemNames, numberOf } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { type Counter, readCounter } from "../counters/index.ts";
-import { baseChain, containerFieldOf, declaredKind, entryKind, entryPage, isEmptyField, isStandardField, linksIn, type Page, readEntry, stackName, stacksOf, textsIn, validHoldersOf, type World } from "../pages/index.ts";
+import { baseChain, containerFieldOf, declaredKind, entryKind, entryPage, inheritedFields, isEmptyField, isStandardField, linksIn, type Page, readEntry, stackName, stacksOf, textsIn, validHoldersOf, type World } from "../pages/index.ts";
 import { fieldName } from "../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText, type LevelNeed, levelNeed } from "./game-experience.ts";
 import { givenItems, progressionOf } from "./progression.ts";
-import { counterLimits, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { counterLimits, formulaValue, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -45,7 +45,9 @@ export function sheetSummary(system: GameSystem): SheetSummary | undefined
         whenTheyApply: [...entries.filter((entry) => entry.optional).flatMap((entry) => entryFields([entry]).filter((field) => !isWorkedOut(system, field) && !isSystemUse(system, field))), ...lineOnly],
         workedOut,
         // "save-proficiencies (str, dex, con…)": a few names whole, many by the first two, as the system writes them.
-        lists: Object.entries(system.values).filter(([field]) => onSheet.has(comparableText(field))).map(([field, names]) => `${field} (${names.length <= 6 ? names.join(", ") : `such as ${names.slice(0, 2).join(", ")}`})`),
+        lists: Object.entries({ ...system.values, ...system.sheetValues }).filter(([field]) => onSheet.has(comparableText(field))).map(([field, names]) =>
+            `${field} (${names.length <= 6 ? names.join(", ") : `such as ${names.slice(0, 2).join(", ")}`})`
+        ),
     };
 }
 
@@ -172,7 +174,9 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 return isEmptyField(value) ? [] : [sheetValue(world, fields, entry.field, value)];
             });
             const items = carriedRows(world, page, equippedPages(world, page));
-            return values.length + items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values, ...(items.length === 0 ? {} : { items }) }];
+            const load = loadValue(world, system, page, fields);
+            const shown = [...values, ...(load === undefined ? [] : [load])];
+            return shown.length + items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values: shown, ...(items.length === 0 ? {} : { items }) }];
         }
 
         const list = itemGroupList(world, group);
@@ -392,7 +396,7 @@ export function sheetFieldNames(world: World, system: GameSystem | undefined, pa
  * Refuses items given to a list that the game system does not take, with the names it takes, and links in place of its names (SYS-8); and text with commas for a
  * list the system declares without names, which would be one item, as "simple weapons, martial weapons".
  */
-export function checkListValues(system: GameSystem | undefined, lists: Record<string, unknown>): void
+export function checkListValues(system: GameSystem | undefined, lists: Record<string, unknown>, onSheet = false): void
 {
     for (const [field, value] of Object.entries(lists)) {
         // A map where a list goes, as {"[[Fighter]]": 1}, would read as nothing: the sheet would come out at level 0 (D-246).
@@ -405,11 +409,11 @@ export function checkListValues(system: GameSystem | undefined, lists: Record<st
             throw new Error(`${field} is a list in the system ${system.name}: write its names apart, as ${field}=[${String(value)}]. Nothing changed.`);
         }
 
-        const wrong = wrongValues(system, field, value);
-        const links = allowedValues(system, field) === undefined ? [] : (Array.isArray(value) ? value : [value]).filter((item) => /\[\[/.test(String(item)));
+        const wrong = wrongValues(system, field, value, onSheet);
+        const links = allowedValues(system, field, onSheet) === undefined ? [] : (Array.isArray(value) ? value : [value]).filter((item) => /\[\[/.test(String(item)));
 
         if (system !== undefined && wrong.length > 0) {
-            throw new Error(`${wrongText(system, field, wrong)} Nothing changed.`);
+            throw new Error(`${wrongText(system, field, wrong, onSheet)} Nothing changed.`);
         }
 
         if (links.length > 0) {
@@ -433,7 +437,7 @@ function isListField(system: GameSystem, field: string): boolean
 /** A list the system declares without the names it takes, which are checked by name, as weapon-proficiencies (SYS-8). */
 function isOpenList(system: GameSystem, field: string): boolean
 {
-    return allowedValues(system, field) === undefined && Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
+    return allowedValues(system, field, false) === undefined && Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
 }
 
 /**
@@ -446,16 +450,17 @@ export function listValueProblems(world: World, system: GameSystem | undefined):
         return [];
     }
 
-    return world.pages.filter((page) => page.system === undefined).flatMap((page) =>
-        Object.entries(page.fields).flatMap(([field, value]): Problem[] => {
+    return world.pages.filter((page) => page.system === undefined).flatMap((page) => {
+        const sheet = hasSheet(world, page);
+        return Object.entries(page.fields).flatMap(([field, value]): Problem[] => {
             if (isOpenList(system, field) && isCommaText(value)) {
                 return [{ path: page.path, message: `${field} on ${page.name} is text with commas, read as one name: a list is written [a, b].`, fix: `write ${page.name}, set ${field}=[${String(value)}]` }];
             }
 
-            const wrong = wrongValues(system, field, value);
-            return wrong.length === 0 ? [] : [{ path: page.path, message: `On ${page.name}: ${wrongText(system, field, wrong)}`, fix: `write ${page.name}, remove ${field}=${wrong[0]}, then add the right name` }];
-        })
-    );
+            const wrong = wrongValues(system, field, value, sheet);
+            return wrong.length === 0 ? [] : [{ path: page.path, message: `On ${page.name}: ${wrongText(system, field, wrong, sheet)}`, fix: `write ${page.name}, remove ${field}=${wrong[0]}, then add the right name` }];
+        });
+    });
 }
 
 /** How many marks each computed field earns (D-217, DAT-2): one for each list of the system's marks that it reads with its item, where that item changes it. */
@@ -559,6 +564,130 @@ function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, se
         seen.add(page);
         return [row(page.name, "", equipped.includes(page), page), ...carriedRows(world, page, equipped, depth + 1, seen)];
     });
+}
+
+/** A character's load when it is over its limit, as status says it under the rigor «rules» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
+export function overLoad(world: World, system: GameSystem | undefined, page: Page): string | undefined
+{
+    if (system?.load === undefined || !hasSheet(world, page)) {
+        return undefined;
+    }
+
+    const fields = effectiveFields(world, page);
+    const load = carriedLoad(world, system.load.field, page) + coinsWeight(fields, system.load.coins);
+    const limit = loadLimit(world, system.load, fields);
+    const value = loadValue(world, system, page, fields);
+    return limit === undefined || load <= limit || value === undefined ? undefined : `load ${value.text}, over the limit`;
+}
+
+/** For an item created without a weight, its own or its base's, when the system counts loads: the AI estimates one (LOAD-1). */
+export function weightlessNote(system: GameSystem | undefined, world: World, page: Page): string[]
+{
+    if (system?.load === undefined || page.type !== "item" || valueNamed(inheritedFields(world, page), system.load.field) !== undefined) {
+        return [];
+    }
+
+    const unit = weightUnit(world, system.load.field) ?? "lb";
+    return [`${page.name} has no ${system.load.field}, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set ${system.load.field}="2 ${unit}".`];
+}
+
+/** What a character carries weighs, against its limit, as the sheet shows it (D-432, LOAD-2): "23 / 210 lb", in the system's unit; none when the system counts no load. */
+function loadValue(world: World, system: GameSystem, page: Page, fields: Record<string, unknown>): SheetValue | undefined
+{
+    if (system.load === undefined) {
+        return undefined;
+    }
+
+    const load = carriedLoad(world, system.load.field, page) + coinsWeight(fields, system.load.coins);
+
+    // Empty hands, no line: a character who carries nothing has no Equipment to show.
+    if (load === 0) {
+        return undefined;
+    }
+
+    const limit = loadLimit(world, system.load, fields);
+    const unit = weightUnit(world, system.load.field);
+    const text = `${weightText(load)}${limit === undefined ? "" : ` / ${weightText(limit)}`}${unit === undefined ? "" : ` ${unit}`}`;
+    return { field: "load", text, marks: 0 };
+}
+
+/** The limit of a character's load: the system's formula, times the factor of its size, written or from its race (LOAD-4). */
+function loadLimit(world: World, load: NonNullable<GameSystem["load"]>, fields: Record<string, unknown>): number | undefined
+{
+    const limit = formulaValue(world, fields, load.limit);
+    const size = load.size === undefined ? undefined : valueNamed(fields, load.size);
+    const factor = typeof size === "string" ? Object.entries(load.sizes).find(([name]) => comparableText(name) === comparableText(size))?.[1] : undefined;
+    return limit === undefined ? undefined : limit * (factor ?? 1);
+}
+
+/** The weight a holder carries (LOAD-1): each stack by its pieces, at its kind's weight over its bundle; each item at its own weight or its base's, and what it holds. */
+export function carriedLoad(world: World, field: string, holder: Page, seen = new Set<Page>()): number
+{
+    const container = containerFieldOf(holder.type);
+    const stacks = stacksOf(world, holder);
+    const counted = new Set<Page>();
+
+    return (container === undefined ? [] : textsIn(holder.fields[container])).reduce((total, entry) => {
+        const kind = entryKind(world, entry)?.kind;
+        const stack = kind === undefined ? undefined : stacks.find((candidate) => candidate.kind === kind);
+
+        if (stack !== undefined) {
+            const first = !counted.has(stack.kind);
+            counted.add(stack.kind);
+            const bundle = Number(stack.kind.fields.bundle);
+            return first ? total + (weightOf(world, field, stack.kind) * stack.count) / (Number.isSafeInteger(bundle) && bundle > 1 ? bundle : 1) : total;
+        }
+
+        const read = readEntry(entry);
+        const page = read.shape === "text" ? undefined : entryPage(world, read.page);
+
+        if (page === undefined || page.type !== "item" || seen.has(page) || validHoldersOf(world, page)[0] !== holder) {
+            return total;
+        }
+
+        seen.add(page);
+        return total + weightOf(world, field, page) + carriedLoad(world, field, page, seen);
+    }, 0);
+}
+
+/** A page's weight as a number of the system's unit, its own or its base's: 1 lb, 1/2 lb, 1½ lb, 1,000 lb; 0 when it has none. */
+function weightOf(world: World, field: string, page: Page): number
+{
+    const value = valueNamed(inheritedFields(world, page), field);
+    const match = typeof value === "string" ? /^\s*([\d,]*)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*$/u.exec(value) : null;
+
+    if (typeof value === "number") {
+        return value;
+    }
+
+    if (match === null || (match[1] === "" && match[2] === undefined)) {
+        return 0;
+    }
+
+    const whole = match[1] === "" ? 0 : Number(match[1].replace(/,/g, ""));
+    const part = match[2] === undefined ? 0 : ({ "½": 0.5, "¼": 0.25, "¾": 0.75 } as Record<string, number>)[match[2]] ?? Number(match[2].split("/")[0]) / Number(match[2].split("/")[1]);
+    return whole + part;
+}
+
+/** The unit the system's weights are written in, as lb; undefined when no page says. */
+function weightUnit(world: World, field: string): string | undefined
+{
+    const written = (world.system?.pages ?? []).map((page) => page.fields[field]).find((value) => typeof value === "string" && /\p{L}/u.test(value));
+    return typeof written === "string" ? /(\p{L}[\p{L}.]*)\s*$/u.exec(written)?.[1] : undefined;
+}
+
+/** What the coins of a purse weigh, as many coins as the system says make one unit of weight; 0 when it says none. */
+function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefined): number
+{
+    const money = valueNamed(fields, "money");
+    const coins = typeof money === "string" ? [...money.matchAll(/(\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1]), 0) : 0;
+    return perUnit === undefined ? 0 : coins / perUnit;
+}
+
+/** A weight as the sheet writes it: whole, or with one decimal. */
+function weightText(weight: number): string
+{
+    return String(Math.round(weight * 10) / 10);
 }
 
 /** How many there are, as the sheet shows it: blank for one, which goes without saying (Stefano, 14 October). */
@@ -711,9 +840,9 @@ function linkText(text: string): string
 }
 
 /** The items of a list that the game system does not take, by the names they are read as (SYS-8); none for a field without values. */
-function wrongValues(system: GameSystem | undefined, field: string, value: unknown): string[]
+function wrongValues(system: GameSystem | undefined, field: string, value: unknown, onSheet: boolean): string[]
 {
-    const allowed = allowedValues(system, field);
+    const allowed = allowedValues(system, field, onSheet);
     // A text with closed names, as an alignment, is one name whole, commas and all.
     const names = isTextField(system, field) ? (isEmptyField(value) ? [] : [String(value).trim()]) : listItemNames(value);
     return allowed === undefined ? [] : names.filter((name) => !allowed.some((item) => comparableText(item) === comparableText(name)));
@@ -725,17 +854,22 @@ function isTextField(system: GameSystem | undefined, field: string): boolean
     return Object.entries(system?.fields ?? {}).some(([name, kind]) => kind === "text" && comparableText(name) === comparableText(field));
 }
 
-/** The names a list field takes in the game system (SYS-8); undefined for a field without values. */
-function allowedValues(system: GameSystem | undefined, field: string): string[] | undefined
+/** The names a list field takes in the game system (SYS-8), and on a page that keeps the sheet those it closes there (D-435); undefined for a field without values. */
+function allowedValues(system: GameSystem | undefined, field: string, onSheet: boolean): string[] | undefined
 {
-    return Object.entries(system?.values ?? {}).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    const named = (values: Record<string, string[]>): string[] | undefined => Object.entries(values).find(([name]) => comparableText(name) === comparableText(field))?.[1];
+    return named(system?.values ?? {}) ?? (onSheet ? named(system?.sheetValues ?? {}) : undefined);
 }
 
 /** "Stealthh is not one of the names skill-proficiencies takes in the system 5e: Acrobatics, …": with how to write a list, when a name holds a comma. */
-function wrongText(system: GameSystem, field: string, wrong: string[]): string
+function wrongText(system: GameSystem, field: string, wrong: string[], onSheet: boolean): string
 {
-    const allowed = allowedValues(system, field) ?? [];
+    const allowed = allowedValues(system, field, onSheet) ?? [];
+    // A sheet's list the campaign may widen, as a language of its own world (D-435).
+    const own = Object.keys(system.sheetValues).some((name) => comparableText(name) === comparableText(field))
+        ? ` A name of the campaign's own world joins them with config values "${field}: [${wrong[0] ?? ""}]".`
+        : "";
     const list = wrong.some((name) => /[,;]/.test(name)) ? " A list is written [a, b]." : "";
     const names = wrong.map((name) => `"${name}"`).join(", ");
-    return `${names} ${wrong.length === 1 ? "is not one of the names" : "are not names"} ${field} takes in the system ${system.name}: ${allowed.join(", ")}.${list}`;
+    return `${names} ${wrong.length === 1 ? "is not one of the names" : "are not names"} ${field} takes in the system ${system.name}: ${allowed.join(", ")}.${list}${own}`;
 }

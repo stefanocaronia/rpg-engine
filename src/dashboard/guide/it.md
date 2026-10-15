@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 80a7cfb9 23c5f59b b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -138,7 +138,7 @@ Il master chiede un tiro solo quando l'esito è incerto e conta, e prima dice co
 
 La storia procede per **scene**: uno scontro, una conversazione, un'esplorazione, un viaggio, un riposo. Alla fine di ogni scena il gioco salva da solo, e la scena entra nel tuo diario.
 
-In uno scontro il master racconta ogni turno che non è tuo, e si ferma dove puoi decidere. La sezione **Scontro** mostra l'ordine dei turni, i punti ferita del tuo gruppo e quanto sono feriti i nemici, a parole. Se il tuo personaggio cade, i tiri salvezza contro la morte compaiono in grande sulla pagina.
+In uno scontro il master racconta ogni turno che non è tuo, e si ferma dove puoi decidere. La **Scena** mostra in cima a chi tocca e chi viene dopo, e la scheda del tuo personaggio accanto alla mappa; l'ordine dei turni, i punti ferita del tuo gruppo e quanto sono feriti i nemici, a parole, restano accanto alla pagina. Se il tuo personaggio cade, i tiri salvezza contro la morte compaiono in grande sulla pagina.
 
 ### 3.4 Il tempo, i viaggi e il mondo che si muove
 
@@ -199,8 +199,7 @@ Ogni impostazione può cambiare, in chat o nelle **Impostazioni**. Una decisione
 Una pagina sul tuo computer, che si apre solo nel browser di quel computer, viva finché la chat è aperta. Quando la chat si chiude mostra *Non collegato*; torna da sola con la chat successiva.
 
 - **Gruppo**: la tua scheda e quelle dei compagni. Clicca un numero per tirarlo; passaci sopra col mouse per vedere da dove viene. Accanto, i tiri.
-- **Scena**: dove sei, la sua immagine e la sua mappa, chi c'è, cosa sta succedendo.
-- **Scontro**: solo in uno scontro: i turni, i combattenti, ciò che hai a portata di mano.
+- **Scena**: dove sei, la sua immagine e la sua mappa, chi c'è, cosa sta succedendo; in uno scontro, i turni e la scheda del tuo personaggio.
 - **Diario**: le missioni, la storia, le tue note.
 - **Mondo**: la mappa del mondo come la conosce il tuo personaggio.
 - **Il vassoio dei dadi**: scegli dadi e modificatore, e lancia.

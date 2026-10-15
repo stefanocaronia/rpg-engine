@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
-import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
+import { type Formula, type FormulaData, formulaOf, parseFormula, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
@@ -77,7 +77,17 @@ const systemSchema = z.object({
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
-    imperial: z.object({ mile: lengthSchema, foot: lengthSchema }).strict().optional(),
+    imperial: z.object({ mile: lengthSchema, foot: lengthSchema, pound: z.string().regex(/^\d+(\.\d+)? kg$/, { error: "write it in kilograms, such as 0.5 kg" }).optional() }).strict().optional(),
+    load: z.object({
+        field: z.string().min(1),
+        limit: z.string().min(1),
+        coins: z.number().int().positive().optional(),
+        size: z.string().min(1).optional(),
+        sizes: z.record(z.string().min(1), z.number().positive()).optional(),
+    }, {
+        error: "write it as the field of an item's weight, the formula of the limit, how many coins weigh one unit, and the factor of each size on the limit, "
+            + "such as {field: weight, limit: str * 15, coins: 50, size: size, sizes: {Tiny: 0.5, Large: 2}}",
+    }).strict().optional(),
     travel: travelSchema.optional(),
     grid: gridSchema.optional(),
     sheet: z.record(z.string().min(1), z.array(z.string().regex(sheetEntryPattern, 'write it as "str", "str (str-mod)" for a field shown beside it, or "flaw?" for one written only when it applies')).min(1), {
@@ -100,12 +110,16 @@ const systemSchema = z.object({
         error: "write it as dice with the highest or the lowest kept or dropped, and the name the game gives such a roll, by language, such as 2d20kh1: {en: with advantage, it: con vantaggio}",
     }).optional(),
     values: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
+    "sheet-values": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     marks: z.array(z.string().min(1)).optional(),
     "status-line": z.array(z.string().min(1)).optional(),
     thresholds: z.record(z.string().regex(/^[^\s]+( -?\d+)?$/, 'write it as "hp 0", or the field alone'), z.string().min(1)).optional(),
     recipes: z.record(z.string(), recipeSchema).optional(),
     conditions: z.array(z.string().min(1)).optional(),
     "condition-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
+    bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), rules: z.string().min(1) }).strict(), {
+        error: "write each list with the most items it holds, the field an item that asks for it has, and the rules to read, such as attuned: {most: 3, needs: attunement, rules: Attunement}",
+    }).optional(),
     keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
         error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
     }).strict().optional(),
@@ -297,6 +311,10 @@ export interface GameSystem
     roundSeconds?: number;
     /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
     imperial?: ImperialUnits;
+    /** What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight. */
+    load?: { field: string; limit: Formula; coins?: number; size?: string; sizes: Record<string, number>; };
+    /** The kilograms of the system's unit of weight, for a player who counts in metric, such as 0.5 for the pound of the 5e (LOAD-2). */
+    pound?: number;
     /** How one travels, when the game says so (D-261, TRV-1). */
     travel?: Travel;
     /** How the map of a place counts, when the game has one (GRD-4). */
@@ -315,6 +333,8 @@ export interface GameSystem
     sheetCards?: { rail: string[]; order: string[]; atHand: string[]; };
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
+    /** The names a list field accepts on a page that keeps the sheet, the player character's and a companion's, as the languages (D-435). */
+    sheetValues: Record<string, string[]>;
     /** The lists whose items mark a number of the sheet that reads them, such as a proficiency (D-217, DAT-2). */
     marks: string[];
     /** The fields the line of a character shows, in order; whenSet marks a field usually at zero, shown only when it is not (DAT-2, DAT-4). */
@@ -326,6 +346,8 @@ export interface GameSystem
     /** By condition, its drawing on a token and in Combat (D-419): the d of an SVG path on a grid of 24. */
     conditionIcons: Record<string, string>;
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
+    /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
+    bonds: Record<string, { most: number; needs: string; rules: string; }>;
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
     combat?: CombatData;
@@ -417,7 +439,7 @@ export function installedSystems(folders: string[]): GameSystem[]
 }
 
 /** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes, line of the player character and travel. */
-export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel"] as const;
+export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel", "values"] as const;
 
 /** What campaign.yaml adds to the game system, as it writes it: checked when the system is read with it (CAM-3). */
 export type CampaignData = Partial<Record<(typeof campaignDataNames)[number], unknown>>;
@@ -493,9 +515,10 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
 
     const sheet = sheetOf(data, name, path);
     const values = data.values ?? {};
+    const sheetValues = data["sheet-values"] ?? {};
     const kindOf = (field: string): string | undefined => Object.entries(data.fields ?? {}).find(([declared]) => comparableText(declared) === comparableText(field))?.[1];
     // Closed names for a list, as the skills, or for a text, as an alignment.
-    const notList = Object.keys(values).find((field) => kindOf(field) !== "list" && kindOf(field) !== "text");
+    const notList = [...Object.keys(values), ...Object.keys(sheetValues)].find((field) => kindOf(field) !== "list" && kindOf(field) !== "text");
 
     if (notList !== undefined) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: values.${notList}: declare ${notList} as a list or a text in fields, or give no values to it.`);
@@ -592,6 +615,16 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         coinMetals: data["coin-metals"] ?? {},
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
+        ...(data.imperial?.pound === undefined ? {} : { pound: Number.parseFloat(data.imperial.pound) }),
+        ...(data.load === undefined ? {} : {
+            load: {
+                field: data.load.field,
+                limit: parseFormula(data.load.limit),
+                ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
+                ...(data.load.size === undefined ? {} : { size: data.load.size }),
+                sizes: data.load.sizes ?? {},
+            },
+        }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
         ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
@@ -601,6 +634,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
         ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,
+        sheetValues,
         marks: data.marks ?? [],
         statusLine: (data["status-line"] ?? []).map((entry) => ({ field: entry.replace(/\?$/, ""), whenSet: entry.endsWith("?") })),
         thresholds: Object.entries(data.thresholds ?? {}).map(([key, rule]) => {
@@ -616,6 +650,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         })),
         conditions: data.conditions ?? [],
         conditionIcons: data["condition-icons"] ?? {},
+        bonds: data.bonds ?? {},
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),
@@ -769,6 +804,28 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
         const own = isMap(base.travel) ? base.travel : {};
         const byName = (key: string): unknown => (isMap(travel[key]) ? { ...withoutNames(isMap(own[key]) ? own[key] : {}, Object.keys(travel[key])), ...travel[key] } : own[key]);
         merged.travel = Object.fromEntries(Object.entries({ ...own, ...travel, paces: byName("paces"), terrain: byName("terrain"), kinds: byName("kinds") }).filter(([, value]) => value !== undefined));
+    }
+
+    const names = mapOf(data.values, "values");
+
+    if (names !== undefined) {
+        // A campaign's own names, as a language of its world, join the system's list, on the sheet or everywhere (D-435).
+        const onSheet = isMap(base["sheet-values"]) ? { ...base["sheet-values"] } : {};
+        const everywhere = isMap(base.values) ? { ...base.values } : {};
+
+        for (const [field, added] of Object.entries(names)) {
+            if (!Array.isArray(added)) {
+                throw new Error(`values.${field}: give the names the campaign adds as a list, such as ${field}: [Lingua dei Guadi].`);
+            }
+
+            const target = nameIn(onSheet, field) !== undefined ? onSheet : everywhere;
+            const key = nameIn(target, field) ?? field;
+            const own = Array.isArray(target[key]) ? target[key].map(String) : [];
+            target[key] = [...own, ...added.map(String).filter((name) => !own.some((other) => comparableText(other) === comparableText(name)))];
+        }
+
+        merged.values = everywhere;
+        merged["sheet-values"] = onSheet;
     }
 
     const line = data["status-line"];

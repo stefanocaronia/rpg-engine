@@ -1,18 +1,18 @@
 // The player's dashboard (D-269, D-272, D-276): the master and the campaign on top, the party's strip, what the master asks, the sheet of whom the address
-// names and the rolls beside it (D-279), read again whenever the server says something changed.
+// names and the table beside it, the turns of a fight, the followed quest and the rolls (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
-import { CombatView } from "./combat.tsx";
+import { useMedia } from "./card.tsx";
 import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
-import { FollowedQuest, JournalView } from "./journal.tsx";
+import { FollowedQuests, JournalView } from "./journal.tsx";
 import { gameNotices, type Notice, Notices } from "./notices.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
@@ -24,9 +24,11 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
+import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
+import { hasTurns, TurnsCard } from "./turns.tsx";
 import { WorldView } from "./world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
@@ -92,6 +94,14 @@ function App()
     // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
     const [answering, setAnswering] = useState<string>();
     const [free, setFree] = useState<PageRoll[]>([]);
+    // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
+    // the page.
+    const wide = useMedia(tableBeside);
+    const [tableAway, setTableAway] = useTableAway();
+    const table = wide && !tableAway;
+    // Whether the player has just opened or folded the table, which slides it in and gives the focus to what folds it, or to its tab; at the first reading it
+    // is simply there.
+    const [tableMoved, setTableMoved] = useState(false);
 
     // Reads view again for whom the address names, or the player character, and what the master asks; an answer that comes after a newer one is left out.
     const read = async (): Promise<void> => {
@@ -190,11 +200,14 @@ function App()
         events.onerror = () => setLive(false);
 
         const followAddress = (): void => {
+            redirectCombat();
             setAddress(readAddress(window.location.hash));
             void read();
         };
 
         window.addEventListener("hashchange", followAddress);
+        // Combat's old address leads to the Scene, which shows the turns now (D-444): the address says so too.
+        redirectCombat();
 
         return () => {
             events.close();
@@ -230,8 +243,8 @@ function App()
     };
 
     const requested = live ? requestedOf(answering === shown.asked?.id ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
-    // A fight open, and whether the turn is the player's character's (D-314, D-315).
-    const fight = shown.openScene?.type === "combat";
+    // The open scene goes by turns, as a fight, and whether the turn is the player's character's (D-314, D-315, D-444).
+    const fight = hasTurns(shown.openScene);
     const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
 
     // The tab's title: the campaign's name and the product's, always the same.
@@ -252,6 +265,26 @@ function App()
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
         ...gameNotices(shown.problems),
     ];
+    // Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known.
+    const rolls = (
+        <RollLog
+            key={shown.campaign}
+            rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
+            free={free}
+            unread={shown.rollsTotal > shown.rolls.length}
+            campaign={shown.campaign}
+            party={shown.party}
+            fresh={fresh}
+            onMore={() => {
+                rollsAsked.current += firstRolls;
+                void read();
+            }}
+            onClearFree={() => {
+                setFree([]);
+                writeFree(shown.campaign, []);
+            }}
+        />
+    );
     return (
         <RequestedRoll.Provider value={requested}>
             <div class={live ? "page" : "page stale"}>
@@ -277,12 +310,12 @@ function App()
                 {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
                 {inSetup ? <SetupView setup={setup} /> : (
                     <>
-                        {/* The player's turn, seen from another section (D-315): a notice that leads to Combat; the page never goes there by itself. */}
-                        {live && yourTurn && address.section !== "combat" && shown.asked === undefined && (
-                            <a class="turn-notice" href={sectionAddress("combat")}>
+                        {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
+                        {live && yourTurn && address.section !== "scene" && shown.asked === undefined && (
+                            <a class="turn-notice" href={sectionAddress("scene")}>
                                 <Icon name="combat" />
                                 <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
-                                <span class="turn-notice-go">{t("Go to Combat")}</span>
+                                <span class="turn-notice-go">{t("Go to the scene")}</span>
                             </a>
                         )}
                         {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
@@ -291,16 +324,15 @@ function App()
                             <main>
                                 {address.section === "about" && <About product={productName} system={shown.system} />}
                                 {address.section === "help" && <Help />}
-                                {/* The quest the player follows, small, where the story goes on (D-367). */}
-                                {(address.section === "scene" || address.section === "combat") && <FollowedQuest version={shown.version} campaign={shown.campaign} />}
-                                {address.section === "scene" && <SceneView place={shown.place} scene={shown.openScene} />}
-                                {address.section === "combat" && (
-                                    <CombatView
+                                {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
+                                {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
+                                {address.section === "scene" && (
+                                    <SceneView
+                                        place={shown.place}
                                         scene={shown.openScene}
-                                        map={shown.place?.map}
-                                        place={shown.place?.name}
                                         lead={lead}
                                         party={shown.party}
+                                        turnsBeside={table}
                                         own={{
                                             sheet: shown.chosen === lead?.name ? shown.sheet : [],
                                             cards: shown.cards,
@@ -313,7 +345,7 @@ function App()
                                 {address.section === "settings" && <SettingsView version={shown.version} />}
                                 {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
                                 {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                                {!["party", "scene", "combat", "journal", "world", "about", "help", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
+                                {!["party", "scene", "journal", "world", "about", "help", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
                                 {address.section === "party" && member && (
                                     <MemberSheet
                                         key={member.name}
@@ -329,24 +361,32 @@ function App()
                                     />
                                 )}
                             </main>
-                            {/* Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known. */}
-                            <RollLog
-                                key={shown.campaign}
-                                rolls={held === undefined ? shown.rolls : shown.rolls.filter((roll) => roll.id !== held)}
-                                free={free}
-                                unread={shown.rollsTotal > shown.rolls.length}
-                                campaign={shown.campaign}
-                                party={shown.party}
-                                fresh={fresh}
-                                onMore={() => {
-                                    rollsAsked.current += firstRolls;
-                                    void read();
-                                }}
-                                onClearFree={() => {
-                                    setFree([]);
-                                    writeFree(shown.campaign, []);
-                                }}
-                            />
+                            {table
+                                ? (
+                                    <PlayTable
+                                        entering={tableMoved}
+                                        onFold={() => {
+                                            setTableMoved(true);
+                                            setTableAway(true);
+                                        }}
+                                    >
+                                        {fight && <TurnsCard scene={shown.openScene} party={shown.party} beside />}
+                                        <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
+                                        {rolls}
+                                    </PlayTable>
+                                )
+                                : wide
+                                ? (
+                                    <TableTab
+                                        fight={fight}
+                                        focused={tableMoved}
+                                        onOpen={() => {
+                                            setTableMoved(true);
+                                            setTableAway(false);
+                                        }}
+                                    />
+                                )
+                                : rolls}
                         </div>
                         <PageFoot product={productName} system={shown.system} />
                     </>
@@ -370,6 +410,14 @@ function App()
             </div>
         </RequestedRoll.Provider>
     );
+}
+
+/** Writes the Scene's address over Combat's old one, without a step in the history. */
+function redirectCombat(): void
+{
+    if (/^#\/combat(\/|$)/.test(window.location.hash)) {
+        history.replaceState(null, "", sectionAddress("scene"));
+    }
 }
 
 // The theme the player picked before, from the start (D-300).

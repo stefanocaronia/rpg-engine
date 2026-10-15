@@ -171,9 +171,11 @@ export function DiceTray({ requested, sheetThrow, party, onShown, onFree }: {
         // The plate is measured, unseen, before the dice fly: they land above it, however many rows its dice take (D-366).
         await new Promise((painted) => requestAnimationFrame(painted));
         const plateTop = measuredPlate.current?.getBoundingClientRect().top;
+        // The header as it stands now, full at the page's top or compact below it: no die lands under it.
+        const headerBottom = Math.max(0, document.querySelector(".top")?.getBoundingClientRect().bottom ?? 0);
 
         if (plateTop !== undefined && plateTop > 0) {
-            loaded?.cover(window.innerHeight - plateTop);
+            loaded?.cover(window.innerHeight - plateTop, headerBottom);
         }
 
         try {
