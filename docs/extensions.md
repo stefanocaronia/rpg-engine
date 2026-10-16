@@ -63,9 +63,9 @@ The `package` command, which the dashboard will call too:
 
 With `--json`, each gives its result as data.
 
-- A name alone is one of ours, under `@rpgengine/`, installed from npm: those are verified. Another's is named with its scope, or as `npm:name` without one; a folder of this computer is never verified.
+- A name alone is one of ours, under `@rpgengine/`, installed from npm: those are verified. Another's is named with its scope, or as `npm:name` without one; a folder or a `.tgz` file of this computer is never verified.
 - A package not ours is installed only with the player's own yes: a button on their dashboard or in the host's form, or `--accept-risk` typed in their terminal; never the master's word.
-- For now a package not ours brings its texts and data, never its code, which does not run; the code of a folder the player installed does. Its parts come under a title of their own and never take the place of the core's or the system's.
+- For now a package not ours brings its texts and data, never its code, which does not run; the code of a folder or a `.tgz` the player installed does. A `.tgz`, as `npm pack` makes it, is unpacked into rpg-engine's folder and installed from there, so the file can then be moved; `uninstall` takes the unpacked copy away too. A copy from a folder or a file takes the place of npm's on the whole computer, and the player is told so before saying yes; asking for the package by its name brings npm's back. Its parts come under a title of their own and never take the place of the core's or the system's.
 
 ## 5. Checks
 

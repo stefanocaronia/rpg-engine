@@ -1,8 +1,9 @@
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
+import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
 
 /** The keyword of the packages for rpg-engine on npm, by which they are found (D-439). */
 export const packageKeyword = "rpg-engine-package";
@@ -11,24 +12,68 @@ export const packageKeyword = "rpg-engine-package";
 export const verifiedScope = "@rpgengine/";
 
 const registry = "https://registry.npmjs.org";
+// Where the packages given as a .tgz are unpacked, in the packages' folder (D-452).
+const localFolder = "local";
 
 // An npm name with a version or a tag, or nothing a shell would read otherwise: the master writes it, and npm runs in a shell.
 const npmSpec = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*(@[0-9A-Za-z.+-]+)?$/;
 const installWait = 5 * 60 * 1000;
+// An npm package's name alone, without a version: a .tgz's becomes the name of its folder.
+const packageName = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
+// A folder always linked, whatever the player's .npmrc says, as D-441 tells a package from a folder by its link.
+const installOptions = "--install-links=false --ignore-scripts --save-exact --no-audit --no-fund --json --loglevel=error";
 
-/** npm on this computer, installing in this folder (D-436): never globally, never running a package's scripts. Its registry is read directly. */
-export function npmPackages(folder: string): PackageManager
+/** What running npm gave: its exit code and what it wrote. */
+export interface NpmRun
 {
+    code: number | null;
+    out: string;
+    errors: string;
+}
+
+/**
+ * npm on this computer, installing in this folder (D-436): never globally, never running a package's scripts, always linking a folder (D-441 tells a package
+ * from a folder by its link). Its registry is read directly; `run` runs npm, a fake in tests.
+ */
+export function npmPackages(folder: string, run: (args: string) => Promise<NpmRun> = npm): PackageManager
+{
+    // What each .tgz said of itself when it was described, before the player's yes: the file installed must still say the same.
+    const described = new Map<string, string>();
+
     return {
-        describe: async (spec) => (isFolderSpec(spec) ? folderPackage(spec) : await registryPackage(spec)),
+        describe: async (spec) => {
+            const read = isLocalSpec(spec) ? localPackage(spec) : await registryPackage(spec);
+
+            if (isTarball(spec) && !("failed" in read)) {
+                described.set(resolve(spec), `${read.name}@${read.version}`);
+            }
+
+            return read;
+        },
         install: async (spec) => {
-            const what = isFolderSpec(spec) ? quotedFolder(spec) : checkedSpec(spec);
-            const ran = await npm(`install --prefix ${quotedFolder(folder)} ${what} --ignore-scripts --save-exact --no-audit --no-fund --json --loglevel=error`);
+            if (isTarball(spec)) {
+                return await installTarball(folder, spec, described.get(resolve(spec)), run);
+            }
+
+            const ran = await run(`install --prefix ${quotedFolder(folder)} ${isLocalSpec(spec) ? quotedFolder(spec) : checkedSpec(spec)} ${installOptions}`);
             return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
         },
         uninstall: async (name) => {
-            const ran = await npm(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
-            return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
+            const ran = await run(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
+
+            if (ran.code !== 0) {
+                return `npm said: ${npmError(ran)}`;
+            }
+
+            // What a .tgz was unpacked to goes with it, and its scope's folder when nothing else is left in it (D-452).
+            rmSync(join(folder, localFolder, name), { recursive: true, force: true });
+            const scope = join(folder, localFolder, name.split("/")[0]);
+
+            if (name.includes("/") && existsSync(scope) && readdirSync(scope).length === 0) {
+                rmSync(scope, { recursive: true, force: true });
+            }
+
+            return undefined;
         },
         search: async () => {
             try {
@@ -48,10 +93,10 @@ export function npmPackages(folder: string): PackageManager
     };
 }
 
-/** Whether a package is given by its folder on this computer rather than by its name on npm. */
-export function isFolderSpec(spec: string): boolean
+/** Whether a package is given by its folder or its .tgz on this computer rather than by its name on npm (D-452): a .tgz by its file name alone too. */
+export function isLocalSpec(spec: string): boolean
 {
-    return spec.startsWith(".") || isAbsolute(spec);
+    return spec.startsWith(".") || isAbsolute(spec) || isTarball(spec);
 }
 
 /** Whether an installed package is ours, verified: in our scope and installed from npm, never from a folder, which anyone can name so (D-428, D-441). */
@@ -75,15 +120,90 @@ async function registryPackage(spec: string): Promise<PackageInfo | { failed: st
     }
 }
 
-/** What a package's folder says of it, by its package.json. */
-function folderPackage(spec: string): PackageInfo | { failed: string; }
+/** What a package's folder or .tgz says of it, by its package.json: a .tgz's name must be one npm takes, as it becomes a folder's. */
+function localPackage(spec: string): PackageInfo | { failed: string; }
 {
-    try {
-        const read = JSON.parse(readFileSync(join(resolve(spec), "package.json"), "utf8")) as Manifest;
-        return read.name === undefined || read.version === undefined ? { failed: `${spec} has a package.json without its name and version` } : infoOf(read);
-    } catch {
-        return { failed: `${spec} is not the folder of a package: it has no package.json that reads` };
+    const what = isTarball(spec) ? "the .tgz of a package" : "the folder of a package";
+
+    if (!existsSync(spec)) {
+        return { failed: `There is no ${isTarball(spec) ? "file" : "folder"} ${spec} on this computer (${resolve(spec)}): give its full path` };
     }
+
+    let text: string | undefined;
+
+    try {
+        text = isTarball(spec) ? tarballText(spec, "package.json") : readFileSync(join(resolve(spec), "package.json"), "utf8");
+    } catch (error) {
+        // An archive refused whole says why; a folder without the file is simply not a package's.
+        return { failed: isTarball(spec) && error instanceof Error ? error.message : `${spec} is not ${what}: it has no package.json that reads` };
+    }
+
+    let read: Manifest;
+
+    try {
+        read = JSON.parse(text ?? "") as Manifest;
+    } catch {
+        return { failed: `${spec} is not ${what}: it has no package.json that reads` };
+    }
+
+    if (read.name === undefined || read.version === undefined) {
+        return { failed: `${spec} has a package.json without its name and version` };
+    }
+
+    return isTarball(spec) && !packageName.test(read.name) ? { failed: `${spec} is named "${read.name}", which is not an npm package's name, such as notes or @me/notes` } : infoOf(read);
+}
+
+/**
+ * Installs a .tgz (D-452): unpacked beside the copy it replaces, swapped in, then linked by npm as a folder of the player's; when npm fails, the copy before comes
+ * back. The file may then be moved or deleted.
+ */
+async function installTarball(folder: string, archive: string, expected: string | undefined, run: (args: string) => Promise<NpmRun>): Promise<string | undefined>
+{
+    let read: Manifest;
+
+    try {
+        read = JSON.parse(tarballText(archive, "package.json") ?? "{}") as Manifest;
+    } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    if (read.name === undefined || !packageName.test(read.name) || (expected !== undefined && expected !== `${read.name}@${read.version}`)) {
+        return `${archive} is no longer the package that was asked about: install it again`;
+    }
+
+    const target = join(folder, localFolder, read.name);
+    const [staged, before] = [`${target}.new`, `${target}.old`];
+    rmSync(staged, { recursive: true, force: true });
+    rmSync(before, { recursive: true, force: true });
+
+    try {
+        unpackTarball(archive, staged);
+    } catch (error) {
+        rmSync(staged, { recursive: true, force: true });
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    const had = existsSync(target);
+
+    if (had) {
+        renameSync(target, before);
+    }
+
+    renameSync(staged, target);
+    const ran = await run(`install --prefix ${quotedFolder(folder)} ${quotedFolder(target)} ${installOptions}`);
+
+    if (ran.code === 0) {
+        rmSync(before, { recursive: true, force: true });
+        return undefined;
+    }
+
+    rmSync(target, { recursive: true, force: true });
+
+    if (had) {
+        renameSync(before, target);
+    }
+
+    return `npm said: ${npmError(ran)}`;
 }
 
 interface Manifest
@@ -153,7 +273,7 @@ function quotedFolder(folder: string): string
 }
 
 /** What npm said went wrong: its JSON error, with --json, else the last line it wrote that is not the pointer to its log. */
-function npmError(ran: { out: string; errors: string; }): string
+function npmError(ran: NpmRun): string
 {
     try {
         const read = JSON.parse(ran.out) as { error?: { code?: string; summary?: string; }; };
@@ -170,7 +290,7 @@ function npmError(ran: { out: string; errors: string; }): string
 }
 
 /** Runs npm with these arguments, in a folder of no campaign, stopped with all it started after a while. */
-function npm(args: string): Promise<{ code: number | null; out: string; errors: string; }>
+function npm(args: string): Promise<NpmRun>
 {
     return new Promise((done) => {
         const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });

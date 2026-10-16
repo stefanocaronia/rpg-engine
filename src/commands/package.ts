@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
-import { type Extension, extensionApi, findExtension, installedExtensions, isFolderSpec, isVerified, readExtension, shortName, verifiedScope } from "../extensions/index.ts";
+import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, shortName, verifiedScope } from "../extensions/index.ts";
 import { chooseAnswer } from "./ask.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
 import { extensionCommandNames, packagesInstalled } from "./game-extensions.ts";
@@ -49,7 +49,7 @@ export const packageCommand = defineCommand({
     slow: true,
     input: z.object({
         action: z.enum(["list", "available", "install", "remove", "uninstall"]).describe("list, available, install, remove or uninstall"),
-        name: z.string().optional().describe("the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder on this computer"),
+        name: z.string().optional().describe("the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder or a .tgz file on this computer"),
         "accept-risk": z.boolean().optional().describe("on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk"),
     }),
 
@@ -159,14 +159,16 @@ async function available(context: Context): Promise<PackageResult>
     const here = installedExtensions(context.extensionFolders ?? []);
     const packages = searched.filter((one) => one.kind === "extension" && one.api === extensionApi).map((one): Available => {
         const installed = here.find((found) => found.package === one.name);
-        const version = installed === undefined ? undefined : usable(context, one.name)?.version;
+        const copy = installed === undefined ? undefined : usable(context, one.name);
+        const version = copy?.version;
         return {
             name: shortName(one.name),
             package: one.name,
             version: one.version,
             ...(one.description === undefined ? {} : { description: one.description }),
             ...(one.author === undefined ? {} : { author: one.author }),
-            verified: one.name.startsWith(verifiedScope),
+            // What npm has is ours by its scope; the copy here is not, when a file or a folder of this computer took its place (D-452).
+            verified: isVerified(one.name, copy?.linked ?? false),
             ...(installed === undefined ? {} : { installed: version ?? "broken" }),
             update: version !== undefined && newer(one.version, version),
         };
@@ -193,7 +195,7 @@ async function installed(root: string, context: Context, name: string, acceptRis
     }
 
     // A name alone is one of ours: weather is @rpgengine/weather, never a stranger's of that name, which is given as npm:weather.
-    const spec = name.startsWith("npm:") ? name.slice(4) : isFolderSpec(name) || name.startsWith("@") ? name : `${verifiedScope}${name}`;
+    const spec = name.startsWith("npm:") ? name.slice(4) : isLocalSpec(name) || name.startsWith("@") ? name : `${verifiedScope}${name}`;
     const described = await packages.describe(spec);
 
     if ("failed" in described) {
@@ -212,14 +214,18 @@ async function installed(root: string, context: Context, name: string, acceptRis
         throw new Error(`${described.name} ${described.version} is made for the extension API ${described.api ?? "none"}, and this RPG Engine reads the API ${extensionApi}: install a version made for it. Nothing changed.`);
     }
 
-    const folderSpec = isFolderSpec(spec);
+    const local = isLocalSpec(spec);
+    const before = usable(context, described.name);
 
-    if (!isVerified(described.name, folderSpec)) {
-        await playerYes(context, folderSpec ? name : described.name, acceptRisk, folderSpec);
+    if (!isVerified(described.name, local)) {
+        // A file or a folder says what it holds, and when it takes the place of a copy from npm, which is one for the whole computer (D-452).
+        const holds = local ? ` (${described.name} ${described.version}${described.author === undefined ? "" : `, by ${described.author}`})` : "";
+        const replaces = local && before !== undefined && !before.linked ? ` It takes the place of ${before.package} ${before.version} from npm, in every campaign on this computer.` : "";
+        await playerYes(context, local ? name : described.name, acceptRisk, local, holds, replaces);
     }
 
-    const before = usable(context, described.name);
-    const reinstall = before === undefined || before.version !== described.version || folderSpec;
+    // A copy from a file or a folder never stands for the one npm has: asked by its name, npm's comes back.
+    const reinstall = before === undefined || before.version !== described.version || local || before.linked;
 
     if (reinstall) {
         const why = await packages.install(spec);
@@ -282,10 +288,10 @@ async function installed(root: string, context: Context, name: string, acceptRis
  * The player's own yes to a package not ours (D-441): on the command line, --accept-risk they typed; in a chat, a button on their dashboard or in the host's
  * form, never the master's word. It throws when there is none.
  */
-async function playerYes(context: Context, name: string, acceptRisk: boolean, fromFolder: boolean): Promise<void>
+async function playerYes(context: Context, name: string, acceptRisk: boolean, local: boolean, holds = "", replaces = ""): Promise<void>
 {
-    const warning = fromFolder
-        ? `${name} is a folder of this computer, not a package published by RPG Engine: it is never verified, and RPG Engine takes no responsibility for it.`
+    const warning = local
+        ? `${name}${holds} is ${isTarball(name) ? "a file" : "a folder"} of this computer, not a package published by RPG Engine: its code runs, it is never verified, and RPG Engine takes no responsibility for it.${replaces}`
         : `${name} is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it.`;
 
     if (context.terminal === true) {
@@ -304,6 +310,11 @@ async function playerYes(context: Context, name: string, acceptRisk: boolean, fr
 
     if (answer === 1 || (typeof answer === "object" && answer !== null)) {
         throw new Error(`The player did not want ${name}. Nothing changed.`);
+    }
+
+    // Closed without an answer is no yes, never a reason to send the player to the terminal.
+    if (answer === undefined) {
+        throw new Error(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`);
     }
 
     throw new Error(`${warning} Only the player can say yes to it, and they cannot be asked here: tell them to install it from their terminal, in the campaign's folder, with rpg package install ${name} --accept-risk. Nothing changed.`);

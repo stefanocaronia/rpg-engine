@@ -1,6 +1,6 @@
 // The package command (D-27, D-428, D-436, D-439, D-441): installing an extension on this computer with npm, ours or another with the player's own yes, adding it to
 // the campaign, listing and removing; npm itself is a fake here, which copies the test extensions as it would install them.
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -30,6 +30,8 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
         install: (spec) => {
             const to = join(modules, ...spec.split("/"));
             mkdirSync(join(to, ".."), { recursive: true });
+            // As npm does, what was there goes first: a link to a folder is taken away, never what it points to.
+            rmSync(to, { recursive: true, force: true });
             cpSync(known[spec], to, { recursive: true });
             installed.push(spec);
             return Promise.resolve(undefined);
@@ -124,6 +126,41 @@ describe("rpg package install", () => {
         );
         expect((await rpg("package", "install", "@test/rumors", "--accept-risk")).exitCode).toBe(0);
         expect((await rpg("rumors")).output).toMatch(/^Unknown command "rumors"/);
+    });
+
+    it("asks the player's yes for a .tgz of this computer, even named alone, saying what it holds and that its code runs (D-452)", async () => {
+        context = { ...context, terminal: true };
+        npm.describe = () => Promise.resolve({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1, author: "Ada" });
+        expect((await rpg("package", "install", "secret-notes-1.0.0.tgz")).output).toBe(
+            "secret-notes-1.0.0.tgz (secret-notes 1.0.0, by Ada) is a file of this computer, not a package published by RPG Engine: its code runs, it is never verified, "
+                + "and RPG Engine takes no responsibility for it. To install it at your own risk: package install secret-notes-1.0.0.tgz --accept-risk. Nothing changed.",
+        );
+        expect(npm.installed).toEqual([]);
+    });
+
+    it("says, before the yes, that a .tgz of one of ours takes the place of npm's copy in every campaign, and npm's comes back when asked by its name (D-452)", async () => {
+        await rpg("package", "install", "weather");
+        context = { ...context, terminal: true };
+        npm.describe = () => Promise.resolve({ name: "@rpgengine/weather", version: weatherVersion, kind: "extension", api: 1 });
+        expect((await rpg("package", "install", "./weather.tgz")).output).toContain(
+            `it is never verified, and RPG Engine takes no responsibility for it. It takes the place of @rpgengine/weather ${weatherVersion} from npm, in every campaign on this computer.`,
+        );
+    });
+
+    it("installs npm's copy again over one from a folder of the same version, asked by its name (D-452)", async () => {
+        const copy = join(makeTempFolder(), "weather");
+        cpSync(join(testExtensionFolders[0], "weather"), copy, { recursive: true });
+        mkdirSync(join(modules, "@rpgengine"), { recursive: true });
+        symlinkSync(copy, join(modules, "@rpgengine", "weather"), "junction");
+        await rpg("package", "install", "weather");
+        expect(npm.installed).toEqual(["@rpgengine/weather"]);
+        removeFolder(join(copy, ".."));
+    });
+
+    it("never sends the player to the terminal when they closed the question without a yes", async () => {
+        context = { ...context, page: { choose: () => Promise.resolve(undefined) } };
+        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player closed the question without a yes to @test/rumors. Nothing changed: ask again only if they bring it up.");
+        expect(npm.installed).toEqual([]);
     });
 
     it("never runs a stranger's code nor lets its part take the place of the core's (D-441)", async () => {
