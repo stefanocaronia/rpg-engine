@@ -8391,9 +8391,46 @@ svg.icon {
 }
 
 @media (max-width: 600px) {
+    /* On a phone who acts takes the whole width, the marks under them; the round goes beside who comes next (D-453). */
     .turn-band {
-        grid-template-columns: auto minmax(0, 1fr);
-        grid-template-areas: "round now" "next next" "line line";
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "now now" "next round" "line line";
+    }
+
+    .turn-who {
+        display: contents;
+    }
+
+    .turn-now {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .turn-who > [aria-live] {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .turn-marks {
+        flex-basis: 100%;
+        margin: 0;
+    }
+
+    .round {
+        align-self: stretch;
+        align-content: center;
+        margin-inline-start: -18px;
+        padding-block-start: 8px;
+        padding-inline-start: 18px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .round-number {
+        font-size: 1.5rem;
+    }
+
+    .next-who {
+        text-wrap: balance;
     }
 
     .turn-next {

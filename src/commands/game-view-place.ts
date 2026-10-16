@@ -320,8 +320,10 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
             : { ...person(sight, page), count, ...hostile, ...state };
     });
     const turnName = (name: string): string => shownTurn(sight, scene, name);
-    // What who acts has used of the turn, as marks beside them (TRN-4).
-    const marks = scene.turn === undefined ? [] : turnMarks(campaignSystem(sight.root, sight.context), scene, scene.turn);
+    // What who acts has used of the turn, as marks beside them, for the party alone: a foe's are the master's to tell (TRN-4, D-453).
+    const acting = scene.turn;
+    const ours = acting !== undefined && sight.party.some((page) => comparableText(page.name) === comparableText(acting));
+    const marks = ours ? turnMarks(campaignSystem(sight.root, sight.context), scene, acting) : [];
     return {
         title: scene.title,
         type: scene.type,

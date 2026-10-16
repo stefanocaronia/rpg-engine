@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, linkListItems, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World } from "../pages/index.ts";
+import { findPage, isEmptyField, isInParty, isPartyMember, linkListItems, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World, writePage } from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -587,10 +587,32 @@ function useOfTurn(root: string, world: World, input: SceneInput, context: Conte
     const done = useInTurn(world, system, current, { name, page }, input.uses.trim(), by);
     updateScene(root, [[["used", name], done.used]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "turn-used", "hidden", { title: current.title, who: name, use: input.uses.trim(), by }));
+
+    // What gave one more, spent from the sheet that counts it (TRN-5).
+    if (done.spends !== undefined) {
+        spendOne(root, context, world, { name, copy: copy !== undefined, page }, done.spends, by ?? "");
+    }
+
     // One who cannot act, as Stunned, is said so: the game's rule, which the master applies (pp. 91, 358).
     const inactive = effectsOf(page).map((effect) => effect.name).filter((effect) => (system?.combat?.inactive ?? []).some((condition) => comparableText(condition) === comparableText(effect)));
     const warned = inactive.length === 0 ? "" : ` ${name} is ${inactive.join(", ")}: read what it may still do.`;
     return { action: "use", line: `${done.line}${warned}` };
+}
+
+/** One of a counter spent, on a page as it writes it or on a copy in the scene, with its line in the log. */
+function spendOne(root: string, context: Context, world: World, who: { name: string; copy: boolean; page: Page; }, spends: { field: string; before: number; max?: number; }, why: string): void
+{
+    const after = spends.before - 1;
+    const value = spends.max === undefined ? after : `${after}/${spends.max}`;
+
+    if (who.copy) {
+        updateScene(root, [[["copies", who.name, spends.field], value]]);
+    } else {
+        writePage(world, who.page.name, undefined, { set: { [spends.field]: value } });
+    }
+
+    const visibility = who.copy ? "hidden" : "public";
+    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, { page: who.name, field: spends.field, before: String(spends.before), after: String(after), why }));
 }
 
 function passTurn(root: string, world: World, context: Context, current: Scene): SceneResult

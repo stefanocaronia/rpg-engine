@@ -29,7 +29,13 @@ describe("the uses of a turn", () => {
             "Ettore has used its action until its next turn, with 2 attack of 2: an attack that another use makes, as with a bonus action or a reaction, is marked as that use; "
                 + 'add by and what only for what gives one more, as by "Action Surge". Nothing changed.',
         );
-        expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge.");
+        // Action Surge is the fighter's counter: spent with it, and refused once it is gone (TRN-5).
+        expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge; action-surge 1 → 0.");
+        expect(await ok("show", "Ettore")).toContain("action-surge 0/1");
+        await use("Ettore", "attack");
+        expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "attack", "--by", "Action Surge"], context)).output).toBe(
+            "Ettore has action-surge 0: Action Surge gives nothing more until it comes back. Nothing changed.",
+        );
         expect(await use("Ettore", "bonus action")).toBe("Ettore: bonus action used.");
         expect(await refused("Ettore", "bonus action")).toContain("Ettore has used its bonus action until its next turn");
     });
@@ -54,6 +60,9 @@ describe("the uses of a turn", () => {
         expect(await marks()).toEqual([{ use: "action", used: true }, { use: "bonus action", used: false }, { use: "reaction", used: false }]);
         await ok("scene", "next");
         expect(await marks()).toEqual([{ use: "action", used: false }, { use: "bonus action", used: false }, { use: "reaction", used: false }]);
+        // A foe's are the master's to tell (D-453).
+        await ok("scene", "next");
+        expect(await marks()).toBeUndefined();
     });
 
     it("asks for the order first, follows a rename, and counts Thirsting Blade as Extra Attack (TRN-1, TRN-3)", async () => {

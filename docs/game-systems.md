@@ -194,7 +194,7 @@ turn-uses:
   sneak attack: {needs: "has(features, Sneak Attack)", any-turn: true, resets: each turn}
 ```
 
-What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. The master names what gives one more with `by`. The dashboard shows who acts the uses that stand alone.
+What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. The master names what gives one more with `by`; when it names a counter of the sheet, as `action-surge` for Action Surge, the engine spends one, and refuses at 0. The dashboard shows a party member who acts the uses that stand alone.
 
 ### damage
 

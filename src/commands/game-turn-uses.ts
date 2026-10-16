@@ -1,17 +1,19 @@
 // What one does in a turn (D-453, TRN-1–TRN-4): the uses the system names, as an action, a bonus action, a reaction, the attacks of an action and what a
 // feature gives once a turn, each at most so many until it comes back.
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import type { Page, World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, TurnUse } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
-import { formulaValue } from "./worked-out.ts";
+import { formulaValue, workedMaximum } from "./worked-out.ts";
 
-/** What a use did: the uses of the one who used it, as the scene keeps them, and the line that says it. */
+/** What a use did: the uses of the one who used it, as the scene keeps them, the line that says it, and the counter of the sheet it spends (TRN-5). */
 export interface UsedInTurn
 {
     used: string[];
     line: string;
+    spends?: { field: string; before: number; max?: number; };
 }
 
 /**
@@ -45,6 +47,9 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
         throw new Error(`It is ${whose}, not ${name}'s: ${use} goes in its own turn${instead}. Nothing changed.`);
     }
 
+    // What gives one more, when the sheet counts it, as action-surge for Action Surge, is spent with it (TRN-5).
+    const spends = spentCounter(world, system, fields, name, by);
+    const spent = spends === undefined ? "" : `; ${spends.field} ${spends.before} → ${spends.before - 1}`;
     const list = [...(scene.used?.[name] ?? [])];
     const most = (one: TurnUse): number | undefined => (one.most === undefined ? 1 : formulaValue(world, fields, one.most));
     const tagged = (entry: string, by?: string): string => (by === undefined ? entry : `${entry} by ${by}`);
@@ -57,7 +62,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
             throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore}. Nothing changed.`);
         }
 
-        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}.` };
+        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.`, ...(spends === undefined ? {} : { spends }) };
     }
 
     // An attack counts within the action it took, until another action is used (TRN-3).
@@ -82,7 +87,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
         throw new Error(`${name} has used its ${within} until its next turn${done}${giveMore}. Nothing changed.`);
     }
 
-    return { used: [...list, tagged(taken, by), use], line: `${name}: ${use} 1${of}, its ${within} used${by === undefined ? "" : `, by ${by}`}.` };
+    return { used: [...list, tagged(taken, by), use], line: `${name}: ${use} 1${of}, its ${within} used${by === undefined ? "" : `, by ${by}`}${spent}.`, ...(spends === undefined ? {} : { spends }) };
 }
 
 /** The uses that are left when a turn begins (TRN-4): none of the one whose turn it is, and of the others only those that last past a turn. */
@@ -110,6 +115,32 @@ export function turnMarks(system: GameSystem | undefined, scene: Scene, name: st
         use,
         used: list.some((entry) => same(baseOf(entry), use)),
     }));
+}
+
+/** The counter of the sheet that `by` names, as action-surge for "Action Surge", with what it holds, a full one when not written yet; refused at 0. */
+function spentCounter(world: World, system: GameSystem, fields: Record<string, unknown>, name: string, by: string | undefined): UsedInTurn["spends"]
+{
+    const wanted = by === undefined ? undefined : comparableText(by).replace(/\s+/g, "-");
+    const field = wanted === undefined ? undefined : Object.keys(system.fields).find((key) => system.fields[key] === "counter" && comparableText(key) === wanted);
+
+    if (by === undefined || field === undefined) {
+        return undefined;
+    }
+
+    const written = readCounter(valueNamed(fields, field));
+    const max = workedMaximum(world, fields, field)?.value;
+    const most = typeof max === "number" ? max : written?.max;
+    const before = written?.value ?? most;
+
+    if (before === undefined) {
+        return undefined;
+    }
+
+    if (before <= 0) {
+        throw new Error(`${name} has ${field} 0: ${by} gives nothing more until it comes back. Nothing changed.`);
+    }
+
+    return { field, before, ...(most === undefined ? {} : { max: most }) };
 }
 
 const giveMore = ': an attack that another use makes, as with a bonus action or a reaction, is marked as that use; add by and what only for what gives one more, as by "Action Surge"';
