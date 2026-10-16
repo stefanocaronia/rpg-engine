@@ -81,12 +81,12 @@ describe("the character sheet (DAT-2)", () => {
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
                 + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
-                + "darkvision, damage-resistances, death-successes, death-failures, exhaustion, days-without-food, expertise, "
-                + "armor-proficiencies, tool-proficiencies, fighting-styles, money, attuned, inventory, spells, prepared. It works out "
-                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, passive-perception, passive-insight, passive-investigation, long-jump, high-jump, push-drag, hold-breath, Features, Attacks, "
+                + "darkvision, damage-resistances, damage-immunities, death-successes, death-failures, exhaustion, days-without-food, expertise, "
+                + "armor-proficiencies, tool-proficiencies, fighting-styles, invocations, money, lifestyle, attuned, inventory, spells, prepared. It works out "
+                + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, extra-attacks, passive-perception, passive-insight, passive-investigation, long-jump, high-jump, push-drag, hold-breath, Features, Attacks, "
                 + "caster-level, spell-save-dc, spell-attack, max-prepared: never write them. Only its names go in alignment (such as lawful good, neutral good), size (Tiny, Small, Medium, Large, Huge, Gargantuan), save-proficiencies "
-                + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), languages (such as Common, Dwarvish), "
-                + "tool-proficiencies (such as alchemist's supplies, brewer's supplies), damage-resistances (such as acid, bludgeoning), as it writes them: "
+                + "(str, dex, con, int, wis, cha), skill-proficiencies (such as Acrobatics, Animal Handling), lifestyle (such as Wretched, Squalid), languages (such as Common, Dwarvish), "
+                + "tool-proficiencies (such as alchemist's supplies, brewer's supplies), damage-resistances (such as acid, bludgeoning), damage-immunities (such as acid, bludgeoning), as it writes them: "
                 + "write lists them if a name is not one.",
         );
         // How a character is made: the system's part of session zero, after the core's (D-235, MOD-5).
@@ -479,7 +479,8 @@ describe("laws on worlds at random", () => {
 
                 const pages = [ennio, character("Lena")];
                 const again = (await ok("change", "--recipe", recipe)).split("\n").slice(1, 3);
-                expect(again.filter((line) => !/^(Ennio|Lena): nothing changed\.( Not brought back: .+\.)?$/.test(line))).toEqual([]);
+                // A second long rest at once gives nothing, and says from when another may (RST-1).
+                expect(again.filter((line) => !/^(Ennio|Lena): nothing changed\.( Not brought back: .+\.)?( (Ennio|Lena) had a long rest at .+: one in 24h\.)?$/.test(line))).toEqual([]);
                 expect([character("Ennio"), character("Lena")]).toEqual(pages);
             }),
             { numRuns: 20 },

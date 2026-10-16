@@ -82,12 +82,58 @@ describe("exhaustion", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
         await ok("change", "Ettore", "exhaustion", "--to", "2");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("Ettore: exhaustion 2 → 1.");
-        // Without food the day before, the rest takes none away; at 0 hit points it gives nothing at all (pp. 87, 358).
+        // Without food the day before, the rest takes none away; at 0 hit points it gives nothing at all (pp. 87, 358). A day later, so that only the food bars it.
+        await ok("advance", "--by", "24h");
         await ok("write", "Ettore", "--set", "days-without-food=2");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).not.toContain("exhaustion 1 → 0");
         await ok("write", "Ettore", "--unset", "days-without-food");
         await ok("change", "Ettore", "hp", "--to", "0");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("At 0 hp when it began, Ettore gains nothing from it.");
+    });
+});
+
+describe("the lifestyle in a settlement (D-449, UPK-4)", () => {
+    it("pays a day of the lifestyle chosen at each midnight there, says what to do without one or without money, and pays nothing outside", async () => {
+        await ok("move", "Ettore", "--to", "Locanda");
+        expect(await ok("advance", "--by", "1d")).toContain(
+            "Ettore has no lifestyle to pay a day in a settlement: ask the player, then set lifestyle=Modest, one of Wretched, Squalid, Poor, Modest, Comfortable, Wealthy, Aristocratic. Read Lifestyle Expenses.",
+        );
+        await ok("write", "Ettore", "--set", "lifestyle=Modest", "--set", "money=1 gp 5 sp");
+        expect(await ok("advance", "--by", "1d")).toContain("Ettore pays a Modest day: money 1 gp 5 sp → 5 sp.");
+        expect(await ok("advance", "--by", "1d")).toContain("Ettore cannot pay a Modest day, 1 gp, with money 5 sp: a poorer lifestyle, work or a debt, as you judge. Read Lifestyle Expenses.");
+        await ok("write", "Ettore", "--set", "lifestyle=Wretched");
+        expect(await ok("advance", "--by", "1d")).not.toContain("Ettore pays");
+        await ok("write", "Ettore", "--set", "lifestyle=Squalid");
+        await ok("move", "Ettore", "--to", "Bosco");
+        expect(await ok("advance", "--by", "1d")).not.toContain("Ettore pays");
+        expect(page("characters/Ettore.md")).toContain("money: 5 sp");
+    });
+
+    it("says each line once however many midnights pass, and lets the master charge a lifestyle of the campaign's (UPK-4)", async () => {
+        await ok("move", "Ettore", "--to", "Locanda");
+        const passed = await ok("advance", "--by", "3d");
+        expect(passed.split("Ettore has no lifestyle").length).toBe(2);
+        await ok("config", "values", "lifestyle: [Mendicante]");
+        await ok("write", "Ettore", "--set", "lifestyle=Mendicante");
+        expect(await ok("advance", "--by", "1d")).toContain(
+            "Ettore's lifestyle Mendicante has no price here: charge the day with change Ettore money, or set one of Wretched, Squalid, Poor, Modest, Comfortable, Wealthy, Aristocratic. Read Lifestyle Expenses.",
+        );
+    });
+});
+
+describe("one long rest in 24 hours (D-449, RST-1)", () => {
+    it("gives nothing from a second one within 24 hours of the last that gave something, and says from when", async () => {
+        await ok("write", "Ettore", "--set", "hp=3/12");
+        await ok("advance", "--by", "8h");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("hp 3/12 → 12/12");
+        await ok("change", "Ettore", "hp", "--to", "4");
+        await ok("advance", "--by", "8h");
+        const again = await ok("change", "Ettore", "--recipe", "long rest");
+        expect(again).toContain("Ettore had a long rest at day 2, 02:00, and gains nothing from another before day 2, 18:00: one in 24h.");
+        expect(again).not.toContain("hp 4/12 →");
+        // The next night, called before its hours are advanced: 16 hours after the last call, as the master may call it either way.
+        await ok("advance", "--to", "day 2, 18:00");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("hp 4/12 → 12/12");
     });
 });
 
@@ -100,6 +146,12 @@ describe("hit dice in a short rest (D-449)", () => {
         expect(refused.output).toBe("Ettore has 1 hit-dice-d10: spend a whole number of them, from 1 up to that. Nothing changed.");
         const long = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "long rest"], context);
         expect(long.output).toBe("long rest spends no dice, not hit-dice-d10. Nothing changed.");
+    });
+
+    it("says the rules the hit points touch, as change does, when they leave 0 (DAT-3)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=0/26");
+        const spent = await ok("change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "short rest");
+        expect(spent).toContain('\nhp is no longer at 0: read rules "');
     });
 });
 

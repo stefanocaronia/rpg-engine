@@ -678,5 +678,8 @@
   "your turn": "twoja tura",
   "Your turn": "Twoja tura",
   "Zoom in": "Przybliż",
-  "Zoom out": "Oddal"
+  "Zoom out": "Oddal",
+  "This turn": "Ta tura",
+  "used": "użyta",
+  "free": "wolna"
 }

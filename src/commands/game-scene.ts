@@ -331,6 +331,8 @@ function sceneLogLine(type: string, data: Record<string, unknown>): string
             return sceneChangeLine(data);
         case "scene-now":
             return `now: ${String(data.now)}`;
+        case "turn-used":
+            return `${String(data.who)} used ${String(data.use)}${typeof data.by === "string" ? `, by ${data.by}` : ""}`;
         default:
             return "";
     }

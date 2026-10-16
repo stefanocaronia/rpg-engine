@@ -771,11 +771,11 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const pound = system?.pound;
     const kilograms = (text: string): string => text.replace(/[\d.]+/g, (number) => String(Math.round(Number(number) * (pound ?? 1) * 10) / 10)).replace(/\s*\p{L}[\p{L}.]*\s*$/u, " kg");
     // The speeds the system works out are lengths too (SPD-1).
-    const length = (name: string): boolean => Object.entries(system?.fields ?? {}).some(([declared, kind]) => kind === "length" && comparableText(declared) === comparableText(name));
+    const declared = (name: string, wanted: string): boolean => Object.entries(system?.fields ?? {}).some(([key, kind]) => kind === wanted && comparableText(key) === comparableText(name));
     const told = (value: SheetValue): SheetValue =>
-        (field !== undefined && comparableText(value.field) === comparableText(field)) || length(value.field)
+        (field !== undefined && comparableText(value.field) === comparableText(field)) || declared(value.field, "length")
             ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
-            : value.field === "load" && measures.units === "metric" && pound !== undefined
+            : (value.field === "load" || declared(value.field, "weight")) && measures.units === "metric" && pound !== undefined
             ? { ...value, text: kilograms(value.text) }
             : value;
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));

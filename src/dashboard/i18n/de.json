@@ -678,5 +678,8 @@
   "your turn": "du bist dran",
   "Your turn": "Du bist dran",
   "Zoom in": "Vergrößern",
-  "Zoom out": "Verkleinern"
+  "Zoom out": "Verkleinern",
+  "This turn": "Diese Runde",
+  "used": "verbraucht",
+  "free": "frei"
 }

@@ -10,6 +10,7 @@ import { experienceProblems } from "./game-experience.ts";
 import { campaignExtensions } from "./game-extension-list.ts";
 import { gridProblems } from "./game-grids.ts";
 import { imageProblems } from "./game-images.ts";
+import { limitProblems } from "./game-limits.ts";
 import { mapProblems } from "./game-maps.ts";
 import { modeProblems } from "./game-mode.ts";
 import { moneyProblems } from "./game-money.ts";
@@ -37,6 +38,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...(system.length === 0 ? workedOutProblems(world) : []),
         ...listValueProblems(world, campaignSystem(root, context)),
         ...bondProblems(world, campaignSystem(root, context)),
+        ...limitProblems(world, campaignSystem(root, context)),
         ...experienceProblems(world),
         ...imageProblems(root, context, world),
         ...roadProblems(world, campaignSystem(root, context)),

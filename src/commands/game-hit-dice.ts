@@ -4,19 +4,21 @@ import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { rollDice } from "../dice/index.ts";
-import { findPage, type World, writePage } from "../pages/index.ts";
-import type { Recipe } from "../systems/index.ts";
+import { findPage, isPartyMember, type World, writePage } from "../pages/index.ts";
+import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { formulaValue } from "./worked-out.ts";
 
 /**
  * Spends dice of a counter named after its die, as hit-dice-d8, in a recipe that lets one (D-449): each die rolled with what the recipe adds, at least 0, the
- * total given to its counter up to the maximum, the dice taken from theirs; the line that says it. Refused when the recipe spends no such counter, or there are
- * not as many.
+ * total given to its counter up to the maximum, the dice taken from theirs; the line that says it, with the rules a party member's counters touch (DAT-3).
+ * Refused when the recipe spends no such counter, or there are not as many.
  */
-export function spendDice(root: string, context: Context, world: World, recipe: Recipe, name: string, field: string, amount: unknown, why: string): string
+export function spendDice(root: string, context: Context, world: World, spending: { system: GameSystem; recipe: Recipe; }, name: string, field: string, amount: unknown, why: string): string
 {
+    const { system, recipe } = spending;
     const rule = Object.entries(recipe.spend).find(([pattern]) => pattern.endsWith("*") ? comparableText(field).startsWith(comparableText(pattern.slice(0, -1))) : comparableText(pattern) === comparableText(field))?.[1];
     const page = findPage(world, name);
     const sides = /d(\d+)$/i.exec(field.trim())?.[1];
@@ -54,5 +56,9 @@ export function spendDice(root: string, context: Context, world: World, recipe: 
     }
 
     const max = (counter: { max?: number; }): string => (counter.max === undefined ? "" : `/${counter.max}`);
-    return `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}.`;
+    const notes = isPartyMember(page)
+        ? [[field, dice.value, dice.value - count], [rule.gives, target.value, after]].flatMap(([changed, before, now]) => thresholdNotes(root, system, String(changed), { before, after: now, amount: {} }))
+        : [];
+    const line = `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}.`;
+    return [line, ...notes].join("\n");
 }

@@ -6,7 +6,7 @@ import { useEffect, useRef } from "preact/hooks";
 import { CardHead, CardHeader, useOpen } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
 import { Icon, iconPath } from "./icons.tsx";
-import { fieldLabel, shownText, strangerLabel } from "./labels.ts";
+import { fieldLabel, itemLabel, shownText, strangerLabel } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { sideOf, Token } from "./party.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
@@ -50,10 +50,13 @@ export function TurnBand({ scene, lead, motion }: { scene: TurnScene; lead?: Mem
             )}
             <div class="turn-now">
                 {acting >= 0 && <FighterToken fighter={fighters[acting]} />}
-                {/* Told again when the turn passes: who acts, in one line. */}
-                <div aria-live="polite" aria-atomic="true">
-                    <p class="eyebrow">{mine ? t("Your turn") : t("Now acting")}</p>
-                    <h2 id="turn-title">{mine ? lead?.name : acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
+                <div class="turn-who">
+                    {/* Told again when the turn passes: who acts, in one line; the marks stay out of it, or each use would read the band again. */}
+                    <div aria-live="polite" aria-atomic="true">
+                        <p class="eyebrow">{mine ? t("Your turn") : t("Now acting")}</p>
+                        <h2 id="turn-title">{mine ? lead?.name : acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
+                    </div>
+                    {scene.marks && <TurnMarks marks={scene.marks} />}
                 </div>
             </div>
             {next && (
@@ -70,6 +73,28 @@ export function TurnBand({ scene, lead, motion }: { scene: TurnScene; lead?: Mem
                 {scene.now && <span>{` — ${scene.now}`}</span>}
             </p>
         </header>
+    );
+}
+
+/** What who acts has of the turn (D-453, TRN-4): each use the game names, full while free, faded once used. */
+function TurnMarks({ marks }: { marks: { use: string; used: boolean; }[]; })
+{
+    return (
+        <ul class="turn-marks" aria-label={t("This turn")}>
+            {marks.map((mark) => {
+                const label = itemLabel(mark.use);
+                const state = mark.used ? t("used") : t("free");
+                return (
+                    <li key={mark.use} class={mark.used ? "used" : "free"}>
+                        <span class="mark-sign tip-below" data-tip={`${label}: ${state}`} aria-hidden="true">
+                            <span class="mark-pip" />
+                            <span class="mark-word">{label}</span>
+                        </span>
+                        <span class="visually-hidden">{`${label}: ${state}`}</span>
+                    </li>
+                );
+            })}
+        </ul>
     );
 }
 

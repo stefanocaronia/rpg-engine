@@ -23,7 +23,8 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
-import { carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, type World } from "../pages/index.ts";
+import { carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, weightUnit, type World } from "../pages/index.ts";
+import { formatDuration } from "../time/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
 /** A computed field that has a value, and the values it came from (FOR-8); a field the rows of the classes give may hold text, such as martial-arts 1d6 (PRO-2). */
@@ -106,7 +107,7 @@ export function hasSheet(world: World, page: Page): boolean
 }
 
 /** Whether a character with these fields keeps the sheet (DAT-2): the player character, and a companion with a level or classes, or that derives from no creature. */
-function keepsSheet(world: World, fields: Record<string, unknown>): boolean
+export function keepsSheet(world: World, fields: Record<string, unknown>): boolean
 {
     const list = world.system?.progression === undefined ? undefined : keyOf(fields, world.system.progression.list);
     const levelled = !isEmptyField(fields[keyOf(fields, "level") ?? "level"]) || (list !== undefined && !isEmptyField(fields[list]));
@@ -610,6 +611,17 @@ export function signedText(world: World, field: string, value: number | string):
     // A length in the system's unit, at most one decimal: 12.5 ft (SPD-1).
     if (typeof value === "number" && kind === "length") {
         return `${Math.round(value * 10) / 10}${world.system?.lengthUnit === undefined ? "" : ` ${world.system.lengthUnit}`}`;
+    }
+
+    // A weight in the unit the system's items are weighed in: 420 lb.
+    if (typeof value === "number" && kind === "weight") {
+        const unit = world.system?.load === undefined ? undefined : weightUnit(world, world.system.load.field);
+        return `${Math.round(value * 10) / 10}${unit === undefined ? "" : ` ${unit}`}`;
+    }
+
+    // A duration in minutes as the engine writes them, half a minute in seconds: 3m, 30s.
+    if (typeof value === "number" && kind === "duration") {
+        return value > 0 && value < 1 ? `${Math.round(value * 60)}s` : formatDuration(Math.round(value));
     }
 
     return typeof value === "number" && (kind === "modifier" || kind === "bonus") && value >= 0 ? `+${value}` : String(value);

@@ -150,6 +150,10 @@ function renameInState(root: string, from: string, to: string): void
         changes.push([["seen"], Object.fromEntries(Object.entries(scene.seen).map(([name, said]) => [named(name), said]))]);
     }
 
+    if (scene.used !== undefined && Object.keys(scene.used).some((name) => named(name) !== name)) {
+        changes.push([["used"], Object.fromEntries(Object.entries(scene.used).map(([name, used]) => [named(name), used]))]);
+    }
+
     if (scene.moved !== undefined && named(scene.moved.turn) !== scene.moved.turn) {
         changes.push([["moved", "turn"], to]);
     }

@@ -351,6 +351,8 @@ async function makeDemoFight(rpg: (...args: string[]) => Promise<void>): Promise
     await rpg("move", "Brigante 2", "--at", "G7");
     await rpg("scene", "order", "--order", "Ettore", "--order", "Brigante 1", "--order", "Lupa", "--order", "Brigante 2");
     await rpg("scene", "hostile", "--who", "Brigante 1", "--who", "Brigante 2");
+    // Ettore has swung once: his action is used, the bonus action and the reaction free (D-453).
+    await rpg("scene", "use", "--who", "Ettore", "--uses", "attack");
 }
 
 /** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; two on the side; one done and one failed. */

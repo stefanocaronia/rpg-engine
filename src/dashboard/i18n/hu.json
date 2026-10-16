@@ -678,5 +678,8 @@
   "your turn": "te jössz",
   "Your turn": "Te jössz",
   "Zoom in": "Nagyítás",
-  "Zoom out": "Kicsinyítés"
+  "Zoom out": "Kicsinyítés",
+  "This turn": "Ez a kör",
+  "used": "felhasználva",
+  "free": "szabad"
 }

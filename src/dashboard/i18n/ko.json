@@ -678,5 +678,8 @@
   "your turn": "내 차례",
   "Your turn": "내 차례",
   "Zoom in": "확대",
-  "Zoom out": "축소"
+  "Zoom out": "축소",
+  "This turn": "이번 턴",
+  "used": "사용함",
+  "free": "가능"
 }

@@ -30,6 +30,8 @@ const recipeSchema = z.object({
     regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
     lower: z.record(z.string(), z.union([z.number().int().positive(), z.string().min(1)])).optional(),
     needs: z.string().min(1).optional(),
+    "once-per": z.string().regex(/^(\d+d)?\s*(\d+h)?\s*(\d+m)?$/, "write it as a duration, such as 24h").optional(),
+    lasts: z.string().regex(/^(\d+d)?\s*(\d+h)?\s*(\d+m)?$/, "write it as a duration, such as 8h").optional(),
     spend: z.record(z.string(), z.object({ gives: z.string().min(1), adds: z.union([z.string().min(1), z.number()]).optional() }).strict()).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
@@ -136,10 +138,12 @@ const systemSchema = z.object({
         grace: z.string().min(1),
         worsens: z.string().min(1),
         water: z.string().min(1).optional(),
+        lifestyle: z.object({ field: z.string().min(1), costs: z.record(z.string().min(1), z.string().min(1)), rules: z.string().min(1) }).strict().optional(),
         rules: z.string().min(1),
     }, {
         error: "write it as the kind spent each day, the field that counts the days without it, the formula of the days one goes without, the counter they then raise, "
-            + "a word on water, and the rules, such as {daily: Rations, short: days-without-food, grace: 3 + con-mod, worsens: exhaustion, rules: Food and Water}",
+            + "a word on water, what a day in a settlement costs by the lifestyle chosen, and the rules, such as {daily: Rations, short: days-without-food, grace: 3 + con-mod, "
+            + "worsens: exhaustion, lifestyle: {field: lifestyle, costs: {modest: 1 gp}, rules: Lifestyle Expenses}, rules: Food and Water}",
     }).strict().optional(),
     burning: z.record(z.string().min(1), z.object({ lasts: z.string().min(1), spends: z.string().min(1).optional() }).strict(), {
         error: "write each thing that burns with how long it lasts, and what it spends when not itself, such as Lamp: {lasts: 6 hours, spends: Oil}",
@@ -147,6 +151,24 @@ const systemSchema = z.object({
     bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), rules: z.string().min(1) }).strict(), {
         error: "write each list with the most items it holds, the field an item that asks for it has, and the rules to read, such as attuned: {most: 3, needs: attunement, rules: Attunement}",
     }).optional(),
+    "turn-uses": z.record(
+        z.string().min(1).refine((name) => !/ (by|for) /i.test(` ${name} `), "a use's name takes no word by or for, which the engine reads in what it keeps"),
+        z.object({
+            most: z.union([z.string().min(1), z.number()]).optional(),
+            within: z.string().min(1).optional(),
+            needs: z.string().min(1).optional(),
+            "any-turn": z.boolean().optional(),
+            resets: z.enum(["own turn", "each turn"]).optional(),
+        }).strict(),
+        { error: "write each use of a turn with its most, the use it goes within, what it needs, whether it goes in any turn and when it comes back, such as attack: {within: action, most: 1 + extra-attacks}" },
+    ).optional(),
+    "at-most": z.record(z.string().min(1), z.union([z.string().min(1), z.number()]), {
+        error: "write each field of a sheet with the most it holds, a number or a formula, such as str: 20 + 4 * has(features, Primal Champion), or prepared: max-prepared",
+    }).optional(),
+    damage: z.object({ counter: z.string().min(1), halves: z.string().min(1), ignores: z.string().min(1), doubles: z.string().min(1), rules: z.string().min(1) }, {
+        error: "write it as the counter damage takes from and the lists of a page that halve, ignore and double a type, such as "
+            + "{counter: hp, halves: damage-resistances, ignores: damage-immunities, doubles: damage-vulnerabilities, rules: Damage Resistance and Vulnerability}",
+    }).strict().optional(),
     keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
         error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
     }).strict().optional(),
@@ -204,10 +226,42 @@ export interface Recipe
     lower: Record<string, Formula>;
     /** A counter that must be above 0 when the rest begins, or it gives that page nothing, as hit points for a long rest (D-449). */
     needs?: string;
+    /** How often it gives a page anything, as a long rest once in 24h (RST-1). */
+    oncePer?: string;
+    /** How long it takes, as a long rest's 8h: the master may advance them before or after applying it (RST-1). */
+    lasts?: string;
     /** By counter named after its die, or counters that begin so, what spending one gives and adds to each die, as hit dice healing (D-449). */
     spend: Record<string, { gives: string; adds: Formula; }>;
     ends: string[];
     rules: string[];
+}
+
+/** A use of a turn (D-453, TRN-1): at most so many, within another use, only for who has it, in any turn or only in one's own, back at one's turn or at every turn. */
+export interface TurnUse
+{
+    most?: Formula;
+    within?: string;
+    needs?: Formula;
+    anyTurn: boolean;
+    resets: "own turn" | "each turn";
+}
+
+/** What a day in a settlement costs under the rigor «rules» (UPK-4): the field of the lifestyle chosen, the coins of each, and the rules to read. */
+export interface Lifestyle
+{
+    field: string;
+    costs: Record<string, string>;
+    rules: string;
+}
+
+/** Damage of a type (D-449, DMG-1): the counter it takes from, and the lists of a page whose types halve it, ignore it or double it. */
+export interface DamageRule
+{
+    counter: string;
+    halves: string;
+    ignores: string;
+    doubles: string;
+    rules: string;
 }
 
 /** What can break what someone keeps alive (D-266, EFF-14): their counter going down, the conditions they may take, and the title of the rule to read. */
@@ -396,9 +450,15 @@ export interface GameSystem
     /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
     bonds: Record<string, { most: number; needs: string; rules: string; }>;
     /** What each party member uses up a day under the rigor «rules» (UPK-1, UPK-2). */
-    upkeep?: { daily: string; short: string; grace: string; worsens: string; water?: string; rules: string; };
+    upkeep?: { daily: string; short: string; grace: string; worsens: string; water?: string; lifestyle?: Lifestyle; rules: string; };
     /** What burns, by the effect named after it: how long it lasts, and the kind it spends when not itself, such as Oil (UPK-3). */
     burning: Record<string, { lasts: string; spends?: string; }>;
+    /** By name, what one may do in a turn (TRN-1), as an action, a bonus action and a reaction. */
+    turnUses: Record<string, TurnUse>;
+    /** By field of a sheet, the most it holds (LIM-1): a number written, or the items of a list. */
+    atMost: Record<string, Formula>;
+    /** What damage of a type does, by the lists of who takes it (DMG-1). */
+    damage?: DamageRule;
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
     combat?: CombatData;
@@ -578,6 +638,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     // What breaks what someone keeps, and what a counter shields, read counters (EFF-14, DAT-14).
     const counted = [
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
+        ...(data.damage === undefined ? [] : [{ where: "damage.counter", field: data.damage.counter }]),
         ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
         ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show].map((field) => ({ where: "dying", field }))),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
@@ -603,6 +664,22 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
 
     if (counted !== undefined) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${counted.where}: ${counted.field} is not declared as a counter in fields.`);
+    }
+
+    // A use of a turn goes within another the system names (TRN-3).
+    const turnUses = data["turn-uses"] ?? {};
+    const looseUse = Object.entries(turnUses).find(([, rule]) => rule.within !== undefined && !Object.keys(turnUses).some((use) => comparableText(use) === comparableText(rule.within ?? "")));
+
+    if (looseUse !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: turn-uses.${looseUse[0]}: ${looseUse[1].within} is not one of its turn-uses; name one, or add it.`);
+    }
+
+    // The lists whose types change damage are lists (DMG-1).
+    const damageLists = data.damage === undefined ? [] : (["halves", "ignores", "doubles"] as const).map((key) => ({ where: `damage.${key}`, field: data.damage?.[key] ?? "" }));
+    const notListed = damageLists.find((entry) => kindOf(entry.field) !== "list");
+
+    if (notListed !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${notListed.where}: ${notListed.field} is not declared as a list in fields.`);
     }
 
     const notMarking = [...(data.marks ?? []), ...[data.progression?.list, data.progression?.parts?.list].filter((field) => field !== undefined)].find((field) => kindOf(field) !== "list");
@@ -713,6 +790,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             regain: regainOf(value.regain ?? {}, name, path, recipe),
             lower: Object.fromEntries(Object.entries(value.lower ?? {}).map(([field, amount]) => [field, parseFormula(String(amount))])),
             ...(value.needs === undefined ? {} : { needs: value.needs }),
+            ...(value["once-per"] === undefined ? {} : { oncePer: value["once-per"] }),
+            ...(value.lasts === undefined ? {} : { lasts: value.lasts }),
             spend: Object.fromEntries(Object.entries(value.spend ?? {}).map(([field, rule]) => [field, { gives: rule.gives, adds: parseFormula(String(rule.adds ?? 0)) }])),
             ends: value.ends ?? [],
             rules: value.rules ?? [],
@@ -722,6 +801,17 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         bonds: data.bonds ?? {},
         ...(data.upkeep === undefined ? {} : { upkeep: data.upkeep }),
         burning: data.burning ?? {},
+        turnUses: Object.fromEntries(
+            Object.entries(data["turn-uses"] ?? {}).map(([use, rule]) => [use, {
+                ...(rule.most === undefined ? {} : { most: parseFormula(String(rule.most)) }),
+                ...(rule.within === undefined ? {} : { within: rule.within }),
+                ...(rule.needs === undefined ? {} : { needs: parseFormula(rule.needs) }),
+                anyTurn: rule["any-turn"] ?? false,
+                resets: rule.resets ?? "own turn",
+            }]),
+        ),
+        atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, parseFormula(String(most))])),
+        ...(data.damage === undefined ? {} : { damage: data.damage }),
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),

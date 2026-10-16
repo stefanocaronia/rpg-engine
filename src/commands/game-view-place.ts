@@ -18,6 +18,7 @@ import { imageFile, ownImage, shownImage } from "./game-images.ts";
 import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
+import { turnMarks } from "./game-turn-uses.ts";
 import { campaignSystem } from "./game-world.ts";
 import { pageCounters } from "./page-counters.ts";
 import { tokenIcon } from "./sheet.ts";
@@ -125,6 +126,8 @@ export interface ShownScene
     order?: string[];
     turn?: string;
     round?: number;
+    /** What who acts has used of the turn (TRN-4). */
+    marks?: { use: string; used: boolean; }[];
     /** In a fight, each one in it, in the order of the turns when there is one (D-314). */
     fighters?: Fighter[];
 }
@@ -317,6 +320,8 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
             : { ...person(sight, page), count, ...hostile, ...state };
     });
     const turnName = (name: string): string => shownTurn(sight, scene, name);
+    // What who acts has used of the turn, as marks beside them (TRN-4).
+    const marks = scene.turn === undefined ? [] : turnMarks(campaignSystem(sight.root, sight.context), scene, scene.turn);
     return {
         title: scene.title,
         type: scene.type,
@@ -327,6 +332,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
         ...(scene.turn === undefined ? {} : { turn: turnName(scene.turn) }),
         ...(scene.round === undefined ? {} : { round: scene.round }),
+        ...(marks.length === 0 ? {} : { marks }),
         ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
     };
 }

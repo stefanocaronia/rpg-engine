@@ -1,0 +1,132 @@
+// What one does in a turn (D-453, TRN-1–TRN-4): the uses the system names, as an action, a bonus action, a reaction, the attacks of an action and what a
+// feature gives once a turn, each at most so many until it comes back.
+import { comparableText } from "../core/text.ts";
+import type { Page, World } from "../pages/index.ts";
+import type { Scene } from "../scene/index.ts";
+import type { GameSystem, TurnUse } from "../systems/index.ts";
+import { effectiveFields } from "./effect-layer.ts";
+import { formulaValue } from "./worked-out.ts";
+
+/** What a use did: the uses of the one who used it, as the scene keeps them, and the line that says it. */
+export interface UsedInTurn
+{
+    used: string[];
+    line: string;
+}
+
+/**
+ * One use of a turn (TRN-1, TRN-2): refused past its most, or in another's turn when it goes only in one's own, unless the master names what gives one more
+ * (`by`, as Action Surge); a use within another, as an attack within the action, takes that one first, and counts within it (TRN-3).
+ */
+export function useInTurn(world: World, system: GameSystem | undefined, scene: Scene, actor: { name: string; page: Page; }, asked: string, by?: string): UsedInTurn
+{
+    const uses = system?.turnUses ?? {};
+    const use = Object.keys(uses).find((name) => comparableText(name) === comparableText(asked));
+
+    if (system === undefined || use === undefined) {
+        const named = Object.keys(uses);
+        throw new Error(`${asked} is no use of a turn${system === undefined ? "" : ` in ${system.name}`}${named.length === 0 ? "" : `: give one of ${named.join(", ")}`}. Nothing changed.`);
+    }
+
+    const rule = uses[use];
+    const fields = effectiveFields(world, actor.page);
+    const name = actor.name;
+
+    if (rule.needs !== undefined && !((formulaValue(world, fields, rule.needs) ?? 0) > 0)) {
+        throw new Error(`${name} has no ${use}: it comes from what the sheet has, as a feature. Nothing changed.`);
+    }
+
+    const ownTurn = scene.turn !== undefined && comparableText(scene.turn) === comparableText(name);
+
+    if (!rule.anyTurn && !ownTurn && by === undefined) {
+        const whose = scene.turn === undefined ? "no one's turn" : `${scene.turn}'s turn`;
+        const anyTurn = Object.entries(uses).filter(([, other]) => other.anyTurn && other.needs === undefined).map(([other]) => other);
+        const instead = anyTurn.length === 0 ? "" : `; what one does in another's turn, as a readied action, takes ${anyTurn.join(" or ")}: mark that`;
+        throw new Error(`It is ${whose}, not ${name}'s: ${use} goes in its own turn${instead}. Nothing changed.`);
+    }
+
+    const list = [...(scene.used?.[name] ?? [])];
+    const most = (one: TurnUse): number | undefined => (one.most === undefined ? 1 : formulaValue(world, fields, one.most));
+    const tagged = (entry: string, by?: string): string => (by === undefined ? entry : `${entry} by ${by}`);
+
+    if (rule.within === undefined) {
+        const count = list.filter((entry) => same(baseOf(entry), use)).length;
+        const limit = most(rule);
+
+        if (limit !== undefined && count >= limit && by === undefined) {
+            throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore}. Nothing changed.`);
+        }
+
+        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}.` };
+    }
+
+    // An attack counts within the action it took, until another action is used (TRN-3).
+    const within = rule.within;
+    const taken = `${within} for ${use}`;
+    const last = list.findLastIndex((entry) => same(withoutBy(entry), taken));
+    const since = last < 0 ? [] : list.slice(last + 1);
+    const counted = since.filter((entry) => same(entry, use)).length;
+    const limit = most(rule);
+    const of = limit === undefined ? "" : ` of ${limit}`;
+
+    if (last >= 0 && !since.some((entry) => same(baseOf(entry), within)) && (limit === undefined || counted < limit)) {
+        return { used: [...list, use], line: `${name}: ${use} ${counted + 1}${of}.` };
+    }
+
+    const withinRule = system.turnUses[within];
+    const withinCount = list.filter((entry) => same(baseOf(entry), within)).length;
+    const withinLimit = withinRule === undefined ? 1 : most(withinRule);
+
+    if (withinLimit !== undefined && withinCount >= withinLimit && by === undefined) {
+        const done = last < 0 ? "" : `, with ${counted} ${use}${of}`;
+        throw new Error(`${name} has used its ${within} until its next turn${done}${giveMore}. Nothing changed.`);
+    }
+
+    return { used: [...list, tagged(taken, by), use], line: `${name}: ${use} 1${of}, its ${within} used${by === undefined ? "" : `, by ${by}`}.` };
+}
+
+/** The uses that are left when a turn begins (TRN-4): none of the one whose turn it is, and of the others only those that last past a turn. */
+export function usesAtTurn(system: GameSystem | undefined, used: Scene["used"], turn: string): Scene["used"]
+{
+    const uses = system?.turnUses ?? {};
+
+    const lasting = (entry: string): boolean => {
+        const use = Object.keys(uses).find((name) => same(name, baseOf(entry)));
+        return use === undefined || uses[use].resets !== "each turn";
+    };
+
+    const left = Object.entries(used ?? {}).flatMap(([name, entries]): [string, string[]][] => {
+        const kept = same(name, turn) ? [] : entries.filter(lasting);
+        return kept.length === 0 ? [] : [[name, kept]];
+    });
+    return left.length === 0 ? undefined : Object.fromEntries(left);
+}
+
+/** The uses a turn shows, as the dashboard's marks (TRN-4): those that stand alone, used or not, for who acts. */
+export function turnMarks(system: GameSystem | undefined, scene: Scene, name: string): { use: string; used: boolean; }[]
+{
+    const list = scene.used?.[name] ?? [];
+    return Object.entries(system?.turnUses ?? {}).filter(([, rule]) => rule.within === undefined && rule.needs === undefined).map(([use]) => ({
+        use,
+        used: list.some((entry) => same(baseOf(entry), use)),
+    }));
+}
+
+const giveMore = ': an attack that another use makes, as with a bonus action or a reaction, is marked as that use; add by and what only for what gives one more, as by "Action Surge"';
+
+/** "action for attack by Action Surge" is an action, taken for an attack. */
+function baseOf(entry: string): string
+{
+    return withoutBy(entry).replace(/ for .*$/, "");
+}
+
+/** "action for attack by Action Surge" without what gave it: "action for attack". */
+function withoutBy(entry: string): string
+{
+    return entry.replace(/ by .*$/, "");
+}
+
+function same(one: string, other: string): boolean
+{
+    return comparableText(one) === comparableText(other);
+}

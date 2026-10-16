@@ -47,6 +47,8 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 | `bonus` | a number effects add up; missing reads 0 |
 | `factor` | a number effects multiply, written as `2`, `0.5`, `1/2` or `½`; missing reads 1 |
 | `length` | a length worked out, shown in `length-unit` and in metres for a metric player |
+| `weight` | a weight worked out, shown in the unit of `load`'s weights and in kilograms for a metric player |
+| `duration` | minutes worked out, shown as durations are written: `3m`, `1h 30m`, `30s` under a minute |
 | `text` | text, or `true`/`false` |
 | `list` | a list |
 | `rolls` | dice kept for later, as a diviner's Portent |
@@ -147,16 +149,23 @@ recipes:
 
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
-- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount or a formula, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`), the counter it `needs` above 0 to give anything (`needs: hp`), the occasions it `ends`, the rules it leaves to the master.
+- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount or a formula, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`), the counter it `needs` above 0 to give anything (`needs: hp`), how often it gives anything (`once-per: 24h`, counted from the last time it gave a page something, less how long it `lasts`, as the master may advance its hours before or after), the occasions it `ends`, the rules it leaves to the master.
 
 ### upkeep, burning
 
 ```yaml
-upkeep: {daily: Rations, short: days-without-food, grace: 3 + con-mod, worsens: exhaustion, water: "a gallon each", rules: Food and Water}
+upkeep:
+  daily: Rations
+  short: days-without-food
+  grace: 3 + con-mod
+  worsens: exhaustion
+  water: "a gallon each"
+  lifestyle: {field: lifestyle, costs: {Poor: 2 sp, Modest: 1 gp}, rules: Lifestyle Expenses}
+  rules: Food and Water
 burning: {Torch: {lasts: 1h}, Lamp: {lasts: 6h, spends: Oil}}
 ```
 
-Under the rigor rules, each midnight `advance` passes, a party member with a sheet outside a settlement (a place of kind city, town, village or inn, or one inside it) spends a piece of `daily`; without one it counts a day in `short`, and past the days `grace` gives raises `worsens` by one; `water` is said, never counted. An effect named after something in `burning` spends one of it, or of what it `spends`, from what the holder carries, and lasts as long as it burns.
+Under the rigor rules, each midnight `advance` passes, a party member with a sheet outside a settlement (a place of kind city, town, village or inn, or one inside it) spends a piece of `daily`; without one it counts a day in `short`, and past the days `grace` gives raises `worsens` by one; `water` is said, never counted. In a settlement, a member pays from `money` a day of the `lifestyle` it keeps, at its `costs`; without one, or without the coins, the line says what to do. An effect named after something in `burning` spends one of it, or of what it `spends`, from what the holder carries, and lasts as long as it burns.
 
 ### bonds
 
@@ -166,6 +175,34 @@ bonds:
 ```
 
 The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read.
+
+### at-most
+
+```yaml
+at-most: {str: 20 + bonus-str-max, prepared: max-prepared}
+```
+
+The most a field of a sheet holds, a number or a formula on the page: `write` refuses a number written above it, or a list longer, before writing (all of them when a page begins to keep a sheet); `validate` reports one written by hand. What an item or an effect raises is worked out, never checked.
+
+### turn-uses
+
+```yaml
+turn-uses:
+  action: {}
+  reaction: {any-turn: true}
+  attack: {within: action, most: 1 + extra-attacks}
+  sneak attack: {needs: "has(features, Sneak Attack)", any-turn: true, resets: each turn}
+```
+
+What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. The master names what gives one more with `by`. The dashboard shows who acts the uses that stand alone.
+
+### damage
+
+```yaml
+damage: {counter: hp, halves: damage-resistances, ignores: damage-immunities, doubles: damage-vulnerabilities, rules: Damage Resistance and Vulnerability}
+```
+
+`change` with `damage` and a negative `by` reads the lists of who takes it: a type in `ignores` takes nothing, in `halves` half rounded down, then in `doubles` twice that; the counter that shields `counter`, as temporary hit points, loses first. An item that names the type with a condition, as "slashing from nonmagical attacks", or names no type, as "damage from spells", waits for the master to say `slashing (applies)` or `slashing (does not apply)`.
 
 ### conditions, keeping, combat, dying
 

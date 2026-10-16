@@ -678,5 +678,8 @@
   "your turn": "sinun vuorosi",
   "Your turn": "Sinun vuorosi",
   "Zoom in": "Lähennä",
-  "Zoom out": "Loitonna"
+  "Zoom out": "Loitonna",
+  "This turn": "Tämä vuoro",
+  "used": "käytetty",
+  "free": "vapaa"
 }

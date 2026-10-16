@@ -33,11 +33,13 @@ import {
 } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
+import { type DamageTaken, damageTaken } from "./game-damage.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { spendDice } from "./game-hit-dice.ts";
 import { campaignCoins } from "./game-money.ts";
+import { logRecipeApplied, tooSoonNote } from "./game-recipe-pace.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
@@ -97,6 +99,9 @@ export const change = defineCommand({
             "the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3",
         ),
         why: z.string().optional().describe("what the change is for"),
+        damage: z.string().optional().describe(
+            "the type of the damage, with by negative, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type",
+        ),
         recipe: z.string().optional().describe("a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest"),
     }),
 
@@ -140,8 +145,15 @@ export const change = defineCommand({
         }
 
         const limits = { ...counterLimits(world, fields, field), hint: maximumHint(world, fields, field) };
-        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
         const why = input.why?.trim() === "" ? undefined : input.why;
+
+        // Damage of a type, as the page's lists change it, its shield first (DMG-1).
+        if (input.damage !== undefined) {
+            const damage = typedDamage(system, fields, field, input, page);
+            return { ...damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system), problems: world.problems };
+        }
+
+        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
         return { ...applyStep(root, context, world, holder, field, step, why, system).outcome, problems: world.problems };
     },
 
@@ -160,6 +172,77 @@ export const change = defineCommand({
         return [lines.join("\n"), ...notes.filter((line) => line.includes("\n")), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** The damage a page takes of the type given (DMG-1): only with by, negative, on the counter the system's damage takes from. */
+function typedDamage(system: GameSystem | undefined, fields: Record<string, unknown>, field: string, input: { by?: number | string; spend?: unknown; to?: unknown; damage?: string; }, page: string): DamageTaken
+{
+    const rule = system?.damage;
+
+    if (system === undefined || rule === undefined) {
+        throw new Error(`The game system ${system?.name ?? "of the campaign"} has no damage types: give by alone, such as by -12. Nothing changed.`);
+    }
+
+    if (comparableText(field) !== comparableText(rule.counter)) {
+        throw new Error(`A damage type goes with ${rule.counter}, not ${field}: change ${page} ${rule.counter} --by=-12 --damage fire. Nothing changed.`);
+    }
+
+    const by = typeof input.by === "number" ? input.by : Number(input.by);
+
+    if (input.spend !== undefined || input.to !== undefined || !Number.isSafeInteger(by) || by >= 0) {
+        throw new Error(`A damage type goes with by, negative, the damage before ${page}'s lists change it, such as by -12, damage fire. Nothing changed.`);
+    }
+
+    return damageTaken(system, rule, fields, -by, input.damage ?? "", page);
+}
+
+/**
+ * Damage of a type taken by its counter (DMG-1): the counter that shields it loses first, as temporary hit points (DAT-14), then the counter the rest; one
+ * outcome that says both, and why the damage is not the amount given.
+ */
+function damageSteps(
+    root: string,
+    context: Context,
+    world: World,
+    target: { holder: CounterHolder; name: string; fields: Record<string, unknown>; field: string; limits: Parameters<typeof counterStep>[5]; coins: Coin[] | undefined; },
+    damage: DamageTaken,
+    why: string | undefined,
+    system: GameSystem | undefined,
+): StepOutcome
+{
+    const { holder, fields, field, coins } = target;
+    const page = holder.page.name;
+    const withNote = (outcome: StepOutcome, notes: string[]): StepOutcome => ({ ...outcome, note: [...notes, outcome.note].filter((part) => part !== "").join("; ") });
+    const shield = Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
+    const shieldField = shield === undefined ? undefined : Object.keys(fields).find((name) => comparableText(name) === comparableText(shield));
+    const absorbed = shieldField === undefined ? 0 : Math.min(Math.max(readCounter(fields[shieldField])?.value ?? 0, 0), damage.amount);
+    const onCounter = (current: World, currentHolder: CounterHolder, amount: number): StepOutcome =>
+        applyStep(root, context, current, currentHolder, field, counterStep({ by: -amount }, fields[field], page, field, coins, target.limits), why, system).outcome;
+
+    if (shieldField === undefined || absorbed === 0) {
+        return withNote(onCounter(world, holder, damage.amount), [damage.note]);
+    }
+
+    const shieldStep = counterStep({ by: -absorbed }, fields[shieldField], page, shieldField, coins, counterLimits(world, fields, shieldField));
+    const first = applyStep(root, context, world, holder, shieldField, shieldStep, why, system);
+
+    if (absorbed === damage.amount) {
+        return withNote(first.outcome, [damage.note]);
+    }
+
+    const outcome = onCounter(first.world, holderNamed(root, first.world, target.name), damage.amount - absorbed);
+    const shielded = `${shieldField} ${first.outcome.before} → ${first.outcome.after} first`;
+    // What someone keeps alive reads the whole damage, the shield's part too (EFF-14).
+    const keeping = keepingLossNote(world, readOpenScene(root).scene, system, page, field, damage.amount);
+    return {
+        ...withNote(outcome, [damage.note, shielded]),
+        thresholds: [...first.outcome.thresholds, ...outcome.thresholds],
+        // The shield is spent, so the only reminder left is what someone keeps (DAT-14).
+        reminders: keeping === "" ? [] : [keeping],
+        due: [...first.outcome.due, ...outcome.due],
+        followers: [...new Set([...first.outcome.followers, ...outcome.followers])],
+        keepers: [...new Set([...first.outcome.keepers, ...outcome.keepers])],
+    };
+}
 
 /** What a step did to a counter or to money. */
 interface StepOutcome
@@ -342,7 +425,7 @@ function recipeResult(
     if (input.field !== undefined && input.spend !== undefined && input.by === undefined && input.to === undefined && page !== undefined) {
         const { system, recipe } = recipeNamed(named, input.recipe);
         const why = input.why === undefined || input.why.trim() === "" ? recipe.name : input.why;
-        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, recipe, page, input.field, input.spend, why) };
+        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, { system, recipe }, page, input.field, input.spend, why) };
     }
 
     if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined) {
@@ -395,7 +478,10 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
     const steps: StepOutcome[] = [];
     // A rest that needs a counter above 0, as a long rest hit points, gives nothing to who has none when it begins (D-449).
     const needed = recipe.needs === undefined ? undefined : readCounter(valueNamed(effectiveFields(current, pageCalled(current, name)), recipe.needs));
-    const barred = needed !== undefined && needed.value <= 0;
+    const atZero = needed !== undefined && needed.value <= 0;
+    // Nor to who had one too recently, as a second long rest within 24 hours (RST-1).
+    const tooSoon = atZero ? undefined : tooSoonNote(root, recipe, name);
+    const barred = atZero || tooSoon !== undefined;
 
     for (const { field, target } of barred ? [] : recipeTargets(current, recipe, pageCalled(current, name))) {
         const holder = pageHolder(current, pageCalled(current, name));
@@ -416,8 +502,13 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
-        resting: [barred ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
+        resting: [atZero ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : tooSoon ?? "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
     };
+
+    if (!barred) {
+        logRecipeApplied(root, context, recipe, name, start.visibility);
+    }
+
     return { outcome, world: current };
 }
 

@@ -2,11 +2,13 @@
 export {
     type CampaignData,
     campaignDataNames,
+    type DamageRule,
     findCampaignSystem,
     findSystem,
     type GameSystem,
     type GridRules,
     installedSystems,
+    type Lifestyle,
     type Recipe,
     type Reward,
     rollName,
@@ -17,6 +19,7 @@ export {
     type Threshold,
     type Travel,
     type TravelKind,
+    type TurnUse,
     withSettings,
 } from "./game-system.ts";
 export { type SystemWords, systemWords } from "./words.ts";

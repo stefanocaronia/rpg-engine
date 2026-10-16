@@ -163,6 +163,8 @@ export interface ShownScene
     order?: string[];
     turn?: string;
     round?: number;
+    /** What who acts has used of the turn, by the game's names (TRN-4): action, bonus action, reaction. */
+    marks?: { use: string; used: boolean; }[];
     /** In a fight, each one in it, in the order of the turns (D-314). */
     fighters?: Fighter[];
 }

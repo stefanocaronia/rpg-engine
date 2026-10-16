@@ -23,12 +23,13 @@ import { turnEffectsNote } from "./game-reminders.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
+import { useInTurn, usesAtTurn } from "./game-turn-uses.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
 import { hasSheet, startingAtZero } from "./worked-out.ts";
 
-const actions = ["open", "add", "leave", "order", "next", "now", "hostile", "calm", "close"] as const;
+const actions = ["open", "add", "leave", "order", "next", "use", "now", "hostile", "calm", "close"] as const;
 type Action = (typeof actions)[number];
 
 // The parameters each action takes; any other is refused, so that nothing given is silently ignored.
@@ -38,6 +39,7 @@ const actionParameters: Record<Action, string[]> = {
     leave: ["who"],
     order: ["order"],
     next: [],
+    use: ["who", "uses", "by"],
     now: ["now"],
     hostile: ["who"],
     calm: ["who"],
@@ -60,6 +62,8 @@ interface SceneInput
     creatures?: string[] | Record<string, number>;
     who?: string[];
     order?: string[];
+    uses?: string;
+    by?: string;
     now?: string;
     summary?: string;
     seen?: string[] | Record<string, string>;
@@ -105,6 +109,7 @@ type SceneResult =
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
     | { action: "now"; title: string; now: string; }
+    | { action: "use"; line: string; }
     | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
     | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
 
@@ -121,6 +126,7 @@ export const scene = defineCommand({
         + "open starts one with a title, a type, a place, who is in it and creatures as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
         + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, after rolling for it if the game does; next passes the turn; "
+        + "use marks what one uses of a turn, such as who Ettore, uses attack: the engine counts the game's uses (action, reaction, the attacks of an action) and refuses one too many; "
         + "now gives the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
         + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows it. "
         + "seen, at open or add, gives what the character sees of those it does not know by name; the player's dashboard calls them so until the character learns the name. "
@@ -129,13 +135,15 @@ export const scene = defineCommand({
     group: "game",
     positionals: ["action"],
     input: z.object({
-        action: z.enum(actions).describe("open, add, leave, order, next, now, hostile, calm or close"),
+        action: z.enum(actions).describe("open, add, leave, order, next, use, now, hostile, calm or close"),
         title: z.string().optional().describe("open: the scene's title"),
         type: z.enum(sceneTypes).optional().describe(`open: ${sceneTypes.join(", ")}`),
         place: z.string().optional().describe("open: the place, such as [[Ossario]]; the character's if left out"),
         with: textList.optional().describe("open, add: the characters in the scene, the player character included, such as [[Lena]]; at open, the character and the companions with them if left out"),
         creatures: z.union([textList, z.record(z.string(), z.number().int())]).optional().describe('open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}'),
-        who: textList.optional().describe("leave: who leaves the scene; hostile, calm: who attacks the party, or stops; characters or copies, such as Annegato 2"),
+        who: textList.optional().describe("leave: who leaves the scene; hostile, calm: who attacks the party, or stops; use: who uses it; characters or copies, such as Annegato 2"),
+        uses: z.string().optional().describe("use: what of a turn, by the game's names, such as action, bonus action, reaction, attack"),
+        by: z.string().optional().describe('use: what gives one more, or lets it in another\'s turn, such as "Action Surge"'),
         order: textList.optional().describe("order: who takes turns, in order; those left out (fallen, fled) take none"),
         now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
@@ -178,6 +186,8 @@ export const scene = defineCommand({
                 return markHostile(root, input.who ?? [], input.action === "hostile", context, current);
             case "order":
                 return withActing(root, context, current, setOrder(root, world, input.order ?? [], context, current));
+            case "use":
+                return useOfTurn(root, world, input, context, current);
             default:
                 return withActing(root, context, current, passTurn(root, world, context, current));
         }
@@ -214,6 +224,8 @@ export const scene = defineCommand({
                 return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             case "now":
                 return `${result.title}: the player's dashboard now shows "${result.now}".`;
+            case "use":
+                return result.line;
             case "hostile":
             case "calm":
                 return markedText(result);
@@ -544,6 +556,43 @@ function keptTurn(current: Scene, named: string[]): { round: number; turn: strin
     return after === undefined ? { round: round + 1, turn: named[0] } : { round, turn: after };
 }
 
+/** One use of a turn by one in the scene (TRN-1–TRN-3), kept in the scene, with its line in the log. */
+function useOfTurn(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult
+{
+    const [who] = input.who ?? [];
+
+    if (who === undefined || input.uses === undefined || input.uses.trim() === "") {
+        throw new Error("Give who and what they use, such as who Ettore, uses attack.");
+    }
+
+    if (current.order === undefined) {
+        throw new Error("The scene has no order of turns, so no turn to use: set it with scene order first, after rolling for it if the game does.");
+    }
+
+    const name = memberNames(current).find((member) => comparableText(member) === comparableText(parsePageReference(who).name));
+
+    if (name === undefined) {
+        throw new Error(`${who} is not in the scene ${current.title}: bring them in with scene add, or give one of ${memberNames(current).join(", ")}.`);
+    }
+
+    const copy = current.copies[name];
+    const page = copy === undefined ? findPage(world, name) : copyPage(name, copy);
+
+    if (page === undefined) {
+        throw new Error(`There is no page named ${name}. Look for it with the find command.`);
+    }
+
+    const by = input.by?.trim() === "" ? undefined : input.by?.trim();
+    const system = campaignSystem(root, context);
+    const done = useInTurn(world, system, current, { name, page }, input.uses.trim(), by);
+    updateScene(root, [[["used", name], done.used]]);
+    appendLogEntry(root, newDatedLogEntry(root, context, "turn-used", "hidden", { title: current.title, who: name, use: input.uses.trim(), by }));
+    // One who cannot act, as Stunned, is said so: the game's rule, which the master applies (pp. 91, 358).
+    const inactive = effectsOf(page).map((effect) => effect.name).filter((effect) => (system?.combat?.inactive ?? []).some((condition) => comparableText(condition) === comparableText(effect)));
+    const warned = inactive.length === 0 ? "" : ` ${name} is ${inactive.join(", ")}: read what it may still do.`;
+    return { action: "use", line: `${done.line}${warned}` };
+}
+
 function passTurn(root: string, world: World, context: Context, current: Scene): SceneResult
 {
     if (current.order === undefined) {
@@ -739,6 +788,13 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
 
     if (turns === undefined || (turns.turn === before.turn && turns.round === (before.round ?? 1))) {
         return result;
+    }
+
+    // A turn that begins gives back what its one used, and every turn what lasts only a turn (TRN-4).
+    const used = readOpenScene(root).scene?.used;
+
+    if (used !== undefined) {
+        updateScene(root, [[["used"], usesAtTurn(campaignSystem(root, context), used, turns.turn)]]);
     }
 
     const acting = turnEffectsNote(campaignWorld(root, context), readOpenScene(root).scene, before.turn, turns.turn);

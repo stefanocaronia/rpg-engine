@@ -678,5 +678,8 @@
   "your turn": "自分のターン",
   "Your turn": "自分のターン",
   "Zoom in": "拡大",
-  "Zoom out": "縮小"
+  "Zoom out": "縮小",
+  "This turn": "このターン",
+  "used": "使用済み",
+  "free": "未使用"
 }

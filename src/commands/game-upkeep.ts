@@ -6,9 +6,11 @@ import { parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
+import { formatAmount, payCoins, readAmount, totalOf } from "../money/index.ts";
 import { baseChain, heldStacksOfKind, kindNamed, locate, type Page, type World, writePage } from "../pages/index.ts";
-import type { GameSystem } from "../systems/index.ts";
+import type { GameSystem, Lifestyle } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { campaignCoins } from "./game-money.ts";
 import { partyPages } from "./game-recipes.ts";
 import { writeStacks } from "./game-stacks.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -39,8 +41,8 @@ export function dailyUpkeep(root: string, context: Context, system: GameSystem |
         lines.push(...members.map((member) => safeUpkeep(root, context, member.name, upkeep)).filter((line) => line !== ""));
     }
 
-    // Water once, however many midnights passed outside a settlement.
-    return [...lines, ...(thirsty && upkeep.water !== undefined ? [`Water: ${upkeep.water}. Read ${upkeep.rules}.`] : [])];
+    // Water once, however many midnights passed outside a settlement; a line that says the same each day, once.
+    return [...new Set(lines), ...(thirsty && upkeep.water !== undefined ? [`Water: ${upkeep.water}. Read ${upkeep.rules}.`] : [])];
 }
 
 /** One member's day, which never stops the time that has passed: a page that cannot be written becomes a line with what to do (UPK-1). */
@@ -68,7 +70,9 @@ function memberUpkeep(root: string, context: Context, name: string, upkeep: NonN
     const hungry = Number(valueNamed(fields, upkeep.short) ?? 0) || 0;
 
     if (inSettlement(world, member)) {
-        return hungry === 0 ? "" : setNumber(root, context, world, member, upkeep.short, 0, "ate in a settlement") ? `${member.name} ate: ${upkeep.short} back to 0.` : "";
+        const paid = upkeep.lifestyle === undefined ? "" : lifestylePaid(root, context, world, member, upkeep.lifestyle);
+        const ate = hungry !== 0 && setNumber(root, context, campaignWorld(root, context), member, upkeep.short, 0, "ate in a settlement") ? `${member.name} ate: ${upkeep.short} back to 0.` : "";
+        return [paid, ate].filter((line) => line !== "").join(" ");
     }
 
     // The system's kind, or one of the campaign that derives from it, as Razioni from Rations.
@@ -93,6 +97,45 @@ function memberUpkeep(root: string, context: Context, name: string, upkeep: NonN
 
     const worse = raise(root, context, campaignWorld(root, context), member.name, upkeep.worsens);
     return `${member.name} has no ${upkeep.daily}: ${upkeep.short} ${days}, past ${grace}: ${upkeep.worsens} ${worse}. Read ${upkeep.rules}.`;
+}
+
+/**
+ * A day in a settlement paid from the purse by the lifestyle chosen (UPK-4): the line that says it, or what to do when none is chosen or the purse is short.
+ */
+function lifestylePaid(root: string, context: Context, world: World, member: Page, lifestyle: Lifestyle): string
+{
+    const chosen = valueNamed(effectiveFields(world, member), lifestyle.field);
+    const named = Object.keys(lifestyle.costs).find((name) => typeof chosen === "string" && comparableText(name) === comparableText(chosen));
+    const { coins } = campaignCoins(root, context);
+
+    if (named === undefined) {
+        const names = Object.keys(lifestyle.costs);
+        const example = names[Math.floor(names.length / 2)];
+        const who = member.fields.role === "pc" ? "ask the player, then " : "";
+        // A lifestyle of the campaign's has no price the system knows: the master charges it.
+        return typeof chosen === "string" && chosen.trim() !== ""
+            ? `${member.name}'s ${lifestyle.field} ${chosen} has no price here: charge the day with change ${member.name} money, or set one of ${names.join(", ")}. Read ${lifestyle.rules}.`
+            : `${member.name} has no ${lifestyle.field} to pay a day in a settlement: ${who}set ${lifestyle.field}=${example}, one of ${names.join(", ")}. Read ${lifestyle.rules}.`;
+    }
+
+    const price = coins === undefined ? undefined : readAmount(lifestyle.costs[named], coins);
+
+    if (coins === undefined || price === undefined || totalOf(price, coins) === 0) {
+        return "";
+    }
+
+    const purse = readAmount(valueNamed(member.fields, "money") ?? "", coins) ?? {};
+    const payment = payCoins(purse, price, coins);
+    const before = formatAmount(purse, coins);
+
+    if (payment === undefined) {
+        return `${member.name} cannot pay a ${named} day, ${lifestyle.costs[named]}, with money ${before}: a poorer lifestyle, work or a debt, as you judge. Read ${lifestyle.rules}.`;
+    }
+
+    const after = formatAmount(payment.purse, coins);
+    writePage(world, member.name, undefined, { set: { money: after } });
+    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: member.name, field: "money", before, after, why: `a ${named} day` }));
+    return `${member.name} pays a ${named} day: money ${before} → ${after}.`;
 }
 
 /** Whether a page stands in a settlement, or in a place inside one (UPK-1). */

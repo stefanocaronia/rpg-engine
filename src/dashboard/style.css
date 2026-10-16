@@ -7897,6 +7897,51 @@ svg.icon {
     text-wrap: balance;
 }
 
+/* What who acts has of the turn: a full pip while free, an empty one once used (D-453). */
+.turn-marks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.turn-who {
+    display: grid;
+    min-width: 0;
+}
+
+.mark-sign {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.mark-pip {
+    width: 9px;
+    height: 9px;
+    margin-inline-start: 2px;
+    border: 2px solid currentColor;
+    transform: rotate(45deg);
+    background: currentColor;
+}
+
+.turn-marks .used {
+    color: var(--muted);
+}
+
+.turn-marks .used .mark-word {
+    text-decoration: line-through;
+}
+
+.turn-marks .used .mark-pip {
+    background: transparent;
+}
+
 .turn-next {
     grid-area: next;
     display: grid;

@@ -108,6 +108,13 @@ describe("the speed a sheet works out", () => {
         expect(sheet.flatMap((group) => group.values).find((value) => value.field === "walking")?.text).toBe("6 m");
     });
 
+    it("tells a weight worked out in kilograms to a player who counts in metric", async () => {
+        await ok("config", "units", "metric");
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=14", "--set", "hp-base=10");
+        const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
+        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "push-drag")?.text).toBe("210 kg");
+    });
+
     it("works out every mode the page has, the same way (SPD-1, SPD-2)", async () => {
         await ok("effect", "add", "Ettore", "Fly", "--set", "fly=60 ft");
         await ok("effect", "add", "Ettore", "Haste", "--set", "speed-factor=2");
@@ -144,6 +151,6 @@ describe("jumping, pushing and holding one's breath (D-449)", () => {
     it("works them out for a character with classes, from Strength, size and Constitution", async () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=15", "--set", "con=14");
         const shown = await ok("show", "Ettore");
-        expect(shown).toContain("long-jump 15 ft · high-jump 5 ft · push-drag 450 · hold-breath 3");
+        expect(shown).toContain("long-jump 15 ft · high-jump 5 ft · push-drag 450 lb · hold-breath 3m");
     });
 });

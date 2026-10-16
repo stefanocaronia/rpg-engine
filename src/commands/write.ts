@@ -82,6 +82,7 @@ import { experienceOf, leastNotes, newLevelNotes } from "./game-experience.ts";
 import { gridNotes } from "./game-grids.ts";
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game-here.ts";
 import { questPictureNote } from "./game-images.ts";
+import { checkLimits } from "./game-limits.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
 import { logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
@@ -254,6 +255,7 @@ export const write = defineCommand({
 
         checkBase(world, existing?.name ?? reference.name, type, fields.set);
         checkBonds(world, system, existing, existing?.name ?? reference.name, fields);
+        checkLimits(world, system, existing, existing?.name ?? reference.name, fields);
         checkEventFields(world, existing, type, fields);
         const written = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
         const { created, changed, mode, retyped } = written;
