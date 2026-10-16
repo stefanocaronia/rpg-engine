@@ -186,6 +186,19 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(await ok("move", "Bandit 1", "--at", "D3")).toContain("This turn Bandit 1 has moved 1.5 m of 9 m: 7.5 m left.");
     });
 
+    it("counts a turn's move with the speed the sheet works out: slowed by a heavy armor without its Strength, stopped when grappled (GRD-5, SPD-1)", async () => {
+        await ok("write", "Kira", "--set", "speed=30 ft", "--set", "str=10", "--add", "inventory=[[Chain Mail]]", "--add", "equipped=[[Chain Mail]]");
+        await ok("move", "Kira", "--to", "Locanda", "--at", "B3");
+        await ok("move", "Bran", "--to", "Locanda", "--at", "E2");
+        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran");
+        await ok("scene", "order", "--order", "Kira", "--order", "Bran");
+        expect(await ok("move", "Kira", "--at", "F3")).toContain("This turn Kira has moved 6 m of 6 m: 0 m left.");
+        await ok("scene", "next");
+        await ok("scene", "next");
+        await ok("effect", "add", "Kira", "Grappled");
+        expect(await ok("move", "Kira", "--at", "G3")).toContain("This turn Kira has moved 1.5 m, 1.5 m beyond the 0 m of Kira's speed");
+    });
+
     it("puts one where no way on foot leads, and says so; says what of a large creature's squares it cannot fill (GRD-4, GRD-5)", async () => {
         await ok("write", "Cella", "--type", "place", "--text", "```map\n######\n#.#..#\n#....#\n######\n```", "--add", "contains=[[Oste]]");
         await ok("move", "Oste", "--at", "B2");

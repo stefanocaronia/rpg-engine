@@ -76,6 +76,14 @@ describe("what attuned items and feats give (D-449)", () => {
         expect(await ok("show", "Ettore")).toContain("wis-save +2");
     });
 
+    it("adds the proficiency bonus of an item of the campaign one is attuned to, as an Ioun Stone of Mastery (D-449)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10");
+        expect(await ok("show", "Ettore")).toContain("proficiency +2");
+        await ok("write", "Pietra della maestria", "--type", "item", "--set", "attunement=true", "--set", "bonus-proficiency=1");
+        await ok("write", "Ettore", "--add", "attuned=[[Pietra della maestria]]");
+        expect(await ok("show", "Ettore")).toContain("proficiency +3");
+    });
+
     it("raises an ability score to what an attuned item sets, and keeps it when higher (FOR-5)", async () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=8", "--set", "hp-base=10");
         await ok("write", "Ettore", "--add", "attuned=[[Gauntlets of Ogre Power]]");
