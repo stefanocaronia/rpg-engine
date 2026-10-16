@@ -677,6 +677,8 @@ function mergedTimes(times: TimePassed[]): TimePassed | undefined
         newDays: times.reduce((sum, time) => sum + time.newDays, 0),
         clocks: [...new Set(times.flatMap((time) => time.clocks))],
         newDayPart: times.map((time) => time.newDayPart).find((part) => part !== "") ?? "",
+        // What the party used up at every midnight of every leg (UPK-1).
+        upkeep: times.flatMap((time) => time.upkeep ?? []),
     };
 }
 

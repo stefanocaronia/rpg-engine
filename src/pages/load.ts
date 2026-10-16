@@ -51,7 +51,7 @@ function carriedLoad(world: World, rule: LoadRule, holder: Page, seen = new Set<
         const read = readEntry(entry);
         const page = read.shape === "text" ? undefined : entryPage(world, read.page);
 
-        if (page === undefined || page.type !== "item" || seen.has(page) || validHoldersOf(world, page)[0] !== holder) {
+        if (page === undefined || page.type !== "item" || seen.has(page) || validHoldersOf(world, page)[0]?.path !== holder.path) {
             return total;
         }
 
@@ -65,7 +65,8 @@ function carriedLoad(world: World, rule: LoadRule, holder: Page, seen = new Set<
 function weightOf(world: World, field: string, page: Page): number
 {
     const value = valueNamed(inheritedFields(world, page), field);
-    const match = typeof value === "string" ? /^\s*([\d,]*)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*$/u.exec(value) : null;
+    // A note may follow the unit, as a waterskin's 5 lb (full).
+    const match = typeof value === "string" ? /^\s*([\d,]*)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*(?:\([^()]*\))?\s*$/u.exec(value) : null;
 
     if (typeof value === "number") {
         return value;
@@ -84,7 +85,8 @@ function weightOf(world: World, field: string, page: Page): number
 function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefined): number
 {
     const money = valueNamed(fields, "money");
-    const coins = typeof money === "string" ? [...money.matchAll(/(\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1]), 0) : 0;
+    // Thousands written with commas, as 1,000 gp.
+    const coins = typeof money === "string" ? [...money.matchAll(/(\d{1,3}(?:,\d{3})+|\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1].replace(/,/g, "")), 0) : 0;
     return perUnit === undefined ? 0 : coins / perUnit;
 }
 

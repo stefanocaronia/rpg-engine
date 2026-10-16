@@ -71,6 +71,11 @@ describe("the load a character carries", () => {
         expect(await ok("show", "Ettore")).toContain("load 30.5 / 210 lb");
     });
 
+    it("weighs a waterskin's 5 lb (full) and a thousand coins written with a comma (LOAD-1)", async () => {
+        await ok("write", "Bruna", "--type", "character", "--set", "role=companion", "--set", "level=1", "--set", "str=10", "--set", "money=1,000 gp", "--add", "inventory=[[Waterskin]]");
+        expect(await ok("show", "Bruna")).toContain("load 25 / 150 lb");
+    });
+
     it("asks a weight for an item written without one, its own or its base's", async () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no weight, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set weight="2 lb".');
         expect(await ok("write", "Spada di Ettore", "--type", "item", "--set", "item=[[Longsword]]")).not.toContain("has no weight");

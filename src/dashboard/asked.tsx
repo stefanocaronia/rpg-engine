@@ -64,6 +64,12 @@ export function AskedBanner(
     const [roomy, setRoomy] = useState(true);
     const needed = useRef(0);
 
+    // A new question measures its own answers afresh.
+    useEffect(() => {
+        needed.current = 0;
+        setRoomy(true);
+    }, [asked.id]);
+
     useLayoutEffect(() => {
         const element = banner.current;
 

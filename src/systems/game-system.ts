@@ -28,7 +28,8 @@ const iconPattern = /^[Mm][MmLlHhVvCcSsQqTtAaZz\d.,\s+-]*$/;
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
     regain: z.record(z.string(), z.union([z.number(), z.string().min(1)])).optional(),
-    lower: z.record(z.string(), z.number().int().positive()).optional(),
+    lower: z.record(z.string(), z.union([z.number().int().positive(), z.string().min(1)])).optional(),
+    needs: z.string().min(1).optional(),
     spend: z.record(z.string(), z.object({ gives: z.string().min(1), adds: z.union([z.string().min(1), z.number()]).optional() }).strict()).optional(),
     ends: z.array(z.string().min(1)).optional(),
     rules: z.array(z.string().min(1)).optional(),
@@ -199,8 +200,10 @@ export interface Recipe
     set: Record<string, "max" | number>;
     /** By field, or by fields that begin so, how many come back in all, such as half the hit dice (DAT-4). */
     regain: Record<string, Formula>;
-    /** By field, how much a counter goes down, never below 0, as exhaustion after a long rest (D-449). */
-    lower: Record<string, number>;
+    /** By field, how much a counter goes down, a formula on the page, never below 0, as exhaustion after a long rest when one has eaten (D-449). */
+    lower: Record<string, Formula>;
+    /** A counter that must be above 0 when the rest begins, or it gives that page nothing, as hit points for a long rest (D-449). */
+    needs?: string;
     /** By counter named after its die, or counters that begin so, what spending one gives and adds to each die, as hit dice healing (D-449). */
     spend: Record<string, { gives: string; adds: Formula; }>;
     ends: string[];
@@ -708,7 +711,8 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
             name: recipe,
             set: value.set ?? {},
             regain: regainOf(value.regain ?? {}, name, path, recipe),
-            lower: value.lower ?? {},
+            lower: Object.fromEntries(Object.entries(value.lower ?? {}).map(([field, amount]) => [field, parseFormula(String(amount))])),
+            ...(value.needs === undefined ? {} : { needs: value.needs }),
             spend: Object.fromEntries(Object.entries(value.spend ?? {}).map(([field, rule]) => [field, { gives: rule.gives, adds: parseFormula(String(rule.adds ?? 0)) }])),
             ends: value.ends ?? [],
             rules: value.rules ?? [],

@@ -215,12 +215,14 @@ describe("recipes (DAT-4, DAT-5)", () => {
         const output = await ok("change", "--recipe", "long rest", "--why", "una notte alla locanda");
         expect(output).toContain(
             "Ennio: hp 20/34 → 34/34 (in Forma d'orso). Still on Ennio, with no end: Forma d'orso. Read in their text whether a rest asks for something.\n"
-                + 'Lena: hp 0/4 → 4/4 (again as Commoner).\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".\n',
+                // At 0 hit points when the rest begins, no benefit (p. 87, D-449).
+                + "Lena: nothing changed. At 0 hp when it began, Lena gains nothing from it.\n",
         );
         expect(output).not.toContain("Bruno");
         expect(character("Ennio")).toContain("hp: 5/12\n");
         expect(character("Ennio")).toContain("Forma d'orso (hp: 34/34)");
-        expect(readLogFile(folder).filter((entry) => entry.data.why === "una notte alla locanda")).toHaveLength(2);
+        // Only Ennio's hit points change: Lena began the rest at 0.
+        expect(readLogFile(folder).filter((entry) => entry.data.why === "una notte alla locanda")).toHaveLength(1);
         await ok("write", "Ennio", "--set", "status=dead");
         expect(await refused("change", "--recipe", "long rest")).toBe("There is no living player character, so a recipe without a page goes to no one: give the page. Nothing changed.");
     });
@@ -443,10 +445,11 @@ describe("laws on worlds at random", () => {
 
     it("bring back with a recipe the fields it names, end the effects until its occasions and no other, and find nothing to do a second time (DAT-4, DAT-5)", async () => {
         const runs = fc.record({
-            hp: fc.integer({ min: 0, max: 12 }),
+            // Above 0 hit points: at 0 a long rest gives nothing (p. 87, D-449).
+            hp: fc.integer({ min: 1, max: 12 }),
             tempHp: fc.integer({ min: 0, max: 5 }),
             slots: fc.integer({ min: 0, max: 3 }),
-            lenaHp: fc.integer({ min: 0, max: 4 }),
+            lenaHp: fc.integer({ min: 1, max: 4 }),
             effects: fc.subarray(["long rest", "short rest", "1h"]),
             recipe: fc.constantFrom("long rest", "short rest"),
         });

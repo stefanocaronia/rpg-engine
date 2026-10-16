@@ -45,7 +45,7 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 | `at-least` | a number the pages of `bonus-lists` raise to at least theirs, never lowering it; an effect sets it |
 | `modifier` | a number shown with its sign |
 | `bonus` | a number effects add up; missing reads 0 |
-| `factor` | a number effects multiply; missing reads 1 |
+| `factor` | a number effects multiply, written as `2`, `0.5`, `1/2` or `½`; missing reads 1 |
 | `length` | a length worked out, shown in `length-unit` and in metres for a metric player |
 | `text` | text, or `true`/`false` |
 | `list` | a list |
@@ -147,7 +147,7 @@ recipes:
 
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
-- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`), the occasions it `ends`, the rules it leaves to the master.
+- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount or a formula, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`), the counter it `needs` above 0 to give anything (`needs: hp`), the occasions it `ends`, the rules it leaves to the master.
 
 ### upkeep, burning
 

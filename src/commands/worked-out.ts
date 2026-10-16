@@ -4,6 +4,7 @@ import {
     chosenDice,
     contributingReads,
     diceFields,
+    factorOf,
     fieldsRead,
     type Formula,
     type FormulaRead,
@@ -135,6 +136,13 @@ const layeredByWorld = new WeakMap<World, WeakMap<Page, Record<string, unknown>>
 // Where a character's fields keep what it carries weighs, for its formulas alone.
 const carriedKey = Symbol("carried weight");
 
+/** What a character carries weighs, as its effective fields keep it (LOAD-1): worked out once with them; undefined for fields that do not keep it. */
+export function carriedIn(fields: Record<string, unknown>): number | undefined
+{
+    const value = (fields as Record<string | symbol, unknown>)[carriedKey];
+    return typeof value === "number" ? value : undefined;
+}
+
 function effectValuesOver(world: World, page: Page): Record<string, unknown>
 {
     const fields = { ...inheritedFields(world, page) };
@@ -159,7 +167,7 @@ function effectValuesOver(world: World, page: Page): Record<string, unknown>
             fields[key] = kind === "bonus"
                 ? (numberOf(fields[key]) ?? 0) + (numberOf(effectValue(value)) ?? 0)
                 : kind === "factor"
-                ? (numberOf(fields[key]) ?? 1) * (numberOf(effectValue(value)) ?? 1)
+                ? (factorOf(fields[key]) ?? 1) * (factorOf(value) ?? 1)
                 : effectValue(value);
         }
     }
@@ -529,6 +537,11 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
         if (entry === undefined && givenFields(world, scope).some((worked) => comparableText(worked.field) === comparableText(name))) {
             const list = itemList(world, name);
             return list === undefined ? (scope.progression()?.lists ?? [name]) : [list];
+        }
+
+        // What the engine gives a formula, as the campaign's rigor or a character's load, is no field anyone writes (FOR-2).
+        if (["rigor", "effects", "load", "load-limit"].includes(comparableText(name))) {
+            return [];
         }
 
         if (entry === undefined || scope.computed(name)?.value === undefined) {

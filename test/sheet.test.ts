@@ -48,6 +48,8 @@ function ettore(): string[]
         "hit-dice-d8=3/3",
         "save-proficiencies=[wis, cha]",
         "skill-proficiencies=[Insight, Religion]",
+        // The cleric's armor and a Life Domain's heavy armor: without them the chain mail and the shield would worsen his rolls.
+        "armor-proficiencies=[light armor, medium armor, shields, heavy armor]",
         "languages=[Common, Dwarvish]",
         "personality-traits=Cito le scritture, sempre.",
         "umore=sereno",
@@ -119,7 +121,7 @@ describe("the sheet in show (DAT-2, D-207)", () => {
             + "medicine +3 · nature +0 · perception +3 · performance +1 · persuasion +1 · religion +2 ● · sleight-of-hand -1 · stealth -1 · survival +3",
             // The armor class from the chain mail and the shield he wears (D-231).
             "Combat: ac 18 · initiative -1 · walking 25 ft (25 ft.) · equipped Cotta di Ettore, Scudo di Ettore · hp-base 18 · hp 20/24 · hit-dice-d8 3/3 · passive-perception 13 · passive-insight 15 · passive-investigation 10 · long-jump 14 ft · high-jump 5 ft · push-drag 420 · hold-breath 3",
-            "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · languages Common, Dwarvish",
+            "Proficiencies: save-proficiencies wis, cha · skill-proficiencies Insight, Religion · armor-proficiencies light armor, medium armor, shields, heavy armor · languages Common, Dwarvish",
             // The cleric's table gives its features and its other columns (D-219).
             "Features: features Spellcasting, Divine Domain, Channel Divinity (1/rest) · cantrips-known 3 · channel-divinity 1/1",
             // The unarmed strike every character has ready, with no weapon equipped (D-235).

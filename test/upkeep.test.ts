@@ -36,6 +36,16 @@ describe("the day's food", () => {
         expect(page("characters/Ettore.md")).toContain('"[[Rations]] 1"');
     });
 
+    it("counts a kind of the campaign that derives from the system's, as Razioni from Rations, and Torcia as a Torch (UPK-1, UPK-3)", async () => {
+        await ok("write", "Razioni", "--type", "item", "--set", "item=[[Rations]]");
+        await ok("write", "Torcia", "--type", "item", "--set", "item=[[Torch]]");
+        await ok("write", "Ettore", "--remove", "inventory=[[Rations]] 2", "--remove", "inventory=[[Torch]] 3", "--add", "inventory=[[Razioni]] 2", "--add", "inventory=[[Torcia]] 3");
+        expect(await ok("advance", "--by", "1d")).toContain("Ettore eats a day's food:");
+        expect(page("characters/Ettore.md")).toContain('"[[Razioni]] 1"');
+        expect(await ok("effect", "add", "Ettore", "Torcia")).toContain("until day 2, 19:00");
+        expect(page("characters/Ettore.md")).toContain('"[[Torcia]] 2"');
+    });
+
     it("spends nothing in a settlement, or in a place inside one (UPK-1)", async () => {
         await ok("move", "Ettore", "--to", "Locanda");
         const passed = await ok("advance", "--by", "2d");
@@ -72,6 +82,12 @@ describe("exhaustion", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
         await ok("change", "Ettore", "exhaustion", "--to", "2");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("Ettore: exhaustion 2 → 1.");
+        // Without food the day before, the rest takes none away; at 0 hit points it gives nothing at all (pp. 87, 358).
+        await ok("write", "Ettore", "--set", "days-without-food=2");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).not.toContain("exhaustion 1 → 0");
+        await ok("write", "Ettore", "--unset", "days-without-food");
+        await ok("change", "Ettore", "hp", "--to", "0");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("At 0 hp when it began, Ettore gains nothing from it.");
     });
 });
 

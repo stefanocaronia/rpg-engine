@@ -48,13 +48,23 @@ describe("the speed a sheet works out", () => {
         expect(await walking("Ettore")).toBe("walking 30 ft (30 ft)");
     });
 
+    it("tells the same speed in an effect's output and on the sheet, for an overloaded character too (SPD-1)", async () => {
+        await ok("config", "rigor", "rules");
+        await ok("write", "Ettore", "--add", "inventory=[[Iron Pot]] 20");
+        expect(await walking("Ettore")).toBe("walking 5 ft (30 ft)");
+        expect(await ok("effect", "add", "Ettore", "Passo veloce", "--set", "bonus-speed=10")).not.toContain("walking 5 ft →");
+        expect(await walking("Ettore")).toBe("walking 5 ft (30 ft)");
+    });
+
     it("adds what effects add, multiplies their factors, halves with exhaustion 2, and stops at 5 or with a condition that stops one (SPD-2)", async () => {
         await ok("effect", "add", "Ettore", "Longstrider", "--set", "bonus-speed=10");
         expect(await walking("Ettore")).toBe("walking 40 ft (30 ft)");
         await ok("effect", "add", "Ettore", "Haste", "--set", "speed-factor=2");
         expect(await walking("Ettore")).toBe("walking 80 ft (30 ft)");
-        await ok("effect", "add", "Ettore", "Slow", "--set", "speed-factor=0.5");
+        await ok("effect", "add", "Ettore", "Slow", "--set", "speed-factor=1/2");
         expect(await walking("Ettore")).toBe("walking 40 ft (30 ft)");
+        const half = await runCommandLine(["effect", "add", "Ettore", "Mezzo", "--set", "speed-factor=half"], context);
+        expect(half.output).toBe('speed-factor on Ettore is a factor: give what the effect multiplies by, such as speed-factor=2 or speed-factor=1/2, not "half". Nothing changed.');
         await ok("effect", "end", "Ettore", "Haste");
         await ok("effect", "end", "Ettore", "Slow");
         await ok("write", "Ettore", "--set", "exhaustion=2");

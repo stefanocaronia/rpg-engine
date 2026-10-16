@@ -199,7 +199,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
             "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
                 + "Difficulty normal: fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; "
                 + "resources standard (treasure, supplies, prices); random encounters normal; threat clocks at their pace.\n"
-                + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them.\n"
+                + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them; a light you put on as an effect, as a torch, still spends one.\n"
                 + 'Still to agree with the player: dice (digital, physical); set each with config. When none is left and the player confirms: mode, to "session zero".',
         );
         await ok("config", "dice", "physical");

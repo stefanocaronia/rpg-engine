@@ -357,6 +357,20 @@ export function listItems(value: unknown): { name: string; number?: number; }[]
     return itemsOf(value);
 }
 
+/** A factor as an effect gives it (FOR-5): 2, 0.5, 1/2 or ½; undefined for anything else. */
+export function factorOf(value: unknown): number | undefined
+{
+    const text = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
+    const fraction = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
+    const signs: Record<string, number> = { "½": 0.5, "¼": 0.25, "¾": 0.75 };
+
+    if (fraction !== null) {
+        return Number(fraction[2]) === 0 ? undefined : Number(fraction[1]) / Number(fraction[2]);
+    }
+
+    return signs[text] ?? (/^\d+(\.\d+)?$/.test(text) ? Number(text) : undefined);
+}
+
 /** A field's value read as a number (FOR-2): a number, a counter's current value, text such as +2, or a measure such as 25 ft. Undefined for anything else. */
 export function numberOf(value: unknown): number | undefined
 {

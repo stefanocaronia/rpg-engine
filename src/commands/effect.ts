@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
-import { numberOf } from "../core/formula.ts";
+import { factorOf, numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
@@ -397,6 +397,11 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
                 from[0] ?? computed.from[0]
             }. Nothing changed.`,
         );
+    }
+
+    // A factor is what the effect multiplies by: 2, 0.5, 1/2 or ½ (FOR-5).
+    if (declaredKind(world, field) === "factor" && factorOf(text) === undefined) {
+        throw new Error(`${field} on ${page.name} is a factor: give what the effect multiplies by, such as ${field}=2 or ${field}=1/2, not "${text}". Nothing changed.`);
     }
 
     // A bonus is what the effect adds, with its sign or without (FOR-5).

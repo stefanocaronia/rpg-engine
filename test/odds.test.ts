@@ -87,22 +87,52 @@ describe("better and worse together (D-445)", () => {
                 "",
             ].join("\n"),
         );
-        context = { ...context, systemFolders: [systems] };
-        await ok("config", "system", "prova");
-        await ok("write", "Ettore", "--set", "mira=2");
 
-        const roll = async (): Promise<string | undefined> => {
-            const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; roll?: { notation: string; }; }[]; }[];
-            return sheet.flatMap((group) => group.values).find((value) => value.field === "mira")?.roll?.notation;
-        };
+        try {
+            context = { ...context, systemFolders: [systems] };
+            await ok("config", "system", "prova");
+            await ok("write", "Ettore", "--set", "mira=2");
 
-        expect(await roll()).toBe("1d20+2");
-        await ok("effect", "add", "Ettore", "Aiuto");
-        expect(await roll()).toBe("2d20kh1+2");
-        await ok("effect", "add", "Ettore", "Ostacolo");
-        expect(await roll()).toBe("1d20+2");
-        await ok("effect", "end", "Ettore", "Aiuto");
-        expect(await roll()).toBe("2d20kl1+2");
-        removeFolder(systems);
+            const roll = async (): Promise<string | undefined> => {
+                const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; roll?: { notation: string; }; }[]; }[];
+                return sheet.flatMap((group) => group.values).find((value) => value.field === "mira")?.roll?.notation;
+            };
+
+            expect(await roll()).toBe("1d20+2");
+            await ok("effect", "add", "Ettore", "Aiuto");
+            expect(await roll()).toBe("2d20kh1+2");
+            await ok("effect", "add", "Ettore", "Ostacolo");
+            expect(await roll()).toBe("1d20+2");
+            await ok("effect", "end", "Ettore", "Aiuto");
+            expect(await roll()).toBe("2d20kl1+2");
+        } finally {
+            // The test system goes even when the test fails.
+            removeFolder(systems);
+        }
+    });
+});
+
+describe("armor without proficiency, and the passives (D-449)", () => {
+    it("worsens what Str and Dex roll in armor or with a shield one lacks proficiency with, and lowers a passive by 5 with disadvantage", async () => {
+        await ok("write", "Ettore", "--add", "inventory=[[Chain Mail]]", "--add", "equipped=[[Chain Mail]]");
+        expect(await dice("athletics")).toBe("2d20kl1");
+        expect(await dice("insight")).toBe("1d20");
+        await ok("write", "Ettore", "--add", "armor-proficiencies=heavy armor");
+        expect(await dice("athletics")).toBe("1d20");
+        await ok("write", "Ettore", "--add", "inventory=[[Shield]]", "--add", "equipped=[[Shield]]");
+        expect(await dice("dex-save")).toBe("2d20kl1");
+        const passive = async (): Promise<string> => /passive-perception \d+/.exec(await ok("show", "Ettore"))?.[0] ?? "";
+        expect(await passive()).toBe("passive-perception 10");
+        await ok("effect", "add", "Ettore", "Poisoned");
+        expect(await passive()).toBe("passive-perception 5");
+    });
+});
+
+describe("mithral armor (D-449)", () => {
+    it("drops its kind's stealth disadvantage when the campaign's item writes it false", async () => {
+        await ok("write", "Ettore", "--add", "armor-proficiencies=heavy armor");
+        await ok("write", "Piastre di mithral", "--type", "item", "--set", "item=[[Plate Armor]]", "--set", "magic=[[Mithral Armor]]", "--set", "strength-required=0", "--set", "stealth-disadvantage=false");
+        await ok("write", "Ettore", "--add", "inventory=[[Piastre di mithral]]", "--add", "equipped=[[Piastre di mithral]]");
+        expect(await dice("stealth")).toBe("1d20");
     });
 });

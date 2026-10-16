@@ -393,8 +393,11 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
     }
 
     const steps: StepOutcome[] = [];
+    // A rest that needs a counter above 0, as a long rest hit points, gives nothing to who has none when it begins (D-449).
+    const needed = recipe.needs === undefined ? undefined : readCounter(valueNamed(effectiveFields(current, pageCalled(current, name)), recipe.needs));
+    const barred = needed !== undefined && needed.value <= 0;
 
-    for (const { field, target } of recipeTargets(current, recipe, pageCalled(current, name))) {
+    for (const { field, target } of barred ? [] : recipeTargets(current, recipe, pageCalled(current, name))) {
         const holder = pageHolder(current, pageCalled(current, name));
         const step = counterStep({ to: target }, effectiveFields(current, holder.page)[field], name, field, undefined);
 
@@ -413,7 +416,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
-        resting: restingEffectsNote(pageCalled(current, name)),
+        resting: [barred ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
     };
     return { outcome, world: current };
 }
@@ -803,7 +806,7 @@ function uncountedMessage(world: World, page: string, field: string, suggested: 
     const system = world.system?.name ?? "";
 
     if (!["number", "at-least"].includes(declaredKind(world, field) ?? "")) {
-        const kind = declaredKind(world, field) === "text" ? "text" : "a list";
+        const kind = declaredKind(world, field) === "text" ? "text" : declaredKind(world, field) === "list" ? "a list" : `a ${declaredKind(world, field) ?? "field"}`;
         return `${field} is ${kind} in the system ${system}, never counted: write it instead, such as write "${page}", set ${field}=${suggested}. Nothing changed.`;
     }
 

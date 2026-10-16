@@ -34,7 +34,7 @@ export { formatPosition, type Position, positionHelp, readPosition } from "./pos
 export { applyRename, planRename, type Renamed, renamedLinks, type RenamePlan } from "./rename-page.ts";
 export { readStops, type Stops, stopsHelp } from "./roads.ts";
 export { countedText, entryOfKind, type EntryReading, isStackEntry, readEntry, stackEntry, withStackCount } from "./stack-entry.ts";
-export { canCount, carriesKind, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, isKind, kindNamed, notKindReason, ownStack, type Stack, stackName, stacksOf } from "./stacks.ts";
+export { canCount, carriesKind, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, heldStacksOfKind, isKind, kindNamed, notKindReason, ownStack, type Stack, stackName, stacksOf } from "./stacks.ts";
 export {
     canHold,
     containerFieldOf,

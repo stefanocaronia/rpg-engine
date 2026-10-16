@@ -42,6 +42,8 @@ describe("rpg roll", () => {
     it("rolls twice the dice and the same numbers with double, as a critical hit's damage (D-449)", async () => {
         const result = await runCommandLine(["roll", "1d8+d6+3", "--double", "--values", "5,7,2,6"], context);
         expect(result.output).toBe("id1 2d8+2d6+3 = 23 [5, 7] + [2, 6] + 3 (physical dice)");
+        const upper = await runCommandLine(["roll", "1D8+3", "--double", "--values", "4,6"], context);
+        expect(upper.output).toBe("id2 2D8+3 = 13 [4, 6] + 3 (physical dice)");
     });
 
     it("uses the faces of physical dice and refuses impossible ones", async () => {

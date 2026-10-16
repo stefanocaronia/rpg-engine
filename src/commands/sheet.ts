@@ -28,7 +28,7 @@ import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../systems
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText, type LevelNeed, levelNeed } from "./game-experience.ts";
 import { givenItems, progressionOf } from "./progression.ts";
-import { counterLimits, formulaValue, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
+import { carriedIn, counterLimits, formulaValue, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
 /** What status says of the sheet before there is a player character (DAT-2): what is written, what only when it applies, what the system works out, and the lists it names. */
 export interface SheetSummary
@@ -593,7 +593,7 @@ export function overLoad(world: World, system: GameSystem | undefined, page: Pag
     }
 
     const fields = effectiveFields(world, page);
-    const load = carriedWeight(world, system.load, page);
+    const load = carriedIn(fields) ?? carriedWeight(world, system.load, page);
     const limit = formulaValue(world, fields, system.load.limit);
     const value = loadValue(world, system, page, fields);
     return limit === undefined || load <= limit || value === undefined ? undefined : `load ${value.text}, over the limit`;
@@ -617,7 +617,7 @@ function loadValue(world: World, system: GameSystem, page: Page, fields: Record<
         return undefined;
     }
 
-    const load = carriedWeight(world, system.load, page);
+    const load = carriedIn(fields) ?? carriedWeight(world, system.load, page);
 
     // Empty hands, no line: a character who carries nothing has no Equipment to show.
     if (load === 0) {

@@ -1,6 +1,6 @@
 // The stacks of goods (D-429, STK-1–STK-4): which items are kinds, what a container counts of each, and which stack a holder means.
 import { comparableText, withArticle } from "../core/text.ts";
-import { inheritedFields } from "./inheritance.ts";
+import { baseChain, inheritedFields } from "./inheritance.ts";
 import { readEntry } from "./stack-entry.ts";
 import { containerFieldOf } from "./standard-fields.ts";
 import { alwaysInList, isDeclaredUncounted } from "./system-pages.ts";
@@ -133,6 +133,33 @@ export function heldStacks(world: World, holder: Page, kind: Page): HeldStack[]
                 found.push({ container: item, stack });
             }
 
+            next.push(...itemsHeldBy(world, item));
+        }
+
+        level = next;
+    }
+
+    return found;
+}
+
+/**
+ * The stacks a holder keeps of a kind or of a kind that derives from it, as the campaign's Razioni from the system's Rations (UPK-1): its own first, then
+ * those inside the items it holds, nearest first.
+ */
+export function heldStacksOfKind(world: World, holder: Page, kind: Page): HeldStack[]
+{
+    const derives = (candidate: Page): boolean => candidate === kind || baseChain(world, candidate).includes(kind);
+    const own = stacksOf(world, holder).filter((stack) => derives(stack.kind)).map((stack) => ({ container: holder, stack }));
+    const found: HeldStack[] = [...own];
+    const seen = new Set<Page>([holder]);
+    let level = itemsHeldBy(world, holder);
+
+    while (level.length > 0) {
+        const next: Page[] = [];
+
+        for (const item of level.filter((page) => !seen.has(page))) {
+            seen.add(item);
+            found.push(...stacksOf(world, item).filter((stack) => derives(stack.kind)).map((stack) => ({ container: item, stack })));
             next.push(...itemsHeldBy(world, item));
         }
 

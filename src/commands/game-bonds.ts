@@ -1,7 +1,7 @@
 // The lists a character binds items in, as the 5e's attunement (D-435, BND-1–BND-3): at most so many items, each one that asks for it, as the system says.
 import type { Problem } from "../core/problem.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
-import { type FieldChange, findPage, inheritedFields, linksIn, type Page, type World } from "../pages/index.ts";
+import { type FieldChange, findPage, inheritedFields, linksIn, type Page, textsIn, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 
 /** Refuses a change that binds more items than the system allows, or an item that asks for no bond (BND-1, BND-2); before anything is written. */
@@ -10,6 +10,14 @@ export function checkBonds(world: World, system: GameSystem | undefined, page: P
     for (const [field, bond] of Object.entries(system?.bonds ?? {})) {
         if (!changes(change, field)) {
             continue;
+        }
+
+        // Each entry a link to an item: text would bind nothing the engine counts (BND-2).
+        const given = [change.set, change.add].flatMap((values) => Object.entries(values ?? {}).filter(([name]) => comparableText(name) === comparableText(field)).flatMap(([, value]) => textsIn(value)));
+        const text = given.find((entry) => linksIn(entry).length === 0);
+
+        if (text !== undefined) {
+            throw new Error(`${field} takes links to items, not "${text}": write the item's page first, then add ${field}=[[${text}]]. Nothing changed.`);
         }
 
         const before = bondedNames(world, page, field);

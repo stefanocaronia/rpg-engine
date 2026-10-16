@@ -6,7 +6,7 @@ import { parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
-import { heldStacks, kindNamed, locate, type Page, type World, writePage } from "../pages/index.ts";
+import { baseChain, heldStacksOfKind, kindNamed, locate, type Page, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { partyPages } from "./game-recipes.ts";
@@ -30,18 +30,28 @@ export function dailyUpkeep(root: string, context: Context, system: GameSystem |
 
     const lines: string[] = [];
 
+    let thirsty = false;
+
     for (let day = 0; day < days; day++) {
         const world = campaignWorld(root, context);
         const members = partyPages(world).filter((page) => hasSheet(world, page));
-        const outside = members.filter((member) => !inSettlement(world, member));
-        lines.push(...members.map((member) => memberUpkeep(root, context, member.name, upkeep)).filter((line) => line !== ""));
-
-        if (outside.length > 0 && upkeep.water !== undefined) {
-            lines.push(`Water: ${upkeep.water}. Read ${upkeep.rules}.`);
-        }
+        thirsty ||= members.some((member) => !inSettlement(world, member));
+        lines.push(...members.map((member) => safeUpkeep(root, context, member.name, upkeep)).filter((line) => line !== ""));
     }
 
-    return lines;
+    // Water once, however many midnights passed outside a settlement.
+    return [...lines, ...(thirsty && upkeep.water !== undefined ? [`Water: ${upkeep.water}. Read ${upkeep.rules}.`] : [])];
+}
+
+/** One member's day, which never stops the time that has passed: a page that cannot be written becomes a line with what to do (UPK-1). */
+function safeUpkeep(root: string, context: Context, name: string, upkeep: NonNullable<GameSystem["upkeep"]>): string
+{
+    try {
+        return memberUpkeep(root, context, name, upkeep);
+    } catch (error) {
+        const why = (error instanceof Error ? error.message : String(error)).replace(/ ?Nothing (changed|moved)[^.]*\.?$/, "");
+        return `${name}'s day could not be counted: ${why} Fix it, then charge the day with change.`;
+    }
 }
 
 /** One member's day (UPK-1, UPK-2): a meal in a settlement, else a ration from what it carries, else a day more without food, and past the grace a level of what it brings. */
@@ -61,12 +71,13 @@ function memberUpkeep(root: string, context: Context, name: string, upkeep: NonN
         return hungry === 0 ? "" : setNumber(root, context, world, member, upkeep.short, 0, "ate in a settlement") ? `${member.name} ate: ${upkeep.short} back to 0.` : "";
     }
 
+    // The system's kind, or one of the campaign that derives from it, as Razioni from Rations.
     const kind = kindNamed(world, member, upkeep.daily);
-    const held = kind === undefined ? [] : heldStacks(world, member, kind);
+    const held = kind === undefined ? [] : heldStacksOfKind(world, member, kind);
 
     if (kind !== undefined && held.length > 0) {
         const { container, stack } = held[0];
-        const step = { container, kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
+        const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
         const spent = writeStacks(root, context, world, [step], "a day's food").notes.join(" ");
         const fed = hungry > 0 && setNumber(root, context, campaignWorld(root, context), member, upkeep.short, 0, "a day's food") ? ` ${upkeep.short} back to 0.` : "";
         return `${member.name} eats a day's food: ${spent}${fed}`;
@@ -128,8 +139,10 @@ function raise(root: string, context: Context, world: World, name: string, field
  */
 export function burning(system: GameSystem | undefined, world: World, holder: Page, name: string): { kind: Page; lasts: string; } | undefined
 {
+    // By its name, or by a kind of the campaign that derives from what burns, as Torcia from Torch.
     const named = kindNamed(world, holder, name);
-    const entry = Object.entries(system?.burning ?? {}).find(([burns]) => comparableText(burns) === comparableText(name) || (named !== undefined && comparableText(burns) === comparableText(named.name)));
+    const names = [name, ...(named === undefined ? [] : [named, ...baseChain(world, named)].map((page) => page.name))];
+    const entry = Object.entries(system?.burning ?? {}).find(([burns]) => names.some((candidate) => comparableText(burns) === comparableText(candidate)));
 
     if (entry === undefined) {
         return undefined;
@@ -138,7 +151,7 @@ export function burning(system: GameSystem | undefined, world: World, holder: Pa
     const [burns, { lasts, spends }] = entry;
     const kind = kindNamed(world, holder, spends ?? burns);
 
-    if (kind === undefined || heldStacks(world, holder, kind).length === 0) {
+    if (kind === undefined || heldStacksOfKind(world, holder, kind).length === 0) {
         throw new Error(`${holder.name} carries no ${spends ?? burns}, in what it holds, to light ${burns}. If the story gives some, add it to what ${holder.name} carries first. Nothing changed.`);
     }
 
@@ -150,13 +163,13 @@ export function burnOne(root: string, context: Context, holderName: string, kind
 {
     const world = campaignWorld(root, context);
     const holder = world.pages.find((page) => page.name === holderName);
-    const held = holder === undefined ? [] : heldStacks(world, holder, kind);
+    const held = holder === undefined ? [] : heldStacksOfKind(world, holder, kind);
 
     if (held.length === 0) {
         return "";
     }
 
     const { container, stack } = held[0];
-    const step = { container, kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
+    const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
     return writeStacks(root, context, world, [step], "lit").notes.join(" ");
 }

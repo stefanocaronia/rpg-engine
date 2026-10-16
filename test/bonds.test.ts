@@ -41,6 +41,8 @@ describe("attunement", () => {
     it("refuses an item that asks for no attunement, with how to write one that does (BND-2)", async () => {
         const bag = await runCommandLine(["write", "Ettore", "--add", "attuned=[[Bag of Holding]]"], context);
         expect(bag.output).toBe("Bag of Holding asks for no attunement, so it goes in no attuned: if it does, write Bag of Holding, set attunement=true. Nothing changed.");
+        const text = await runCommandLine(["write", "Ettore", "--add", "attuned=anello strano"], context);
+        expect(text.output).toBe(`attuned takes links to items, not "anello strano": write the item's page first, then add attuned=[[anello strano]]. Nothing changed.`);
         await ok("write", "Anello del guado", "--type", "item", "--set", "attunement=true");
         await ok("write", "Ettore", "--add", "attuned=[[Anello del guado]]");
     });
@@ -93,5 +95,20 @@ describe("what attuned items and feats give (D-449)", () => {
         // An effect sets the score, whatever the gauntlets give.
         await ok("effect", "add", "Ettore", "Feeblemind", "--set", "str=1");
         expect(await ok("show", "Ettore")).toContain("str 1 (-5)");
+    });
+});
+
+describe("the SRD pages that give bonuses when attuned (D-449)", () => {
+    it("adds the Stone of Good Luck's 1 to saves, skills and initiative, and a Remarkable Athlete's Strength modifier to the long jump", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "dex=10", "--set", "wis=10", "--set", "hp-base=10");
+        const read = async (name: string): Promise<string> => new RegExp(`(?<![-\\w])${name} [+-]?\\d+`).exec(await ok("show", "Ettore"))?.[0] ?? "";
+        expect(await read("wis-save")).toBe("wis-save +0");
+        await ok("write", "Ettore", "--add", "attuned=[[Stone of Good Luck]]");
+        expect(await read("wis-save")).toBe("wis-save +1");
+        expect(await read("initiative")).toBe("initiative +1");
+        expect(await read("passive-perception")).toBe("passive-perception 11");
+        expect(await ok("show", "Ettore")).toContain("long-jump 14 ft");
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 7", "--set", "subclasses=[[Champion]]", "--set", "hp-base=58");
+        expect(await ok("show", "Ettore")).toContain("long-jump 16 ft");
     });
 });

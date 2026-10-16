@@ -84,13 +84,15 @@ export const roll = defineCommand({
         const physical = input.values !== undefined;
         const system = campaignSystem(root, context);
         const roller = rollerOf(root, context, input.who, hasNames(input.notation));
-        const named = withSheetValues(input.double === true ? doubledDice(input.notation) : input.notation, roller, input.who, system);
+        // The notation as it is rolled, twice the dice for a critical hit (D-449).
+        const rolled = input.double === true ? doubledDice(input.notation) : input.notation;
+        const named = withSheetValues(rolled, roller, input.who, system);
         const keeper = input.keep === undefined ? undefined : keptField(root, context, input.who, input.keep);
         const used = input.use === undefined ? undefined : keptRoll(root, context, input.from ?? input.who, input.use);
         const diceRoll = rollWith(named.notation, used, input.values ? { values: input.values } : { random: context.random });
         // The notation as it was given, with the values its names took from the sheet (DAT-8).
         const taken = Object.entries(named.taken).map(([field, value]) => `${field} ${roller === undefined ? value : signedText(roller.world, field, value)}`);
-        const text = taken.length === 0 ? diceRoll.text : `${input.notation}${diceRoll.text.slice(diceRoll.notation.length)} (${taken.join(", ")})`;
+        const text = taken.length === 0 ? diceRoll.text : `${rolled}${diceRoll.text.slice(diceRoll.notation.length)} (${taken.join(", ")})`;
         const sheet = taken.length === 0 ? {} : { sheet: named.taken };
         const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
@@ -142,7 +144,8 @@ interface KeptField
 /** A notation with twice its dice and the same numbers, as a critical hit's damage (D-449): 1d8+3 is 2d8+3, d6+1d4 is 2d6+2d4. */
 function doubledDice(notation: string): string
 {
-    return notation.replace(/(^|[^\w-])(\d*)d(\d+|%|F)/g, (_whole, before: string, count: string, faces: string) => `${before}${(count === "" ? 1 : Number(count)) * 2}d${faces}`);
+    // Any case, as the dice read: 1D8 is 1d8.
+    return notation.replace(/(^|[^\w-])(\d*)(d)(\d+|%|F)/gi, (_whole, before: string, count: string, d: string, faces: string) => `${before}${(count === "" ? 1 : Number(count)) * 2}${d}${faces}`);
 }
 
 /** The field of who rolls that keep writes to (KEP-2): a page's, declared as kept rolls. */
@@ -322,7 +325,10 @@ export function withSheetValues(notation: string, roller: { world: World; page: 
 /** Refuses a score the system shows with a modifier beside it, such as str with str-mod (DAT-2): a roll adds the modifier, and 1d20+str would add the score. */
 function checkNotScore(roller: { world: World; page: Page; } | undefined, system: GameSystem | undefined, fields: Record<string, unknown> | undefined, name: string): void
 {
-    const entry = system?.sheet.flatMap((group) => group.entries).find((candidate) => candidate.beside !== undefined && comparableText(candidate.field) === comparableText(name));
+    // Only a score with its modifier beside it, as str with str-mod; not a speed with the one written beside it (SPD-1).
+    const entry = system?.sheet.flatMap((group) => group.entries).find((candidate) =>
+        candidate.beside !== undefined && comparableText(candidate.field) === comparableText(name) && roller !== undefined && declaredKind(roller.world, candidate.beside) === "modifier"
+    );
     const read = (field: string): unknown => Object.entries(fields ?? {}).find(([key]) => comparableText(key) === comparableText(field))?.[1];
     const modifier = entry?.beside === undefined ? undefined : numberOf(read(entry.beside));
 
