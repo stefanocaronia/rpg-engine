@@ -58,6 +58,15 @@ function countSession(folder, before)
         changes: {},
         clockSteps: [],
         effects: [],
+        turnUses: [],
+        partyTurns: [],
+        typedDamage: [],
+        untypedDamage: [],
+        dying: [],
+        rests: [],
+        upkeep: { rations: 0, hungry: 0, lifestylePaid: 0, lifestyleAsked: 0, lifestyleShort: 0, lifestyleSet: 0 },
+        attuned: [],
+        recharge: { effects: [], rolls: 0 },
         due: [],
         eventsByHand: [],
         newDays: [],
@@ -113,7 +122,7 @@ function countSession(folder, before)
                 counts.otherTools.push({ turn: turn.label, tool: use.name, subagent: use.subagent, input: JSON.stringify(use.input).slice(0, 300) });
             }
 
-            countRpgCall(counts, turn.label, name, use.input ?? {}, outputText, { eventPages, playerCharacters });
+            countRpgCall(counts, turn.label, name, use.input ?? {}, outputText, { eventPages, playerCharacters }, Boolean(output?.is_error));
         }
 
         counts.denials.push(...(result?.permission_denials ?? []).map((denial) => ({ turn: turn.label, ...denial })));
@@ -153,12 +162,15 @@ function countSession(folder, before)
     counts.pages = { before: before.pages, after: pageCount(join(campaignAfter, "world")) };
     counts.time = { started: meta.started, ended: end.at, minutes: round((Date.parse(end.at) - Date.parse(meta.started)) / 60000), masterWorkMinutes: round(counts.durations.reduce((total, value) => total + value, 0) / 60000) };
     counts.end = end;
+    delete counts.partyTurnNow;
     return counts;
 }
 
 /** What the rpg tools did: rolls, scenes, time, counters, clocks, effects, moves of the player's character and events that came. */
-function countRpgCall(counts, turn, name, input, output, campaign)
+function countRpgCall(counts, turn, name, input, output, campaign, refused)
 {
+    countSheetTools(counts, turn, name, input, output, refused);
+
     if (name === "roll" && input.reveal !== undefined) {
         counts.rolls.reveals++;
     } else if (name === "roll") {
@@ -240,6 +252,70 @@ function countRpgCall(counts, turn, name, input, output, campaign)
     }
 }
 
+/**
+ * What the master did with the counts of D-449, D-453 and D-454: the uses of a turn and the turns of the party that had one, damage with a type, the dying, rests,
+ * the day's upkeep, attunement, and the powers that recharge.
+ */
+function countSheetTools(counts, turn, name, input, output, refused)
+{
+    // A party member's turn starts where scene says to mark its uses (TRN-1); any other turn, or the scene's end, ends it.
+    if (name === "scene" && ["open", "order", "next", "close"].includes(input.action)) {
+        const started = /Mark with scene use what (.+?) uses of the turn/.exec(output);
+        counts.partyTurnNow = started === null ? undefined : counts.partyTurns.push({ turn, who: started[1], uses: 0 }) - 1;
+    }
+
+    if (name === "scene" && input.action === "use") {
+        counts.turnUses.push({ turn, who: input.who, uses: input.uses, by: input.by, refused });
+        const now = counts.partyTurns[counts.partyTurnNow ?? -1];
+
+        if (!refused && now !== undefined && [input.who].flat().map(String).includes(now.who)) {
+            now.uses++;
+        }
+    }
+
+    if (name === "change" && input.damage !== undefined) {
+        counts.typedDamage.push({ turn, page: input.page, by: input.by, damage: input.damage, refused });
+    }
+
+    if (name === "change" && output.includes("if this damage has a type, give it with damage")) {
+        counts.untypedDamage.push({ turn, page: input.page, by: input.by });
+    }
+
+    if (name === "change" && input.recipe !== undefined) {
+        counts.rests.push({ turn, recipe: input.recipe, page: input.page, field: input.field, spend: input.spend, refused, again: /gains nothing from another/.test(output) });
+    }
+
+    if (name === "write" && /lifestyle/.test(JSON.stringify(input.set ?? ""))) {
+        counts.upkeep.lifestyleSet++;
+    }
+
+    if (name === "write" && /attuned/.test(JSON.stringify(input.add ?? ""))) {
+        counts.attuned.push({ turn, page: input.page, add: input.add, refused });
+    }
+
+    if (name === "effect" && input.action === "add" && / \d+$/.test(String(input.page ?? "")) && String(input.name ?? "").includes("(")) {
+        counts.recharge.effects.push({ turn, page: input.page, name: input.name });
+    }
+
+    if (name === "roll" && /recharge|ricaric/i.test(`${input.why ?? ""} ${input.check ?? ""}`)) {
+        counts.recharge.rolls++;
+    }
+
+    for (const line of output.split("\n")) {
+        const dying = / is no longer dying/.test(line) ? "ended" : / dies at once/.test(line) ? "instant death" : /: damage at /.test(line) ? "failure from damage" : / is \S+ while \S+ is /.test(line) ? "fell" : undefined;
+
+        if (dying !== undefined) {
+            counts.dying.push({ turn, tool: name, kind: dying, line: line.slice(0, 200) });
+        }
+
+        counts.upkeep.rations += (line.match(/ eats a day's food/g) ?? []).length;
+        counts.upkeep.hungry += (line.match(/ has no \S+: \S+ \d+, (of|past) /g) ?? []).length;
+        counts.upkeep.lifestylePaid += (line.match(/ pays a \S+ day: /g) ?? []).length;
+        counts.upkeep.lifestyleAsked += (line.match(/ has no \S+ to pay a day in a settlement/g) ?? []).length;
+        counts.upkeep.lifestyleShort += (line.match(/ cannot pay a \S+ day/g) ?? []).length;
+    }
+}
+
 function effectDuration(input)
 {
     if (input.action !== "add") {
@@ -294,6 +370,17 @@ function markdown(details)
         ["Events with a date and a clock", (s) => s.eventsWithDateAndClock.length],
         ["New days", (s) => s.newDays.length],
         ["effect calls by duration", (s) => s.effects.length ? countBy(s.effects, (e) => e.duration) : "0"],
+        ["scene use (refused); with by", (s) => `${s.turnUses.length} (${s.turnUses.filter((u) => u.refused).length}); ${s.turnUses.filter((u) => u.by !== undefined).map((u) => `${u.turn} ${u.who} ${u.by}`).join(", ") || "none"}`],
+        ["scene use by what is used", (s) => s.turnUses.length ? countBy(s.turnUses.filter((u) => !u.refused), (u) => u.uses) : "0"],
+        ["Party turns in a fight with a scene use", (s) => `${s.partyTurns.filter((t) => t.uses > 0).length} of ${s.partyTurns.length}`],
+        ["Damage with a type (refused; applies, does not apply)", (s) => `${s.typedDamage.length} (${s.typedDamage.filter((d) => d.refused).length}; ${s.typedDamage.filter((d) => /\(applies\)/i.test(d.damage)).length}, ${s.typedDamage.filter((d) => /does not apply/i.test(d.damage)).length})`],
+        ["Damage with a type, by type", (s) => s.typedDamage.length ? countBy(s.typedDamage.filter((d) => !d.refused), (d) => String(d.damage).replace(/\s*\(.*\)$/, "")) : "0"],
+        ["Damage without a type on a page with damage lists", (s) => s.untypedDamage.map((d) => `${d.turn} ${d.page}`).join(", ") || "0"],
+        ["Dying: the engine's lines; death saves written", (s) => `${s.dying.length ? countBy(s.dying, (d) => d.kind) : "0"}; ${Object.entries(s.changes).filter(([field]) => /^death-/.test(field)).map(([field, count]) => `${field} ${count}`).join(", ") || "0"}`],
+        ["Rests by recipe (refused, a second within its time)", (s) => s.rests.length ? `${countBy(s.rests, (r) => `${r.recipe}${r.spend === undefined ? "" : " with hit dice"}`)} (${s.rests.filter((r) => r.refused).length}, ${s.rests.filter((r) => r.again).length})` : "0"],
+        ["Upkeep: rations eaten, days without food; lifestyle paid, asked, short, set", (s) => `${s.upkeep.rations}, ${s.upkeep.hungry}; ${s.upkeep.lifestylePaid}, ${s.upkeep.lifestyleAsked}, ${s.upkeep.lifestyleShort}, ${s.upkeep.lifestyleSet}`],
+        ["Attunement writes (refused)", (s) => s.attuned.length ? `${s.attuned.map((a) => `${a.turn} ${a.page}`).join(", ")} (${s.attuned.filter((a) => a.refused).length})` : "0"],
+        ["Recharge: effects on copies, rolls", (s) => `${s.recharge.effects.map((e) => `${e.turn} ${e.page} «${e.name}»`).join(", ") || "0"}; ${s.recharge.rolls}`],
         ["Master cost: total, median per turn, highest", (s) => `${s.masterCost} $, ${median(s.costs.map((c) => c.cost))} $, ${maxOf(s.costs, "cost")}`],
         ["Player cost", (s) => `${s.playerCost} $`],
         ["Duration: total (master work)", (s) => `${s.time.minutes} min (${s.time.masterWorkMinutes} min)`],
