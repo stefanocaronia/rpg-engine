@@ -279,19 +279,54 @@ function askedText(question: string, what: "checks" | "answers", options: Option
 }
 
 /**
- * The player's answer: on the dashboard's page while one is open, else in the host's form, if it shows one (ASK-1, D-279). A form that does not show, while
- * the dashboard runs, is only absent this time: a page may open.
+ * The player's answer, on the dashboard's page and in the host's form at once, where both are (ASK-13, D-455): the first answer wins and takes the other
+ * away; one that never showed, a page not open or a form the host does not show, leaves the other to answer. Neither shown is absent: the master asks in words.
  */
-export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">
+export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<Answer>
 {
-    const onPage = context.page === undefined ? "absent" : await context.page.choose(question, title, labels, context.signal, rows);
+    const { page, player } = context;
 
-    if (onPage !== "absent" || context.player === undefined) {
-        return onPage;
+    if (page === undefined && player === undefined) {
+        return "absent";
     }
 
-    const inForm = await context.player.choose(question, title, labels, context.signal);
-    return inForm === "unavailable" && context.page !== undefined ? "absent" : inForm;
+    // One stop for both: the call's own, and the first answer's (ASK-9).
+    const stop = new AbortController();
+    const outer = context.signal;
+    const cancel = (): void => stop.abort();
+    outer?.addEventListener("abort", cancel);
+
+    if (outer?.aborted === true) {
+        stop.abort();
+    }
+
+    const ways = [...(page === undefined ? [] : [page.choose(question, title, labels, stop.signal, rows)]), ...(player === undefined ? [] : [player.choose(question, title, labels, stop.signal)])];
+    const answer = await firstAnswer(ways, page === undefined ? "unavailable" : "absent");
+    outer?.removeEventListener("abort", cancel);
+    stop.abort();
+    return answer;
+}
+
+type Answer = number | Said | undefined | "unavailable" | "absent";
+
+/** The first of the ways that showed and settled, a click or nothing; when none showed, `none` says why: no page open, or no form at all. */
+function firstAnswer(ways: Promise<Answer>[], none: "unavailable" | "absent"): Promise<Answer>
+{
+    return new Promise((done) => {
+        let left = ways.length;
+
+        for (const way of ways) {
+            void way.then((answer) => {
+                left -= 1;
+
+                if (answer !== "absent" && answer !== "unavailable") {
+                    done(answer);
+                } else if (left === 0) {
+                    done(none);
+                }
+            });
+        }
+    });
 }
 
 /** A public line for what the player answered, or that no one did (ASK-6); a roll has its own line instead. */

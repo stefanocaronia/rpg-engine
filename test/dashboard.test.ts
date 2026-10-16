@@ -1281,7 +1281,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("keeps the question through a reload, and gives it to the form, or to words, when the page closes and none comes back (ASK-1)", async () => {
+    it("keeps the question through a reload, gives it to words when the page closes and none comes back, and to the first answer with a form too (ASK-1, ASK-13)", async () => {
         const first = await openPage();
         const asking = ask.run(ask.input.parse(wall), served);
         const asked = await waitAsked();
@@ -1296,12 +1296,12 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         );
         expect(await askedNow()).toBeNull();
 
+        // With a form too, the first answer wins, the form's here, and the page's question goes (ASK-13).
         const third = await openPage();
         const form = { choose: async () => 0 };
-        const formAsking = ask.run(ask.input.parse(wall), { ...served, player: form });
-        await waitAsked();
+        expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Atletica" });
+        expect(await askedNow()).toBeNull();
         third.close();
-        expect(await formAsking).toMatchObject({ kind: "roll", check: "Atletica" });
     });
 
     it("waits for a page to come back from the last one that closed, not from the first", async () => {

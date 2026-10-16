@@ -282,3 +282,32 @@ describe("where the player's character moves on the map (ASK-11)", () => {
         expect(readLogFile(folder).filter((entry) => entry.type === "asked")).toHaveLength(asked);
     });
 });
+
+describe("the page and the form at once (ASK-13, D-455)", () => {
+    const choice = { question: "Apri la porta della cripta?", options: ["Sì", "No"] };
+
+    /** A way that waits until it is taken away, and says it was. */
+    const waiting = (taken: string[], name: string): Player => ({
+        choose: (_question, _title, _labels, signal) =>
+            new Promise((done) => {
+                signal?.addEventListener("abort", () => {
+                    taken.push(name);
+                    done(undefined);
+                });
+            }),
+    });
+    const answering = (index: number | "unavailable" | "absent"): Player => ({ choose: async () => index });
+
+    it("takes the first answer, from the form or from the page, and takes the other away", async () => {
+        const taken: string[] = [];
+        expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: waiting(taken, "page"), player: answering(1) }))).toBe("The player chose: No.");
+        expect(taken).toEqual(["page"]);
+        expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: answering(0), player: waiting(taken, "form") }))).toBe("The player chose: Sì.");
+        expect(taken).toEqual(["page", "form"]);
+    });
+
+    it("leaves the page to answer when the host shows no form, and asks in words when neither shows", async () => {
+        expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: answering(0), player: answering("unavailable") }))).toBe("The player chose: Sì.");
+        expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: answering("absent"), player: answering("unavailable") }))).toContain("The player has no buttons open now");
+    });
+});
