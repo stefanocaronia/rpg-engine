@@ -27,6 +27,22 @@ describe("damage of a type", () => {
         expect(await ok("change", "Ettore", "hp", "--by=-3", "--damage", "cold")).toBe("Ettore: hp 8/20 → 5/20.");
     });
 
+    it("adds what an attuned item and an effect give to the page's own lists, never covering them (DMG-1)", async () => {
+        await ok("write", "Ettore", "--add", "damage-resistances=poison");
+        await ok("effect", "add", "Ettore", "Rage", "--set", "damage-resistances=bludgeoning, piercing, slashing");
+        expect(await ok("change", "Ettore", "hp", "--by=-9", "--damage", "slashing")).toBe("Ettore: hp 20/20 → 16/20: slashing 9 halved, in damage-resistances: 4.");
+        expect(await ok("change", "Ettore", "hp", "--by=-4", "--damage", "poison")).toBe("Ettore: hp 16/20 → 14/20: poison 4 halved, in damage-resistances: 2.");
+        await ok("write", "Ettore", "--add", "attuned=[[Staff of Fire]]");
+        expect(await ok("change", "Ettore", "hp", "--by=-6", "--damage", "fire")).toBe("Ettore: hp 14/20 → 11/20: fire 6 halved, in damage-resistances: 3.");
+    });
+
+    it("reminds the type when damage without one reaches a page with lists, and what goes past 0 in a form (D-454)", async () => {
+        await ok("write", "Ettore", "--add", "damage-resistances=fire");
+        expect(await ok("change", "Ettore", "hp", "--by=-4")).toContain("Ettore has damage-resistances fire: if this damage has a type, give it with damage, as rolled.");
+        await ok("effect", "add", "Ettore", "Forma d'orso", "--set", "hp=10/10");
+        expect(await ok("change", "Ettore", "hp", "--by=-14")).toContain("4 went past 0 in Forma d'orso: when it ends so, what goes past may carry over to Ettore's own hp, as its text says.");
+    });
+
     it("takes the temporary hit points first, from what is left after halving (DMG-1)", async () => {
         await ok("write", "Ettore", "--add", "damage-resistances=slashing", "--set", "temp-hp=4");
         const hit = await ok("change", "Ettore", "hp", "--by=-10", "--damage", "slashing");

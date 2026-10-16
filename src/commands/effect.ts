@@ -6,7 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readRounds, withEffect } from "../effects/index.ts";
-import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKind, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, type World } from "../pages/index.ts";
+import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKind, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, textsIn, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
@@ -141,6 +141,7 @@ export const effect = defineCommand({
         const keeper = input.by === undefined ? undefined : keeperLink(world, open.scene, input.by);
         const system = campaignSystem(root, context);
         checkNotCounter(system, holder.page, name);
+        checkNotImmune(world, system, holder.page, name);
         // Something that burns, as a torch, spends one of what the holder carries and lasts as long as it burns, unless told otherwise (UPK-3).
         const lit = holder.copy ? undefined : burning(system, world, holder.page, name);
         const lasting = input.for ?? (input.until === undefined ? lit?.lasts : undefined);
@@ -203,6 +204,18 @@ function checkNotCounter(system: GameSystem | undefined, page: Page, name: strin
 
     if (system !== undefined && field !== undefined && system.fields[field] === "counter") {
         throw new Error(`${field} is a counter of the system ${system.name}, kept on the page: change it, such as page ${page.name}, field ${field}, by 1. Nothing changed.`);
+    }
+}
+
+/** Refuses a condition of the system that the page's list of immunities names, as poisoned on a zombie (D-454, EFF-17); before anything is written. */
+function checkNotImmune(world: World, system: GameSystem | undefined, page: Page, name: string): void
+{
+    const condition = (system?.conditions ?? []).find((candidate) => comparableText(candidate) === comparableText(name));
+    const list = system?.immune;
+    const immune = condition !== undefined && list !== undefined && textsIn(valueNamed(effectiveFields(world, page), list)).some((item) => comparableText(item) === comparableText(condition));
+
+    if (immune) {
+        throw new Error(`${page.name} is immune to ${condition}, in its ${list}: it does not take it. Nothing changed.`);
     }
 }
 

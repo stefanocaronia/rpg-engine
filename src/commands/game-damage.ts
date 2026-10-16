@@ -1,7 +1,8 @@
 // Damage of a type (D-449, DMG-1–DMG-3): what the lists of who takes it ignore, halve or double, before the counter loses it.
 import { comparableText, valueNamed } from "../core/text.ts";
-import { textsIn } from "../pages/index.ts";
+import { findPage, inheritedFields, linksIn, type Page, textsIn, type World } from "../pages/index.ts";
 import type { DamageRule, GameSystem } from "../systems/index.ts";
+import { effectsOf } from "./effect-layer.ts";
 
 /** What a page takes of an amount of damage of a type, and the note that says why when it is not the amount. */
 export interface DamageTaken
@@ -52,6 +53,24 @@ export function damageTaken(system: GameSystem, rule: DamageRule, fields: Record
     const taken = (halved ? Math.floor(amount / 2) : amount) * (doubled ? 2 : 1);
     const why = [halved ? `halved, in ${rule.halves}` : "", doubled ? `doubled, in ${rule.doubles}` : ""].filter((part) => part !== "");
     return { amount: taken, note: why.length === 0 ? "" : `${type} ${amount} ${why.join(", then ")}: ${taken}` };
+}
+
+/**
+ * The lists of a page that change damage, each the union of what it writes, what the pages of the system's bonus lists give, as a ring one is attuned to,
+ * and what its effects give, as a rage (DMG-1): an effect adds to the list, never covers it. A list written as text stays text, for damageTaken to refuse.
+ */
+export function damageLists(world: World, page: Page, rule: DamageRule): Record<string, unknown>
+{
+    const own = inheritedFields(world, page);
+    const given = (world.system?.bonusLists ?? []).flatMap((list) => linksIn(valueNamed(own, list)).flatMap((name) => findPage(world, name) ?? []));
+    const effects = effectsOf(page);
+    return Object.fromEntries([rule.ignores, rule.halves, rule.doubles].map((list) => {
+        const written = valueNamed(own, list);
+        const fromPages = given.flatMap((other) => textsIn(valueNamed(inheritedFields(world, other), list)));
+        const fromEffects = effects.flatMap((effect) => effect.values.filter(([field]) => comparableText(field) === comparableText(list)).flatMap(([, value]) => value.split(/\s*,\s*/)));
+        const added = [...fromPages, ...fromEffects].filter((item) => item.trim() !== "");
+        return [list, typeof written === "string" && added.length === 0 ? written : [...textsIn(written), ...added]];
+    }));
 }
 
 /** "slashing (applies)": the type, and whether a condition on it holds, when the master said so. */

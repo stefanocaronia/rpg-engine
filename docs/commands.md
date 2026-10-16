@@ -240,7 +240,7 @@ Read-only: no. Positional parameters: `page`, `field`.
 - `spend` (`integer | string`, optional): how much is paid or used up, or coins; refused when there is not enough
 - `to` (`integer | string`, optional): the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3
 - `why` (`string`, optional): what the change is for
-- `damage` (`string`, optional): the type of the damage, with by negative, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type
+- `damage` (`string`, optional): the type of the damage, with by negative and as rolled, never halved or doubled by you, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type
 - `recipe` (`string`, optional): a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest
 
 ### effect

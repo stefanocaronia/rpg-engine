@@ -819,7 +819,13 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
         updateScene(root, [[["used"], usesAtTurn(campaignSystem(root, context), used, turns.turn)]]);
     }
 
-    const acting = turnEffectsNote(campaignWorld(root, context), readOpenScene(root).scene, before.turn, turns.turn);
+    const world = campaignWorld(root, context);
+    const effects = turnEffectsNote(world, readOpenScene(root).scene, before.turn, turns.turn);
+    // A party member's turn reminds what to mark of it (TRN-1).
+    const member = findPage(world, turns.turn);
+    const uses = Object.entries(campaignSystem(root, context)?.turnUses ?? {}).filter(([, rule]) => rule.needs === undefined).map(([use]) => use);
+    const mark = member !== undefined && isPartyMember(member) && uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
+    const acting = [effects, mark].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
 }
 

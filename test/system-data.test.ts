@@ -216,7 +216,7 @@ describe("recipes (DAT-4, DAT-5)", () => {
         expect(output).toContain(
             "Ennio: hp 20/34 → 34/34 (in Forma d'orso). Still on Ennio, with no end: Forma d'orso. Read in their text whether a rest asks for something.\n"
                 // At 0 hit points when the rest begins, no benefit (p. 87, D-449).
-                + "Lena: nothing changed. At 0 hp when it began, Lena gains nothing from it.\n",
+                + "Lena: nothing changed. At 0 hp when it began, Lena gains nothing from it. Still on Lena, with no end: Unconscious. Read in their text whether a rest asks for something.\n",
         );
         expect(output).not.toContain("Bruno");
         expect(character("Ennio")).toContain("hp: 5/12\n");

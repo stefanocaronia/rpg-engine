@@ -151,6 +151,7 @@ const systemSchema = z.object({
     bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), rules: z.string().min(1) }).strict(), {
         error: "write each list with the most items it holds, the field an item that asks for it has, and the rules to read, such as attuned: {most: 3, needs: attunement, rules: Attunement}",
     }).optional(),
+    immune: z.string().min(1).optional(),
     "turn-uses": z.record(
         z.string().min(1).refine((name) => !/ (by|for) /i.test(` ${name} `), "a use's name takes no word by or for, which the engine reads in what it keeps"),
         z.object({
@@ -159,6 +160,7 @@ const systemSchema = z.object({
             needs: z.string().min(1).optional(),
             "any-turn": z.boolean().optional(),
             resets: z.enum(["own turn", "each turn"]).optional(),
+            note: z.string().min(1).optional(),
         }).strict(),
         { error: "write each use of a turn with its most, the use it goes within, what it needs, whether it goes in any turn and when it comes back, such as attack: {within: action, most: 1 + extra-attacks}" },
     ).optional(),
@@ -175,8 +177,15 @@ const systemSchema = z.object({
     combat: z.object({ track: z.string().min(1), "in-words": z.boolean().optional(), inactive: z.array(z.string().min(1)).optional() }, {
         error: "write it as the counter a fight follows, whether the player hears a foe's in words, and the conditions that keep from acting, such as {track: hp, in-words: true, inactive: [Stunned]}",
     }).strict().optional(),
-    dying: z.object({ at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'), show: z.array(z.string().min(1)).min(1) }, {
-        error: "write it as when the panel of the dying shows and its counters, such as {at: hp 0, show: [death-successes, death-failures]}",
+    dying: z.object({
+        at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'),
+        show: z.array(z.string().min(1)).min(1),
+        condition: z.string().min(1).optional(),
+        fails: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-failures 3"').optional(),
+        rules: z.string().min(1).optional(),
+    }, {
+        error: "write it as when the dying begins, their counters, the condition they take, the counter of failures and how many kill, and the rules of instant death, "
+            + "such as {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death}",
     }).strict().optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
@@ -244,6 +253,8 @@ export interface TurnUse
     needs?: Formula;
     anyTurn: boolean;
     resets: "own turn" | "each turn";
+    /** What its line says each time, as what a spell cast with a bonus action leaves (TRN-1). */
+    note?: string;
 }
 
 /** What a day in a settlement costs under the rigor «rules» (UPK-4): the field of the lifestyle chosen, the coins of each, and the rules to read. */
@@ -286,6 +297,12 @@ export interface Dying
     field: string;
     value: number;
     show: string[];
+    /** The condition taken at the value, as Unconscious (DIE-1). */
+    condition?: string;
+    /** The counter of failures, and how many kill (DIE-2). */
+    fails?: { field: string; most: number; };
+    /** The title of the rule of instant death (DIE-2). */
+    rules?: string;
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -453,6 +470,8 @@ export interface GameSystem
     upkeep?: { daily: string; short: string; grace: string; worsens: string; water?: string; lifestyle?: Lifestyle; rules: string; };
     /** What burns, by the effect named after it: how long it lasts, and the kind it spends when not itself, such as Oil (UPK-3). */
     burning: Record<string, { lasts: string; spends?: string; }>;
+    /** The list of a page that names the conditions it does not take, as condition-immunities (EFF-17). */
+    immune?: string;
     /** By name, what one may do in a turn (TRN-1), as an action, a bonus action and a reaction. */
     turnUses: Record<string, TurnUse>;
     /** By field of a sheet, the most it holds (LIM-1): a number written, or the items of a list. */
@@ -640,13 +659,14 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
         ...(data.damage === undefined ? [] : [{ where: "damage.counter", field: data.damage.counter }]),
         ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
-        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show].map((field) => ({ where: "dying", field }))),
+        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show, ...(data.dying.fails === undefined ? [] : [data.dying.fails.split(" ")[0]])].map((field) => ({ where: "dying", field }))),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
 
     const unknownCondition = [
         ...(data.keeping?.conditions ?? []).map((condition) => ({ where: "keeping.conditions", condition })),
         ...(data.combat?.inactive ?? []).map((condition) => ({ where: "combat.inactive", condition })),
+        ...(data.dying?.condition === undefined ? [] : [{ where: "dying.condition", condition: data.dying.condition }]),
         ...Object.keys(data["condition-icons"] ?? {}).map((condition) => ({ where: "condition-icons", condition })),
     ].find((entry) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(entry.condition)));
 
@@ -801,6 +821,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         bonds: data.bonds ?? {},
         ...(data.upkeep === undefined ? {} : { upkeep: data.upkeep }),
         burning: data.burning ?? {},
+        ...(data.immune === undefined ? {} : { immune: data.immune }),
         turnUses: Object.fromEntries(
             Object.entries(data["turn-uses"] ?? {}).map(([use, rule]) => [use, {
                 ...(rule.most === undefined ? {} : { most: parseFormula(String(rule.most)) }),
@@ -808,13 +829,14 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                 ...(rule.needs === undefined ? {} : { needs: parseFormula(rule.needs) }),
                 anyTurn: rule["any-turn"] ?? false,
                 resets: rule.resets ?? "own turn",
+                ...(rule.note === undefined ? {} : { note: rule.note }),
             }]),
         ),
         atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, parseFormula(String(most))])),
         ...(data.damage === undefined ? {} : { damage: data.damage }),
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
-        ...(data.dying === undefined ? {} : { dying: { field: data.dying.at.split(" ")[0], value: Number(data.dying.at.split(" ")[1]), show: data.dying.show } }),
+        ...(data.dying === undefined ? {} : { dying: dyingRule(data.dying) }),
         shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
@@ -1129,4 +1151,19 @@ function systemFormulas(data: FormulaData, name: string, path: string): SystemFo
     } catch (error) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${error instanceof Error ? error.message : String(error)}`);
     }
+}
+
+/** The dying as the system writes them: "hp 0" and "death-failures 3" read as a field and a number (DIE-1, DIE-2). */
+function dyingRule(data: { at: string; show: string[]; condition?: string; fails?: string; rules?: string; }): Dying
+{
+    const [field, value] = data.at.split(" ");
+    const [fails, most] = data.fails?.split(" ") ?? [];
+    return {
+        field,
+        value: Number(value),
+        show: data.show,
+        ...(data.condition === undefined ? {} : { condition: data.condition }),
+        ...(fails === undefined ? {} : { fails: { field: fails, most: Number(most) } }),
+        ...(data.rules === undefined ? {} : { rules: data.rules }),
+    };
 }

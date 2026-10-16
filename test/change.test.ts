@@ -107,8 +107,8 @@ describe("rpg change", () => {
     });
 
     it("stops at a limit with by, and says how far it went beyond", async () => {
-        expect((await rpg("change", "Bruna", "hp", "--by=-15")).output).toBe('Bruna: hp 12/12 → 0/12: at 0, 3 beyond.\nhp is at 0, 3 beyond: read rules "Dropping to 0 Hit Points".');
-        expect((await rpg("change", "Bruna", "hp", "--by=20")).output).toBe('Bruna: hp 0/12 → 12/12: at max, 8 beyond.\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".');
+        expect((await rpg("change", "Bruna", "hp", "--by=-15")).output).toBe('Bruna: hp 12/12 → 0/12: at 0, 3 beyond.\nhp is at 0, 3 beyond: read rules "Dropping to 0 Hit Points".\nBruna is Unconscious while hp is 0.');
+        expect((await rpg("change", "Bruna", "hp", "--by=20")).output).toBe('Bruna: hp 0/12 → 12/12: at max, 8 beyond.\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".\nBruna is no longer dying: Unconscious ended.');
         expect((await rpg("change", "Bruna", "hp", "--by=1")).output).toBe("Nothing changed: hp on Bruna is 12/12: at max, 1 beyond.");
     });
 

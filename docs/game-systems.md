@@ -194,7 +194,7 @@ turn-uses:
   sneak attack: {needs: "has(features, Sneak Attack)", any-turn: true, resets: each turn}
 ```
 
-What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. The master names what gives one more with `by`; when it names a counter of the sheet, as `action-surge` for Action Surge, the engine spends one, and refuses at 0. The dashboard shows a party member who acts the uses that stand alone.
+What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. A use may carry a `note` its line says each time. The master names what gives one more with `by`; when it names a counter of the sheet, as `action-surge` for Action Surge, the engine spends one, and refuses at 0. The dashboard shows a party member who acts the uses that stand alone.
 
 ### damage
 
@@ -202,7 +202,7 @@ What one may do in a turn, which `scene use` counts once the scene has an order 
 damage: {counter: hp, halves: damage-resistances, ignores: damage-immunities, doubles: damage-vulnerabilities, rules: Damage Resistance and Vulnerability}
 ```
 
-`change` with `damage` and a negative `by` reads the lists of who takes it: a type in `ignores` takes nothing, in `halves` half rounded down, then in `doubles` twice that; the counter that shields `counter`, as temporary hit points, loses first. An item that names the type with a condition, as "slashing from nonmagical attacks", or names no type, as "damage from spells", waits for the master to say `slashing (applies)` or `slashing (does not apply)`.
+`change` with `damage` and a negative `by` reads the lists of who takes it, what it writes with what the pages of `bonus-lists` and its effects add: a type in `ignores` takes nothing, in `halves` half rounded down, then in `doubles` twice that; the counter that shields `counter`, as temporary hit points, loses first. An item that names the type with a condition, as "slashing from nonmagical attacks", or names no type, as "damage from spells", waits for the master to say `slashing (applies)` or `slashing (does not apply)`.
 
 ### conditions, keeping, combat, dying
 
@@ -211,12 +211,15 @@ conditions: [Blinded, Charmed, Poisoned, Prone]
 condition-icons: {Prone: "M4 18h16M7 14l5-4 5 4"}
 keeping: {counter: hp, conditions: [Incapacitated, Unconscious], rules: Concentration}
 combat: {track: hp, in-words: true, inactive: [Incapacitated, Stunned, Unconscious]}
-dying: {at: hp 0, show: [death-successes, death-failures]}
+dying: {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death}
+immune: condition-immunities
 ```
 
 - `conditions`: effects with these names show their rule; `condition-icons` draws them.
 - `keeping`: what can break what someone keeps alive, as concentration; the output names the rule, the engine ends nothing.
-- `combat`: the counter the dashboard's Combat follows, foes' in words; who cannot act. `dying`: what the sheet shows at the dying point.
+- `combat`: the counter the dashboard's Combat follows, foes' in words; who cannot act.
+- `dying`: what the sheet shows at the dying point. For a party member the engine adds `condition` there and ends it with what is regained, which also brings the `show` counters back to 0. Damage taken there adds one to `fails`, and what goes past the value as large as the counter's maximum sets `fails` to its most (`rules`).
+- `immune`: the list of a page whose conditions `effect add` refuses.
 
 ### tables, computed, counters
 

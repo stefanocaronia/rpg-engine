@@ -7,6 +7,7 @@ import { rollDice } from "../dice/index.ts";
 import { findPage, isPartyMember, type World, writePage } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { dyingAfter } from "./game-dying.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { formulaValue } from "./worked-out.ts";
@@ -59,6 +60,10 @@ export function spendDice(root: string, context: Context, world: World, spending
     const notes = isPartyMember(page)
         ? [[field, dice.value, dice.value - count], [rule.gives, target.value, after]].flatMap(([changed, before, now]) => thresholdNotes(root, system, String(changed), { before, after: now, amount: {} }))
         : [];
+    // Hit points regained by one dying end it (DIE-3).
+    const dying = isPartyMember(page) && system.dying !== undefined && comparableText(system.dying.field) === comparableText(rule.gives)
+        ? dyingAfter(root, context, system, page.name, { before: target.value, after, lost: 0 })
+        : [];
     const line = `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}.`;
-    return [line, ...notes].join("\n");
+    return [line, ...notes, ...dying].join("\n");
 }

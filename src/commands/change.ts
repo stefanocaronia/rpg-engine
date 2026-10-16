@@ -27,13 +27,15 @@ import {
     stackName,
     stacksOf,
     systemPageNamed,
+    textsIn,
     withPage,
     type World,
     writePage,
 } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
-import { type DamageTaken, damageTaken } from "./game-damage.ts";
+import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
+import { dyingAfter } from "./game-dying.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
@@ -100,7 +102,7 @@ export const change = defineCommand({
         ),
         why: z.string().optional().describe("what the change is for"),
         damage: z.string().optional().describe(
-            "the type of the damage, with by negative, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type",
+            "the type of the damage, with by negative and as rolled, never halved or doubled by you, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type",
         ),
         recipe: z.string().optional().describe("a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest"),
     }),
@@ -149,12 +151,17 @@ export const change = defineCommand({
 
         // Damage of a type, as the page's lists change it, its shield first (DMG-1).
         if (input.damage !== undefined) {
-            const damage = typedDamage(system, fields, field, input, page);
-            return { ...damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system), problems: world.problems };
+            const damage = typedDamage(system, { ...fields, ...(system?.damage === undefined ? {} : damageLists(world, holder.page, system.damage)) }, field, input, page);
+            const done = damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system);
+            return { ...withDying(root, context, system, { holder, field, fields }, done.outcome, done.lost), problems: world.problems };
         }
 
         const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
-        return { ...applyStep(root, context, world, holder, field, step, why, system).outcome, problems: world.problems };
+        const outcome = applyStep(root, context, world, holder, field, step, why, system).outcome;
+        const by = typeof input.by === "number" ? input.by : Number(input.by);
+        const untyped = Number.isFinite(by) && by < 0 ? untypedDamageNote(world, system, holder.page, field) : "";
+        const told = untyped === "" ? outcome : { ...outcome, reminders: [...outcome.reminders, untyped] };
+        return { ...withDying(root, context, system, { holder, field, fields }, told, Number.isFinite(by) && by < 0 ? -by : 0), problems: world.problems };
     },
 
     format(result)
@@ -207,7 +214,7 @@ function damageSteps(
     damage: DamageTaken,
     why: string | undefined,
     system: GameSystem | undefined,
-): StepOutcome
+): { outcome: StepOutcome; lost: number; }
 {
     const { holder, fields, field, coins } = target;
     const page = holder.page.name;
@@ -219,21 +226,21 @@ function damageSteps(
         applyStep(root, context, current, currentHolder, field, counterStep({ by: -amount }, fields[field], page, field, coins, target.limits), why, system).outcome;
 
     if (shieldField === undefined || absorbed === 0) {
-        return withNote(onCounter(world, holder, damage.amount), [damage.note]);
+        return { outcome: withNote(onCounter(world, holder, damage.amount), [damage.note]), lost: damage.amount };
     }
 
     const shieldStep = counterStep({ by: -absorbed }, fields[shieldField], page, shieldField, coins, counterLimits(world, fields, shieldField));
     const first = applyStep(root, context, world, holder, shieldField, shieldStep, why, system);
 
     if (absorbed === damage.amount) {
-        return withNote(first.outcome, [damage.note]);
+        return { outcome: withNote(first.outcome, [damage.note]), lost: 0 };
     }
 
     const outcome = onCounter(first.world, holderNamed(root, first.world, target.name), damage.amount - absorbed);
     const shielded = `${shieldField} ${first.outcome.before} → ${first.outcome.after} first`;
     // What someone keeps alive reads the whole damage, the shield's part too (EFF-14).
     const keeping = keepingLossNote(world, readOpenScene(root).scene, system, page, field, damage.amount);
-    return {
+    const merged = {
         ...withNote(outcome, [damage.note, shielded]),
         thresholds: [...first.outcome.thresholds, ...outcome.thresholds],
         // The shield is spent, so the only reminder left is what someone keeps (DAT-14).
@@ -242,6 +249,51 @@ function damageSteps(
         followers: [...new Set([...first.outcome.followers, ...outcome.followers])],
         keepers: [...new Set([...first.outcome.keepers, ...outcome.keepers])],
     };
+    return { outcome: merged, lost: damage.amount - absorbed };
+}
+
+/** "Ghoul 1 has damage-immunities poison: …": for damage given without a type to a page whose lists change some (DMG-1); empty otherwise. */
+function untypedDamageNote(world: World, system: GameSystem | undefined, page: Page, field: string): string
+{
+    const rule = system?.damage;
+
+    if (rule === undefined || comparableText(field) !== comparableText(rule.counter)) {
+        return "";
+    }
+
+    const lists = Object.entries(damageLists(world, page, rule)).flatMap(([list, value]) => {
+        const items = textsIn(value);
+        return items.length === 0 ? [] : [`${list} ${items.join(", ")}`];
+    });
+    return lists.length === 0 ? "" : `${page.name} has ${lists.join("; ")}: if this damage has a type, give it with damage, as rolled.`;
+}
+
+/** What the dying rule adds after a party member's counter changed (DIE-1–DIE-3): its lines among the reminders. */
+function withDying(
+    root: string,
+    context: Context,
+    system: GameSystem | undefined,
+    target: { holder: CounterHolder; field: string; fields: Record<string, unknown>; },
+    outcome: StepOutcome,
+    lost: number,
+): StepOutcome
+{
+    const { holder, field, fields } = target;
+    const dying = system?.dying;
+
+    if (system === undefined || dying === undefined || holder.kind !== "page" || !isPartyMember(holder.page) || comparableText(field) !== comparableText(dying.field)) {
+        return outcome;
+    }
+
+    const before = readCounter(fields[field]);
+    const after = comparableText(outcome.field) === comparableText(field) ? readCounterText(outcome.after)?.value : before?.value;
+
+    if (before === undefined || after === undefined) {
+        return outcome;
+    }
+
+    const lines = dyingAfter(root, context, system, holder.page.name, { before: before.value, after, lost, ...(before.max === undefined ? {} : { max: before.max }) });
+    return lines.length === 0 ? outcome : { ...outcome, reminders: [...outcome.reminders, ...lines] };
 }
 
 /** What a step did to a counter or to money. */
@@ -347,7 +399,12 @@ function applyStep(
     const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...levels];
     // What the loss may break that someone keeps alive, on anyone, and what shields the counter that went down (EFF-14, DAT-14).
     const lost = touched ? lostBy(step) : 0;
-    const reminders = [keepingLossNote(world, readOpenScene(root).scene, system, page, field, lost), ...shieldNotes(world, system, holder.page, field, lost)].filter((note) => note !== "");
+    // What goes past 0 in an effect that gives the counter, as a beast form, may carry over to the page's own (D-454).
+    const beyond = Math.abs(Number(step.amount.beyond ?? 0));
+    const carried = layer !== undefined && lost > 0 && beyond > 0 && readCounterText(String(step.after))?.value === 0
+        ? `${beyond} went past 0 in ${layer.name}: when it ends so, what goes past may carry over to ${page}'s own ${field}, as its text says.`
+        : "";
+    const reminders = [keepingLossNote(world, readOpenScene(root).scene, system, page, field, lost), ...shieldNotes(world, system, holder.page, field, lost), carried].filter((note) => note !== "");
     const outcome = {
         page,
         field,

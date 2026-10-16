@@ -62,7 +62,8 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
             throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore}. Nothing changed.`);
         }
 
-        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.`, ...(spends === undefined ? {} : { spends }) };
+        const note = rule.note === undefined ? "" : ` ${rule.note}`;
+        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.${note}`, ...(spends === undefined ? {} : { spends }) };
     }
 
     // An attack counts within the action it took, until another action is used (TRN-3).
