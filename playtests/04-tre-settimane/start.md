@@ -15,6 +15,7 @@ Copy-Item -Recurse -Force playtests\04-tre-settimane\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
 rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement xp
+rpg config calendar-start "day 1"
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 3, 08:00" --why "La mattina dopo la cripta"
 rpg validate; rpg status

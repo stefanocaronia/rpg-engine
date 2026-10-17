@@ -158,7 +158,7 @@ describe("the limits of counters (FOR-6)", () => {
         expect(await ok("write", "Ettore", "--set", "con=16")).toContain("hp 27/27 (max 24 → 27: hp-base 18, level 3, con-mod +3): worked out by the system 5e.");
         expect(pageText("Ettore")).toContain("hp: 27/27");
         expect(await refused("change", "Ettore", "hp", "--to", "20/30")).toBe(
-            "The maximum of hp on Ettore is worked out by the game system: 27, from hp-base 18, level 3, con-mod +3. Give the current value alone, such as to 20; to raise the maximum, write hp-base. Nothing changed.",
+            "The maximum of hp on Ettore is worked out by the game system: 27, from hp-base 18, level 3, con-mod +3. Give the current value alone, such as to 20; to raise the maximum, write hp-base; to change it for a while, as a drain, give an effect that sets hp-base. Nothing changed.",
         );
         expect(await ok("change", "Ettore", "hp", "--to", "20/27")).toBe("Ettore: hp 27/27 → 20/27.");
         expect(await ok("change", "Ettore", "hp", "--by=10")).toBe("Ettore: hp 20/27 → 27/27: at max, 3 beyond.");

@@ -63,7 +63,7 @@ inventory:
   - "[[Armatura di cuoio di Viola]]"
   - "[[Stocco di Viola]]"
   - "[[Liuto di Viola]]"
-  - "[[Razioni di Viola]]"
+  - "[[Rations]] 5"
   - "[[Otre di Viola]]"
   - una borsa di stracci colorati, trucchi e una parrucca
   - giaciglio e gavetta

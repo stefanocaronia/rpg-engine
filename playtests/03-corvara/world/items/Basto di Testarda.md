@@ -2,7 +2,7 @@
 item: "[[Pack Saddle]]"
 contains:
   - "[[Cassa sigillata]]"
-  - "[[Biada di Testarda]]"
+  - "[[Feed]] 6"
 ---
 
 Il basto del mulo, con le cinghie rattoppate.

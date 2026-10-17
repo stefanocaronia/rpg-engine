@@ -36,7 +36,9 @@ describe("the uses of a turn", () => {
         expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "attack", "--by", "Action Surge"], context)).output).toBe(
             "Ettore has action-surge 0: Action Surge gives nothing more until it comes back. Nothing changed.",
         );
-        expect(await use("Ettore", "bonus action")).toBe("Ettore: bonus action used. A spell cast with it leaves only a cantrip of one action for this turn (p. 101).");
+        // Who knows spells hears what a spell with the bonus action leaves (p. 101); who knows none, as Vespa below, does not.
+        await ok("write", "Ettore", "--add", "spells=[[Fire Bolt]]");
+        expect(await use("Ettore", "bonus action")).toBe("Ettore: bonus action used. If it cast a spell, only a cantrip of one action follows this turn (p. 101).");
         expect(await refused("Ettore", "bonus action")).toContain("Ettore has used its bonus action until its next turn");
     });
 
@@ -52,6 +54,7 @@ describe("the uses of a turn", () => {
         expect(await use("Vespa", "reaction")).toBe("Vespa: reaction used.");
         expect(await use("Vespa", "sneak attack")).toBe("Vespa: sneak attack used.");
         expect(await refused("Ettore", "reaction")).toContain("Ettore has used its reaction until its next turn");
+        expect(await use("Vespa", "bonus action")).toBe("Vespa: bonus action used.");
     });
 
     it("gives the dashboard what who acts has used of the turn (TRN-4)", async () => {
@@ -126,5 +129,14 @@ describe("legendary creatures and what a creature does not take (D-454)", () => 
         expect((await runCommandLine(["effect", "add", "Adult Green Dragon 1", "Poisoned"], context)).output).toBe(
             "Adult Green Dragon 1 is immune to Poisoned, in its condition-immunities: it does not take it. Nothing changed.",
         );
+    });
+});
+
+describe("what the turn's reminder names (D-454, playtest 05)", () => {
+    it("names the uses each member has, the attacks of the action with how many, and Sneak Attack for a rogue; marking the action tells to mark the attacks", async () => {
+        expect(await ok("scene", "next")).toContain("Mark with scene use what Vespa uses of the turn, as it happens: action, bonus action, reaction, attack, sneak attack.");
+        await ok("scene", "next");
+        expect(await ok("scene", "next")).toContain("Mark with scene use what Ettore uses of the turn, as it happens: action, bonus action, reaction, attack (2 in the action).");
+        expect(await use("Ettore", "action")).toBe("Ettore: action used. If it is to attack, mark each attack instead, 2 for Ettore, which takes the action.");
     });
 });

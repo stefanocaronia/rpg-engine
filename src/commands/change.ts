@@ -658,7 +658,7 @@ function counterStep(
 
     // A maximum the game system works out is given only as it works it out (FOR-7).
     if ("to" in counterChange && limits.max !== undefined && counterChange.to.max !== undefined && counterChange.to.max !== limits.max) {
-        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}`;
+        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}; to change it for a while, as a drain, give an effect that sets ${limits.hint.raise}`;
         throw new Error(
             `The maximum of ${field} on ${page} is worked out by the game system: ${limits.hint?.made ?? limits.max}. Give the current value alone, such as to ${Math.min(counterChange.to.value, limits.max)}${raise}. Nothing changed.`,
         );
@@ -668,7 +668,7 @@ function counterStep(
 
     // Above a maximum the game system works out, a value reads as the maximum (FOR-6): what change says it wrote would not be what is read.
     if ("to" in counterChange && limits.max !== undefined && after.value > limits.max) {
-        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}`;
+        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}; to change it for a while, as a drain, give an effect that sets ${limits.hint.raise}`;
         throw new Error(`${field} on ${page} goes no higher than its maximum, which the game system works out: ${limits.hint?.made ?? limits.max}. Give to ${limits.max} or less${raise}. Nothing changed.`);
     }
 

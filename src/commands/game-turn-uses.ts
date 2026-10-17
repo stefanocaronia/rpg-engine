@@ -62,8 +62,12 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
             throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore}. Nothing changed.`);
         }
 
-        const note = rule.note === undefined ? "" : ` ${rule.note}`;
-        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.${note}`, ...(spends === undefined ? {} : { spends }) };
+        const noted = rule.note !== undefined && (rule.noteWhen === undefined || (formulaValue(world, fields, rule.noteWhen) ?? 0) > 0);
+        const note = noted ? ` ${rule.note}` : "";
+        // An action that holds more than one attack is marked by its attacks, each in turn (TRN-3).
+        const inner = Object.entries(uses).find(([, other]) => other.within !== undefined && same(other.within, use) && (most(other) ?? 0) > 1);
+        const attacks = inner === undefined ? "" : ` If it is to attack, mark each ${inner[0]} instead, ${most(inner[1])} for ${name}, which takes the ${use}.`;
+        return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.${note}${attacks}`, ...(spends === undefined ? {} : { spends }) };
     }
 
     // An attack counts within the action it took, until another action is used (TRN-3).
@@ -106,6 +110,20 @@ export function usesAtTurn(system: GameSystem | undefined, used: Scene["used"], 
         return kept.length === 0 ? [] : [[name, kept]];
     });
     return left.length === 0 ? undefined : Object.fromEntries(left);
+}
+
+/** The uses a page may mark of its turn (TRN-1): those it has, as Sneak Attack for a rogue, a use within another with how many fit, as "attack (2 in the action)". */
+export function turnUsesOf(world: World, system: GameSystem | undefined, page: Page): string[]
+{
+    const fields = effectiveFields(world, page);
+    return Object.entries(system?.turnUses ?? {}).flatMap(([use, rule]) => {
+        if (rule.needs !== undefined && !((formulaValue(world, fields, rule.needs) ?? 0) > 0)) {
+            return [];
+        }
+
+        const most = rule.most === undefined ? 1 : formulaValue(world, fields, rule.most);
+        return [rule.within !== undefined && most !== undefined && most > 1 ? `${use} (${most} in the ${rule.within})` : use];
+    });
 }
 
 /** The uses a turn shows, as the dashboard's marks (TRN-4): those that stand alone, used or not, for who acts. */

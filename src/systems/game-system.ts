@@ -161,6 +161,7 @@ const systemSchema = z.object({
             "any-turn": z.boolean().optional(),
             resets: z.enum(["own turn", "each turn"]).optional(),
             note: z.string().min(1).optional(),
+            "note-when": z.string().min(1).optional(),
         }).strict(),
         { error: "write each use of a turn with its most, the use it goes within, what it needs, whether it goes in any turn and when it comes back, such as attack: {within: action, most: 1 + extra-attacks}" },
     ).optional(),
@@ -253,8 +254,9 @@ export interface TurnUse
     needs?: Formula;
     anyTurn: boolean;
     resets: "own turn" | "each turn";
-    /** What its line says each time, as what a spell cast with a bonus action leaves (TRN-1). */
+    /** What its line says each time, as what a spell cast with a bonus action leaves (TRN-1), and only for whom a formula gives more than 0. */
     note?: string;
+    noteWhen?: Formula;
 }
 
 /** What a day in a settlement costs under the rigor «rules» (UPK-4): the field of the lifestyle chosen, the coins of each, and the rules to read. */
@@ -830,6 +832,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                 anyTurn: rule["any-turn"] ?? false,
                 resets: rule.resets ?? "own turn",
                 ...(rule.note === undefined ? {} : { note: rule.note }),
+                ...(rule["note-when"] === undefined ? {} : { noteWhen: parseFormula(rule["note-when"]) }),
             }]),
         ),
         atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, parseFormula(String(most))])),

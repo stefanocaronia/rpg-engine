@@ -75,7 +75,7 @@ inventory:
   - "[[Mazza di Corrado]]"
   - "[[Simbolo sacro di Corrado]]"
   - "[[Borsa da cerusico di Corrado]]"
-  - "[[Torce di Corrado]]"
+  - "[[Torch]] 6"
   - "[[Rations]] 3"
   - zaino da esploratore (giaciglio, gavetta, acciarino, otre, 15 m di corda di canapa)
   - le lettere della sorella

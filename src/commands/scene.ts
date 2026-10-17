@@ -23,7 +23,7 @@ import { turnEffectsNote } from "./game-reminders.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { useInTurn, usesAtTurn } from "./game-turn-uses.ts";
+import { turnUsesOf, useInTurn, usesAtTurn } from "./game-turn-uses.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
@@ -823,8 +823,8 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const effects = turnEffectsNote(world, readOpenScene(root).scene, before.turn, turns.turn);
     // A party member's turn reminds what to mark of it (TRN-1).
     const member = findPage(world, turns.turn);
-    const uses = Object.entries(campaignSystem(root, context)?.turnUses ?? {}).filter(([, rule]) => rule.needs === undefined).map(([use]) => use);
-    const mark = member !== undefined && isPartyMember(member) && uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
+    const uses = member === undefined || !isPartyMember(member) ? [] : turnUsesOf(world, campaignSystem(root, context), member);
+    const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
     const acting = [effects, mark].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
 }

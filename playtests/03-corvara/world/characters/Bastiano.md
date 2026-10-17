@@ -3,7 +3,7 @@ role: npc
 status: alive
 creature: "[[Commoner]]"
 inventory:
-  - "[[Razioni di Bastiano]]"
+  - "[[Rations]] 12"
 ---
 
 Portatore di Ponteselce, sui quarant'anni, spalle larghe e poche parole. Pagato 2 monete d'argento al giorno, come un mercenario non addestrato; il primo giorno è già pagato.

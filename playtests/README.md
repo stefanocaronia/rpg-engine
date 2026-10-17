@@ -20,7 +20,7 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 
 ## Prepare
 
-1. Commit everything, and `npm link` once: the run refuses uncommitted changes, builds `dist/` from the commit and checks that the global `rpg` is that build.
+1. Commit everything, and `npm link` once: the run refuses uncommitted changes, builds `dist/` from the commit and checks that the global `rpg` is that build. A run of several sessions checks again before each: while it plays, nothing else may change the checkout, so run it from a worktree of its own when other work goes on there.
 2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with no `&`: one folder per run, `<runs>\<date>\<n>\`, where `<runs>` is a folder of yours, such as `<runs>\2026-10-03\1\guadoscuro`. The master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
 3. Put the output folder next to the campaign, such as `<runs>\2026-10-03\1\results`: a run folder can then be deleted or archived whole.
 4. Try it first on a throwaway campaign and output folder, with `--max 1 --hard 2`.

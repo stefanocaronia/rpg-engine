@@ -66,8 +66,8 @@ inventory:
   - "[[Scudo di Corrado]]"
   - "[[Simbolo sacro di Corrado]]"
   - "[[Borsa da cerusico di Corrado]]"
-  - "[[Torce di Corrado]]"
-  - "[[Fuoco dell'alchimista di Corrado]]"
+  - "[[Torch]] 5"
+  - "[[Alchemist's Fire]] 1"
   - zaino da esploratore (giaciglio, gavetta, acciarino, razioni per 5 giorni, otre, 15 m di corda di canapa)
   - le lettere della sorella
 equipped:
