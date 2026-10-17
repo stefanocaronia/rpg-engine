@@ -1,0 +1,7 @@
+(Organizer: tonight's game goes on with a character you already know, as if you had played him for a few evenings with this master; you remember what follows, and nothing else of the world.
+
+Your character is Corrado, the soldier and field medic you had in mind: now a cleric of the Mother of Springs, 3rd level, in chain mail with mace and shield. He heals (Cura ferite, Parola guaritrice), keeps the dying from slipping away (Salvare i morenti), blesses his friends before a fight (Benedizione), protects one of them (Scudo della fede), calls a spectral weapon (Arma spirituale), can hold a man in place (Blocca persone) and burns with sacred flame (Fiamma sacra). In his pack: his healer's kit, six torches, three days of rations and his sister's letters. All his prayers are fresh: he slept last night.
+
+Three friends travel with him, and the master keeps their sheets: Gisella, a dwarf veteran who served in his company, with longsword and shield; Tobia, a young elf wizard who writes everything down; Lucia, called la Gazza, a halfling burglar with a silvered shortsword. Gisella and Lucia each carry a potion of healing.
+
+Two days ago, in Roccalba, you killed the owlbears of the gorge for Tecla, the headwoman. Last evening Lucia went up alone to the high pastures above the beech wood, to look at some old pens she had noticed, and said she would be back by dark. She was not. Before dawn, from up there, you heard wolves howl, and one cry that was hers. You climbed in the dark. Now the sun is rising, and you come out of the trees onto the juniper plateau.)
