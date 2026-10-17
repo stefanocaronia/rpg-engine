@@ -4,9 +4,13 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { oneAnswer } from "./one-answer.mjs";
 
 const [out, folder, profile, model] = process.argv.slice(2);
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
+// A form refused faster than a person could read it is taken for one never shown, and the server stops showing forms (tooFastForPerson in src/mcp-server.ts).
+const personReads = 1600;
+const started = Date.now();
 
 try {
     const form = JSON.parse(readFileSync(0, "utf8"));
@@ -16,8 +20,20 @@ try {
         throw new Error("the form has no buttons");
     }
 
-    const choice = press(form, labels);
-    appendFileSync(join(folder, "dialogue.md"), `**Buttons** (${form.message})\n\n${labels.join(" · ")} → ${choice}\n\n`);
+    // The page may have asked the player first: then its answer, by index, as the form lists the same choices in the same order with other words.
+    const answer = await oneAnswer({ folder, question: form.message, side: "form", ask: () => ({ index: labels.indexOf(press(form, labels)) }) });
+    const choice = labels[answer.index ?? -1];
+    const from = answer.from === undefined ? "" : ` (the player's answer on the ${answer.from})`;
+
+    if (choice === undefined) {
+        // An answer the form cannot give, as the player's own words on the page: the page has already given it, so the form steps aside, never too fast.
+        await new Promise((done) => setTimeout(done, Math.max(0, personReads - (Date.now() - started))));
+        appendFileSync(join(folder, "dialogue.md"), `**Buttons** (${form.message})\n\n${labels.join(" · ")} → none: answered on the page\n\n`);
+        console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "Elicitation", action: "cancel" } }));
+        process.exit(0);
+    }
+
+    appendFileSync(join(folder, "dialogue.md"), `**Buttons** (${form.message})\n\n${labels.join(" · ")} → ${choice}${from}\n\n`);
     console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "Elicitation", action: "accept", content: { choice } } }));
 } catch (error) {
     appendFileSync(join(folder, "forms-errors.txt"), `${new Date().toISOString()} ${error.message}\n`);

@@ -15,7 +15,7 @@ const usage = [
     '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50] [--hard 60] [--budget 15]',
     '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
-    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open, and --uncommitted, to test the working tree as it is.",
+    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; and --master-effort low|medium|high|xhigh|max, the master's effort.",
 ].join("\n");
 const options = readOptions();
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -216,7 +216,9 @@ function masterArgs(folder)
     const path = (file) => `"${resolve(file).replaceAll("\\", "/")}"`;
     const command = ["node", path(join(repo, "playtests", "answer-form.mjs")), path(out), path(folder), path(options.profile), options["player-model"]].join(" ");
     const hooks = { hooks: { Elicitation: [{ matcher: "rpg", hooks: [{ type: "command", command, timeout: 300 }] }] } };
-    return ["--model", options["master-model"], "--settings", JSON.stringify(hooks), ...isolation.split(" ")];
+    // The master's effort, when the run asks for one; left out, Claude Code's own.
+    const effort = options["master-effort"] === undefined ? {} : { effortLevel: options["master-effort"] };
+    return ["--model", options["master-model"], "--settings", JSON.stringify({ ...hooks, ...effort }), ...isolation.split(" ")];
 }
 
 /** One master turn; returns the text the player sees, the session's cost so far, and what went wrong, if anything. */
@@ -704,12 +706,17 @@ function readOptions()
                 uncommitted: { type: "boolean" },
                 "master-model": { type: "string", default: "claude-opus-5-5" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
+                "master-effort": { type: "string" },
             },
         });
         const required = values.questionnaire ? ["profile", "out"] : ["campaign", "profile", "out", "first"];
         const missing = required.filter((name) => !values[name]);
         const notCounts = ["session", "max", "hard"].filter((name) => values[name] !== undefined && !(Number.isInteger(Number(values[name])) && Number(values[name]) > 0));
         const notFiles = ["profile", "questionnaire", "prepared", "moments"].filter((name) => values[name] && !existsSync(values[name]));
+
+        if (values["master-effort"] !== undefined && !["low", "medium", "high", "xhigh", "max"].includes(values["master-effort"])) {
+            throw new Error(`--master-effort is low, medium, high, xhigh or max, not ${values["master-effort"]}.`);
+        }
 
         if (values.moments && !values.dashboard) {
             throw new Error("--moments are done on the dashboard's page: add --dashboard.");

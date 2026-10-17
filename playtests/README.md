@@ -5,6 +5,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | Path | Content |
 |---|---|
 | `run-playtest.mjs` | plays one session of a scenario, or asks the questionnaire |
+| `one-answer.mjs` | one answer from the player to a question that shows both on the page and in the chat's form |
 | `page-player.mjs` | the dashboard's page in a run with `--dashboard`: the master's questions there answered by the player and clicked, the scenario's moments, what the page showed |
 | `count-playtest.mjs` | counts the numbers of a run, the same way every time |
 | `checklist.md` | the fixed checklist, filled after every run |
@@ -18,6 +19,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `05b-pozzo-allagato/` | the world of 05 from the mine's yard, with harder fights: two ghouls, a wyrmling whose breath recharges, a cloak to attune to |
 | `06-la-forra-dell-orso/` | the party of 05 at 3rd level against an owlbear in a gorge with a map: falling, death saves, stabilizing, healing, and positions |
 | `07-il-pianoro-dei-lupi/` | the party of 06 at dawn on a plateau with a map, Lucia already at 0 among wolves: the dying point from the first turn |
+| `08-il-guado-del-mulino/` | the player's character down at a ford, with an ogre and wolves on a map, and the master at low effort |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
@@ -52,7 +54,7 @@ node playtests/run-playtest.mjs --from <runs>\2026-10-03\1\results\session-2 --c
 
 A scenario may start in play, from a campaign its `start.md` prepares (settings, characters, the date): `--prepared` with the scenario's brief accepts it for session 1, and gives the brief to the player with the first turn, as what they remember of their character. Give it again to every run from a save of that scenario.
 
-With `--dashboard` the session is played with the dashboard open, as in the desktop app (phase 3). The master's chat is one Claude Code process for the whole session, its prompts sent as a stream, so that the rpg server and the page it serves live from turn to turn. The first link to the dashboard in a tool's result opens the page in the Chrome installed, at 1280 in the dark theme. A question the master asks there goes to the player, with the master's words so far, and the player's answer is clicked on the page: a button, their own words, or a square of the map. A question that does not show within 10 s, or that the player or the click fails, is answered through the page's request instead, and said in `page/console.txt`. `--moments` with the scenario's moments file does, before a player's message, what the page's Settings and Notes do (a setting, a note, a note shared) and tells the player. `--uncommitted` tests the working tree as it is, uncommitted changes included: `meta.json` gives the commit and the tree, and `tested.diff` the changes.
+With `--dashboard` the session is played with the dashboard open, as in the desktop app (phase 3). The master's chat is one Claude Code process for the whole session, its prompts sent as a stream, so that the rpg server and the page it serves live from turn to turn. The first link to the dashboard in a tool's result opens the page in the Chrome installed, at 1280 in the dark theme. A question the master asks there goes to the player, with the master's words so far, and the player's answer is clicked on the page: a button, their own words, or a square of the map. A question that does not show within 10 s, or that the player or the click fails, is answered through the page's request instead, and said in `page/console.txt`. The same question shows in the chat's form too: the player is asked once, by whichever of the two gets it first, and the other gives that answer by its index, as both list the choices in the same order with other words ([one-answer.mjs](one-answer.mjs), meeting in the session's `answers/`); the form never steps aside within 1.5 s, or the server would take forms away for the session. `--moments` with the scenario's moments file does, before a player's message, what the page's Settings and Notes do (a setting, a note, a note shared) and tells the player. `--uncommitted` tests the working tree as it is, uncommitted changes included: `meta.json` gives the commit and the tree, and `tested.diff` the changes.
 
 Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a subscription. Writing the pages, the trial run and reading the results for the checklist cost extra. `end.json` records the master's cost for the session and the player's for the run so far.
 
@@ -78,6 +80,7 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 | `--strict-mcp-config --mcp-config .mcp.json` | only the `rpg` server, approved without a person |
 | `--permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: any other write or command is denied, and the denial recorded |
 | `--settings` with an `Elicitation` hook | the rpg server's buttons (`ask`) go to the AI player, who reads what the master wrote so far and presses one, as in a chat that shows them: [answer-form.mjs](answer-form.mjs); each press is in `dialogue.md` as **Buttons**, and one that fails in `forms-errors.txt` (D-148, D-246) |
+| `--master-effort`, as `effortLevel` in those settings | the master's effort, when the run asks for one: low to max; Claude Code's own otherwise |
 | `--model claude-opus-5-5`, `--session-id`, then `--resume` | the same master at every phase; one chat per session |
 
 Claude Code runs without the `CLAUDE*` variables of the shell, so a Claude Code session the run is started from cannot leak into it.

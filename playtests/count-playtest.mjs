@@ -77,6 +77,7 @@ function countSession(folder, before)
         writes: 0,
         costs: [],
         durations: [],
+        speed: [],
         contextFirstTurn: 0,
         contextLargest: { tokens: 0, turn: "" },
     };
@@ -139,6 +140,7 @@ function countSession(folder, before)
         counts.costs.push({ turn: turn.label, cost: round(cost - previousCost) });
         previousCost = cost;
         counts.durations.push(result?.duration_ms ?? 0);
+        counts.speed.push({ turn: turn.label, seconds: (result?.duration_ms ?? 0) / 1000, steps: result?.num_turns ?? 0, calls: toolUses.length });
 
         for (const event of assistant) {
             const usage = event.message.usage ?? {};
@@ -411,6 +413,7 @@ function markdown(details)
         ["Master cost: total, median per turn, highest", (s) => `${s.masterCost} $, ${median(s.costs.map((c) => c.cost))} $, ${maxOf(s.costs, "cost")}`],
         ["Player cost", (s) => `${s.playerCost} $`],
         ["Duration: total (master work)", (s) => `${s.time.minutes} min (${s.time.masterWorkMinutes} min)`],
+        ["Speed: seconds and model steps per master turn (medians); seconds and calls per step", (s) => speedLine(s.speed)],
         ["Context: first turn, largest", (s) => `${s.contextFirstTurn}, ${s.contextLargest.tokens} (${s.contextLargest.turn})`],
         ["Pages", (s) => `${s.pages.before} → ${s.pages.after}`],
         ["Log lines of the session by type", (s) => Object.entries(s.log).map(([type, count]) => `${type} ${count}`).join(", ")],
@@ -419,6 +422,14 @@ function markdown(details)
     const header = `| Number | ${names.join(" | ")} |\n|---|${names.map(() => "---|").join("")}`;
     const table = [header, ...rows.map(([label, value]) => `| ${label} | ${names.map((name) => String(value(details[name])).replace(/\|/g, "\\|")).join(" | ")} |`)].join("\n");
     return `${table}\n\nQuestionnaire, player cost: ${details.questionnaire.playerCost} $`;
+}
+
+/** How fast the master answers: the median seconds and model steps of a turn, and over the session the seconds and the tool calls of one step. */
+function speedLine(speed)
+{
+    const steps = sum(speed.map((turn) => turn.steps));
+    const perStep = (value) => (steps === 0 ? 0 : round(sum(speed.map((turn) => turn[value])) / steps));
+    return `${median(speed.map((turn) => turn.seconds))} s, ${median(speed.map((turn) => turn.steps))} steps; ${perStep("seconds")} s and ${perStep("calls")} calls a step`;
 }
 
 function uniqueDue(due)

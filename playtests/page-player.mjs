@@ -5,6 +5,7 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path";
 import { chromium } from "playwright-core";
 import { parse } from "yaml";
+import { oneAnswer } from "./one-answer.mjs";
 
 // How often the question the master asks is looked for, while the master plays its turn, in milliseconds.
 const askedPoll = 250;
@@ -77,11 +78,15 @@ export function pagePlayer({ folder, askPlayer, moments })
             note(`run: the question "${asked.question}" did not show on the page within ${bannerWait / 1000} s`);
         }
 
-        const reply = await (asked.square ? pickSquare(asked) : pickButton(asked)).catch((error) => {
-            note(`run: the player gave no answer (${error.message}); the first button instead`);
-            return { index: 0, label: asked.labels[0], fallback: true };
-        });
-        const clicked = shown === undefined ? await answerWithoutBanner(asked, reply) : await click(banner, asked, reply).catch((error) => {
+        // One answer for the page and the chat's form (one-answer.mjs): the form's, when it asked the player first, is the same choice by its index.
+        const reply = await oneAnswer({ folder, question: asked.question, side: "page", ask: () => (asked.square ? pickSquare(asked) : pickButton(asked)) })
+            .then((given) => (given.index !== undefined && given.label === undefined ? { ...given, label: asked.labels[given.index] } : given))
+            .catch((error) => {
+                note(`run: the player gave no answer (${error.message}); the first button instead`);
+                return { index: 0, label: asked.labels[0], fallback: true };
+            });
+        // The form's answer has already reached the master: the page has nothing to click.
+        const clicked = reply.from === "form" ? "answered in the chat's form" : shown === undefined ? await answerWithoutBanner(asked, reply) : await click(banner, asked, reply).catch((error) => {
             note(`run: the click failed (${error.message})`);
             return answerWithoutBanner(asked, reply);
         });
@@ -89,7 +94,7 @@ export function pagePlayer({ folder, askPlayer, moments })
         appendFileSync(join(pageFolder, "asked.jsonl"), JSON.stringify(timing) + "\n");
         const choices = asked.labels.join(" · ") + (asked.square ? " · a square of the map" : "");
         // What reached the master: a click, an answer sent around the page, or one the server refused, as when the question had already changed.
-        const how = clicked === true ? "" : clicked === false ? " (not on the page: see page/console.txt)" : ` (not delivered: ${clicked}; the master got another answer or none)`;
+        const how = clicked === true ? "" : clicked === false ? " (not on the page: see page/console.txt)" : reply.from === "form" ? ` (${clicked})` : ` (not delivered: ${clicked}; the master got another answer or none)`;
         record(folder, "Page", `(${asked.title}: ${asked.question})\n\n${choices} → ${reply.square ?? reply.label ?? `«${reply.words}»`}${how}`);
     };
 
