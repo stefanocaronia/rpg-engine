@@ -39,7 +39,7 @@ node playtests/run-playtest.mjs --profile playtests/players/marco.md --out <runs
 
 Then count the numbers, for B12 and the report: `node playtests/count-playtest.mjs <results folder> playtests/01-guadoscuro/world`.
 
-Each session is a new master chat; the player keeps one chat for the whole run. The organizer's notes reach only the player and are kept in `dialogue.md`: the opening of each evening and, once, at `--max` player messages, that it is getting late. A session stops when the player ends it, at `--hard` messages (default `--max` + 10), on an error, or when the master's session passes `--budget` dollars (default 15).
+Each session is a new master chat; the player keeps one chat for the whole run. The organizer's notes reach only the player and are kept in `dialogue.md`: the opening of each evening and, once, at `--max` player messages, that it is getting late. A player who ends the evening before that note writes the message again, once, without ending it: the first stays in `dialogue.md`, and the master never reads it. A session stops when the player ends it, at `--hard` messages (default `--max` + 10), on an error, or when the master's session passes `--budget` dollars (default 15).
 
 A run only goes forward: each session is played once, in the same output folder, and each later session continues the player's chat of the one before, even after a questionnaire. A session that fails is not resumed: start a new run, with a new campaign and a new output folder.
 

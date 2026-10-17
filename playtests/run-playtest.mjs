@@ -133,6 +133,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
     const max = Number(options.max);
     const hard = Number(options.hard ?? max + 10);
     const lateNote = "(Organizer: it is getting late. End the evening at the next good point, in your own words.)";
+    const earlyNote = "(Organizer: it is still early, and the evening goes on. Write your last message again, without ending the evening: the master has not read it.)";
     const dashboardNote = "(Organizer: tonight the game's dashboard is open in the browser beside the chat. When the master asks you a roll or a choice there, you get its buttons here, and press one.)";
     let note = [`(Organizer: a new evening begins. You open it by writing «${options.first}»; the master's answer follows.)`, options.dashboard ? dashboardNote : ""].filter(Boolean).join("\n");
     let player = { message: options.first, endSession: false };
@@ -165,6 +166,14 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
             }
 
             player = await playerTurn([count === 1 ? memory : "", note, master.text].filter(Boolean).join("\n\n"), true);
+
+            // A goodbye before the late note, as when the characters go to sleep (playtests 05b and 06), is written again once.
+            if (player.endSession && count < max) {
+                record(folder, `P${count + 1}, ended early`, player.message);
+                record(folder, "Organizer", earlyNote);
+                player = await playerTurn(earlyNote, true);
+            }
+
             progress.playerRunCost = player.cost;
             note = "";
         }
