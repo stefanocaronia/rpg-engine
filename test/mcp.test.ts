@@ -251,7 +251,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         expect((await call("instructions", {})).text).not.toContain("call `ask`");
 
         const shown: unknown[] = [];
-        const forms = await formClient({ action: "accept", content: { choice: "Tiro: Acrobazia (1d20+3)" } }, shown);
+        const forms = await formClient({ action: "accept", content: { choice: "Acrobazia · d20 +3" } }, shown);
         expect((await forms.listTools()).tools.map((tool) => tool.name)).toContain("ask");
         expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(
             /call `ask` instead of stopping in words\. Never speak of buttons to the player: if one does not show, ask in words\.$/,
@@ -262,7 +262,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         expect(shown).toEqual([{
             mode: "form",
             message: wall.question,
-            requestedSchema: { type: "object", properties: { choice: { type: "string", title: "Tiro", enum: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20+3)", "Cambio idea"] } }, required: ["choice"] },
+            requestedSchema: { type: "object", properties: { choice: { type: "string", title: "Tiro", enum: ["Atletica · d20 +5", "Acrobazia · d20 +3", "Cambio idea"] } }, required: ["choice"] },
         }]);
         await forms.close();
     });

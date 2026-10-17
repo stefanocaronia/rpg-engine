@@ -58,7 +58,7 @@ const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cad
 describe("a roll with buttons (ASK-3, ASK-7)", () => {
     it("shows the checks and the change of mind, rolls the chosen one with the engine's dice and logs it as the player's roll", async () => {
         expect(await asked(wall, 0)).toBe("id4 Bruna, Atletica: 1d20+5 = 9 [4] + 5, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.");
-        expect(shown).toEqual([{ question: wall.question, title: "Tiro", labels: ["Tiro: Atletica (1d20+5)", "Tiro: Acrobazia (1d20+3)", "Cambio idea"] }]);
+        expect(shown).toEqual([{ question: wall.question, title: "Tiro", labels: ["Atletica · d20 +5", "Acrobazia · d20 +3", "Cambio idea"] }]);
         expect(readLogFile(folder).at(-1)).toMatchObject({
             id: "id4",
             type: "roll",
@@ -70,13 +70,16 @@ describe("a roll with buttons (ASK-3, ASK-7)", () => {
 
     it("rolls any notation of the dice, such as advantage, and takes the only player character when who is left out", async () => {
         expect(await asked({ question: "Colpire il lupo", options: "Attacco 2d20kh1+5" }, 0)).toContain("Bruna, Attacco: 2d20kh1+5 = 9 [(4), 4] + 5, rolled by the player.");
-        expect(shown[0].labels).toEqual(["Tiro: Attacco (2d20kh1+5)", "Cambio idea"]);
+        expect(shown[0].labels).toEqual(["Attacco · d20 +5, con vantaggio", "Cambio idea"]);
+        // The form writes the dice as the dashboard's button draws them: the game's name for a roll, every kind of die, the number added (D-297, D-399).
+        await asked({ question: "Colpo furtivo", options: "Spada corta 1d6+2d6+3" }, 1);
+        expect(shown[1].labels).toEqual(["Spada corta · d6 + 2d6 +3", "Cambio idea"]);
     });
 
     it("gives the buttons in English when the campaign is in another language", async () => {
         await rpg("config", "language", "fr");
         await asked(wall, 2);
-        expect(shown[0]).toMatchObject({ title: "Roll", labels: ["Roll: Atletica (1d20+5)", "Roll: Acrobazia (1d20+3)", "Change my mind"] });
+        expect(shown[0]).toMatchObject({ title: "Roll", labels: ["Atletica · d20 +5", "Acrobazia · d20 +3", "Change my mind"] });
     });
 });
 
@@ -221,7 +224,7 @@ describe("checks whose dice are written with spaces or a minus, as roll's own ad
 
     it("takes the dice from the first word that is a die, spaces and a minus included", async () => {
         await asked({ question: "Il muro", options: ["Atletica 1d20+athletics - 1", "Forza 1d20 + str-mod"], who: "Bruna" }, undefined);
-        expect(shown[0].labels).toEqual(["Tiro: Atletica (1d20+2-1)", "Tiro: Forza (1d20+2)", "Cambio idea"]);
+        expect(shown[0].labels).toEqual(["Atletica · d20 +1", "Forza · d20 +2", "Cambio idea"]);
     });
 });
 

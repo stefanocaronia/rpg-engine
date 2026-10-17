@@ -6,6 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
+import { rollName } from "../systems/index.ts";
 import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -144,7 +145,10 @@ export const ask = defineCommand({
 async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
-    const chosen = await chooseAnswer(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] });
+    const system = campaignSystem(root, context);
+    const language = readSettings(root).language ?? system?.language ?? "en";
+    const shown = [...checks.map((check) => formLabel(check, (dice) => (system === undefined ? undefined : rollName(system, dice, language)))), words.change];
+    const chosen = await chooseAnswer(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] }, shown);
 
     const asked = askedText(question, "checks", checks);
 
@@ -279,11 +283,32 @@ function askedText(question: string, what: "checks" | "answers", options: Option
 }
 
 /**
+ * A check as a form shows it, in words as the dashboard's button shows it in pictures (D-297, D-399): "Furtività · d20 +5, con vantaggio", "Spada corta · d6 +3",
+ * the dice the game names as one die and the name; `named` gives the name a game has for some dice.
+ */
+function formLabel(check: Option, named: (dice: string) => string | undefined): string
+{
+    const terms = (check.notation ?? "").replace(/\s+/g, "").split(/(?=[+-])/).filter((term) => term !== "");
+    const dice = terms.filter((term) => /d/i.test(term));
+    const modifier = terms.filter((term) => !/d/i.test(term)).reduce((sum, term) => sum + Number(term), 0);
+    const name = dice.length === 1 ? named(dice[0].replace(/^\+/, "")) : undefined;
+    const shown = dice.map((term, index) => {
+        const sign = term.startsWith("-") ? "−" : "+";
+        const body = term.replace(/^[+-]/, "").replace(name === undefined ? /^1(?=d)/i : /^\d*(d(?:\d+|%)).*$/i, name === undefined ? "" : "$1");
+        return index === 0 && sign === "+" ? body : `${sign} ${body}`;
+    });
+    const added = modifier === 0 ? "" : ` ${modifier < 0 ? "−" : "+"}${Math.abs(modifier)}`;
+    return `${check.label} · ${shown.join(" ")}${added}${name === undefined ? "" : `, ${name}`}`;
+}
+
+/**
  * The player's answer, on the dashboard's page and in the host's form at once, where both are (ASK-13, D-455): the first answer wins and takes the other
  * away; one that never showed, a page not open or a form the host does not show, leaves the other to answer. Neither shown is absent: the master asks in words.
+ * A form shows `shown` in place of the labels, when they are as many and each its own.
  */
-export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows): Promise<Answer>
+export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows, shown?: string[]): Promise<Answer>
 {
+    const formLabels = shown?.length === labels.length && new Set(shown).size === shown.length ? shown : labels;
     const { page, player } = context;
 
     if (page === undefined && player === undefined) {
@@ -300,7 +325,7 @@ export async function chooseAnswer(context: Context, question: string, title: st
         stop.abort();
     }
 
-    const ways = [...(page === undefined ? [] : [page.choose(question, title, labels, stop.signal, rows)]), ...(player === undefined ? [] : [player.choose(question, title, labels, stop.signal)])];
+    const ways = [...(page === undefined ? [] : [page.choose(question, title, labels, stop.signal, rows)]), ...(player === undefined ? [] : [player.choose(question, title, formLabels, stop.signal)])];
     const answer = await firstAnswer(ways, page === undefined ? "unavailable" : "absent");
     outer?.removeEventListener("abort", cancel);
     stop.abort();
