@@ -395,7 +395,9 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
         // A quest taken is a fact of the story (D-369).
         await ok("write", "Il guado", "--type", "quest", "--set", "status=open");
         await ok("scene", "close", "--summary", "Ettore attraversa il guado, ferito.");
-        await ok("advance", "--by", "1h");
+        // Two advances in a row tell one stretch of time.
+        await ok("advance", "--by", "30m");
+        await ok("advance", "--by", "30m");
         await ok("scene", "open", "--title", "Alla torre", "--type", "exploration");
         const { chapters } = JSON.parse(await ok("view", "--journal", "--json"));
         expect(chapters.map((chapter: { title?: string; open: boolean; }) => [chapter.title ?? "between", chapter.open])).toEqual([

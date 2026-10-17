@@ -210,6 +210,14 @@ function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => StoryFact | 
             chapters.push(holder);
         }
 
+        // Time that passes again right after time passed is one stretch: from the first to the last.
+        const last = holder.facts.at(-1);
+
+        if (told.kind === "time" && last?.kind === "time") {
+            holder.facts[holder.facts.length - 1] = { ...told, ...(last.from === undefined ? {} : { from: last.from }) };
+            continue;
+        }
+
         holder.facts.push(told);
     }
 
