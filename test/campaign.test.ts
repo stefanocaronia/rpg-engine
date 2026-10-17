@@ -212,7 +212,7 @@ describe("rpg config", () => {
         mkdirSync(join(folder, ".codex"), { recursive: true });
         writeFileSync(join(folder, ".codex", "config.toml"), 'model = "gpt-5"\nmodel_reasoning_effort = "xhigh"\n\n[mcp_servers.rpg]\ncommand = "rpg"\n');
         expect((await runCommandLine(["config", "effort", "low"], context)).output).toBe(
-            "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort low. Nothing changed.",
+            "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort and low, medium, high or app. Nothing changed.",
         );
         const set = await runCommandLine(["config", "effort", "low"], { ...context, terminal: true });
         expect(set.output).toContain("effort: low\nWritten for Claude Code, Codex and Gemini CLI: it applies from the next chat");
@@ -228,6 +228,27 @@ describe("rpg config", () => {
         await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8").match(/model_reasoning_effort/g)).toHaveLength(1);
         expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBe("high");
+        // Medium: Gemini's preview of 3 Pro takes only low and high (review of 17 October).
+        await runCommandLine(["config", "effort", "medium"], { ...context, actor: "player" });
+        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs.customOverrides.at(-1)).toEqual({
+            match: { model: "gemini-3-pro-preview" },
+            modelConfig: { generateContentConfig: { thinkingConfig: { thinkingLevel: "HIGH" } } },
+        });
+        // app takes it away from every file: each app keeps its own again.
+        expect((await runCommandLine(["config", "effort", "app"], { ...context, terminal: true })).output).toContain("Taken away for Claude Code, Codex and Gemini CLI");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("effort");
+        expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBeUndefined();
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model = "gpt-5"\n\n\[mcp_servers\.rpg\]/);
+        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs).toBeUndefined();
+    });
+
+    it("puts the effort first in a Codex file with a byte order mark, a quoted key, an array of brackets and a commented table (review of 17 October)", async () => {
+        mkdirSync(join(folder, ".codex"), { recursive: true });
+        writeFileSync(join(folder, ".codex", "config.toml"), '﻿"model_reasoning_effort" = "xhigh"\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n');
+        await runCommandLine(["config", "effort", "low"], { ...context, terminal: true });
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toBe(
+            'model_reasoning_effort = "low"\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n',
+        );
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {

@@ -61,19 +61,27 @@ export function dyingAfter(root: string, context: Context, system: GameSystem, n
     const failures = counted(dying.fails.field);
     const past = change.lost - Math.max(change.before - dying.value, 0);
 
-    // Damage past the value as large as the maximum kills at once (DIE-2).
+    const save = dying.save;
+    const wasStable = save !== undefined && counted(save.succeeds.field) >= save.succeeds.most;
+
+    // Damage past the value as large as the maximum kills at once (DIE-2), one stable too (DIE-6).
     if (change.lost > 0 && change.max !== undefined && past >= change.max) {
-        setNumbers(root, context, world, name, { [dying.fails.field]: dying.fails.most }, "instant death");
-        lines.push(`${name} dies at once: ${past} past ${dying.value} is at least the maximum, ${change.max}; ${dying.fails.field} ${failures} → ${dying.fails.most}. Read rules ${dying.rules}.`);
+        setNumbers(root, context, world, name, { [dying.fails.field]: dying.fails.most, ...(wasStable ? { [save.succeeds.field]: 0 } : {}) }, "instant death");
+        const unstable = wasStable && save.stable !== undefined && endCondition(root, context, name, save.stable);
+        lines.push(
+            `${name} dies at once: ${past} past ${dying.value} is at least the maximum, ${change.max}; ${dying.fails.field} ${failures} → ${dying.fails.most}${unstable ? `, ${save.stable} ended` : ""}. Read rules ${dying.rules}.`,
+        );
     } else if (change.lost > 0 && change.before <= dying.value) {
         // Damage while there counts a failure (DIE-2); a critical hit counts two, which only the master knows. One stable is dying again (DIE-6).
         const after = Math.min(failures + 1, dying.fails.most);
-        const save = dying.save;
-        const wasStable = save !== undefined && counted(save.succeeds.field) >= save.succeeds.most;
         setNumbers(root, context, world, name, { [dying.fails.field]: after, ...(wasStable ? { [save.succeeds.field]: 0 } : {}) }, `damage at ${dying.value} ${dying.field}`);
         const unstable = wasStable && save.stable !== undefined && endCondition(root, context, name, save.stable);
-        const again = wasStable ? ` ${name} is no longer stable: ${save.succeeds.field} ${save.succeeds.most} → 0${unstable ? `, ${save.stable} ended` : ""}; its death saves start again.` : "";
-        lines.push(`${dying.fails.field} ${failures} → ${after}: damage at ${dying.value} ${dying.field}; a critical hit counts two, so add one more with change.${again}`);
+        const dead = after >= dying.fails.most;
+        const again = wasStable
+            ? ` ${name} is no longer stable: ${save.succeeds.field} ${save.succeeds.most} → 0${unstable ? `, ${save.stable} ended` : ""}${dead ? "" : "; its death saves start again"}.`
+            : "";
+        const dies = dead ? ` ${name} dies: a moment of its own in the story.` : "";
+        lines.push(`${dying.fails.field} ${failures} → ${after}: damage at ${dying.value} ${dying.field}; a critical hit counts two, so add one more with change.${again}${dies}`);
     }
 
     // Reaching the value brings the condition (DIE-1), and what that breaks of what one keeps.
@@ -184,7 +192,8 @@ function isPlayerCharacter(page: Page): boolean
  */
 function isSaveRoll(dice: string, notation: string): boolean
 {
-    const compact = notation.toLowerCase().replace(/\s+/g, "");
+    // d20 is 1d20, as dice read it (playtest review of 17 October).
+    const compact = notation.toLowerCase().replace(/\s+/g, "").replace(/(^|[+-])d/g, "$11d");
     return compact.startsWith(dice) && compact.slice(dice.length).split(/(?=[+-])/).filter((term) => term !== "").every((term) => /^[+-]\d*d\d+$/.test(term));
 }
 
@@ -228,15 +237,18 @@ function savedFrom(root: string, context: Context, system: GameSystem | undefine
     if (roll.total >= save.atLeast) {
         const before = counted(save.succeeds.field);
         const after = Math.min(before + 1, save.succeeds.most);
-        setNumbers(root, context, world, name, { [save.succeeds.field]: after }, "death save");
+        const failures = counted(dying.fails.field);
+        const stable = after >= save.succeeds.most;
+        // The last success makes it stable: its failures gone, with the system's effect for it, as the effect given does (DIE-6).
+        setNumbers(root, context, world, name, { [save.succeeds.field]: after, ...(stable && failures > 0 ? { [dying.fails.field]: 0 } : {}) }, "death save");
 
-        // The last success makes it stable, with the system's effect for it (DIE-6).
-        if (after >= save.succeeds.most && save.stable !== undefined) {
+        if (stable && save.stable !== undefined) {
             addCondition(root, context, name, save.stable);
         }
 
-        const stable = after >= save.succeeds.most ? ` ${name} is stable: no more death saves, still ${dying.condition ?? "dying"} until it regains ${dying.field}.` : "";
-        return [`${name}'s death save: ${roll.total}, a success; ${save.succeeds.field} ${before} → ${after}.${stable}`];
+        const cleared = stable && failures > 0 ? `, ${dying.fails.field} ${failures} → 0` : "";
+        const said = stable ? ` ${name} is stable: no more death saves, still ${dying.condition ?? "dying"} until it regains ${dying.field}.` : "";
+        return [`${name}'s death save: ${roll.total}, a success; ${save.succeeds.field} ${before} → ${after}${cleared}.${said}`];
     }
 
     const before = counted(dying.fails.field);

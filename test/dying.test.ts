@@ -83,6 +83,26 @@ describe("the dying", () => {
         expect(await ok("roll", "1d20+2", "--who", "Ettore", "--why", "iniziativa")).not.toContain("death save");
     });
 
+    it("clears the failures at the third success, reads d20 as the save, and says death when damage or instant death ends one stable (review of 17 October)", async () => {
+        await ok("change", "Ettore", "hp", "--by=-10");
+        // d20 alone is the save's die, as 1d20.
+        const rolled = async (face: number): Promise<string> => (await runCommandLine(["roll", "d20", "--who", "Ettore"], { ...context, random: () => face })).output;
+        await rolled(4);
+        await rolled(12);
+        await rolled(12);
+        expect(await rolled(12)).toContain("Ettore's death save: 12, a success; death-successes 2 → 3, death-failures 1 → 0. Ettore is stable");
+        // Stable, then killed at once: Stable goes with it.
+        expect(await ok("change", "Ettore", "hp", "--by=-25")).toContain("death-failures 0 → 3, Stable ended. Read rules Instant Death.");
+        // Damage that brings the failures to their most says the death, not saves starting again.
+        await ok("change", "Ettore", "death-failures", "--to", "0");
+        await ok("change", "Ettore", "death-successes", "--to", "0");
+        await ok("effect", "add", "Ettore", "Stable");
+        await ok("change", "Ettore", "death-failures", "--to", "2");
+        expect(await ok("change", "Ettore", "hp", "--by=-1")).toContain(
+            "death-failures 2 → 3: damage at 0 hp; a critical hit counts two, so add one more with change. Ettore is no longer stable: death-successes 3 → 0, Stable ended. Ettore dies: a moment of its own in the story.",
+        );
+    });
+
     it("rolls a companion's death save as its turn starts, told as the mentor setting asks; three successes make it stable (DIE-5, D-460)", async () => {
         await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=3/12");
         await ok("change", "Lena", "hp", "--by=-5");
@@ -97,7 +117,7 @@ describe("the dying", () => {
         await ok("scene", "next");
         const fifteen = await runCommandLine(["scene", "next"], { ...context, random: () => 15 });
         expect(fifteen.output).toContain(
-            "Lena's death save: 15, a success; death-successes 2 → 3. Lena is stable: no more death saves, still Unconscious until it regains hp. "
+            "Lena's death save: 15, a success; death-successes 2 → 3, death-failures 1 → 0. Lena is stable: no more death saves, still Unconscious until it regains hp. "
                 + "Tell it in the story alone: never name the save or its roll.",
         );
         await ok("scene", "next");

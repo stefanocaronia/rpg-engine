@@ -105,6 +105,9 @@ describe("damage of a type", () => {
         expect((await runCommandLine(["change", "Ettore", "hp", "--by=-1d8-2", "--damage", "slashing"], context)).output).toBe(
             "by -1d8-2 reads two ways: put the roll in brackets after the minus, such as by -(1d8+2), which takes away 1d8+2. Nothing changed.",
         );
+        expect((await runCommandLine(["change", "Ettore", "hp", "--by=-(2d6)+3", "--damage", "slashing"], context)).output).toBe(
+            "by -(2d6)+3 does not read as a roll: put the whole roll in brackets after the sign, such as by -(2d6+3), which takes away 2d6+3. Nothing changed.",
+        );
         const hit = await ok("change", "Ettore", "hp", "--by=-(2d6+3)", "--damage", "slashing", "--why", "il morso del lupo");
         const total = Number(/^Rolled 2d6\+3 = (\d+) \[\d+, \d+\] \+ 3\.\n/.exec(hit)?.[1]);
         expect(hit).toContain(`Ettore: hp 20/20 → ${20 - Math.floor(total / 2)}/20: slashing ${total} halved, in damage-resistances: ${Math.floor(total / 2)}.`);

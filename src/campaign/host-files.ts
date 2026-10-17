@@ -48,10 +48,14 @@ export function refreshHostFiles(root: string, startLines: string, platform: str
     }
 }
 
-/** Writes the master's effort the player chose where each host reads it, as config sets it (D-462); the files that could not be written, by path. */
-export function writeEffortFiles(root: string, platform: string): string[]
+/**
+ * Writes the master's effort the player chose where each host reads it, as config sets it (D-462); with `cleared`, takes it away, and each app keeps its own.
+ * What could not be written, by file.
+ */
+export function writeEffortFiles(root: string, platform: string, cleared = false): string[]
 {
-    return [() => claudeSettingsFile(root), () => codexConfigFile(root, platform), () => geminiSettingsFile(root, platform)].flatMap((change) => {
+    const effort: Effort | undefined = cleared ? "app" : chosenEffort(root);
+    return [() => claudeSettingsFile(root, effort), () => codexConfigFile(root, platform, effort), () => geminiSettingsFile(root, platform, effort)].flatMap((change) => {
         try {
             const file = change();
 
@@ -71,7 +75,10 @@ function hostFiles(root: string, startLines: string, platform: string): (() => H
     return [() => agentsFile(root, startLines), () => claudeFile(root), () => claudeSettingsFile(root), () => codexConfigFile(root, platform), () => geminiSettingsFile(root, platform)];
 }
 
-/** The master's effort the player chose (D-462), for each host's file; undefined when unset, and each app keeps its own. */
+/** An effort for the hosts' files (D-462): one the player chose, or app, the player's choice to take it away. */
+type Effort = (typeof efforts)[number] | "app";
+
+/** The master's effort the player chose (D-462), for each host's file; undefined when unset, and what the files hold stays. */
 function chosenEffort(root: string): (typeof efforts)[number] | undefined
 {
     const effort = readTextSetting(root, "effort");
@@ -112,20 +119,24 @@ function claudeFile(root: string): HostFile | undefined
  * asks whether to use it, with "continue without" chosen, nor asks for each tool (D-412); a value already written there is the player's, and stays, but the
  * effort the player chose in the campaign (D-462).
  */
-function claudeSettingsFile(root: string): HostFile | undefined
+function claudeSettingsFile(root: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
 {
     const path = join(root, ".claude", "settings.json");
     const text = files().fresh(path);
     const settings = text === undefined ? {} : jsonObject(path, text, "Claude Code cannot be set up for the game in it");
     const permissions = isObject(settings.permissions) ? settings.permissions : {};
-    const effort = chosenEffort(root);
-    const wanted = {
+    const wanted: Record<string, unknown> = {
         ...settings,
         autoMemoryEnabled: settings.autoMemoryEnabled ?? false,
         enabledMcpjsonServers: settings.enabledMcpjsonServers ?? ["rpg"],
         permissions: { ...permissions, allow: permissions.allow ?? ["mcp__rpg"] },
-        ...(effort === undefined ? {} : { effortLevel: effort }),
+        ...(effort === undefined || effort === "app" ? {} : { effortLevel: effort }),
     };
+
+    if (effort === "app") {
+        delete wanted.effortLevel;
+    }
+
     return text !== undefined && JSON.stringify(wanted) === JSON.stringify(settings) ? undefined : { path, text: settingsText(wanted) };
 }
 
@@ -134,35 +145,38 @@ function claudeSettingsFile(root: string): HostFile | undefined
  * as long as the server does (D-412), and its memories off; a table already written is the player's, and stays. The effort the player chose (D-462) is a key
  * of the top, before the first table, where Codex reads it; under a table it would belong to that table, and be ignored.
  */
-function codexConfigFile(root: string, platform: string): HostFile | undefined
+function codexConfigFile(root: string, platform: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
 {
     const path = join(root, ".codex", "config.toml");
     const before = files().fresh(path) ?? "";
-    const text = withTopKey(before, "model_reasoning_effort", chosenEffort(root));
+    const text = effort === undefined ? before : withTopKey(before, "model_reasoning_effort", effort === "app" ? undefined : effort);
     const server = rpgServer(platform);
     const tables: [string, string][] = [
         ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"`],
         ["memories", "generate_memories = false\nuse_memories = false"],
     ];
-    const missing = tables.filter(([name]) => !text.split(/\r?\n/).some((line) => line.trim() === `[${name}]`));
+    // A table's header with a comment after it is that table all the same.
+    const missing = tables.filter(([name]) => !text.split(/\r?\n/).some((line) => line.replace(/#.*$/, "").trim() === `[${name}]`));
     const parts = [text.trimEnd(), ...missing.map(([name, body]) => `[${name}]\n${body}`)].filter((part) => part !== "");
     return missing.length === 0 && text === before ? undefined : { path, text: `${parts.join("\n\n")}\n` };
 }
 
-/** A TOML text with a key of its top set to a value, in place of the one there, before the first table; as it is when the value is undefined. */
+/**
+ * A TOML text with a key of its top set to a value, before the first table, in place of the one there, quoted or not; without a value, the key taken away.
+ * As it is when nothing changes.
+ */
 function withTopKey(text: string, key: string, value: string | undefined): string
 {
-    if (value === undefined) {
-        return text;
-    }
-
-    const lines = text.replace(/\r\n/g, "\n").split("\n");
-    const firstTable = lines.findIndex((line) => line.trim().startsWith("["));
-    const top = (firstTable === -1 ? lines : lines.slice(0, firstTable)).filter((line) => !new RegExp(`^\\s*${key}\\s*=`).test(line));
+    const plain = text.replace(/^﻿/, "").replace(/\r\n/g, "\n");
+    const lines = plain.split("\n");
+    // A table's header, not a line of an array that begins with a bracket.
+    const firstTable = lines.findIndex((line) => /^\s*\[\[?[A-Za-z0-9_."-]+\]\]?\s*(#.*)?$/.test(line));
+    const keyLine = new RegExp(`^\\s*"?${key}"?\\s*=`);
+    const top = (firstTable === -1 ? lines : lines.slice(0, firstTable)).filter((line) => !keyLine.test(line));
     const rest = firstTable === -1 ? [] : lines.slice(firstTable);
-    const head = [`${key} = ${JSON.stringify(value)}`, ...top].join("\n").trimEnd();
-    const joined = rest.length === 0 ? head : `${head}\n\n${rest.join("\n")}`;
-    return joined.trimEnd() === text.replace(/\r\n/g, "\n").trimEnd() ? text : joined;
+    const head = [...(value === undefined ? [] : [`${key} = ${JSON.stringify(value)}`]), ...top].join("\n").trimEnd();
+    const joined = [head, rest.join("\n")].filter((part) => part.trim() !== "").join("\n\n");
+    return joined.trimEnd() === plain.trimEnd() ? text : joined;
 }
 
 /**
@@ -170,7 +184,7 @@ function withTopKey(text: string, key: string, value: string | undefined): strin
  * the file it reads, and write_file and replace excluded, so that the master writes only through rpg's tools and keeps no memory in files; what the player
  * already wrote there stays, a trust they set included.
  */
-function geminiSettingsFile(root: string, platform: string): HostFile | undefined
+function geminiSettingsFile(root: string, platform: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
 {
     const path = join(root, ".gemini", "settings.json");
     const text = files().fresh(path);
@@ -184,36 +198,54 @@ function geminiSettingsFile(root: string, platform: string): HostFile | undefine
 
     const servers = isObject(settings.mcpServers) ? settings.mcpServers : {};
     const rpg = isObject(servers.rpg) ? servers.rpg : rpgServer(platform);
-    const effort = chosenEffort(root);
-    const wanted = {
+    const wanted: Record<string, unknown> = {
         ...settings,
         mcpServers: { ...servers, rpg: "trust" in rpg ? rpg : { ...rpg, trust: true } },
         context: withDefault("context", "fileName", ["AGENTS.md"]),
         tools: withDefault("tools", "exclude", ["write_file", "replace"]),
-        ...(effort === undefined ? {} : { modelConfigs: geminiThinking(settings.modelConfigs, effort) }),
     };
+    const configs = effort === undefined ? settings.modelConfigs : geminiThinking(settings.modelConfigs, effort);
+
+    if (configs === undefined) {
+        delete wanted.modelConfigs;
+    } else {
+        wanted.modelConfigs = configs;
+    }
+
     return text !== undefined && JSON.stringify(wanted) === JSON.stringify(settings) ? undefined : { path, text: settingsText(wanted) };
 }
 
-// How Gemini CLI thinks at each effort (D-462): a level for its third models, a budget for the 2.5 ones, whose default is the high one.
+// How Gemini CLI thinks at each effort (D-462): a level for its third models, a budget for the 2.5 ones, whose default is the high one. Its preview of 3 Pro
+// takes only low and high: medium there is high.
 const geminiThinkingOf = {
-    low: { level: "LOW", budget: 1024 },
-    medium: { level: "MEDIUM", budget: 4096 },
-    high: { level: "HIGH", budget: 8192 },
+    low: { level: "LOW", budget: 1024, preview: undefined },
+    medium: { level: "MEDIUM", budget: 4096, preview: "HIGH" },
+    high: { level: "HIGH", budget: 8192, preview: undefined },
 };
 
-/** Gemini CLI's model configs with the effort's thinking for its chat models, in place of the overrides for them; the player's other overrides stay. */
-function geminiThinking(configs: unknown, effort: (typeof efforts)[number]): Record<string, unknown>
+// The models whose overrides are the engine's, which an effort writes again or takes away.
+const geminiChatModels = ["chat-base-3", "chat-base-2.5", "gemini-3-pro-preview"];
+
+/**
+ * Gemini CLI's model configs with the effort's thinking for its chat models, in place of the overrides for them; with app, those taken away. The player's
+ * other overrides stay; undefined when nothing is left.
+ */
+function geminiThinking(configs: unknown, effort: Effort): Record<string, unknown> | undefined
 {
     const own = isObject(configs) ? configs : {};
-    const overrides = Array.isArray(own.customOverrides) ? own.customOverrides : [];
-    const ours = (override: unknown): boolean => isObject(override) && isObject(override.match) && ["chat-base-3", "chat-base-2.5"].includes(String(override.match.model));
-    const thinking = geminiThinkingOf[effort];
+    const overrides = (Array.isArray(own.customOverrides) ? own.customOverrides : []) as unknown[];
+    const ours = (override: unknown): boolean => isObject(override) && isObject(override.match) && geminiChatModels.includes(String(override.match.model));
     const override = (model: string, config: Record<string, unknown>): Record<string, unknown> => ({ match: { model }, modelConfig: { generateContentConfig: { thinkingConfig: config } } });
-    return {
-        ...own,
-        customOverrides: [...overrides.filter((one) => !ours(one)), override("chat-base-3", { thinkingLevel: thinking.level }), override("chat-base-2.5", { thinkingBudget: thinking.budget })],
-    };
+    const thinking = effort === "app" ? undefined : geminiThinkingOf[effort];
+    const written = thinking === undefined ? [] : [
+        override("chat-base-3", { thinkingLevel: thinking.level }),
+        override("chat-base-2.5", { thinkingBudget: thinking.budget }),
+        ...(thinking.preview === undefined ? [] : [override("gemini-3-pro-preview", { thinkingLevel: thinking.preview })]),
+    ];
+    const kept = [...overrides.filter((one) => !ours(one)), ...written];
+    const { customOverrides: _replaced, ...rest } = own;
+    const result = kept.length === 0 ? rest : { ...rest, customOverrides: kept };
+    return Object.keys(result).length === 0 ? undefined : result;
 }
 
 /** A host's settings file read as a JSON object; refused, with how to fix it, when it is not one. */

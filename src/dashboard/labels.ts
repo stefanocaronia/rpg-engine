@@ -275,6 +275,7 @@ export function valueLabel(value: string): string
         low: t("Low"),
         medium: t("Medium"),
         high: t("High"),
+        app: t("Your app decides"),
         "on request": t("On request"),
         "new elements": t("New places, quests and those you meet"),
         "made with the player": t("Made with the player"),

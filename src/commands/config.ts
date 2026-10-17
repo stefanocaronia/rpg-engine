@@ -120,7 +120,19 @@ export const config = defineCommand({
 
         // The master's effort is the player's to choose, in their terminal or on the dashboard, never the master's own (D-462).
         if (input.setting?.trim() === "effort" && input.value !== undefined && context.terminal !== true && context.actor !== "player") {
-            throw new Error("effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort low. Nothing changed.");
+            throw new Error(
+                "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort and low, medium, high or app. Nothing changed.",
+            );
+        }
+
+        // app, or none, takes the effort away: each app keeps its own again (D-462).
+        if (input.setting?.trim() === "effort" && ["app", "none"].includes(input.value?.trim().toLowerCase() ?? "")) {
+            if (clearSetting(root, "effort")) {
+                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: "effort", value: "app" }));
+            }
+
+            const unwritten = writeEffortFiles(root, context.platform, true);
+            return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code, Codex and Gemini CLI: from the next chat each keeps its own.", ...unwritten], part: "" };
         }
 
         const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
@@ -303,9 +315,10 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         means: { none: "no pictures", "on request": "those you ask for", "new elements": "one for each new place and quest, and for each one you meet" },
     },
     effort: {
-        about: "how much the master thinks before each answer, from the next chat; unset, your AI app decides",
-        values: efforts,
-        means: { low: "quicker answers, a little less thought", medium: "the usual balance", high: "slower answers, more thought" },
+        about: "how much the master thinks before each answer, from the next chat",
+        values: [...efforts, "app"],
+        means: { low: "quicker answers, a little less thought", medium: "the usual balance", high: "slower answers, more thought", app: "your AI app decides, as it does in any chat" },
+        unset: "app",
     },
     lines: { about: "what never appears in the game" },
     veils: { about: "what happens only off screen, without details" },
@@ -483,6 +496,11 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
 
     if (after.value === before.value) {
         return [];
+    }
+
+    // The master's effort is no rule of play: it changes how the next chat thinks, never this one (D-462).
+    if (after.name === "effort") {
+        return [`The player set how much you think to ${after.value ?? "their app's own"} on the dashboard: it applies from their next chat; nothing to do now.`];
     }
 
     // How the master writes comes with its parts as they are now, on a line of their own: the same for each of them the player changed (D-395).

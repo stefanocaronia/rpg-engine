@@ -828,7 +828,9 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     // 08); dying, the death save it starts with (DIE-5).
     const member = findPage(world, turns.turn);
     const dying = member === undefined ? "" : dyingTurn(root, context, system, member);
-    const uses = member === undefined || comparableText(String(member.fields.role ?? "")) !== "pc" || dying !== "" ? [] : turnUsesOf(system);
+    // Who cannot act, as one stable but still Unconscious, marks nothing.
+    const inactive = member !== undefined && effectsOf(member).some((effect) => sameName(system?.combat?.inactive ?? [], effect.name) !== undefined);
+    const uses = member === undefined || comparableText(String(member.fields.role ?? "")) !== "pc" || dying !== "" || inactive ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
     const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn)].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };

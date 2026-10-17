@@ -214,8 +214,13 @@ function diceBy(by: number | string | undefined, context: Context): { by: number
     const bracketed = /^\((.*)\)$/.exec(body)?.[1];
     const notation = bracketed ?? body;
 
-    if (!/\d*d(\d+|%|F)/i.test(notation) || !isDiceNotation(notation)) {
+    if (!/\d*d(\d+|%|F)/i.test(notation)) {
         return undefined;
+    }
+
+    // Dice that do not read as a roll, as -(2d6)+3 with brackets around a part: the whole roll goes in them.
+    if (!isDiceNotation(notation)) {
+        throw new Error(`by ${String(by)} does not read as a roll: put the whole roll in brackets after the sign, such as by -(2d6+3), which takes away 2d6+3. Nothing changed.`);
     }
 
     // -1d8-2 reads as 1d8+2 taken away or as 1d8-2 taken away: a minus before more than one term asks for brackets (playtest 08).
