@@ -128,7 +128,7 @@ describe("the dying", () => {
         await ok("scene", "order", "--order", "Ettore", "--order", "Lena");
         expect(await ok("scene", "next")).toContain(
             "Lena is dying: the engine rolled its death save, 1d20 = 4 [4]. Lena's death save: 4, a failure; death-failures 0 → 1. Tell it in a sentence, the roll in brackets. "
-                + "Read rules Death Saving Throws.",
+                + "To stabilize Lena, as Medicine or a spell does: effect add Stable, which sets the death saves itself. Read rules Death Saving Throws.",
         );
         await ok("config", "mentor", "off");
         await ok("change", "Lena", "death-successes", "--to", "2");
@@ -138,6 +138,7 @@ describe("the dying", () => {
             "Lena's death save: 15, a success; death-successes 2 → 3, death-failures 1 → 0. Lena is stable: no more death saves, still Unconscious until it regains hp. "
                 + "Tell it in the story alone: never name the save or its roll.",
         );
+        expect(fifteen.output).not.toContain("To stabilize");
         await ok("scene", "next");
         expect(await ok("scene", "next")).not.toContain("death save");
     });

@@ -57,6 +57,13 @@ export function stableName(counters: DyingCounter[] | undefined): string | undef
     return counters?.find((counter) => counter.side === "successes")?.full;
 }
 
+/** Of someone's effects, those their marks say beside their state: never the one that names it stable, as the 5e's Stable, said once by the state (playtest 11). */
+export function effectsBesideState<Effect extends { name: string; }>(effects: Effect[], counters: DyingCounter[] | undefined): Effect[]
+{
+    const stable = dyingState(counters) === "stable" ? stableName(counters)?.toLowerCase() : undefined;
+    return effects.filter((effect) => effect.name.toLowerCase() !== stable);
+}
+
 /** Where one of the party at their dying point stands (D-461): still dying, stable at the last success, dead at the last failure. */
 export type DyingState = "dying" | "stable" | "dead";
 

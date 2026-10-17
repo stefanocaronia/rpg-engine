@@ -831,9 +831,12 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const dying = turn.lines.join(" ");
     // Who cannot act, as one stable but still Unconscious, marks nothing.
     const inactive = member !== undefined && effectsOf(member).some((effect) => sameName(system?.combat?.inactive ?? [], effect.name) !== undefined);
-    const uses = member === undefined || comparableText(String(member.fields.role ?? "")) !== "pc" || dying !== "" || inactive ? [] : turnUsesOf(system);
+    const pc = member !== undefined && comparableText(String(member.fields.role ?? "")) === "pc";
+    const uses = !pc || dying !== "" || inactive ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
-    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn), turn.problem ?? ""].filter((line) => line !== "").join(" ");
+    // Notes written between the calls of another's turn reached the player (playtests 06, 08, 09, 11).
+    const quiet = pc ? "" : "Write nothing until the round is told: what you work out stays in your thinking.";
+    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn), turn.problem ?? "", quiet].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
 }
 

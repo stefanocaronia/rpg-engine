@@ -6,7 +6,7 @@ import { stableWord } from "./dying.tsx";
 import { effectLabel } from "./game-words.ts";
 import { statusIcons } from "./icons.tsx";
 import { conditionsPref, useChoice } from "./prefs.ts";
-import { type DyingState, dyingState } from "./save-outcome.ts";
+import { type DyingState, dyingState, effectsBesideState } from "./save-outcome.ts";
 import { t } from "./text.ts";
 
 /** What a token's pip reads of someone: what is on them, whether they act, are at 0 or dead. */
@@ -39,7 +39,7 @@ export interface StatusMark
 /** The marks of someone's state, the one that counts most first: dead, at 0, kept from acting, then the conditions, the last put on first; with `all`, their other effects after them. */
 export function statusMarks(status: TokenStatus, all = false): StatusMark[]
 {
-    const effects = status.effects ?? [];
+    const effects = effectsBesideState(status.effects ?? [], status.counters);
     // At 0 one of the party has a heartbeat, dying or stable; anyone else falls to the ground. The dead a red skull (D-461).
     const down: StatusMark = status.party === true
         ? { icon: statusIcons.down, label: status.dying === "stable" ? stableWord(status.counters) : t("Dying"), kind: "state", tone: status.dying === "stable" ? "stable" : "dying" }

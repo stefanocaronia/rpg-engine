@@ -85,6 +85,9 @@ export const fightGuidance = "Tell the turns in order, as story, each roll in br
 export const playerTurn = ", the player's character";
 export const playerStop = ": stop here and hand them the turn.";
 
+/** What another's turn reminds, at its end. */
+export const quietTurn = "Write nothing until the round is told: what you work out stays in your thinking.";
+
 /**
  * Puts a campaign that init made in play, as after its setup and session zero (MOD-1): the settings the master follows in play that are not yet there take
  * their usual values, and the tests of play open scenes at once.

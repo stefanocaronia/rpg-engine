@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, playerStop, playerTurn, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, playerStop, playerTurn, quietTurn, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -121,7 +121,7 @@ describe("the end of effects (EFF-8, EFF-9)", () => {
         await ok("scene", "leave", "--who", "Ennio");
         await ok("scene", "next");
         await ok("scene", "next");
-        expect(await ok("scene", "next")).toBe("Round 2 · now Annegato 1 (then Lena).\nEnded: Schivata on Ennio.");
+        expect(await ok("scene", "next")).toBe(`Round 2 · now Annegato 1 (then Lena).\n${quietTurn}\nEnded: Schivata on Ennio.`);
     });
 
     it("lets a copy that leaves take its effects with it", async () => {
@@ -215,7 +215,7 @@ describe("other ends (EFF-4, EFF-9)", () => {
         expect(await ok("effect", "add", "Lena", "Aiutata", "--until", "[[Lena]]")).toBe("Lena: Aiutata until round 1, Lena.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Bruno")).output).toBe("Bruno takes no turn in this scene. The order: Ennio, Annegato 1, Lena, Annegato 2.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Lena", "--for", "1 round")).output).toBe("Give for or until, not both.");
-        expect(await ok("scene", "next")).toBe("Round 1 · now Lena (then Annegato 2).\nEnded: Aiutata on Lena.");
+        expect(await ok("scene", "next")).toBe(`Round 1 · now Lena (then Annegato 2).\n${quietTurn}\nEnded: Aiutata on Lena.`);
     });
 
     it("lasts the scene, and ends with it; refused without a scene", async () => {
@@ -301,7 +301,7 @@ describe("the edges of the command, case by case", () => {
         expect(await ok("advance", "--by", "1d")).toBe("day 1, 18:00 → day 2, 18:00.");
         await combat();
         // The effect without an end is named on the turn that ends (EFF-15).
-        expect(await ok("scene", "next")).toBe("Round 1 · now Annegato 1 (then Lena).\nEnd of Ennio's turn: Maledizione. Read in their text what acts now.");
+        expect(await ok("scene", "next")).toBe(`Round 1 · now Annegato 1 (then Lena).\nEnd of Ennio's turn: Maledizione. Read in their text what acts now. ${quietTurn}`);
         await ok("effect", "add", "Lena", "Schivata", "--for", "1 round");
         expect((await rpg("validate")).output).toBe("No problems.");
         expect(await ok("scene", "close", "--summary", "Fatto.")).toBe(

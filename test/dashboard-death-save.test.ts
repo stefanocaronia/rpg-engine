@@ -1,6 +1,6 @@
 // The death save on the page (D-461): its outcome read from what the system's code wrote against what the question carried (DIE-4), never worked out by it.
 import { describe, expect, it } from "vitest";
-import { dyingState, saveOutcome } from "../src/dashboard/save-outcome.ts";
+import { dyingState, effectsBesideState, saveOutcome } from "../src/dashboard/save-outcome.ts";
 
 const save = {
     sides: 20,
@@ -41,5 +41,14 @@ describe("where one at their dying point stands (D-461)", () => {
         const counters = (successes: number, failures: number) => [{ value: failures, limit: 3, side: "failures" as const }, { value: successes, limit: 3, side: "successes" as const }];
         expect([dyingState(counters(1, 1)), dyingState(counters(3, 2)), dyingState(counters(2, 3)), dyingState(counters(3, 3)), dyingState(undefined)]).toEqual(["dying", "stable", "dead", "dead", undefined]);
         expect(dyingState([{ value: 5 }, { value: 9 }])).toBe("dying");
+    });
+});
+
+describe("the marks of one stable (playtest 11)", () => {
+    it("say the stable state once, never again by the effect that names it", () => {
+        const counters = [{ field: "death-successes", value: 3, limit: 3, side: "successes" as const, full: "Stable" }, { field: "death-failures", value: 0, limit: 3, side: "failures" as const }];
+        const effects = [{ name: "Stable", text: "Stable", condition: true as const }, { name: "Unconscious", text: "Unconscious", condition: true as const }];
+        expect(effectsBesideState(effects, counters).map((effect) => effect.name)).toEqual(["Unconscious"]);
+        expect(effectsBesideState(effects, [{ ...counters[0], value: 2 }, counters[1]])).toEqual(effects);
     });
 });
