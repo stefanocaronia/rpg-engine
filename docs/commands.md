@@ -236,7 +236,7 @@ Read-only: no. Positional parameters: `page`, `field`.
 
 - `page` (`string`, optional): page that holds the counter or the money; with a recipe, left out for the player character and the companions with them
 - `field` (`string`, optional): the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe
-- `by` (`integer | string`, optional): how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7
+- `by` (`integer | string`, optional): how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -2d6+3 takes away 2d6+3, a hit's damage once it hits, its dice doubled on a critical hit
 - `spend` (`integer | string`, optional): how much is paid or used up, or coins; refused when there is not enough
 - `to` (`integer | string`, optional): the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3
 - `why` (`string`, optional): what the change is for

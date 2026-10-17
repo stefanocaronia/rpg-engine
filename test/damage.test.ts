@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -97,6 +97,21 @@ describe("damage of a type", () => {
         expect((await runCommandLine(["change", "Scritto", "hp", "--by=-8", "--damage", "fire"], context)).output).toBe(
             'Scritto\'s damage-resistances is text, "fire, cold": write it as a list, such as damage-resistances: [acid, bludgeoning]. Nothing changed.',
         );
+    });
+
+    it("rolls dice given as by, its sign in front, and logs the roll for the player once the change is made (D-459)", async () => {
+        await ok("write", "Ettore", "--add", "damage-resistances=slashing");
+        const hit = await ok("change", "Ettore", "hp", "--by=-2d6+3", "--damage", "slashing", "--why", "il morso del lupo");
+        const total = Number(/^Rolled 2d6\+3 = (\d+) \[\d+, \d+\] \+ 3\.\n/.exec(hit)?.[1]);
+        expect(hit).toContain(`Ettore: hp 20/20 → ${20 - Math.floor(total / 2)}/20: slashing ${total} halved, in damage-resistances: ${Math.floor(total / 2)}.`);
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll").at(-1)).toMatchObject({ visibility: "public", data: { notation: "2d6+3", total, why: "il morso del lupo", physical: false } });
+        expect(await ok("change", "Ettore", "hp", "--by", "1d4+1")).toMatch(/^Rolled 1d4\+1 = \d+ \[\d\] \+ 1\.\nEttore: hp \d+\/20 → \d+\/20(: at max)?\.$/);
+        // A change refused rolls nothing the log keeps; coins are no dice.
+        const rolls = readLogFile(folder).filter((entry) => entry.type === "roll").length;
+        expect((await runCommandLine(["change", "Ettore", "hp", "--by=-1d6", "--damage", "fuoco"], context)).exitCode).toBe(1);
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll").length).toBe(rolls);
+        await ok("write", "Ettore", "--set", "money=10 gp");
+        expect(await ok("change", "Ettore", "money", "--by", "+2 gp")).toBe("Ettore: money 10 gp → 12 gp.");
     });
 
     it("refuses a type the system does not name, damage without by negative, and another counter (DMG-2)", async () => {

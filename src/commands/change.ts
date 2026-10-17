@@ -5,6 +5,7 @@ import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, valueNamed, withArticle } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
+import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../money/index.ts";
 import {
     baseChain,
@@ -95,7 +96,9 @@ export const change = defineCommand({
     input: z.object({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
         field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
-        by: z.union([wholeNumber, z.string()]).optional().describe("how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7"),
+        by: z.union([wholeNumber, z.string()]).optional().describe(
+            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -2d6+3 takes away 2d6+3, a hit's damage once it hits, its dice doubled on a critical hit",
+        ),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
         to: z.union([z.number().int(), z.string()]).optional().describe(
             "the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3",
@@ -120,48 +123,16 @@ export const change = defineCommand({
             throw new Error('Give the page and the field, such as page Bruna, field hp, by -7; or a recipe of the game system, such as recipe "long rest".');
         }
 
-        const holder = holderNamed(root, world, input.page);
-        const fields = withDeclaredStart(world, holder, effectiveFields(world, holder.page), input.field);
-        // A name that is no field of the page, nor one the system declares, may be a kind the page holds a stack of (STK-5).
-        const kind = holdsField(world, fields, input.field) ? undefined : kindNamed(world, holder.kind === "page" ? holder.page : undefined, input.field) ?? countable(world, input.field);
+        // Dice in by are rolled first and logged once the change is made, as a roll the player sees (D-459): one call for a roll and its damage.
+        const roll = diceBy(input.by, context);
+        const result = changeField(root, context, world, { ...input, page: input.page, field: input.field, ...(roll === undefined ? {} : { by: roll.by }) });
 
-        if (kind !== undefined && holder.kind === "copy") {
-            throw new Error(`${holder.page.name} is a copy in the scene, which holds no stacks: what it carries is the master's to tell. Nothing changed.`);
+        if (roll === undefined) {
+            return result;
         }
 
-        if (kind !== undefined) {
-            return { ...changeStack(root, context, world, holder.page, kind, input), problems: world.problems };
-        }
-
-        const { coins, problem } = campaignCoins(root, context);
-        const system = campaignSystem(root, context);
-        const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
-        const example = exampleValue(input, coins, clock, usuallyZero(system, input.field) || withoutMaximum(system, input.field));
-        const field = fieldName(world, holder, fields, input.field, example, coins, suggestedNumber(fields, { ...input, field: input.field }));
-        // A field the game system declares is never money (SYS-8).
-        const purse = coins === undefined || declaredKind(world, field) !== undefined ? undefined : readAmount(fields[field], coins);
-        const page = holder.page.name;
-
-        if (problem !== undefined && typeof fields[field] === "string" && /\d+\s*\p{L}/u.test(fields[field])) {
-            throw new Error(`${field} on ${page} looks like money, but the campaign's coins cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
-        }
-
-        const limits = { ...counterLimits(world, fields, field), hint: maximumHint(world, fields, field) };
-        const why = input.why?.trim() === "" ? undefined : input.why;
-
-        // Damage of a type, as the page's lists change it, its shield first (DMG-1).
-        if (input.damage !== undefined) {
-            const damage = typedDamage(system, { ...fields, ...(system?.damage === undefined ? {} : damageLists(world, holder.page, system.damage)) }, field, input, page);
-            const done = damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system);
-            return { ...withDying(root, context, system, { holder, field, fields }, done.outcome, done.lost), problems: world.problems };
-        }
-
-        const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
-        const outcome = applyStep(root, context, world, holder, field, step, why, system).outcome;
-        const by = typeof input.by === "number" ? input.by : Number(input.by);
-        const untyped = Number.isFinite(by) && by < 0 ? untypedDamageNote(world, system, holder.page, field) : "";
-        const told = untyped === "" ? outcome : { ...outcome, reminders: [...outcome.reminders, untyped] };
-        return { ...withDying(root, context, system, { holder, field, fields }, told, Number.isFinite(by) && by < 0 ? -by : 0), problems: world.problems };
+        appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }));
+        return { ...result, rolled: roll.data.result };
     },
 
     format(result)
@@ -175,10 +146,94 @@ export const change = defineCommand({
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
         // A rule's text, of several lines, comes after the lines of the change.
         const notes = stepNotes(result);
-        const lines = [summary, ...notes.filter((line) => !line.includes("\n"))];
+        const lines = [...("rolled" in result && result.rolled !== undefined ? [`Rolled ${result.rolled}.`] : []), summary, ...notes.filter((line) => !line.includes("\n"))];
         return [lines.join("\n"), ...notes.filter((line) => line.includes("\n")), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** Changes a counter, money or a stack on a page as the input asks: by, spend or to, a damage type with its lists, then what the change sets off. */
+function changeField(
+    root: string,
+    context: Context,
+    world: World,
+    input: { page: string; field: string; by?: number | string; spend?: number | string; to?: number | string; why?: string; damage?: string; },
+)
+{
+    const holder = holderNamed(root, world, input.page);
+    const fields = withDeclaredStart(world, holder, effectiveFields(world, holder.page), input.field);
+    // A name that is no field of the page, nor one the system declares, may be a kind the page holds a stack of (STK-5).
+    const kind = holdsField(world, fields, input.field) ? undefined : kindNamed(world, holder.kind === "page" ? holder.page : undefined, input.field) ?? countable(world, input.field);
+
+    if (kind !== undefined && holder.kind === "copy") {
+        throw new Error(`${holder.page.name} is a copy in the scene, which holds no stacks: what it carries is the master's to tell. Nothing changed.`);
+    }
+
+    if (kind !== undefined) {
+        return { ...changeStack(root, context, world, holder.page, kind, input), problems: world.problems };
+    }
+
+    const { coins, problem } = campaignCoins(root, context);
+    const system = campaignSystem(root, context);
+    const clock = holder.kind === "page" && isCounterField(holder.page.type, comparableText(input.field.trim()));
+    const example = exampleValue(input, coins, clock, usuallyZero(system, input.field) || withoutMaximum(system, input.field));
+    const field = fieldName(world, holder, fields, input.field, example, coins, suggestedNumber(fields, { ...input, field: input.field }));
+    // A field the game system declares is never money (SYS-8).
+    const purse = coins === undefined || declaredKind(world, field) !== undefined ? undefined : readAmount(fields[field], coins);
+    const page = holder.page.name;
+
+    if (problem !== undefined && typeof fields[field] === "string" && /\d+\s*\p{L}/u.test(fields[field])) {
+        throw new Error(`${field} on ${page} looks like money, but the campaign's coins cannot be read: ${problem.message} To fix it, ${problem.fix}. Nothing changed.`);
+    }
+
+    const limits = { ...counterLimits(world, fields, field), hint: maximumHint(world, fields, field) };
+    const why = input.why?.trim() === "" ? undefined : input.why;
+
+    // Damage of a type, as the page's lists change it, its shield first (DMG-1).
+    if (input.damage !== undefined) {
+        const damage = typedDamage(system, { ...fields, ...(system?.damage === undefined ? {} : damageLists(world, holder.page, system.damage)) }, field, input, page);
+        const done = damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system);
+        return { ...withDying(root, context, system, { holder, field, fields }, done.outcome, done.lost), problems: world.problems };
+    }
+
+    const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
+    const outcome = applyStep(root, context, world, holder, field, step, why, system).outcome;
+    const by = typeof input.by === "number" ? input.by : Number(input.by);
+    const untyped = Number.isFinite(by) && by < 0 ? untypedDamageNote(world, system, holder.page, field) : "";
+    const told = untyped === "" ? outcome : { ...outcome, reminders: [...outcome.reminders, untyped] };
+    return { ...withDying(root, context, system, { holder, field, fields }, told, Number.isFinite(by) && by < 0 ? -by : 0), problems: world.problems };
+}
+
+/**
+ * Dice given as by, such as -2d6+3, rolled with the engine's dice (D-459): the sign in front is the roll's, so -2d6+3 takes away 2d6+3, never less than 0;
+ * undefined for a number, coins or any other text.
+ */
+function diceBy(by: number | string | undefined, context: Context): { by: number; data: { notation: string; total: number; result: string; physical: false; dice: unknown; }; } | undefined
+{
+    const text = typeof by === "string" ? by.replace(/\s+/g, "") : "";
+    const notation = text.replace(/^[+-]/, "");
+
+    if (!/\d*d(\d+|%|F)/i.test(notation) || !isDiceNotation(notation)) {
+        return undefined;
+    }
+
+    const rolled = rollDice(notation, { random: context.random });
+    const total = Math.max(0, rolled.total);
+    return { by: text.startsWith("-") ? -total : total, data: { notation, total: rolled.total, result: rolled.text, physical: false, dice: rolled.dice } };
+}
+
+/** Whether a text reads as dice, such as 2d6+3: coins and names of fields do not. */
+function isDiceNotation(text: string): boolean
+{
+    try {
+        return parseNotation(text).some((term) => term.kind === "dice");
+    } catch (error) {
+        if (error instanceof DiceError) {
+            return false;
+        }
+
+        throw error;
+    }
+}
 
 /** The damage a page takes of the type given (DMG-1): only with by, negative, on the counter the system's damage takes from. */
 function typedDamage(system: GameSystem | undefined, fields: Record<string, unknown>, field: string, input: { by?: number | string; spend?: unknown; to?: unknown; damage?: string; }, page: string): DamageTaken
