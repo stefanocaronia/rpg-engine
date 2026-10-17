@@ -4,9 +4,13 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "../src/core/context.ts";
 import type { LogEntry } from "../src/core/log.ts";
+import { loadSystemCode } from "../src/systems/index.ts";
 
 /** The game systems the tests see: those of the package, 5e and ironsworn, the second kept out of the npm package until it is playable. */
 export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url))];
+
+/** The code of the systems the tests see, loaded once for each test file, as an entry of the engine does (D-448). */
+export const testSystemCode = await loadSystemCode(testSystemFolders);
 
 /** The extensions the tests see: ours of the repository, such as weather, and the test ones. */
 export const testExtensionFolders = [fileURLToPath(new URL("../extensions/", import.meta.url)), fileURLToPath(new URL("./extensions/", import.meta.url))];
@@ -31,6 +35,7 @@ export function testContext(folder: string): Context
         actor: "master",
         platform: "linux",
         systemFolders: testSystemFolders,
+        systemCode: testSystemCode,
         extensionFolders: testExtensionFolders,
     };
 }

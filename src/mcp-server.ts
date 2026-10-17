@@ -18,6 +18,7 @@ import { npmPackages } from "./extensions/index.ts";
 import { startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
 import { computerHelpers, hostPictures, hostWriter } from "./pictures/index.ts";
+import { loadSystemCode } from "./systems/index.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -111,6 +112,8 @@ export async function startMcpServer(): Promise<void>
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
     const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host), helpers: computerHelpers(), packages: npmPackages(packagesFolder()), host };
+    // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
+    context.systemCode = await loadSystemCode(context.systemFolders);
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const served: Context = { ...context, files: session };
     server = createMcpServer(served, process.env, dashboardOpener(served, session).open);

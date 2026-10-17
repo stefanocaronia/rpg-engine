@@ -26,6 +26,7 @@ import { findHiddenImage, findImage } from "./images/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { rollName } from "./systems/index.ts";
+import { loadSystemCode } from "./systems/index.ts";
 
 /**
  * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
@@ -161,6 +162,8 @@ const pageHtml = [
 /** Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free; undefined when none is. */
 export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
+    // The systems' code, when no MCP server loaded it first, as the dashboard served alone (D-448).
+    context.systemCode ??= await loadSystemCode(context.systemFolders);
     const root = withFiles(session, () => findCampaign(context.folder)) ?? context.folder;
 
     for (const port of options.ports ?? campaignPorts(root)) {

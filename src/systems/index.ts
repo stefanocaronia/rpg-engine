@@ -22,4 +22,5 @@ export {
     type TurnUse,
     withSettings,
 } from "./game-system.ts";
+export { type CounterChange, type LoadedSystemCode, loadSystemCode, type RollMade, type SystemEntry, type SystemGame, systemHasCode, type SystemHooks, type SystemPage, type SystemReader } from "./system-code.ts";
 export { type SystemWords, systemWords } from "./words.ts";

@@ -10,6 +10,7 @@ import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
+import { systemHasCode } from "./system-code.ts";
 
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";
@@ -420,6 +421,8 @@ export interface GameSystem
     name: string;
     /** The folder that holds its system.yaml and its pages. */
     folder: string;
+    /** Whether it brings code of its own, as its package.json says (D-448): the engine has loaded it, and calls its hooks. */
+    code: boolean;
     /** What it is, for messages: "the fifth edition, from the SRD 5.1". */
     title: string;
     /** The language it names its pages in, as a code such as en. */
@@ -777,6 +780,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
     return frozen({
         name,
         folder,
+        code: systemHasCode(folder),
         title: data.title,
         language: data.language,
         attribution: data.attribution,

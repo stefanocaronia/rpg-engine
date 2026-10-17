@@ -28,6 +28,11 @@ export interface Context
     signal?: AbortSignal;
     /** The folders that hold the installed game systems, nearest first (SYS-1). */
     systemFolders: string[];
+    /**
+     * The code of the systems that bring some, by name, loaded as the command line, the MCP server or the dashboard starts (D-448): its hooks, which the
+     * systems module types, or what kept it from loading.
+     */
+    systemCode?: Record<string, { hooks: object; } | { problem: string; }>;
     /** The folders that hold the installed extensions, each a package folder or npm's node_modules (D-436); none where missing. */
     extensionFolders?: string[];
     /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */

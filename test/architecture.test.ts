@@ -41,6 +41,7 @@ describe("architecture", () => {
             "core/version.ts",
             "instructions/index.ts",
             "systems/game-system.ts",
+            "systems/system-code.ts",
             "extensions/extension.ts",
             "extensions/packages.ts",
             "extensions/tarball.ts",

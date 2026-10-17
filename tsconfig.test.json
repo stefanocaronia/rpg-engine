@@ -7,5 +7,5 @@
       "rpg-engine": ["./src/index.ts"]
     }
   },
-  "include": ["src", "test", "systems/*/test", "extensions/*/src", "extensions/*/test"]
+  "include": ["src", "test", "systems/*/src", "systems/*/test", "extensions/*/src", "extensions/*/test"]
 }

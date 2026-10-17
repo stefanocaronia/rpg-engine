@@ -10,6 +10,7 @@ import { firstSentence } from "./core/text.ts";
 import { getVersion } from "./core/version.ts";
 import { npmPackages } from "./extensions/index.ts";
 import { hostPictures } from "./pictures/index.ts";
+import { loadSystemCode } from "./systems/index.ts";
 
 export interface CommandLineResult
 {
@@ -28,6 +29,8 @@ export async function runCommandLine(
     context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined), packages: npmPackages(packagesFolder()), terminal: true },
 ): Promise<CommandLineResult>
 {
+    // The systems' code, loaded once, before any command may call its hooks (D-448).
+    context.systemCode ??= await loadSystemCode(context.systemFolders);
     const [commandName, ...args] = argv;
 
     if (commandName === undefined || commandName === "--help" || commandName === "-h") {
