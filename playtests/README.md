@@ -22,6 +22,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `08-il-guado-del-mulino/` | the player's character down at a ford, with an ogre and wolves on a map, and the master at low effort |
 | `09-l-ossario-dei-pastori/` | a dark ossuary with a map: ghouls, a shadow and a dust mephit, a companion falling and stabilized, a cloak to attune and wear |
 | `10-il-mago-a-terra/` | the plateau of 07 with Tobia already at 0 among goblins, and a cloak worn but not attuned: a companion's death saves and Stable |
+| `11-senza-magia/` | a short scene on the plateau: Tobia at 0 with one failure, no healing left but Lucia's kit, archers on Corrado's unbound cloak: Stable, and the cloak asked about |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 

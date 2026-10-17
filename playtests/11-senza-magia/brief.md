@@ -1,0 +1,7 @@
+(Organizer: tonight's game goes on with a character you already know, as if you had played him for a few evenings with this master; you remember what follows, and nothing else of the world.
+
+Your character is Corrado, the soldier and field medic you had in mind: now a cleric of the Mother of Springs, 3rd level, in chain mail with mace and shield. Today his prayers are spent: he used every one of them this morning, at dawn, on the wounded of a goblin ambush, and the power of his goddess too. Until he sleeps he has only his mace, his cantrips (Fiamma sacra, Guida, Salvare i morenti) and his hands. His healer's kit is in his pack. Over his chain mail he wears a grey woollen cloak that Tecla, the headwoman of Roccalba, gave him: it was her father's, and Tobia says it is a cloak of protection. He put it on this morning, but has never sat with it long enough to bind himself to it.
+
+Three friends travel with him, and the master keeps their sheets: Gisella, a dwarf veteran with longsword and shield; Tobia, a young elf wizard; Lucia, called la Gazza, a halfling burglar with a silvered shortsword, who carries a healer's kit of her own and knows how to use it. Your potions went at dawn too.
+
+You were crossing the juniper plateau again, on the way down to Roccalba. Goblins again: arrows from the boulders. Tobia went down at the first volley, at the edge of the scree, and Lucia threw herself beside him. You are at the far side of the plateau, and the arrows are coming at you.)
