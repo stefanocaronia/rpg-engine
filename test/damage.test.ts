@@ -101,7 +101,11 @@ describe("damage of a type", () => {
 
     it("rolls dice given as by, its sign in front, and logs the roll for the player once the change is made (D-459)", async () => {
         await ok("write", "Ettore", "--add", "damage-resistances=slashing");
-        const hit = await ok("change", "Ettore", "hp", "--by=-2d6+3", "--damage", "slashing", "--why", "il morso del lupo");
+        // A minus before more than one term reads two ways: brackets say which (playtest 08).
+        expect((await runCommandLine(["change", "Ettore", "hp", "--by=-1d8-2", "--damage", "slashing"], context)).output).toBe(
+            "by -1d8-2 reads two ways: put the roll in brackets after the minus, such as by -(1d8+2), which takes away 1d8+2. Nothing changed.",
+        );
+        const hit = await ok("change", "Ettore", "hp", "--by=-(2d6+3)", "--damage", "slashing", "--why", "il morso del lupo");
         const total = Number(/^Rolled 2d6\+3 = (\d+) \[\d+, \d+\] \+ 3\.\n/.exec(hit)?.[1]);
         expect(hit).toContain(`Ettore: hp 20/20 → ${20 - Math.floor(total / 2)}/20: slashing ${total} halved, in damage-resistances: ${Math.floor(total / 2)}.`);
         expect(readLogFile(folder).filter((entry) => entry.type === "roll").at(-1)).toMatchObject({ visibility: "public", data: { notation: "2d6+3", total, why: "il morso del lupo", physical: false } });

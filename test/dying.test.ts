@@ -64,6 +64,25 @@ describe("the dying", () => {
         expect(await save(20)).toContain("\nEttore's death save: 20, the highest face: hp 0/20 → 1/20.\nEttore is no longer dying: Unconscious ended.");
     });
 
+    it("makes one stable with the system's effect, as a companion's Medicine does; damage there undoes it, hit points end it (DIE-6, playtest 08)", async () => {
+        await ok("change", "Ettore", "hp", "--by=-10");
+        await ok("change", "Ettore", "death-failures", "--by=1");
+        expect(await ok("effect", "add", "Ettore", "Stable")).toContain(
+            "Ettore is stable: death-successes 0 → 3, death-failures 1 → 0; no more death saves, still Unconscious until it regains hp.",
+        );
+        const clicking: Player = { choose: async () => 0 };
+        const asked = await ask.run(ask.input.parse({ question: "Ettore", options: "Tiro contro la morte 1d20", who: "Ettore" }), { ...context, player: clicking });
+        expect(ask.format(asked)).not.toContain("death save");
+        expect(await ok("change", "Ettore", "hp", "--by=-2")).toContain(
+            "death-failures 0 → 1: damage at 0 hp; a critical hit counts two, so add one more with change. Ettore is no longer stable: death-successes 3 → 0, Stable ended; its death saves start again.",
+        );
+        await ok("effect", "add", "Ettore", "Stable");
+        expect(await ok("change", "Ettore", "hp", "--by=5")).toContain("Ettore is no longer dying: death-successes 3 → 0, Unconscious ended, Stable ended.");
+        // Initiative read from the sheet is no death save, though a d20 (playtest 08).
+        await ok("change", "Ettore", "hp", "--to", "0");
+        expect(await ok("roll", "1d20+2", "--who", "Ettore", "--why", "iniziativa")).not.toContain("death save");
+    });
+
     it("rolls a companion's death save as its turn starts, told as the mentor setting asks; three successes make it stable (DIE-5, D-460)", async () => {
         await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=3/12");
         await ok("change", "Lena", "hp", "--by=-5");

@@ -134,7 +134,7 @@ describe("legendary creatures and what a creature does not take (D-454)", () => 
 
 describe("what the turn's reminder names (playtests 05 and 05b)", () => {
     it("names the uses that stand alone, leaving the attacks and Sneak Attack the master's to mark; marking the action tells to mark the attacks", async () => {
-        expect(await ok("scene", "next")).toContain("Mark with scene use what Vespa uses of the turn, as it happens: action, bonus action, reaction.");
+        expect(await ok("scene", "next")).not.toContain("Mark with scene use what Vespa");
         await ok("scene", "next");
         expect(await ok("scene", "next")).toContain("Mark with scene use what Ettore uses of the turn, as it happens: action, bonus action, reaction.");
         expect(await use("Ettore", "action")).toBe("Ettore: action used. If it is to attack, mark each attack instead, 2 for Ettore, which takes the action.");

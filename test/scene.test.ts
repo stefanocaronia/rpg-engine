@@ -83,12 +83,12 @@ describe("rpg scene", () => {
     it("runs the turns, changes a copy's counters with change, and closes with a summary that keeps the enemies' numbers hidden", async () => {
         await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato=2");
         expect(await ok("scene", "order", "--order", "lena", "--order", "Annegato 1", "--order", "[[Ennio]]", "--order", "Annegato 2")).toBe(
-            "Order: Lena · Annegato 1 · Ennio · Annegato 2.\nRound 1 · now Lena (then Annegato 1).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.",
+            "Order: Lena · Annegato 1 · Ennio · Annegato 2.\nRound 1 · now Lena (then Annegato 1).",
         );
         expect(await ok("scene", "next")).toBe("Round 1 · now Annegato 1 (then Ennio).");
         await ok("scene", "next");
         await ok("scene", "next");
-        expect(await ok("scene", "next")).toBe("Round 2 · now Lena (then Annegato 1).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.");
+        expect(await ok("scene", "next")).toBe("Round 2 · now Lena (then Annegato 1).");
 
         expect(await ok("change", "annegato 1", "hp", "--by=-9", "--why", "freccia")).toBe("Annegato 1: hp 22/22 → 13/22.");
         expect(await ok("change", "Annegato 2", "hp", "--by=-30")).toBe("Annegato 2: hp 22/22 → 0/22: at 0, 8 beyond.");
@@ -177,7 +177,7 @@ describe("rpg scene", () => {
         const opened = await scene.run(scene.input.parse({ action: "open", title: "Ossario", type: "combat", with: "Lena", creatures: { Lupo: 2 } }), context);
         expect(scene.format(opened)).toBe(`Scene opened: Ossario (combat) at Ossario. In it: Lena: hp 7/7; Lupo 1: hp 11/11; Lupo 2: hp 11/11.\n${fightGuidance}`);
         expect(scene.format(await scene.run(scene.input.parse({ action: "order", order: "Lena" }), context))).toBe(
-            "Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.",
+            "Order: Lena. No turn: Lupo 1, Lupo 2.\nRound 1 · now Lena.",
         );
         expect(scene.format(await scene.run(scene.input.parse({ action: "close", summary: "Fuggono.", creatures: {}, with: [] }), context))).toContain("Scene closed after 1 round: Ossario.");
     });
@@ -303,7 +303,7 @@ describe("rpg scene, after the second review", () => {
         await ok("scene", "order", "--order", "Ennio", "--order", "Annegato 1", "--order", "Lena", "--order", "Annegato 2");
         await ok("scene", "next");
         expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lena", "--order", "Annegato 2")).toBe(
-            "Order: Ennio · Lena · Annegato 2. No turn: Annegato 1.\nRound 1 · now Lena (then Annegato 2).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.",
+            "Order: Ennio · Lena · Annegato 2. No turn: Annegato 1.\nRound 1 · now Lena (then Annegato 2).",
         );
         await ok("scene", "next");
         expect(await ok("scene", "order", "--order", "Ennio", "--order", "Lena")).toBe(
@@ -367,7 +367,7 @@ describe("rpg scene leave, and the reminder in advance", () => {
         await ok("scene", "next");
         await ok("change", "Annegato 1", "hp", "--by=-18");
         expect(await ok("scene", "leave", "--who", "annegato 1")).toBe(
-            "Annegato 1 (hp 4/22 · uses 1/1) left the scene.\nRound 1 · now Lena (then Annegato 2).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.",
+            "Annegato 1 (hp 4/22 · uses 1/1) left the scene.\nRound 1 · now Lena (then Annegato 2).",
         );
         // Out of the copies, kept as it left for what overcoming it gives at the close (DAT-11).
         expect(stateFile()).not.toMatch(/ {2}copies:\n(?: {4}.*\n| {6}.*\n)* {4}Annegato 1:/);

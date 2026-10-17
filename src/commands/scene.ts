@@ -824,10 +824,11 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const system = campaignSystem(root, context);
     const scene = readOpenScene(root).scene;
     const effects = turnEffectsNote(world, scene, before.turn, turns.turn);
-    // A party member's turn reminds what to mark of it (TRN-1), or, dying, the death save it starts with (DIE-5).
+    // The player character's turn reminds what to mark of it, which the player sees on the dashboard (TRN-1); a companion's counts went right without (playtest
+    // 08); dying, the death save it starts with (DIE-5).
     const member = findPage(world, turns.turn);
     const dying = member === undefined ? "" : dyingTurn(root, context, system, member);
-    const uses = member === undefined || !isPartyMember(member) || dying !== "" ? [] : turnUsesOf(system);
+    const uses = member === undefined || comparableText(String(member.fields.role ?? "")) !== "pc" || dying !== "" ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
     const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn)].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };

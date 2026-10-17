@@ -97,7 +97,7 @@ export const change = defineCommand({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
         field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe(
-            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -2d6+3 takes away 2d6+3, a hit's damage once it hits, its dice doubled on a critical hit",
+            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone; a hit's damage once it hits, its dice doubled on a critical hit",
         ),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
         to: z.union([z.number().int(), z.string()]).optional().describe(
@@ -204,16 +204,23 @@ function changeField(
 }
 
 /**
- * Dice given as by, such as -2d6+3, rolled with the engine's dice (D-459): the sign in front is the roll's, so -2d6+3 takes away 2d6+3, never less than 0;
+ * Dice given as by, such as -(2d6+3), rolled with the engine's dice (D-459): the sign in front is the roll's, so -(2d6+3) takes away 2d6+3, never less than 0;
  * undefined for a number, coins or any other text.
  */
 function diceBy(by: number | string | undefined, context: Context): { by: number; data: { notation: string; total: number; result: string; physical: false; dice: unknown; }; } | undefined
 {
     const text = typeof by === "string" ? by.replace(/\s+/g, "") : "";
-    const notation = text.replace(/^[+-]/, "");
+    const body = text.replace(/^[+-]/, "");
+    const bracketed = /^\((.*)\)$/.exec(body)?.[1];
+    const notation = bracketed ?? body;
 
     if (!/\d*d(\d+|%|F)/i.test(notation) || !isDiceNotation(notation)) {
         return undefined;
+    }
+
+    // -1d8-2 reads as 1d8+2 taken away or as 1d8-2 taken away: a minus before more than one term asks for brackets (playtest 08).
+    if (text.startsWith("-") && bracketed === undefined && /[+-]/.test(notation)) {
+        throw new Error(`by ${String(by)} reads two ways: put the roll in brackets after the minus, such as by -(1d8+2), which takes away 1d8+2. Nothing changed.`);
     }
 
     const rolled = rollDice(notation, { random: context.random });

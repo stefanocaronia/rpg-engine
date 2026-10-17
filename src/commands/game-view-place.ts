@@ -399,14 +399,15 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
 
 /**
  * The panel of the dying of someone of the party (D-310 (7), D-314): at the value of the counter the system names, as hp 0, the counters it shows, with their
- * limits; none at any other value, nor for the dead.
+ * limits, or below it in a game whose counter goes below; none above it, nor for the dead.
  */
 export function dyingOf(world: World, system: GameSystem | undefined, page: Page): DyingCounter[] | undefined
 {
     const counters = pageCounters(world, page);
     const dying = system?.dying;
+    const value = readCounter(counters[dying?.field ?? ""])?.value;
 
-    if (dying === undefined || page.fields.status === "dead" || readCounter(counters[dying.field])?.value !== dying.value) {
+    if (dying === undefined || page.fields.status === "dead" || value === undefined || value > dying.value) {
         return undefined;
     }
 

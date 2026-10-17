@@ -215,7 +215,7 @@ describe("other ends (EFF-4, EFF-9)", () => {
         expect(await ok("effect", "add", "Lena", "Aiutata", "--until", "[[Lena]]")).toBe("Lena: Aiutata until round 1, Lena.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Bruno")).output).toBe("Bruno takes no turn in this scene. The order: Ennio, Annegato 1, Lena, Annegato 2.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Lena", "--for", "1 round")).output).toBe("Give for or until, not both.");
-        expect(await ok("scene", "next")).toBe("Round 1 · now Lena (then Annegato 2).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.\nEnded: Aiutata on Lena.");
+        expect(await ok("scene", "next")).toBe("Round 1 · now Lena (then Annegato 2).\nEnded: Aiutata on Lena.");
     });
 
     it("lasts the scene, and ends with it; refused without a scene", async () => {

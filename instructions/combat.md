@@ -2,4 +2,4 @@ Tell the turns in order, as story, each roll in brackets where it falls, the ord
 
 Whoever attacks the party turns hostile the moment they do, never before: mark them with `scene hostile`, and with `scene calm` the one who surrenders, flees or parleys. Mark it, never announce it: the story shows it.
 
-In a turn of a foe or a companion, send its calls together: its attacks in one message; in the next, the damage of those that hit, with `change` and its dice, such as by -2d6+3, then `scene next` and the attacks of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes what comes after.
+In a turn of a foe or a companion, send its calls together: its attacks in one message; in the next, the damage of those that hit, with `change` and its dice, such as by -(2d6+3), then `scene next` and the attacks of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes what comes after.

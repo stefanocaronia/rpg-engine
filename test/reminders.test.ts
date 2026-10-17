@@ -92,7 +92,7 @@ describe("the effects at a turn and at a rest (EFF-15)", () => {
             "Round 1 · now Ghoul 1 (then Viola).\nEnd of Corrado's turn: Eroismo (by Viola). Start of Ghoul 1's turn: In fiamme. Read in their text what acts now.",
         );
         expect(await ok("scene", "next")).toBe(
-            "Round 1 · now Viola (then Malco).\nEnd of Ghoul 1's turn: In fiamme. Read in their text what acts now. Mark with scene use what Viola uses of the turn, as it happens: action, bonus action, reaction.",
+            "Round 1 · now Viola (then Malco).\nEnd of Ghoul 1's turn: In fiamme. Read in their text what acts now.",
         );
         expect(await ok("scene", "next")).toBe("Round 1 · now Malco (then Corrado).");
     });

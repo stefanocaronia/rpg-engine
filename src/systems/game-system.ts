@@ -191,6 +191,7 @@ const systemSchema = z.object({
             succeeds: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-successes 3"'),
             highest: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 1"').optional(),
             lowest: z.number().int().min(1).optional(),
+            stable: z.string().min(1).optional(),
             rules: z.string().min(1).optional(),
         }).strict().optional(),
     }, {
@@ -317,9 +318,9 @@ export interface Dying
     rules?: string;
     /**
      * The save rolled at the start of a dying one's turn (DIE-4): its die, the total that succeeds, the counter of successes and how many make one stable, what
-     * the die's highest face brings back, how many failures its lowest counts, and the rules to read.
+     * the die's highest face brings back, how many failures its lowest counts, the effect of one made stable (DIE-6), and the rules to read.
      */
-    save?: { dice: string; atLeast: number; succeeds: { field: string; most: number; }; highest?: { field: string; value: number; }; lowest?: number; rules?: string; };
+    save?: { dice: string; atLeast: number; succeeds: { field: string; most: number; }; highest?: { field: string; value: number; }; lowest?: number; stable?: string; rules?: string; };
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -1197,6 +1198,7 @@ function dyingRule(data: NonNullable<z.infer<typeof systemSchema>["dying"]>): Dy
                 succeeds: { field: succeeds, most: Number(stable) },
                 ...(highest === undefined ? {} : { highest: { field: highest, value: Number(back) } }),
                 ...(save.lowest === undefined ? {} : { lowest: save.lowest }),
+                ...(save.stable === undefined ? {} : { stable: save.stable }),
                 ...(save.rules === undefined ? {} : { rules: save.rules }),
             },
         }),
