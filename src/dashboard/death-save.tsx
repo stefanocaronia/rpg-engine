@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import { CheckLabel } from "./asked.tsx";
 import type { Asked, Member, ShownRoll } from "./data.ts";
-import { HeartLine, type HeartLineKind, Marks } from "./dying.tsx";
+import { HeartLine, type HeartLineKind, Marks, Skull } from "./dying.tsx";
 import { Icon } from "./icons.tsx";
 import { checkOf, fieldLabel } from "./labels.ts";
 import { Token } from "./party.tsx";
@@ -77,7 +77,11 @@ export function DeathSaveCard({ asked, save, member, roll, rolling, onRoll, onCl
                 <p class="dying-word" role="status">
                     {outcome !== undefined && roll !== undefined && (
                         <>
-                            <span aria-hidden="true">{`${roll.total} · ${outcomeWords(outcome, highest)}`}</span>
+                            <span aria-hidden="true">
+                                {`${roll.total} · `}
+                                {outcome.kind === "dead" && <Skull />}
+                                {outcomeWords(outcome, highest)}
+                            </span>
                             <span class="visually-hidden">
                                 {`${roll.total}: ${outcomeWords(outcome, highest)}. ${t("Successes")}: ${t("{value} of {max}", { value: outcome.successes, max: save.successes.most })}; ${t("Failures")}: ${
                                     t("{value} of {max}", { value: outcome.failures, max: save.failures.most })

@@ -3974,9 +3974,10 @@ a {
     --size: 84px;
 }
 
-.token.dead {
-    filter: grayscale(1);
-    opacity: 0.6;
+/* The dead: the picture grey and faded, the pip of their state, a red skull, as it is (D-461). */
+.token.dead > :is(img, .initials) {
+    filter: grayscale(1) brightness(0.8);
+    opacity: 0.55;
 }
 
 /* A party member's token, with their class in its tooltip (D-409). */
@@ -8688,6 +8689,31 @@ svg.icon {
     --pip-ink: var(--float);
 }
 
+.token .status-pip.dead {
+    --pip-paper: var(--low);
+    --pip-ink: var(--float);
+}
+
+/* The skull is drawn filled, its eyes, nose and teeth holes in it, to read at 12 pixels. */
+.token .status-pip svg path.filled,
+.status-icon svg path.filled,
+.dying-skull path {
+    fill: currentColor;
+    stroke: none;
+    fill-rule: evenodd;
+}
+
+.token .status-pip svg path.filled {
+    fill: var(--pip-ink);
+}
+
+.dying-skull {
+    width: 1em;
+    height: 1em;
+    margin-inline-end: 0.3em;
+    vertical-align: -0.12em;
+}
+
 .status-icon.state.stable {
     background: color-mix(in srgb, var(--ally) 16%, transparent);
     color: var(--ally);
@@ -9378,6 +9404,32 @@ svg.icon {
 
 .lm-status.strong .lm-status-symbol {
     stroke: #f1e8d3;
+}
+
+/* At 0 on the map, as on the page (D-461), on the map's paper, the same in both themes: the heartbeat of one of the party red, green once stable; the dead a
+   red skull, filled; a foe down keeps the dark of the engine's states. */
+.lm-status:is(.dying, .dead) .lm-status-disc {
+    fill: #a73929;
+}
+
+.lm-status.stable .lm-status-disc {
+    fill: #1b6b45;
+}
+
+.lm-status-symbol.filled {
+    fill: #f1e8d3;
+    stroke: none;
+    fill-rule: evenodd;
+}
+
+/* A token at 0 greyed until its counter rises again; the dead greyer and faded. */
+.lm-token.fallen image {
+    filter: grayscale(0.85) brightness(0.85);
+}
+
+.lm-token.dead image {
+    filter: grayscale(1) brightness(0.8);
+    opacity: 0.55;
 }
 
 @media (hover: hover) {

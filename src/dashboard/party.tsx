@@ -103,8 +103,8 @@ export function Token({ member, large, hostile, side, status, number, dying }: {
     side?: Side;
     status?: TokenStatus;
     number?: string | undefined;
-    /** At their dying point, the picture greyed, as the panel of the dying says (D-461). */
-    dying?: DyingState | undefined;
+    /** At 0, the picture greyed, as the panel of the dying says, a foe down too; dead, greyer and faded (D-461). */
+    dying?: DyingState | "down" | undefined;
 })
 {
     const fallen = dying === "dead" || member.dead === true ? "dead" : dying === undefined ? "" : `fallen ${dying}`;

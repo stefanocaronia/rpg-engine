@@ -9,6 +9,7 @@ import { biomeLabel, biomes } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
+import { type DyingState, dyingState } from "./save-outcome.ts";
 import { Card } from "./sheet.tsx";
 import { StatusPip } from "./status.tsx";
 import { t } from "./text.ts";
@@ -52,7 +53,7 @@ export function SceneView(
                         <CharacterCard lead={lead} scene={turns} own={own} />
                     </div>
                 )}
-                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} />}
+                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} dying={dyingOf(party)} />}
                 {/* Who is here: under the map, who is where says it (D-325). */}
                 {turns === undefined && scene === undefined && place && place.here.length > 0 && place.map === undefined && (
                     <div key="groups" class="groups">
@@ -316,7 +317,7 @@ function People({ people }: { people: ShownPerson[]; })
                             // A kind of creature by its letter, as in Combat and on the map (D-331); anyone else unknown as a hood.
                             <span class={["token stranger", letterOf(person.name) === undefined ? "" : "numbered", person.hostile === true ? "hostile" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
                                 {letterOf(person.name) ?? <Icon name="stranger" />}
-                                <StatusPip status={person} />
+                                <StatusPip status={{ ...person, party: false }} />
                             </span>
                         )
                         : (
@@ -324,7 +325,8 @@ function People({ people }: { people: ShownPerson[]; })
                                 member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
                                 hostile={person.hostile === true}
                                 side={sideOf(person.role)}
-                                status={person}
+                                status={{ ...person, party: person.role !== "other" }}
+                                dying={person.dead === true ? "dead" : person.down === true ? "down" : undefined}
                                 number={person.stranger ? letterOf(person.name) : undefined}
                             />
                         )}
@@ -342,4 +344,13 @@ function People({ people }: { people: ShownPerson[]; })
 function letterOf(name: string): string | undefined
 {
     return /^creature ([A-Z])$/.exec(name)?.[1];
+}
+
+/** Where those of the party at their dying point stand, by name, for their tokens on the map (D-461). */
+function dyingOf(party: Member[]): Map<string, DyingState>
+{
+    return new Map(party.flatMap((member) => {
+        const state = dyingState(member.dying);
+        return state === undefined ? [] : [[member.name, state] as const];
+    }));
 }

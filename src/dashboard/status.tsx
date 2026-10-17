@@ -17,6 +17,8 @@ export interface TokenStatus
     dead?: boolean | undefined;
     /** One of the party at their dying point: dying, stable, or dead at the last failure (D-461). */
     dying?: DyingState | undefined;
+    /** One of the party, whose 0 is a heartbeat; anyone else's is their fall to the ground (D-461). */
+    party?: boolean | undefined;
 }
 
 /** A mark of someone's state: its drawing, its words, and whether it is one of the engine's states, a condition, or another effect (`other`: `.effect` is the chips of the effects). */
@@ -25,19 +27,24 @@ export interface StatusMark
     icon: string;
     label: string;
     kind: "state" | "condition" | "other";
-    /** Where one of the party at their dying point stands, which tints the mark as the panel of the dying (D-461). */
-    tone?: DyingState;
+    /** Where one at 0 stands, which tints the mark as the panel of the dying: dying, stable, dead, or a foe down (D-461). */
+    tone?: DyingState | "down";
+    /** A drawing filled, its holes empty, as the skull of the dead; else a line. */
+    filled?: true;
 }
 
 /** The marks of someone's state, the one that counts most first: dead, at 0, kept from acting, then the conditions, the last put on first; with `all`, their other effects after them. */
 export function statusMarks(status: TokenStatus, all = false): StatusMark[]
 {
     const effects = status.effects ?? [];
-    const tone = status.dying === undefined ? {} : { tone: status.dying };
+    // At 0 one of the party has a heartbeat, dying or stable; anyone else falls to the ground. The dead a red skull (D-461).
+    const down: StatusMark = status.party === true
+        ? { icon: statusIcons.down, label: status.dying === "stable" ? t("Stable") : t("Dying"), kind: "state", tone: status.dying === "stable" ? "stable" : "dying" }
+        : { icon: statusIcons.fallen, label: t("down"), kind: "state", tone: "down" };
     const states: StatusMark[] = status.dead === true || status.dying === "dead"
-        ? [{ icon: statusIcons.dead, label: t("dead"), kind: "state", ...tone }]
+        ? [{ icon: statusIcons.dead, label: t("dead"), kind: "state", tone: "dead", filled: true }]
         : [
-            ...(status.down === true ? [{ icon: statusIcons.down, label: status.dying === "stable" ? t("Stable") : t("down"), kind: "state" as const, ...tone }] : []),
+            ...(status.down === true ? [down] : []),
             ...(status.inactive === true ? [{ icon: statusIcons.inactive, label: t("Can't act"), kind: "state" as const }] : []),
         ];
     const conditions = effects.filter((effect) => effect.condition === true).reverse().map((effect): StatusMark => ({ icon: effect.icon ?? statusIcons.condition, label: effectLabel(effect), kind: "condition" }));
@@ -49,7 +56,7 @@ export function statusMarks(status: TokenStatus, all = false): StatusMark[]
 export function memberStatus(member: Member, scene?: ShownScene): TokenStatus
 {
     const inScene = scene?.fighters?.find((fighter) => fighter.name === member.name) ?? scene?.who.find((person) => person.name === member.name);
-    return { effects: member.effects, dead: member.dead, down: member.dying !== undefined, inactive: inScene?.inactive === true, dying: dyingState(member.dying) };
+    return { effects: member.effects, dead: member.dead, down: member.dying !== undefined, inactive: inScene?.inactive === true, dying: dyingState(member.dying), party: true };
 }
 
 /** The pip of someone's state on their token, its marks in its tooltip; none without a mark, or while the player keeps them off. */
@@ -66,7 +73,7 @@ export function StatusPip({ status }: { status: TokenStatus | undefined; })
     return (
         <span class={classes.filter((name) => name !== "").join(" ")} data-tip={marks.map((mark) => mark.label).join(", ")}>
             <svg viewBox="-3 -3 30 30" aria-hidden="true">
-                <path d={marks[0].icon} />
+                <path d={marks[0].icon} class={marks[0].filled ? "filled" : undefined} />
             </svg>
         </span>
     );
@@ -81,7 +88,7 @@ export function StatusIcons({ status }: { status: TokenStatus; })
             {marks.map((mark, index) => (
                 <span key={`${mark.label} ${index}`} class={["status-icon", mark.kind, mark.tone ?? ""].filter((name) => name !== "").join(" ")} role="img" aria-label={mark.label} data-tip={mark.label} tabIndex={0}>
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d={mark.icon} />
+                        <path d={mark.icon} class={mark.filled ? "filled" : undefined} />
                     </svg>
                 </span>
             ))}

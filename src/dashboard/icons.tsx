@@ -76,12 +76,15 @@ const iconPaths = {
 };
 
 /**
- * The engine's states on a token and in Combat (D-419), for any game: dead, at 0, kept from acting; and the mark of a condition the system draws no picture
- * for. The conditions' own pictures are the system's (`condition-icons`).
+ * The engine's states on a token and in Combat (D-419), for any game: dead, one of the party at 0 (a heartbeat), anyone else down (fallen to the ground), kept
+ * from acting; and the mark of a condition the system draws no picture for. The conditions' own pictures are the system's (`condition-icons`). The skull of
+ * the dead is filled, its eyes, nose and teeth holes, to read on a pip of 12 pixels (D-461).
  */
 export const statusIcons = {
-    dead: "M7 20V10.5a5 5 0 0 1 10 0V20 M4.5 20h15 M12 9v6 M9.8 11.2h4.4",
+    dead:
+        "M12 2.5C7 2.5 3.5 6 3.5 10.6c0 2.7 1.2 4.8 3.2 6.1V19.5c0 1.1.9 2 2 2h6.6c1.1 0 2-.9 2-2v-2.8c2-1.3 3.2-3.4 3.2-6.1C20.5 6 17 2.5 12 2.5Z M8.6 8.8a2.3 2.4 0 1 0 0 4.8a2.3 2.4 0 1 0 0-4.8Z M15.4 8.8a2.3 2.4 0 1 0 0 4.8a2.3 2.4 0 1 0 0-4.8Z M12 13.8l-1.4 2.5h2.8Z M10.1 18.4h1.1v3.4h-1.1Z M12.8 18.4h1.1v3.4h-1.1Z",
     down: "M3 12.5h4.5l2-5 3 10 2.5-5H21",
+    fallen: "M12 4v10.5 M7.5 10l4.5 4.5 4.5-4.5 M4.5 19.5h15",
     inactive: "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17Z M10 9v6 M14 9v6",
     condition: "M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8Z",
 };

@@ -2,6 +2,7 @@
 // the line of the heart and a word between them, tinted by where they stand: red dying, green stable, grey and flat dead. In the band of the sheet and the
 // card at hand a panel; in a row of the turns one line.
 import type { DyingCounter } from "./data.ts";
+import { statusIcons } from "./icons.tsx";
 import { type DyingState, dyingState } from "./save-outcome.ts";
 import { t } from "./text.ts";
 
@@ -15,10 +16,23 @@ export function DeathSaves({ dying, compact = false }: { dying: DyingCounter[]; 
             {successes !== undefined && <Marks kind="successes" value={successes.value} most={successes.limit ?? Math.max(successes.value, 1)} lit={0} />}
             <span class="death-middle">
                 <HeartLine line={stateLines[state]} />
-                <span class="death-word">{dyingWord(state)}</span>
+                <span class="death-word">
+                    {state === "dead" && <Skull />}
+                    {dyingWord(state)}
+                </span>
             </span>
             {failures !== undefined && <Marks kind="failures" value={failures.value} most={failures.limit ?? Math.max(failures.value, 1)} lit={0} />}
         </div>
+    );
+}
+
+/** The red skull of the dead, as on their token (D-461), before the word. */
+export function Skull()
+{
+    return (
+        <svg class="dying-skull" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={statusIcons.dead} />
+        </svg>
     );
 }
 

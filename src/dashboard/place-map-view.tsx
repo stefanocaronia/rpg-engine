@@ -12,6 +12,7 @@ import { strangerLabel } from "./labels.ts";
 import { type Side, sideIcons, sideOf } from "./party.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
 import { conditionsPref, tokenSymbolsPref, useChoice, usePref } from "./prefs.ts";
+import type { DyingState } from "./save-outcome.ts";
 import { statusMarks, statusWords } from "./status.tsx";
 import { t } from "./text.ts";
 
@@ -29,7 +30,14 @@ export interface Picking
     onSelect(square: string): void;
 }
 
-export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; place: string; acting?: string; picking?: Picking; })
+export function PlaceMap({ map, place, acting, picking, dying }: {
+    map: ShownGrid;
+    place: string;
+    acting?: string;
+    picking?: Picking;
+    /** Where those of the party at their dying point stand, by name, for their tokens (D-461). */
+    dying?: ReadonlyMap<string, DyingState>;
+})
 {
     const svg = useRef<SVGSVGElement>(null);
     const scale = useScale(svg);
@@ -161,7 +169,18 @@ export function PlaceMap({ map, place, acting, picking }: { map: ShownGrid; plac
                         {Array.from({ length: map.rows }, (_, row) => <text key={`r${row}`} x={left - 10} y={Y(row) + size / 2} text-anchor="end" dominant-baseline="middle">{row + 1}</text>)}
                     </g>
                     <g class="lm-tokens">
-                        {standing.map((one, index) => <Token key={index} one={one} index={index} acting={one.name === acting} hostile={one.hostile === true} x={middle(one)[0]} y={middle(one)[1]} scale={scale} />)}
+                        {standing.map((one, index) => (
+                            <Token
+                                key={index}
+                                one={{ ...one, party: one.role !== "other", dying: dying?.get(one.name) }}
+                                index={index}
+                                acting={one.name === acting}
+                                hostile={one.hostile === true}
+                                x={middle(one)[0]}
+                                y={middle(one)[1]}
+                                scale={scale}
+                            />
+                        ))}
                     </g>
                     {picking !== undefined && (
                         <g class="lm-picks">
@@ -682,7 +701,7 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
  * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414); anyone the pip of
  * their state at the lower right, and its words in the token's title (D-419).
  */
-function Token({ one, index, acting, hostile, x, y, scale }: { one: ShownGrid["at"][number]; index: number; acting: boolean; hostile: boolean; x: number; y: number; scale: number; })
+function Token({ one, index, acting, hostile, x, y, scale }: { one: Standing; index: number; acting: boolean; hostile: boolean; x: number; y: number; scale: number; })
 {
     const [symbols] = usePref(tokenSymbolsPref);
     const side = one.side ?? 1;
@@ -699,7 +718,7 @@ function Token({ one, index, acting, hostile, x, y, scale }: { one: ShownGrid["a
     const pipPaper = pip === "you" ? 3 : 1.5;
     return (
         // Whoever acts grows from the middle of their square, which stays where it is seen from above.
-        <g class={`lm-token ${one.role}${acting ? " acting" : ""}`} style={acting ? { transformOrigin: `${x}px ${y}px` } : undefined}>
+        <g class={["lm-token", one.role, acting ? "acting" : "", fallenOf(one)].filter((name) => name !== "").join(" ")} style={acting ? { transformOrigin: `${x}px ${y}px` } : undefined}>
             <title>{[`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`, ...statusWords(one)].join(" · ")}</title>
             {hostile && (
                 <>
@@ -734,6 +753,15 @@ function Token({ one, index, acting, hostile, x, y, scale }: { one: ShownGrid["a
             <MapStatus one={one} x={x + r * 0.56 - inward(statusRadius, 1.5)} y={y + r * 0.56 - inward(statusRadius, 1.5)} grow={below} />
         </g>
     );
+}
+
+/** Someone on the map, with whether they are of the party and, at their dying point, where they stand (D-461). */
+type Standing = ShownGrid["at"][number] & { party?: boolean; dying?: DyingState | undefined; };
+
+/** At 0 a token greyed, until its counter rises again; dead, greyer and faded, as in the party's strip (D-461). */
+function fallenOf(one: Standing): string
+{
+    return one.dead === true || one.dying === "dead" ? "dead" : one.down === true ? "fallen" : "";
 }
 
 // The marks on a token as on one of 40 pixels on the page: the side's pip of 17, the state's of 12, a number's coin 13 high.
@@ -782,7 +810,7 @@ function MapNumber({ number, x, y, grow }: { number: string; x: number; y: numbe
  * The pip of someone's state on the map (D-419): as on the page, smaller than the side's, a second coin behind when there are more; the same size for any
  * creature, larger by `grow` on a map shown small.
  */
-function MapStatus({ one, x, y, grow }: { one: ShownGrid["at"][number]; x: number; y: number; grow: number; })
+function MapStatus({ one, x, y, grow }: { one: Standing; x: number; y: number; grow: number; })
 {
     const [shown] = useChoice(conditionsPref);
     const marks = statusMarks(one);
@@ -799,7 +827,7 @@ function MapStatus({ one, x, y, grow }: { one: ShownGrid["at"][number]; x: numbe
     const behind = { x: radius * 0.3, y: radius * 0.85 };
     const strong = marks[0].kind === "state";
     return (
-        <g class={["lm-status", strong ? "strong" : "", shown === "hover" ? "on-hover" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
+        <g class={["lm-status", strong ? "strong" : "", marks[0].tone ?? "", shown === "hover" ? "on-hover" : ""].filter((name) => name !== "").join(" ")} aria-hidden="true">
             {marks.length > 1 && (
                 <>
                     <circle class="lm-pip-paper" cx={x + behind.x} cy={y - behind.y} r={radius + paper} />
@@ -808,7 +836,7 @@ function MapStatus({ one, x, y, grow }: { one: ShownGrid["at"][number]; x: numbe
             )}
             <circle class="lm-pip-paper" cx={x} cy={y} r={radius + paper} />
             <circle class="lm-status-disc" cx={x} cy={y} r={radius} />
-            <path class="lm-status-symbol" d={marks[0].icon} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
+            <path class={marks[0].filled ? "lm-status-symbol filled" : "lm-status-symbol"} d={marks[0].icon} transform={`translate(${x - 12 * scale} ${y - 12 * scale}) scale(${scale})`} />
         </g>
     );
 }
