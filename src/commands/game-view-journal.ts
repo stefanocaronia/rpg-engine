@@ -75,7 +75,8 @@ export type StoryFact =
 /** A fact the journal tells: of the story, never of the game (D-369); the saves made have their own section, the mode is the setup's, the rolls have their column. */
 export type JournalFact = Extract<StoryFact, { kind: (typeof storyKinds)[number]; }>;
 
-const storyKinds = ["counter", "time", "moved", "learned", "effect", "effect-ended", "back", "quest"] as const;
+// The story tells what happened at its hour; time passing is no fact of it, the hours of the facts show it.
+const storyKinds = ["counter", "moved", "learned", "effect", "effect-ended", "back", "quest"] as const;
 
 const statuses = ["open", "done", "failed"] as const;
 
@@ -208,14 +209,6 @@ function chaptersOf(entries: LogEntry[], fact: (entry: LogEntry) => StoryFact | 
 
         if (holder !== scene && holder !== between) {
             chapters.push(holder);
-        }
-
-        // Time that passes again right after time passed is one stretch: from the first to the last.
-        const last = holder.facts.at(-1);
-
-        if (told.kind === "time" && last?.kind === "time") {
-            holder.facts[holder.facts.length - 1] = { ...told, ...(last.from === undefined ? {} : { from: last.from }) };
-            continue;
         }
 
         holder.facts.push(told);

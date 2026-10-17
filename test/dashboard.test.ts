@@ -395,7 +395,7 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
         // A quest taken is a fact of the story (D-369).
         await ok("write", "Il guado", "--type", "quest", "--set", "status=open");
         await ok("scene", "close", "--summary", "Ettore attraversa il guado, ferito.");
-        // Two advances in a row tell one stretch of time.
+        // Time passing is no fact of the story: the hours of the facts show it.
         await ok("advance", "--by", "30m");
         await ok("advance", "--by", "30m");
         await ok("scene", "open", "--title", "Alla torre", "--type", "exploration");
@@ -421,14 +421,12 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             ],
         });
         expect(chapters[1].facts).toEqual([
-            { kind: "time", from: "day 1, 18:00", to: "day 1, 19:00", date: "day 1, 19:00" },
             { kind: "effect-ended", who: "Ettore", effect: "Benedizione", date: "day 1, 19:00" },
         ]);
         // The page writes them in its language (D-403): English here.
         expect([...chapters[2].facts, ...chapters[1].facts].map((fact: JournalFact) => factLabel(fact))).toEqual([
             "Ettore: HP 20/24 → 18/24",
             "Quest taken: Il guado",
-            "Time passes: day 1, 18:00 → day 1, 19:00",
             "Ettore: Benedizione ended",
         ]);
         // A capital only to someone and a creature, never to a name that has none.
