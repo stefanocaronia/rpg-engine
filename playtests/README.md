@@ -15,6 +15,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `04-tre-settimane/` | prepared too: three weeks of downtime with two clocks at different paces |
 | `03-corvara/` | a prepared scenario of a six-day journey by road, river and heath, then three weeks of downtime |
 | `05-vena-bianca/` | prepared: a party of four classes at 5th level, a day's road to a mine, two fights, the rests and the village: what the engine counts on the sheet |
+| `05b-pozzo-allagato/` | the world of 05 from the mine's yard, with harder fights: two ghouls, a wyrmling whose breath recharges, a cloak to attune to |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
