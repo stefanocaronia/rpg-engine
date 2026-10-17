@@ -230,6 +230,9 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         const opened = await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=2");
         expect(opened).toContain("Locanda has a map: put Bandit 1, Bandit 2 on it, one at a time, such as page Bandit 1, at D2.");
         await ok("move", "Bandit 1", "--at", "I2");
+        // Whose turn begins off the map is put on it first (playtest 07, where the wolves never stood anywhere).
+        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 2", "--order", "Bran", "--order", "Bandit 1");
+        expect(await ok("scene", "next")).toContain("Bandit 2 is not on the map of Locanda: put it on its square with move Bandit 2 --at, such as E4, before telling its turn.");
         await ok("move", "Bandit 2", "--at", "I3");
         expect(innPage()).toContain("Bandit 1 I2");
         expect(await refused("move", "Bandit 1", "--to", "Guado", "--at", "D3")).toContain("Bandit 1 is a copy in the open scene");

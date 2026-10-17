@@ -185,9 +185,18 @@ const systemSchema = z.object({
         condition: z.string().min(1).optional(),
         fails: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-failures 3"').optional(),
         rules: z.string().min(1).optional(),
+        save: z.object({
+            dice: z.string().regex(/^1d\d+$/, 'write it as "1d20"'),
+            "at-least": z.number().int(),
+            succeeds: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-successes 3"'),
+            highest: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 1"').optional(),
+            lowest: z.number().int().min(1).optional(),
+            rules: z.string().min(1).optional(),
+        }).strict().optional(),
     }, {
-        error: "write it as when the dying begins, their counters, the condition they take, the counter of failures and how many kill, and the rules of instant death, "
-            + "such as {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death}",
+        error: "write it as when the dying begins, their counters, the condition they take, the counter of failures and how many kill, the rules of instant death, "
+            + "and the save they roll, such as {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death, "
+            + "save: {dice: 1d20, at-least: 10, succeeds: death-successes 3, highest: hp 1, lowest: 2, rules: Death Saving Throws}}",
     }).strict().optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
@@ -306,6 +315,11 @@ export interface Dying
     fails?: { field: string; most: number; };
     /** The title of the rule of instant death (DIE-2). */
     rules?: string;
+    /**
+     * The save rolled at the start of a dying one's turn (DIE-4): its die, the total that succeeds, the counter of successes and how many make one stable, what
+     * the die's highest face brings back, how many failures its lowest counts, and the rules to read.
+     */
+    save?: { dice: string; atLeast: number; succeeds: { field: string; most: number; }; highest?: { field: string; value: number; }; lowest?: number; rules?: string; };
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -665,6 +679,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.damage === undefined ? [] : [{ where: "damage.counter", field: data.damage.counter }]),
         ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
         ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show, ...(data.dying.fails === undefined ? [] : [data.dying.fails.split(" ")[0]])].map((field) => ({ where: "dying", field }))),
+        ...[data.dying?.save?.succeeds, data.dying?.save?.highest].filter((given) => given !== undefined).map((given) => ({ where: "dying.save", field: given.split(" ")[0] })),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
 
@@ -1160,11 +1175,14 @@ function systemFormulas(data: FormulaData, name: string, path: string): SystemFo
     }
 }
 
-/** The dying as the system writes them: "hp 0" and "death-failures 3" read as a field and a number (DIE-1, DIE-2). */
-function dyingRule(data: { at: string; show: string[]; condition?: string; fails?: string; rules?: string; }): Dying
+/** The dying as the system writes them: "hp 0" and "death-failures 3" read as a field and a number (DIE-1, DIE-2, DIE-4). */
+function dyingRule(data: NonNullable<z.infer<typeof systemSchema>["dying"]>): Dying
 {
     const [field, value] = data.at.split(" ");
     const [fails, most] = data.fails?.split(" ") ?? [];
+    const save = data.save;
+    const [succeeds, stable] = save?.succeeds.split(" ") ?? [];
+    const [highest, back] = save?.highest?.split(" ") ?? [];
     return {
         field,
         value: Number(value),
@@ -1172,5 +1190,15 @@ function dyingRule(data: { at: string; show: string[]; condition?: string; fails
         ...(data.condition === undefined ? {} : { condition: data.condition }),
         ...(fails === undefined ? {} : { fails: { field: fails, most: Number(most) } }),
         ...(data.rules === undefined ? {} : { rules: data.rules }),
+        ...(save === undefined ? {} : {
+            save: {
+                dice: save.dice,
+                atLeast: save["at-least"],
+                succeeds: { field: succeeds, most: Number(stable) },
+                ...(highest === undefined ? {} : { highest: { field: highest, value: Number(back) } }),
+                ...(save.lowest === undefined ? {} : { lowest: save.lowest }),
+                ...(save.rules === undefined ? {} : { rules: save.rules }),
+            },
+        }),
     };
 }

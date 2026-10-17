@@ -7,6 +7,7 @@ import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
+import { deathSave } from "./game-dying.ts";
 import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -34,7 +35,7 @@ interface Option
 type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical"; asked: string; };
 
 type AskResult =
-    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; }
+    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; dying?: string[]; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "said"; words: string; }
@@ -118,7 +119,9 @@ export const ask = defineCommand({
     {
         switch (result.kind) {
             case "roll":
-                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.`;
+                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.${
+                    (result.dying ?? []).map((line) => `\n${line}`).join("")
+                }`;
             case "changed":
                 return "The player changed their mind: no roll. Ask what they do instead, and stop.";
             case "chose":
@@ -177,7 +180,9 @@ async function rollChosen(root: string, context: Context, question: string, chec
     const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, why: `${check.label}: ${question}`, check: check.label, who, physical: false, dice: diceRoll.dice };
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
-    return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total };
+    // A check of a dying character is their death save, which the engine writes (DIE-4, D-460).
+    const dying = deathSave(root, context, campaignSystem(root, context), who, diceRoll);
+    return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, ...(dying.length === 0 ? {} : { dying }) };
 }
 
 /**

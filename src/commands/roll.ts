@@ -10,6 +10,7 @@ import { createProof, DiceError, type DiceRoll, fingerprint, rollDice, sha256 } 
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { deathSave } from "./game-dying.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -110,7 +111,9 @@ export const roll = defineCommand({
         // The page first: a page that cannot be written leaves no line in the log saying it was (KEP-2, KEP-3).
         const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         appendLogEntry(root, entry);
-        const note = roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
+        // A roll of a dying party member is their death save, which the engine writes (DIE-4, D-460).
+        const dying = input.who === undefined ? [] : deathSave(root, context, system, input.who, diceRoll);
+        const note = dying.length > 0 ? dying.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
         return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
     },
 

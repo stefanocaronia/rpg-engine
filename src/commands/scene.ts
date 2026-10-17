@@ -12,9 +12,10 @@ import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { dyingTurn } from "./game-dying.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
-import { clearCopies, offMapNote } from "./game-grids.ts";
+import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
 import { metPictureNote, picturesNote } from "./game-images.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
@@ -820,13 +821,28 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     }
 
     const world = campaignWorld(root, context);
-    const effects = turnEffectsNote(world, readOpenScene(root).scene, before.turn, turns.turn);
-    // A party member's turn reminds what to mark of it (TRN-1).
+    const system = campaignSystem(root, context);
+    const scene = readOpenScene(root).scene;
+    const effects = turnEffectsNote(world, scene, before.turn, turns.turn);
+    // A party member's turn reminds what to mark of it (TRN-1), or, dying, the death save it starts with (DIE-5).
     const member = findPage(world, turns.turn);
-    const uses = member === undefined || !isPartyMember(member) ? [] : turnUsesOf(campaignSystem(root, context));
+    const dying = member === undefined ? "" : dyingTurn(root, context, system, member);
+    const uses = member === undefined || !isPartyMember(member) || dying !== "" ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
-    const acting = [effects, mark].filter((line) => line !== "").join(" ");
+    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn)].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
+}
+
+/** Who acts and stands on no square of the scene's map, when its place has one (GRD-3, playtest 07): where it stands decides reach, cover and the way. */
+function offTheMap(world: World, scene: Scene | undefined, name: string): string
+{
+    const place = scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+
+    if (place === undefined || placeGrid(place) === undefined || standing(world, place, scene).some((one) => sameName([one.name], name) !== undefined && one.square !== undefined)) {
+        return "";
+    }
+
+    return `${name} is not on the map of ${place.name}: put it on its square with move ${name} --at, such as E4, before telling its turn.`;
 }
 
 /** "Marked hostile: Annegato 1. Hostile now: Annegato 1, Annegato 2." (D-415). */

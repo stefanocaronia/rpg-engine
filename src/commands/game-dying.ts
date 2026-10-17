@@ -1,11 +1,13 @@
-// The dying (D-454, DIE-1–DIE-3): at 0 hit points a party member takes the system's condition, damage there counts a failure, damage past it as large as the
+// The dying (D-454, D-460, DIE-1–DIE-5): at 0 hit points a party member takes the system's condition and rolls its death saves, damage there counts a failure, damage past it as large as the
 // maximum kills at once, and hit points regained end it all.
+import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
-import { readCounter } from "../counters/index.ts";
+import { formatCounter, readCounter } from "../counters/index.ts";
+import { rollDice, type ThrownDie } from "../dice/index.ts";
 import { withEffect } from "../effects/index.ts";
-import { findPage, type World, writePage } from "../pages/index.ts";
+import { findPage, isPartyMember, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { saveEffects } from "./game-effects.ts";
@@ -76,6 +78,119 @@ export function dyingAfter(root: string, context: Context, system: GameSystem, n
     }
 
     return lines;
+}
+
+/** Whether a party member is dying now (DIE-4): its counter at the dying value, neither stable by its successes nor dead by its failures. */
+export function isDying(world: World, system: GameSystem | undefined, page: Page): boolean
+{
+    const dying = system?.dying;
+
+    if (dying?.save === undefined || dying.fails === undefined || !isPartyMember(page)) {
+        return false;
+    }
+
+    const fields = effectiveFields(world, page);
+    const counter = readCounter(valueNamed(fields, dying.field));
+    const counted = (field: string): number => readCounter(valueNamed(fields, field))?.value ?? 0;
+    return counter !== undefined && counter.value <= dying.value && counted(dying.save.succeeds.field) < dying.save.succeeds.most && counted(dying.fails.field) < dying.fails.most;
+}
+
+/**
+ * The start of a dying party member's turn (DIE-5, D-460): the player character's death save is the player's moment, rolled with a button; anyone else's the
+ * engine rolls now and writes, for the master to tell as the mentor setting asks. What the master reads; nothing for one who is not dying.
+ */
+export function dyingTurn(root: string, context: Context, system: GameSystem | undefined, page: Page): string
+{
+    const save = system?.dying?.save;
+
+    if (save === undefined || !isDying(campaignWorld(root, context), system, page)) {
+        return "";
+    }
+
+    const rules = save.rules === undefined ? "" : ` Read rules ${save.rules}.`;
+
+    if (isPlayerCharacter(page)) {
+        return `${page.name} is dying: the turn starts with their death save, the player's to roll: ask them, with ask, a check of ${save.dice}; the engine writes its outcome.${rules}`;
+    }
+
+    const rolled = rollDice(save.dice, { random: context.random });
+    appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { notation: rolled.notation, total: rolled.total, result: rolled.text, why: "death save", who: page.name, physical: false, dice: rolled.dice }));
+    const lines = savedFrom(root, context, system, page.name, rolled);
+    return `${page.name} is dying: the engine rolled its death save, ${rolled.text}. ${lines.join(" ")} ${tellingOf(readSettings(root).mentor)}${rules}`;
+}
+
+/** The death save the player rolled for their character, with ask or roll (DIE-4): its lines; none for anyone else, whose saves the engine rolls (DIE-5). */
+export function deathSave(root: string, context: Context, system: GameSystem | undefined, name: string, roll: { notation: string; total: number; dice: ThrownDie[]; }): string[]
+{
+    // A name two pages share names no one: a free label of the roll, as roll takes it.
+    const pages = pagesWithName(campaignWorld(root, context), name);
+    return pages.length !== 1 || !isPlayerCharacter(pages[0]) ? [] : savedFrom(root, context, system, name, roll);
+}
+
+/** How the master tells a companion's death save (D-460): with the mentor off, the story alone, never naming it; else the roll in brackets, explained once in the tutorial. */
+function tellingOf(mentor: string | undefined): string
+{
+    return mentor === "off"
+        ? "Tell it in the story alone: never name the save or its roll."
+        : `Tell it in a sentence, the roll in brackets${mentor === "tutorial" ? ", and the first time what a death save is" : ""}.`;
+}
+
+function isPlayerCharacter(page: Page): boolean
+{
+    return comparableText(String(page.fields.role ?? "")) === "pc";
+}
+
+/**
+ * A death save rolled for a dying party member (DIE-4): a total at least the save's is a success, else a failure, as many as the save says on the die's lowest
+ * face; its highest face brings the counter back, which ends the dying (DIE-3). The lines that say it; none when who rolled is not dying, or the dice are not
+ * the save's.
+ */
+function savedFrom(root: string, context: Context, system: GameSystem | undefined, name: string, roll: { notation: string; total: number; dice: ThrownDie[]; }): string[]
+{
+    const dying = system?.dying;
+    const save = dying?.save;
+    const world = campaignWorld(root, context);
+    const page = findPage(world, name);
+    const sides = Number(save?.dice.slice(2));
+    const natural = roll.dice.find((die) => die.sides === sides && die.dropped !== true)?.value;
+
+    if (system === undefined || dying?.fails === undefined || save === undefined || page === undefined || !isDying(world, system, page) || natural === undefined) {
+        return [];
+    }
+
+    if (!roll.notation.toLowerCase().replace(/\s+/g, "").startsWith(save.dice)) {
+        return [];
+    }
+
+    const fields = effectiveFields(world, page);
+    const counted = (field: string): number => readCounter(valueNamed(fields, field))?.value ?? 0;
+
+    if (save.highest !== undefined && natural === sides) {
+        const own = readCounter(valueNamed(page.fields, save.highest.field));
+
+        if (own !== undefined) {
+            const after = formatCounter({ ...own, value: save.highest.value });
+            writePage(world, name, undefined, { set: { [save.highest.field]: after } });
+            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: name, field: save.highest.field, before: formatCounter(own), after, why: "death save" }));
+            const back = dyingAfter(root, context, system, name, { before: dying.value, after: save.highest.value, lost: 0 });
+            return [`${name}'s death save: ${natural}, the highest face: ${save.highest.field} ${formatCounter(own)} → ${after}.`, ...back];
+        }
+    }
+
+    if (roll.total >= save.atLeast) {
+        const before = counted(save.succeeds.field);
+        const after = Math.min(before + 1, save.succeeds.most);
+        setNumbers(root, context, world, name, { [save.succeeds.field]: after }, "death save");
+        const stable = after >= save.succeeds.most ? ` ${name} is stable: no more death saves, still ${dying.condition ?? "dying"} until it regains ${dying.field}.` : "";
+        return [`${name}'s death save: ${roll.total}, a success; ${save.succeeds.field} ${before} → ${after}.${stable}`];
+    }
+
+    const before = counted(dying.fails.field);
+    const lowest = natural === 1 ? (save.lowest ?? 1) : 1;
+    const after = Math.min(before + lowest, dying.fails.most);
+    setNumbers(root, context, world, name, { [dying.fails.field]: after }, "death save");
+    const dead = after >= dying.fails.most ? ` ${name} dies: a moment of its own in the story.` : "";
+    return [`${name}'s death save: ${roll.total}, ${lowest > 1 ? `the lowest face, ${lowest} failures` : "a failure"}; ${dying.fails.field} ${before} → ${after}.${dead}`];
 }
 
 /** Writes plain numbers on a page, each with its line in the log. */

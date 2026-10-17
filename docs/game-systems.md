@@ -211,14 +211,20 @@ conditions: [Blinded, Charmed, Poisoned, Prone]
 condition-icons: {Prone: "M4 18h16M7 14l5-4 5 4"}
 keeping: {counter: hp, conditions: [Incapacitated, Unconscious], rules: Concentration}
 combat: {track: hp, in-words: true, inactive: [Incapacitated, Stunned, Unconscious]}
-dying: {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death}
+dying:
+  at: hp 0
+  show: [death-successes, death-failures]
+  condition: Unconscious
+  fails: death-failures 3
+  rules: Instant Death
+  save: {dice: 1d20, at-least: 10, succeeds: death-successes 3, highest: hp 1, lowest: 2, rules: Death Saving Throws}
 immune: condition-immunities
 ```
 
 - `conditions`: effects with these names show their rule; `condition-icons` draws them.
 - `keeping`: what can break what someone keeps alive, as concentration; the output names the rule, the engine ends nothing.
 - `combat`: the counter the dashboard's Combat follows, foes' in words; who cannot act.
-- `dying`: what the sheet shows at the dying point. For a party member the engine adds `condition` there and ends it with what is regained, which also brings the `show` counters back to 0. Damage taken there adds one to `fails`, and what goes past the value as large as the counter's maximum sets `fails` to its most (`rules`).
+- `dying`: what the sheet shows at the dying point. For a party member the engine adds `condition` there and ends it with what is regained, which also brings the `show` counters back to 0. Damage taken there adds one to `fails`, and what goes past the value as large as the counter's maximum sets `fails` to its most (`rules`). With `save`, a dying party member rolls a save as its turn starts: at least `at-least` adds to `succeeds`, which at its most makes it stable; less adds to `fails`, `lowest` of them on the die's lowest face; the highest face sets the counter of `highest`, which ends the dying. The player character's save is the player's to roll, with `ask` or `roll`; anyone else's the engine rolls at `scene next`.
 - `immune`: the list of a page whose conditions `effect add` refuses.
 
 ### tables, computed, counters
