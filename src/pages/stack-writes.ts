@@ -3,7 +3,7 @@ import { comparableText } from "../core/text.ts";
 import { countedText, countOf, readEntry } from "./stack-entry.ts";
 import { canCount, entryKind, entryPage, goodsNamed, isKind, notKindReason, stacksOf } from "./stacks.ts";
 import { containerFieldOf } from "./standard-fields.ts";
-import { type Page, pageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
+import { type Page, pageNamed, searchSystemPages, textsIn, validHoldersOf, type World } from "./world.ts";
 import type { PageChange } from "./write-page.ts";
 
 /**
@@ -124,9 +124,23 @@ export function missingKindMessage(world: World, holder: Page, field: string, re
         return `There is no page named ${read.page}, but it is a name of ${named.name}, ${unit}: write ${holder.name}, add ${field}="[[${named.name}]] ${pieces}".`;
     }
 
+    const campaignKind = `Only what the system lacks becomes a kind of the campaign, written first: write "${read.page}", type item.`;
+    const near = goodsLike(world, read.page);
+
+    if (near.length > 0) {
+        return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system has ${near.map((page) => page.name).join(", ")}: if it is one of them, `
+            + `write ${holder.name}, add ${field}="[[${near[0].name}]] ${read.count}". ${campaignKind}`;
+    }
+
     return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system's kinds go by their English names, as find shows them: write the one it has `
-        + `with your word as its label, such as write ${holder.name}, add ${field}="[[Torch|${read.page.toLowerCase()}]] ${read.count}". Only what the system lacks becomes a kind of the `
-        + `campaign, written first: write "${read.page}", type item.`;
+        + `with your word as its label, such as write ${holder.name}, add ${field}="[[Torch|${read.page.toLowerCase()}]] ${read.count}". ${campaignKind}`;
+}
+
+/** The system's goods whose names hold a word, the shortest first, as Arrows for Arrow: for a refusal to name them, which saves a find (STK-10). */
+function goodsLike(world: World, word: string): Page[]
+{
+    const named = searchSystemPages(world, { text: word, type: "item" }).filter((match) => match.excerpt === undefined && canCount(world, match.page)).map((match) => match.page);
+    return named.sort((one, other) => one.name.length - other.name.length).slice(0, 3);
 }
 
 /** The kind an entry counts, alone or with a count, as a list of one; none for any other entry. */

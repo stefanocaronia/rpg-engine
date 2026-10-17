@@ -1375,10 +1375,18 @@ function oneItemLists(world: World, set: Record<string, unknown>, type: PageType
     return Object.fromEntries(Object.entries(set).map(([name, value]) => [name, listOf(name, value)]));
 }
 
-/** Text given through MCP to a field that is always a list, such as "[[A]], [[B]]", read as the command line reads it (D-136); any other value as it is. */
+/**
+ * Text given through MCP to a field that is always a list, such as "[[A]], [[B]]", or written as a list, such as "[dex, int]", read as the command line reads it
+ * (D-136); any other value as it is.
+ */
 function listFromText(name: string, value: unknown): unknown
 {
-    return typeof value === "string" && listFieldNames.some((field) => comparableText(field) === comparableText(name)) ? readFieldValue(value) : value;
+    if (typeof value !== "string") {
+        return value;
+    }
+
+    const writtenAsList = /^\[(?!\[).*\]$/s.test(value.trim());
+    return writtenAsList || listFieldNames.some((field) => comparableText(field) === comparableText(name)) ? readFieldValue(value) : value;
 }
 
 function readAssignment(assignment: string): [string, unknown]

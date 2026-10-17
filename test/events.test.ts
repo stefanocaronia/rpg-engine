@@ -310,6 +310,9 @@ describe("firing, case by case (EVT-1, EVT-4, EVT-5)", () => {
         expect(() => write.run(write.input.parse({ page: "Il rituale", set: { when: "[[Varro]] dead, party in [[Cripta]]" } }), context)).toThrow(
             '"[[Varro]] dead, party in [[Cripta]]" holds more than one condition: give a list, of which one is enough, such as ["[[Varro]] dead", "party in [[Cripta]]"].',
         );
+        // Any field: text written as a list reads as one, as the command line reads it (Code tab game of 17 October).
+        write.run(write.input.parse({ page: "Diario", set: { tags: "[antico, cifrato]", note: "[[Varro]] lo scrisse" } }), context);
+        expect(readFileSync(join(folder, "world", "items", "Diario.md"), "utf8")).toContain('tags:\n  - antico\n  - cifrato\nnote: "[[Varro]] lo scrisse"');
     });
 });
 

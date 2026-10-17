@@ -117,6 +117,11 @@ describe("STK-2, STK-10: what write counts, and how", () => {
             'There is no page named Arrows (20), but it is a name of Arrows, counted in pieces, 20 for each bought: write Lena, add inventory="[[Arrows]] 20". Nothing changed.',
         );
         expect(await refused("write", "Lena", "--add", "inventory=[[Torcia]] 3")).toContain('write the one it has with your word as its label, such as write Lena, add inventory="[[Torch|torcia]] 3"');
+        // The system's goods whose names hold the word, which saves a find (Code tab game of 17 October).
+        expect(await refused("write", "Lena", "--add", "inventory=[[Arrow]] 20")).toBe(
+            'There is no page named Arrow, so [[Arrow]] 20 counts nothing. The system has Arrows, Arrow of Slaying, Arrow-Catching Shield: if it is one of them, write Lena, add inventory="[[Arrows]] 20". '
+                + 'Only what the system lacks becomes a kind of the campaign, written first: write "Arrow", type item. Nothing changed.',
+        );
     });
 
     it("refuses a count inside a text that names a kind, with its stack, and tells how to count another", async () => {
