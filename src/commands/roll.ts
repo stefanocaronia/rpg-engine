@@ -112,7 +112,8 @@ export const roll = defineCommand({
         const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         appendLogEntry(root, entry);
         // A roll of a dying party member is their death save, which the engine writes (DIE-4, D-460).
-        const dying = input.who === undefined ? [] : deathSave(root, context, system, input.who, diceRoll);
+        // A hidden roll writes nothing the player would see (review of 17 October).
+        const dying = input.who === undefined || input.hidden === true ? [] : deathSave(root, context, system, input.who, diceRoll);
         const note = dying.length > 0 ? dying.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
         return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
     },

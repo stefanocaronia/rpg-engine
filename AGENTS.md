@@ -22,7 +22,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | the docs for developers and agents: `architecture.md`, `game-systems.md`, `extensions.md`, `commands.md` (generated); the player's guide is Help's, `src/dashboard/guide/` | yes | no |
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
-| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/` | yes | yes, without their tests and scripts |
+| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/`; `ironsworn` is for now a test system | yes | yes, without their tests and scripts, and without `ironsworn` until it is playable |
 | `extensions/` | our extensions, each an npm package of its own under `@rpgengine/` (D-436, D-441), such as `weather`: with its tests in its `test/` | yes | no: each is published apart |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |

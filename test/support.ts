@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import type { Context } from "../src/core/context.ts";
 import type { LogEntry } from "../src/core/log.ts";
 
-/** The game systems the tests see: those of the package, such as 5e, and the test system ironsworn. */
-export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url)), fileURLToPath(new URL("./systems/", import.meta.url))];
+/** The game systems the tests see: those of the package, 5e and ironsworn, the second kept out of the npm package until it is playable. */
+export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url))];
 
 /** The extensions the tests see: ours of the repository, such as weather, and the test ones. */
 export const testExtensionFolders = [fileURLToPath(new URL("../extensions/", import.meta.url)), fileURLToPath(new URL("./extensions/", import.meta.url))];

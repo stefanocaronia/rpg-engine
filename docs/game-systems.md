@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/) and from [test/systems/ironsworn](../test/systems/ironsworn/), a test system based on Ironsworn. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/) and from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
 
 ## 1. The folder
 

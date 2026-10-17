@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { Context, Player, Rows } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -101,6 +101,20 @@ describe("the dying", () => {
         expect(await ok("change", "Ettore", "hp", "--by=-1")).toContain(
             "death-failures 2 → 3: damage at 0 hp; a critical hit counts two, so add one more with change. Ettore is no longer stable: death-successes 3 → 0, Stable ended. Ettore dies: a moment of its own in the story.",
         );
+    });
+
+    it("counts no instant death for what temporary hit points take, brings back no one dead, and writes nothing of a hidden roll (review of 17 October)", async () => {
+        await ok("change", "Ettore", "hp", "--to", "5");
+        await ok("write", "Ettore", "--set", "temp-hp=10");
+        const hit = await ok("change", "Ettore", "hp", "--by=-30");
+        expect(hit).not.toContain("dies at once");
+        await ok("change", "Ettore", "death-failures", "--to", "3");
+        expect(await ok("change", "Ettore", "hp", "--by=10")).toContain("Ettore is dead, with death-failures 3: hp regained brings no one back");
+        await ok("change", "Ettore", "hp", "--to", "0");
+        await ok("change", "Ettore", "death-failures", "--to", "0");
+        const before = readLogFile(folder).length;
+        await ok("roll", "1d20", "--who", "Ettore", "--hidden");
+        expect(readLogFile(folder).slice(before).filter((entry) => entry.type === "counter-changed")).toEqual([]);
     });
 
     it("rolls a companion's death save as its turn starts, told as the mentor setting asks; three successes make it stable (DIE-5, D-460)", async () => {

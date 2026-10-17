@@ -206,11 +206,12 @@ describe("view as data (VIEW-1, D-272)", () => {
     it("works the same for another game: momentum from -6, with the maximum the debilities leave", async () => {
         // The test system based on Ironsworn, with a sheet and a line of its own.
         const systems = makeTempFolder();
-        cpSync(join(testSystemFolders[1], "ironsworn"), join(systems, "ironsworn"), { recursive: true });
+        cpSync(join(testSystemFolders[0], "ironsworn"), join(systems, "ironsworn"), { recursive: true });
         const settings = join(systems, "ironsworn", "system.yaml");
         writeFileSync(settings, `${readFileSync(settings, "utf8")}\nsheet:\n  Stats: [edge, heart, iron, shadow, wits]\n  Condition: [health, spirit, supply, momentum, debilities?]\nstatus-line: [health, spirit, supply, momentum]\n`);
         const ironsworn = makeTempFolder();
-        context = { ...testContext(ironsworn), systemFolders: [testSystemFolders[0], systems] };
+        // Its copy with a sheet first: the nearest folder wins over the package's ironsworn.
+        context = { ...testContext(ironsworn), systemFolders: [systems, testSystemFolders[0]] };
 
         try {
             await ok("init", "--name", "Ferro", "--language", "en", "--system", "ironsworn");

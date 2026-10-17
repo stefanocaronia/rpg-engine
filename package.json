@@ -19,6 +19,7 @@
     "systems",
     "!systems/*/test",
     "!systems/*/build",
+    "!systems/ironsworn",
     "instructions"
   ],
   "scripts": {

@@ -43,6 +43,11 @@ export function dyingAfter(root: string, context: Context, system: GameSystem, n
     const fields = effectiveFields(world, page);
     const counted = (field: string): number => readCounter(valueNamed(fields, field))?.value ?? 0;
 
+    // The dead, at their most failures, are not brought back by the counter: only what the rules say does, as the master tells it (review of 17 October).
+    if (change.after > dying.value && change.before <= dying.value && counted(dying.fails.field) >= dying.fails.most) {
+        return [`${name} is dead, with ${dying.fails.field} ${counted(dying.fails.field)}: ${dying.field} regained brings no one back; only what the rules say does, as you tell it.`];
+    }
+
     // Above the value again: the counters back to 0, the condition ended (DIE-3).
     if (change.after > dying.value && change.before <= dying.value) {
         const reset = dying.show.filter((field) => counted(field) !== 0);

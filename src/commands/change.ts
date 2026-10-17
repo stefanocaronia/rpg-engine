@@ -200,7 +200,11 @@ function changeField(
     const by = typeof input.by === "number" ? input.by : Number(input.by);
     const untyped = Number.isFinite(by) && by < 0 ? untypedDamageNote(world, system, holder.page, field) : "";
     const told = untyped === "" ? outcome : { ...outcome, reminders: [...outcome.reminders, untyped] };
-    return { ...withDying(root, context, system, { holder, field, fields }, told, Number.isFinite(by) && by < 0 ? -by : 0), problems: world.problems };
+    // What a shield, as temporary hit points, would have taken first is no loss past the dying value: never an instant death the master undoes (review of 17 October).
+    const shield = Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
+    const shielded = shield === undefined ? 0 : Math.max(readCounter(valueNamed(fields, shield))?.value ?? 0, 0);
+    const lost = Number.isFinite(by) && by < 0 ? Math.max(-by - shielded, 0) : 0;
+    return { ...withDying(root, context, system, { holder, field, fields }, told, lost), problems: world.problems };
 }
 
 /**
