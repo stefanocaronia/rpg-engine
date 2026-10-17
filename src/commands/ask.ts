@@ -129,9 +129,9 @@ export const ask = defineCommand({
             case "stays":
                 return "The player changed their mind: their character does not move. Ask what they do instead, and stop.";
             case "unavailable":
-                return `The player saw no buttons: ask them in words what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop. From now on, always in words.`;
+                return `The player saw no buttons: ask them what the call held, which they have not seen: ${result.asked}. Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop. From now on, the same way.`;
             case "absent":
-                return `The player has no buttons open now: ask them in words this time what the call held, which they have not seen: ${result.asked}. No word about buttons; then stop.`;
+                return `The player has no buttons open now: ask them this time what the call held, which they have not seen: ${result.asked}. Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop.`;
             case "physical":
                 return `The player rolls their own dice: tell first in the story what happened before this roll, such as the blow that calls for it, then ask it in words, with what is at stake and the checks: ${result.asked}. Then stop; they will tell the values.`;
             default:

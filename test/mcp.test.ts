@@ -270,7 +270,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     it("takes ask away from a host that closes the form faster than anyone could read it, since it never showed it (ASK-6)", async () => {
         const closing = await formClient({ action: "cancel" }, []);
         expect(((await closing.callTool({ name: "ask", arguments: wall })).content as { text: string; }[])[0].text).toBe(
-            "The player saw no buttons: ask them in words what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20+3). No word about buttons; then stop. From now on, always in words.",
+            "The player saw no buttons: ask them what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20+3). Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop. From now on, the same way.",
         );
         expect((await closing.listTools()).tools.map((tool) => tool.name)).not.toContain("ask");
         expect(((await closing.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).not.toContain("call `ask`");

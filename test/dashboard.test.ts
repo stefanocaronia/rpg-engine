@@ -1266,7 +1266,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
 
     it("turns to the form, or to words this time, when no page is open, and keeps the buttons for later", async () => {
         expect(ask.format(await ask.run(ask.input.parse(wall), served))).toBe(
-            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+            "The player has no buttons open now: ask them this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop.",
         );
         const form = { choose: async () => 1 };
         expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Acrobazia" });
@@ -1276,7 +1276,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const lines = readLogFile(folder).length;
         const hidden: Player = { choose: async () => "unavailable" };
         expect(ask.format(await ask.run(ask.input.parse(wall), { ...served, player: hidden }))).toBe(
-            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+            "The player has no buttons open now: ask them this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop.",
         );
         expect(readLogFile(folder)).toHaveLength(lines);
     });
@@ -1292,7 +1292,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await askedNow())?.id).toBe(asked.id);
         second.close();
         expect(ask.format(await asking)).toBe(
-            "The player has no buttons open now: ask them in words this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). No word about buttons; then stop.",
+            "The player has no buttons open now: ask them this time what the call held, which they have not seen: Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono (the checks: Atletica 1d20+5, Acrobazia 1d20-1). Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop.",
         );
         expect(await askedNow()).toBeNull();
 
