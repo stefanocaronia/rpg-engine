@@ -112,18 +112,13 @@ export function usesAtTurn(system: GameSystem | undefined, used: Scene["used"], 
     return left.length === 0 ? undefined : Object.fromEntries(left);
 }
 
-/** The uses a page may mark of its turn (TRN-1): those it has, as Sneak Attack for a rogue, a use within another with how many fit, as "attack (2 in the action)". */
-export function turnUsesOf(world: World, system: GameSystem | undefined, page: Page): string[]
+/**
+ * The uses a turn's reminder names (TRN-1): those that stand alone, as the action, the bonus action and the reaction; the attacks within the action and what
+ * a feature gives, as Sneak Attack, stay the master's to mark when it will, and are counted then (playtests 05 and 05b: the master counts them right).
+ */
+export function turnUsesOf(system: GameSystem | undefined): string[]
 {
-    const fields = effectiveFields(world, page);
-    return Object.entries(system?.turnUses ?? {}).flatMap(([use, rule]) => {
-        if (rule.needs !== undefined && !((formulaValue(world, fields, rule.needs) ?? 0) > 0)) {
-            return [];
-        }
-
-        const most = rule.most === undefined ? 1 : formulaValue(world, fields, rule.most);
-        return [rule.within !== undefined && most !== undefined && most > 1 ? `${use} (${most} in the ${rule.within})` : use];
-    });
+    return Object.entries(system?.turnUses ?? {}).filter(([, rule]) => rule.within === undefined && rule.needs === undefined).map(([use]) => use);
 }
 
 /** The uses a turn shows, as the dashboard's marks (TRN-4): those that stand alone, used or not, for who acts. */

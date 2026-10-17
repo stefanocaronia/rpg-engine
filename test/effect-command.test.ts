@@ -109,7 +109,7 @@ describe("the end of effects (EFF-8, EFF-9)", () => {
         }
 
         expect(await ok("scene", "next")).toBe(
-            `Round 2 · now Ennio${playerTurn} (then Annegato 1)${playerStop}\nMark with scene use what Ennio uses of the turn, as it happens: action, bonus action, reaction, attack.\nEnded: Spaventato on Annegato 2.`,
+            `Round 2 · now Ennio${playerTurn} (then Annegato 1)${playerStop}\nMark with scene use what Ennio uses of the turn, as it happens: action, bonus action, reaction.\nEnded: Spaventato on Annegato 2.`,
         );
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "effect-ended", visibility: "hidden", data: { page: "Annegato 2", copy: true, effect: "Spaventato" } });
         expect(await ok("scene", "close", "--summary", "Vinto.")).toContain("\nEnded with the scene: Benedetta on Lena (hp 12/12 → 9/9).");
@@ -215,7 +215,7 @@ describe("other ends (EFF-4, EFF-9)", () => {
         expect(await ok("effect", "add", "Lena", "Aiutata", "--until", "[[Lena]]")).toBe("Lena: Aiutata until round 1, Lena.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Bruno")).output).toBe("Bruno takes no turn in this scene. The order: Ennio, Annegato 1, Lena, Annegato 2.");
         expect((await rpg("effect", "add", "Lena", "Altro", "--until", "Lena", "--for", "1 round")).output).toBe("Give for or until, not both.");
-        expect(await ok("scene", "next")).toBe("Round 1 · now Lena (then Annegato 2).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction, attack.\nEnded: Aiutata on Lena.");
+        expect(await ok("scene", "next")).toBe("Round 1 · now Lena (then Annegato 2).\nMark with scene use what Lena uses of the turn, as it happens: action, bonus action, reaction.\nEnded: Aiutata on Lena.");
     });
 
     it("lasts the scene, and ends with it; refused without a scene", async () => {
