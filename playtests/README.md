@@ -20,6 +20,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `06-la-forra-dell-orso/` | the party of 05 at 3rd level against an owlbear in a gorge with a map: falling, death saves, stabilizing, healing, and positions |
 | `07-il-pianoro-dei-lupi/` | the party of 06 at dawn on a plateau with a map, Lucia already at 0 among wolves: the dying point from the first turn |
 | `08-il-guado-del-mulino/` | the player's character down at a ford, with an ogre and wolves on a map, and the master at low effort |
+| `09-l-ossario-dei-pastori/` | a dark ossuary with a map: ghouls, a shadow and a dust mephit, a companion falling and stabilized, a cloak to attune and wear |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
