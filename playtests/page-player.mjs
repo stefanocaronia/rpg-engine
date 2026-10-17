@@ -5,7 +5,7 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path";
 import { chromium } from "playwright-core";
 import { parse } from "yaml";
-import { oneAnswer } from "./one-answer.mjs";
+import { notYetRead, oneAnswer } from "./one-answer.mjs";
 
 // How often the question the master asks is looked for, while the master plays its turn, in milliseconds.
 const askedPoll = 250;
@@ -101,7 +101,7 @@ export function pagePlayer({ folder, askPlayer, moments })
     // The buttons, as a chat that shows them would: the player reads the master's words so far, then presses one or writes what they do.
     const pickButton = async (asked) => {
         const prompt = [
-            mastersWords(state.said),
+            notYetRead(folder, mastersWords(state.said)),
             `(The dashboard shows the master's question: «${asked.question}», with these buttons: ${asked.labels.join(" · ")}. Press one, giving its text exactly, or write what you do instead.)`,
         ].filter(Boolean).join("\n\n");
         const schema = { type: "object", required: ["answer"], properties: { answer: { type: "string", description: "one button's text exactly, or your own words" } } };
@@ -114,7 +114,7 @@ export function pagePlayer({ folder, askPlayer, moments })
     const pickSquare = async (asked) => {
         const map = (await getJson(`${state.link}api/view`))?.place?.map;
         const prompt = [
-            mastersWords(state.said),
+            notYetRead(folder, mastersWords(state.said)),
             `(The dashboard shows the master's question on the map: «${asked.question}». ${mapInWords(map)} Give the square where your character goes, such as E4, or press ${
                 asked.labels.map((label) => `«${label}»`).join(" or ")
             }.)`,

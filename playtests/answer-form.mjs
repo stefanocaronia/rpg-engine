@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { oneAnswer } from "./one-answer.mjs";
+import { notYetRead, oneAnswer } from "./one-answer.mjs";
 
 const [out, folder, profile, model] = process.argv.slice(2);
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
@@ -48,7 +48,8 @@ function press(form, labels)
     const resume = existsSync(chatFile);
     const id = resume ? readFileSync(chatFile, "utf8").trim() : randomUUID();
     mkdirSync(join(out, "player"), { recursive: true });
-    const prompt = [mastersTextSoFar(form.transcript_path), `(The app shows you buttons under the master's message: ${form.message}) Press one of them: ${labels.join(" · ")}.`].filter(Boolean).join("\n\n");
+    // Only what the player has not read yet of this turn: an earlier question may have shown the rest.
+    const prompt = [notYetRead(folder, mastersTextSoFar(form.transcript_path)), `(The app shows you buttons under the master's message: ${form.message}) Press one of them: ${labels.join(" · ")}.`].filter(Boolean).join("\n\n");
     const schema = JSON.stringify({ type: "object", required: ["choice"], properties: { choice: { type: "string", enum: labels, description: "the button you press" } } });
     const args = ["-p", "--model", model, "--system-prompt-file", resolve(profile), "--system-prompt-snapshot", "off", "--tools", "", "--setting-sources", "project,local", "--strict-mcp-config"];
     const run = spawnSync("claude", [...args, "--output-format", "json", "--json-schema", schema, ...(resume ? ["--resume", id] : ["--session-id", id])], { cwd: join(out, "player"), input: prompt, encoding: "utf8", env: environment });

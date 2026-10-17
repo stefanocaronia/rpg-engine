@@ -1,6 +1,7 @@
 // One answer from the player to each question the master asks, though it shows both on the page and in the chat's form (D-455): whichever of the two
 // gets it first asks the player, and the other waits for that answer and gives it, by the index of the choice, as both list the choices in the same order.
-// They meet in the session's folder, as the form is a process of its own that Claude Code starts for each question.
+// They meet in the session's folder, as the form is a process of its own that Claude Code starts for each question; there they also keep what the player
+// has read of the master's turn, so that no paragraph reaches the player twice.
 import { createHash } from "node:crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -39,6 +40,42 @@ export async function oneAnswer({ folder, question, side, ask })
         writeFileSync(taken, "taken");
         return answer;
     }
+}
+
+/** A master's turn begins: nothing of it has been read yet. */
+export function turnBegins(folder)
+{
+    mkdirSync(join(folder, "answers"), { recursive: true });
+    writeFileSync(join(folder, "answers", "read.json"), "[]");
+}
+
+/**
+ * What the player has not yet read of the master's words in this turn, which from now on they have: a question shows the words so far, and the end of the turn
+ * only the rest, so that no paragraph reaches the player twice. Paragraphs, as the chat, the page's stream and the transcript each split the same blocks.
+ */
+export function notYetRead(folder, text)
+{
+    const file = join(folder, "answers", "read.json");
+    const read = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
+    const left = [...read];
+    const unread = paragraphs(text).filter((paragraph) => {
+        const index = left.indexOf(paragraph);
+
+        if (index === -1) {
+            return true;
+        }
+
+        left.splice(index, 1);
+        return false;
+    });
+    mkdirSync(join(folder, "answers"), { recursive: true });
+    writeFileSync(file, JSON.stringify([...read, ...unread]));
+    return unread.join("\n\n");
+}
+
+function paragraphs(text)
+{
+    return text.split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean);
 }
 
 /** Whether this side is the first to the question, made sure by creating its claim, which fails when the other side already has. */

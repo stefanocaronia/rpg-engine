@@ -8,6 +8,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from "node:pat
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { notYetRead, turnBegins } from "./one-answer.mjs";
 import { pagePlayer, readMoments } from "./page-player.mjs";
 
 const usage = [
@@ -144,6 +145,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
         for (let count = 1;; count++) {
             progress.count = count;
             record(folder, `P${count}`, player.message);
+            turnBegins(folder);
             page?.turnBegins(count);
             const streamFile = join(folder, "turns", `M${count}.jsonl`);
             const master = chat ? await chat.turn(player.message, streamFile) : masterTurn(campaign, masterSession, player.message, streamFile);
@@ -165,7 +167,9 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
                 record(folder, "Organizer", note);
             }
 
-            player = await playerTurn([count === 1 ? memory : "", note, master.text].filter(Boolean).join("\n\n"), true);
+            // The rest of the master's message: what a question in this turn already showed the player is not sent again.
+            const unread = notYetRead(folder, master.text) || "(The master's message ends there.)";
+            player = await playerTurn([count === 1 ? memory : "", note, unread].filter(Boolean).join("\n\n"), true);
 
             // A goodbye before the late note, as when the characters go to sleep (playtests 05b and 06), is written again once.
             if (player.endSession && count < max) {
