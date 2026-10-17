@@ -276,6 +276,15 @@ export interface Asked
     /** Whose sheet the checks read, and by button the field of the sheet it rolls, whose row answers it too (ASK-12). */
     who?: string;
     fields?: (string | null)[];
+    /** A death save, the player's to roll (DIE-4, D-460): its die, the total that succeeds, its counters as they stand, and what its lowest and highest faces do. */
+    save?: {
+        sides: number;
+        atLeast: number;
+        successes: { field: string; value: number; most: number; };
+        failures: { field: string; value: number; most: number; };
+        lowest?: number;
+        highest?: { field: string; value: number; };
+    };
 }
 
 /** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */

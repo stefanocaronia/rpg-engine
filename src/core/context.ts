@@ -159,11 +159,23 @@ export interface Said
     said: string;
 }
 
-/** Whose sheet a roll's checks read, and by button the field each one rolls, for the page to light that row of the sheet (ASK-12). */
+/** Whose sheet a roll's checks read, and by button the field each one rolls, for the page to light that row of the sheet (ASK-12); a death save, what it is. */
 export interface Rows
 {
     who: string;
     fields: (string | null)[];
+    save?: SaveAsked;
+}
+
+/** A death save the question asks (DIE-4, D-460): its die, the total that succeeds, its counters as they stand, and what the lowest and highest faces do. */
+export interface SaveAsked
+{
+    sides: number;
+    atLeast: number;
+    successes: { field: string; value: number; most: number; };
+    failures: { field: string; value: number; most: number; };
+    lowest?: number;
+    highest?: { field: string; value: number; };
 }
 
 /** A square of a place's map the player touched, by its name, such as E4 (ASK-11). */

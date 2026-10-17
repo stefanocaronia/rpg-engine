@@ -7,7 +7,7 @@ import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
-import { deathSave } from "./game-dying.ts";
+import { deathSave, deathSaveAsked } from "./game-dying.ts";
 import { placeGrid } from "./game-grids.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
@@ -144,14 +144,20 @@ export const ask = defineCommand({
     },
 });
 
-/** The buttons of a roll: the checks and a change of mind (ASK-3, ASK-4). The chosen check is rolled with the engine's dice and logged as the player's roll. */
+/**
+ * The buttons of a roll: the checks and a change of mind (ASK-3, ASK-4); a death save, only its check, as no one turns it down (D-460). The chosen check is
+ * rolled with the engine's dice and logged as the player's roll.
+ */
 async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
-    const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), words.change];
     const system = campaignSystem(root, context);
+    const save = deathSaveAsked(root, context, system, who, checks.map((check) => check.notation ?? ""));
+    const change = save === undefined ? [words.change] : [];
+    const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), ...change];
     const language = readSettings(root).language ?? system?.language ?? "en";
-    const shown = [...checks.map((check) => formLabel(check, (dice) => (system === undefined ? undefined : rollName(system, dice, language)))), words.change];
-    const chosen = await chooseAnswer(context, question, words.roll, labels, { who, fields: [...checks.map((check) => check.field ?? null), null] }, shown);
+    const shown = [...checks.map((check) => formLabel(check, (dice) => (system === undefined ? undefined : rollName(system, dice, language)))), ...change];
+    const rows = { who, fields: [...checks.map((check) => check.field ?? null), ...change.map(() => null)], ...(save === undefined ? {} : { save }) };
+    const chosen = await chooseAnswer(context, question, words.roll, labels, rows, shown);
 
     const asked = askedText(question, "checks", checks);
 

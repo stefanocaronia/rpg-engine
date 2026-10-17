@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
-import type { Context, Player } from "../src/core/context.ts";
+import type { Context, Player, Rows } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -30,6 +30,23 @@ describe("the dying", () => {
 
     it("writes the death save the player rolls with a button: a success at 10, a failure under it, two on a 1, back to 1 hp on a 20 (DIE-4, D-460)", async () => {
         await ok("change", "Ettore", "hp", "--by=-10");
+        // The page gets only the check, as no one turns a death save down, with what the page draws of it.
+        let shown: { labels: string[]; rows?: Rows; } | undefined;
+        const page: Player = {
+            choose: async (_question, _title, labels, _signal, rows) => {
+                shown = { labels, rows };
+                return undefined;
+            },
+        };
+        await ask.run(ask.input.parse({ question: "Ettore è a terra", options: "Tiro contro la morte 1d20", who: "Ettore" }), { ...context, page });
+        expect(shown).toEqual({
+            labels: ["Tiro: Tiro contro la morte (1d20)"],
+            rows: {
+                who: "Ettore",
+                fields: [null],
+                save: { sides: 20, atLeast: 10, successes: { field: "death-successes", value: 0, most: 3 }, failures: { field: "death-failures", value: 0, most: 3 }, lowest: 2, highest: { field: "hp", value: 1 } },
+            },
+        });
 
         const save = async (face: number): Promise<string> => {
             const clicking: Player = { choose: async () => 0 };

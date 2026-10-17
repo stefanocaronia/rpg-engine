@@ -1,7 +1,7 @@
 // The dying (D-454, D-460, DIE-1–DIE-5): at 0 hit points a party member takes the system's condition and rolls its death saves, damage there counts a failure, damage past it as large as the
 // maximum kills at once, and hit points regained end it all.
 import { readSettings } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
+import type { Context, SaveAsked } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
@@ -125,6 +125,39 @@ export function deathSave(root: string, context: Context, system: GameSystem | u
     // A name two pages share names no one: a free label of the roll, as roll takes it.
     const pages = pagesWithName(campaignWorld(root, context), name);
     return pages.length !== 1 || !isPlayerCharacter(pages[0]) ? [] : savedFrom(root, context, system, name, roll);
+}
+
+/**
+ * The death save a question asks of a dying player character (DIE-4, D-460): every check its dice, as Tiro contro la morte 1d20; with its counters as they
+ * stand, for the page to draw the moment. Undefined for any other question.
+ */
+export function deathSaveAsked(root: string, context: Context, system: GameSystem | undefined, who: string, notations: string[]): SaveAsked | undefined
+{
+    const dying = system?.dying;
+    const save = dying?.save;
+    const world = campaignWorld(root, context);
+    const pages = pagesWithName(world, who);
+    const page = pages.length === 1 ? pages[0] : undefined;
+    const ofSave = (notation: string): boolean => notation.toLowerCase().replace(/\s+/g, "").startsWith(save?.dice ?? "\u0000");
+
+    if (dying?.fails === undefined || save === undefined || page === undefined || !isPlayerCharacter(page) || !isDying(world, system, page)) {
+        return undefined;
+    }
+
+    if (notations.length === 0 || !notations.every(ofSave)) {
+        return undefined;
+    }
+
+    const fields = effectiveFields(world, page);
+    const counted = (field: string): number => readCounter(valueNamed(fields, field))?.value ?? 0;
+    return {
+        sides: Number(save.dice.slice(2)),
+        atLeast: save.atLeast,
+        successes: { field: save.succeeds.field, value: counted(save.succeeds.field), most: save.succeeds.most },
+        failures: { field: dying.fails.field, value: counted(dying.fails.field), most: dying.fails.most },
+        ...(save.lowest === undefined ? {} : { lowest: save.lowest }),
+        ...(save.highest === undefined ? {} : { highest: save.highest }),
+    };
 }
 
 /** How the master tells a companion's death save (D-460): with the mentor off, the story alone, never naming it; else the roll in brackets, explained once in the tutorial. */

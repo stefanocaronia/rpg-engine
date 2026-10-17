@@ -390,7 +390,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         // And the name the game gives its roll, in the campaign's language, as "with advantage" (D-399).
         const names = asked === undefined ? undefined : rollNamesOf(asked.labels, served);
         const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};
-        sendJson(response, 200, { asked: asked === undefined ? null : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, names, ...rows, ...(asked.square ? { square: true } : {}) } });
+        sendJson(response, 200, {
+            asked: asked === undefined
+                ? null
+                : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, names, ...rows, ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }), ...(asked.square ? { square: true } : {}) },
+        });
         return;
     }
 
