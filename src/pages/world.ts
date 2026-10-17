@@ -4,7 +4,7 @@ import type { Formula, SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
 import { linkedPages } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
@@ -86,6 +86,8 @@ export interface SystemInfo
     lengthUnit?: string;
     /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
     bonusLists?: string[];
+    /** By bonus list, the list its pages must be in too, as an attuned ring worn (BND-4). */
+    bonusWhile?: Record<string, string>;
 }
 
 /** The pages of the campaign's game system, read-only (SYS-2). */
@@ -130,13 +132,13 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
     }
 
     const systemPages = packagePages(system.folder, system.name);
-    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists } = system;
+    const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
         root,
         pages: campaign.pages,
         problems,
-        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, pages: systemPages.pages },
+        system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile, pages: systemPages.pages },
         language,
         ...(rigor === undefined ? {} : { rigor }),
     });
@@ -585,4 +587,15 @@ function textExcerpt(page: Page, text: string): string | undefined
 function shorten(text: string): string
 {
     return text.length > 120 ? `${text.slice(0, 119)}…` : text;
+}
+
+/** The pages of the system's bonus lists a page names (FOR-5, D-449): an attuned ring, a feat; of a list given only while in another, only those in it too, as a ring worn (BND-4). */
+export function bonusPages(world: World, fields: Record<string, unknown>): Page[]
+{
+    return (world.system?.bonusLists ?? []).flatMap((list) => {
+        const named = linksIn(valueNamed(fields, list));
+        const whileIn = world.system?.bonusWhile?.[list];
+        const held = whileIn === undefined ? undefined : linksIn(valueNamed(fields, whileIn)).map(comparableText);
+        return named.filter((name) => held === undefined || held.includes(comparableText(name))).flatMap((name) => findPage(world, name) ?? []);
+    });
 }

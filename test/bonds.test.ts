@@ -68,6 +68,7 @@ describe("what attuned items and feats give (D-449)", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "dex=10", "--set", "wis=10", "--set", "hp-base=10");
         const ac = async (): Promise<string> => /(?<![-\w])ac \d+/.exec(await ok("show", "Ettore"))?.[0] ?? "";
         expect(await ac()).toBe("ac 10");
+        await ok("write", "Ettore", "--add", "inventory=[[Ring of Protection]]", "--add", "equipped=[[Ring of Protection]]", "--add", "inventory=[[Cloak of Protection]]", "--add", "equipped=[[Cloak of Protection]]");
         await ok("write", "Ettore", "--add", "attuned=[[Ring of Protection]]", "--add", "attuned=[[Cloak of Protection]]");
         expect(await ac()).toBe("ac 12");
         await ok("write", "Fortunato", "--type", "topic", "--set", "category=feat", "--set", "bonus-ac=1");
@@ -82,13 +83,13 @@ describe("what attuned items and feats give (D-449)", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10");
         expect(await ok("show", "Ettore")).toContain("proficiency +2");
         await ok("write", "Pietra della maestria", "--type", "item", "--set", "attunement=true", "--set", "bonus-proficiency=1");
-        await ok("write", "Ettore", "--add", "attuned=[[Pietra della maestria]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Pietra della maestria]]", "--add", "equipped=[[Pietra della maestria]]", "--add", "attuned=[[Pietra della maestria]]");
         expect(await ok("show", "Ettore")).toContain("proficiency +3");
     });
 
     it("raises an ability score to what an attuned item sets, and keeps it when higher (FOR-5)", async () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "str=8", "--set", "hp-base=10");
-        await ok("write", "Ettore", "--add", "attuned=[[Gauntlets of Ogre Power]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Gauntlets of Ogre Power]]", "--add", "equipped=[[Gauntlets of Ogre Power]]", "--add", "attuned=[[Gauntlets of Ogre Power]]");
         expect(await ok("show", "Ettore")).toContain("str 19 (+4)");
         await ok("write", "Ettore", "--set", "str=20");
         expect(await ok("show", "Ettore")).toContain("str 20 (+5)");
@@ -103,12 +104,25 @@ describe("the SRD pages that give bonuses when attuned (D-449)", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "dex=10", "--set", "wis=10", "--set", "hp-base=10");
         const read = async (name: string): Promise<string> => new RegExp(`(?<![-\\w])${name} [+-]?\\d+`).exec(await ok("show", "Ettore"))?.[0] ?? "";
         expect(await read("wis-save")).toBe("wis-save +0");
-        await ok("write", "Ettore", "--add", "attuned=[[Stone of Good Luck]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Stone of Good Luck]]", "--add", "equipped=[[Stone of Good Luck]]", "--add", "attuned=[[Stone of Good Luck]]");
         expect(await read("wis-save")).toBe("wis-save +1");
         expect(await read("initiative")).toBe("initiative +1");
         expect(await read("passive-perception")).toBe("passive-perception 11");
         expect(await ok("show", "Ettore")).toContain("long-jump 14 ft");
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 7", "--set", "subclasses=[[Champion]]", "--set", "hp-base=58");
         expect(await ok("show", "Ettore")).toContain("long-jump 16 ft");
+    });
+});
+
+describe("an attuned item worn or held (D-456, BND-4)", () => {
+    it("gives its bonuses only while in equipped too, and says so when bound", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 1", "--set", "dex=10", "--set", "hp-base=10", "--add", "inventory=[[Ring of Protection]]");
+        const ac = async (): Promise<string> => /(?<![-\w])ac \d+/.exec(await ok("show", "Ettore"))?.[0] ?? "";
+        expect(await ok("write", "Ettore", "--add", "attuned=[[Ring of Protection]]")).toContain(
+            "Its bonuses count while it is in equipped too: add equipped=[[Ring of Protection]] when worn or held.",
+        );
+        expect(await ac()).toBe("ac 10");
+        await ok("write", "Ettore", "--add", "equipped=[[Ring of Protection]]");
+        expect(await ac()).toBe("ac 11");
     });
 });

@@ -54,6 +54,7 @@ export { alwaysInList, alwaysInMessage, declaredKind, heldSystemPageMessage, hid
 export {
     type Backlink,
     backlinks,
+    bonusPages,
     concernsPlayer,
     createWorld,
     findPage,

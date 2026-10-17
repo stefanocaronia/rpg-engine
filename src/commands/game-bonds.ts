@@ -51,7 +51,11 @@ export function bondNotes(world: World, system: GameSystem | undefined, before: 
             const item = findPage(world, added);
             const asked = item === undefined ? undefined : askedBond(world, item, bond.needs);
             const what = asked === undefined || asked === true ? "" : `; it asks: ${asked}, which you check`;
-            return `${after.name}: ${field} ${added}, ${now.length} of ${bond.most}${what}. Read ${bond.rules}.`;
+            // Its bonuses count only while in the other list too, as a ring worn (BND-4).
+            const worn = bond.while === undefined || linksIn(valueNamed(after.fields, bond.while)).some((name) => comparableText(name) === comparableText(added))
+                ? ""
+                : ` Its bonuses count while it is in ${bond.while} too: add ${bond.while}=[[${added}]] when worn or held.`;
+            return `${after.name}: ${field} ${added}, ${now.length} of ${bond.most}${what}. Read ${bond.rules}.${worn}`;
         });
     });
 }

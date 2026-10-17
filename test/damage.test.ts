@@ -32,7 +32,9 @@ describe("damage of a type", () => {
         await ok("effect", "add", "Ettore", "Rage", "--set", "damage-resistances=bludgeoning, piercing, slashing");
         expect(await ok("change", "Ettore", "hp", "--by=-9", "--damage", "slashing")).toBe("Ettore: hp 20/20 → 16/20: slashing 9 halved, in damage-resistances: 4.");
         expect(await ok("change", "Ettore", "hp", "--by=-4", "--damage", "poison")).toBe("Ettore: hp 16/20 → 14/20: poison 4 halved, in damage-resistances: 2.");
-        await ok("write", "Ettore", "--add", "attuned=[[Staff of Fire]]");
+        // A staff with charges is one thing: an item of the campaign derived from the system's, held and attuned.
+        await ok("write", "Bastone di Ettore", "--type", "item", "--set", "item=[[Staff of Fire]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Bastone di Ettore]]", "--add", "equipped=[[Bastone di Ettore]]", "--add", "attuned=[[Bastone di Ettore]]");
         expect(await ok("change", "Ettore", "hp", "--by=-6", "--damage", "fire")).toBe("Ettore: hp 14/20 → 11/20: fire 6 halved, in damage-resistances: 3.");
     });
 

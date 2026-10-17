@@ -194,6 +194,10 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         expect(await refused("travel", "Rocca")).toBe("Ettore is on Sentiero dei colli, but no journey says where along it: move them to the stop they last passed or the nearest one (Bivio, Rocca). Nothing changed.");
     });
 
+    it("TRV-6: who without the player character where the travellers start says the character stays (playtest 05)", async () => {
+        expect(await ok("travel", "Bivio", "--who", "Lena")).toContain("Ettore stays in Locanda: who replaces the party; to go together, leave who out, or name the party too.");
+    });
+
     it("TRV-6: who names the travellers, a hireling too, and leaves the others where they are", async () => {
         await ok("write", "Bruno", "--type", "character", "--set", "role=npc");
         await ok("write", "Locanda", "--add", "contains=[[Bruno]]");

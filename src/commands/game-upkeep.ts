@@ -84,7 +84,10 @@ function memberUpkeep(root: string, context: Context, name: string, upkeep: NonN
         const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
         const spent = writeStacks(root, context, world, [step], "a day's food").notes.join(" ");
         const fed = hungry > 0 && setNumber(root, context, campaignWorld(root, context), member, upkeep.short, 0, "a day's food") ? ` ${upkeep.short} back to 0.` : "";
-        return `${member.name} eats a day's food: ${spent}${fed}`;
+        // The last one eaten is said, for the player to hear before the day without (UPK-2).
+        const left = held.reduce((total, holding) => total + holding.stack.count, 0) - 1;
+        const last = left === 0 ? ` That was the last ${upkeep.daily}: tell the player before tomorrow.` : "";
+        return `${member.name} eats a day's food: ${spent}${fed}${last}`;
     }
 
     const days = hungry + 1;

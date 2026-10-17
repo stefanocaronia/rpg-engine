@@ -148,8 +148,9 @@ const systemSchema = z.object({
     burning: z.record(z.string().min(1), z.object({ lasts: z.string().min(1), spends: z.string().min(1).optional() }).strict(), {
         error: "write each thing that burns with how long it lasts, and what it spends when not itself, such as Lamp: {lasts: 6 hours, spends: Oil}",
     }).optional(),
-    bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), rules: z.string().min(1) }).strict(), {
-        error: "write each list with the most items it holds, the field an item that asks for it has, and the rules to read, such as attuned: {most: 3, needs: attunement, rules: Attunement}",
+    bonds: z.record(z.string().min(1), z.object({ most: z.number().int().positive(), needs: z.string().min(1), while: z.string().min(1).optional(), rules: z.string().min(1) }).strict(), {
+        error: "write each list with the most items it holds, the field an item that asks for it has, the list it gives its bonuses only while in, and the rules to read, "
+            + "such as attuned: {most: 3, needs: attunement, while: equipped, rules: Attunement}",
     }).optional(),
     immune: z.string().min(1).optional(),
     "turn-uses": z.record(
@@ -467,7 +468,9 @@ export interface GameSystem
     conditionIcons: Record<string, string>;
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
     /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
-    bonds: Record<string, { most: number; needs: string; rules: string; }>;
+    bonds: Record<string, { most: number; needs: string; while?: string; rules: string; }>;
+    /** By bonus list, the list its pages must be in too to give their bonuses, as an attuned ring worn (BND-4). */
+    bonusWhile: Record<string, string>;
     /** What each party member uses up a day under the rigor «rules» (UPK-1, UPK-2). */
     upkeep?: { daily: string; short: string; grace: string; worsens: string; water?: string; lifestyle?: Lifestyle; rules: string; };
     /** What burns, by the effect named after it: how long it lasts, and the kind it spends when not itself, such as Oil (UPK-3). */
@@ -768,6 +771,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.imperial?.pound === undefined ? {} : { pound: Number.parseFloat(data.imperial.pound) }),
         ...(data["length-unit"] === undefined ? {} : { lengthUnit: data["length-unit"] }),
         bonusLists: data["bonus-lists"] ?? [],
+        bonusWhile: Object.fromEntries(Object.entries(data.bonds ?? {}).flatMap(([list, bond]) => (bond.while === undefined ? [] : [[list, bond.while]]))),
         ...(data.load === undefined ? {} : {
             load: {
                 field: data.load.field,

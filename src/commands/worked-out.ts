@@ -23,7 +23,7 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
-import { carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, weightUnit, type World } from "../pages/index.ts";
+import { bonusPages, carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, weightUnit, type World } from "../pages/index.ts";
 import { formatDuration } from "../time/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 
@@ -151,7 +151,7 @@ function effectValuesOver(world: World, page: Page): Record<string, unknown>
 
     // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449); an at-least
     // field rises to theirs, as Gauntlets of Ogre Power's str 19, and stays when higher.
-    for (const page of (world.system?.bonusLists ?? []).flatMap((list) => linksIn(valueNamed(fields, list)).flatMap((name) => findPage(world, name) ?? []))) {
+    for (const page of bonusPages(world, fields)) {
         for (const [field, value] of Object.entries(inheritedFields(world, page))) {
             const kind = declaredKind(world, field);
             const amount = kind === "bonus" || kind === "at-least" ? numberOf(value) : undefined;

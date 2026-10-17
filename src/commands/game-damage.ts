@@ -1,6 +1,6 @@
 // Damage of a type (D-449, DMG-1–DMG-3): what the lists of who takes it ignore, halve or double, before the counter loses it.
 import { comparableText, valueNamed } from "../core/text.ts";
-import { findPage, inheritedFields, linksIn, type Page, textsIn, type World } from "../pages/index.ts";
+import { bonusPages, inheritedFields, type Page, textsIn, type World } from "../pages/index.ts";
 import type { DamageRule, GameSystem } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
 
@@ -62,7 +62,7 @@ export function damageTaken(system: GameSystem, rule: DamageRule, fields: Record
 export function damageLists(world: World, page: Page, rule: DamageRule): Record<string, unknown>
 {
     const own = inheritedFields(world, page);
-    const given = (world.system?.bonusLists ?? []).flatMap((list) => linksIn(valueNamed(own, list)).flatMap((name) => findPage(world, name) ?? []));
+    const given = bonusPages(world, own);
     const effects = effectsOf(page);
     return Object.fromEntries([rule.ignores, rule.halves, rule.doubles].map((list) => {
         const written = valueNamed(own, list);

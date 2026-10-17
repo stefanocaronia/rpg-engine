@@ -151,6 +151,7 @@ export const travel = defineCommand({
         const measures = measuresOf(root, system);
         const journey = readJourney(root);
         const travellers = travellersOf(world, input.who, journey);
+        const staying = input.who === undefined ? "" : stayingNote(world, travellers);
         const { movers, vehicle } = moversOf(world, travellers);
         const ownJourney = journey !== undefined && sameMovers(journey, movers) ? journey : undefined;
         checkOtherJourney(world, roads, journey, movers);
@@ -192,7 +193,17 @@ export const travel = defineCommand({
         const time = merged === undefined ? undefined : { ...merged, around: merged.passed >= 60 ? aroundLead(world) : undefined, extensionLines };
         // A passage's conditions are its page's text, the master's to judge (ROA-8).
         const passages = (plan.passages ?? []).map((name) => `The way goes through ${name}, a passage to another map: read its page for when and how it opens.`);
-        return { ...told, reached: walked.reached, date: formatGameDate(date), travelled, hoursLeft: Math.max(0, plan.hours * 60 - travelled), ending, around, time, notes: [...passages, ...walked.notes] };
+        return {
+            ...told,
+            reached: walked.reached,
+            date: formatGameDate(date),
+            travelled,
+            hoursLeft: Math.max(0, plan.hours * 60 - travelled),
+            ending,
+            around,
+            time,
+            notes: [...passages, ...walked.notes, ...(staying === "" ? [] : [staying])],
+        };
     },
 
     format(result)
@@ -518,6 +529,20 @@ function aroundLines(world: World, roads: Roads, from: Position, point: Position
 }
 
 /** The travellers (TRV-6): the characters named, or the party where the player character is; in the open, those of its journey. */
+/** "Corrado stays in Roccalba: …": who travels leaves out the player character where they start, which who may not have meant (playtest 05). */
+function stayingNote(world: World, travellers: Page[]): string
+{
+    const pc = playerCharacter(world);
+    const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
+    const start = travellers[0] === undefined ? undefined : placeOf(travellers[0]);
+
+    if (pc === undefined || travellers.includes(pc) || start === undefined || placeOf(pc)?.path !== start.path) {
+        return "";
+    }
+
+    return `${pc.name} stays in ${start.name}: who replaces the party; to go together, leave who out, or name the party too.`;
+}
+
 function travellersOf(world: World, who: string | string[] | undefined, journey: Journey | undefined): Page[]
 {
     const names = (typeof who === "string" ? [who] : (who ?? [])).filter((name) => name.trim() !== "");

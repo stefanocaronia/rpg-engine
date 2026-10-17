@@ -36,6 +36,11 @@ describe("the day's food", () => {
         expect(page("characters/Ettore.md")).toContain('"[[Rations]] 1"');
     });
 
+    it("says when the last ration is eaten, for the player to hear (UPK-2, playtest 05)", async () => {
+        expect(await ok("advance", "--by", "1d")).not.toContain("That was the last");
+        expect(await ok("advance", "--by", "1d")).toContain("That was the last Rations: tell the player before tomorrow.");
+    });
+
     it("counts a kind of the campaign that derives from the system's, as Razioni from Rations, and Torcia as a Torch (UPK-1, UPK-3)", async () => {
         await ok("write", "Razioni", "--type", "item", "--set", "item=[[Rations]]");
         await ok("write", "Torcia", "--type", "item", "--set", "item=[[Torch]]");

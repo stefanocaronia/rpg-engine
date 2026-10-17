@@ -88,7 +88,9 @@ export function pagePlayer({ folder, askPlayer, moments })
         const timing = { asked: asked.id, title: asked.title, question: asked.question, labels: asked.labels, square: asked.square === true, reply, shownMs: shown === undefined ? null : shown - seen, answeredMs: Date.now() - seen, clicked };
         appendFileSync(join(pageFolder, "asked.jsonl"), JSON.stringify(timing) + "\n");
         const choices = asked.labels.join(" · ") + (asked.square ? " · a square of the map" : "");
-        record(folder, "Page", `(${asked.title}: ${asked.question})\n\n${choices} → ${reply.square ?? reply.label ?? `«${reply.words}»`}${clicked ? "" : " (not on the page: see page/console.txt)"}`);
+        // What reached the master: a click, an answer sent around the page, or one the server refused, as when the question had already changed.
+        const how = clicked === true ? "" : clicked === false ? " (not on the page: see page/console.txt)" : ` (not delivered: ${clicked}; the master got another answer or none)`;
+        record(folder, "Page", `(${asked.title}: ${asked.question})\n\n${choices} → ${reply.square ?? reply.label ?? `«${reply.words}»`}${how}`);
     };
 
     // The buttons, as a chat that shows them would: the player reads the master's words so far, then presses one or writes what they do.
@@ -162,8 +164,8 @@ export function pagePlayer({ folder, askPlayer, moments })
     const answerWithoutBanner = async (asked, reply) => {
         note(`run: the question "${asked.question}" answered through /api/answer, not on the page`);
         const body = reply.words !== undefined ? { asked: asked.id, text: reply.words } : reply.square !== undefined ? { asked: asked.id, square: reply.square } : { asked: asked.id, choice: reply.index };
-        await fetch(`${state.link}api/answer`, { method: "POST", headers: { "Content-Type": "application/json", Origin: state.link.replace(/\/$/, "") }, body: JSON.stringify(body) });
-        return false;
+        const response = await fetch(`${state.link}api/answer`, { method: "POST", headers: { "Content-Type": "application/json", Origin: state.link.replace(/\/$/, "") }, body: JSON.stringify(body) });
+        return response.ok ? false : `HTTP ${response.status}`;
     };
 
     const show = async (section) => {

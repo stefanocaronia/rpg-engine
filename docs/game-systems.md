@@ -171,10 +171,10 @@ Under the rigor rules, each midnight `advance` passes, a party member with a she
 
 ```yaml
 bonds:
-  attuned: {most: 3, needs: attunement, rules: Attunement}
+  attuned: {most: 3, needs: attunement, while: equipped, rules: Attunement}
 ```
 
-The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read.
+The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read. With `while`, a bound item gives its bonuses only while in that list too, as a ring worn, and binding one not there says so.
 
 ### at-most
 
@@ -194,7 +194,7 @@ turn-uses:
   sneak attack: {needs: "has(features, Sneak Attack)", any-turn: true, resets: each turn}
 ```
 
-What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. A use may carry a `note` its line says each time. The master names what gives one more with `by`; when it names a counter of the sheet, as `action-surge` for Action Surge, the engine spends one, and refuses at 0. The dashboard shows a party member who acts the uses that stand alone.
+What one may do in a turn, which `scene use` counts once the scene has an order of turns (a use's name takes no word `by` or `for`): each use at most `most` times (1 when left out; a formula on who uses it, unlimited when it gives nothing), in one's own turn unless `any-turn`, for who `needs` gives more than 0; a use `within` another takes that one first and counts inside it. Uses come back at the start of one's own turn, or at every turn with `resets: each turn`. A use may carry a `note` its line says each time, only for whom `note-when` gives more than 0. The master names what gives one more with `by`; when it names a counter of the sheet, as `action-surge` for Action Surge, the engine spends one, and refuses at 0. The dashboard shows a party member who acts the uses that stand alone.
 
 ### damage
 
