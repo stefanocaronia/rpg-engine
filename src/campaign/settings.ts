@@ -70,6 +70,9 @@ export { unitSystems };
 /** Which pictures the engine has made, where it can (D-308, D-388, D-420): none, only those the player asks for, or one for each new place, quest and one met. */
 export const pictureWays = ["none", "on request", "new elements"] as const;
 
+/** How much the master thinks before each answer, written for each AI app in the campaign's folder (D-462). */
+export const efforts = ["low", "medium", "high"] as const;
+
 /** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
 export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
 
@@ -143,6 +146,10 @@ export const settingsSchema = z.object({
         "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
             + "or new elements (one for each new place and quest, and for each character and kind of creature the character meets)",
     ),
+    effort: z.enum(efforts).optional().describe(
+        "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code, Codex and Gemini CLI read it in the campaign's folder; "
+            + "unset, each app keeps its own",
+    ),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
@@ -186,7 +193,7 @@ export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 // The pictures: status asks for them once, only where they can be made (D-308).
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {

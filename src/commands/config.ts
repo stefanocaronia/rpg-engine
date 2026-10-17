@@ -13,6 +13,7 @@ import {
     companionWays,
     diceWays,
     difficulties,
+    efforts,
     lethalities,
     listSettingNames,
     mapSettingNames,
@@ -34,6 +35,7 @@ import {
     storyWays,
     styleTextLengths,
     unitSystems,
+    writeEffortFiles,
 } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
@@ -116,6 +118,11 @@ export const config = defineCommand({
             throw new Error('Give add or remove with a list setting and no value, such as setting lines, add "spiders".');
         }
 
+        // The master's effort is the player's to choose, in their terminal or on the dashboard, never the master's own (D-462).
+        if (input.setting?.trim() === "effort" && input.value !== undefined && context.terminal !== true && context.actor !== "player") {
+            throw new Error("effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort low. Nothing changed.");
+        }
+
         const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
         const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
         let replaced: string[] = [];
@@ -142,6 +149,16 @@ export const config = defineCommand({
             }
         } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
+        }
+
+        // The effort written where each app reads it in the campaign's folder (D-462).
+        if (input.setting?.trim() === "effort" && input.value !== undefined) {
+            const unwritten = writeEffortFiles(root, context.platform);
+            replaced = [
+                ...replaced,
+                "Written for Claude Code, Codex and Gemini CLI: it applies from the next chat; in Codex and Gemini CLI only in a folder they trust; an effort picked in the app for one chat wins there.",
+                ...unwritten,
+            ];
         }
 
         // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.
@@ -183,7 +200,7 @@ const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
 const styleSettingNames = ["prose", "story", "author", "style"];
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
-export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "pictures", "lines", "veils", "language"] as const;
+export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "pictures", "effort", "lines", "veils", "language"] as const;
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -284,6 +301,11 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         about: "the pictures of places, quests and those you meet, made on this computer",
         values: pictureWays,
         means: { none: "no pictures", "on request": "those you ask for", "new elements": "one for each new place and quest, and for each one you meet" },
+    },
+    effort: {
+        about: "how much the master thinks before each answer, from the next chat; unset, your AI app decides",
+        values: efforts,
+        means: { low: "quicker answers, a little less thought", medium: "the usual balance", high: "slower answers, more thought" },
     },
     lines: { about: "what never appears in the game" },
     veils: { about: "what happens only off screen, without details" },
@@ -556,7 +578,14 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
     }
 
     // How the master writes, unset: the core's own ways, never missing (D-395).
-    const own: Record<string, string> = { prose: "plain (as your instructions write)", story: "situations (as your instructions write)", author: "(none)", style: "(none)" };
+    // And the master's effort, unset: each app's own, the player's to choose (D-462).
+    const own: Record<string, string> = {
+        prose: "plain (as your instructions write)",
+        story: "situations (as your instructions write)",
+        author: "(none)",
+        style: "(none)",
+        effort: "(the app's own: the player's to choose)",
+    };
 
     if (settings[name] === undefined && Object.hasOwn(own, name)) {
         return own[name];

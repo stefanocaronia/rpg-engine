@@ -159,6 +159,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "dice",
             "units",
             "pictures",
+            "effort",
             "lines",
             "veils",
             "language",

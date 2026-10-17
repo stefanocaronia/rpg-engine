@@ -203,9 +203,31 @@ describe("rpg config", () => {
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
+    });
+
+    it("writes the master's effort the player chose where each app reads it, refused to the master (D-462)", async () => {
+        mkdirSync(join(folder, ".codex"), { recursive: true });
+        writeFileSync(join(folder, ".codex", "config.toml"), 'model = "gpt-5"\nmodel_reasoning_effort = "xhigh"\n\n[mcp_servers.rpg]\ncommand = "rpg"\n');
+        expect((await runCommandLine(["config", "effort", "low"], context)).output).toBe(
+            "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort low. Nothing changed.",
+        );
+        const set = await runCommandLine(["config", "effort", "low"], { ...context, terminal: true });
+        expect(set.output).toContain("effort: low\nWritten for Claude Code, Codex and Gemini CLI: it applies from the next chat");
+        expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ effortLevel: "low", autoMemoryEnabled: false });
+        // A key of Codex's top, before its first table, in place of the player's: under a table it would be ignored.
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "low"\nmodel = "gpt-5"\n\n\[mcp_servers\.rpg\]\ncommand = "rpg"\n/);
+        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs.customOverrides).toEqual([
+            { match: { model: "chat-base-3" }, modelConfig: { generateContentConfig: { thinkingConfig: { thinkingLevel: "LOW" } } } },
+            { match: { model: "chat-base-2.5" }, modelConfig: { generateContentConfig: { thinkingConfig: { thinkingBudget: 1024 } } } },
+        ]);
+        // The player's own change on the dashboard, and the same written twice stays one key.
+        await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
+        await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8").match(/model_reasoning_effort/g)).toHaveLength(1);
+        expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBe("high");
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
@@ -277,7 +299,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, calendar-start, pictures, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });
