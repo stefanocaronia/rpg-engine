@@ -7,6 +7,7 @@ import { answer, readAsked, readView } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
+import { DeathSaveCard } from "./death-save.tsx";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
@@ -19,6 +20,7 @@ import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
+import type { SaveAsked } from "./save-outcome.ts";
 import { SavesView } from "./saves.tsx";
 import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
@@ -69,7 +71,15 @@ interface Shown
     /** How many problems the campaign's files have, which the master fixes (validate). */
     problems?: number;
     problem?: string;
+    /** What a death save's roll changed, kept back while its dice are in the air (D-461). */
+    pending?: Steady;
 }
+
+/** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
+type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "story" | "openScene">;
+
+// How long at most what a death save changed waits for its dice, when they never land.
+const longestHold = 15_000;
 
 function App()
 {
@@ -93,6 +103,12 @@ function App()
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
     // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
     const [answering, setAnswering] = useState<string>();
+    // The death save asked of the player, a card that stays until its outcome is told (D-461): the question, whether the player rolled, its roll once landed.
+    const [saving, setSaving] = useState<{ asked: Asked; save: SaveAsked; sent?: boolean; roll?: ShownRoll; }>();
+    const savingNow = useRef(saving);
+    savingNow.current = saving;
+    // The roll that answers it while its dice fly: what it changes of the sheet waits for them (D-461).
+    const holding = useRef<{ roll: ShownRoll; timer: number; }>();
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
@@ -148,35 +164,89 @@ function App()
                     setHeld(asking.id);
                 }
 
-                setShown((before) => ({
-                    campaign: overview.kind === "overview" ? overview.campaign : undefined,
-                    system: overview.kind === "overview" ? overview.system : undefined,
-                    now: overview.kind === "overview" ? overview.now : undefined,
-                    calendar: overview.kind === "overview" ? overview.calendar : undefined,
-                    party,
-                    chosen: member?.name,
-                    headline: page?.kind === "page" ? page.headline : undefined,
-                    sheet: page?.kind === "page" ? page.sheet : [],
-                    cards: page?.kind === "page" ? page.cards : undefined,
-                    text: page?.kind === "page" ? page.text : "",
-                    story: page?.kind === "page" ? page.story : undefined,
-                    rolls,
-                    rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
-                    masterMood: overview.kind === "overview" ? overview.master?.mood : undefined,
-                    place: overview.kind === "overview" ? overview.place : undefined,
-                    openScene: overview.kind === "overview" ? overview.openScene : undefined,
-                    asked,
-                    version: before.version + 1,
-                    readAt: new Date(),
-                    noCharacter: overview.kind === "none",
-                    problems: overview.kind === "overview" ? overview.problems : undefined,
-                }));
+                // A death save asked becomes its card; another question takes its place. The roll that answers it holds back what it changes (D-461).
+                const card = asked?.save === undefined ? (asked === undefined ? savingNow.current : undefined) : savingNow.current?.asked.id === asked.id ? savingNow.current : { asked, save: asked.save };
+                savingNow.current = card;
+                setSaving(card);
+
+                if (asking !== undefined && card !== undefined && card.roll === undefined && holding.current === undefined) {
+                    holding.current = { roll: asking, timer: window.setTimeout(() => land(asking.id), longestHold) };
+                }
+
+                setShown((before) =>
+                    withHeld(before, {
+                        campaign: overview.kind === "overview" ? overview.campaign : undefined,
+                        system: overview.kind === "overview" ? overview.system : undefined,
+                        now: overview.kind === "overview" ? overview.now : undefined,
+                        calendar: overview.kind === "overview" ? overview.calendar : undefined,
+                        party,
+                        chosen: member?.name,
+                        headline: page?.kind === "page" ? page.headline : undefined,
+                        sheet: page?.kind === "page" ? page.sheet : [],
+                        cards: page?.kind === "page" ? page.cards : undefined,
+                        text: page?.kind === "page" ? page.text : "",
+                        story: page?.kind === "page" ? page.story : undefined,
+                        rolls,
+                        rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
+                        masterMood: overview.kind === "overview" ? overview.master?.mood : undefined,
+                        place: overview.kind === "overview" ? overview.place : undefined,
+                        openScene: overview.kind === "overview" ? overview.openScene : undefined,
+                        asked,
+                        version: before.version + 1,
+                        readAt: new Date(),
+                        noCharacter: overview.kind === "none",
+                        problems: overview.kind === "overview" ? overview.problems : undefined,
+                    }, holding.current !== undefined)
+                );
             }
         } catch (error) {
             if (number === reading.current) {
                 setShown((before) => ({ ...before, problem: error instanceof Error ? error.message : String(error) }));
             }
         }
+    };
+
+    // The death save's dice have landed: its outcome on the card, and the sheet as the roll left it (D-461).
+    const land = (roll: string): void => {
+        const held = holding.current;
+
+        if (held === undefined || held.roll.id !== roll) {
+            return;
+        }
+
+        window.clearTimeout(held.timer);
+        holding.current = undefined;
+        setSaving((before) => (before === undefined || before.roll !== undefined ? before : { ...before, roll: held.roll }));
+        setShown((before) => (before.pending === undefined ? before : { ...before, ...before.pending, pending: undefined }));
+    };
+
+    // The card of the death save closed, the focus goes to the notice of the turn, or else to the page (D-461).
+    const closeSave = (): void => {
+        setSaving(undefined);
+        requestAnimationFrame(() => {
+            const page = document.querySelector<HTMLElement>("main");
+            page?.setAttribute("tabindex", "-1");
+            (document.querySelector<HTMLElement>(".turn-notice") ?? page)?.focus({ preventScroll: true });
+        });
+    };
+
+    // The player rolls the death save from its card, as from a check's button.
+    const rollSave = async (): Promise<void> => {
+        const id = saving?.asked.id;
+
+        if (id === undefined) {
+            return;
+        }
+
+        setSaving((before) => (before === undefined ? before : { ...before, sent: true }));
+
+        try {
+            await answer(id, 0);
+        } catch {
+            setSaving((before) => (before === undefined ? before : { ...before, sent: false }));
+        }
+
+        void read();
     };
 
     // A new roll's face on the robot, for a moment, when the roll is remarkable (D-305, 7).
@@ -307,11 +377,23 @@ function App()
                 )}
                 {inSetup && <SetupCorner live={live} />}
                 <Notices notices={notices} />
-                {live && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
+                {live && saving !== undefined && (
+                    <DeathSaveCard
+                        key={saving.asked.id}
+                        asked={saving.asked}
+                        save={saving.save}
+                        member={lead}
+                        roll={saving.roll}
+                        rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
+                        onRoll={() => void rollSave()}
+                        onClose={closeSave}
+                    />
+                )}
+                {live && saving === undefined && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
                 {inSetup ? <SetupView setup={setup} /> : (
                     <>
                         {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
-                        {live && yourTurn && address.section !== "scene" && shown.asked === undefined && (
+                        {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
                             <a class="turn-notice" href={sectionAddress("scene")}>
                                 <Icon name="combat" />
                                 <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
@@ -395,6 +477,7 @@ function App()
                     requested={thrown}
                     sheetThrow={sheetThrow}
                     party={shown.party}
+                    onLanded={land}
                     onShown={(id) => {
                         setHeld((now) => (now === id ? undefined : now));
 
@@ -410,6 +493,26 @@ function App()
             </div>
         </RequestedRoll.Provider>
     );
+}
+
+/** The page as read now; while a death save's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */
+function withHeld(before: Shown, next: Shown, hold: boolean): Shown
+{
+    if (!hold) {
+        return { ...next, pending: undefined };
+    }
+
+    const steady = (shown: Shown): Steady => ({
+        party: shown.party,
+        chosen: shown.chosen,
+        headline: shown.headline,
+        sheet: shown.sheet,
+        cards: shown.cards,
+        text: shown.text,
+        story: shown.story,
+        openScene: shown.openScene,
+    });
+    return { ...next, ...steady(before), pending: steady(next) };
 }
 
 /** Writes the Scene's address over Combat's old one, without a step in the history. */

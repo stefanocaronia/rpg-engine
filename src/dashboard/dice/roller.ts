@@ -28,8 +28,11 @@ export interface Roller
 {
     kinds: ReadonlySet<string>;
     roll(dice: DieThrow[], showing: Showing): Promise<boolean>;
-    /** Leaves the window's foot, this many pixels tall, to the plate of the next throws, and its head to the page's header: no die lies under them (D-366). */
-    cover(foot: number, head: number): void;
+    /**
+     * Leaves the window's foot, this many pixels tall, to the plate of the next throws, and its head to the page's header: no die lies under them (D-366);
+     * `tight`, the dice keep under the head even where that leaves them less room than a tray (D-461).
+     */
+    cover(foot: number, head: number, tight?: boolean): void;
     hide(): void;
     resize(): void;
 }
@@ -92,7 +95,7 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
             dice.forEach((die, index) => die.rare !== undefined && stage.celebrate(index, die.rare, { instant, particles }));
             return true;
         },
-        cover: (foot, head) => stage.cover(foot, head),
+        cover: (foot, head, tight) => stage.cover(foot, head, tight),
         hide: () => stage.hide(),
         resize: () => stage.resize(),
     };

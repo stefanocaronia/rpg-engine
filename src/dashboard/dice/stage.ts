@@ -19,6 +19,8 @@ const dimmedBody = 0.35;
 const plateOnWide = 150;
 // The window's height up to which the dice grow with it, in pixels: a laptop's or a desktop's; past it they keep their size.
 const commonHeight = 900;
+// The least depth of the floor, from wall to wall, when the dice keep under something on the page that leaves them less than a tray: a die's and a little more.
+const leastTight = 2.8;
 const plateOnPhone = 220;
 const dimmedInk = 0.55;
 // The fire the highest face's numbers light with, on every set and theme: a gold ink lights brighter, a dark one turns gold.
@@ -37,8 +39,11 @@ export interface Stage
     tray: Tray;
     /** Puts dice of these kinds, by the meshes given for each kind. */
     place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
-    /** Leaves the window's foot, this many pixels tall, to the plate of the throw, and its head to the page's header: no die lies under them (D-366). */
-    cover(foot: number, head: number): void;
+    /**
+     * Leaves the window's foot, this many pixels tall, to the plate of the throw, and its head to the page's header: no die lies under them (D-366); `tight`,
+     * the dice keep under the head even where that leaves them less room than a tray, at least a die's (D-461).
+     */
+    cover(foot: number, head: number, tight?: boolean): void;
     show(poses: (Pose | undefined)[]): void;
     /** Sets a die that does not count aside: gone out a moment, darker, then burnt away, or faded at once when shown instant (D-358). */
     dim(die: number, instant: boolean): void;
@@ -152,6 +157,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     const tray: Tray = { width: 7, depth: 4.5 };
     let covering: number | undefined;
     let heading = 0;
+    let tight = false;
     // The dice lie on a table that moves up the window as the tray ends above the plate.
     const table = new THREE.Group();
     scene.add(table);
@@ -173,9 +179,10 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         // The tray fills what the camera sees on the floor, but for the window's foot the plate covers: no die lies under it (D-366).
         const seen = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.length();
         const edge = seen / 2 - 1.2;
-        const far = Math.max(3, edge - heading / height * seen);
+        const below = edge - heading / height * seen;
+        const far = tight ? below : Math.max(3, below);
         const covered = (covering ?? (matchMedia("(max-width: 600px)").matches ? plateOnPhone : plateOnWide)) / height * seen;
-        const front = Math.max(6 - far, edge - covered);
+        const front = Math.max((tight ? leastTight : 6) - far, edge - covered);
         tray.depth = (front + far) / 2;
         tray.width = Math.max(3, far * camera.aspect);
         table.position.z = (front - far) / 2;
@@ -292,10 +299,11 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                 prime(first.object, look.finish);
             }
         },
-        cover(foot, head)
+        cover(foot, head, under = false)
         {
             covering = foot;
             heading = head;
+            tight = under;
             resize();
         },
         show(poses)

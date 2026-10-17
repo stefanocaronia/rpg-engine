@@ -9,6 +9,7 @@ import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
+import { DeathSaves } from "./dying.tsx";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
@@ -20,7 +21,7 @@ import { requestedRow, useRequested } from "./requested.ts";
 import { memberStatus } from "./status.tsx";
 import { StoryBox } from "./story.tsx";
 import { arrowStep, systemWord, t } from "./text.ts";
-import { DeathSaves, Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
+import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
 const descriptionCard = "Description";

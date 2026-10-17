@@ -1,0 +1,74 @@
+// The dying (D-310 (7), D-314, D-461), in the language of the death save's card: the successes as circles on one side, the failures as squares on the other,
+// the line of the heart and a word between them, tinted by where they stand: red dying, green stable, grey and flat dead. In the band of the sheet and the
+// card at hand a panel; in a row of the turns one line.
+import type { DyingCounter } from "./data.ts";
+import { type DyingState, dyingState } from "./save-outcome.ts";
+import { t } from "./text.ts";
+
+/** The panel of the dying, from its counters, the successes first: large, or in one line in a row of the turns. */
+export function DeathSaves({ dying, compact = false }: { dying: DyingCounter[]; compact?: boolean; })
+{
+    const state = dyingState(dying) ?? "dying";
+    const [successes, failures] = dying;
+    return (
+        <div class={["death-saves", state, compact ? "compact" : ""].filter((name) => name !== "").join(" ")}>
+            {successes !== undefined && <Marks kind="successes" value={successes.value} most={successes.limit ?? Math.max(successes.value, 1)} lit={0} />}
+            <span class="death-middle">
+                <HeartLine line={stateLines[state]} />
+                <span class="death-word">{dyingWord(state)}</span>
+            </span>
+            {failures !== undefined && <Marks kind="failures" value={failures.value} most={failures.limit ?? Math.max(failures.value, 1)} lit={0} />}
+        </div>
+    );
+}
+
+/** Where someone at their dying point stands, in a word. */
+export function dyingWord(state: DyingState): string
+{
+    return state === "dead" ? t("Dead") : state === "stable" ? t("Stable") : t("Dying");
+}
+
+/** A side's marks: successes as circles, failures as squares; the last `lit` of those marked are new, lit as they come. */
+export function Marks({ kind, value, most, lit }: { kind: "successes" | "failures"; value: number; most: number; lit: number; })
+{
+    const label = kind === "successes" ? t("Successes") : t("Failures");
+    return (
+        <div class={`dying-side dying-${kind}`}>
+            <span class="dying-label" aria-hidden="true">{label}</span>
+            <span class="dying-marks">
+                {Array.from({ length: most }, (_, index) => (
+                    <span
+                        key={index}
+                        class={["dying-mark", index < value ? "marked" : "", index < value && index >= value - lit ? "new" : ""].filter((name) => name !== "").join(" ")}
+                        aria-hidden="true"
+                    />
+                ))}
+                <span class="visually-hidden">{`${label}: ${t("{value} of {max}", { value, max: most })}`}</span>
+            </span>
+        </div>
+    );
+}
+
+/** The kinds of the line of the heart. */
+export type HeartLineKind = keyof typeof heartLines;
+
+// The line of the heart, on a strip 420 wide and 60 high: a faint beat while dying, a stronger one at a success, weaker at a failure, flat at the last.
+const heartLines = {
+    faint: "M0 30H130l6-6 5 10 4-4H170l5-16 7 28 5-12H260l5-5 4 8 4-3H420",
+    beat: "M0 30H120l8-4 6 4H170l6-26 8 50 6-24H240l8-4 6 4H330l6-22 8 42 6-20H420",
+    weak: "M0 30H140l6-8 6 14 4-6H300l4-6 4 8H420",
+    flat: "M0 30H420",
+    strong: "M0 30H120l8-6 6 6H160l8-34 10 60 8-30H250l8-6 6 6H320l8-30 10 54 8-24H420",
+};
+
+// The line of each state that stays.
+const stateLines: Record<DyingState, HeartLineKind> = { dying: "faint", stable: "beat", dead: "flat" };
+
+export function HeartLine({ line }: { line: HeartLineKind; })
+{
+    return (
+        <svg class="dying-line" viewBox="0 0 420 60" preserveAspectRatio="none" aria-hidden="true">
+            <path d={heartLines[line]} />
+        </svg>
+    );
+}

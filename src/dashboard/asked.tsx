@@ -571,7 +571,7 @@ function showRow(field: string | null | undefined): void
  * A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name, the number added and what kind of roll it is in words, as
  * "with advantage" (D-399); the notation is in the tooltip.
  */
-function CheckLabel({ check, dice, name }: { check: string; dice: string; name: string | undefined; })
+export function CheckLabel({ check, dice, name }: { check: string; dice: string; name: string | undefined; })
 {
     const modifier = notationModifier(dice);
     return (

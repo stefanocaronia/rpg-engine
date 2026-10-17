@@ -5,14 +5,16 @@
 import { useEffect, useRef } from "preact/hooks";
 import { CardHead, CardHeader, useOpen } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
+import { DeathSaves } from "./dying.tsx";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, itemLabel, shownText, strangerLabel } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { sideOf, Token } from "./party.tsx";
+import { dyingState } from "./save-outcome.ts";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
 import { StatusIcons, StatusPip, type TokenStatus } from "./status.tsx";
 import { t } from "./text.ts";
-import { Bar, DeathSaves } from "./widgets.tsx";
+import { Bar } from "./widgets.tsx";
 
 /** The player character's sheet as the page read it, for its card. */
 export interface OwnSheet
@@ -221,7 +223,7 @@ function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; memb
                     <StatusIcons status={fighterStatus(fighter)} />
                 </div>
                 {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
-                {fighter.dying && <DeathSaves dying={fighter.dying} />}
+                {fighter.dying && <DeathSaves dying={fighter.dying} compact />}
             </div>
         </li>
     );
@@ -250,6 +252,7 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
                 member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
                 hostile={hostile}
                 side={pip ? sideOf(fighter.role) : undefined}
+                dying={dyingState(fighter.dying)}
                 {...(status === undefined ? {} : { status })}
                 number={number}
             />
@@ -259,7 +262,7 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
 /** A fighter's state: what is on them, whether they act, and at 0 the party's dying point or a foe down. */
 function fighterStatus(fighter: Fighter): TokenStatus
 {
-    return { effects: fighter.effects, inactive: fighter.inactive === true, down: fighter.dying !== undefined || fighter.health === "down" };
+    return { effects: fighter.effects, inactive: fighter.inactive === true, down: fighter.dying !== undefined || fighter.health === "down", dying: dyingState(fighter.dying) };
 }
 
 /** A fighter's name as the page writes it: Creature 2 for "creature 2", Someone for "someone". */

@@ -1,7 +1,7 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
 import { Coins } from "./coins.tsx";
-import type { DyingCounter, Member, SheetValue } from "./data.ts";
+import type { Member, SheetValue } from "./data.ts";
 import { besideLabel, effectEndLabel, effectLabel } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
@@ -121,22 +121,6 @@ function Items({ items, fields }: { items: string[]; fields?: ReadonlySet<string
 {
     const sentences = items.some((item) => item.trim().split(/\s+/).length >= sentenceWords);
     return <ul class={sentences ? "notes" : "chips"}>{items.map((item) => <li key={item}>{itemLabel(item, fields)}</li>)}</ul>;
-}
-
-/** The death saves, large (D-310 (7), D-314): the successes and the failures, by shape as well as colour. */
-export function DeathSaves({ dying }: { dying: DyingCounter[]; })
-{
-    return (
-        <div class="death-saves">
-            {dying.map((counter, index) => (
-                <p key={counter.field} class="saves-row">
-                    <span class="saves-label">{phraseLabel(fieldLabel(counter.field))}</span>
-                    {Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, mark) => <span key={mark} class={`save ${index === 0 ? "success" : "failure"}${mark < counter.value ? " marked" : ""}`} aria-hidden="true" />)}
-                    <span class="visually-hidden">{t("{value} of {max}", { value: counter.value, max: counter.limit ?? "?" })}</span>
-                </p>
-            ))}
-        </div>
-    );
 }
 
 /** Someone's effects as tags, each with its end; past `most`, how many more. */

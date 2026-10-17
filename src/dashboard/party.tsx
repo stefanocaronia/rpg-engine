@@ -1,9 +1,11 @@
 // The party's strip (D-276): a link to each one's sheet, with their token and the pip of their state (D-419), their name, the first counter of their line and
 // their effects; the dead go last.
 import type { Member, ShownScene } from "./data.ts";
+import { dyingWord } from "./dying.tsx";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { tokenSymbolsPref, usePref } from "./prefs.ts";
+import type { DyingState } from "./save-outcome.ts";
 import { memberStatus, StatusPip, statusWords, type TokenStatus } from "./status.tsx";
 import { t } from "./text.ts";
 import { Bar, Effects } from "./widgets.tsx";
@@ -34,7 +36,11 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
                     >
                         <MemberToken member={member} status={status} />
                         <span class="name">{member.name}</span>
-                        {member.dead ? <span class="dead-mark">{t("dead")}</span> : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
+                        {member.dead
+                            ? <span class="dead-mark">{t("dead")}</span>
+                            : status.dying !== undefined && member.dying !== undefined
+                            ? <MemberDying state={status.dying} counters={member.dying} />
+                            : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
                         <Effects effects={member.effects} most={2} />
                     </a>
                 );
@@ -43,12 +49,26 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
     );
 }
 
+/** One of the party at their dying point in the strip (D-461): the word of where they stand and their marks, small, in place of their bar. */
+function MemberDying({ state, counters }: { state: DyingState; counters: Member["dying"] & object; })
+{
+    const [successes, failures] = counters;
+    const marks = (counter: typeof successes, kind: string) =>
+        counter === undefined ? [] : Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, index) => <span key={`${kind}${index}`} class={`strip-mark ${kind}${index < counter.value ? " marked" : ""}`} />);
+    return (
+        <span class={`member-dying ${state}`}>
+            <span class="member-dying-word">{dyingWord(state)}</span>
+            <span class="strip-marks" aria-hidden="true">{[...marks(successes, "success"), ...marks(failures, "failure")]}</span>
+        </span>
+    );
+}
+
 /** A party member's token with the pip of their state (D-419), in the strip and the sheet's band; never in the rolls. Their class in its tooltip (D-409). */
 export function MemberToken({ member, large, status }: { member: Member; large?: boolean; status: TokenStatus; })
 {
     return (
         <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
-            <Token member={member} large={large} side={sideOf(member.role)} status={status} />
+            <Token member={member} large={large} side={sideOf(member.role)} status={status} dying={status.dying} />
         </span>
     );
 }
@@ -76,9 +96,19 @@ export const sideIcons: Record<Side, string> = {
  * With a side, the pip of that side at the start of its lower edge, with their class's symbol or the side's (D-414); with a state, its pip at the end (D-419); with a
  * number, a stranger's as Creature 2's or B1's, a small dark coin at the end of its upper edge, off the face (D-420).
  */
-export function Token({ member, large, hostile, side, status, number }: { member: Tokened; large?: boolean; hostile?: boolean; side?: Side; status?: TokenStatus; number?: string | undefined; })
+export function Token({ member, large, hostile, side, status, number, dying }: {
+    member: Tokened;
+    large?: boolean;
+    hostile?: boolean;
+    side?: Side;
+    status?: TokenStatus;
+    number?: string | undefined;
+    /** At their dying point, the picture greyed, as the panel of the dying says (D-461). */
+    dying?: DyingState | undefined;
+})
 {
-    const classes = ["token", member.role, member.dead ? "dead" : "", large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
+    const fallen = dying === "dead" || member.dead === true ? "dead" : dying === undefined ? "" : `fallen ${dying}`;
+    const classes = ["token", member.role, fallen, large ? "large" : "", hostile ? "hostile" : ""].filter((name) => name !== "").join(" ");
     return (
         <span class={classes} aria-hidden="true">
             {member.image === undefined
