@@ -67,6 +67,8 @@ function countSession(folder, before)
         upkeep: { rations: 0, hungry: 0, lifestylePaid: 0, lifestyleAsked: 0, lifestyleShort: 0, lifestyleSet: 0 },
         attuned: [],
         recharge: { effects: [], rolls: 0 },
+        stabilizing: [],
+        positions: { moves: 0, refused: 0, opportunities: [], difficult: 0, beyond: [] },
         due: [],
         eventsByHand: [],
         newDays: [],
@@ -297,6 +299,28 @@ function countSheetTools(counts, turn, name, input, output, refused)
         counts.recharge.effects.push({ turn, page: input.page, name: input.name });
     }
 
+    // Keeping the dying from dying (DIE): a Medicine check, a healer's kit, Spare the Dying, or a stable condition, as the master names them.
+    const said = `${input.why ?? ""} ${input.check ?? ""} ${input.question ?? ""} ${JSON.stringify(input.options ?? "")} ${input.name ?? ""}`;
+
+    if (["roll", "ask", "effect", "change"].includes(name) && /stabil|medicin|morent|spare the dying|healer|cerusic/i.test(said) && !(name === "change" && input.field === "hp")) {
+        counts.stabilizing.push({ turn, tool: name, what: said.trim().slice(0, 120), refused });
+    }
+
+    // Positions on a place's map (GRD, POS): a move to a square, refused or not, and what the engine says of it.
+    if (name === "move" && input.at !== undefined) {
+        counts.positions.moves++;
+        counts.positions.refused += refused ? 1 : 0;
+        counts.positions.difficult += /difficult ground/.test(output) ? 1 : 0;
+
+        if (/Opportunity Attacks/.test(output)) {
+            counts.positions.opportunities.push({ turn, page: input.page, at: input.at });
+        }
+
+        if (/beyond the .* speed/.test(output)) {
+            counts.positions.beyond.push({ turn, page: input.page, at: input.at });
+        }
+    }
+
     if (name === "roll" && /recharge|ricaric/i.test(`${input.why ?? ""} ${input.check ?? ""}`)) {
         counts.recharge.rolls++;
     }
@@ -381,6 +405,9 @@ function markdown(details)
         ["Upkeep: rations eaten, days without food; lifestyle paid, asked, short, set", (s) => `${s.upkeep.rations}, ${s.upkeep.hungry}; ${s.upkeep.lifestylePaid}, ${s.upkeep.lifestyleAsked}, ${s.upkeep.lifestyleShort}, ${s.upkeep.lifestyleSet}`],
         ["Attunement writes (refused)", (s) => s.attuned.length ? `${s.attuned.map((a) => `${a.turn} ${a.page}`).join(", ")} (${s.attuned.filter((a) => a.refused).length})` : "0"],
         ["Recharge: effects on copies, rolls", (s) => `${s.recharge.effects.map((e) => `${e.turn} ${e.page} «${e.name}»`).join(", ") || "0"}; ${s.recharge.rolls}`],
+        ["Stabilizing: calls that name it", (s) => s.stabilizing.map((c) => `${c.turn} ${c.tool}`).join(", ") || "0"],
+        ["Moves to a square (refused); onto difficult ground", (s) => `${s.positions.moves} (${s.positions.refused}); ${s.positions.difficult}`],
+        ["Moves past an enemy's side (opportunity); beyond the speed", (s) => `${s.positions.opportunities.map((m) => `${m.turn} ${m.page}`).join(", ") || "0"}; ${s.positions.beyond.map((m) => `${m.turn} ${m.page}`).join(", ") || "0"}`],
         ["Master cost: total, median per turn, highest", (s) => `${s.masterCost} $, ${median(s.costs.map((c) => c.cost))} $, ${maxOf(s.costs, "cost")}`],
         ["Player cost", (s) => `${s.playerCost} $`],
         ["Duration: total (master work)", (s) => `${s.time.minutes} min (${s.time.masterWorkMinutes} min)`],
