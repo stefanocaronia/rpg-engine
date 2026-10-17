@@ -79,7 +79,14 @@ export function effectEndLabel(end: EffectEnd): string
 /** An effect in the page's language, with its end: Benedizione until day 1, 18:01. */
 export function effectLabel(effect: { name: string; end?: EffectEnd; }): string
 {
-    return effect.end === undefined ? effect.name : `${effect.name} ${effectEndLabel(effect.end)}`;
+    const name = effectName(effect.name);
+    return effect.end === undefined ? name : `${name} ${effectEndLabel(effect.end)}`;
+}
+
+/** An effect's name in the page's language: a condition of the system in its words, as Unconscious in Italian; any other as written. */
+export function effectName(name: string): string
+{
+    return systemWord("words", name) ?? name;
 }
 
 /** Where a place is from the party, in the page's language: 12 km north-east, Here; the length as `length` writes it in the player's units. */

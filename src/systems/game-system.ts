@@ -43,6 +43,8 @@ const speedSchema = z.string().refine((text) => readSpeed(text) !== undefined, `
 // A factor of speed, such as 1/2 for difficult terrain, or 0.5.
 const factorSchema = z.union([z.number().positive(), z.string().regex(/^\d+\/[1-9]\d*$/, "write it as 1/2, or as a number such as 0.5")]);
 const hoursSchema = z.number().positive().max(24);
+const inWordsHelp = "give the words a foe's counter is heard in, from full to 0, such as [unhurt, hurt, badly hurt, down]";
+const inWordsSchema = z.array(z.string().min(1), { error: inWordsHelp }).min(2, inWordsHelp);
 
 const travelSchema = z.object({
     paces: z.record(z.string().min(1), speedSchema).optional(),
@@ -177,16 +179,23 @@ const systemSchema = z.object({
     keeping: z.object({ counter: z.string().min(1), conditions: z.array(z.string().min(1)).optional(), rules: z.string().min(1) }, {
         error: "write it as what can break what someone keeps alive, such as {counter: hp, conditions: [Unconscious], rules: Concentration}",
     }).strict().optional(),
-    combat: z.object({ track: z.string().min(1), "in-words": z.boolean().optional(), inactive: z.array(z.string().min(1)).optional() }, {
-        error: "write it as the counter a fight follows, whether the player hears a foe's in words, and the conditions that keep from acting, such as {track: hp, in-words: true, inactive: [Stunned]}",
+    combat: z.object({ track: z.string().min(1), "in-words": inWordsSchema.optional(), inactive: z.array(z.string().min(1)).optional() }, {
+        error: "write it as the counter a fight follows, the words the player hears a foe's in, from full to 0, and the conditions that keep from acting, "
+            + "such as {track: hp, in-words: [unhurt, hurt, badly hurt, down], inactive: [Stunned]}",
     }).strict().optional(),
     dying: z.object({
         at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'),
         show: z.object({ successes: z.string().min(1).optional(), failures: z.string().min(1).optional() }).strict(),
+        stable: z.string().min(1).optional(),
+        marks: z.object({ successes: z.string().min(1).optional(), failures: z.string().min(1).optional() }).strict().optional(),
     }, {
-        error: "write it as when the dying begins and the counters the dashboard shows by their sides, such as {at: hp 0, show: {successes: death-successes, failures: death-failures}}; "
+        error: "write it as when the dying begins, the counters the dashboard shows by their sides, what it calls one whose successes are full, and the short words of "
+            + "each side's marks, such as {at: hp 0, show: {successes: death-successes, failures: death-failures}, stable: Stable, marks: {successes: Successes, failures: Failures}}; "
             + "what the dying point does is the system's code (D-448)",
-    }).strict().optional(),
+    }).strict().refine((dying) => dying.show.successes === undefined || dying.stable !== undefined, {
+        message: "name what full successes make, which the dashboard says, such as stable: Stable",
+        path: ["stable"],
+    }).optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
         list: z.string().min(1),
@@ -289,7 +298,8 @@ export interface Keeping
 export interface CombatData
 {
     track: string;
-    inWords: boolean;
+    /** The words a foe's counter is heard in, from full to 0, the others between at equal shares (D-314); none when the player hears the numbers. */
+    inWords: string[];
     inactive: string[];
 }
 
@@ -302,6 +312,10 @@ export interface Dying
     field: string;
     value: number;
     show: { successes?: string; failures?: string; };
+    /** What the dashboard calls one whose successes are full, as the 5e's Stable. */
+    stable?: string;
+    /** The short words of each side's marks, as Successes; the field's label where none. */
+    marks: { successes?: string; failures?: string; };
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -840,7 +854,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, parseFormula(String(most))])),
         ...(data.damage === undefined ? {} : { damage: data.damage }),
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
-        ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? false, inactive: data.combat.inactive ?? [] } }),
+        ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? [], inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: dyingRule(data.dying) }),
         shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
@@ -1162,5 +1176,5 @@ function systemFormulas(data: FormulaData, name: string, path: string): SystemFo
 function dyingRule(data: NonNullable<z.infer<typeof systemSchema>["dying"]>): Dying
 {
     const [field, value] = data.at.split(" ");
-    return { field, value: Number(value), show: data.show };
+    return { field, value: Number(value), show: data.show, ...(data.stable === undefined ? {} : { stable: data.stable }), marks: data.marks ?? {} };
 }

@@ -5,14 +5,14 @@
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHead } from "./card.tsx";
-import type { ShownGrid } from "./data.ts";
+import type { DyingCounter, ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { iconPath } from "./icons.tsx";
 import { strangerLabel } from "./labels.ts";
 import { type Side, sideIcons, sideOf } from "./party.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
 import { conditionsPref, tokenSymbolsPref, useChoice, usePref } from "./prefs.ts";
-import type { DyingState } from "./save-outcome.ts";
+import { type DyingState, dyingState } from "./save-outcome.ts";
 import { statusMarks, statusWords } from "./status.tsx";
 import { t } from "./text.ts";
 
@@ -36,7 +36,7 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
     acting?: string;
     picking?: Picking;
     /** Where those of the party at their dying point stand, by name, for their tokens (D-461). */
-    dying?: ReadonlyMap<string, DyingState>;
+    dying?: ReadonlyMap<string, DyingCounter[]>;
 })
 {
     const svg = useRef<SVGSVGElement>(null);
@@ -172,7 +172,7 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
                         {standing.map((one, index) => (
                             <Token
                                 key={index}
-                                one={{ ...one, party: one.role !== "other", dying: dying?.get(one.name) }}
+                                one={{ ...one, party: one.role !== "other", dying: dyingState(dying?.get(one.name)), counters: dying?.get(one.name) }}
                                 index={index}
                                 acting={one.name === acting}
                                 hostile={one.hostile === true}
@@ -756,7 +756,7 @@ function Token({ one, index, acting, hostile, x, y, scale }: { one: Standing; in
 }
 
 /** Someone on the map, with whether they are of the party and, at their dying point, where they stand (D-461). */
-type Standing = ShownGrid["at"][number] & { party?: boolean; dying?: DyingState | undefined; };
+type Standing = ShownGrid["at"][number] & { party?: boolean; dying?: DyingState | undefined; counters?: DyingCounter[] | undefined; };
 
 /** At 0 a token greyed, until its counter rises again; dead, greyer and faded, as in the party's strip (D-461). */
 function fallenOf(one: Standing): string

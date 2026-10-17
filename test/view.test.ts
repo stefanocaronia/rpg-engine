@@ -394,7 +394,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         const overview = JSON.parse(await ok("view", "--json"));
         const fighters = overview.openScene.fighters;
         expect(fighters.map((fighter: { name: string; }) => fighter.name)).toEqual(["creature 1", "Kira", "creature 2", "Bran"]);
-        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "bloodied", effects: [] });
+        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "bloodied", wound: "low", effects: [] });
         // Of a foe only the conditions anyone sees, by name; a stunned one does not act. The party's effects as their line gives them, with the end, at the turn
         // of a creature the character does not know by its number (VIEW-4).
         expect(fighters[2]).toMatchObject({ health: "unhurt", effects: [{ name: "Stunned", text: "Stunned" }], inactive: true });
@@ -407,6 +407,19 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         // Nowhere the copies' names, of a creature the character does not know: in the diary the end is at a creature's turn.
         expect(JSON.stringify(overview)).not.toContain("Lupo nero");
         expect(overview.diary).toContain("Bran: Benedizione until round 2, a creature");
+
+        // The system's four words at equal shares of the 11 hit points: more than half hurt, half or less bloodied, 0 down (D-465).
+        const heard = async (): Promise<unknown> => {
+            const { health, wound } = JSON.parse(await ok("view", "--json")).openScene.fighters[2];
+            return { health, wound };
+        };
+
+        await ok("change", "Lupo nero 2", "hp", "--by=-5");
+        expect(await heard()).toEqual({ health: "hurt" });
+        await ok("change", "Lupo nero 2", "hp", "--by=-1");
+        expect(await heard()).toEqual({ health: "bloodied", wound: "low" });
+        await ok("change", "Lupo nero 2", "hp", "--to=0");
+        expect(await heard()).toEqual({ health: "down", wound: "down" });
     });
 
     it("gives the state of each one at the place, in the scene and on the map: the party's effects, of the others the conditions anyone sees; none for someone (D-419)", async () => {
@@ -458,7 +471,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
 
     it("gives someone of the party at the dying point the panel of the dying in their band, outside a fight too; never the dead (D-310 (7))", async () => {
         await ok("write", "Bran", "--set", "hp=0/9", "--set", "death-failures=2");
-        const dying = [{ field: "death-successes", value: 0, limit: 3, side: "successes" }, { field: "death-failures", value: 2, limit: 3, side: "failures" }];
+        const dying = [{ field: "death-successes", value: 0, limit: 3, side: "successes", full: "Stable", mark: "Successes" }, { field: "death-failures", value: 2, limit: 3, side: "failures", mark: "Failures" }];
         expect(JSON.parse(await ok("view", "--json")).party[1].dying).toEqual(dying);
         await ok("change", "Bran", "hp", "--to=1");
         expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();

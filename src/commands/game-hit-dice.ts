@@ -7,7 +7,7 @@ import { rollDice } from "../dice/index.ts";
 import { findPage, isPartyMember, type World, writePage } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
-import { systemCounterChanged } from "./game-system-code.ts";
+import { allSaid, systemCounterChanged } from "./game-system-code.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { formulaValue } from "./worked-out.ts";
@@ -61,7 +61,7 @@ export function spendDice(root: string, context: Context, world: World, spending
         ? [[field, dice.value, dice.value - count], [rule.gives, target.value, after]].flatMap(([changed, before, now]) => thresholdNotes(root, system, String(changed), { before, after: now, amount: {} }))
         : [];
     // What the counter regained sets off in the game system's code, as the 5e's dying point (D-448).
-    const dying = systemCounterChanged(root, context, { page: page.name, field: rule.gives, before: target.value, after, lost: 0, ...(target.max === undefined ? {} : { max: target.max }) });
+    const dying = allSaid(systemCounterChanged(root, context, { page: page.name, field: rule.gives, before: target.value, after, lost: 0, ...(target.max === undefined ? {} : { max: target.max }) }));
     const line = `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}.`;
     return [line, ...notes, ...dying].join("\n");
 }

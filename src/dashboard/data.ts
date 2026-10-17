@@ -135,7 +135,10 @@ export interface Fighter
     /** In a fight, marked by the master as attacking the party (D-415): its token glows red. */
     hostile?: true;
     stranger?: true;
+    /** A foe's counter in the system's words, or anyone's as numbers. */
     health?: string;
+    /** How hard a foe heard in words is hit: low in the lower half of the system's words, down at the last. */
+    wound?: "low" | "down";
     effects: Member["effects"];
     inactive?: true;
     keeps?: string[];
@@ -150,6 +153,10 @@ export interface DyingCounter
     limit?: number;
     /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
     side?: "successes" | "failures";
+    /** Of the successes, what the system calls one whose counter is full, as Stable. */
+    full?: string;
+    /** The short word of its marks, as Successes; its field's label where none. */
+    mark?: string;
 }
 
 /** The open scene as the player sees it (VIEW-6). */

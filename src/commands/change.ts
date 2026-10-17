@@ -46,7 +46,7 @@ import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { changeStack } from "./game-stacks.ts";
-import { systemCounterChanged } from "./game-system-code.ts";
+import { allSaid, systemCounterChanged } from "./game-system-code.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -132,7 +132,7 @@ export const change = defineCommand({
         }
 
         // The game system's code follows the change, after the roll that made it (D-448): as the 5e's dying point.
-        const lines = hitCounter === undefined ? [] : systemCounterChanged(root, context, hitCounter);
+        const lines = hitCounter === undefined ? [] : allSaid(systemCounterChanged(root, context, hitCounter));
         const told = lines.length === 0 ? result : { ...result, reminders: [...result.reminders, ...lines] };
         return roll === undefined ? told : { ...told, rolled: roll.data.result };
     },
@@ -463,7 +463,7 @@ function applyStep(
     const carried = layer !== undefined && lost > 0 && beyond > 0 && readCounterText(String(step.after))?.value === 0
         ? `${beyond} went past 0 in ${layer.name}: when it ends so, what goes past may carry over to ${page}'s own ${field}, as its text says.`
         : "";
-    const reminders = [keepingLossNote(world, readOpenScene(root).scene, system, page, field, lost), ...shieldNotes(world, system, holder.page, field, lost), carried].filter((note) => note !== "");
+    const reminders = [keepingLossNote(world, readOpenScene(root).scene, system, page, field, lost), ...shieldNotes(world, system, holder.page, field, lost, fellBy(step)), carried].filter((note) => note !== "");
     const outcome = {
         page,
         field,
@@ -505,14 +505,15 @@ function withDeclaredStart(world: World, holder: CounterHolder, fields: Record<s
 function lostBy(step: Step): number
 {
     const by = step.amount.by;
+    return typeof by === "number" ? Math.max(0, -by) : fellBy(step);
+}
 
-    if (typeof by === "number") {
-        return by < 0 ? -by : 0;
-    }
-
+/** How far a step's counter went down, which stops at its least. */
+function fellBy(step: Step): number
+{
     const before = readCounter(step.before)?.value;
     const after = readCounter(step.after)?.value;
-    return before === undefined || after === undefined ? 0 : before - after;
+    return before === undefined || after === undefined ? 0 : Math.max(0, before - after);
 }
 
 /** What else a step says: the thresholds it touches, the events it sets off, the pages that changed with it, and those that keep their own. */

@@ -20,7 +20,7 @@ import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
-import type { SaveAsked } from "./save-outcome.ts";
+import { type SaveAsked, type SaveOutcome, saveOutcome } from "./save-outcome.ts";
 import { SavesView } from "./saves.tsx";
 import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
@@ -103,12 +103,15 @@ function App()
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
     // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
     const [answering, setAnswering] = useState<string>();
-    // The death save asked of the player, a card that stays until its outcome is told (D-461): the question, whether the player rolled, its roll once landed.
-    const [saving, setSaving] = useState<{ asked: Asked; save: SaveAsked; sent?: boolean; roll?: ShownRoll; }>();
+    // The death save asked of the player, a card that stays until its outcome is told (D-461): the question, whether the player rolled, its roll once landed
+    // with what the system's code wrote of it.
+    const [saving, setSaving] = useState<{ asked: Asked; save: SaveAsked; sent?: boolean; roll?: ShownRoll; outcome?: SaveOutcome | undefined; }>();
     const savingNow = useRef(saving);
     savingNow.current = saving;
     // The roll that answers it while its dice fly: what it changes of the sheet waits for them (D-461).
     const holding = useRef<{ roll: ShownRoll; timer: number; }>();
+    // The party as last read, never held back: what a death save's roll left of them.
+    const partyNow = useRef<Member[]>([]);
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
@@ -126,6 +129,7 @@ function App()
         try {
             const [overview, asked] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined)]);
             const party = overview.kind === "overview" ? overview.party : [];
+            partyNow.current = party;
             const rolls = overview.kind === "overview" ? overview.rolls : [];
             const member = party.find((candidate) => candidate.name === readAddress(window.location.hash).name) ?? party[0];
             const page = member === undefined ? undefined : await readView(member.name);
@@ -166,8 +170,10 @@ function App()
 
                 // A death save asked becomes its card; another question takes its place. The roll that answers it holds back what it changes (D-461).
                 const card = asked?.save === undefined ? (asked === undefined ? savingNow.current : undefined) : savingNow.current?.asked.id === asked.id ? savingNow.current : { asked, save: asked.save };
-                savingNow.current = card;
-                setSaving(card);
+                // Dice landed before what the system's code wrote was read: the outcome as soon as it is.
+                const shownCard = card?.roll !== undefined && card.outcome === undefined ? toldCard(card, party) : card;
+                savingNow.current = shownCard;
+                setSaving(shownCard);
 
                 if (asking !== undefined && card !== undefined && card.roll === undefined && holding.current === undefined) {
                     holding.current = { roll: asking, timer: window.setTimeout(() => land(asking.id), longestHold) };
@@ -216,7 +222,13 @@ function App()
 
         window.clearTimeout(held.timer);
         holding.current = undefined;
-        setSaving((before) => (before === undefined || before.roll !== undefined ? before : { ...before, roll: held.roll }));
+        setSaving((before) => {
+            if (before === undefined || before.roll !== undefined) {
+                return before;
+            }
+
+            return { ...toldCard(before, partyNow.current), roll: held.roll };
+        });
         setShown((before) => (before.pending === undefined ? before : { ...before, ...before.pending, pending: undefined }));
     };
 
@@ -384,6 +396,7 @@ function App()
                         save={saving.save}
                         member={lead}
                         roll={saving.roll}
+                        outcome={saving.outcome}
                         rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
                         onRoll={() => void rollSave()}
                         onClose={closeSave}
@@ -493,6 +506,14 @@ function App()
             </div>
         </RequestedRoll.Provider>
     );
+}
+
+/** A death save's card with its outcome, as what the system's code wrote left who rolled it, in the party as last read (D-461). */
+function toldCard<Card extends { asked: Asked; save: SaveAsked; outcome?: SaveOutcome | undefined; }>(card: Card, party: Member[]): Card
+{
+    const who = card.asked.who;
+    const after = party.find((member) => (who === undefined ? member.role === "pc" : member.name === who));
+    return { ...card, outcome: after === undefined ? undefined : saveOutcome(card.save, after) };
 }
 
 /** The page as read now; while a death save's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */

@@ -3,7 +3,8 @@
 // card at hand a panel; in a row of the turns one line.
 import type { DyingCounter } from "./data.ts";
 import { statusIcons } from "./icons.tsx";
-import { type DyingState, dyingState } from "./save-outcome.ts";
+import { fieldLabel, itemLabel } from "./labels.ts";
+import { type DyingState, dyingState, stableName } from "./save-outcome.ts";
 import { t } from "./text.ts";
 
 /** The panel of the dying, from its counters by their sides: large, or in one line in a row of the turns. */
@@ -14,15 +15,15 @@ export function DeathSaves({ dying, compact = false }: { dying: DyingCounter[]; 
     const failures = dying.find((counter) => counter.side === "failures");
     return (
         <div class={["death-saves", state, compact ? "compact" : ""].filter((name) => name !== "").join(" ")}>
-            {successes !== undefined && <Marks kind="successes" value={successes.value} most={successes.limit ?? Math.max(successes.value, 1)} lit={0} />}
+            {successes !== undefined && <Marks kind="successes" label={sideLabel(successes)} value={successes.value} most={successes.limit ?? Math.max(successes.value, 1)} lit={0} />}
             <span class="death-middle">
                 <HeartLine line={stateLines[state]} />
                 <span class="death-word">
                     {state === "dead" && <Skull />}
-                    {dyingWord(state)}
+                    {dyingWord(state, dying)}
                 </span>
             </span>
-            {failures !== undefined && <Marks kind="failures" value={failures.value} most={failures.limit ?? Math.max(failures.value, 1)} lit={0} />}
+            {failures !== undefined && <Marks kind="failures" label={sideLabel(failures)} value={failures.value} most={failures.limit ?? Math.max(failures.value, 1)} lit={0} />}
         </div>
     );
 }
@@ -37,16 +38,28 @@ export function Skull()
     );
 }
 
-/** Where someone at their dying point stands, in a word. */
-export function dyingWord(state: DyingState): string
+/** Where someone at their dying point stands, in a word: stable as the system calls it, by their counters. */
+export function dyingWord(state: DyingState, counters: DyingCounter[] | undefined): string
 {
-    return state === "dead" ? t("Dead") : state === "stable" ? t("Stable") : t("Dying");
+    return state === "dead" ? t("Dead") : state === "stable" ? stableWord(counters) : t("Dying");
 }
 
-/** A side's marks: successes as circles, failures as squares; the last `lit` of those marked are new, lit as they come. */
-export function Marks({ kind, value, most, lit }: { kind: "successes" | "failures"; value: number; most: number; lit: number; })
+/** What the system calls one whose successes are full, in the page's language, as Stable; else the label of the successes. */
+export function stableWord(counters: DyingCounter[] | undefined): string
 {
-    const label = kind === "successes" ? t("Successes") : t("Failures");
+    const name = stableName(counters);
+    return name === undefined ? fieldLabel(counters?.find((counter) => counter.side === "successes")?.field ?? "") : itemLabel(name);
+}
+
+/** The words of a side's marks, the system's short ones, as Successes, else its field's label. */
+export function sideLabel(counter: { field: string; mark?: string | undefined; }): string
+{
+    return counter.mark === undefined ? fieldLabel(counter.field) : itemLabel(counter.mark);
+}
+
+/** A side's marks, named by the system: successes as circles, failures as squares; the last `lit` of those marked are new, lit as they come. */
+export function Marks({ kind, label, value, most, lit }: { kind: "successes" | "failures"; label: string; value: number; most: number; lit: number; })
+{
     return (
         <div class={`dying-side dying-${kind}`}>
             <span class="dying-label" aria-hidden="true">{label}</span>

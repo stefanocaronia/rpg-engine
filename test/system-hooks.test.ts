@@ -1,5 +1,5 @@
 // The hooks of a game system's code (D-448): called after the engine's own writes, the roll that made a change first in the log; one that fails, or code that
-// is not loaded, is a line for the master and the change stands; the 5e's death save and the dashboard's reading of it agree.
+// is not loaded, is a line for the master and the change stands; the dashboard reads the 5e's death save from what its code wrote.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
@@ -34,9 +34,22 @@ describe("the hooks of a system's code (D-448)", () => {
                 },
             },
         };
-        expect(await ok("change", "Ettore", "hp", "--by=-3", failing)).toContain("Ettore: hp 10/20 → 7/20.\nThe system 5e failed after this change: broken: on purpose. It is done all the same.");
-        expect(await ok("change", "Ettore", "hp", "--by=-1", { ...context, systemCode: {} })).toContain("The system 5e's code is not loaded: start the server again");
+        expect(await ok("change", "Ettore", "hp", "--by=-3", failing)).toContain(
+            "Ettore: hp 10/20 → 7/20.\nThe system 5e failed after this change: broken: on purpose. It is done all the same; meanwhile apply its rules yourself, as its pages say.",
+        );
+        expect(await ok("change", "Ettore", "hp", "--by=-1", { ...context, systemCode: {} })).toContain("The system 5e's code is not loaded: start the MCP server again (/mcp in Claude Code)");
         expect(await ok("show", "Ettore")).toContain("hp 6/20");
+    });
+
+    it("keep the engine's own notes when the code is not loaded: the marks of the turn, what a roll's effects ask (review of 17 October)", async () => {
+        const unloaded = { ...context, systemCode: {} };
+        await ok("effect", "add", "Ettore", "Poisoned");
+        expect(await ok("roll", "1d20+2", "--who", "Ettore", "--why", "Atletica", unloaded)).toMatch(/Ettore has Poisoned: if they change this roll[^\n]*\nThe system 5e's code is not loaded/);
+        await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Ettore", "--creatures", "Wolf=1");
+        await ok("scene", "order", "--order", "Wolf 1", "--order", "Ettore");
+        const turn = await ok("scene", "next", unloaded);
+        expect(turn).toContain("Mark with scene use what Ettore uses of the turn");
+        expect(turn).toContain("The system 5e's code is not loaded");
     });
 
     it("come after the roll that made a change, in the log (D-459)", async () => {
@@ -47,7 +60,7 @@ describe("the hooks of a system's code (D-448)", () => {
         expect(last).toEqual(["roll", "counter-changed death-failures"]);
     });
 
-    it("write the death save as the dashboard reads it, for every face and every count (D-461)", async () => {
+    it("write the death save the dashboard reads from the view, for every face and every count, stable as the system names it (D-461)", async () => {
         await ok("change", "Ettore", "hp", "--to", "0");
         const clicking: Player = { choose: async () => 0 };
 
@@ -65,15 +78,14 @@ describe("the hooks of a system's code (D-448)", () => {
                     },
                 };
                 await ask.run(ask.input.parse({ question: "Ettore", options: "Tiro contro la morte 1d20", who: "Ettore" }), { ...context, page, player: clicking, random: () => face });
-                const outcome = saveOutcome(asking.save as Parameters<typeof saveOutcome>[0], { total: face, dice: [{ sides: 20, value: face }] });
-                const shown = await ok("show", "Ettore");
-                const counted = (field: string): number => Number(new RegExp(`${field} (\\d+)`).exec(shown)?.[1] ?? 0);
-                const label = `${successes}/${failures}, face ${face}`;
+                const member = JSON.parse(await ok("view", "--json")).party.find((one: { name: string; }) => one.name === "Ettore");
+                const outcome = saveOutcome(asking.save as Parameters<typeof saveOutcome>[0], member);
+                const lost = failures + (face === 1 ? 2 : 1);
+                const expected = face === 20 ? "back" : face >= 10 ? (successes === 2 ? "stable" : "success") : lost >= 3 ? "dead" : face === 1 ? "failures" : "failure";
+                expect(outcome?.kind, `${successes}/${failures}, face ${face}`).toBe(expected);
 
-                if (outcome.kind === "back") {
-                    expect(shown, label).toContain("hp 1/20");
-                } else {
-                    expect([counted("death-successes"), counted("death-failures")], label).toEqual([outcome.successes, outcome.kind === "stable" ? 0 : outcome.failures]);
+                if (expected !== "back") {
+                    expect(member.dying.find((counter: { side: string; }) => counter.side === "successes").full).toBe("Stable");
                 }
             }
         }

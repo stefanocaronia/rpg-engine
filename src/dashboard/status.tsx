@@ -1,7 +1,8 @@
 // Someone's state (D-419): on their token a small pip at the lower right, the mark that counts most (dead, at 0, kept from acting, then the last condition put
 // on), a second coin behind it when there are more, all of them in its tooltip; in Combat's order each mark as an icon. The conditions' drawings are the game
 // system's (`condition-icons`); one it does not draw, or a system without them, has a plain mark. The player chooses when the pips show (Settings).
-import type { Member, SeenEffect, ShownScene } from "./data.ts";
+import type { DyingCounter, Member, SeenEffect, ShownScene } from "./data.ts";
+import { stableWord } from "./dying.tsx";
 import { effectLabel } from "./game-words.ts";
 import { statusIcons } from "./icons.tsx";
 import { conditionsPref, useChoice } from "./prefs.ts";
@@ -17,6 +18,8 @@ export interface TokenStatus
     dead?: boolean | undefined;
     /** One of the party at their dying point: dying, stable, or dead at the last failure (D-461). */
     dying?: DyingState | undefined;
+    /** Their counters at the dying point, which say what the system calls one stable. */
+    counters?: DyingCounter[] | undefined;
     /** One of the party, whose 0 is a heartbeat; anyone else's is their fall to the ground (D-461). */
     party?: boolean | undefined;
 }
@@ -39,7 +42,7 @@ export function statusMarks(status: TokenStatus, all = false): StatusMark[]
     const effects = status.effects ?? [];
     // At 0 one of the party has a heartbeat, dying or stable; anyone else falls to the ground. The dead a red skull (D-461).
     const down: StatusMark = status.party === true
-        ? { icon: statusIcons.down, label: status.dying === "stable" ? t("Stable") : t("Dying"), kind: "state", tone: status.dying === "stable" ? "stable" : "dying" }
+        ? { icon: statusIcons.down, label: status.dying === "stable" ? stableWord(status.counters) : t("Dying"), kind: "state", tone: status.dying === "stable" ? "stable" : "dying" }
         : { icon: statusIcons.fallen, label: t("down"), kind: "state", tone: "down" };
     const states: StatusMark[] = status.dead === true || status.dying === "dead"
         ? [{ icon: statusIcons.dead, label: t("dead"), kind: "state", tone: "dead", filled: true }]
@@ -56,7 +59,7 @@ export function statusMarks(status: TokenStatus, all = false): StatusMark[]
 export function memberStatus(member: Member, scene?: ShownScene): TokenStatus
 {
     const inScene = scene?.fighters?.find((fighter) => fighter.name === member.name) ?? scene?.who.find((person) => person.name === member.name);
-    return { effects: member.effects, dead: member.dead, down: member.dying !== undefined, inactive: inScene?.inactive === true, dying: dyingState(member.dying), party: true };
+    return { effects: member.effects, dead: member.dead, down: member.dying !== undefined, inactive: inScene?.inactive === true, dying: dyingState(member.dying), counters: member.dying, party: true };
 }
 
 /** The pip of someone's state on their token, its marks in its tooltip; none without a mark, or while the player keeps them off. */
@@ -79,19 +82,30 @@ export function StatusPip({ status }: { status: TokenStatus | undefined; })
     );
 }
 
-/** Each mark of someone's state as an icon with its words, for a screen reader too and for the keyboard, as Combat's order shows them (D-419). */
-export function StatusIcons({ status }: { status: TokenStatus; })
+/**
+ * Each mark of someone's state as an icon with its words, for a screen reader too and for the keyboard, as Combat's order shows them (D-419); a foe's fall only
+ * drawn when its words already say it.
+ */
+export function StatusIcons({ status, downSaid = false }: { status: TokenStatus; downSaid?: boolean; })
 {
     const marks = statusMarks(status, true);
     return marks.length === 0 ? null : (
         <span class="status-icons">
-            {marks.map((mark, index) => (
-                <span key={`${mark.label} ${index}`} class={["status-icon", mark.kind, mark.tone ?? ""].filter((name) => name !== "").join(" ")} role="img" aria-label={mark.label} data-tip={mark.label} tabIndex={0}>
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d={mark.icon} class={mark.filled ? "filled" : undefined} />
-                    </svg>
-                </span>
-            ))}
+            {marks.map((mark, index) => {
+                const said = downSaid && mark.tone === "down";
+                return (
+                    <span
+                        key={`${mark.label} ${index}`}
+                        class={["status-icon", mark.kind, mark.tone ?? ""].filter((name) => name !== "").join(" ")}
+                        {...(said ? { "aria-hidden": "true" } : { role: "img", "aria-label": mark.label, tabIndex: 0 })}
+                        data-tip={mark.label}
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d={mark.icon} class={mark.filled ? "filled" : undefined} />
+                        </svg>
+                    </span>
+                );
+            })}
         </span>
     );
 }

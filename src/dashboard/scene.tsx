@@ -1,7 +1,7 @@
 // The Scene section (D-309, VIEW-6, D-444): where the party is, its picture with the places around it, its name, what holds there and its text; the open
 // scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+import type { DyingCounter, Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
@@ -9,7 +9,6 @@ import { biomeLabel, biomes } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
-import { type DyingState, dyingState } from "./save-outcome.ts";
 import { Card } from "./sheet.tsx";
 import { StatusPip } from "./status.tsx";
 import { t } from "./text.ts";
@@ -347,10 +346,7 @@ function letterOf(name: string): string | undefined
 }
 
 /** Where those of the party at their dying point stand, by name, for their tokens on the map (D-461). */
-function dyingOf(party: Member[]): Map<string, DyingState>
+function dyingOf(party: Member[]): Map<string, DyingCounter[]>
 {
-    return new Map(party.flatMap((member) => {
-        const state = dyingState(member.dying);
-        return state === undefined ? [] : [[member.name, state] as const];
-    }));
+    return new Map(party.flatMap((member) => (member.dying === undefined ? [] : [[member.name, member.dying] as const])));
 }

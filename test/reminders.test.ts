@@ -111,9 +111,13 @@ describe("what shields a counter (DAT-14), and the counters only change changes 
         expect(await ok("change", "Corrado", "temp-hp", "--to", "3")).toBe('Corrado: temp-hp 0 → 3.\ntemp-hp is no longer at 0: read rules "Temporary Hit Points".');
         expect((await rpg("write", "Corrado", "--set", "temp-hp=5")).output).toContain('temp-hp is a counter: use change, page "Corrado", field temp-hp, to 5');
         expect(await ok("change", "Corrado", "hp", "--by=-7")).toBe(
-            "Corrado: hp 24/24 → 17/24.\nCorrado has temp-hp 3, which goes first: if this was damage, give hp back what temp-hp takes and take it from temp-hp, with change. "
-                + "Read rules Temporary Hit Points.",
+            "Corrado: hp 24/24 → 17/24.\nCorrado has temp-hp 3, which goes first: if this was damage, temp-hp takes 3 of it: change temp-hp by -3 and hp by +3. Read rules Temporary Hit Points.",
         );
+        // What hit points lost past 0 is no hit point to give back: at 5 with 10 temporary, 20 leaves 0 (review of 17 October).
+        await ok("change", "Corrado", "hp", "--to", "5");
+        await ok("change", "Corrado", "temp-hp", "--to", "10");
+        expect(await ok("change", "Corrado", "hp", "--by=-20")).toContain("temp-hp takes 10 of it: change temp-hp by -10; hp stays as it is.");
+        await ok("change", "Corrado", "hp", "--to", "17");
         await ok("change", "Corrado", "temp-hp", "--to", "0");
         expect(await ok("change", "Corrado", "hp", "--by=-1")).toBe("Corrado: hp 17/24 → 16/24.");
     });

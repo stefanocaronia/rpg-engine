@@ -210,17 +210,19 @@ damage: {counter: hp, halves: damage-resistances, ignores: damage-immunities, do
 conditions: [Blinded, Charmed, Poisoned, Prone]
 condition-icons: {Prone: "M4 18h16M7 14l5-4 5 4"}
 keeping: {counter: hp, conditions: [Incapacitated, Unconscious], rules: Concentration}
-combat: {track: hp, in-words: true, inactive: [Incapacitated, Stunned, Unconscious]}
+combat: {track: hp, in-words: [unhurt, hurt, bloodied, down], inactive: [Incapacitated, Stunned, Unconscious]}
 dying:
   at: hp 0
   show: {successes: death-successes, failures: death-failures}
+  stable: Stable
+  marks: {successes: Successes, failures: Failures}
 immune: condition-immunities
 ```
 
 - `conditions`: effects with these names show their rule; `condition-icons` draws them.
 - `keeping`: what can break what someone keeps alive, as concentration; the output names the rule, the engine ends nothing.
-- `combat`: the counter the dashboard's Combat follows, foes' in words; who cannot act.
-- `dying`: when the dashboard shows the panel of the dying, and its counters by their sides. What the dying point does, as the 5e's death saves, is the system's code (see [Code](#code)).
+- `combat`: the counter the dashboard's Combat follows; `in-words`, the words a foe's is heard in, the first at full, the last at 0, those between at equal shares, translated by the system's `words`; who cannot act.
+- `dying`: when the dashboard shows the panel of the dying, its counters by their sides, `stable`, what it calls one whose successes are full, and `marks`, the short words of each side (the field's label where none), all translated by `words`. What the dying point does, as the 5e's death saves, is the system's code (see [Code](#code)); the dashboard tells a death save from what that code wrote.
 - `immune`: the list of a page whose conditions `effect add` refuses.
 
 ### tables, computed, counters
@@ -340,8 +342,8 @@ export default system;
 
 - The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again.
 - `game` reads a page (its counters with its effects, its effects, whether it is in the party or the player's character), a setting, and compares names as the engine does; it sets numbers (a counter keeps its maximum), adds and ends effects, and rolls with the engine's dice. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook.
-- A hook that fails, or code that cannot load, is a line for the master: the command's change stands.
-- The code reaches the game only through `game`: lint refuses `Math.random`, `Date`, `process` and Node's modules in `systems/*/src`.
+- A hook that fails, or code that cannot load, is a line for the master, with what to do: the command's change stands.
+- The code reaches the game only through `game`: lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
 
 ## 7. Checks
 

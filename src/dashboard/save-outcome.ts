@@ -1,6 +1,6 @@
-// What a death save the player rolled did (D-461), as the engine writes it (DIE-4): the page reads it from the roll and what the question carried, to tell it as
-// soon as the dice land.
-import type { Asked, ThrownDie } from "./data.ts";
+// What a death save the player rolled did (D-461), as the system's code wrote it (DIE-4): the page reads it from the counters the roll left against those the
+// question carried, to tell it as soon as the dice land; the rule itself is the system's alone.
+import type { Asked, DyingCounter } from "./data.ts";
 
 /** What a death save asks, as the engine sends it. */
 export type SaveAsked = NonNullable<Asked["save"]>;
@@ -15,23 +15,46 @@ export interface SaveOutcome
     count: number;
 }
 
-/** The outcome of a death save from its roll, as the engine writes it (DIE-4): the highest face brings the counter back, a total at least the save's succeeds. */
-export function saveOutcome(save: SaveAsked, roll: { total: number; dice: ThrownDie[]; }): SaveOutcome
+/** One of the party as the roll left them: their counters by their sides while at their dying point, none above it; whether dead. */
+export interface AfterSave
 {
-    const natural = roll.dice.find((die) => die.sides === save.sides && die.dropped !== true)?.value;
+    dying?: DyingCounter[] | undefined;
+    dead?: boolean | undefined;
+}
 
-    if (save.highest !== undefined && natural === save.sides) {
+/**
+ * The outcome of a death save from what its roll left (DIE-4): back above the dying point, failures added, the last of them dead, or a success, the last of
+ * them stable; none when it changed nothing, as when the system's code did not run.
+ */
+export function saveOutcome(save: SaveAsked, after: AfterSave): SaveOutcome | undefined
+{
+    if (after.dead === true) {
+        return { kind: "dead", successes: save.successes.value, failures: save.failures.most, count: Math.max(save.failures.most - save.failures.value, 1) };
+    }
+
+    if (after.dying === undefined) {
         return { kind: "back", successes: 0, failures: 0, count: 0 };
     }
 
-    if (roll.total >= save.atLeast) {
-        const successes = Math.min(save.successes.value + 1, save.successes.most);
-        return { kind: successes >= save.successes.most ? "stable" : "success", successes, failures: save.failures.value, count: 0 };
+    const successes = sideValue(after.dying, "successes") ?? save.successes.value;
+    const failures = sideValue(after.dying, "failures") ?? save.failures.value;
+
+    if (failures > save.failures.value) {
+        const count = failures - save.failures.value;
+        return { kind: failures >= save.failures.most ? "dead" : count > 1 ? "failures" : "failure", successes, failures, count };
     }
 
-    const count = natural === 1 ? (save.lowest ?? 1) : 1;
-    const failures = Math.min(save.failures.value + count, save.failures.most);
-    return { kind: failures >= save.failures.most ? "dead" : count > 1 ? "failures" : "failure", successes: save.successes.value, failures, count };
+    if (successes > save.successes.value) {
+        return { kind: successes >= save.successes.most ? "stable" : "success", successes, failures, count: 0 };
+    }
+
+    return undefined;
+}
+
+/** What the system calls one whose successes are full, as the 5e's Stable; none when it names nothing. */
+export function stableName(counters: DyingCounter[] | undefined): string | undefined
+{
+    return counters?.find((counter) => counter.side === "successes")?.full;
 }
 
 /** Where one of the party at their dying point stands (D-461): still dying, stable at the last success, dead at the last failure. */
@@ -46,4 +69,9 @@ export function dyingState(counters: { value: number; limit?: number; side?: "su
 
     const full = (side: "successes" | "failures"): boolean => counters.some((counter) => counter.side === side && counter.limit !== undefined && counter.value >= counter.limit);
     return full("failures") ? "dead" : full("successes") ? "stable" : "dying";
+}
+
+function sideValue(counters: DyingCounter[], side: "successes" | "failures"): number | undefined
+{
+    return counters.find((counter) => counter.side === side)?.value;
 }

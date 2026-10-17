@@ -25,6 +25,11 @@ export default [
             "no-restricted-properties": ["error", { object: "Math", property: "random", message: "Roll with the game's roll: the engine's dice." }],
             "no-restricted-globals": ["error", { name: "Date", message: "The game's time comes from the engine." }, { name: "process", message: "A system's code reaches only the game." }],
             "no-restricted-imports": ["error", { patterns: [{ group: ["node:*", "fs", "path"], message: "A system's code reaches only the game, through its hooks." }] }],
+            "no-restricted-syntax": [
+                "error",
+                { selector: "ImportExpression", message: "A system's code reaches only the game, through its hooks." },
+                { selector: "MemberExpression[object.name='globalThis']", message: "A system's code reaches only the game, through its hooks." },
+            ],
         },
     },
 ];

@@ -74,9 +74,9 @@ export function restingEffectsNote(page: Page): string
 
 /**
  * "Corrado has temp-hp 3, which goes first: …": a counter that shields the one that went down by `lost`, while it is above 0 (DAT-14). The change took it all
- * from the shielded counter: the note says how to put it right.
+ * from the shielded counter, which fell by `fell`, never below its least: the note says how to put it right, in numbers.
  */
-export function shieldNotes(world: World, system: GameSystem | undefined, page: Page, field: string, lost: number): string[]
+export function shieldNotes(world: World, system: GameSystem | undefined, page: Page, field: string, lost: number, fell: number): string[]
 {
     if (system === undefined || !(lost > 0)) {
         return [];
@@ -87,7 +87,11 @@ export function shieldNotes(world: World, system: GameSystem | undefined, page: 
         const value = readCounter(fields.find(([name]) => comparableText(name) === comparableText(shield))?.[1])?.value ?? 0;
         const rule = system.thresholds.find((threshold) => comparableText(threshold.field) === comparableText(shield))?.rule;
         const read = rule === undefined ? "" : ` Read rules ${rule}.`;
-        return value > 0 ? [`${page.name} has ${shield} ${value}, which goes first: if this was damage, give ${field} back what ${shield} takes and take it from ${shield}, with change.${read}`] : [];
+        // What the shield takes, and what the counter should have lost after it: given back only what it lost beyond that (review of 17 October).
+        const taken = Math.min(value, lost);
+        const back = Math.max(0, fell - (lost - taken));
+        const right = back > 0 ? `change ${shield} by -${taken} and ${field} by +${back}` : `change ${shield} by -${taken}; ${field} stays as it is`;
+        return value > 0 ? [`${page.name} has ${shield} ${value}, which goes first: if this was damage, ${shield} takes ${taken} of it: ${right}.${read}`] : [];
     });
 }
 

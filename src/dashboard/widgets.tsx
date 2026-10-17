@@ -2,7 +2,7 @@
 // for a screen reader.
 import { Coins } from "./coins.tsx";
 import type { Member, SheetValue } from "./data.ts";
-import { besideLabel, effectEndLabel, effectLabel } from "./game-words.ts";
+import { besideLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 import { t } from "./text.ts";
@@ -129,7 +129,7 @@ export function Effects({ effects, most }: { effects: Member["effects"]; most?: 
     const shown = most === undefined ? effects : effects.slice(0, most);
     return effects.length === 0 ? null : (
         <span class="effects">
-            {shown.map((effect) => <span key={effect.text} class="effect" title={effectLabel(effect)}>{effect.name}{effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}</span>)}
+            {shown.map((effect) => <span key={effect.text} class="effect" title={effectLabel(effect)}>{effectName(effect.name)}{effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}</span>)}
             {effects.length > shown.length && <span class="effect more">+{effects.length - shown.length}</span>}
         </span>
     );

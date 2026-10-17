@@ -111,6 +111,10 @@ describe("the dying", () => {
         await ok("change", "Ettore", "death-failures", "--to", "3");
         expect(await ok("change", "Ettore", "hp", "--by=10")).toContain("Ettore is dead, with death-failures 3: hp regained brings no one back");
         await ok("change", "Ettore", "hp", "--to", "0");
+        // Damage on the dead counts no failure and kills no one again.
+        const struck = readLogFile(folder).length;
+        expect(await ok("change", "Ettore", "hp", "--by=-4")).not.toContain("dies");
+        expect(readLogFile(folder).slice(struck).filter((entry) => entry.data.field === "death-failures")).toEqual([]);
         await ok("change", "Ettore", "death-failures", "--to", "0");
         const before = readLogFile(folder).length;
         await ok("roll", "1d20", "--who", "Ettore", "--hidden");

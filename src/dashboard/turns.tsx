@@ -7,7 +7,7 @@ import { CardHead, CardHeader, useOpen } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
 import { DeathSaves } from "./dying.tsx";
 import { Icon, iconPath } from "./icons.tsx";
-import { fieldLabel, itemLabel, shownText, strangerLabel } from "./labels.ts";
+import { fieldLabel, itemLabel, phraseLabel, shownText, strangerLabel } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { sideOf, Token } from "./party.tsx";
 import { dyingState } from "./save-outcome.ts";
@@ -219,8 +219,11 @@ function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; memb
                 </p>
                 {counter !== undefined && <Bar value={counter} label={fieldLabel(counter.field)} />}
                 <div class="turn-facts">
-                    {counter === undefined && fighter.health && (fighter.role === "other" ? <span class={`wound ${fighter.health}`}>{healthLabel(fighter.health)}</span> : <span class="turn-health num">{shownText(fighter.health)}</span>)}
-                    <StatusIcons status={fighterStatus(fighter)} />
+                    {counter === undefined && fighter.health
+                        && (fighter.role === "other"
+                            ? <span class={fighter.wound === undefined ? "wound" : `wound ${fighter.wound}`}>{phraseLabel(itemLabel(fighter.health))}</span>
+                            : <span class="turn-health num">{shownText(fighter.health)}</span>)}
+                    <StatusIcons status={fighterStatus(fighter)} downSaid={counter === undefined && fighter.role === "other" && fighter.wound === "down"} />
                 </div>
                 {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
                 {fighter.dying && <DeathSaves dying={fighter.dying} compact />}
@@ -252,7 +255,7 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
                 member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
                 hostile={hostile}
                 side={pip ? sideOf(fighter.role) : undefined}
-                dying={dyingState(fighter.dying) ?? (fighter.health === "down" ? "down" : undefined)}
+                dying={dyingState(fighter.dying) ?? (fighter.wound === "down" ? "down" : undefined)}
                 {...(status === undefined ? {} : { status })}
                 number={number}
             />
@@ -265,8 +268,9 @@ function fighterStatus(fighter: Fighter): TokenStatus
     return {
         effects: fighter.effects,
         inactive: fighter.inactive === true,
-        down: fighter.dying !== undefined || fighter.health === "down",
+        down: fighter.dying !== undefined || fighter.wound === "down",
         dying: dyingState(fighter.dying),
+        counters: fighter.dying,
         party: fighter.role !== "other",
     };
 }
@@ -275,11 +279,4 @@ function fighterStatus(fighter: Fighter): TokenStatus
 function shownName(fighter: Fighter): string
 {
     return fighter.stranger ? strangerLabel(fighter.name) : fighter.name;
-}
-
-/** How hurt a foe looks, in the page's language (D-314): unhurt, hurt, bloodied, down. */
-function healthLabel(health: string): string
-{
-    const labels: Record<string, string> = { unhurt: t("unhurt"), hurt: t("hurt"), bloodied: t("bloodied"), down: t("down") };
-    return labels[health] ?? health;
 }

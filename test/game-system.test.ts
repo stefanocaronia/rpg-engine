@@ -86,11 +86,14 @@ describe("the names a game gives its rolls (D-399)", () => {
 describe("what a fight follows on the dashboard (D-314)", () => {
     const base = "title: one of our own\nlanguage: it\nfields: { pf: counter, salvi: counter, persi: counter, forza: number }\nconditions: [Stordito, Prono]\n";
 
-    it("reads the counter, whether a foe's is told in words, who does not act, and the panel of the dying", () => {
-        system(near, "nostro", `${base}combat: {track: pf, in-words: true, inactive: [Stordito]}\ndying: {at: pf 0, show: {successes: salvi, failures: persi}}\n`);
-        expect(installedSystems([near])[0]).toMatchObject({ combat: { track: "pf", inWords: true, inactive: ["Stordito"] }, dying: { field: "pf", value: 0, show: { successes: "salvi", failures: "persi" } } });
+    it("reads the counter, the words a foe's is told in, who does not act, and the panel of the dying with what full successes make", () => {
+        system(near, "nostro", `${base}combat: {track: pf, in-words: [illeso, ferito, a terra], inactive: [Stordito]}\ndying: {at: pf 0, show: {successes: salvi, failures: persi}, stable: Salvo}\n`);
+        expect(installedSystems([near])[0]).toMatchObject({
+            combat: { track: "pf", inWords: ["illeso", "ferito", "a terra"], inactive: ["Stordito"] },
+            dying: { field: "pf", value: 0, show: { successes: "salvi", failures: "persi" }, stable: "Salvo" },
+        });
         system(near, "nostro", `${base}combat: {track: pf}\n`);
-        expect(installedSystems([near])[0].combat).toEqual({ track: "pf", inWords: false, inactive: [] });
+        expect(installedSystems([near])[0].combat).toEqual({ track: "pf", inWords: [], inactive: [] });
     });
 
     it("refuses a track or a counter of the dying that is no counter, and a condition it does not have", () => {
@@ -102,6 +105,10 @@ describe("what a fight follows on the dashboard (D-314)", () => {
         expect(() => installedSystems([near])).toThrow("dying: forza is not declared as a counter in fields");
         system(near, "nostro", `${base}dying: {at: pf, show: {successes: salvi}}\n`);
         expect(() => installedSystems([near])).toThrow("cannot be read");
+        system(near, "nostro", `${base}dying: {at: pf 0, show: {successes: salvi}}\n`);
+        expect(() => installedSystems([near])).toThrow("name what full successes make");
+        system(near, "nostro", `${base}combat: {track: pf, in-words: true}\n`);
+        expect(() => installedSystems([near])).toThrow("give the words a foe's counter is heard in");
     });
 
     it("reads the drawing of a condition, and marks an effect named as one of its conditions, whatever its case, with its drawing when it has one (D-419)", () => {

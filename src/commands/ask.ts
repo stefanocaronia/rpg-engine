@@ -8,7 +8,7 @@ import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
 import { placeGrid } from "./game-grids.ts";
-import { systemAsking, systemRolled } from "./game-system-code.ts";
+import { allSaid, systemAsking, systemRolled } from "./game-system-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
@@ -35,7 +35,7 @@ interface Option
 type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical"; asked: string; };
 
 type AskResult =
-    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; dying?: string[]; }
+    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; notes?: string[]; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "said"; words: string; }
@@ -120,7 +120,7 @@ export const ask = defineCommand({
         switch (result.kind) {
             case "roll":
                 return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.${
-                    (result.dying ?? []).map((line) => `\n${line}`).join("")
+                    (result.notes ?? []).map((line) => `\n${line}`).join("")
                 }`;
             case "changed":
                 return "The player changed their mind: no roll. Ask what they do instead, and stop.";
@@ -187,8 +187,8 @@ async function rollChosen(root: string, context: Context, question: string, chec
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
     // A check of a dying character is their death save, which the engine writes (DIE-4, D-460).
-    const dying = systemRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice });
-    return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, ...(dying.length === 0 ? {} : { dying }) };
+    const notes = allSaid(systemRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice }));
+    return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, ...(notes.length === 0 ? {} : { notes }) };
 }
 
 /**

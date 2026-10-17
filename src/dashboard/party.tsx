@@ -52,12 +52,13 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
 /** One of the party at their dying point in the strip (D-461): the word of where they stand and their marks, small, in place of their bar. */
 function MemberDying({ state, counters }: { state: DyingState; counters: Member["dying"] & object; })
 {
-    const [successes, failures] = counters;
+    const successes = counters.find((counter) => counter.side === "successes");
+    const failures = counters.find((counter) => counter.side === "failures");
     const marks = (counter: typeof successes, kind: string) =>
         counter === undefined ? [] : Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, index) => <span key={`${kind}${index}`} class={`strip-mark ${kind}${index < counter.value ? " marked" : ""}`} />);
     return (
         <span class={`member-dying ${state}`}>
-            <span class="member-dying-word">{dyingWord(state)}</span>
+            <span class="member-dying-word">{dyingWord(state, counters)}</span>
             <span class="strip-marks" aria-hidden="true">{[...marks(successes, "success"), ...marks(failures, "failure")]}</span>
         </span>
     );

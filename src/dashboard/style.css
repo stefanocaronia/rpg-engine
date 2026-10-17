@@ -5702,6 +5702,7 @@ button.row,
 .dying-side {
     position: relative;
     display: grid;
+    min-width: 0;
     gap: 6px;
     justify-items: start;
 }
@@ -5710,16 +5711,20 @@ button.row,
     justify-items: end;
 }
 
+/* A system's word, which may be long in a language: it breaks rather than leave its card. */
 .dying-label {
     color: var(--ally);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    overflow-wrap: anywhere;
+    hyphens: auto;
 }
 
 .dying-failures .dying-label {
     color: var(--low);
+    text-align: end;
 }
 
 .dying-marks {
@@ -5862,6 +5867,11 @@ button.row,
 
 .dying-card:is(.success, .stable) .dying-word {
     color: var(--ally);
+}
+
+/* A total the system's code wrote nothing of: no outcome, so no colour of one. */
+.dying-card.told:not(.success, .stable, .failure, .failures, .dead, .back) .dying-word {
+    color: var(--ink);
 }
 
 .dying-card.back .dying-word {
@@ -8535,10 +8545,9 @@ svg.icon {
     background: color-mix(in srgb, var(--ink) 8%, transparent);
     font-size: 0.8rem;
     font-weight: 650;
-    text-transform: capitalize;
 }
 
-.wound.bloodied {
+.wound.low {
     background: color-mix(in srgb, var(--low) 16%, transparent);
     color: var(--low);
 }

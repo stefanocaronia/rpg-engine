@@ -16,26 +16,39 @@ import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 
+/** What a system's code said after a command's change, and apart why it did not run or failed, which the caller adds to its notes, never deciding by it. */
+export interface SystemSaid
+{
+    lines: string[];
+    problem?: string;
+}
+
+/** All a system's code said, its problem last. */
+export function allSaid(said: SystemSaid): string[]
+{
+    return said.problem === undefined ? said.lines : [...said.lines, said.problem];
+}
+
 /** After a counter of a page changed, as by change or the hit dice: the system's lines. */
-export function systemCounterChanged(root: string, context: Context, change: CounterChange): string[]
+export function systemCounterChanged(root: string, context: Context, change: CounterChange): SystemSaid
 {
     return called(root, context, "this change", (hooks, game) => hooks.counterChanged?.(change, game) ?? []);
 }
 
 /** As someone's turn starts in a scene: the system's lines. */
-export function systemTurnStarted(root: string, context: Context, who: string): string[]
+export function systemTurnStarted(root: string, context: Context, who: string): SystemSaid
 {
     return called(root, context, "this turn began", (hooks, game) => hooks.turnStarted?.({ who }, game) ?? []);
 }
 
 /** After a roll for someone was logged, never a hidden one: the system's lines. */
-export function systemRolled(root: string, context: Context, roll: RollMade): string[]
+export function systemRolled(root: string, context: Context, roll: RollMade): SystemSaid
 {
     return called(root, context, "this roll", (hooks, game) => hooks.rolled?.(roll, game) ?? []);
 }
 
 /** After an effect was added to a page, never to a copy: the system's lines. */
-export function systemEffectAdded(root: string, context: Context, added: { page: string; effect: string; }): string[]
+export function systemEffectAdded(root: string, context: Context, added: { page: string; effect: string; }): SystemSaid
 {
     return called(root, context, "this effect", (hooks, game) => hooks.effectAdded?.(added, game) ?? []);
 }
@@ -52,26 +65,27 @@ export function systemAsking(root: string, context: Context, question: { who: st
     }
 }
 
-/** A hook called with the game: its lines; when the code is not loaded or fails, a line that says so, the engine's change made all the same. */
-function called(root: string, context: Context, after: string, call: (hooks: SystemHooks, game: SystemGame) => string[]): string[]
+/** A hook called with the game: its lines; when the code is not loaded or fails, apart, a line that says so and what to do, the engine's change made all the same. */
+function called(root: string, context: Context, after: string, call: (hooks: SystemHooks, game: SystemGame) => string[]): SystemSaid
 {
     const system = campaignSystem(root, context);
     const hooks = loadedHooks(system, context);
+    const byHand = "meanwhile apply its rules yourself, as its pages say";
 
     if (typeof hooks === "string") {
-        return [`The system ${system?.name}'s code ${hooks}, so nothing of it followed ${after}: it is done all the same; validate says more.`];
+        return { lines: [], problem: `The system ${system?.name}'s code ${hooks}, so nothing of it followed ${after}; ${byHand}.` };
     }
 
     if (hooks === undefined) {
-        return [];
+        return { lines: [] };
     }
 
     try {
         const lines = call(hooks, game(root, context));
-        return Array.isArray(lines) ? lines : [`The system ${system?.name} gave no lines after ${after}: its hooks give a list. It is done all the same.`];
+        return Array.isArray(lines) ? { lines } : { lines: [], problem: `The system ${system?.name} gave no lines after ${after}: its hooks give a list. It is done all the same; ${byHand}.` };
     } catch (error) {
         const why = (error instanceof Error ? error.message : String(error)).split("\n")[0].replace(/[:.]$/, "");
-        return [`The system ${system?.name} failed after ${after}: ${why}. It is done all the same.`];
+        return { lines: [], problem: `The system ${system?.name} failed after ${after}: ${why}. It is done all the same; ${byHand}.` };
     }
 }
 
@@ -85,10 +99,10 @@ function loadedHooks(system: GameSystem | undefined, context: Context): SystemHo
     const loaded = context.systemCode?.[system.name];
 
     if (loaded === undefined) {
-        return "is not loaded: start the server again";
+        return "is not loaded: start the MCP server again (/mcp in Claude Code), or open a new chat";
     }
 
-    return "problem" in loaded ? `cannot load: ${loaded.problem}` : (loaded.hooks as SystemHooks);
+    return "problem" in loaded ? `cannot load (${loaded.problem}): install rpg-engine again, or run npm run build in its repository, then start the MCP server again` : (loaded.hooks as SystemHooks);
 }
 
 /** The game as a system's code reads it. */

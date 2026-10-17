@@ -98,6 +98,8 @@ export interface Fighter
     hostile?: true;
     stranger?: true;
     health?: string;
+    /** How hard a foe heard in words is hit: low in the lower half of the system's words, down at the last. */
+    wound?: "low" | "down";
     effects: SeenEffect[];
     inactive?: true;
     keeps?: string[];
@@ -112,6 +114,10 @@ export interface DyingCounter
     limit?: number;
     /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
     side?: "successes" | "failures";
+    /** Of the successes, what the system calls one whose counter is full, as Stable. */
+    full?: string;
+    /** The short word of its marks, as Successes. */
+    mark?: string;
 }
 
 /** The open scene as the player sees it (VIEW-6): who is in it as in VIEW-4, and the order of the turns. */
@@ -392,7 +398,8 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
         ...(icon === undefined ? {} : { icon }),
         ...(stranger ? { stranger: true as const } : {}),
         ...hostileMark(scene, name),
-        ...(health === undefined ? {} : { health }),
+        ...(health === undefined ? {} : { health: health.word }),
+        ...(health?.wound === undefined ? {} : { wound: health.wound }),
         effects,
         ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
         ...(keeps.length === 0 ? {} : { keeps }),
@@ -417,7 +424,9 @@ export function dyingOf(world: World, system: GameSystem | undefined, page: Page
     // Each counter by its side, as the system names them (D-461).
     return (["successes", "failures"] as const).flatMap((side) => {
         const field = dying.show[side];
-        return field === undefined ? [] : [{ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), side }];
+        const full = side === "successes" && dying.stable !== undefined ? { full: dying.stable } : {};
+        const mark = dying.marks[side] === undefined ? {} : { mark: dying.marks[side] };
+        return field === undefined ? [] : [{ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), side, ...full, ...mark }];
     });
 }
 
@@ -445,7 +454,7 @@ function stateOf(sight: PlaceSight, page: Page): Pick<ShownPerson, "effects" | "
     const party = sight.party.includes(page);
     const effects = shownEffects(sight, system, page, party);
     const dead = page.fields.status === "dead";
-    const down = !dead && (party ? dyingOf(sight.world, system, page) !== undefined : healthOf(sight.world, system, page, false) === "down");
+    const down = !dead && (party ? dyingOf(sight.world, system, page) !== undefined : healthOf(sight.world, system, page, false)?.wound === "down");
     return {
         ...(effects.length === 0 ? {} : { effects }),
         ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
@@ -477,32 +486,41 @@ function keepsFromActing(system: GameSystem | undefined, effects: SeenEffect[]):
 }
 
 /**
- * Someone's counter in a fight as the player may know it (D-238, D-314): a foe's in words when the system says so, as the hit points of the 5e; else as it is,
- * as Ironsworn's progress track (D-314 (7)).
+ * Someone's counter in a fight as the player may know it (D-238, D-314): a foe's in the system's words when it gives them, as the 5e's hit points; else as it
+ * is, as Ironsworn's progress track (D-314 (7)).
  */
-function healthOf(world: World, system: GameSystem | undefined, page: Page, party: boolean): string | undefined
+function healthOf(world: World, system: GameSystem | undefined, page: Page, party: boolean): { word: string; wound?: "low" | "down"; } | undefined
 {
     const track = system?.combat === undefined ? undefined : readCounter(pageCounters(world, page)[system.combat.track]);
+    const words = party ? [] : system?.combat?.inWords ?? [];
 
     if (track === undefined) {
         return undefined;
     }
 
-    return !party && system?.combat?.inWords ? healthWord(track.value, track.max) : `${track.value}${track.max === undefined ? "" : `/${track.max}`}`;
+    if (words.length === 0) {
+        return { word: `${track.value}${track.max === undefined ? "" : `/${track.max}`}` };
+    }
+
+    const index = healthIndex(words.length, track.value, track.max);
+    const wound = index === words.length - 1 ? "down" : index > 0 && index >= words.length / 2 ? "low" : undefined;
+    return { word: words[index], ...(wound === undefined ? {} : { wound }) };
 }
 
-/** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */
-function healthWord(value: number, most: number | undefined): string
+/** Which of so many words a counter is heard in: the first full, the last at 0 or less, those between at equal shares of what is lost, as half or less the third of four. */
+function healthIndex(count: number, value: number, most: number | undefined): number
 {
     if (value <= 0) {
-        return "down";
+        return count - 1;
     }
 
-    if (most === undefined || value >= most) {
-        return "unhurt";
+    const between = count - 2;
+
+    if (most === undefined || value >= most || between === 0) {
+        return 0;
     }
 
-    return value * 2 <= most ? "bloodied" : "hurt";
+    return 1 + Math.min(between - 1, Math.floor(((most - value) * between) / most));
 }
 
 /** The limit a threshold of the system gives a counter, as death-failures 3. */
