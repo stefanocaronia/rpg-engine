@@ -33,10 +33,9 @@ import {
     type World,
     writePage,
 } from "../pages/index.ts";
-import type { GameSystem, Recipe } from "../systems/index.ts";
+import type { CounterChange as SystemCounterChange, GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
-import { dyingAfter } from "./game-dying.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
@@ -47,6 +46,7 @@ import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { changeStack } from "./game-stacks.ts";
+import { systemCounterChanged } from "./game-system-code.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -125,14 +125,16 @@ export const change = defineCommand({
 
         // Dice in by are rolled first and logged once the change is made, as a roll the player sees (D-459): one call for a roll and its damage.
         const roll = diceBy(input.by, context);
-        const result = changeField(root, context, world, { ...input, page: input.page, field: input.field, ...(roll === undefined ? {} : { by: roll.by }) });
+        const { hitCounter, ...result } = changeField(root, context, world, { ...input, page: input.page, field: input.field, ...(roll === undefined ? {} : { by: roll.by }) });
 
-        if (roll === undefined) {
-            return result;
+        if (roll !== undefined) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }));
         }
 
-        appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }));
-        return { ...result, rolled: roll.data.result };
+        // The game system's code follows the change, after the roll that made it (D-448): as the 5e's dying point.
+        const lines = hitCounter === undefined ? [] : systemCounterChanged(root, context, hitCounter);
+        const told = lines.length === 0 ? result : { ...result, reminders: [...result.reminders, ...lines] };
+        return roll === undefined ? told : { ...told, rolled: roll.data.result };
     },
 
     format(result)
@@ -192,7 +194,7 @@ function changeField(
     if (input.damage !== undefined) {
         const damage = typedDamage(system, { ...fields, ...(system?.damage === undefined ? {} : damageLists(world, holder.page, system.damage)) }, field, input, page);
         const done = damageSteps(root, context, world, { holder, name: input.page, fields, field, limits, coins }, damage, why, system);
-        return { ...withDying(root, context, system, { holder, field, fields }, done.outcome, done.lost), problems: world.problems };
+        return { ...done.outcome, ...counterChangeOf({ holder, field, fields }, done.outcome, done.lost), problems: world.problems };
     }
 
     const step = purse !== undefined && coins !== undefined ? moneyStep(input, purse, coins, page, field) : counterStep(input, fields[field], page, field, coins, limits);
@@ -204,7 +206,7 @@ function changeField(
     const shield = Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
     const shielded = shield === undefined ? 0 : Math.max(readCounter(valueNamed(fields, shield))?.value ?? 0, 0);
     const lost = Number.isFinite(by) && by < 0 ? Math.max(-by - shielded, 0) : 0;
-    return { ...withDying(root, context, system, { holder, field, fields }, told, lost), problems: world.problems };
+    return { ...told, ...counterChangeOf({ holder, field, fields }, told, lost), problems: world.problems };
 }
 
 /**
@@ -339,32 +341,18 @@ function untypedDamageNote(world: World, system: GameSystem | undefined, page: P
     return lists.length === 0 ? "" : `${page.name} has ${lists.join("; ")}: if this damage has a type, give it with damage, as rolled.`;
 }
 
-/** What the dying rule adds after a party member's counter changed (DIE-1–DIE-3): its lines among the reminders. */
-function withDying(
-    root: string,
-    context: Context,
-    system: GameSystem | undefined,
-    target: { holder: CounterHolder; field: string; fields: Record<string, unknown>; },
-    outcome: StepOutcome,
-    lost: number,
-): StepOutcome
+/** The counter a step changed on a page, never a copy, for the game system's code (D-448): before and after, its maximum, and what damage took of it. */
+function counterChangeOf(target: { holder: CounterHolder; field: string; fields: Record<string, unknown>; }, outcome: StepOutcome, lost: number): { hitCounter?: SystemCounterChange; }
 {
     const { holder, field, fields } = target;
-    const dying = system?.dying;
-
-    if (system === undefined || dying === undefined || holder.kind !== "page" || !isPartyMember(holder.page) || comparableText(field) !== comparableText(dying.field)) {
-        return outcome;
-    }
-
     const before = readCounter(fields[field]);
     const after = comparableText(outcome.field) === comparableText(field) ? readCounterText(outcome.after)?.value : before?.value;
 
-    if (before === undefined || after === undefined) {
-        return outcome;
+    if (holder.kind !== "page" || before === undefined || after === undefined) {
+        return {};
     }
 
-    const lines = dyingAfter(root, context, system, holder.page.name, { before: before.value, after, lost, ...(before.max === undefined ? {} : { max: before.max }) });
-    return lines.length === 0 ? outcome : { ...outcome, reminders: [...outcome.reminders, ...lines] };
+    return { hitCounter: { page: holder.page.name, field, before: before.value, after, lost, ...(before.max === undefined ? {} : { max: before.max }) } };
 }
 
 /** What a step did to a counter or to money. */

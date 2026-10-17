@@ -213,18 +213,14 @@ keeping: {counter: hp, conditions: [Incapacitated, Unconscious], rules: Concentr
 combat: {track: hp, in-words: true, inactive: [Incapacitated, Stunned, Unconscious]}
 dying:
   at: hp 0
-  show: [death-successes, death-failures]
-  condition: Unconscious
-  fails: death-failures 3
-  rules: Instant Death
-  save: {dice: 1d20, at-least: 10, succeeds: death-successes 3, highest: hp 1, lowest: 2, stable: Stable, rules: Death Saving Throws}
+  show: {successes: death-successes, failures: death-failures}
 immune: condition-immunities
 ```
 
 - `conditions`: effects with these names show their rule; `condition-icons` draws them.
 - `keeping`: what can break what someone keeps alive, as concentration; the output names the rule, the engine ends nothing.
 - `combat`: the counter the dashboard's Combat follows, foes' in words; who cannot act.
-- `dying`: what the sheet shows at the dying point. For a party member the engine adds `condition` there and ends it with what is regained, which also brings the `show` counters back to 0. Damage taken there adds one to `fails`, and what goes past the value as large as the counter's maximum sets `fails` to its most (`rules`). With `save`, a dying party member rolls a save as its turn starts: at least `at-least` adds to `succeeds`, which at its most makes it stable; less adds to `fails`, `lowest` of them on the die's lowest face; the highest face sets the counter of `highest`, which ends the dying. The player character's save is the player's to roll, with `ask` or `roll`, the save's dice with no number added; anyone else's the engine rolls at `scene next`. The effect `stable` makes one stable, as a companion's Medicine does: successes full, failures gone; damage at the value undoes it.
+- `dying`: when the dashboard shows the panel of the dying, and its counters by their sides. What the dying point does, as the 5e's death saves, is the system's code (see [Code](#code)).
 - `immune`: the list of a page whose conditions `effect add` refuses.
 
 ### tables, computed, counters
@@ -319,6 +315,34 @@ A campaign's pages work as a system's: a class in `world/topics/` counts in `sum
 config counters "bulwark-dice: {max: 'has(subclasses, Shield Oath) * 4', refill: short rest}"
 ```
 
-## 6. Checks
+## 6. Code
+
+Where data is not enough, a system brings code, as the 5e does for its dying point. Its `package.json` says so, as an extension's does:
+
+```json
+{ "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 1 } }
+```
+
+`src/index.ts` is built into `dist/` with the engine; the package ships `dist/` without `src/`. Its default export gives the hooks, each optional, each giving lines for the command's output:
+
+```ts
+import type { SystemEntry } from "rpg-engine";
+
+const system: SystemEntry = () => ({
+    counterChanged: (change, game) => [],   // after change or the hit dice wrote a counter of a page
+    turnStarted: ({ who }, game) => [],     // as someone's turn starts in a scene
+    rolled: (roll, game) => [],             // after a roll for someone, never a hidden one
+    effectAdded: ({ page, effect }, game) => [],
+    asking: ({ who, notations }, game) => undefined, // what the page draws of a question, as a death save; it only reads
+});
+export default system;
+```
+
+- The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again.
+- `game` reads a page (its counters with its effects, its effects, whether it is in the party or the player's character), a setting, and compares names as the engine does; it sets numbers (a counter keeps its maximum), adds and ends effects, and rolls with the engine's dice. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook.
+- A hook that fails, or code that cannot load, is a line for the master: the command's change stands.
+- The code reaches the game only through `game`: lint refuses `Math.random`, `Date`, `process` and Node's modules in `systems/*/src`.
+
+## 7. Checks
 
 [test/system-packages.test.ts](../test/system-packages.test.ts) runs on every installed system: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, and it has an `attribution`. A system keeps its own tests in its `test/`.

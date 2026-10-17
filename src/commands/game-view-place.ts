@@ -414,12 +414,10 @@ export function dyingOf(world: World, system: GameSystem | undefined, page: Page
         return undefined;
     }
 
-    // Each counter by its side, from the system's names, never by its place in show (review of 17 October).
-    const sideOf = (field: string): DyingCounter["side"] =>
-        comparableText(field) === comparableText(dying.save?.succeeds.field ?? "") ? "successes" : comparableText(field) === comparableText(dying.fails?.field ?? "") ? "failures" : undefined;
-    return dying.show.map((field) => {
-        const side = sideOf(field);
-        return { field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), ...(side === undefined ? {} : { side }) };
+    // Each counter by its side, as the system names them (D-461).
+    return (["successes", "failures"] as const).flatMap((side) => {
+        const field = dying.show[side];
+        return field === undefined ? [] : [{ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), side }];
     });
 }
 

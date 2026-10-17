@@ -87,8 +87,8 @@ describe("what a fight follows on the dashboard (D-314)", () => {
     const base = "title: one of our own\nlanguage: it\nfields: { pf: counter, salvi: counter, persi: counter, forza: number }\nconditions: [Stordito, Prono]\n";
 
     it("reads the counter, whether a foe's is told in words, who does not act, and the panel of the dying", () => {
-        system(near, "nostro", `${base}combat: {track: pf, in-words: true, inactive: [Stordito]}\ndying: {at: pf 0, show: [salvi, persi]}\n`);
-        expect(installedSystems([near])[0]).toMatchObject({ combat: { track: "pf", inWords: true, inactive: ["Stordito"] }, dying: { field: "pf", value: 0, show: ["salvi", "persi"] } });
+        system(near, "nostro", `${base}combat: {track: pf, in-words: true, inactive: [Stordito]}\ndying: {at: pf 0, show: {successes: salvi, failures: persi}}\n`);
+        expect(installedSystems([near])[0]).toMatchObject({ combat: { track: "pf", inWords: true, inactive: ["Stordito"] }, dying: { field: "pf", value: 0, show: { successes: "salvi", failures: "persi" } } });
         system(near, "nostro", `${base}combat: {track: pf}\n`);
         expect(installedSystems([near])[0].combat).toEqual({ track: "pf", inWords: false, inactive: [] });
     });
@@ -98,9 +98,9 @@ describe("what a fight follows on the dashboard (D-314)", () => {
         expect(() => installedSystems([near])).toThrow("combat.track: forza is not declared as a counter in fields");
         system(near, "nostro", `${base}combat: {track: pf, inactive: [Paralizzato]}\n`);
         expect(() => installedSystems([near])).toThrow("combat.inactive: Paralizzato is not one of its conditions");
-        system(near, "nostro", `${base}dying: {at: pf 0, show: [forza]}\n`);
+        system(near, "nostro", `${base}dying: {at: pf 0, show: {failures: forza}}\n`);
         expect(() => installedSystems([near])).toThrow("dying: forza is not declared as a counter in fields");
-        system(near, "nostro", `${base}dying: {at: pf, show: [salvi]}\n`);
+        system(near, "nostro", `${base}dying: {at: pf, show: {successes: salvi}}\n`);
         expect(() => installedSystems([near])).toThrow("cannot be read");
     });
 

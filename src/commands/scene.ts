@@ -12,7 +12,6 @@ import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { dyingTurn } from "./game-dying.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
@@ -23,6 +22,7 @@ import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { turnEffectsNote } from "./game-reminders.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
+import { systemTurnStarted } from "./game-system-code.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { turnUsesOf, useInTurn, usesAtTurn } from "./game-turn-uses.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
@@ -827,7 +827,7 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     // The player character's turn reminds what to mark of it, which the player sees on the dashboard (TRN-1); a companion's counts went right without (playtest
     // 08); dying, the death save it starts with (DIE-5).
     const member = findPage(world, turns.turn);
-    const dying = member === undefined ? "" : dyingTurn(root, context, system, member);
+    const dying = systemTurnStarted(root, context, turns.turn).join(" ");
     // Who cannot act, as one stable but still Unconscious, marks nothing.
     const inactive = member !== undefined && effectsOf(member).some((effect) => sameName(system?.combat?.inactive ?? [], effect.name) !== undefined);
     const uses = member === undefined || comparableText(String(member.fields.role ?? "")) !== "pc" || dying !== "" || inactive ? [] : turnUsesOf(system);

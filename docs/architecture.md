@@ -81,7 +81,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 
 ### A game system
 
-`systems/<name>/` holds `system.yaml`, `world/` (pages, as in a campaign), `rules/` (chapters of rules text), `images/`, `LICENSE.md`, and, not published, `test/` and `build/`. [systems/game-system.ts](../src/systems/game-system.ts) validates it into a frozen `GameSystem`. See [game-systems.md](game-systems.md).
+`systems/<name>/` holds `system.yaml`, `world/` (pages, as in a campaign), `rules/` (chapters of rules text), `images/`, `LICENSE.md`, and, not published, `test/` and `build/`. [systems/game-system.ts](../src/systems/game-system.ts) validates it into a frozen `GameSystem`. A system may bring code, `package.json` and `src/` built to `dist/`: [systems/system-code.ts](../src/systems/system-code.ts) loads it as an entry starts, into the `Context`, and [commands/game-system-code.ts](../src/commands/game-system-code.ts) calls its hooks after the commands' writes. See [game-systems.md](game-systems.md).
 
 ## 5. Mechanisms
 

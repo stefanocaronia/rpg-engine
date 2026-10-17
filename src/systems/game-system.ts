@@ -182,23 +182,10 @@ const systemSchema = z.object({
     }).strict().optional(),
     dying: z.object({
         at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'),
-        show: z.array(z.string().min(1)).min(1),
-        condition: z.string().min(1).optional(),
-        fails: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-failures 3"').optional(),
-        rules: z.string().min(1).optional(),
-        save: z.object({
-            dice: z.string().regex(/^1d\d+$/, 'write it as "1d20"'),
-            "at-least": z.number().int(),
-            succeeds: z.string().regex(/^[^\s]+ \d+$/, 'write it as "death-successes 3"'),
-            highest: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 1"').optional(),
-            lowest: z.number().int().min(1).optional(),
-            stable: z.string().min(1).optional(),
-            rules: z.string().min(1).optional(),
-        }).strict().optional(),
+        show: z.object({ successes: z.string().min(1).optional(), failures: z.string().min(1).optional() }).strict(),
     }, {
-        error: "write it as when the dying begins, their counters, the condition they take, the counter of failures and how many kill, the rules of instant death, "
-            + "and the save they roll, such as {at: hp 0, show: [death-successes, death-failures], condition: Unconscious, fails: death-failures 3, rules: Instant Death, "
-            + "save: {dice: 1d20, at-least: 10, succeeds: death-successes 3, highest: hp 1, lowest: 2, rules: Death Saving Throws}}",
+        error: "write it as when the dying begins and the counters the dashboard shows by their sides, such as {at: hp 0, show: {successes: death-successes, failures: death-failures}}; "
+            + "what the dying point does is the system's code (D-448)",
     }).strict().optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
@@ -306,23 +293,15 @@ export interface CombatData
     inactive: string[];
 }
 
-/** When the dashboard shows the panel of the dying, and its counters (D-314): at a counter's value, such as hp 0. */
+/**
+ * When the dashboard shows the panel of the dying, and its counters by their sides (D-314, D-461): at a counter's value, such as hp 0. What the dying point
+ * does is the system's code (D-448).
+ */
 export interface Dying
 {
     field: string;
     value: number;
-    show: string[];
-    /** The condition taken at the value, as Unconscious (DIE-1). */
-    condition?: string;
-    /** The counter of failures, and how many kill (DIE-2). */
-    fails?: { field: string; most: number; };
-    /** The title of the rule of instant death (DIE-2). */
-    rules?: string;
-    /**
-     * The save rolled at the start of a dying one's turn (DIE-4): its die, the total that succeeds, the counter of successes and how many make one stable, what
-     * the die's highest face brings back, how many failures its lowest counts, the effect of one made stable (DIE-6), and the rules to read.
-     */
-    save?: { dice: string; atLeast: number; succeeds: { field: string; most: number; }; highest?: { field: string; value: number; }; lowest?: number; stable?: string; rules?: string; };
+    show: { successes?: string; failures?: string; };
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -683,15 +662,13 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
         ...(data.damage === undefined ? [] : [{ where: "damage.counter", field: data.damage.counter }]),
         ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
-        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...data.dying.show, ...(data.dying.fails === undefined ? [] : [data.dying.fails.split(" ")[0]])].map((field) => ({ where: "dying", field }))),
-        ...[data.dying?.save?.succeeds, data.dying?.save?.highest].filter((given) => given !== undefined).map((given) => ({ where: "dying.save", field: given.split(" ")[0] })),
+        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...Object.values(data.dying.show)].map((field) => ({ where: "dying", field }))),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
 
     const unknownCondition = [
         ...(data.keeping?.conditions ?? []).map((condition) => ({ where: "keeping.conditions", condition })),
         ...(data.combat?.inactive ?? []).map((condition) => ({ where: "combat.inactive", condition })),
-        ...(data.dying?.condition === undefined ? [] : [{ where: "dying.condition", condition: data.dying.condition }]),
         ...Object.keys(data["condition-icons"] ?? {}).map((condition) => ({ where: "condition-icons", condition })),
     ].find((entry) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(entry.condition)));
 
@@ -1181,31 +1158,9 @@ function systemFormulas(data: FormulaData, name: string, path: string): SystemFo
     }
 }
 
-/** The dying as the system writes them: "hp 0" and "death-failures 3" read as a field and a number (DIE-1, DIE-2, DIE-4). */
+/** The dying as the system writes them: "hp 0" read as a field and a number. */
 function dyingRule(data: NonNullable<z.infer<typeof systemSchema>["dying"]>): Dying
 {
     const [field, value] = data.at.split(" ");
-    const [fails, most] = data.fails?.split(" ") ?? [];
-    const save = data.save;
-    const [succeeds, stable] = save?.succeeds.split(" ") ?? [];
-    const [highest, back] = save?.highest?.split(" ") ?? [];
-    return {
-        field,
-        value: Number(value),
-        show: data.show,
-        ...(data.condition === undefined ? {} : { condition: data.condition }),
-        ...(fails === undefined ? {} : { fails: { field: fails, most: Number(most) } }),
-        ...(data.rules === undefined ? {} : { rules: data.rules }),
-        ...(save === undefined ? {} : {
-            save: {
-                dice: save.dice,
-                atLeast: save["at-least"],
-                succeeds: { field: succeeds, most: Number(stable) },
-                ...(highest === undefined ? {} : { highest: { field: highest, value: Number(back) } }),
-                ...(save.lowest === undefined ? {} : { lowest: save.lowest }),
-                ...(save.stable === undefined ? {} : { stable: save.stable }),
-                ...(save.rules === undefined ? {} : { rules: save.rules }),
-            },
-        }),
-    };
+    return { field, value: Number(value), show: data.show };
 }

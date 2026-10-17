@@ -7,8 +7,8 @@ import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
-import { deathSave, deathSaveAsked } from "./game-dying.ts";
 import { placeGrid } from "./game-grids.ts";
+import { systemAsking, systemRolled } from "./game-system-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
@@ -151,7 +151,7 @@ export const ask = defineCommand({
 async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en): Promise<AskResult>
 {
     const system = campaignSystem(root, context);
-    const save = deathSaveAsked(root, context, system, who, checks.map((check) => check.notation ?? ""));
+    const save = systemAsking(root, context, { who, notations: checks.map((check) => check.notation ?? "") });
     const change = save === undefined ? [words.change] : [];
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), ...change];
     const language = readSettings(root).language ?? system?.language ?? "en";
@@ -187,7 +187,7 @@ async function rollChosen(root: string, context: Context, question: string, chec
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
     // A check of a dying character is their death save, which the engine writes (DIE-4, D-460).
-    const dying = deathSave(root, context, campaignSystem(root, context), who, diceRoll);
+    const dying = systemRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice });
     return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, ...(dying.length === 0 ? {} : { dying }) };
 }
 

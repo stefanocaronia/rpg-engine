@@ -11,11 +11,11 @@ import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
-import { stabilized } from "./game-dying.ts";
 import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
 import { keepingConditionNote, secondKeptNote } from "./game-reminders.ts";
 import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
+import { systemEffectAdded } from "./game-system-code.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { burning, burnOne } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
@@ -158,7 +158,7 @@ export const effect = defineCommand({
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
         const burnt = lit === undefined ? [] : [burnOne(root, context, holder.page.name, lit.kind)].filter((note) => note !== "");
         // One dying made stable, as by a companion's Medicine: its death saves end (DIE-6).
-        const stable = holder.copy ? [] : stabilized(root, context, system, holder.page.name, name);
+        const stable = holder.copy ? [] : systemEffectAdded(root, context, { page: holder.page.name, effect: name });
         const instead = [...(replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`]), ...burnt, ...stable];
         return { action: "add", page: holder.page.name, effect: added.name, end: added.end === undefined ? undefined : formatEnd(added.end), values: changed, ended: [], notes: [...instead, ...notes] };
     },
