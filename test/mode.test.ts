@@ -199,7 +199,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
             "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
                 + "Difficulty normal: fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; "
                 + "resources standard (treasure, supplies, prices); random encounters normal; threat clocks at their pace.\n"
-                + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them; a light you put on as an effect, as a torch, still spends one.\n"
+                + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.\n"
                 + 'Still to agree with the player: dice (digital, physical); set each with config. When none is left and the player confirms: mode, to "session zero".',
         );
         await ok("config", "dice", "physical");
@@ -209,7 +209,10 @@ describe("the mode (MOD-1–MOD-7)", () => {
             /^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\nDifficulty normal: .+\nRigor smooth: .+\n(?!Still)/,
         );
         // config gives the chosen value with what it means in play, and status follows a change (D-263).
-        expect(await ok("config", "rigor", "rules")).toMatch(/^rigor: rules: as written: charge with change what is used up; advance spends the day's food outside a settlement, .+ the rule applies$/m);
+        // Ironsworn counts no food nor what burns: its master is never promised them (review of 17 October).
+        expect(await ok("config", "rigor", "rules")).toMatch(
+            /^rigor: rules: as written: charge with change what is used up; encumbrance, fatigue and the like as the rules say; warn before something runs out, and once it has, the rule applies$/m,
+        );
         expect(await ok("config", "difficulty")).toMatch(/^difficulty: normal: fights moderate to high; .+$/m);
         expect(await ok("status")).toContain("\nRigor rules: as written: charge with change what is used up");
     });

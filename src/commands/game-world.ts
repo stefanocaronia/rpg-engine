@@ -1,5 +1,5 @@
 import { join, resolve } from "node:path";
-import { campaignFileName, readCampaignData, readOneSetting, readTextSetting } from "../campaign/index.ts";
+import { campaignFileName, type CountedByGame, readCampaignData, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
@@ -267,4 +267,11 @@ function languageName(code: string): string
     } catch {
         return code;
     }
+}
+
+/** What the game system counts itself, for a rigor's meaning (UPK-1, UPK-3): the day's food, and what burns, by its first name. */
+export function countedByGame(system: GameSystem | undefined): CountedByGame
+{
+    const burning = Object.keys(system?.burning ?? {})[0];
+    return { upkeep: system?.upkeep !== undefined, ...(burning === undefined ? {} : { burning }) };
 }

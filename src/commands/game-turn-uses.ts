@@ -27,7 +27,13 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
 
     if (system === undefined || use === undefined) {
         const named = Object.keys(uses);
-        throw new Error(`${asked} is no use of a turn${system === undefined ? "" : ` in ${system.name}`}${named.length === 0 ? "" : `: give one of ${named.join(", ")}`}. Nothing changed.`);
+
+        // A game that counts no uses of a turn: nothing to mark (review of 17 October, on Ironsworn).
+        if (named.length === 0) {
+            throw new Error(`${system?.name ?? "The campaign's game"} counts no uses of a turn: leave scene use out. Nothing changed.`);
+        }
+
+        throw new Error(`${asked} is no use of a turn in ${system?.name}: give one of ${named.join(", ")}. Nothing changed.`);
     }
 
     const rule = uses[use];
@@ -43,7 +49,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
     if (!rule.anyTurn && !ownTurn && by === undefined) {
         const whose = scene.turn === undefined ? "no one's turn" : `${scene.turn}'s turn`;
         const anyTurn = Object.entries(uses).filter(([, other]) => other.anyTurn && other.needs === undefined).map(([other]) => other);
-        const instead = anyTurn.length === 0 ? "" : `; what one does in another's turn, as a readied action, takes ${anyTurn.join(" or ")}: mark that`;
+        const instead = anyTurn.length === 0 ? "" : `; what one does in another's turn takes ${anyTurn.join(" or ")}: mark that`;
         throw new Error(`It is ${whose}, not ${name}'s: ${use} goes in its own turn${instead}. Nothing changed.`);
     }
 
@@ -59,7 +65,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
         const limit = most(rule);
 
         if (limit !== undefined && count >= limit && by === undefined) {
-            throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore}. Nothing changed.`);
+            throw new Error(`${name} has used ${limit === 1 ? `its ${use}` : `${count} ${use}`} until its next turn${giveMore(uses, use)}. Nothing changed.`);
         }
 
         const noted = rule.note !== undefined && (rule.noteWhen === undefined || (formulaValue(world, fields, rule.noteWhen) ?? 0) > 0);
@@ -89,7 +95,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
 
     if (withinLimit !== undefined && withinCount >= withinLimit && by === undefined) {
         const done = last < 0 ? "" : `, with ${counted} ${use}${of}`;
-        throw new Error(`${name} has used its ${within} until its next turn${done}${giveMore}. Nothing changed.`);
+        throw new Error(`${name} has used its ${within} until its next turn${done}${giveMore(uses, within)}. Nothing changed.`);
     }
 
     return { used: [...list, tagged(taken, by), use], line: `${name}: ${use} 1${of}, its ${within} used${by === undefined ? "" : `, by ${by}`}${spent}.`, ...(spends === undefined ? {} : { spends }) };
@@ -157,7 +163,13 @@ function spentCounter(world: World, system: GameSystem, fields: Record<string, u
     return { field, before, ...(most === undefined ? {} : { max: most }) };
 }
 
-const giveMore = ': an attack that another use makes, as with a bonus action or a reaction, is marked as that use; add by and what only for what gives one more, as by "Action Surge"';
+/** What a refusal adds (TRN-2): what another use makes is marked as that use, the game's own named; by only for what gives one more. */
+function giveMore(uses: Record<string, TurnUse>, use: string): string
+{
+    const others = Object.entries(uses).filter(([name, rule]) => !same(name, use) && rule.within === undefined && rule.needs === undefined).map(([name]) => name);
+    const as = others.length === 0 ? "" : `, as with ${others.join(" or ")},`;
+    return `: what another use makes${as} is marked as that use; add by and what only for what gives one more, as a feature by its name`;
+}
 
 /** "action for attack by Action Surge" is an action, taken for an attack. */
 function baseOf(entry: string): string

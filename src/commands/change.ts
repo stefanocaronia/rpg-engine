@@ -97,7 +97,7 @@ export const change = defineCommand({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
         field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe(
-            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone; a hit's damage once it hits, its dice doubled on a critical hit",
+            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone, as the game's rules have them rolled",
         ),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
         to: z.union([z.number().int(), z.string()]).optional().describe(

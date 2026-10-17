@@ -37,13 +37,13 @@ export function saveOutcome(save: SaveAsked, roll: { total: number; dice: Thrown
 /** Where one of the party at their dying point stands (D-461): still dying, stable at the last success, dead at the last failure. */
 export type DyingState = "dying" | "stable" | "dead";
 
-/** The state the panel of the dying says, from its counters, the successes first and the failures after; none when not dying. */
-export function dyingState(counters: { value: number; limit?: number; }[] | undefined): DyingState | undefined
+/** The state the panel of the dying says, from its counters by their sides; none when not dying. */
+export function dyingState(counters: { value: number; limit?: number; side?: "successes" | "failures"; }[] | undefined): DyingState | undefined
 {
     if (counters === undefined) {
         return undefined;
     }
 
-    const full = (counter: { value: number; limit?: number; } | undefined): boolean => counter?.limit !== undefined && counter.value >= counter.limit;
-    return full(counters[1]) ? "dead" : full(counters[0]) ? "stable" : "dying";
+    const full = (side: "successes" | "failures"): boolean => counters.some((counter) => counter.side === side && counter.limit !== undefined && counter.value >= counter.limit);
+    return full("failures") ? "dead" : full("successes") ? "stable" : "dying";
 }

@@ -6,11 +6,12 @@ import { statusIcons } from "./icons.tsx";
 import { type DyingState, dyingState } from "./save-outcome.ts";
 import { t } from "./text.ts";
 
-/** The panel of the dying, from its counters, the successes first: large, or in one line in a row of the turns. */
+/** The panel of the dying, from its counters by their sides: large, or in one line in a row of the turns. */
 export function DeathSaves({ dying, compact = false }: { dying: DyingCounter[]; compact?: boolean; })
 {
     const state = dyingState(dying) ?? "dying";
-    const [successes, failures] = dying;
+    const successes = dying.find((counter) => counter.side === "successes");
+    const failures = dying.find((counter) => counter.side === "failures");
     return (
         <div class={["death-saves", state, compact ? "compact" : ""].filter((name) => name !== "").join(" ")}>
             {successes !== undefined && <Marks kind="successes" value={successes.value} most={successes.limit ?? Math.max(successes.value, 1)} lit={0} />}

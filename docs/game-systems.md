@@ -250,13 +250,14 @@ counters:
 ```yaml
 progression:
   list: classes
+  level: level
   features: Features
   skip: [Proficiency Bonus, 1st, 2nd, 3rd]
   parts: {list: subclasses, field: class, lists: [prepared]}
   experience: {field: xp, table: xp-by-level, rules: Beyond 1st Level}
 ```
 
-Items of `list` such as `[[Barbarian]] 3` read the row of their page's level table: its columns become fields (but those in `skip`), its `features` column the features gained. `parts` are pages that add features by their class's level, as subclasses. `experience` gives the points each level needs.
+Items of `list` such as `[[Barbarian]] 3` read the row of their page's level table: its columns become fields (but those in `skip`), its `features` column the features gained. `parts` are pages that add features by their class's level, as subclasses. `experience` gives the points each level needs. `level` names the field of a level written on a page: a companion with it, or with items of `list`, keeps the sheet.
 
 ### item-formulas, always-in
 

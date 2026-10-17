@@ -148,6 +148,8 @@ export interface DyingCounter
     field: string;
     value: number;
     limit?: number;
+    /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
+    side?: "successes" | "failures";
 }
 
 /** The open scene as the player sees it (VIEW-6). */

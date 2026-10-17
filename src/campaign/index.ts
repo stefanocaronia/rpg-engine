@@ -14,6 +14,7 @@ export {
     checkSettings,
     clearSetting,
     companionWays,
+    type CountedByGame,
     diceWays,
     difficulties,
     efforts,

@@ -35,13 +35,36 @@ export const difficultyMeanings: Record<(typeof difficulties)[number], string> =
 
 /** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
 export const rigorMeanings: Record<(typeof rigors)[number], string> = {
-    smooth: "you gloss over food and water, light, encumbrance, fatigue, spell components and the like: count them only when the story turns on them; "
-        + "a light you put on as an effect, as a torch, still spends one",
-    rules: "as written: charge with change what is used up; advance spends the day's food outside a settlement, and an effect named after what burns, such as Torch, spends "
-        + "it as it is lit; water, lifestyle and wages are yours to charge; encumbrance, fatigue and spell components as the rules say; warn before something runs out, "
-        + "and once it has, the rule applies",
+    smooth: "you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them",
+    rules: "as written: charge with change what is used up; encumbrance, fatigue and the like as the rules say; warn before something runs out, and once it has, the rule applies",
     simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
 };
+
+/** What the game system counts itself (UPK-1, UPK-3): the day's food, and what burns as it is lit, by its first name; what a rigor's meaning adds of them. */
+export interface CountedByGame
+{
+    upkeep: boolean;
+    burning?: string;
+}
+
+/** A rigor's meaning with what the game counts itself said (review of 17 October): a game that counts no food is never promised it. */
+function rigorMeaning(rigor: string, counted: CountedByGame | undefined): string | undefined
+{
+    const meaning = (rigorMeanings as Record<string, string>)[rigor];
+    const burns = counted?.burning === undefined ? "" : `an effect named after what burns, such as ${counted.burning}, spends it as it is lit`;
+
+    if (meaning === undefined || rigor === "simulation" || counted === undefined) {
+        return meaning;
+    }
+
+    if (rigor === "smooth") {
+        return burns === "" ? meaning : `${meaning}; a light you put on as an effect, as a ${counted.burning}, still spends one`;
+    }
+
+    const food = counted.upkeep ? "advance spends the day's food outside a settlement; water, lifestyle and wages are yours to charge" : "";
+    const counts = [food, burns].filter((part) => part !== "").join("; ");
+    return counts === "" ? meaning : meaning.replace("charge with change what is used up; ", `charge with change what is used up; ${counts}; `);
+}
 
 /** How much the master teaches the game, out of the story (D-347): the story alone, a hint now and then, or each rule as it first comes up. */
 export const mentorWays = ["off", "hints", "tutorial"] as const;
@@ -54,9 +77,16 @@ export const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
         + "as the mentor's part of your instructions says",
 };
 
-/** What the chosen difficulty, rigor or mentor means, as status and config give it; undefined for another setting or a value it does not take. */
-export function settingMeaning(name: string, value: unknown): string | undefined
+/**
+ * What the chosen difficulty, rigor or mentor means, as status and config give it, the rigor with what the game counts itself; undefined for another setting
+ * or a value it does not take.
+ */
+export function settingMeaning(name: string, value: unknown, counted?: CountedByGame): string | undefined
 {
+    if (name === "rigor" && typeof value === "string") {
+        return rigorMeaning(value, counted);
+    }
+
     const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings, ...styleMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
@@ -135,7 +165,7 @@ export const settingsSchema = z.object({
     saves: z.enum(saveModes).optional().describe(
         "when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
     ),
-    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food, spell components and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
+    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),

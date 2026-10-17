@@ -97,8 +97,8 @@ export function levelDueNote(name: string, experience: Experience | undefined, c
 
     const rules = experience.rules === undefined ? "" : `: read rules "${experience.rules}"`;
     const how = companion
-        ? "level up the companion: the class and what the new level asks are yours to choose, as the story has shaped the companion, or the player's if they made it"
-        : "level up with the player, out of the story, now or at the next rest as they prefer; they choose the class and what the new level asks";
+        ? "level up the companion: what the new level asks is yours to choose, as the story has shaped the companion, or the player's if they made it"
+        : "level up with the player, out of the story, now or at the next rest as they prefer; they choose what the new level asks";
     return `${name} has the ${experience.field} for level ${experience.due}: ${how}${rules}.`;
 }
 

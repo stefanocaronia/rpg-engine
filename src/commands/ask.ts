@@ -49,7 +49,7 @@ export const ask = defineCommand({
         + "The call returns when the player clicks: for a check, the engine rolls it, logs it as the player's roll, and gives you the result. "
         + "For a roll: the question says what is at stake either way, in about 100 characters (apps may cut it); give the checks that fit, each with its dice, "
         + "naming the sheet's numbers by their fields as roll does: the engine works them out, and only then the player's sheet lights that row; the player may also change their mind. "
-        + "In a fight: the attack, then the damage if it hits, each with its own ask; saving throws and rolls to stay alive too. "
+        + "In a fight, each roll the player's character makes is its own ask, in the order the game's rules give them. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "

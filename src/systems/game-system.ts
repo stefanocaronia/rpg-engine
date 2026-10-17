@@ -202,6 +202,7 @@ const systemSchema = z.object({
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
         list: z.string().min(1),
+        level: z.string().min(1).optional(),
         features: z.string().min(1),
         skip: z.array(z.string().min(1)).optional(),
         parts: z.object({ list: z.string().min(1), field: z.string().min(1), lists: z.array(z.string().min(1)).optional() }).strict().optional(),

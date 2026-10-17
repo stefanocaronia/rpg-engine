@@ -24,7 +24,7 @@ import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { datedText, problemText, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -118,7 +118,7 @@ export const status = defineCommand({
             ].filter((part) => part !== undefined),
             // What the chosen difficulty and rigor mean in play, one line each (D-263).
             meanings: (["difficulty", "rigor"] as const).flatMap((name) => {
-                const meaning = settingMeaning(name, settings[name]);
+                const meaning = settingMeaning(name, settings[name], countedByGame(system));
                 return meaning === undefined ? [] : [`${name.charAt(0).toUpperCase()}${name.slice(1)} ${settings[name]}: ${meaning}.`];
             }),
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).

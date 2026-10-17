@@ -36,7 +36,8 @@ describe("the outcome of a death save (D-461)", () => {
 
 describe("where one at their dying point stands (D-461)", () => {
     it("is dying until the last success makes them stable or the last failure dead, the failures counting first", () => {
-        const counters = (successes: number, failures: number) => [{ value: successes, limit: 3 }, { value: failures, limit: 3 }];
+        // By their sides, in any order of show (review of 17 October).
+        const counters = (successes: number, failures: number) => [{ value: failures, limit: 3, side: "failures" as const }, { value: successes, limit: 3, side: "successes" as const }];
         expect([dyingState(counters(1, 1)), dyingState(counters(3, 2)), dyingState(counters(2, 3)), dyingState(counters(3, 3)), dyingState(undefined)]).toEqual(["dying", "stable", "dead", "dead", undefined]);
         expect(dyingState([{ value: 5 }, { value: 9 }])).toBe("dying");
     });

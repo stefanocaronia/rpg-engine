@@ -110,6 +110,8 @@ export interface DyingCounter
     field: string;
     value: number;
     limit?: number;
+    /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
+    side?: "successes" | "failures";
 }
 
 /** The open scene as the player sees it (VIEW-6): who is in it as in VIEW-4, and the order of the turns. */
@@ -333,7 +335,8 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
         who: [...characters, ...creatures],
         ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
         ...(scene.turn === undefined ? {} : { turn: turnName(scene.turn) }),
-        ...(scene.round === undefined ? {} : { round: scene.round }),
+        // The round only where the game has rounds (D-314 (3)): Ironsworn has none.
+        ...(scene.round === undefined || campaignSystem(sight.root, sight.context)?.roundSeconds === undefined ? {} : { round: scene.round }),
         ...(marks.length === 0 ? {} : { marks }),
         ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
     };
@@ -411,7 +414,13 @@ export function dyingOf(world: World, system: GameSystem | undefined, page: Page
         return undefined;
     }
 
-    return dying.show.map((field) => ({ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field) }));
+    // Each counter by its side, from the system's names, never by its place in show (review of 17 October).
+    const sideOf = (field: string): DyingCounter["side"] =>
+        comparableText(field) === comparableText(dying.save?.succeeds.field ?? "") ? "successes" : comparableText(field) === comparableText(dying.fails?.field ?? "") ? "failures" : undefined;
+    return dying.show.map((field) => {
+        const side = sideOf(field);
+        return { field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), ...(side === undefined ? {} : { side }) };
+    });
 }
 
 /** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
@@ -469,7 +478,10 @@ function keepsFromActing(system: GameSystem | undefined, effects: SeenEffect[]):
     return effects.some((effect) => inactive.has(comparableText(effect.name)));
 }
 
-/** Someone's counter in a fight as the player may know it (D-238, D-314): the party's as numbers, a foe's in words when the system says so, else none. */
+/**
+ * Someone's counter in a fight as the player may know it (D-238, D-314): a foe's in words when the system says so, as the hit points of the 5e; else as it is,
+ * as Ironsworn's progress track (D-314 (7)).
+ */
 function healthOf(world: World, system: GameSystem | undefined, page: Page, party: boolean): string | undefined
 {
     const track = system?.combat === undefined ? undefined : readCounter(pageCounters(world, page)[system.combat.track]);
@@ -478,7 +490,7 @@ function healthOf(world: World, system: GameSystem | undefined, page: Page, part
         return undefined;
     }
 
-    return party ? `${track.value}${track.max === undefined ? "" : `/${track.max}`}` : system?.combat?.inWords ? healthWord(track.value, track.max) : undefined;
+    return !party && system?.combat?.inWords ? healthWord(track.value, track.max) : `${track.value}${track.max === undefined ? "" : `/${track.max}`}`;
 }
 
 /** A foe's counter as the player may hear it (D-238, D-314): unhurt, hurt, bloodied at half or less, down at none. */

@@ -52,7 +52,7 @@ import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
@@ -67,7 +67,7 @@ export const config = defineCommand({
         + "system: one of the installed game systems, listed while it is missing. difficulty, how hard the world plays: story, easy, normal, hard, brutal. "
         + "lethality, what a fall means: narrative (the character never dies), epic (only when it matters), dice (the dice decide). "
         + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
-        + "rigor, how closely travel, fatigue, food, spell components and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
+        + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
         + "dice, who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values). units: metric or imperial. "
         + "companions: none, made with the player or made by the master in session zero, or met in play. "
         + "Without a written world: premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start). "
@@ -253,7 +253,7 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         means: { permadeath: "never: what happens stays; only starting the campaign over", checkpoint: "if your character dies: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
     },
     rigor: {
-        about: "how closely food, light, fatigue, spell components and the like follow the rules",
+        about: "how closely food, light, fatigue and the like follow the rules",
         values: rigors,
         means: {
             smooth: "only when the story turns on them",
@@ -511,7 +511,7 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
         return cleared === undefined ? [] : [`The player took ${after.name} away on the dashboard: ${cleared}. Play by it from now on.`, ...(style === "" ? [] : [style])];
     }
 
-    const meaning = settingMeaning(after.name, after.value) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
+    const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context))) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
     const value = after.most === undefined ? after.value : `"${after.value}"`;
     const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
     // The mentor's new part comes with it, once in the chat (D-347).
@@ -580,7 +580,7 @@ function systemShownValue(root: string, setting: SystemSetting): string
 /** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173); difficulty and rigor with what they mean (D-263). */
 function shownValue(root: string, context: Context, settings: CampaignSettings, name: SettingName): unknown
 {
-    const meaning = settingMeaning(name, settings[name]);
+    const meaning = settingMeaning(name, settings[name], countedByGame(campaignSystem(root, context)));
 
     if (meaning !== undefined) {
         return `${String(settings[name])}: ${meaning}`;

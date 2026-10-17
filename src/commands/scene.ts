@@ -127,7 +127,7 @@ export const scene = defineCommand({
         + "open starts one with a title, a type, a place, who is in it and creatures as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
         + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, after rolling for it if the game does; next passes the turn; "
-        + "use marks what one uses of a turn, such as who Ettore, uses attack: the engine counts the game's uses (action, reaction, the attacks of an action) and refuses one too many; "
+        + "use marks what one uses of a turn, such as who Ettore, uses attack: the engine counts the uses of a turn the game declares and refuses one too many; "
         + "now gives the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
         + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows it. "
         + "seen, at open or add, gives what the character sees of those it does not know by name; the player's dashboard calls them so until the character learns the name. "
@@ -865,7 +865,7 @@ function turnText(result: Turns): string
 {
     const then = result.order.length > 1 ? nextTurn(result.order, result.turn, 1).turn : undefined;
     const now = result.player ? `${result.turn}, the player's character` : result.turn;
-    const stop = result.player ? ": stop here and hand them the turn, even if all they can do is roll to stay alive." : ".";
+    const stop = result.player ? ": stop here and hand them the turn." : ".";
     return `Round ${result.round} · now ${now}${then === undefined ? "" : ` (then ${then})`}${stop}`;
 }
 

@@ -7,6 +7,8 @@
 export interface ProgressionRule
 {
     list: string;
+    /** The field of a character's level, when the game has one: written on a companion, it keeps the sheet as its list does (DAT-2). */
+    level?: string;
     features: string;
     skip: string[];
     /** `lists`: the character's lists a part's page adds to by the level of its item, written as its features, such as a domain's spells always prepared (PRO-7). */

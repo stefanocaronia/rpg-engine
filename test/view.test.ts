@@ -458,7 +458,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
 
     it("gives someone of the party at the dying point the panel of the dying in their band, outside a fight too; never the dead (D-310 (7))", async () => {
         await ok("write", "Bran", "--set", "hp=0/9", "--set", "death-failures=2");
-        const dying = [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 2, limit: 3 }];
+        const dying = [{ field: "death-successes", value: 0, limit: 3, side: "successes" }, { field: "death-failures", value: 2, limit: 3, side: "failures" }];
         expect(JSON.parse(await ok("view", "--json")).party[1].dying).toEqual(dying);
         await ok("change", "Bran", "hp", "--to=1");
         expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();

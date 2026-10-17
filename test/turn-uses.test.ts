@@ -26,8 +26,8 @@ describe("the uses of a turn", () => {
         expect(await use("Ettore", "attack")).toBe("Ettore: attack 1 of 2, its action used.");
         expect(await use("Ettore", "attack")).toBe("Ettore: attack 2 of 2.");
         expect(await refused("Ettore", "attack")).toBe(
-            "Ettore has used its action until its next turn, with 2 attack of 2: an attack that another use makes, as with a bonus action or a reaction, is marked as that use; "
-                + 'add by and what only for what gives one more, as by "Action Surge". Nothing changed.',
+            "Ettore has used its action until its next turn, with 2 attack of 2: what another use makes, as with bonus action or reaction, is marked as that use; "
+                + "add by and what only for what gives one more, as a feature by its name. Nothing changed.",
         );
         // Action Surge is the fighter's counter: spent with it, and refused once it is gone (TRN-5).
         expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge; action-surge 1 → 0.");
@@ -43,7 +43,7 @@ describe("the uses of a turn", () => {
     });
 
     it("keeps the action to one's own turn, the reaction to any, until one's turn comes again, and Sneak Attack once a turn (TRN-2, TRN-4)", async () => {
-        expect(await refused("Vespa", "action")).toBe("It is Ettore's turn, not Vespa's: action goes in its own turn; what one does in another's turn, as a readied action, takes reaction: mark that. Nothing changed.");
+        expect(await refused("Vespa", "action")).toBe("It is Ettore's turn, not Vespa's: action goes in its own turn; what one does in another's turn takes reaction: mark that. Nothing changed.");
         expect(await use("Vespa", "reaction")).toBe("Vespa: reaction used.");
         expect(await use("Vespa", "sneak attack")).toBe("Vespa: sneak attack used.");
         expect(await refused("Vespa", "sneak attack")).toContain("Vespa has used its sneak attack until its next turn");

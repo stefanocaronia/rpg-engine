@@ -109,8 +109,11 @@ export function hasSheet(world: World, page: Page): boolean
 /** Whether a character with these fields keeps the sheet (DAT-2): the player character, and a companion with a level or classes, or that derives from no creature. */
 export function keepsSheet(world: World, fields: Record<string, unknown>): boolean
 {
-    const list = world.system?.progression === undefined ? undefined : keyOf(fields, world.system.progression.list);
-    const levelled = !isEmptyField(fields[keyOf(fields, "level") ?? "level"]) || (list !== undefined && !isEmptyField(fields[list]));
+    // The level's field is the game's, as its list is: a game without levels has none (review of 17 October).
+    const progression = world.system?.progression;
+    const list = progression === undefined ? undefined : keyOf(fields, progression.list);
+    const level = progression?.level === undefined ? undefined : (keyOf(fields, progression.level) ?? progression.level);
+    const levelled = (level !== undefined && !isEmptyField(fields[level])) || (list !== undefined && !isEmptyField(fields[list]));
     return fields.role === "pc" || (fields.role === "companion" && (isEmptyField(fields.creature) || levelled));
 }
 

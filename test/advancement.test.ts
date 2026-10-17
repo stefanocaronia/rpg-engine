@@ -91,7 +91,7 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         await character("Ennio", "pc", "classes=[[Fighter]] 1", "xp=0");
         expect(await ok("status")).toContain("PC: Ennio: level 1 · xp 0 (300 to level 2) · hp 12/12");
         expect(await ok("show", "Ennio")).toContain("classes Fighter 1 · level 1 · xp 0 (300 to level 2)");
-        const due = "Ennio has the xp for level 2: level up with the player, out of the story, now or at the next rest as they prefer; they choose the class and what the new level asks: "
+        const due = "Ennio has the xp for level 2: level up with the player, out of the story, now or at the next rest as they prefer; they choose what the new level asks: "
             + 'read rules "Beyond 1st Level".';
         expect(await ok("change", "Ennio", "xp", "--by", "200", "--why", "i lupi")).not.toContain("has the xp");
         const reached = await ok("change", "Ennio", "xp", "--by", "150", "--why", "la missione");
@@ -111,7 +111,7 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
         await character("Lena", "companion", "classes=[[Wizard]] 1", "xp=2800");
         expect(await ok("show", "Lena")).toContain("xp 2800 (level 4 due)");
         expect(await ok("status")).toContain(
-            "Lena has the xp for level 4: level up the companion: the class and what the new level asks are yours to choose, as the story has shaped the companion, or the player's if they made it: "
+            "Lena has the xp for level 4: level up the companion: what the new level asks is yours to choose, as the story has shaped the companion, or the player's if they made it: "
                 + 'read rules "Beyond 1st Level".',
         );
         await ok("write", "Lena", "--set", "classes=[[Wizard]] 20");
