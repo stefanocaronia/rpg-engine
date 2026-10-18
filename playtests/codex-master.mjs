@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 
 // Shell commands may only read: the master writes through rpg alone, which the campaign's config approves.
 const config = ["-c", 'sandbox_mode="read-only"'];
@@ -28,7 +28,8 @@ export function codexHome(out, campaign)
 /** Codex's version, for meta.json. */
 export function codexVersion(environment)
 {
-    return spawnSync("codex", ["--version"], { encoding: "utf8", env: environment }).stdout.trim();
+    const [command, first] = codexCommand();
+    return spawnSync(command, [...first, "--version"], { encoding: "utf8", env: environment }).stdout?.trim() ?? "";
 }
 
 /**
@@ -39,7 +40,8 @@ export function codexTurn({ campaign, home, environment, session, prompt })
 {
     const started = Date.now();
     const args = session.started ? ["exec", "resume", session.id, "--json", "--skip-git-repo-check", ...config, "-"] : ["exec", "--json", "--skip-git-repo-check", ...config, "-"];
-    const run = spawnSync("codex", args, { cwd: campaign, input: prompt, encoding: "utf8", env: { ...environment, CODEX_HOME: home }, maxBuffer: 1 << 28 });
+    const [command, first] = codexCommand();
+    const run = spawnSync(command, [...first, ...args], { cwd: campaign, input: prompt, encoding: "utf8", env: { ...environment, CODEX_HOME: home }, maxBuffer: 1 << 28 });
     const raw = (run.stdout ?? "").split("\n").map((line) => {
         try {
             return JSON.parse(line);
@@ -61,6 +63,22 @@ export function codexTurn({ campaign, home, environment, session, prompt })
     const error = run.status !== 0 || done === undefined ? (run.stderr || run.error?.message || "no turn.completed").trim().slice(-1500) : "";
     const events = [...items.flatMap(claudeShaped), { type: "result", num_turns: items.length, duration_ms: Date.now() - started, total_cost_usd: 0, usage: done?.usage ?? {} }];
     return { raw, events, text, cost: 0, isolation: otherServers.length > 0 ? `tools of other servers: ${otherServers.join(", ")}` : "", error };
+}
+
+/** How to start Codex: on Windows npm's codex is a .cmd, which needs a shell, so its script is run with node instead; elsewhere codex itself. */
+function codexCommand()
+{
+    if (process.platform !== "win32") {
+        return ["codex", []];
+    }
+
+    const script = (process.env.PATH ?? "").split(delimiter).map((folder) => join(folder, "node_modules", "@openai", "codex", "bin", "codex.js")).find((file) => existsSync(file));
+
+    if (script === undefined) {
+        throw new Error("Codex is not installed where npm puts it (node_modules/@openai/codex beside codex.cmd on the PATH): install it with npm install -g @openai/codex.");
+    }
+
+    return [process.execPath, [script]];
 }
 
 /** An item of Codex's turn as Claude Code streams the same: its text, or a tool's call and result. */
