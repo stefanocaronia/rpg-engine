@@ -62,7 +62,7 @@ describe("what breaks what someone keeps alive (EFF-14)", () => {
             "Viola: Scudo della fede until day 1, 23:10. Corrado already keeps Benedizione (Corrado, Viola). Read rules Concentration.",
         );
         expect(await ok("effect", "add", "Corrado", "Paralyzed", "--for", "1m")).toContain(
-            "Corrado: Paralyzed until day 1, 23:01. Corrado keeps Benedizione (Corrado, Viola) · Scudo della fede (Viola): now Paralyzed. Read rules Concentration.",
+            "Corrado: Paralyzed until day 1, 23:01. Corrado keeps Benedizione (Corrado, Viola) · Scudo della fede (Viola): now Paralyzed, which breaks it, whatever else asks for a save: effect end, by [[Corrado]]. Read rules Concentration.",
         );
         expect(await ok("effect", "add", "Viola", "Frightened", "--for", "1m")).not.toContain("keeps");
     });

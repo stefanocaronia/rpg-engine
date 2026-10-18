@@ -25,7 +25,7 @@ export function keepingLossNote(world: World, scene: Scene | undefined, system: 
     return kept.length === 0 ? "" : `${name} keeps ${kept.join(" · ")}: lost ${lost} ${field}. Read rules ${keeping.rules}.`;
 }
 
-/** "Corrado keeps Scudo della fede (Viola): now Paralyzed. Read rules Concentration.": what someone keeps alive, when they take a condition the game system names (EFF-14). */
+/** "Corrado keeps Scudo della fede (Viola): now Paralyzed, which breaks it…": what someone keeps alive, when they take a condition the game system names (EFF-14). */
 export function keepingConditionNote(world: World, scene: Scene | undefined, system: GameSystem | undefined, name: string, condition: string): string
 {
     const keeping = system?.keeping;
@@ -35,7 +35,8 @@ export function keepingConditionNote(world: World, scene: Scene | undefined, sys
     }
 
     const kept = keptEffects(world, scene, name);
-    return kept.length === 0 ? "" : `${name} keeps ${kept.join(" · ")}: now ${condition}. Read rules ${keeping.rules}.`;
+    // The condition breaks it whatever a loss of the same change would ask (playtest 13: a save offered at 0 hp).
+    return kept.length === 0 ? "" : `${name} keeps ${kept.join(" · ")}: now ${condition}, which breaks it, whatever else asks for a save: effect end, by [[${name}]]. Read rules ${keeping.rules}.`;
 }
 
 /**
