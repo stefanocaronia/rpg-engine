@@ -5,6 +5,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | Path | Content |
 |---|---|
 | `run-playtest.mjs` | plays one session of a scenario, or asks the questionnaire |
+| `codex-master.mjs` | the master played by Codex instead of Claude Code (`--master-host codex`) |
 | `one-answer.mjs` | one answer from the player to a question that shows both on the page and in the chat's form |
 | `page-player.mjs` | the dashboard's page in a run with `--dashboard`: the master's questions there answered by the player and clicked, the scenario's moments, what the page showed |
 | `count-playtest.mjs` | counts the numbers of a run, the same way every time |
@@ -23,6 +24,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `09-l-ossario-dei-pastori/` | a dark ossuary with a map: ghouls, a shadow and a dust mephit, a companion falling and stabilized, a cloak to attune and wear |
 | `10-il-mago-a-terra/` | the plateau of 07 with Tobia already at 0 among goblins, and a cloak worn but not attuned: a companion's death saves and Stable |
 | `11-senza-magia/` | a short scene on the plateau: Tobia at 0 with one failure, no healing left but Lucia's kit, archers on Corrado's unbound cloak: Stable, and the cloak asked about |
+| `12-altri-host/` | the gorge of 06 with Codex as the master |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
@@ -83,6 +85,7 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 | `--strict-mcp-config --mcp-config .mcp.json` | only the `rpg` server, approved without a person |
 | `--permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: any other write or command is denied, and the denial recorded |
 | `--settings` with an `Elicitation` hook | the rpg server's buttons (`ask`) go to the AI player, who reads what the master wrote so far and presses one, as in a chat that shows them: [answer-form.mjs](answer-form.mjs); each press is in `dialogue.md` as **Buttons**, and one that fails in `forms-errors.txt` (D-148, D-246) |
+| `--master-host codex` | Codex as the master: `codex exec`, resumed turn by turn, with a Codex home of its own in the output folder (the login and the campaign trusted), so that it reads the campaign's AGENTS.md and `.codex/config.toml`; its events beside each turn (`M3.codex.jsonl`) and, in Claude Code's shape, in the turn's file; no dashboard, as each turn starts a new rpg server; no cost, Codex's tokens instead |
 | `--master-effort`, as `effortLevel` in those settings | the master's effort, when the run asks for one: low to max; Claude Code's own otherwise |
 | `--model claude-opus-5-5`, `--session-id`, then `--resume` | the same master at every phase; one chat per session |
 

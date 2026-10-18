@@ -8,6 +8,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from "node:pat
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { codexHome, codexTurn, codexVersion } from "./codex-master.mjs";
 import { notYetRead, turnBegins } from "./one-answer.mjs";
 import { pagePlayer, readMoments } from "./page-player.mjs";
 
@@ -16,7 +17,7 @@ const usage = [
     '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50] [--hard 60] [--budget 15]',
     '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
-    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; and --master-effort low|medium|high|xhigh|max, the master's effort.",
+    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; --master-effort low|medium|high|xhigh|max, the master's effort; and --master-host codex, Codex as the master instead of Claude Code.",
 ].join("\n");
 const options = readOptions();
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -24,6 +25,8 @@ const out = resolve(options.out);
 const playerFolder = join(out, "player");
 const playerChatFile = join(out, "player-session.txt");
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
+// Codex plays the master instead of Claude Code (codex-master.mjs).
+const codexHost = options["master-host"] === "codex";
 // What an AI host reads in a campaign, as rpg init writes it: the master must find exactly these.
 const hostFileNames = ["AGENTS.md", "CLAUDE.md", join(".claude", "settings.json")];
 const playerSchema = JSON.stringify({
@@ -72,13 +75,20 @@ async function playSession()
 
     const masterSession = { id: randomUUID(), started: false };
     const claudeVersion = claude(["--version"], out, "").stdout.trim();
+    const host = codexHost ? { codex: codexVersion(environment), home: codexHome(out, campaign) } : undefined;
     const code = { commit: tested.commit, ...(tested.tree === undefined ? {} : { tree: tested.tree, uncommitted: "the working tree, as tested.diff shows it against the commit" }) };
-    writeJson(join(folder, "meta.json"), { started: new Date().toISOString(), ...code, rpg, claude: claudeVersion, node: process.version, campaign, masterSession: masterSession.id, options });
-    checkIsolation(campaign, join(folder, "context.md"));
+    writeJson(join(folder, "meta.json"), { started: new Date().toISOString(), ...code, rpg, claude: claudeVersion, node: process.version, campaign, masterSession: masterSession.id, ...(host === undefined ? {} : { codex: host.codex }), options });
+
+    if (host === undefined) {
+        checkIsolation(campaign, join(folder, "context.md"));
+    } else {
+        writeFileSync(join(folder, "context.md"), `Codex ${host.codex}, with CODEX_HOME ${host.home}: the login and the campaign trusted, so it reads the campaign's AGENTS.md and .codex/config.toml (the rpg server) and nothing of the user's.\n`);
+    }
+
     const progress = { stop: "error", count: 0, masterCost: 0, playerRunCost: 0 };
 
     try {
-        await playTurns(campaign, folder, masterSession, progress, memory, moments);
+        await playTurns(campaign, folder, masterSession, progress, memory, moments, host);
 
         if (progress.stop === "isolation" || progress.stop === "error") {
             throw new Error(`Master turn M${progress.count}: ${progress.detail}. ${progress.stop === "isolation" ? "The run is void: fix the setup and start a new run." : "See the turn in turns/."}`);
@@ -129,7 +139,7 @@ function lastSessionFolder()
  * Master and player take turns until the player ends the evening or a limit stops the session; `progress` says how far it got and why it stopped. A new player of a
  * run from a save gets `memory` with its first turn. With the dashboard, the master's chat and its page live for the whole session.
  */
-async function playTurns(campaign, folder, masterSession, progress, memory, moments)
+async function playTurns(campaign, folder, masterSession, progress, memory, moments, host)
 {
     const max = Number(options.max);
     const hard = Number(options.hard ?? max + 10);
@@ -148,7 +158,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
             turnBegins(folder);
             page?.turnBegins(count);
             const streamFile = join(folder, "turns", `M${count}.jsonl`);
-            const master = chat ? await chat.turn(player.message, streamFile) : masterTurn(campaign, masterSession, player.message, streamFile);
+            const master = chat ? await chat.turn(player.message, streamFile) : host ? hostTurn(campaign, host, masterSession, player.message, streamFile) : masterTurn(campaign, masterSession, player.message, streamFile);
             await page?.turnEnds(count);
             record(folder, `M${count}`, master.text);
             progress.masterCost = master.cost;
@@ -223,6 +233,16 @@ function masterArgs(folder)
     // The master's effort, when the run asks for one; left out, Claude Code's own.
     const effort = options["master-effort"] === undefined ? {} : { effortLevel: options["master-effort"] };
     return ["--model", options["master-model"], "--settings", JSON.stringify({ ...hooks, ...effort }), ...isolation.split(" ")];
+}
+
+/** One master turn by Codex: its own events beside the turn, and in the turn's file the same in Claude Code's shape, for the counts. */
+function hostTurn(campaign, host, session, prompt, streamFile)
+{
+    const turn = codexTurn({ campaign, home: host.home, environment, session, prompt });
+    const lines = (events) => events.map((event) => JSON.stringify(event)).join("\n") + "\n";
+    writeFileSync(streamFile.replace(/\.jsonl$/, ".codex.jsonl"), lines(turn.raw));
+    writeFileSync(streamFile, lines(turn.events));
+    return turn;
 }
 
 /** One master turn; returns the text the player sees, the session's cost so far, and what went wrong, if anything. */
@@ -709,6 +729,7 @@ function readOptions()
                 moments: { type: "string" },
                 uncommitted: { type: "boolean" },
                 "master-model": { type: "string", default: "claude-opus-5-5" },
+                "master-host": { type: "string", default: "claude" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
                 "master-effort": { type: "string" },
             },
@@ -720,6 +741,14 @@ function readOptions()
 
         if (values["master-effort"] !== undefined && !["low", "medium", "high", "xhigh", "max"].includes(values["master-effort"])) {
             throw new Error(`--master-effort is low, medium, high, xhigh or max, not ${values["master-effort"]}.`);
+        }
+
+        if (!["claude", "codex"].includes(values["master-host"])) {
+            throw new Error(`--master-host is claude or codex, not ${values["master-host"]}.`);
+        }
+
+        if (values["master-host"] === "codex" && values.dashboard) {
+            throw new Error("With --master-host codex each turn starts a new rpg server, so the dashboard would not live from one turn to the next: leave --dashboard out.");
         }
 
         if (values.moments && !values.dashboard) {
