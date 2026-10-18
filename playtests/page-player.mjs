@@ -71,7 +71,8 @@ export function pagePlayer({ folder, askPlayer, moments })
     // A question the run cannot play as the player would is still answered, through the page's request and said, so that the master's turn never waits half
     // an hour: with the player's reply, or the first button when the player gave none.
     const answer = async (asked, seen) => {
-        const banner = state.page.locator("section.asked:not(.leaving)");
+        // A question shows in the banner, or, a death save of the player's character, on the heartbeat card with its one button (D-461).
+        const banner = state.page.locator("section.asked:not(.leaving), section:has(button.dying-roll)").first();
         const shown = await banner.waitFor({ state: "visible", timeout: bannerWait }).then(() => Date.now()).catch(() => undefined);
 
         if (shown === undefined) {
@@ -133,6 +134,13 @@ export function pagePlayer({ folder, askPlayer, moments })
     };
 
     const click = async (banner, asked, reply) => {
+        const roll = banner.locator("button.dying-roll");
+
+        if (await roll.count() > 0) {
+            await roll.click();
+            return true;
+        }
+
         const buttons = banner.locator(".asked-buttons > button");
         // A question on the map has its button first, before those of its labels.
         const first = (await buttons.count()) - asked.labels.length;
