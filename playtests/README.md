@@ -27,6 +27,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `12-altri-host/` | the gorge of 06 with Codex as the master |
 | `13-cadere-giocando/` | the ford of 08 at full strength against four orcs who take heads: the player's character falling in play |
 | `14-classi-e-livello-7/` | a new party at 7th level, paladin, druid, ranger and warlock, against a mage in a ruined tower: Wild Shape, Divine Smite, the charges of a wand, reactions, and the level-up to 8th |
+| `15-lingua-e-lunghezza/` | the campaign of 13 in English (`en/`) and in German (`de/`), three evenings each, the first cut short in the fight: the language, the dashboard's words, a new master resuming mid-fight, continuity |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 
