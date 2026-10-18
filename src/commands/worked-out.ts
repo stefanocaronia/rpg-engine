@@ -566,8 +566,20 @@ function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof
 export function computedMessage(world: World, computed: { name: string; value: number | string; from: string[]; direct?: string[]; }, page: string): string
 {
     const bonuses = directBonuses(world, computed);
-    const instead = bonuses.length === 0 ? "change one of those" : `change one of those, or give ${bonuses.join(" or ")} with an effect`;
+    const instead = bonuses.length === 0 ? "change one of those" : `change one of those, or give ${bonuses.join(" or ")} with an effect${aloneNote(world, computed.name, bonuses)}`;
     return `${computed.name} on ${page} is ${signedText(world, computed.name, computed.value)}, worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: ${instead}`;
+}
+
+/**
+ * "; bonus-skills also changes the other fields that read it…": of these bonuses, those other computed fields read too, as bonus-skills for every skill, which
+ * are no bonus to one alone (playtest 14); nothing when none is.
+ */
+export function aloneNote(world: World, field: string, bonuses: string[]): string
+{
+    const readers = (bonus: string): number => (world.system?.formulas?.computed ?? []).filter(([, formula]) => fieldsRead(formula).some((name) => comparableText(name) === comparableText(bonus))).length;
+    const shared = bonuses.filter((bonus) => readers(bonus) > 1);
+    const one = shared.length === 1;
+    return shared.length === 0 ? "" : `; ${shared.join(" and ")} also ${one ? "changes" : "change"} the other fields that read ${one ? "it" : "them"}, so for ${field} alone add the number to its roll`;
 }
 
 /**

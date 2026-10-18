@@ -116,7 +116,9 @@ describe("rpg route (TRV-4, TRV-5)", () => {
     });
 
     it("TRV-4: a way only by river says so, on foot", async () => {
-        expect(await ok("route", "Porto")).toBe("No way leads to Porto on foot: the roads that join them include Fiume Nero, a river travelled only in a vehicle with category waterborne vehicle.");
+        expect(await ok("route", "Porto")).toBe(
+            "No way leads to Porto on foot: the roads that join them include Fiume Nero, a river travelled only in a vehicle with category waterborne vehicle, such as an item that derives from [[Galley]], which brings it with its speed.",
+        );
     });
 });
 

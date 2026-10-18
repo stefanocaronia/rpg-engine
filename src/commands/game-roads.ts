@@ -181,7 +181,7 @@ export function noWayText(world: World, system: GameSystem | undefined, roads: R
     }
 
     const usable = speedOf(world, system, roads, going);
-    const needed = [...new Set(any.steps.filter((step) => usable(step.stretch, step.forward) === undefined).map((step) => kindText(system, roads.pages.get(step.stretch.road))))];
+    const needed = [...new Set(any.steps.filter((step) => usable(step.stretch, step.forward) === undefined).map((step) => kindText(world, system, roads.pages.get(step.stretch.road))))];
     const how = going.vehicle === undefined ? "on foot" : `in ${going.vehicle.name}`;
     return `No way leads to ${goal.name} ${how}: the roads that join them include ${needed.join(", ")}.`;
 }
@@ -392,13 +392,22 @@ export function terrainFactor(world: World, system: GameSystem | undefined, road
     return value === undefined ? 1 : factors[value];
 }
 
-/** "Fiume Nero, a river travelled in a waterborne vehicle": a road and what it needs. */
-function kindText(system: GameSystem | undefined, road: Page | undefined): string
+/** "Fiume Nero, a river travelled in a waterborne vehicle, such as one that derives from [[Keelboat]]": a road and what it needs. */
+function kindText(world: World, system: GameSystem | undefined, road: Page | undefined): string
 {
     if (road === undefined) {
         return "a road";
     }
 
     const { name, kind } = kindOf(system, road);
-    return kind?.vehicle === undefined ? `${road.name}, a ${name}` : `${road.name}, a ${name} travelled only in a vehicle with ${kind.vehicle.field} ${kind.vehicle.value}`;
+
+    if (kind?.vehicle === undefined) {
+        return `${road.name}, a ${name}`;
+    }
+
+    // A vehicle of the system to derive from, which has the field and a speed: writing the field alone left the master stuck (playtest 14).
+    const needed = kind.vehicle;
+    const model = (world.system?.pages ?? []).find((page) => carries(world, page, kind));
+    const like = model === undefined ? `, with ${needed.speed} too` : `, such as an item that derives from [[${model.name}]], which brings it with its ${needed.speed}`;
+    return `${road.name}, a ${name} travelled only in a vehicle with ${needed.field} ${needed.value}${like}`;
 }

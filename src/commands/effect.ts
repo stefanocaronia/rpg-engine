@@ -19,7 +19,7 @@ import { allSaid, systemEffectAdded } from "./game-system-code.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { burning, burnOne } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
-import { computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./worked-out.ts";
+import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./worked-out.ts";
 
 const actions = ["add", "end"] as const;
 
@@ -409,8 +409,8 @@ function checkValue(world: World, page: Page, fields: Record<string, unknown>, f
         // A bonus field of the page first, which is what an effect is for; else a field the page writes.
         const from = [...directBonuses(world, computed), ...computed.from.filter((name) => computedField(world, name, fields) === undefined)];
         throw new Error(
-            `${computed.name} on ${page.name} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: give the effect one of the fields it comes from instead, such as ${
-                from[0] ?? computed.from[0]
+            `${computed.name} on ${page.name} is worked out by the system ${world.system?.name ?? ""} from ${computed.from.join(", ")}: give the effect one of the fields it comes from instead, such as ${from[0] ?? computed.from[0]}${
+                aloneNote(world, computed.name, directBonuses(world, computed))
             }. Nothing changed.`,
         );
     }

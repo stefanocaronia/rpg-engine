@@ -210,9 +210,12 @@ describe("a computed field is never written (FOR-7)", () => {
                 + "A bonus such as bonus-proficiency comes from an effect, for what gives one, such as a magic item. Nothing changed.",
         );
         expect(await refused("change", "Ettore", "insight", "--by=1")).toBe(
-            "insight on Ettore is +5, worked out by the system 5e from wis, level, bonus-proficiency, skill-proficiencies, expertise, features, bonus-skills: change one of those, or give bonus-skills with an effect. Nothing changed.",
+            "insight on Ettore is +5, worked out by the system 5e from wis, level, bonus-proficiency, skill-proficiencies, expertise, features, bonus-skills: change one of those, or give bonus-skills with an effect; "
+                + "bonus-skills also changes the other fields that read it, so for insight alone add the number to its roll. Nothing changed.",
         );
-        expect(await refused("effect", "add", "Ettore", "Strano", "--set", "insight=9")).toContain("give the effect one of the fields it comes from instead, such as bonus-skills. Nothing changed.");
+        expect(await refused("effect", "add", "Ettore", "Strano", "--set", "insight=9")).toContain(
+            "such as bonus-skills; bonus-skills also changes the other fields that read it, so for insight alone add the number to its roll. Nothing changed.",
+        );
     });
 
     it("is said by validate when written by hand, with a maximum that does not match", async () => {
