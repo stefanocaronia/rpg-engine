@@ -401,6 +401,13 @@ describe("show on derived pages and copies (INH-13, INH-14)", () => {
         await ok("write", "Vecchio annegato#Tattiche", "--text", "Aspetta.");
         expect(await ok("show", "Vecchio annegato#Tattiche")).toBe("Vecchio annegato#Tattiche (character) · world/characters/Vecchio annegato.md\nDerives from: Annegato capo › Annegato\n\n## Tattiche\n\nAspetta.");
         expect((await rpg("show", "Vecchio annegato#Nulla")).output).toBe('Vecchio annegato has no section or secret "Nulla". Its sections are: Tattiche. It shows, from Annegato: Debolezza.');
+        // A list longer than eight shows its first eight, and Page#field shows it whole (D-468).
+        const places = Array.from({ length: 10 }, (_, index) => `[[Luogo ${index + 1}]]`).join(", ");
+        await ok("write", "Vecchio annegato", "--set", `knows=${places}`);
+        const shown = await ok("show", "Vecchio annegato");
+        expect(shown).toContain('  - "[[Luogo 8]]"\n  - "and 2 more: show Vecchio annegato#knows"');
+        expect(shown).not.toContain("Luogo 9");
+        expect(await ok("show", "Vecchio annegato#knows")).toContain('  - "[[Luogo 9]]"\n  - "[[Luogo 10]]"\n---');
     });
 
     it("shows a copy with what it changed, and its creature's introduction, sections and secrets", async () => {

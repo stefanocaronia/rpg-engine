@@ -165,7 +165,7 @@ Show a page of the world, or one of its sections or secrets, with what it inheri
 
 Read-only: yes. Positional parameters: `page`.
 
-- `page` (`string`, required): name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, or a group of a character's sheet
+- `page` (`string`, required): name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, a group of a character's sheet, or one field whole
 
 ### view
 

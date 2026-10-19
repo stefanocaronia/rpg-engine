@@ -33,6 +33,9 @@ import { featureSource, progressionOf } from "./progression.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./sheet.ts";
 import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./worked-out.ts";
 
+// A list longer than this shows its first items only (D-468).
+const listedItems = 8;
+
 export const show = defineCommand({
     name: "show",
     description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
@@ -43,7 +46,7 @@ export const show = defineCommand({
     readOnly: true,
     positionals: ["page"],
     input: z.object({
-        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, or a group of a character's sheet"),
+        page: z.string().describe("name of the page, or of a copy in the open scene; Page#Name shows one section or one secret, a group of a character's sheet, or one field whole"),
     }),
 
     run(input, context)
@@ -84,6 +87,13 @@ export const show = defineCommand({
         // A section or a secret first, then a group of the sheet (DAT-2).
         const part = reference.section === undefined ? undefined : findPart(world, page, reference.section);
         const group = reference.section === undefined || part !== undefined ? undefined : sheetGroup(world, system, page, reference.section);
+
+        // A field whole, as a long list that show cuts short (D-468).
+        const field = reference.section === undefined || part !== undefined || group !== undefined ? undefined : sameName(Object.keys(page.fields), reference.section);
+
+        if (field !== undefined) {
+            return { fieldText: `${page.name}#${field}\n---\n${formatFields({ [field]: page.fields[field] })}\n---` };
+        }
 
         if (reference.section !== undefined && part === undefined && group === undefined) {
             const groups = sheetGroupNames(world, system, page).length === 0 ? "" : ` The groups of its sheet are: ${sheetGroupNames(world, system, page).join(", ")}.`;
@@ -140,6 +150,10 @@ export const show = defineCommand({
             return result.sceneLog;
         }
 
+        if (result.fieldText !== undefined) {
+            return result.fieldText;
+        }
+
         const what = result.copyOf !== undefined
             ? `copy of ${result.copyOf} in the open scene "${result.scene}"`
             : result.system !== undefined
@@ -173,7 +187,7 @@ export const show = defineCommand({
         const offSheet = (fields: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(fields).filter(([field]) => !onSheet.has(comparableText(field))));
         const sheet = [...result.sheet, ...(result.featureHint === undefined ? [] : [result.featureHint])].join("\n");
         const own = offSheet(result.fields ?? {});
-        const fields = Object.keys(own).length > 0 ? `---\n${formatFields(own)}\n---` : "";
+        const fields = Object.keys(own).length > 0 ? `---\n${formatFields(cutLists(own, result.page))}\n---` : "";
         // A value that only repeats the one it comes from, as a creature's athletics its str-mod, is not said again.
         const workedLines = result.worked.filter((worked) => !worked.repeats && !onSheet.has(comparableText(worked.field))).map((worked) => worked.line);
         const worked = workedLines.length === 0 ? "" : `Worked out by the system ${result.systemName ?? ""}:\n${workedLines.join("\n")}`;
@@ -187,6 +201,17 @@ export const show = defineCommand({
         return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** The fields with a list longer than `listedItems` cut to its first ones and how to see them all, as knows of a well-travelled character (D-468). */
+function cutLists(fields: Record<string, unknown>, page: string): Record<string, unknown>
+{
+    return Object.fromEntries(
+        Object.entries(fields).map(([field, value]) => [
+            field,
+            Array.isArray(value) && value.length > listedItems ? [...value.slice(0, listedItems), `and ${value.length - listedItems} more: show ${page}#${field}`] : value,
+        ]),
+    );
+}
 
 /** Whether a worked-out value only repeats the one value it is said to come from, as athletics -1 from str-mod -1. */
 function repeatsRead(world: World, worked: WorkedField): boolean
