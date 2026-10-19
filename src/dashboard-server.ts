@@ -70,6 +70,8 @@ export interface DashboardOptions
     page?: string;
     /** How long a question waits for a page to come back, after the last one closed: a few seconds; less in the tests. */
     pageReturn?: number;
+    /** How long a question waits on pages that no one sees, before it goes to the form or to words (D-455); less in the tests. */
+    pageHidden?: number;
 }
 
 // The commands the page may run: what the player may see, never the master's (VIEW-1). Roles will say more (phase 2).
@@ -185,6 +187,9 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 page: options.page ?? builtPage,
                 pages: new Set<ServerResponse>(),
                 pageReturn: options.pageReturn ?? pageReturn,
+                pageHidden: options.pageHidden ?? pageHidden,
+                pageIds: new Map<ServerResponse, string>(),
+                seen: new Map<string, boolean>(),
                 changed: new Map<string, PlayerSetting>(),
                 events: [],
                 left: new Set<string>(),
@@ -269,6 +274,14 @@ interface Served
     shared: Map<string, string>;
     /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
     returning?: NodeJS.Timeout;
+    /** How long a question waits on pages that no one sees, before it goes to the form or to words (D-455). */
+    pageHidden: number;
+    /** Each open page's own id, as it gives it when it listens. */
+    pageIds: Map<ServerResponse, string>;
+    /** Whether each page, by its id, is seen now: on the screen, not in a tab or a window behind (D-455). */
+    seen: Map<string, boolean>;
+    /** The wait of a question on pages that no one sees: a page seen again ends it. */
+    hiding?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
     notify(): void;
     /** The page in a language the package does not ship, translated on the fly (D-406). */
@@ -301,6 +314,9 @@ const playerWait = 30 * 60 * 1000;
 
 // After the last page closed, how long a question waits for one to come back, as after a reload, before it goes to the form or to words (ASK-1).
 const pageReturn = 5000;
+
+// How long a question waits on pages that are open but that no one sees, as one in a tab behind, before it goes to the form or to words (D-455).
+const pageHidden = 5000;
 
 function serve(server: Server, served: Served): Dashboard
 {
@@ -355,6 +371,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     // The page answers the master's question with a click, and changes the player's settings: what it sends, and only from itself (D-279, D-341).
     if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
         await answerAsked(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/seen" && origin !== undefined) {
+        await pageSeen(request, response, served);
         return;
     }
 
@@ -525,6 +546,7 @@ function pagePlayer(served: Served): Player
             served.asked = asked;
             signal?.addEventListener("abort", stop);
             served.notify();
+            watchHidden(served);
         });
     };
 
@@ -656,6 +678,46 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
+}
+
+/** Whether a page is seen now, as it says when it comes in sight or goes out of it (D-455): a question on pages no one sees goes to the chat. */
+async function pageSeen(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ page: z.string().min(1).max(64), seen: z.boolean() }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send the page's id and whether it is seen: { page, seen }." });
+        return;
+    }
+
+    served.seen.set(parsed.data.page, parsed.data.seen);
+    watchHidden(served);
+    sendJson(response, 202, {});
+}
+
+/**
+ * While a question waits and every open page says no one sees it, as in a tab behind, it goes to the form or to words after a short while (D-455); a page
+ * seen again, or one that says nothing of itself, keeps it on the page.
+ */
+function watchHidden(served: Served): void
+{
+    const asked = served.asked;
+    const unseen = served.pages.size > 0 && [...served.pages].every((page) => served.seen.get(served.pageIds.get(page) ?? "") === false);
+
+    if (asked === undefined || !unseen) {
+        clearTimeout(served.hiding);
+        served.hiding = undefined;
+        return;
+    }
+
+    served.hiding ??= setTimeout(() => {
+        served.hiding = undefined;
+        const still = served.pages.size > 0 && [...served.pages].every((page) => served.seen.get(served.pageIds.get(page) ?? "") === false);
+
+        if (still && served.asked === asked) {
+            asked.settle("absent");
+        }
+    }, served.pageHidden).unref();
 }
 
 /**
@@ -1055,9 +1117,18 @@ function listenForChanges(request: IncomingMessage, response: ServerResponse, se
     response.writeHead(200, { ...securityHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" });
     response.write("retry: 2000\n\n");
     served.pages.add(response);
+    const id = new URL(request.url ?? "/", "http://localhost").searchParams.get("page");
+
+    if (id !== null && id !== "") {
+        served.pageIds.set(response, id);
+    }
+
     clearTimeout(served.returning);
     request.on("close", () => {
         served.pages.delete(response);
+        served.pageIds.delete(response);
+        served.seen.delete(id ?? "");
+        watchHidden(served);
         const asked = served.asked;
 
         if (served.pages.size === 0 && asked !== undefined) {

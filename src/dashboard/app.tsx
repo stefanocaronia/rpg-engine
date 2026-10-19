@@ -3,7 +3,7 @@
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, readAsked, readView } from "./api.ts";
+import { answer, readAsked, readView, sendSeen } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
@@ -272,12 +272,18 @@ function App()
     };
 
     useEffect(() => {
-        const events = new EventSource("/events");
+        // This page's own id, so that the server knows whether it is seen, and a question on pages no one sees goes to the chat (D-455).
+        const pageId = Math.random().toString(36).slice(2, 12);
+        const events = new EventSource(`/events?page=${pageId}`);
+        const tellSeen = (): void => void sendSeen(pageId, document.visibilityState === "visible");
 
         events.onopen = () => {
             setLive(true);
+            tellSeen();
             void read();
         };
+
+        document.addEventListener("visibilitychange", tellSeen);
 
         events.addEventListener("changed", () => void read());
         events.onerror = () => setLive(false);
@@ -294,6 +300,7 @@ function App()
 
         return () => {
             events.close();
+            document.removeEventListener("visibilitychange", tellSeen);
             window.removeEventListener("hashchange", followAddress);
         };
     }, []);
@@ -330,10 +337,11 @@ function App()
     const fight = hasTurns(shown.openScene);
     const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
 
-    // The tab's title: the campaign's name and the product's, always the same.
+    // The tab's title: the campaign's name and the product's; a question that waits marks it, to be seen from another tab (D-455).
     useEffect(() => {
-        document.title = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
-    }, [shown.campaign]);
+        const name = shown.campaign === undefined ? productName : `${shown.campaign} · ${productName}`;
+        document.title = shown.asked === undefined ? name : `● ${shown.asked.title} · ${name}`;
+    }, [shown.campaign, shown.asked?.id]);
 
     const setup = useSetup(shown.version);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).

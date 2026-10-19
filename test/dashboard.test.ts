@@ -875,7 +875,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     beforeEach(async () => {
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
         served = { ...context, files: session };
-        const started = await startDashboard(served, session, { ports: [0], page: folder, pageReturn: 1000 });
+        const started = await startDashboard(served, session, { ports: [0], page: folder, pageReturn: 1000, pageHidden: 300 });
 
         if (started === undefined) {
             throw new Error("The dashboard did not start.");
@@ -942,11 +942,11 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         return answer;
     }
 
-    /** A page open on the dashboard, waiting for notices. */
-    function openPage(): Promise<{ close(): void; }>
+    /** A page open on the dashboard, waiting for notices, with its own id when it gives one. */
+    function openPage(id?: string): Promise<{ close(): void; }>
     {
         return new Promise((done) => {
-            const events = request({ host: "127.0.0.1", port, path: "/events" }, (response) => {
+            const events = request({ host: "127.0.0.1", port, path: id === undefined ? "/events" : `/events?page=${id}` }, (response) => {
                 response.once("data", () => done({ close: () => events.destroy() }));
             });
             events.end();
@@ -1306,6 +1306,22 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(await ask.run(ask.input.parse(wall), { ...served, player: form })).toMatchObject({ kind: "roll", check: "Atletica" });
         expect(await askedNow()).toBeNull();
         third.close();
+    });
+
+    it("hands a question on pages no one sees to the chat after a while, and keeps it on one that is seen (D-455)", async () => {
+        const page = await openPage("p1");
+        expect((await send("POST", "/api/seen", { page: "p1", seen: false })).status).toBe(202);
+        const asking = ask.run(ask.input.parse(wall), served);
+        await waitAsked();
+        expect(await asking).toMatchObject({ kind: "absent" });
+        await send("POST", "/api/seen", { page: "p1", seen: true });
+        const again = ask.run(ask.input.parse(wall), served);
+        const asked = await waitAsked();
+        await new Promise((done) => setTimeout(done, 500));
+        expect((await askedNow())?.id).toBe(asked.id);
+        await send("POST", "/api/answer", { asked: asked.id, choice: 0 });
+        expect(await again).toMatchObject({ kind: "roll" });
+        page.close();
     });
 
     it("waits for a page to come back from the last one that closed, not from the first", async () => {
