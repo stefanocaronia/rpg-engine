@@ -166,6 +166,8 @@ export const status = defineCommand({
             problems: campaignProblems(root, world, context).length + codeProblems.length,
             // Every contradiction of the state, always, told for the turns that follow (CHK-3).
             contradictions: toldContradictions(context, allStateChecks(root, context)),
+            // The opening of an evening, once in a chat: notes said while the master read the game reached the player (playtests 15, 16).
+            opening: openingOnce(context),
             // A load that stopped halfway leaves the campaign between two times (SAV-5).
             halfLoaded: interruptedLoad(root)?.number,
             sheet: system === undefined ? undefined : sheetSummary(system),
@@ -219,11 +221,23 @@ export const status = defineCommand({
             result.clocks.length === 0 ? "" : `Clocks: ${result.clocks.join(" · ")}`,
             result.halfLoaded === undefined ? "" : `The load of save ${result.halfLoaded} stopped halfway: call save load to finish it, before anything else.`,
             ...result.contradictions,
+            result.opening ? "Write nothing to the player until your message is ready: your first words are the opening itself." : "",
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
         return state.filter((line) => line !== "").join("\n");
     },
 });
+
+/** Whether the opening line is due: once in a chat with the master; never on the command line, where no master opens an evening. */
+function openingOnce(context: Context): boolean
+{
+    if (context.told === undefined || context.told.has("opening")) {
+        return false;
+    }
+
+    context.told.add("opening");
+    return true;
+}
 
 /** The lines of the contradictions, marked told in the chat. */
 function toldContradictions(context: Context, found: Contradiction[]): string[]

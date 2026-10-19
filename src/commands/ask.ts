@@ -143,7 +143,7 @@ export const ask = defineCommand({
     {
         switch (result.kind) {
             case "roll":
-                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.${
+                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides; write nothing until your message is ready.${
                     (result.notes ?? []).map((line) => `\n${line}`).join("")
                 }`;
             case "changed":

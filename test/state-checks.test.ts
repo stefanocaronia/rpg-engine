@@ -88,6 +88,14 @@ describe("the system's checks (CHK-2)", () => {
     });
 });
 
+describe("the opening of an evening (playtests 15, 16)", () => {
+    it("asks the master once in a chat to write nothing before the opening", async () => {
+        const line = "Write nothing to the player until your message is ready: your first words are the opening itself.";
+        expect(await ok("status")).toContain(line);
+        expect(await ok("status")).not.toContain(line);
+    });
+});
+
 describe("the laws of the checks (CHK-1, CHK-4)", () => {
     it("change nothing: the campaign's files are the same before and after", async () => {
         await ok("change", "Ettore", "death-failures", "--to", "2");

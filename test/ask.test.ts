@@ -57,7 +57,9 @@ const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cad
 
 describe("a roll with buttons (ASK-3, ASK-7)", () => {
     it("shows the checks and the change of mind, rolls the chosen one with the engine's dice and logs it as the player's roll", async () => {
-        expect(await asked(wall, 0)).toBe("id4 Bruna, Atletica: 1d20+5 = 9 [4] + 5, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides.");
+        expect(await asked(wall, 0)).toBe(
+            "id4 Bruna, Atletica: 1d20+5 = 9 [4] + 5, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides; write nothing until your message is ready.",
+        );
         expect(shown).toEqual([{ question: wall.question, title: "Tiro", labels: ["Atletica · d20 +5", "Acrobazia · d20 +3", "Cambio idea"] }]);
         expect(readLogFile(folder).at(-1)).toMatchObject({
             id: "id4",
