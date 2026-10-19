@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
@@ -44,15 +44,16 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
         describe: async (spec) => {
             const read = isLocalSpec(spec) ? localPackage(spec) : await registryPackage(spec);
 
-            if (isTarball(spec) && !("failed" in read)) {
+            if (isLocalSpec(spec) && !("failed" in read)) {
                 described.set(resolve(spec), `${read.name}@${read.version}`);
             }
 
             return read;
         },
         install: async (spec) => {
-            if (isTarball(spec)) {
-                return await installTarball(folder, spec, described.get(resolve(spec)), run);
+            // A file or a folder is copied, so that the yes holds for the code it held then, whatever the folder holds later (D-452, D-478).
+            if (isLocalSpec(spec)) {
+                return await installCopy(folder, spec, described.get(resolve(spec)), run);
             }
 
             const ran = await run(`install --prefix ${quotedFolder(folder)} ${isLocalSpec(spec) ? quotedFolder(spec) : checkedSpec(spec)} ${installOptions}`);
@@ -154,21 +155,21 @@ function localPackage(spec: string): PackageInfo | { failed: string; }
 }
 
 /**
- * Installs a .tgz (D-452): unpacked beside the copy it replaces, swapped in, then linked by npm as a folder of the player's; when npm fails, the copy before comes
- * back. The file may then be moved or deleted.
+ * Installs a .tgz or a folder of this computer (D-452, D-478): unpacked or copied beside the copy it replaces, swapped in, then linked by npm as a folder of the
+ * player's; when npm fails, the copy before comes back. The file or the folder may then be moved, changed or deleted: what runs is the copy.
  */
-async function installTarball(folder: string, archive: string, expected: string | undefined, run: (args: string) => Promise<NpmRun>): Promise<string | undefined>
+async function installCopy(folder: string, spec: string, expected: string | undefined, run: (args: string) => Promise<NpmRun>): Promise<string | undefined>
 {
     let read: Manifest;
 
     try {
-        read = JSON.parse(tarballText(archive, "package.json") ?? "{}") as Manifest;
+        read = JSON.parse((isTarball(spec) ? tarballText(spec, "package.json") : readFileSync(join(resolve(spec), "package.json"), "utf8")) ?? "{}") as Manifest;
     } catch (error) {
         return error instanceof Error ? error.message : String(error);
     }
 
     if (read.name === undefined || !packageName.test(read.name) || (expected !== undefined && expected !== `${read.name}@${read.version}`)) {
-        return `${archive} is no longer the package that was asked about: install it again`;
+        return `${spec} is no longer the package that was asked about: install it again`;
     }
 
     const target = join(folder, localFolder, read.name);
@@ -177,7 +178,12 @@ async function installTarball(folder: string, archive: string, expected: string 
     rmSync(before, { recursive: true, force: true });
 
     try {
-        unpackTarball(archive, staged);
+        if (isTarball(spec)) {
+            unpackTarball(spec, staged);
+        } else {
+            // What npm or git keep beside a package's own files is no part of it.
+            cpSync(resolve(spec), staged, { recursive: true, filter: (path) => !/[\\/](node_modules|\.git)([\\/]|$)/.test(path.slice(resolve(spec).length)) });
+        }
     } catch (error) {
         rmSync(staged, { recursive: true, force: true });
         return error instanceof Error ? error.message : String(error);

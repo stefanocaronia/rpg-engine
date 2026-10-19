@@ -113,6 +113,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 | State checks | What cannot be true together in the party and the open scene, told to the master; read-only | [commands/game-checks.ts](../src/commands/game-checks.ts) |
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions' | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
 | Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
+| Consent | The player's yes to a package not ours, in a window of their operating system when the host shows no form | [confirm/](../src/confirm/) |
 | Translation | The dashboard's phrases and a system's words in the campaign's language | [page-words.ts](../src/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |
 
 ### The dashboard

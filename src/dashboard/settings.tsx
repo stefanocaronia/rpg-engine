@@ -388,7 +388,7 @@ export function Command({ text }: { text: string; })
 
     return (
         <span class="setting-command">
-            {/* Its words wrap only between them, never at a hyphen of --accept-risk; one wider than the line wraps within. */}
+            {/* Its words wrap only between them, never at a hyphen of a package's name; one wider than the line wraps within. */}
             <code>{text.split(" ").flatMap((word, index) => [index === 0 ? "" : " ", <span key={index} class="command-word">{word}</span>])}</code>
             <button type="button" class="setting-copy" aria-label={t("Copy {command}", { command: text })} onClick={() => void copy()}>{copied ? t("Copied") : t("Copy")}</button>
         </span>

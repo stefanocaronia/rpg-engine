@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
 import { extensionCommands } from "./commands/game-extensions.ts";
 import { commands } from "./commands/index.ts";
+import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "./core/context.ts";
 import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
 import { FileStore, withFiles } from "./core/store.ts";
@@ -26,7 +27,7 @@ const mcpDescription = "Start the MCP server for an AI host. Through it the host
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
 export async function runCommandLine(
     argv: string[],
-    context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined), packages: npmPackages(packagesFolder()), terminal: true },
+    context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined), packages: npmPackages(packagesFolder()), confirm: systemConfirm(process.platform, process.env), terminal: true },
 ): Promise<CommandLineResult>
 {
     // The systems' code, loaded once, before any command may call its hooks (D-448).

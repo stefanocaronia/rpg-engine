@@ -259,7 +259,7 @@ function PackageRow({ row, working, busy, onAct }: { row: Row; working?: { actio
                         <Icon name="terminal" />
                         {t("From your terminal, in the campaign's folder:")}
                     </span>
-                    <Command text={`rpg package install ${row.package} --accept-risk`} />
+                    <Command text={`rpg package install ${row.package}`} />
                 </div>
             )}
             {working !== undefined && (

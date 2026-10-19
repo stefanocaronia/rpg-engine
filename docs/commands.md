@@ -52,7 +52,6 @@ Read-only: no. Positional parameters: `action`, `name`.
 
 - `action` (`"list" | "available" | "install" | "remove" | "uninstall"`, required): list, available, install, remove or uninstall
 - `name` (`string`, optional): the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder or a .tgz file on this computer
-- `accept-risk` (`boolean`, optional): on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk
 
 ## Game
 

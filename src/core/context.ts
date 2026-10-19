@@ -41,6 +41,8 @@ export interface Context
     terminal?: boolean;
     /** npm on this computer, which installs the packages in the engine's own folder (D-436); missing where nothing installs, as in most tests. */
     packages?: PackageManager;
+    /** A window of the player's operating system, for a yes the master cannot give (D-478); only where a player sits, never in the tests. */
+    confirm?: Confirm;
     /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
@@ -78,6 +80,15 @@ export interface PackageInfo
     description?: string;
     /** Who wrote it, as npm gives it. */
     author?: string;
+}
+
+/** What the window of the player's operating system said: yes, no, or none when it could not be shown. */
+export type Confirmed = "yes" | "no" | "none";
+
+/** A yes or no asked of the player in a window of their operating system, which the master cannot answer with its own tools (D-478). */
+export interface Confirm
+{
+    ask(title: string, text: string, signal?: AbortSignal): Promise<Confirmed>;
 }
 
 /** npm for the packages (D-436): what one is before it is installed, installing it in the engine's folder without running its scripts, and the search. */

@@ -5,7 +5,7 @@ import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
-import type { Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
+import type { Confirm, Confirmed, Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
@@ -50,10 +50,21 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
 // The weather's version, as its package.json gives it.
 const weatherVersion = (JSON.parse(readFileSync(join(testExtensionFolders[0], "weather", "package.json"), "utf8")) as { version: string; }).version;
 
-/** A player who answers on the dashboard's page with this button. */
+/** A player who answers on the dashboard's page, or in the host's form, with this button. */
 function pageAnswering(button: number): Player
 {
     return { choose: () => Promise.resolve(button) };
+}
+
+/** The window of the player's computer, answering so, and saying what it was asked. */
+function windowAnswering(answer: Confirmed, asked: string[] = []): Confirm
+{
+    return {
+        ask: (title, text) => {
+            asked.push(`${title}: ${text}`);
+            return Promise.resolve(answer);
+        },
+    };
 }
 
 let folder: string;
@@ -103,40 +114,49 @@ describe("rpg package install", () => {
         expect((await rpg("package", "install", "weather")).output).toContain("Its commands: weather, weather-set. They are yours from the player's next message.");
     });
 
-    it("installs one not ours only with the player's own yes: never the master's, in a chat a button (D-441)", async () => {
-        const refused = await rpg("package", "install", "@test/rumors", "--accept-risk");
+    it("installs one not ours only with the player's own yes in the host's form or a window of their computer, never the page's nor the master's (D-441, D-478)", async () => {
+        const refused = await rpg("package", "install", "@test/rumors");
         expect(refused.exitCode).toBe(1);
         expect(refused.output).toBe(
-            "@test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it. Only the player can say yes to it, and they cannot be asked here: "
-                + "tell them to install it from their terminal, in the campaign's folder, with rpg package install @test/rumors --accept-risk. Nothing changed.",
+            "@test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or "
+                + "in a window of their computer, and neither can be shown here (no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
 
-        context = { ...context, page: pageAnswering(1) };
+        // The page's click can be forged by a local program: it is never the yes (review of 19 October).
+        context = { ...context, page: pageAnswering(0) };
+        expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(1);
+        expect(npm.installed).toEqual([]);
+
+        context = { ...context, player: pageAnswering(1) };
         expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors. Nothing changed.");
         expect(npm.installed).toEqual([]);
 
-        context = { ...context, page: pageAnswering(0) };
+        context = { ...context, player: pageAnswering(0) };
         expect((await rpg("package", "install", "@test/rumors")).output).toMatch(
             /^Installed rumors 2\.0\.0, not verified: at the player's risk, and the campaign uses it: a rumor in each tavern\. Its code is not used/,
         );
     });
 
-    it("on the command line, asks for --accept-risk, and installs with it", async () => {
-        context = { ...context, terminal: true };
-        expect((await rpg("package", "install", "@test/rumors")).output).toBe(
-            "@test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it. "
-                + "To install it at your own risk: package install @test/rumors --accept-risk. Nothing changed.",
-        );
-        expect((await rpg("package", "install", "@test/rumors", "--accept-risk")).exitCode).toBe(0);
+    it("asks in a window of the player's computer where no form is, as on the command line, and asks the form first where there is one (D-478)", async () => {
+        const asked: string[] = [];
+        context = { ...context, terminal: true, confirm: windowAnswering("no", asked) };
+        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors. Nothing changed.");
+        expect(asked).toEqual(["A package not ours: Install @test/rumors? @test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it."]);
+        context = { ...context, confirm: windowAnswering("yes", asked) };
+        expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
+        await rpg("package", "remove", "@test/rumors");
+        context = { ...context, player: pageAnswering(0), confirm: windowAnswering("no", asked) };
+        expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
         expect((await rpg("rumors")).output).toMatch(/^Unknown command "rumors"/);
     });
 
     it("asks the player's yes for a .tgz of this computer, even named alone, saying what it holds and that its code runs (D-452)", async () => {
-        context = { ...context, terminal: true };
+        context = { ...context, terminal: true, confirm: windowAnswering("none") };
         npm.describe = () => Promise.resolve({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1, author: "Ada" });
         expect((await rpg("package", "install", "secret-notes-1.0.0.tgz")).output).toBe(
             "secret-notes-1.0.0.tgz (secret-notes 1.0.0, by Ada) is a file of this computer, not a package published by RPG Engine: its code runs, it is never verified, "
-                + "and RPG Engine takes no responsibility for it. To install it at your own risk: package install secret-notes-1.0.0.tgz --accept-risk. Nothing changed.",
+                + "and RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here "
+                + "(no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
         expect(npm.installed).toEqual([]);
     });
@@ -161,14 +181,14 @@ describe("rpg package install", () => {
     });
 
     it("never sends the player to the terminal when they closed the question without a yes", async () => {
-        context = { ...context, page: { choose: () => Promise.resolve(undefined) } };
+        context = { ...context, player: { choose: () => Promise.resolve(undefined) } };
         expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player closed the question without a yes to @test/rumors. Nothing changed: ask again only if they bring it up.");
         expect(npm.installed).toEqual([]);
     });
 
     it("never runs a stranger's code nor lets its part take the place of the core's (D-441)", async () => {
-        context = { ...context, terminal: true };
-        await rpg("package", "install", "@test/rumors", "--accept-risk");
+        context = { ...context, terminal: true, confirm: windowAnswering("yes") };
+        await rpg("package", "install", "@test/rumors");
         const instructions = (await rpg("instructions")).output;
         expect(instructions).toContain("\n\n### Rumors (extension)\n\nEvery tavern holds a rumor.");
         expect(instructions).toContain("# Game master: core instructions");
@@ -191,7 +211,8 @@ describe("rpg package install", () => {
             '@other/left-pad is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}. Nothing changed.',
         );
         npm.describe = (spec) => Promise.resolve({ name: spec, version: "0.1.0", kind: "extension", api: 1 });
-        expect((await rpg("package", "install", "npm:seasons-of-the-test", "--accept-risk")).output).toBe(
+        context = { ...context, confirm: windowAnswering("yes") };
+        expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
             "seasons-of-the-test is installed on this computer, but it is for the game system 5e, and the campaign plays ironsworn: the campaign does not use it.",
         );
         npm.describe = (spec) => Promise.resolve({ name: spec, version: "3.0.0", kind: "extension", api: 2 });
@@ -312,7 +333,7 @@ describe("the packages on the dashboard's page (D-475)", () => {
     it("leaves someone else's package to the player's terminal, until the page's yes cannot be forged (D-441)", async () => {
         const refused = await send("POST", "/api/package", { action: "add", name: "@test/rumors" });
         expect(refused.status).toBe(403);
-        expect(JSON.parse(refused.body)).toMatchObject({ code: "not-ours", error: expect.stringContaining("rpg package install @test/rumors --accept-risk") });
+        expect(JSON.parse(refused.body)).toMatchObject({ code: "not-ours", error: expect.stringContaining("rpg package install @test/rumors: a window of your computer asks for your yes") });
         expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toEqual([]);
     });
 });

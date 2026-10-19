@@ -705,7 +705,7 @@ async function changePackage(request: IncomingMessage, response: ServerResponse,
     const ours = name.startsWith(verifiedScope) || !/[/:.\\]/.test(name);
 
     if ((action === "add" || action === "update") && !ours) {
-        sendJson(response, 403, { error: `${name} is not one of ours: install it from your terminal, in the campaign's folder, with rpg package install ${name} --accept-risk.`, code: "not-ours" });
+        sendJson(response, 403, { error: `${name} is not one of ours: install it from your terminal, in the campaign's folder, with rpg package install ${name}: a window of your computer asks for your yes.`, code: "not-ours" });
         return;
     }
 

@@ -42,7 +42,7 @@ export const packageCommand = defineCommand({
     name: "package",
     description: "The packages of the campaign: extensions such as weather, from npm. "
         + "list says those on this computer and those the campaign uses; available, those npm has, and updates. install adds or updates one, on this computer and in the campaign, "
-        + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked on their dashboard or in a form, or installs it from their terminal. "
+        + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
         + "remove takes one out of the campaign; uninstall takes it off this computer. Example: package install weather.",
     group: "campaign",
     positionals: ["action", "name"],
@@ -50,7 +50,6 @@ export const packageCommand = defineCommand({
     input: z.object({
         action: z.enum(["list", "available", "install", "remove", "uninstall"]).describe("list, available, install, remove or uninstall"),
         name: z.string().optional().describe("the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder or a .tgz file on this computer"),
-        "accept-risk": z.boolean().optional().describe("on the command line only: the player's own yes to a package not published by RPG Engine, at their own risk"),
     }),
 
     async run(input, context): Promise<PackageResult>
@@ -72,7 +71,7 @@ export const packageCommand = defineCommand({
         }
 
         if (input.action === "install") {
-            return await installed(root, context, name, context.terminal === true && input["accept-risk"] === true);
+            return await installed(root, context, name);
         }
 
         return input.action === "remove" ? removed(root, context, name) : await uninstalled(root, context, name);
@@ -186,7 +185,7 @@ function newer(version: string, than: string): boolean
 }
 
 /** Installs a package on this computer and adds it to the campaign (D-27, D-428, D-441): ours, or another once the player wants it; an extension, for this game. */
-async function installed(root: string, context: Context, name: string, acceptRisk: boolean): Promise<PackageResult>
+async function installed(root: string, context: Context, name: string): Promise<PackageResult>
 {
     const packages = context.packages;
 
@@ -221,7 +220,7 @@ async function installed(root: string, context: Context, name: string, acceptRis
         // A file or a folder says what it holds, and when it takes the place of a copy from npm, which is one for the whole computer (D-452).
         const holds = local ? ` (${described.name} ${described.version}${described.author === undefined ? "" : `, by ${described.author}`})` : "";
         const replaces = local && before !== undefined && !before.linked ? ` It takes the place of ${before.package} ${before.version} from npm, in every campaign on this computer.` : "";
-        await playerYes(context, local ? name : described.name, acceptRisk, local, holds, replaces);
+        await playerYes(context, local ? name : described.name, local, holds, replaces);
     }
 
     // A copy from a file or a folder never stands for the one npm has: asked by its name, npm's comes back.
@@ -285,24 +284,17 @@ async function installed(root: string, context: Context, name: string, acceptRis
 }
 
 /**
- * The player's own yes to a package not ours (D-441): on the command line, --accept-risk they typed; in a chat, a button on their dashboard or in the host's
- * form, never the master's word. It throws when there is none.
+ * The player's own yes to a package not ours (D-441, D-478), where the master cannot give it with its own tools: the host's form first, never the dashboard's
+ * page, whose click a local program can forge; else a window of their operating system; else none, and it throws.
  */
-async function playerYes(context: Context, name: string, acceptRisk: boolean, local: boolean, holds = "", replaces = ""): Promise<void>
+async function playerYes(context: Context, name: string, local: boolean, holds = "", replaces = ""): Promise<void>
 {
     const warning = local
         ? `${name}${holds} is ${isTarball(name) ? "a file" : "a folder"} of this computer, not a package published by RPG Engine: its code runs, it is never verified, and RPG Engine takes no responsibility for it.${replaces}`
         : `${name} is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it.`;
-
-    if (context.terminal === true) {
-        if (!acceptRisk) {
-            throw new Error(`${warning} To install it at your own risk: package install ${name} --accept-risk. Nothing changed.`);
-        }
-
-        return;
-    }
-
-    const answer = await chooseAnswer(context, `Install ${name}? ${warning}`, "A package not ours", ["Install it, at my risk", "Do not install it"]);
+    const question = `Install ${name}? ${warning}`;
+    const title = "A package not ours";
+    const answer = context.player === undefined ? "unavailable" : await context.player.choose(question, title, ["Install it, at my risk", "Do not install it"], context.signal);
 
     if (answer === 0) {
         return;
@@ -312,12 +304,25 @@ async function playerYes(context: Context, name: string, acceptRisk: boolean, lo
         throw new Error(`The player did not want ${name}. Nothing changed.`);
     }
 
-    // Closed without an answer is no yes, never a reason to send the player to the terminal.
+    // Closed without an answer is no yes, never a reason to ask again some other way.
     if (answer === undefined) {
         throw new Error(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`);
     }
 
-    throw new Error(`${warning} Only the player can say yes to it, and they cannot be asked here: tell them to install it from their terminal, in the campaign's folder, with rpg package install ${name} --accept-risk. Nothing changed.`);
+    const window = context.confirm === undefined ? "none" : await context.confirm.ask(title, question, context.signal);
+
+    if (window === "yes") {
+        return;
+    }
+
+    if (window === "no") {
+        throw new Error(`The player did not want ${name}. Nothing changed.`);
+    }
+
+    throw new Error(
+        `${warning} Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here (no desktop, as over SSH; `
+            + `on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.`,
+    );
 }
 
 /** The installed extension of this package, when it reads; undefined when it is missing or broken. */
