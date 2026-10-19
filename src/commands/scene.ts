@@ -12,6 +12,7 @@ import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { newStateChecks } from "./game-checks.ts";
 import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
@@ -836,7 +837,9 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
     // Notes written between the calls of another's turn reached the player (playtests 06, 08, 09, 11).
     const quiet = pc ? "" : "Write nothing until the round is told: what you work out stays in your thinking.";
-    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn), turn.problem ?? "", quiet].filter((line) => line !== "").join(" ");
+    // What cannot be true together, once in a chat, after the system's code had its say (CHK-3).
+    const checks = newStateChecks(root, context).join(" ");
+    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn), turn.problem ?? "", checks, quiet].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
 }
 

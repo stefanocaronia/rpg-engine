@@ -47,6 +47,8 @@ export interface TimePassed
     calendar?: string;
     /** What the campaign's extensions said of the time passed, such as the weather of a new morning (D-436). */
     extensionLines?: string[];
+    /** What cannot be true together now, not yet told in the chat (CHK-3). */
+    checks?: string[];
 }
 
 // An hour or more passing usually ends a scene: then advance reminds that one is still open.

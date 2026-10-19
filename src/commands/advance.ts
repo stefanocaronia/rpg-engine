@@ -4,6 +4,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
 import { calendarText, nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./game-advance.ts";
+import { newStateChecks } from "./game-checks.ts";
 import { dueEvents, dueText, isDated, plannedEvents } from "./game-events.ts";
 import { timePassedLines } from "./game-extensions.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
@@ -71,14 +72,17 @@ export const advance = defineCommand({
         }
 
         const passed = passTime(root, context, world, now, wanted, why, input.by ?? input.to ?? "");
-        return passed.passed === 0 ? passed : { ...passed, extensionLines: await timePassedLines(root, context, now, addDuration(now, passed.passed)) };
+        const lines = passed.passed === 0 ? passed : { ...passed, extensionLines: await timePassedLines(root, context, now, addDuration(now, passed.passed)) };
+        // What the time passed leaves that cannot be true together, as one knocked out who woke at 0 (CHK-3).
+        const checks = newStateChecks(root, context);
+        return checks.length === 0 ? lines : { ...lines, checks };
     },
 
     format(result)
     {
         const rest = result.wanted - result.passed;
         const then = rest > 0 ? ` Then advance the other ${formatDuration(rest)}, if they are still doing what they were.` : "";
-        return [movedLine(result, rest), ...passedLines(result, then)].filter((line) => line !== "").join("\n");
+        return [movedLine(result, rest), ...passedLines(result, then), ...(result.checks ?? [])].filter((line) => line !== "").join("\n");
     },
 });
 

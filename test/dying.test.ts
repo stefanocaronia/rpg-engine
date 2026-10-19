@@ -109,8 +109,12 @@ describe("the dying", () => {
         const hit = await ok("change", "Ettore", "hp", "--by=-30");
         expect(hit).not.toContain("dies at once");
         await ok("change", "Ettore", "death-failures", "--to", "3");
-        expect(await ok("change", "Ettore", "hp", "--by=10")).toContain("Ettore is dead, with death-failures 3: hp regained brings no one back");
-        await ok("change", "Ettore", "hp", "--to", "0");
+        // The dead regain nothing: hp back to 0, and how the rules bring them back (DIE-7).
+        expect(await ok("change", "Ettore", "hp", "--by=10")).toContain(
+            "Ettore is dead, with death-failures 3: what this change gave is undone, hp back to 0, as hp regained brings no one back. To bring Ettore back as the rules say, as a spell does: "
+                + "first change death-failures to 0, then give the hp.",
+        );
+        expect(await ok("show", "Ettore")).toContain("hp 0/20");
         // Damage on the dead counts no failure and kills no one again.
         const struck = readLogFile(folder).length;
         expect(await ok("change", "Ettore", "hp", "--by=-4")).not.toContain("dies");
@@ -119,6 +123,16 @@ describe("the dying", () => {
         const before = readLogFile(folder).length;
         await ok("roll", "1d20", "--who", "Ettore", "--hidden");
         expect(readLogFile(folder).slice(before).filter((entry) => entry.type === "counter-changed")).toEqual([]);
+    });
+
+    it("leaves a party member as they are when a form that gives hit points goes to 0, what goes past for its text to say (DIE-8, D-454)", async () => {
+        await ok("effect", "add", "Ettore", "Forma selvatica", "--set", "hp=11/11");
+        const hit = await ok("change", "Ettore", "hp", "--by=-15");
+        expect(hit).toContain("4 went past 0 in Forma selvatica");
+        expect(hit).not.toContain("Unconscious");
+        expect(hit).not.toContain("dies at once");
+        expect(await ok("show", "Ettore")).not.toContain("Unconscious");
+        expect(await ok("effect", "end", "Ettore", "Forma selvatica")).toContain("hp 0/11 → 10/20");
     });
 
     it("rolls a companion's death save as its turn starts, told as the mentor setting asks; three successes make it stable (DIE-5, D-460)", async () => {

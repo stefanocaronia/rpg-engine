@@ -110,6 +110,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 | Travel | Roads as places with `stops`, positions, travel on and off roads, maps of places | [map/](../src/map/), [grid/](../src/grid/), [commands/travel.ts](../src/commands/travel.ts) |
 | Rules | House rules, then the system's chapters, then precedents | [rules/](../src/rules/), [commands/rules.ts](../src/commands/rules.ts) |
 | Problems | What `validate` lists; most never stop other commands | [commands/problems.ts](../src/commands/problems.ts), [pages/check.ts](../src/pages/check.ts) |
+| State checks | What cannot be true together in the party and the open scene, told to the master; read-only | [commands/game-checks.ts](../src/commands/game-checks.ts) |
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions' | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
 | Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
 | Translation | The dashboard's phrases and a system's words in the campaign's language | [page-words.ts](../src/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |

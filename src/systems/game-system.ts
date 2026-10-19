@@ -43,6 +43,9 @@ const speedSchema = z.string().refine((text) => readSpeed(text) !== undefined, `
 // A factor of speed, such as 1/2 for difficult terrain, or 0.5.
 const factorSchema = z.union([z.number().positive(), z.string().regex(/^\d+\/[1-9]\d*$/, "write it as 1/2, or as a number such as 0.5")]);
 const hoursSchema = z.number().positive().max(24);
+// What a state check reads (CHK-2): an effect by its name, or a field against a number, as hp <= 0.
+const checkFieldPattern = /^([\p{L}][\p{L}\p{M}\p{N}_-]*)\s*(<=|>=|!=|=|<|>)\s*(-?\d+)$/u;
+const checkAtomSchema = z.string().trim().min(1, "give an effect's name, or a field against a number, such as hp <= 0");
 const inWordsHelp = "give the words a foe's counter is heard in, from full to 0, such as [unhurt, hurt, badly hurt, down]";
 const inWordsSchema = z.array(z.string().min(1), { error: inWordsHelp }).min(2, inWordsHelp);
 
@@ -196,6 +199,11 @@ const systemSchema = z.object({
         message: "name what full successes make, which the dashboard says, such as stable: Stable",
         path: ["stable"],
     }).optional(),
+    checks: z.array(
+        z.object({ when: checkAtomSchema, needs: checkAtomSchema, say: z.string().min(1) }, {
+            error: 'write each as what holds, what must hold with it, and the line for the master, such as {when: Stable, needs: hp <= 0, say: "{page} is Stable with {hp}: effect end {page} Stable."}',
+        }).strict(),
+    ).optional(),
     tables: z.record(z.string(), z.record(z.string(), z.number())).optional(),
     progression: z.object({
         list: z.string().min(1),
@@ -301,6 +309,20 @@ export interface CombatData
     /** The words a foe's counter is heard in, from full to 0, the others between at equal shares (D-314); none when the player hears the numbers. */
     inWords: string[];
     inactive: string[];
+}
+
+/** What a state check reads (CHK-2): an effect a page has, with no end and no keeper, or one of its fields against a number. */
+export type CheckAtom = { effect: string; } | { field: string; op: CheckOperator; value: number; };
+
+/** How a state check compares a field with a number. */
+export type CheckOperator = "<" | "<=" | "=" | "!=" | ">=" | ">";
+
+/** A state check of the system (CHK-2): when `when` holds, `needs` must hold too, else the master reads `say`, with {page} and each {field} filled in. */
+export interface SystemCheck
+{
+    when: CheckAtom;
+    needs: CheckAtom;
+    say: string;
 }
 
 /**
@@ -500,6 +522,8 @@ export interface GameSystem
     combat?: CombatData;
     /** The panel of the dying on the dashboard (D-314). */
     dying?: Dying;
+    /** What cannot be true together, which the engine says to the master (CHK-2). */
+    checks: SystemCheck[];
     /** By counter, the counter it shields, which loses from it first, as temp-hp shields hp (DAT-14). */
     shields: Record<string, string>;
     /** What it works out from the fields of a page (D-199, FOR-1). */
@@ -702,6 +726,24 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${counted.where}: ${counted.field} is not declared as a counter in fields.`);
     }
 
+    // A state check compares a field the system declares, written as one, and its line names only the page and such fields (CHK-2).
+    const checks = data.checks ?? [];
+    const atoms = checks.flatMap((check) => [check.when, check.needs]);
+    const miswritten = atoms.find((atom) => /[<>=!]/.test(atom) && !checkFieldPattern.test(atom.trim()));
+    const checkField = atoms.map(checkAtom).find((atom) => "field" in atom && kindOf(atom.field) === undefined);
+    const placeholder = checks.flatMap((check) => [...check.say.matchAll(/\{([^{}]+)\}/g)].map((found) => found[1])).find((named) => named !== "page" && kindOf(named) === undefined);
+    const checkProblem = miswritten !== undefined
+        ? `"${miswritten}" is no comparison: write a field, one of < <= = != >= >, and a whole number, such as hp <= 0`
+        : checkField !== undefined && "field" in checkField
+        ? `${checkField.field} is not declared in fields`
+        : placeholder === undefined
+        ? undefined
+        : `{${placeholder}} in say is neither {page} nor a field declared in fields`;
+
+    if (checkProblem !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: checks: ${checkProblem}.`);
+    }
+
     // A use of a turn goes within another the system names (TRN-3).
     const turnUses = data["turn-uses"] ?? {};
     const looseUse = Object.entries(turnUses).find(([, rule]) => rule.within !== undefined && !Object.keys(turnUses).some((use) => comparableText(use) === comparableText(rule.within ?? "")));
@@ -856,6 +898,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? [], inactive: data.combat.inactive ?? [] } }),
         ...(data.dying === undefined ? {} : { dying: dyingRule(data.dying) }),
+        checks: (data.checks ?? []).map((check) => ({ when: checkAtom(check.when), needs: checkAtom(check.needs), say: check.say })),
         shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
         ...(data.progression === undefined ? {} : { progression: progressionRule(data.progression) }),
@@ -1170,6 +1213,13 @@ function systemFormulas(data: FormulaData, name: string, path: string): SystemFo
     } catch (error) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${error instanceof Error ? error.message : String(error)}`);
     }
+}
+
+/** What a state check reads, as written (CHK-2): "hp <= 0" a field against a number, anything else an effect's name. */
+function checkAtom(text: string): CheckAtom
+{
+    const field = checkFieldPattern.exec(text.trim());
+    return field === null ? { effect: text.trim() } : { field: field[1], op: field[2] as CheckOperator, value: Number(field[3]) };
 }
 
 /** The dying as the system writes them: "hp 0" read as a field and a number. */

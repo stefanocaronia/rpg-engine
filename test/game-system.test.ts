@@ -111,6 +111,17 @@ describe("what a fight follows on the dashboard (D-314)", () => {
         expect(() => installedSystems([near])).toThrow("give the words a foe's counter is heard in");
     });
 
+    it("reads the state checks, and refuses one that compares a field it does not declare, a comparison written wrong, or a line that names neither (CHK-2)", () => {
+        system(near, "nostro", `${base}checks: [{when: Prono, needs: pf <= 0, say: "{page} prono con {pf}"}]\n`);
+        expect(installedSystems([near])[0].checks).toEqual([{ when: { effect: "Prono" }, needs: { field: "pf", op: "<=", value: 0 }, say: "{page} prono con {pf}" }]);
+        system(near, "nostro", `${base}checks: [{when: Prono, needs: vita <= 0, say: "{page}"}]\n`);
+        expect(() => installedSystems([near])).toThrow("checks: vita is not declared in fields");
+        system(near, "nostro", `${base}checks: [{when: Prono, needs: pf =< 0, say: "{page}"}]\n`);
+        expect(() => installedSystems([near])).toThrow('checks: "pf =< 0" is no comparison');
+        system(near, "nostro", `${base}checks: [{when: Prono, needs: pf <= 0, say: "{page} con {pff}"}]\n`);
+        expect(() => installedSystems([near])).toThrow("checks: {pff} in say is neither {page} nor a field declared in fields");
+    });
+
     it("reads the drawing of a condition, and marks an effect named as one of its conditions, whatever its case, with its drawing when it has one (D-419)", () => {
         system(near, "nostro", `${base}condition-icons: { stordito: "M4 4L20 20" }\n`);
         const read = installedSystems([near])[0];

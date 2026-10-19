@@ -217,6 +217,8 @@ dying:
   stable: Stable
   marks: {successes: Successes, failures: Failures}
 immune: condition-immunities
+checks:
+  - {when: Stable, needs: hp <= 0, say: "{page} is Stable with {hp}: effect end {page} Stable."}
 ```
 
 - `conditions`: effects with these names show their rule; `condition-icons` draws them.
@@ -224,6 +226,7 @@ immune: condition-immunities
 - `combat`: the counter the dashboard's Combat follows; `in-words`, the words a foe's is heard in, the first at full, the last at 0, those between at equal shares, translated by the system's `words`; who cannot act.
 - `dying`: when the dashboard shows the panel of the dying, its counters by their sides, `stable`, what it calls one whose successes are full, and `marks`, the short words of each side (the field's label where none), all translated by `words`. What the dying point does, as the 5e's death saves, is the system's code (see [Code](#code)); the dashboard tells a death save from what that code wrote.
 - `immune`: the list of a page whose conditions `effect add` refuses.
+- `checks`: what cannot be true together, which the engine tells the master at `scene next` and `advance`, once in a chat while it lasts, and in `status` and `validate` every time; it never changes anything. `when` and `needs` are an effect's name, which counts only without an end or a keeper, or a field against a number; `say` fills `{page}` and each `{field}` with the page's own values. A check that needs more is the system's code. The engine checks two things itself, from the data above: who keeps an effect alive while a condition of `keeping` is on them, and one of the party at the value of `dying`, not marked dead, with no condition of `combat.inactive`. It checks the party, alive or dead, and the characters of the open scene, never copies.
 
 ### tables, computed, counters
 

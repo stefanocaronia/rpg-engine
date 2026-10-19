@@ -8,6 +8,7 @@ import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import type { GameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { allStateChecks, type Contradiction, markStateChecksTold } from "./game-checks.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
@@ -163,6 +164,8 @@ export const status = defineCommand({
             plannedEvents: events.filter((event) => !due.includes(event)).map((event) => plannedText(event, now)),
             clocks: clocksToMove(world, now, facts),
             problems: campaignProblems(root, world, context).length + codeProblems.length,
+            // Every contradiction of the state, always, told for the turns that follow (CHK-3).
+            contradictions: toldContradictions(context, allStateChecks(root, context)),
             // A load that stopped halfway leaves the campaign between two times (SAV-5).
             halfLoaded: interruptedLoad(root)?.number,
             sheet: system === undefined ? undefined : sheetSummary(system),
@@ -215,11 +218,19 @@ export const status = defineCommand({
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),
             result.clocks.length === 0 ? "" : `Clocks: ${result.clocks.join(" · ")}`,
             result.halfLoaded === undefined ? "" : `The load of save ${result.halfLoaded} stopped halfway: call save load to finish it, before anything else.`,
+            ...result.contradictions,
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
         return state.filter((line) => line !== "").join("\n");
     },
 });
+
+/** The lines of the contradictions, marked told in the chat. */
+function toldContradictions(context: Context, found: Contradiction[]): string[]
+{
+    markStateChecksTold(context, found);
+    return found.map((one) => one.line);
+}
 
 /** The game date; or why it cannot be read; or, before there is one, a reminder to set it when some planned event has a date. */
 function timeLine(result: { now?: string; dateProblem?: string; datedEvents: boolean; }): string

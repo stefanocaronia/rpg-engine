@@ -2,6 +2,8 @@
 export {
     type CampaignData,
     campaignDataNames,
+    type CheckAtom,
+    type CheckOperator,
     type DamageRule,
     findCampaignSystem,
     findSystem,
@@ -14,6 +16,7 @@ export {
     rollName,
     type SheetEntry,
     type SheetGroup,
+    type SystemCheck,
     systemFileName,
     type SystemSetting,
     type Threshold,

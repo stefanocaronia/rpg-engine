@@ -348,7 +348,8 @@ function counterChangeOf(target: { holder: CounterHolder; field: string; fields:
     const before = readCounter(fields[field]);
     const after = comparableText(outcome.field) === comparableText(field) ? readCounterText(outcome.after)?.value : before?.value;
 
-    if (holder.kind !== "page" || before === undefined || after === undefined) {
+    // What an effect that gives the counter took, as a beast form, is not the page's own (DIE-8): its code sees the page's counter only.
+    if (holder.kind !== "page" || before === undefined || after === undefined || outcome.effect !== undefined) {
         return {};
     }
 

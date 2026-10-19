@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
+import { stateCheckProblems } from "./game-checks.ts";
 import { extensionCodeProblems } from "./game-extensions.ts";
 import { campaignWorld } from "./game-world.ts";
 import { campaignProblems } from "./problems.ts";
@@ -18,7 +19,7 @@ export const validate = defineCommand({
     {
         const root = requireCampaign(context.folder);
         // And what keeps an extension's code from being used, which only loading it tells (D-441).
-        return { problems: [...campaignProblems(root, campaignWorld(root, context), context), ...await extensionCodeProblems(root, context, [])] };
+        return { problems: [...campaignProblems(root, campaignWorld(root, context), context), ...await extensionCodeProblems(root, context, []), ...stateCheckProblems(root, context)] };
     },
 
     format(result)
