@@ -109,3 +109,6 @@ export function inPlay(folder: string): void
         }`,
     );
 }
+
+/** The last line of the instructions, before the master's first words of an evening. */
+export const openingLine = "Now read where the game stands, writing nothing: your first words to the player are the opening itself.";

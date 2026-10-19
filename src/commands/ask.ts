@@ -14,10 +14,34 @@ import { campaignSystem } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, withSheetValues } from "./roll.ts";
 
-// The words of the buttons, in the campaign's language; English for the others (ASK-7).
+// The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7).
 const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; }> = {
     en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move" },
     it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento" },
+    ar: { roll: "رمية", change: "غيّرت رأيي", choice: "اختيار", square: "حركة" },
+    cs: { roll: "Hod", change: "Rozmyslet si to", choice: "Volba", square: "Pohyb" },
+    da: { roll: "Slag", change: "Jeg fortryder", choice: "Valg", square: "Bevægelse" },
+    de: { roll: "Wurf", change: "Ich überlege es mir anders", choice: "Wahl", square: "Bewegung" },
+    el: { roll: "Ζαριά", change: "Άλλαξα γνώμη", choice: "Επιλογή", square: "Κίνηση" },
+    es: { roll: "Tirada", change: "Cambio de idea", choice: "Elección", square: "Movimiento" },
+    fi: { roll: "Heitto", change: "Muutan mieleni", choice: "Valinta", square: "Liike" },
+    fr: { roll: "Jet", change: "Je change d'avis", choice: "Choix", square: "Déplacement" },
+    he: { roll: "הטלה", change: "שיניתי את דעתי", choice: "בחירה", square: "תנועה" },
+    hi: { roll: "पासा", change: "मैंने मन बदल लिया", choice: "चुनाव", square: "चाल" },
+    hu: { roll: "Dobás", change: "Meggondoltam magam", choice: "Választás", square: "Mozgás" },
+    is: { roll: "Kast", change: "Ég skipti um skoðun", choice: "Val", square: "Hreyfing" },
+    ja: { roll: "判定", change: "やっぱりやめる", choice: "選択", square: "移動" },
+    ko: { roll: "굴림", change: "마음을 바꿀게요", choice: "선택", square: "이동" },
+    nb: { roll: "Kast", change: "Jeg ombestemmer meg", choice: "Valg", square: "Forflytning" },
+    nl: { roll: "Worp", change: "Ik bedenk me", choice: "Keuze", square: "Verplaatsen" },
+    pl: { roll: "Rzut", change: "Zmieniam zdanie", choice: "Wybór", square: "Ruch" },
+    pt: { roll: "Rolagem", change: "Mudei de ideia", choice: "Escolha", square: "Movimento" },
+    ro: { roll: "Aruncare", change: "M-am răzgândit", choice: "Alegere", square: "Mișcare" },
+    ru: { roll: "Бросок", change: "Передумать", choice: "Выбор", square: "Перемещение" },
+    sv: { roll: "Slag", change: "Jag ångrar mig", choice: "Val", square: "Förflyttning" },
+    tr: { roll: "Zar", change: "Fikrimi değiştirdim", choice: "Seçim", square: "Hareket" },
+    uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення" },
+    zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动" },
 };
 
 // A list, or one text, as an MCP client may send it.

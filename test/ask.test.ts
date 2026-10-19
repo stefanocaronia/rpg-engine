@@ -76,8 +76,8 @@ describe("a roll with buttons (ASK-3, ASK-7)", () => {
         expect(shown[1].labels).toEqual(["Spada corta · d6 + 2d6 +3", "Cambio idea"]);
     });
 
-    it("gives the buttons in English when the campaign is in another language", async () => {
-        await rpg("config", "language", "fr");
+    it("gives the buttons in English when the campaign is in a language the dashboard does not ship", async () => {
+        await rpg("config", "language", "sw");
         await asked(wall, 2);
         expect(shown[0]).toMatchObject({ title: "Roll", labels: ["Atletica · d20 +5", "Acrobazia · d20 +3", "Change my mind"] });
     });

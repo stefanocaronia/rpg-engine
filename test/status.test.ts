@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, openingLine, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -34,7 +34,7 @@ describe("rpg status", () => {
         );
         expect(status).toMatch(/veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nNo player character yet\.$/);
         const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
-        expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}`);
+        expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}\n\n${openingLine}`);
     });
 
     it("shows the party, where they are, their counters and who is with them", async () => {

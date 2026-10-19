@@ -459,7 +459,9 @@ function shownLines(depths: number[], isClosed: (index: number) => boolean): boo
 /** A thing's name as the page writes it, with a capital, whatever the page that has it says: "torce" as "Torce". */
 function itemName(name: string): string
 {
-    return name.charAt(0).toLocaleUpperCase() + name.slice(1);
+    // A thing of the system, as Unarmed Strike, in the campaign's language (playtest 15).
+    const said = systemWord("words", name) ?? name;
+    return said.charAt(0).toLocaleUpperCase() + said.slice(1);
 }
 
 /** Flashes its content once when its text changes, as when a number goes down. */

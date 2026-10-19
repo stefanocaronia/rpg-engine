@@ -254,7 +254,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         const forms = await formClient({ action: "accept", content: { choice: "Acrobazia · d20 +3" } }, shown);
         expect((await forms.listTools()).tools.map((tool) => tool.name)).toContain("ask");
         expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(
-            /call `ask` instead of stopping in words\. Never speak of buttons to the player: if one does not show, ask in words\.$/,
+            /call `ask` instead of stopping in words\. Never speak of buttons to the player: if one does not show, ask in words\.\n\nNow read where the game stands/,
         );
 
         const result = await forms.callTool({ name: "ask", arguments: wall });

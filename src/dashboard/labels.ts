@@ -123,7 +123,11 @@ export function notationModifier(notation: string): number
 /** A number as it reads: −1 with a minus sign rather than a hyphen. */
 export function shownText(text: string): string
 {
-    return (systemWord("words", text) ?? text).replace(/(^|[\s(])-(?=\d)/g, "$1−");
+    // A number then a word of the system, as a weapon's 1d6+2 bludgeoning, says the word in the campaign's language (playtest 15).
+    const tail = /^(.*\d)\s+(\D+)$/.exec(text);
+    const tailWord = tail === null ? undefined : systemWord("words", tail[2]);
+    const said = systemWord("words", text) ?? (tail === null || tailWord === undefined ? text : `${tail[1]} ${tailWord}`);
+    return said.replace(/(^|[\s(])-(?=\d)/g, "$1−");
 }
 
 /** Dice as they read: 1d20−1 with a minus sign rather than a hyphen. */
