@@ -800,6 +800,8 @@ describe("the page's reading of a sheet (D-273)", () => {
         // Combat's address leads to the Scene, which shows the turns (D-444).
         expect(readAddress("#/combat")).toEqual({ section: "scene" });
         expect(readAddress("#/about")).toEqual({ section: "about" });
+        // The packages, a page of the menu (D-475).
+        expect(readAddress("#/packages")).toEqual({ section: "packages" });
         expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
         expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
     });

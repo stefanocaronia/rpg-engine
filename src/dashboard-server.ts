@@ -14,6 +14,7 @@ import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
+import { packageCommand } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -22,10 +23,11 @@ import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationParts } from "./dice/index.ts";
+import { verifiedScope } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
-import { rollName } from "./systems/index.ts";
+import { installedSystems, rollName } from "./systems/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 /**
@@ -271,7 +273,12 @@ interface Served
     notify(): void;
     /** The page in a language the package does not ship, translated on the fly (D-406). */
     words: PageTranslator;
+    /** The package the player is adding, updating or taking away on the page, while npm works (D-475): one at a time. */
+    packageWork?: { name: string; action: PackageAction; };
 }
+
+/** What the player does with a package on the page (D-475). */
+type PackageAction = "add" | "update" | "remove" | "uninstall";
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 interface Asked
@@ -351,6 +358,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (request.method === "POST" && path === "/api/package" && origin !== undefined) {
+        await changePackage(request, response, served);
+        return;
+    }
+
     if (request.method === "POST" && path === "/api/config" && origin !== undefined) {
         await changeSetting(request, response, served);
         return;
@@ -398,6 +410,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
                 ? null
                 : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, names, ...rows, ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }), ...(asked.square ? { square: true } : {}) },
         });
+        return;
+    }
+
+    if (path === "/api/packages") {
+        await packagesNow(response, served, url.searchParams.get("npm") === "true");
         return;
     }
 
@@ -638,6 +655,82 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
         }
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
+ * The packages as the page shows them (D-475): the game system, those on this computer with whether the campaign uses them, those it lists and lacks, what npm
+ * has when asked, and the one the player is working on now.
+ */
+async function packagesNow(response: ServerResponse, served: Served, npm: boolean): Promise<void>
+{
+    try {
+        await served.session.ready();
+        const shown = await withFiles(served.session, async () => {
+            const root = requireCampaign(served.context.folder);
+            const system = campaignSystem(root, served.context);
+            const list = await packageCommand.run(packageCommand.input.parse({ action: "list" }), served.context);
+            const available = npm ? await packageCommand.run(packageCommand.input.parse({ action: "available" }), served.context) : undefined;
+            return {
+                system: system === undefined ? null : { name: system.name, title: system.title },
+                // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
+                otherSystems: installedSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
+                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing } : {}),
+                ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
+                ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
+            };
+        });
+        sendJson(response, 200, shown);
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
+ * A package the player adds to the campaign, updates, takes out of it or off this computer on the page (D-475), as package does with the player as who did it;
+ * the master hears of it at the head of their next call. Only ours: one of someone else's the player installs from their terminal, until the page's yes can be
+ * told from a forged one (D-441, D-475).
+ */
+async function changePackage(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ action: z.enum(["add", "update", "remove", "uninstall"]), name: z.string().trim().min(1).max(214) }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send what to do with which package: { action: add, update, remove or uninstall, name }." });
+        return;
+    }
+
+    const { action, name } = parsed.data;
+    // Ours by our scope, or a name alone, which package reads as ours; never a folder, a file, another scope or npm:.
+    const ours = name.startsWith(verifiedScope) || !/[/:.\\]/.test(name);
+
+    if ((action === "add" || action === "update") && !ours) {
+        sendJson(response, 403, { error: `${name} is not one of ours: install it from your terminal, in the campaign's folder, with rpg package install ${name} --accept-risk.`, code: "not-ours" });
+        return;
+    }
+
+    if (served.packageWork !== undefined) {
+        sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy" });
+        return;
+    }
+
+    served.packageWork = { name, action };
+    served.notify();
+
+    try {
+        await served.session.ready();
+        const news = await withFiles(served.session, async () => {
+            const input = { action: action === "add" || action === "update" ? "install" : action, name };
+            const result = await packageCommand.run(packageCommand.input.parse(input), { ...served.context, actor: "player" });
+            return `The player, on the dashboard, ${action === "update" ? "updated" : action === "add" ? "added" : action === "remove" ? "took out of the campaign" : "uninstalled"} ${name}: ${packageCommand.format(result)}`;
+        });
+        served.events.push(news);
+        sendJson(response, 202, {});
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+        served.packageWork = undefined;
+        served.notify();
     }
 }
 

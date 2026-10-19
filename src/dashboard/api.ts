@@ -206,6 +206,72 @@ export async function changeSaves(change: SavesChange): Promise<string | undefin
     }
 }
 
+/** A package on this computer (D-475): with whether the campaign uses it, or broken when it does not read. */
+export type ShownPackage =
+    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
+    | { name: string; package: string; broken: string; };
+
+/** A package npm has for this rpg-engine, with the version installed here, if any, and whether npm's is newer. */
+export interface NpmPackage
+{
+    name: string;
+    package: string;
+    version: string;
+    description?: string;
+    author?: string;
+    verified: boolean;
+    installed?: string;
+    update: boolean;
+}
+
+/** What the player does with a package on the page. */
+export type PackageAction = "add" | "update" | "remove" | "uninstall";
+
+/**
+ * The packages as the page shows them (D-475): the game system and the others on this computer, the packages here, those the campaign lists and lacks, the one
+ * being worked on; with npm, what it has, or why it did not answer.
+ */
+export interface PackagesView
+{
+    system: { name: string; title: string; } | null;
+    otherSystems?: { name: string; title: string; }[];
+    installed: ShownPackage[];
+    missing: string[];
+    working?: { name: string; action: PackageAction; };
+    available?: NpmPackage[];
+    failed?: string;
+}
+
+/** The packages, and what npm has when asked, which takes longer. */
+export async function readPackages(npm: boolean): Promise<PackagesView>
+{
+    const response = await fetch(npm ? "/api/packages?npm=true" : "/api/packages");
+    const body = await response.json() as PackagesView | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body;
+}
+
+/** Adds, updates, takes out of the campaign or off this computer a package (D-475), once npm is done: undefined when done, else what went wrong. */
+export async function changePackage(action: PackageAction, name: string): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) });
+
+        if (response.status === 202) {
+            return undefined;
+        }
+
+        const body = await response.json().catch(() => ({})) as { error?: string; };
+        return body.error ?? t("It did not reach the game: try again.");
+    } catch {
+        return t("It did not reach the game: try again.");
+    }
+}
+
 /** A change of one of the player's settings: a value, or an item added to a list or taken off it. */
 export type SettingChange = { setting: string; value: string; } | { setting: string; add: string; } | { setting: string; remove: string; };
 

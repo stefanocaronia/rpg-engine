@@ -1,10 +1,13 @@
 // The package command (D-27, D-428, D-436, D-439, D-441): installing an extension on this computer with npm, ours or another with the player's own yes, adding it to
 // the campaign, listing and removing; npm itself is a fake here, which copies the test extensions as it would install them.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
+import { SessionStore } from "../src/core/session-store.ts";
+import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
 /** npm as these tests have it: the packages it knows by name, each the folder of a test extension; it installs one by copying it into node_modules. */
@@ -251,5 +254,65 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         expect((await rpg("weather")).output).toMatch(/^Unknown command "weather"/);
         expect((await rpg("package", "remove", "weather")).output).toBe("The campaign does not use weather: it uses no package. Nothing changed.");
         expect((await rpg("package", "list")).output).toMatch(/^On this computer: weather \d+\.\d+\.\d+\.\n/);
+    });
+});
+
+describe("the packages on the dashboard's page (D-475)", () => {
+    let session: SessionStore;
+    let dashboard: Dashboard;
+    let port: number;
+
+    beforeEach(async () => {
+        session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+
+        if (started === undefined) {
+            throw new Error("The dashboard did not start.");
+        }
+
+        dashboard = started;
+        port = Number(new URL(dashboard.url).port);
+    });
+
+    afterEach(async () => {
+        await dashboard.close();
+        session.close();
+    });
+
+    function send(method: string, path: string, body?: unknown): Promise<{ status: number; body: string; }>
+    {
+        const headers = body === undefined ? {} : { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+        return new Promise((done, fail) => {
+            const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+            });
+            sent.on("error", fail);
+            sent.end(body === undefined ? undefined : JSON.stringify(body));
+        });
+    }
+
+    it("lists the system and the packages, adds and takes out one of ours as the player, and the master hears of each", async () => {
+        const before = JSON.parse((await send("GET", "/api/packages")).body);
+        expect(before.system).toMatchObject({ name: "ironsworn" });
+        expect(before.otherSystems.map((one: { name: string; }) => one.name)).toContain("5e");
+        expect(before.installed).toEqual([]);
+        const shop = JSON.parse((await send("GET", "/api/packages?npm=true")).body);
+        expect(shop.available.map((one: { name: string; }) => one.name)).toContain("weather");
+        expect((await send("POST", "/api/package", { action: "add", name: "weather" })).status).toBe(202);
+        const after = JSON.parse((await send("GET", "/api/packages")).body);
+        expect(after.installed).toMatchObject([{ name: "weather", used: true, verified: true }]);
+        expect(dashboard.news().lines.join("\n")).toContain("The player, on the dashboard, added weather: Installed weather");
+        expect((await send("POST", "/api/package", { action: "remove", name: "weather" })).status).toBe(202);
+        expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "weather", used: false }]);
+    });
+
+    it("leaves someone else's package to the player's terminal, until the page's yes cannot be forged (D-441)", async () => {
+        const refused = await send("POST", "/api/package", { action: "add", name: "@test/rumors" });
+        expect(refused.status).toBe(403);
+        expect(JSON.parse(refused.body)).toMatchObject({ code: "not-ours", error: expect.stringContaining("rpg package install @test/rumors --accept-risk") });
+        expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toEqual([]);
     });
 });

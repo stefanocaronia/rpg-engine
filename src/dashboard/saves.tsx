@@ -322,7 +322,7 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
 }
 
 /** A modal question over the whole page, the dice too, which Escape closes. */
-function Confirm({ title, onClose, children }: { title: string; onClose(): void; children: ComponentChildren; })
+export function Confirm({ title, onClose, children }: { title: string; onClose(): void; children: ComponentChildren; })
 {
     const dialog = useRef<HTMLDialogElement>(null);
 

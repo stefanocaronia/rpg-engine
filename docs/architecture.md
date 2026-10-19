@@ -117,7 +117,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 
 ### The dashboard
 
-The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves), sends `/events` when files change (no data: the page reads `view` again), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
+The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours), sends `/events` when files change (no data: the page reads `view` again), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
 
 ## 6. Tests
 

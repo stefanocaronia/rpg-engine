@@ -15,6 +15,7 @@ import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView } from "./journal.tsx";
 import { gameNotices, type Notice, Notices } from "./notices.tsx";
+import { PackagesPage } from "./packages.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
@@ -439,8 +440,9 @@ function App()
                                 {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
                                 {address.section === "settings" && <SettingsView version={shown.version} />}
                                 {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
+                                {address.section === "packages" && <PackagesPage version={shown.version} />}
                                 {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                                {!["party", "scene", "journal", "world", "about", "help", "settings", "saves"].includes(address.section) && <Upcoming section={address.section} />}
+                                {!["party", "scene", "journal", "world", "about", "help", "settings", "saves", "packages"].includes(address.section) && <Upcoming section={address.section} />}
                                 {address.section === "party" && member && (
                                     <MemberSheet
                                         key={member.name}
