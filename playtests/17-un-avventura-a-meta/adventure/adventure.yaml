@@ -1,0 +1,13 @@
+title: Il pozzo che sussurra
+about: Un casale di pastori a mezza giornata di cammino, un pozzo antico che di notte sussurra nomi, e una colpa vecchia di vent'anni che nessuno vuole dire.
+language: it
+version: 1.0.0
+author: Bea Ruggeri
+license: CC BY 4.0
+needs: {system: 5e}
+levels: 3
+content: [annegamento, non morti, un omicidio del passato]
+length: 1-2 sessioni
+party: 4 personaggi
+start: "[[Fontebassa]]"
+opening: "[[Apertura del pozzo che sussurra]]"

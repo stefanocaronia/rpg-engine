@@ -10,7 +10,7 @@ import { z } from "zod";
 import { readAdventureZip } from "./adventures/index.ts";
 import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
-import { installAdventure } from "./commands/game-adventures.ts";
+import { installAdventure, readAdventureSpec } from "./commands/game-adventures.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
@@ -815,15 +815,22 @@ async function changePackage(request: IncomingMessage, response: ServerResponse,
 }
 
 /**
- * An adventure the player adds on the page from a .zip of their computer (D-483), as package install does with the player as who did it; the zip comes as the
+ * An adventure the player adds on the page from a .zip of their computer or an https link, GitHub's too (D-483), as package install does with the player as who did it; the zip comes as the
  * request's body, named by its X-File-Name, and is read from a copy that goes once it is installed or refused. The master hears of it at their next call.
  */
 async function addAdventure(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
-    const name = fileName(String(request.headers["x-file-name"] ?? "adventure.zip")).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 120) || "adventure.zip";
-    const bytes = await readBytes(request, largestUpload);
+    const linked = /^application\/json/i.test(String(request.headers["content-type"] ?? ""));
+    const url = linked ? z.object({ url: z.string().trim().regex(/^https:\/\/\S+$/i).max(2000) }).strict().safeParse(await readBody(request)) : undefined;
+    const name = url?.success === true ? url.data.url : fileName(String(request.headers["x-file-name"] ?? "adventure.zip")).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 120) || "adventure.zip";
+    const bytes = linked ? undefined : await readBytes(request, largestUpload);
 
-    if (bytes === undefined) {
+    if (url?.success === false) {
+        sendJson(response, 400, { error: "Send the adventure's https link, such as https://github.com/someone/an-adventure: { url }." });
+        return;
+    }
+
+    if (!linked && bytes === undefined) {
         sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: an adventure is never that big.` });
         return;
     }
@@ -837,10 +844,12 @@ async function addAdventure(request: IncomingMessage, response: ServerResponse, 
     served.notify();
 
     try {
+        // A link is downloaded before the campaign's files are touched: a slow site never holds them.
+        const adventure = bytes === undefined ? await readAdventureSpec(name, served.context) : readAdventureZip(bytes, name);
         await served.session.ready();
         const news = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
-            const installed = installAdventure(root, { ...served.context, actor: "player" }, readAdventureZip(bytes, name), name);
+            const installed = installAdventure(root, { ...served.context, actor: "player" }, adventure, name);
             return `The player, on the dashboard, added an adventure: ${adventureText(installed)}`;
         });
         served.events.push(news);

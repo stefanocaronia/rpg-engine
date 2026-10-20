@@ -290,6 +290,24 @@ describe("the adventures on the dashboard's page (D-483)", () => {
         expect(JSON.parse(twice.body.toString("utf8")).error).toContain("broken.zip is not a .zip that reads");
     });
 
+    it("adds one from a GitHub link, read as the zip of its branch", async () => {
+        const asked: string[] = [];
+        await dashboard.close();
+
+        const download = (url: string): Promise<Uint8Array> => {
+            asked.push(url);
+            return Promise.resolve(readFileSync(adventureZip({}, "pozzo-main/")));
+        };
+
+        const started = await startDashboard({ ...context, files: session, download }, session, { ports: [0], page: folder });
+        dashboard = started as Dashboard;
+        port = Number(new URL(dashboard.url).port);
+        const added = await send("POST", "/api/adventure", JSON.stringify({ url: "https://github.com/ada/pozzo/tree/main" }), { "content-type": "application/json" });
+        expect(added.status).toBe(202);
+        expect(asked).toEqual(["https://codeload.github.com/ada/pozzo/zip/refs/heads/main"]);
+        expect((await send("POST", "/api/adventure", JSON.stringify({ url: "http://example.com/a.zip" }), { "content-type": "application/json" })).status).toBe(400);
+    });
+
     it("exports the campaign, then gives its .zip to download by its name alone", async () => {
         makeSave(folder, context, undefined, "session zero");
         const exported = JSON.parse((await send("POST", "/api/export", JSON.stringify({ author: "Ada" }), { "content-type": "application/json" })).body.toString("utf8")) as { file: string; };

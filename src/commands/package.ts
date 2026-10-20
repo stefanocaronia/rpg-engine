@@ -460,7 +460,7 @@ export function adventureText(result: AdventureInstalled): string
         ? ""
         : result.start.placed
         ? ` It starts in [[${result.start.name}]].`
-        : ` It starts in [[${result.start.name}]], in no place of the world yet: write it into the place that holds it, with a road if one leads there.`;
+        : ` It starts in [[${result.start.name}]], in no place of the world yet: write it into the place that holds it, or give it a position, and a road from where it is reached.`;
     const read = manifest.opening === undefined ? "Read its places and quests" : `Show [[${manifest.opening}]] and the pages it says to read first`;
     return [
         `${result.already ? "The campaign already has" : "Installed"} the adventure ${manifest.title} ${manifest.version}${by} (${rights}): ${manifest.about.replace(/\.$/, "")}. ${counts}.`,

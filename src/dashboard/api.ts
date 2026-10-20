@@ -291,6 +291,23 @@ export async function addAdventure(file: File): Promise<string | undefined>
     }
 }
 
+/** Adds an adventure from an https link, a GitHub repository's too (D-483): undefined when it is in the campaign, else what went wrong. */
+export async function addAdventureLink(url: string): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/adventure", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+
+        if (response.status === 202) {
+            return undefined;
+        }
+
+        const body = await response.json().catch(() => ({})) as { error?: string; };
+        return body.error ?? t("It did not reach the game: try again.");
+    } catch {
+        return t("It did not reach the game: try again.");
+    }
+}
+
 /** Exports the campaign as an adventure, as it was at its start (ADV-7): the address to download its .zip from, or what went wrong. */
 export async function exportCampaign(credits: { author?: string; license?: string; }): Promise<{ download: string; file: string; } | { error: string; }>
 {

@@ -1273,7 +1273,8 @@ a {
     background: color-mix(in srgb, var(--low) 10%, var(--float));
 }
 
-.save-button:disabled {
+.save-button:disabled,
+.save-button[aria-disabled="true"] {
     border-color: var(--rule);
     background: var(--float);
     color: var(--muted);
@@ -11251,6 +11252,51 @@ svg.icon {
 .package-file > .saves-said {
     justify-self: stretch;
     overflow-wrap: anywhere;
+}
+
+/* Or a link: the field takes the room left by its button, up to a line that a GitHub address fits in. */
+.package-link {
+    display: grid;
+    gap: 4px;
+    justify-self: stretch;
+    max-width: 640px;
+    margin-top: 4px;
+}
+
+.package-link label {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.package-link-row {
+    display: flex;
+    gap: 8px;
+}
+
+.package-link input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+}
+
+.package-link input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+}
+
+.package-link input:read-only {
+    color: var(--muted);
+}
+
+.package-link .save-button {
+    min-height: 40px;
 }
 
 .package-file + .package-sub,

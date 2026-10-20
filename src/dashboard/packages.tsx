@@ -1,9 +1,9 @@
 // The Packages section (D-475): what is added to the game, in four cards. The game system, only seen, as it is chosen in the setup, with the others of this
 // computer for a new campaign; the packages the campaign uses, with those it lists and this computer lacks, and its adventures, with the day each came in on
-// (D-476); those to add, an adventure from a .zip, the extensions from this computer and from npm, ours and, when the player asks, others', which are installed
+// (D-476); those to add, an adventure from a .zip or a link, the extensions from this computer and from npm, ours and, when the player asks, others', which are installed
 // from the player's terminal until the page's yes cannot be forged; the campaign shared as an adventure (D-483). Each row opens on what it brings.
 import { useEffect, useRef, useState } from "preact/hooks";
-import { addAdventure, changePackage, exportCampaign, type NpmPackage, type PackageAction, type PackagesView, readPackages } from "./api.ts";
+import { addAdventure, addAdventureLink, changePackage, exportCampaign, type NpmPackage, type PackageAction, type PackagesView, readPackages } from "./api.ts";
 import { CardHead } from "./card.tsx";
 import { gameDateLabel, sinceDateLabel } from "./game-words.ts";
 import { Icon, iconPath } from "./icons.tsx";
@@ -409,18 +409,20 @@ function AdventureRow({ adventure, working, busy, onTakeOut }: { adventure: Adve
 }
 
 /**
- * An adventure from a .zip of this computer (D-483): the button opens the file chooser, the page sends the file, and what happened is said here, by the
- * button: the engine's refusal as it is. While the server adds one, from this page or another, the bar runs.
+ * An adventure from a .zip of this computer or from an https link, a GitHub repository's too (D-483): the button opens the file chooser, the field takes the
+ * link, and what happened is said below them: the engine's refusal as it is. While the server adds one, from this page or another, the bar runs.
  */
 function AddAdventure({ working, onAdded }: { working: PackagesView["working"]; onAdded(): void; })
 {
     const [adding, setAdding] = useState(false);
     const [said, setSaid] = useState<{ problem: boolean; text: string; }>();
+    const [link, setLink] = useState("");
     const picker = useRef<HTMLInputElement>(null);
     const button = useRef<HTMLButtonElement>(null);
     const [back, setBack] = useState(false);
-    // The server names an adventure it adds by its file: an extension never ends in .zip.
-    const busy = adding || (working?.action === "add" && /\.zip$/i.test(working.name));
+    // The server names an adventure it adds by its file or its link: an extension is never either.
+    const busy = adding || (working?.action === "add" && /\.zip$|^https:\/\//i.test(working.name));
+    const waiting = busy || working !== undefined;
 
     // The button is off while the file goes: the focus it had comes back to it, once it is on again.
     useEffect(() => {
@@ -430,14 +432,42 @@ function AddAdventure({ working, onAdded }: { working: PackagesView["working"]; 
         }
     }, [back, busy, working]);
 
+    const done = (refused: string | undefined): void => {
+        setAdding(false);
+        setSaid(refused === undefined ? { problem: false, text: `✓ ${t("The adventure is in the campaign: the master brings it into the story when you want it.")}` } : { problem: true, text: refused });
+        onAdded();
+    };
+
     const add = async (file: File): Promise<void> => {
         setBack(document.activeElement === button.current);
         setAdding(true);
         setSaid(undefined);
-        const refused = await addAdventure(file);
-        setAdding(false);
-        setSaid(refused === undefined ? { problem: false, text: `✓ ${t("The adventure is in the campaign: the master brings it into the story when you want it.")}` } : { problem: true, text: refused });
-        onAdded();
+        done(await addAdventure(file));
+    };
+
+    // The field keeps the focus while the link goes: it is only read-only, so Enter again does nothing.
+    const addLink = async (): Promise<void> => {
+        // An address copied without its scheme, as github.com/someone/an-adventure, is taken as https.
+        const url = link.trim().replace(/^(?=[\w-]+(?:\.[\w-]+)+\/)/, "https://");
+
+        if (waiting) {
+            return;
+        }
+
+        if (!/^https:\/\/\S+$/i.test(url)) {
+            setSaid({ problem: true, text: t("Paste the adventure's link: it starts with https://.") });
+            return;
+        }
+
+        setAdding(true);
+        setSaid(undefined);
+        const refused = await addAdventureLink(url);
+
+        if (refused === undefined) {
+            setLink("");
+        }
+
+        done(refused);
     };
 
     return (
@@ -463,12 +493,38 @@ function AddAdventure({ working, onAdded }: { working: PackagesView["working"]; 
                 type="button"
                 class="save-button package-button"
                 aria-describedby="package-file-about"
-                disabled={busy || working !== undefined}
+                disabled={waiting}
                 onClick={() => picker.current?.click()}
             >
                 <Icon name="plus" />
                 {t("Add from a .zip…")}
             </button>
+            <form
+                class="package-link"
+                noValidate
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    void addLink();
+                }}
+            >
+                <label for="package-link">{t("Or from a link, a GitHub repository's too")}</label>
+                <span class="package-link-row">
+                    <input
+                        id="package-link"
+                        type="url"
+                        inputMode="url"
+                        enterKeyHint="go"
+                        autocomplete="off"
+                        spellcheck={false}
+                        maxLength={2000}
+                        value={link}
+                        readOnly={busy}
+                        placeholder={t("https://github.com/someone/an-adventure")}
+                        onInput={(event) => setLink(event.currentTarget.value)}
+                    />
+                    <button type="submit" class="save-button package-button" aria-disabled={waiting}>{t("Add")}</button>
+                </span>
+            </form>
             {busy && (
                 <div class="package-progress" role="status">
                     <span class="package-bar" aria-hidden="true" />
