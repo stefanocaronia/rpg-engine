@@ -32,7 +32,7 @@ import { languageName } from "./languages.ts";
 import { PageHead } from "./pages.tsx";
 import { Confirm } from "./saves.tsx";
 import { Command } from "./settings.tsx";
-import { arrowStep, t } from "./text.ts";
+import { arrowStep, isolated, pageDirection, t } from "./text.ts";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
 interface Said
@@ -462,6 +462,7 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
             <div class="package-add-line">
                 <input
                     id="package-source"
+                    dir="auto"
                     type="text"
                     inputMode="url"
                     enterKeyHint="go"
@@ -627,7 +628,11 @@ function CatalogAway({ failed, asking, onRetry }: { failed: Catalog["failed"]; a
                 <p>
                     <strong>{headline}</strong> {line}
                 </p>
-                {why.map((one) => <p class="package-why" key={one}>{one}</p>)}
+                {why.map((one) => (
+                    <p class="package-why" key={one}>
+                        <bdi>{one}</bdi>
+                    </p>
+                ))}
                 <button type="button" class="save-button package-button" aria-disabled={asking} onClick={() => !asking && onRetry()}>
                     <Icon name="update" />
                     {t("Try again")}
@@ -658,7 +663,7 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
         ? (
             <span class="package-update">
                 <Icon name="update" />
-                {`${entry.installed} → ${entry.version}`}
+                {`${isolated(entry.installed)} ${pageDirection() === "rtl" ? "←" : "→"} ${isolated(entry.version)}`}
             </span>
         )
         : entry.version;
@@ -690,7 +695,7 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
                 <>
                     {version}
                     {version !== undefined && facts.length > 0 && " · "}
-                    {facts.join(" · ")}
+                    {facts.map(isolated).join(" · ")}
                 </>
             )}
             focusable
@@ -824,7 +829,7 @@ function ExtensionRow(
                 tone="broken"
                 name={name}
                 about={<span class="package-red">{t("It does not read: install it again.")}</span>}
-                meta={<span class="package-why">{extension.broken}</span>}
+                meta={<bdi class="package-why">{extension.broken}</bdi>}
                 actions={
                     <>
                         <button type="button" class="save-button package-button" aria-label={t("Install {name} again", { name })} aria-disabled={state.busy} onClick={() => !state.busy && onUpdate()}>
@@ -972,7 +977,7 @@ function PackageRow(
                     <strong class="package-title">{name}</strong>
                     {badges}
                 </span>
-                {about !== undefined && about !== "" && <span class="package-about">{about}</span>}
+                {about !== undefined && about !== "" && <span class="package-about">{typeof about === "string" ? <bdi>{about}</bdi> : about}</span>}
                 {meta !== undefined && meta !== false && <span class="package-meta">{meta}</span>}
             </span>
             {actions !== undefined && <span class="package-actions">{actions}</span>}
@@ -1099,7 +1104,11 @@ function SaidNote({ said, focus, onSee }: { said: Said | undefined; focus?: bool
     return said === undefined ? null : (
         <div ref={note} class={said.problem ? "package-said problem" : "package-said"} role="status" {...(focus ? { tabIndex: -1 } : {})}>
             <p>{said.text}</p>
-            {said.why !== undefined && <p class="package-why">{said.why}</p>}
+            {said.why !== undefined && (
+                <p class="package-why">
+                    <bdi>{said.why}</bdi>
+                </p>
+            )}
             {said.command !== undefined && <Command text={said.command} />}
             {said.added !== undefined && onSee !== undefined && (
                 <button type="button" class="package-see" onClick={() => said.added !== undefined && onSee(said.added)}>

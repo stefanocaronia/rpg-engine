@@ -1,7 +1,7 @@
-import { existsSync, lstatSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { packageFoldersIn } from "../core/files.ts";
+import { installedFromFolder, packageFoldersIn } from "../core/files.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
@@ -132,7 +132,7 @@ export function readExtension(folder: string): Extension
         ...(calendar === undefined ? {} : { calendar }),
         parts,
         ...(manifest.data.main === undefined ? {} : { code: where(manifest.data.main) }),
-        linked: lstatSync(folder).isSymbolicLink(),
+        linked: installedFromFolder(folder),
     };
 }
 

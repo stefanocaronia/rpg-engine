@@ -142,9 +142,10 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
 
 describe("an adventure's .zip (ADV-1)", () => {
     it("is read inside one folder at its top, as GitHub makes it, leaving out what is no part of it", async () => {
-        const result = await rpg("package", "install", adventureZip({ "README.md": "Read me." }, "pozzo-main/"));
+        const result = await rpg("package", "install", adventureZip({ "README.md": "Read me.", "LICENSE": "CC BY 4.0", "notes.txt": "Mine." }, "pozzo-main/"));
         expect(result.exitCode).toBe(0);
-        expect(result.output).toContain("Left out, no part of an adventure: README.md.");
+        expect(result.output).toContain("Left out, no part of an adventure: notes.txt.");
+        expect(result.output).toContain("Its first date: [[La piena]], on day 3, 06:00.");
     });
 
     it("is refused whole for a path that climbs out, a file of the wrong kind, a name not in UTF-8, or no manifest", () => {

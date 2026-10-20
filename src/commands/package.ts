@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
-import { isLink } from "../core/files.ts";
+import { installedFromFolder } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
@@ -24,7 +24,7 @@ type PackageResult =
     | { kind: "available"; packages: Available[]; failed?: string; }
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
     | { kind: "removed"; name: string; }
-    | { kind: "uninstalled"; name: string; wasUsed: boolean; }
+    | { kind: "uninstalled"; name: string; wasUsed: boolean; extension: boolean; }
     | { kind: "system-installed"; system: InstalledSystem; plays?: string; }
     | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
@@ -160,7 +160,7 @@ export const packageCommand = defineCommand({
             return [
                 `Installed ${language.name} (${language.code}) ${language.version}, the dashboard's words made by hand${language.verified ? "" : ", by someone else"}, for every campaign on this computer.`,
                 result.replaced === undefined ? "" : `It takes the place of ${result.replaced}.`,
-                result.missing === 0 ? "" : `${result.missing} phrases it lacks come from the translation on the fly.`,
+                result.missing === 0 ? "" : `The ${result.missing} phrases it lacks stay as the dashboard has them, its own or translated on the fly.`,
             ].filter((line) => line !== "").join(" ");
         }
 
@@ -178,7 +178,9 @@ export const packageCommand = defineCommand({
         }
 
         if (result.kind === "uninstalled") {
-            return `${result.name} is off this computer${result.wasUsed ? ", and the campaign no longer uses it" : ""}: another campaign that lists it asks to install it again.`;
+            return result.extension
+                ? `${result.name} is off this computer${result.wasUsed ? ", and the campaign no longer uses it" : ""}: another campaign that lists it asks to install it again.`
+                : `${result.name} is off this computer.`;
         }
 
         if (result.kind === "installed") {
@@ -429,7 +431,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
         const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
         // The engine's own have no package of their own here; one npm installed is ours only by our scope, and never from a folder (D-441).
         const shipped = system.folder.startsWith(context.systemFolders[0]);
-        const linked = isLink(system.folder);
+        const linked = installedFromFolder(system.folder);
         return {
             name: system.name,
             title: system.title,
@@ -514,7 +516,7 @@ function languagesHere(context: Context): InstalledLanguage[]
         name: pack.name,
         package: pack.package,
         version: pack.version,
-        verified: isVerified(pack.package, isLink(pack.folder)),
+        verified: isVerified(pack.package, installedFromFolder(pack.folder)),
     }));
 }
 
@@ -671,7 +673,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
     }
 
     appendLogEntry(root, newDatedLogEntry(root, context, "package-uninstalled", "public", { package: found.package }));
-    return { kind: "uninstalled", name: shortName(found.package), wasUsed };
+    return { kind: "uninstalled", name: shortName(found.package), wasUsed, extension: other === undefined };
 }
 
 /** Installs an adventure from a .zip, a folder or a link (D-483): no npm, no code, and the same refusals wherever it comes from. */
@@ -699,7 +701,11 @@ export function adventureText(result: AdventureInstalled): string
         `${result.already ? "The campaign already has" : "Installed"} the adventure ${manifest.title} ${manifest.version}${by} (${rights}): ${manifest.about.replace(/\.$/, "")}. ${counts}.`,
         levels === undefined ? "" : `It is written for ${levels}: adapt it to the party's.`,
         manifest.content.length === 0 ? "" : `Its content: ${manifest.content.join(", ")}; keep to the player's lines and veils.`,
-        result.firstDate === undefined ? "" : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
+        result.firstDate === undefined
+            ? ""
+            : result.shift === 0
+            ? `Its first date: [[${result.firstDate.page}]], on ${result.firstDate.date}.`
+            : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
         result.textDates === 0 ? "" : result.textDates === 1 ? "1 date in its text stays as written: count it from today." : `${result.textDates} dates in its text stay as written: count them from today.`,
         result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
         result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,

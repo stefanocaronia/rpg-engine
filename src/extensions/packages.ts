@@ -20,8 +20,9 @@ const npmSpec = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*(@[0-9A-Za-z.+-]
 const installWait = 5 * 60 * 1000;
 // An npm package's name alone, without a version: a .tgz's becomes the name of its folder.
 const packageName = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
-// A folder always linked, whatever the player's .npmrc says, as D-441 tells a package from a folder by its link.
-const installOptions = "--install-links=false --ignore-scripts --save-exact --no-audit --no-fund --json --loglevel=error";
+// A folder's copy installed as files, never as a link, which Node may not follow where the app keeps the player's data; npm's package.json still names it
+// as file:, by which D-441 tells it from a package of npm's.
+const installOptions = "--install-links=true --ignore-scripts --save-exact --no-audit --no-fund --json --loglevel=error";
 
 /** What running npm gave: its exit code and what it wrote. */
 export interface NpmRun

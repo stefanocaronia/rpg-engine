@@ -117,7 +117,7 @@ describe("npm's packages with a .tgz (D-452)", () => {
         expect(await packages.describe(refused)).toEqual({ failed: `${refused} holds package/link, which is not a plain file or folder (a link or a device): it is refused whole.` });
     });
 
-    it("unpacks it into local/<name>, links it there with npm whatever the .npmrc says, and keeps no file of the swap", async () => {
+    it("unpacks it into local/<name>, installs it from there with npm as files whatever the .npmrc says, and keeps no file of the swap", async () => {
         const run = fakeRun();
         const packages = npmPackages(join(folder, "packages"), run);
         const archive = tarball(join(folder, "notes.tgz"), [{ name: "package/package.json", text: manifest() }, { name: "package/index.js", text: "v1" }]);
@@ -125,7 +125,7 @@ describe("npm's packages with a .tgz (D-452)", () => {
         expect(await packages.install(archive)).toBeUndefined();
         const target = join(folder, "packages", "local", "secret-notes");
         expect(readFileSync(join(target, "index.js"), "utf8")).toBe("v1");
-        expect(run.asked[0]).toContain(`"${target}" --install-links=false --ignore-scripts`);
+        expect(run.asked[0]).toContain(`"${target}" --install-links=true --ignore-scripts`);
         expect(readdirSync(join(folder, "packages", "local"))).toEqual(["secret-notes"]);
     });
 

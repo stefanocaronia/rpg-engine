@@ -127,7 +127,11 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
         }
 
         if (folder === undefined || parts.length === 1) {
-            ignored.add(parts[0]);
+            // What a repository has beside an adventure, its readme and licence, goes unsaid.
+            if (!/^(readme|licen[cs]e|copying|changelog)(\..*)?$/i.test(parts[0])) {
+                ignored.add(parts[0]);
+            }
+
             continue;
         }
 

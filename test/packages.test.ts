@@ -127,7 +127,7 @@ describe("a language as a package (D-485 (3))", () => {
         });
         context = { ...context, packages: npm, pageFolder: fileURLToPath(new URL("../src/dashboard/", import.meta.url)) };
         expect((await rpg("package", "install", "@test/deutsch")).output).toMatch(
-            /^Installed Deutsch \(de\) 1\.0\.0, the dashboard's words made by hand, by someone else, for every campaign on this computer\. \d+ phrases it lacks come from the translation on the fly\.$/,
+            /^Installed Deutsch \(de\) 1\.0\.0, the dashboard's words made by hand, by someone else, for every campaign on this computer\. The \d+ phrases it lacks stay as the dashboard has them, its own or translated on the fly\.$/,
         );
 
         const broken = await rpg("package", "install", "@test/kaputt");

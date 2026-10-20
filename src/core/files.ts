@@ -1,6 +1,6 @@
 // The files of a folder and of the folders inside it, listed one folder at a time: listing a whole tree at once looks at every file again on Windows (D-194).
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, join, relative, sep } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 
 /** The full paths of `folder` and of the folders inside it, however deep; none when there is no such folder. */
 export function foldersIn(folder: string): string[]
@@ -70,11 +70,23 @@ function chosenPackages(folder: string): Set<string> | undefined
     }
 }
 
-/** Whether a path is a link, as npm makes one for a package installed from a folder: such a package is never verified (D-441). */
-export function isLink(path: string): boolean
+/**
+ * Whether a package of npm's folder came from a folder or a file of this computer, never from npm (D-441, D-452): npm's package.json names it as file:, or it
+ * is a link to the folder. Such a package is never verified, whatever its name.
+ */
+export function installedFromFolder(folder: string): boolean
 {
+    const parts = resolve(folder).split(sep);
+    const at = parts.lastIndexOf("node_modules");
+
     try {
-        return lstatSync(path).isSymbolicLink();
+        if (lstatSync(folder).isSymbolicLink()) {
+            return true;
+        }
+
+        const read = JSON.parse(readFileSync(join(parts.slice(0, at).join(sep), "package.json"), "utf8")) as { dependencies?: Record<string, unknown>; };
+        const spec = at < 0 ? undefined : read.dependencies?.[parts.slice(at + 1).join("/")];
+        return typeof spec === "string" && /^(file|link):/.test(spec);
     } catch {
         return false;
     }
