@@ -2,13 +2,16 @@
 // story has not touched them; exported as they were at the start, without the player characters.
 import { zipSync } from "fflate";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { dirname, join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readAdventureZip, readManifest } from "../src/adventures/index.ts";
 import { runCommandLine } from "../src/command-line.ts";
 import { makeSave } from "../src/commands/game-saves.ts";
 import type { Context } from "../src/core/context.ts";
 import { appendLogEntry, newLogEntry } from "../src/core/log.ts";
+import { SessionStore } from "../src/core/session-store.ts";
+import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { inPlay, makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 const manifest = [
@@ -236,5 +239,64 @@ describe("package export (ADV-7)", () => {
     it("refuses a campaign played with no save of its start: what it is now is a save of the whole game", async () => {
         await rpg("scene", "open", "--title", "Inizio");
         expect((await rpg("package", "export")).output).toContain("has no save of its start");
+    });
+});
+
+describe("the adventures on the dashboard's page (D-483)", () => {
+    let session: SessionStore;
+    let dashboard: Dashboard;
+    let port: number;
+
+    beforeEach(async () => {
+        session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+
+        if (started === undefined) {
+            throw new Error("The dashboard did not start.");
+        }
+
+        dashboard = started;
+        port = Number(new URL(dashboard.url).port);
+    });
+
+    afterEach(async () => {
+        await dashboard.close();
+        session.close();
+    });
+
+    function send(method: string, path: string, body?: Uint8Array | string, headers: Record<string, string> = {}): Promise<{ status: number; body: Buffer; type?: string; }>
+    {
+        const sentHeaders = { ...(body === undefined ? {} : { origin: `http://127.0.0.1:${port}` }), ...headers };
+        return new Promise((done, fail) => {
+            const sent = request({ host: "127.0.0.1", port, path, method, headers: sentHeaders }, (response) => {
+                const chunks: Buffer[] = [];
+                response.on("data", (chunk: Buffer) => chunks.push(chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: Buffer.concat(chunks), type: response.headers["content-type"] }));
+            });
+            sent.on("error", fail);
+            sent.end(body);
+        });
+    }
+
+    it("adds one from a .zip the page sends, lists it with its date, and the master hears of it", async () => {
+        const added = await send("POST", "/api/adventure", readFileSync(adventureZip()), { "content-type": "application/zip", "x-file-name": encodeURIComponent("Il pozzo.adventure.zip") });
+        expect(added.status).toBe(202);
+        const listed = JSON.parse((await send("GET", "/api/packages")).body.toString("utf8")) as { adventures: { title: string; }[]; };
+        expect(listed.adventures).toMatchObject([{ title: "Il pozzo", version: "1.0.0" }]);
+        expect(dashboard.news().lines.join(" ")).toContain("The player, on the dashboard, added an adventure: Installed the adventure Il pozzo 1.0.0");
+
+        const twice = await send("POST", "/api/adventure", new TextEncoder().encode("not a zip"), { "x-file-name": "broken.zip" });
+        expect(twice.status).toBe(400);
+        expect(JSON.parse(twice.body.toString("utf8")).error).toContain("broken.zip is not a .zip that reads");
+    });
+
+    it("exports the campaign, then gives its .zip to download by its name alone", async () => {
+        makeSave(folder, context, undefined, "session zero");
+        const exported = JSON.parse((await send("POST", "/api/export", JSON.stringify({ author: "Ada" }), { "content-type": "application/json" })).body.toString("utf8")) as { file: string; };
+        expect(exported.file).toBe("Prova.adventure.zip");
+        const downloaded = await send("GET", `/api/export?file=${encodeURIComponent(exported.file)}`);
+        expect(downloaded.type).toBe("application/zip");
+        expect(readAdventureZip(downloaded.body, exported.file).manifest).toMatchObject({ title: "Prova", author: "Ada" });
+        expect((await send("GET", `/api/export?file=${encodeURIComponent("../campaign.yaml")}`)).status).toBe(404);
     });
 });

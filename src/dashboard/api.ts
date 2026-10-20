@@ -274,6 +274,35 @@ export async function changePackage(action: PackageAction, name: string): Promis
     }
 }
 
+/** Adds an adventure from a .zip the player picked (D-483): undefined when it is in the campaign, else what went wrong, as the engine says it. */
+export async function addAdventure(file: File): Promise<string | undefined>
+{
+    try {
+        const response = await fetch("/api/adventure", { method: "POST", headers: { "Content-Type": "application/zip", "X-File-Name": encodeURIComponent(file.name) }, body: file });
+
+        if (response.status === 202) {
+            return undefined;
+        }
+
+        const body = await response.json().catch(() => ({})) as { error?: string; };
+        return body.error ?? t("It did not reach the game: try again.");
+    } catch {
+        return t("It did not reach the game: try again.");
+    }
+}
+
+/** Exports the campaign as an adventure, as it was at its start (ADV-7): the address to download its .zip from, or what went wrong. */
+export async function exportCampaign(credits: { author?: string; license?: string; }): Promise<{ download: string; file: string; } | { error: string; }>
+{
+    try {
+        const response = await fetch("/api/export", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(credits) });
+        const body = await response.json().catch(() => ({})) as { file?: string; error?: string; };
+        return body.file === undefined ? { error: body.error ?? t("It did not reach the game: try again.") } : { download: `/api/export?file=${encodeURIComponent(body.file)}`, file: body.file };
+    } catch {
+        return { error: t("It did not reach the game: try again.") };
+    }
+}
+
 /** A change of one of the player's settings: a value, or an item added to a list or taken off it. */
 export type SettingChange = { setting: string; value: string; } | { setting: string; add: string; } | { setting: string; remove: string; };
 

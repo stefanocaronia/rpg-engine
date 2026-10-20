@@ -73,6 +73,8 @@ const iconPaths = {
     unverified: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6Z M12 8v5 M12 16v.3",
     offline: "M3 3l18 18 M8.5 16.5a5 5 0 0 1 7 0 M5 12.5a10 10 0 0 1 4.5-2.4 M14.5 10.2A10 10 0 0 1 19 12.5 M2 8.8a15 15 0 0 1 4.3-2.6 M10.5 5.1A15 15 0 0 1 22 8.8 M12 20h.01",
     terminal: "M3.5 4.5h17v15h-17Z M7 9l3 3-3 3 M12.5 15H17",
+    // The campaign shared as an adventure (D-483): out of the box.
+    share: "M12 15V3.5 M7.5 8 12 3.5 16.5 8 M8 11H5v9.5h14V11h-3",
     // Help's parts (D-409): the chat with the master, and the dice.
     chat: "M4.5 5h15v10.5H10l-4.5 3.5v-3.5h-1Z M8 9h8 M8 12h5",
     dice: diePaths[20],

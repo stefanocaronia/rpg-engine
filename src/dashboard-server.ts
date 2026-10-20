@@ -4,17 +4,19 @@ import { createHash, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { connect } from "node:net";
-import { extname, join, resolve } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { readAdventureZip } from "./adventures/index.ts";
 import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
+import { installAdventure } from "./commands/game-adventures.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
-import { resetPoints } from "./commands/game-saves.ts";
+import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
-import { packageCommand } from "./commands/package.ts";
+import { adventureText, packageCommand } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
@@ -384,6 +386,17 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    // An adventure the player adds from a .zip of their computer, and the campaign exported as one (D-483): files, never code.
+    if (request.method === "POST" && path === "/api/adventure" && origin !== undefined) {
+        await addAdventure(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/export" && origin !== undefined) {
+        await exportCampaign(request, response, served);
+        return;
+    }
+
     if (request.method === "POST" && path === "/api/config" && origin !== undefined) {
         await changeSetting(request, response, served);
         return;
@@ -436,6 +449,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/packages") {
         await packagesNow(response, served, url.searchParams.get("npm") === "true");
+        return;
+    }
+
+    if (path === "/api/export") {
+        exportedFile(response, served, url.searchParams.get("file") ?? "");
         return;
     }
 
@@ -797,6 +815,95 @@ async function changePackage(request: IncomingMessage, response: ServerResponse,
 }
 
 /**
+ * An adventure the player adds on the page from a .zip of their computer (D-483), as package install does with the player as who did it; the zip comes as the
+ * request's body, named by its X-File-Name, and is read from a copy that goes once it is installed or refused. The master hears of it at their next call.
+ */
+async function addAdventure(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const name = fileName(String(request.headers["x-file-name"] ?? "adventure.zip")).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 120) || "adventure.zip";
+    const bytes = await readBytes(request, largestUpload);
+
+    if (bytes === undefined) {
+        sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: an adventure is never that big.` });
+        return;
+    }
+
+    if (served.packageWork !== undefined) {
+        sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy" });
+        return;
+    }
+
+    served.packageWork = { name, action: "add" };
+    served.notify();
+
+    try {
+        await served.session.ready();
+        const news = withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+            const installed = installAdventure(root, { ...served.context, actor: "player" }, readAdventureZip(bytes, name), name);
+            return `The player, on the dashboard, added an adventure: ${adventureText(installed)}`;
+        });
+        served.events.push(news);
+        sendJson(response, 202, {});
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+        served.packageWork = undefined;
+        served.notify();
+    }
+}
+
+/** A file's name as the page sends it, encoded for a header; as it is when it does not decode. */
+function fileName(header: string): string
+{
+    try {
+        return decodeURIComponent(header);
+    } catch {
+        return header;
+    }
+}
+
+/** The campaign exported as an adventure on the page (ADV-7), with the credits the player gives: the name of its file, which the page then downloads. */
+async function exportCampaign(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ author: z.string().trim().min(1).max(200).optional(), license: z.string().trim().min(1).max(200).optional() }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send the credits, if any: { author, license }." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const result = await withFiles(served.session, () => packageCommand.run(packageCommand.input.parse({ action: "export", ...parsed.data }), { ...served.context, actor: "player" }));
+        sendJson(response, 200, result.kind === "exported" ? { file: basename(result.file), pages: result.pages } : {});
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/** A zip of the campaign's exports/ folder, for the browser to save: by its name alone, never a path. */
+function exportedFile(response: ServerResponse, served: Served, name: string): void
+{
+    const root = findCampaign(served.context.folder);
+    const path = root === undefined || basename(name) !== name || !/\.adventure\.zip$/i.test(name) ? undefined : join(root, exportsFolderName, name);
+    const bytes = path === undefined ? undefined : files().bytes(path);
+
+    if (bytes === undefined) {
+        send(response, 404, "text/plain; charset=utf-8", "There is no such export: export the campaign again.");
+        return;
+    }
+
+    response.writeHead(200, {
+        ...securityHeaders,
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(name)}`,
+        "Cache-Control": "no-store",
+    });
+    response.end(bytes);
+}
+
+/**
  * A save the player makes on the page, one they go back to, or the campaign started over from its first, as save does, with the player as who did it; the
  * mode of saves allows it or refuses it as in the chat, and starting over needs the campaign's name written. The master hears of it at their next call (D-359).
  */
@@ -1086,6 +1193,25 @@ function isSetup(result: unknown): result is { kind: "setup"; questions: PlayerS
     return typeof result === "object" && result !== null && (result as { kind?: unknown; }).kind === "setup";
 }
 
+/** A request's body as bytes, up to `most`; undefined when it is more. */
+async function readBytes(request: IncomingMessage, most: number): Promise<Uint8Array | undefined>
+{
+    const chunks: Buffer[] = [];
+    let size = 0;
+
+    for await (const chunk of request) {
+        size += (chunk as Buffer).length;
+
+        if (size > most) {
+            return undefined;
+        }
+
+        chunks.push(chunk as Buffer);
+    }
+
+    return Buffer.concat(chunks);
+}
+
 /** A request's body as JSON, up to `most` characters; undefined when it is more, or no JSON. */
 async function readBody(request: IncomingMessage, most = 4096): Promise<unknown>
 {
@@ -1205,6 +1331,8 @@ function decoded(part: string): string | undefined
     }
 }
 
+// The largest .zip the page sends for an adventure: far more than one holds, far less than the engine reads of a package.
+const largestUpload = 100 * 1024 * 1024;
 const securityHeaders = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'" };
 
 function sendJson(response: ServerResponse, status: number, body: unknown): void

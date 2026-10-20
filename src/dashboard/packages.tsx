@@ -1,9 +1,11 @@
-// The Packages section (D-475): what is added to the game, in three cards. The game system, only seen, as it is chosen in the setup, with the others of this
-// computer for a new campaign; the packages the campaign uses, with those it lists and this computer lacks; those to add, from this computer and from npm, ours
-// and, when the player asks, others', which are installed from the player's terminal until the page's yes cannot be forged. Each row opens on what it brings.
+// The Packages section (D-475): what is added to the game, in four cards. The game system, only seen, as it is chosen in the setup, with the others of this
+// computer for a new campaign; the packages the campaign uses, with those it lists and this computer lacks, and its adventures, with the day each came in on
+// (D-476); those to add, an adventure from a .zip, the extensions from this computer and from npm, ours and, when the player asks, others', which are installed
+// from the player's terminal until the page's yes cannot be forged; the campaign shared as an adventure (D-483). Each row opens on what it brings.
 import { useEffect, useRef, useState } from "preact/hooks";
-import { changePackage, type NpmPackage, type PackageAction, type PackagesView, readPackages } from "./api.ts";
+import { addAdventure, changePackage, exportCampaign, type NpmPackage, type PackageAction, type PackagesView, readPackages } from "./api.ts";
 import { CardHead } from "./card.tsx";
+import { gameDateLabel, sinceDateLabel } from "./game-words.ts";
 import { Icon, iconPath } from "./icons.tsx";
 import { phraseLabel, systemTitleLabel } from "./labels.ts";
 import { PageHead } from "./pages.tsx";
@@ -31,6 +33,9 @@ interface Row
     broken?: string;
 }
 
+/** An adventure of the campaign, as the server lists it. */
+type Adventure = NonNullable<PackagesView["adventures"]>[number];
+
 export function PackagesPage({ version }: { version: number; })
 {
     const [view, setView] = useState<PackagesView>();
@@ -40,6 +45,7 @@ export function PackagesPage({ version }: { version: number; })
     const [sending, setSending] = useState<PackagesView["working"]>();
     const [others, setOthers] = useState(false);
     const [asking, setAsking] = useState<Row>();
+    const [taking, setTaking] = useState<Adventure>();
     const reads = useRef(0);
     const npmReads = useRef(0);
     const saying = useRef<HTMLParagraphElement>(null);
@@ -89,6 +95,16 @@ export function PackagesPage({ version }: { version: number; })
         askNpm();
     };
 
+    // An adventure goes out of the campaign while the story has not touched its pages: else the engine says why it stays.
+    const takeOut = async (adventure: Adventure): Promise<void> => {
+        setTaking(undefined);
+        setSending({ name: adventure.title, action: "remove" });
+        const refused = await changePackage("remove", adventure.title);
+        setSending(undefined);
+        setSaid(refused === undefined ? { problem: false, text: `✓ ${t("{name} is out of the campaign.", { name: adventure.title })}` } : { problem: true, text: refused });
+        read();
+    };
+
     const act = (action: PackageAction, row: Row): void => {
         if (action === "uninstall") {
             setAsking(row);
@@ -103,6 +119,7 @@ export function PackagesPage({ version }: { version: number; })
     const here = rows?.filter((row) => row.where === "here" || row.where === "broken") ?? [];
     const fromNpm = rows?.filter((row) => row.where === "npm") ?? [];
     const shownNpm = fromNpm.filter((row) => row.verified || others);
+    const adventures = view?.adventures ?? [];
     const row = (one: Row) => <PackageRow key={one.package} row={one} working={isWorking(working, one) ? working : undefined} busy={working !== undefined} onAct={act} />;
     return (
         <section class="page-stack packages" aria-labelledby="packages-title">
@@ -137,9 +154,32 @@ export function PackagesPage({ version }: { version: number; })
             )}
             {rows !== undefined && (
                 <section class="package-card" aria-labelledby="packages-used">
-                    <CardHead icon={iconPath("packages")} title={<h3 id="packages-used">{t("In this campaign")}</h3>} {...(used.length === 0 ? {} : { note: String(used.length) })} />
+                    <CardHead
+                        icon={iconPath("packages")}
+                        title={<h3 id="packages-used">{t("In this campaign")}</h3>}
+                        {...(used.length + adventures.length === 0 ? {} : { note: String(used.length + adventures.length) })}
+                    />
                     <div class="package-body">
-                        {used.length === 0 ? <p class="package-note">{t("No package: the campaign is played with its system alone.")}</p> : <ul class="package-list">{used.map(row)}</ul>}
+                        {used.length + adventures.length === 0 && <p class="package-note">{t("No package: the campaign is played with its system alone.")}</p>}
+                        {/* The kinds are named only when there are adventures: extensions alone are what the card always held. */}
+                        {used.length > 0 && adventures.length > 0 && <h4 class="package-sub">{t("Extensions")}</h4>}
+                        {used.length > 0 && <ul class="package-list">{used.map(row)}</ul>}
+                        {adventures.length > 0 && (
+                            <>
+                                <h4 class="package-sub">{t("Adventures")}</h4>
+                                <ul class="package-list">
+                                    {adventures.map((adventure) => (
+                                        <AdventureRow
+                                            key={adventure.title}
+                                            adventure={adventure}
+                                            working={working?.action === "remove" && working.name === adventure.title}
+                                            busy={working !== undefined}
+                                            onTakeOut={setTaking}
+                                        />
+                                    ))}
+                                </ul>
+                            </>
+                        )}
                     </div>
                 </section>
             )}
@@ -147,6 +187,7 @@ export function PackagesPage({ version }: { version: number; })
                 <section class="package-card" aria-labelledby="packages-to-add">
                     <CardHead icon={iconPath("plus")} title={<h3 id="packages-to-add">{t("To add")}</h3>} />
                     <div class="package-body">
+                        <AddAdventure working={working} onAdded={read} />
                         {here.length > 0 && (
                             <>
                                 <h4 class="package-sub">{t("On this computer")}</h4>
@@ -185,6 +226,16 @@ export function PackagesPage({ version }: { version: number; })
                             : <ul class="package-list">{shownNpm.map(row)}</ul>}
                     </div>
                 </section>
+            )}
+            {rows !== undefined && <ShareCampaign />}
+            {taking !== undefined && (
+                <Confirm title={t("Take {name} out of the campaign?", { name: taking.title })} onClose={() => setTaking(undefined)}>
+                    <p>{t("Its places, people and pages leave the world. To have it again, add its .zip once more.")}</p>
+                    <div class="confirm-buttons">
+                        <button type="button" class="save-button" autoFocus onClick={() => setTaking(undefined)}>{t("Cancel")}</button>
+                        <button type="button" class="save-button danger final" disabled={working !== undefined} onClick={() => void takeOut(taking)}>{t("Take out")}</button>
+                    </div>
+                </Confirm>
             )}
             {asking !== undefined && (
                 <Confirm title={t("Uninstall {name} from this computer?", { name: asking.name })} onClose={() => setAsking(undefined)}>
@@ -304,6 +355,219 @@ function PackageRow({ row, working, busy, onAct }: { row: Row; working?: { actio
                 </div>
             )}
         </li>
+    );
+}
+
+/** An adventure of the campaign: its map, its title, its version and the day it came in on; open, the same in full and taking it out. */
+function AdventureRow({ adventure, working, busy, onTakeOut }: { adventure: Adventure; working: boolean; busy: boolean; onTakeOut(adventure: Adventure): void; })
+{
+    const [open, setOpen] = useState(false);
+    const id = `adventure-${adventure.title.replace(/[^\p{L}\p{N}]+/gu, "-")}`;
+    const since = adventure.since === undefined ? undefined : sinceDateLabel(adventure.since);
+    return (
+        <li class={open ? "package-row open" : "package-row"}>
+            <span class="package-tile" aria-hidden="true">
+                <Icon name="world" />
+            </span>
+            <button type="button" class="package-what" aria-expanded={open} aria-controls={id} aria-describedby={`${id}-meta`} onClick={() => setOpen(!open)}>
+                <span class="package-text">
+                    <span class="package-name">
+                        <span class="package-title">{adventure.title}</span>
+                    </span>
+                    <span class="package-meta" id={`${id}-meta`}>{since === undefined ? adventure.version : `${adventure.version} · ${since}`}</span>
+                </span>
+                <Icon name="fold" />
+            </button>
+            {working && (
+                <div class="package-progress" role="status">
+                    <span class="package-bar" aria-hidden="true" />
+                    <strong>{workingText("remove")}</strong>
+                </div>
+            )}
+            {open && (
+                <div class="package-more" id={id}>
+                    <dl class="package-facts">
+                        <dt>{t("Version")}</dt>
+                        <dd>{adventure.version}</dd>
+                        {adventure.since !== undefined && (
+                            <>
+                                <dt>{t("In the campaign since")}</dt>
+                                <dd>{gameDateLabel(adventure.since)}</dd>
+                            </>
+                        )}
+                    </dl>
+                    <p class="package-why">{t("It can be taken out until the story touches its pages.")}</p>
+                    {!working && (
+                        <div class="package-more-actions">
+                            <button type="button" class="save-button package-button" disabled={busy} onClick={() => onTakeOut(adventure)}>{t("Take out of the campaign…")}</button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </li>
+    );
+}
+
+/**
+ * An adventure from a .zip of this computer (D-483): the button opens the file chooser, the page sends the file, and what happened is said here, by the
+ * button: the engine's refusal as it is. While the server adds one, from this page or another, the bar runs.
+ */
+function AddAdventure({ working, onAdded }: { working: PackagesView["working"]; onAdded(): void; })
+{
+    const [adding, setAdding] = useState(false);
+    const [said, setSaid] = useState<{ problem: boolean; text: string; }>();
+    const picker = useRef<HTMLInputElement>(null);
+    const button = useRef<HTMLButtonElement>(null);
+    const [back, setBack] = useState(false);
+    // The server names an adventure it adds by its file: an extension never ends in .zip.
+    const busy = adding || (working?.action === "add" && /\.zip$/i.test(working.name));
+
+    // The button is off while the file goes: the focus it had comes back to it, once it is on again.
+    useEffect(() => {
+        if (back && !busy && working === undefined) {
+            setBack(false);
+            button.current?.focus();
+        }
+    }, [back, busy, working]);
+
+    const add = async (file: File): Promise<void> => {
+        setBack(document.activeElement === button.current);
+        setAdding(true);
+        setSaid(undefined);
+        const refused = await addAdventure(file);
+        setAdding(false);
+        setSaid(refused === undefined ? { problem: false, text: `✓ ${t("The adventure is in the campaign: the master brings it into the story when you want it.")}` } : { problem: true, text: refused });
+        onAdded();
+    };
+
+    return (
+        <div class="package-file">
+            <h4 class="package-sub">{t("An adventure")}</h4>
+            <p class="package-note" id="package-file-about">{t("A .zip with adventure.yaml in it: its places and people join the world.")}</p>
+            <input
+                ref={picker}
+                type="file"
+                accept=".zip,application/zip"
+                hidden
+                onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+
+                    if (file !== undefined) {
+                        void add(file);
+                    }
+                }}
+            />
+            <button
+                ref={button}
+                type="button"
+                class="save-button package-button"
+                aria-describedby="package-file-about"
+                disabled={busy || working !== undefined}
+                onClick={() => picker.current?.click()}
+            >
+                <Icon name="plus" />
+                {t("Add from a .zip…")}
+            </button>
+            {busy && (
+                <div class="package-progress" role="status">
+                    <span class="package-bar" aria-hidden="true" />
+                    <span>
+                        <strong>{t("Adding the adventure…")}</strong> {t("You can go to another page: it goes on by itself.")}
+                    </span>
+                </div>
+            )}
+            {!busy && said !== undefined && <p class={said.problem ? "saves-said problem" : "saves-said"} role="status">{said.text}</p>}
+        </div>
+    );
+}
+
+/**
+ * The campaign shared as an adventure (D-483): its world as it was at the start, without the player characters, credited as the player likes; then the link
+ * to download it. A line says whose it is to share.
+ */
+function ShareCampaign()
+{
+    const [author, setAuthor] = useState("");
+    const [license, setLicense] = useState("");
+    const [exporting, setExporting] = useState(false);
+    const [made, setMade] = useState<Awaited<ReturnType<typeof exportCampaign>>>();
+    const ready = useRef<HTMLAnchorElement>(null);
+
+    useEffect(() => {
+        if (made !== undefined && "download" in made) {
+            ready.current?.focus();
+        }
+    }, [made]);
+
+    // The button stays where the focus is while the export goes: a second press waits for the first.
+    const share = async (): Promise<void> => {
+        if (exporting) {
+            return;
+        }
+
+        setExporting(true);
+        setMade(undefined);
+        const credits = { ...(author.trim() === "" ? {} : { author: author.trim() }), ...(license.trim() === "" ? {} : { license: license.trim() }) };
+        setMade(await exportCampaign(credits));
+        setExporting(false);
+    };
+
+    return (
+        <section class="package-card" aria-labelledby="packages-share">
+            <CardHead icon={iconPath("share")} title={<h3 id="packages-share">{t("Share as an adventure")}</h3>} />
+            <div class="package-body package-share">
+                <p class="package-note">{t("The world as it was at the start of the campaign, without the player characters: a .zip that another campaign can add.")}</p>
+                <form
+                    class="package-credits"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        void share();
+                    }}
+                >
+                    <label>
+                        <span>{t("Author")}</span>
+                        <input type="text" value={author} maxLength={200} placeholder={t("Optional")} autocomplete="name" onInput={(event) => setAuthor(event.currentTarget.value)} />
+                    </label>
+                    <label>
+                        <span>{t("Licence")}</span>
+                        <input
+                            type="text"
+                            value={license}
+                            maxLength={200}
+                            list="package-licences"
+                            placeholder={t("Optional")}
+                            aria-describedby="package-license-about"
+                            onInput={(event) => setLicense(event.currentTarget.value)}
+                        />
+                    </label>
+                    <datalist id="package-licences">
+                        <option value="CC BY 4.0" />
+                        <option value="CC BY-SA 4.0" />
+                        <option value="CC0 1.0" />
+                    </datalist>
+                    <p class="package-why" id="package-license-about">{t("Without a licence, all rights are reserved.")}</p>
+                    <p class="package-rights">
+                        <Icon name="licence" />
+                        {t("Share it only if you have the right to: a world taken from a book or from someone else's adventure is not yours to give.")}
+                    </p>
+                    <button type="submit" class="save-button package-button" aria-disabled={exporting}>
+                        <Icon name="share" />
+                        {exporting ? t("Exporting…") : t("Export")}
+                    </button>
+                </form>
+                {made !== undefined && "download" in made && (
+                    <p class="saves-said package-ready" role="status">
+                        <span>{`✓ ${t("{file} is ready.", { file: made.file })}`}</span>
+                        <a ref={ready} class="save-button gold package-button" href={made.download} download={made.file}>
+                            <Icon name="download" />
+                            {t("Download")}
+                        </a>
+                    </p>
+                )}
+                {made !== undefined && "error" in made && <p class="saves-said problem" role="status">{made.error}</p>}
+            </div>
+        </section>
     );
 }
 

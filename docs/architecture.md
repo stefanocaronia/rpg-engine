@@ -82,7 +82,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 
 ### An adventure
 
-A folder or a `.zip` with `adventure.yaml` (title, about, language, version, author, license, needs, levels, content, length, party, start, opening) and only `world/`, `images/` and `rules/`, as a campaign has them ([adventures/](../src/adventures/)). `package install` copies it into the campaign whole or not at all: pages under `world/<type>/<Adventure>/`, the rest under a folder of its own, the dates of the frontmatter moved to today; the log says which adventures are installed, so they go back with a save. `package export` writes the world as it was at the start, without the player characters ([commands/game-adventures.ts](../src/commands/game-adventures.ts)). A document without `adventure.yaml` is imported by the master, who writes its pages.
+A folder or a `.zip` with `adventure.yaml` (title, about, language, version, author, license, needs, levels, content, length, party, start, opening) and only `world/`, `images/` and `rules/`, as a campaign has them ([adventures/](../src/adventures/)). `package install` copies it into the campaign whole or not at all: pages under `world/<type>/<Adventure>/`, the rest under a folder of its own, the dates of the frontmatter moved to today; the log says which adventures are installed, so they go back with a save. `package export` writes the world as it was at the start, without the player characters ([commands/game-adventures.ts](../src/commands/game-adventures.ts)). A document without `adventure.yaml` is imported by the master, who writes its pages. The Packages page lists them, adds one from a `.zip` and exports the campaign ([dashboard/packages.tsx](../src/dashboard/packages.tsx)).
 
 ### A game system
 

@@ -10838,6 +10838,7 @@ svg.icon {
 
 .package-card {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     min-width: 0;
     border: 1px solid var(--rule);
     border-radius: var(--radius-l);
@@ -11233,6 +11234,110 @@ svg.icon {
 
 .package-offline p {
     margin: 0;
+}
+
+/* An adventure from a .zip (D-483): its heading, a line, the button, then the work or what happened, by the button. */
+.package-file {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+}
+
+.package-file > .package-sub {
+    margin: 0;
+}
+
+.package-file > .package-progress,
+.package-file > .saves-said {
+    justify-self: stretch;
+    overflow-wrap: anywhere;
+}
+
+.package-file + .package-sub,
+.package-file + .package-sub-line {
+    margin-top: 16px;
+}
+
+/* The campaign as an adventure: who wrote it and its licence, each optional, side by side when they fit; whose it is to share; the export, then its link. */
+.package-share {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+.package-credits {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: end;
+    gap: 10px 12px;
+    max-width: 640px;
+}
+
+.package-credits label {
+    display: grid;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.package-credits input {
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel-2);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+}
+
+.package-credits input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+}
+
+.package-credits > p,
+.package-credits > button {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.package-credits > button {
+    justify-self: start;
+}
+
+.package-credits > .package-why {
+    margin-top: -4px;
+}
+
+.package-rights {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.88rem;
+}
+
+.package-rights svg.icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    color: var(--muted);
+}
+
+.package-ready {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    overflow-wrap: anywhere;
+}
+
+.package-ready a {
+    text-decoration: none;
 }
 
 /* On a phone the action goes under the row's words, so that the name keeps the width; the rest from the tile's edge. */

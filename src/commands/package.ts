@@ -449,7 +449,7 @@ async function adventureInstalled(root: string, context: Context, spec: string):
 }
 
 /** What the master hears of an adventure installed (D-483 (5)): what it is in a few lines, then what to read and where it starts, never its text. */
-function adventureText(result: AdventureInstalled): string
+export function adventureText(result: AdventureInstalled): string
 {
     const { manifest } = result;
     const by = manifest.author === undefined ? "" : ` by ${manifest.author}`;
