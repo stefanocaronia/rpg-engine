@@ -206,48 +206,69 @@ export async function changeSaves(change: SavesChange): Promise<string | undefin
     }
 }
 
-/** A package on this computer (D-475): with whether the campaign uses it, or broken when it does not read. */
-export type ShownPackage =
+/** An extension on this computer (D-475): with whether the campaign uses it, or broken when it does not read. */
+export type ShownExtension =
     | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
     | { name: string; package: string; broken: string; };
 
-/** A package npm has for this rpg-engine, with the version installed here, if any, and whether npm's is newer. */
-export interface NpmPackage
+/** A game system on this computer (D-485): the campaign plays one, chosen in its setup; one npm installed has its package. */
+export interface ShownSystem
 {
+    name: string;
+    title: string;
+    version?: string;
+    package?: string;
+    verified: boolean;
+    used: boolean;
+    code: boolean;
+}
+
+/** A language package on this computer (D-485 (3)): the dashboard's words made by hand, for every campaign. */
+export interface ShownLanguage
+{
+    code: string;
     name: string;
     package: string;
     version: string;
-    description?: string;
-    author?: string;
     verified: boolean;
-    installed?: string;
-    update: boolean;
 }
 
-/** What the player does with a package on the page. */
-export type PackageAction = "add" | "update" | "remove" | "uninstall";
+/** An adventure of the campaign, with the game date it came in on, and whether it can still go: not once the story touched it (D-476). */
+export interface ShownAdventure
+{
+    title: string;
+    version: string;
+    since?: string;
+    removable: boolean;
+}
 
-/**
- * The packages as the page shows them (D-475): the game system and the others on this computer, the packages here, those the campaign lists and lacks, the one
- * being worked on; with npm, what it has, or why it did not answer.
- */
+/** What the player does with a package already here: update it, take it out of the campaign, or off this computer. */
+export type PackageAction = "update" | "remove" | "uninstall";
+
+/** The package the server works on, one at a time: what it does, and whether it waits for the player's yes in a window of their computer (D-478). */
+export interface PackageWork
+{
+    name: string;
+    action: "add" | PackageAction;
+    phase: "working" | "yes";
+}
+
+/** The packages as the page shows them (D-485): by kind, with the one being worked on. */
 export interface PackagesView
 {
     system: { name: string; title: string; } | null;
-    otherSystems?: { name: string; title: string; }[];
-    installed: ShownPackage[];
+    systems?: ShownSystem[];
+    adventures?: ShownAdventure[];
+    installed: ShownExtension[];
     missing: string[];
-    /** The adventures the campaign has installed, with the game date each came in on (D-476). */
-    adventures?: { title: string; version: string; since?: string; }[];
-    working?: { name: string; action: PackageAction; };
-    available?: NpmPackage[];
-    failed?: string;
+    languages?: ShownLanguage[];
+    working?: PackageWork;
 }
 
-/** The packages, and what npm has when asked, which takes longer. */
-export async function readPackages(npm: boolean): Promise<PackagesView>
+/** The packages here, at once: without npm. */
+export async function readPackages(): Promise<PackagesView>
 {
-    const response = await fetch(npm ? "/api/packages?npm=true" : "/api/packages");
+    const response = await fetch("/api/packages");
     const body = await response.json() as PackagesView | { error: string; };
 
     if ("error" in body) {
@@ -257,57 +278,82 @@ export async function readPackages(npm: boolean): Promise<PackagesView>
     return body;
 }
 
-/** Adds, updates, takes out of the campaign or off this computer a package (D-475), once npm is done: undefined when done, else what went wrong. */
-export async function changePackage(action: PackageAction, name: string): Promise<string | undefined>
+/** The kinds of packages. */
+export type PackageKind = "system" | "adventure" | "extension" | "language";
+
+/** A package one may add (D-486): what the player needs to trust it, whether it brings code, what to add it by, and whether it is here already. */
+export interface CatalogEntry
 {
-    try {
-        // Adding goes the way of everything the page adds; the rest is done to a package by its name (D-485).
-        const response = action === "add"
-            ? await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: name }) })
-            : await fetch("/api/package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) });
-
-        if (response.status === 202) {
-            return undefined;
-        }
-
-        const body = await response.json().catch(() => ({})) as { error?: string; };
-        return body.error ?? t("It did not reach the game: try again.");
-    } catch {
-        return t("It did not reach the game: try again.");
-    }
+    kind: PackageKind;
+    title: string;
+    description?: string;
+    author?: string;
+    version?: string;
+    verified: boolean;
+    code: boolean;
+    source: string;
+    installed?: string;
+    update: boolean;
+    levels?: string;
+    length?: string;
+    language?: string;
+    stars?: number;
 }
 
-/** Adds an adventure from a .zip the player picked (D-483): undefined when it is in the campaign, else what went wrong, as the engine says it. */
-export async function addAdventure(file: File): Promise<string | undefined>
+/** What npm and GitHub offer, and the one that did not answer, in its own words. */
+export interface Catalog
 {
-    try {
-        const response = await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/zip", "X-File-Name": encodeURIComponent(file.name) }, body: file });
-
-        if (response.status === 202) {
-            return undefined;
-        }
-
-        const body = await response.json().catch(() => ({})) as { error?: string; };
-        return body.error ?? t("It did not reach the game: try again.");
-    } catch {
-        return t("It did not reach the game: try again.");
-    }
+    entries: CatalogEntry[];
+    failed: { npm?: string; github?: string; };
 }
 
-/** Adds an adventure from an https link, a GitHub repository's too (D-483): undefined when it is in the campaign, else what went wrong. */
-export async function addAdventureLink(url: string): Promise<string | undefined>
+/** The catalog (D-486), as the server keeps it for ten minutes; `fresh` asks npm and GitHub again. */
+export async function readCatalog(fresh: boolean): Promise<Catalog>
+{
+    const response = await fetch(fresh ? "/api/catalog?fresh=true" : "/api/catalog");
+    const body = await response.json() as Catalog | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body;
+}
+
+/** What a package's work came to: done, with the kind the engine recognized in what was added; or the engine's words, and why the yes was not given. */
+export type PackageOutcome = { done: true; kind?: PackageKind; } | { done: false; error: string; code?: "declined" | "no-window" | "busy"; };
+
+/** Adds what the player wrote (D-485 (1)): a link, a GitHub repository's too, an npm name or a folder of this computer; the engine tells its kind. */
+export async function addSource(source: string): Promise<PackageOutcome>
+{
+    return await packageWork(() => fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source }) }));
+}
+
+/** Adds a .zip or a .tgz the player picked, sent as it is with its name. */
+export async function addFile(file: File): Promise<PackageOutcome>
+{
+    return await packageWork(() => fetch("/api/add", { method: "POST", headers: { "Content-Type": file.type || "application/octet-stream", "X-File-Name": encodeURIComponent(file.name) }, body: file }));
+}
+
+/** Updates a package, takes it out of the campaign or off this computer: an adventure by its title, the others by their name or package. */
+export async function changePackage(action: PackageAction, name: string): Promise<PackageOutcome>
+{
+    return await packageWork(() => fetch("/api/package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) }));
+}
+
+async function packageWork(send: () => Promise<Response>): Promise<PackageOutcome>
 {
     try {
-        const response = await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: url }) });
+        const response = await send();
+        const body = await response.json().catch(() => ({})) as { kind?: PackageKind; error?: string; code?: "declined" | "no-window" | "busy"; };
 
         if (response.status === 202) {
-            return undefined;
+            return { done: true, ...(body.kind === undefined ? {} : { kind: body.kind }) };
         }
 
-        const body = await response.json().catch(() => ({})) as { error?: string; };
-        return body.error ?? t("It did not reach the game: try again.");
+        return { done: false, error: body.error ?? t("It did not reach the game: try again."), ...(body.code === undefined ? {} : { code: body.code }) };
     } catch {
-        return t("It did not reach the game: try again.");
+        return { done: false, error: t("It did not reach the game: try again.") };
     }
 }
 

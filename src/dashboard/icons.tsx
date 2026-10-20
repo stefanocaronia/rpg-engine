@@ -84,6 +84,12 @@ const iconPaths = {
     // Rolling by hand, from the sheet or the tray (D-330).
     hand: "M8 12.5V5.5a1.5 1.5 0 0 1 3 0V11 M11 11V4a1.5 1.5 0 0 1 3 0v7 M14 11V5.5a1.5 1.5 0 0 1 3 0V13 M17 10.5a1.5 1.5 0 0 1 3 0V14a6.5 6.5 0 0 1-6.5 6.5H12c-2 0-3.3-.7-4.5-1.9l-3.3-3.4a1.5 1.5 0 0 1 2.1-2.1L8 14.8",
     licence: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 14l2 2 3.5-4",
+    // The Packages page (D-486): a file to add, the catalog's search, a language, the window of the computer where the yes is given, more rows.
+    file: "M6 3h8l4 4v14H6Z M14 3v4h4 M9 13h6 M9 16.5h6",
+    search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M15.5 15.5 20 20",
+    language: "M4 5h9 M8.5 3v2 M6 5c.5 3 2.8 5.5 6 7 M11 5c-.6 3-2.5 5.6-5.5 7.3 M12.5 21l4-9 4 9 M14 17.5h5",
+    window: "M3 5h18v14H3Z M3 9h18 M6 7h.01 M8.5 7h.01",
+    more: "M6 9l6 6 6-6",
 };
 
 /**
