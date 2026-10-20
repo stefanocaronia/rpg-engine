@@ -136,7 +136,7 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
 
     it("tells a document from a package: one without adventure.yaml is the master's to import (D-483 (10))", async () => {
         const result = await rpg("package", "install", join(folder, "Il pozzo.pdf"));
-        expect(result.output).toContain("is a document, not a package: an adventure is imported from it by you, the master");
+        expect(result.output).toContain("is a document, not a package: make an adventure from it with import");
     });
 });
 
@@ -223,9 +223,25 @@ describe("package export (ADV-7)", () => {
         const first = readFileSync(file);
         const read = readAdventureZip(first, "Prova.adventure.zip");
         expect(Object.keys(read.files).sort()).toEqual(["world/places/Borgo.md", "world/topics/Inizio.md"]);
-        expect(read.manifest).toMatchObject({ title: "Prova", author: "Ada", needs: { system: "5e" }, opening: "Inizio", start: "Borgo" });
+        expect(read.manifest).toMatchObject({ title: "Prova", author: "Ada", opening: "Inizio", start: "Borgo" });
+        // No page uses the game system: the adventure needs none, nor its credits (D-489 (6)).
+        expect(read.manifest.needs.system).toBeUndefined();
+        expect(read.manifest.attribution).toBeUndefined();
         await rpg("package", "export", "--author", "Ada");
         expect(readFileSync(file).equals(first)).toBe(true);
+    });
+
+    it("needs the game system only where a page uses it, and keeps to the player the pages from their own documents (D-489 (6))", async () => {
+        await rpg("write", "Borgo", "--type", "place", "--set", "source=The King, p. 3");
+        await rpg("write", "Grosh", "--type", "character", "--set", "creature=[[Goblin]]");
+        makeSave(folder, context, undefined, "session zero");
+        const result = await rpg("package", "export");
+        expect(result.output).toContain("1 of its pages come from the player's own documents (source:): Borgo. So it says personal use only.");
+        const read = readAdventureZip(readFileSync(join(folder, "exports", "Prova.adventure.zip")), "Prova.adventure.zip");
+        expect(read.manifest).toMatchObject({ license: "personal use only", needs: { system: "5e" } });
+        expect(read.manifest.attribution).toContain("System Reference Document");
+        // The player says they may share it, with the document's own license.
+        expect((await rpg("package", "export", "--license", "CC BY 4.0")).output).not.toContain("personal use only");
     });
 
     it("writes a manifest that installs again, whatever the campaign's premise and language", async () => {

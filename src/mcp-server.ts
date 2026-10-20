@@ -19,7 +19,7 @@ import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { npmPackages } from "./extensions/index.ts";
 import { startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
-import { computerHelpers, hostPictures, hostWriter } from "./pictures/index.ts";
+import { computerHelpers, hostPictures, hostReader, hostWriter } from "./pictures/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 type AnyCommand = Command<any, any>;
@@ -117,6 +117,7 @@ export async function startMcpServer(): Promise<void>
         ...defaultContext(),
         pictures: hostPictures(host),
         writer: hostWriter(host),
+        reader: hostReader(host),
         helpers: computerHelpers(),
         packages: npmPackages(packagesFolder()),
         confirm: systemConfirm(process.platform, process.env),

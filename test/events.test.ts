@@ -12,9 +12,9 @@ let context: Context;
 
 // What the outputs say to do with due events (D-106).
 const one =
-    "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
+    "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again. If what it needs is gone, cancel it, or let whoever wanted it try another way; never bend the world back to the written story.";
 const many =
-    "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again.";
+    "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again. If what it needs is gone, cancel it, or let whoever wanted it try another way; never bend the world back to the written story.";
 const judge = "If an event no longer goes as planned, write it: its status, date or by.";
 const questJudge = "If the story of a quest has ended, set its status.";
 // The part new-day, which the command line gives every time (D-97, D-134).

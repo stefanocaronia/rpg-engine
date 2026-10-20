@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { svgBrief } from "./briefs.ts";
 import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
@@ -12,6 +12,8 @@ import { cleanSvg, svgIn } from "./svg.ts";
 
 // How long a picture may take before the engine gives it up: the probe's took 18 to 74 seconds.
 const longest = 3 * 60 * 1000;
+// How long a run of the importer may take: Elena's probe read sixteen pages in about four minutes (D-489).
+const longestReading = 30 * 60 * 1000;
 
 // Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer.
 const drawing = (claude: string): string =>
@@ -27,6 +29,12 @@ const writing = (claude: string): string =>
 export function claudeWriter(maker: PictureMaker = claudePictures()): TextWriter
 {
     return { ready: () => maker.ready().ready, write };
+}
+
+/** Claude Code on this computer as the importer (D-489 (1)): ready where the player's Claude login lets it draw too. */
+export function claudeReader(maker: PictureMaker = claudePictures()): DocumentReader
+{
+    return { ready: () => maker.ready().ready, read };
 }
 
 /** Why Claude draws no pictures, for the master and the player (D-390). */
@@ -137,6 +145,37 @@ function write(brief: string): Promise<string | undefined>
             rmSync(folder, { recursive: true, force: true });
             const answer = parsed(output);
             done(answer?.is_error === true || typeof answer?.result !== "string" ? undefined : answer.result);
+        });
+        child.stdin.end(brief);
+    });
+}
+
+/**
+ * One run of the importer: Claude Code in the import's folder with no settings, memory or session of its own, reading only there and writing only in the
+ * folders given, every other tool and path refused (D-489 (1)). Its last words, or why it stopped.
+ */
+function read(folder: string, brief: string, writable: string[]): Promise<{ said: string; } | { failed: string; }>
+{
+    const allowed = ["Read(./**)", "Glob", ...writable.map((name) => `Edit(./${name}/**)`)].map((rule) => `"${rule}"`).join(" ");
+    const line = `${claude} -p --model sonnet --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence --disable-slash-commands `
+        + `--tools "Read,Write,Edit,Glob" --permission-mode dontAsk --allowedTools ${allowed} --max-budget-usd 3 `
+        + `--system-prompt "You read a player's documents and write a tabletop adventure from them, as files in this folder."`;
+
+    return new Promise((done) => {
+        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
+        let output = "";
+        let errors = "";
+        const timer = setTimeout(() => stopTree(child), longestReading);
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk: string) => (output += chunk));
+        child.stderr.on("data", (chunk: string) => (errors += chunk));
+        child.stdin.on("error", () => undefined);
+        child.on("error", () => undefined);
+        child.on("close", () => {
+            clearTimeout(timer);
+            const answer = parsed(output);
+            done(answer?.is_error === true || typeof answer?.result !== "string" ? { failed: refusal(answer, errors) } : { said: answer.result });
         });
         child.stdin.end(brief);
     });

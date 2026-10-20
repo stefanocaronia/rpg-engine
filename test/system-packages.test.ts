@@ -13,17 +13,19 @@ import { installedSystems } from "../src/systems/index.ts";
 import { testSystemFolders } from "./support.ts";
 
 describe("the installed game systems", () => {
-    it("are the 5e system of the package and the ironsworn system of the tests", () => {
-        expect(installedSystems(testSystemFolders).map((system) => system.name)).toEqual(["5e", "ironsworn"]);
+    it("are the 5e and free systems of the package and the ironsworn system of the tests", () => {
+        expect(installedSystems(testSystemFolders).map((system) => system.name)).toEqual(["5e", "free", "ironsworn"]);
     });
 
     for (const system of installedSystems(testSystemFolders)) {
         describe(`the system ${system.name}`, () => {
             // Read as a campaign would be: the checks of validate apply to its pages too.
             const world = loadWorld(system.folder);
+            // Free play is ours, a sheet of words and nothing else: no pages, no rules, no source to credit (D-489 (7)).
+            const sourced = system.name !== "free";
 
             it("reads like a campaign: every page reads, and validate finds no problem in it", () => {
-                expect(world.pages.length).toBeGreaterThan(0);
+                expect(world.pages.length > 0).toBe(sourced);
                 expect(world.problems).toEqual([]);
                 expect(checkWorld(world)).toEqual([]);
             });
@@ -71,7 +73,7 @@ describe("the installed game systems", () => {
 
             it("writes its rules in chapters that open with a heading, each section read by its path (RUL-1, RUL-3)", () => {
                 const book = readRuleBook(join(system.folder, "rules"), system.name);
-                expect(book.length).toBeGreaterThan(0);
+                expect(book.length > 0).toBe(sourced);
                 expect(book.filter((section) => section.level === 0).map((section) => section.file)).toEqual([]);
                 // A title with ›, > or / in it could not be read by its path.
                 const unread = book.filter((section) => !isTitled(section, section.path.join(" › ")));
@@ -121,7 +123,7 @@ describe("the installed game systems", () => {
             });
 
             it("says where it comes from", () => {
-                expect(system.attribution).toBeDefined();
+                expect(system.attribution !== undefined).toBe(sourced);
             });
         });
     }

@@ -40,7 +40,7 @@ describe("rpg init", () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
-        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`);
+        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, free, ironsworn), language (a code, such as it), ${asked}; ${onward}`);
         // A new campaign starts in setup (MOD-1).
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("\nmode: setup\n");
 
@@ -63,7 +63,7 @@ describe("rpg init", () => {
     it("tells the player how to start playing, and the master what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
         expect(result.output).toBe(
-            `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`,
+            `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: 5e, free, ironsworn), ${asked}; ${onward}`,
         );
     });
 
@@ -201,10 +201,10 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, free, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
-                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
+                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, free, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
     });
 
@@ -253,7 +253,7 @@ describe("rpg config", () => {
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: 5e, ironsworn), ${asked}; ${onward}`);
+        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: 5e, free, ironsworn), ${asked}; ${onward}`);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });

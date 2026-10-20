@@ -62,6 +62,8 @@ export interface Context
     pictures?: PictureMaker;
     /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */
     writer?: TextWriter;
+    /** What reads the player's documents outside the chat (D-489 (1)): none where no helper is ready, and in tests. */
+    reader?: DocumentReader;
     /** The folder of this player's data on this computer, apart from any campaign: the page's words translated on the fly (D-406). */
     home?: string;
     /** The folder of the dashboard's built page, whose i18n/ lists every phrase it has (D-423). */
@@ -134,6 +136,14 @@ export interface TextWriter
 {
     ready(): boolean;
     write(brief: string): Promise<string | undefined>;
+}
+
+/** What reads the player's documents outside the chat and writes an adventure from them (D-489 (1)): whether it can now, and one run of a brief in a folder. */
+export interface DocumentReader
+{
+    ready(): boolean;
+    /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. */
+    read(folder: string, brief: string, writable: string[]): Promise<{ said: string; } | { failed: string; }>;
 }
 
 /**

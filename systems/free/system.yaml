@@ -1,0 +1,12 @@
+# Free play, without a game system (D-307, D-489 (7)): a sheet of words and no numbers; what happens is the story's, the dice only when the player asks for them.
+# A book, a module or notes imported into a campaign of this system give an adventure that needs no system.
+title: free play, without a game system
+language: en
+fields:
+  concept: text
+  abilities: list
+sheet:
+  Character: [concept, abilities, factions?]
+  Equipment: [money?, inventory?]
+sheet-notes:
+  Character: "concept is who the character is, in one line, in the player's words; abilities, three to five things they do well, also in the player's words, such as [sailing, reading people, the long knife]: what they do with them succeeds when the story allows it."

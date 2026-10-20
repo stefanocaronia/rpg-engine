@@ -11,7 +11,7 @@ import { FileStore, withFiles } from "./core/store.ts";
 import { firstSentence } from "./core/text.ts";
 import { getVersion } from "./core/version.ts";
 import { npmPackages } from "./extensions/index.ts";
-import { hostPictures } from "./pictures/index.ts";
+import { hostPictures, hostReader } from "./pictures/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 export interface CommandLineResult
@@ -28,7 +28,15 @@ const mcpDescription = "Start the MCP server for an AI host. Through it the host
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
 export async function runCommandLine(
     argv: string[],
-    context: Context = { ...defaultContext(), pictures: hostPictures(() => undefined), packages: npmPackages(packagesFolder()), confirm: systemConfirm(process.platform, process.env), download: downloadBytes, terminal: true },
+    context: Context = {
+        ...defaultContext(),
+        pictures: hostPictures(() => undefined),
+        reader: hostReader(() => undefined),
+        packages: npmPackages(packagesFolder()),
+        confirm: systemConfirm(process.platform, process.env),
+        download: downloadBytes,
+        terminal: true,
+    },
 ): Promise<CommandLineResult>
 {
     // The systems' code, loaded once, before any command may call its hooks (D-448).

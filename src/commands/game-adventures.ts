@@ -11,7 +11,7 @@ import { comparableText, linkTargetName } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { shortName } from "../extensions/index.ts";
 import { findImage, imageFileName, largestImage } from "../images/index.ts";
-import { locate, type Page, pageNamed, readFields, splitPageFile, textsIn, worldFolderName } from "../pages/index.ts";
+import { locate, type Page, pageNamed, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../pages/index.ts";
 import { readRuleBook, ruleSections } from "../rules/index.ts";
 import { unpackFiles } from "../saves/index.ts";
 import { formatGameDate, readGameDate } from "../time/index.ts";
@@ -62,6 +62,8 @@ export interface AdventureExported
     pages: number;
     leftOut: { characters: string[]; adventures: string[]; };
     opening?: string;
+    /** The pages written from the player's documents (source:), when no license was given: the zip keeps them to the player. */
+    sourced?: string[];
 }
 
 // The mark of an install under way, with its title and the days it moves dates by: while it is there, installing the same adventure finishes it (ADV-5).
@@ -74,8 +76,7 @@ export function isAdventureSpec(spec: string): boolean
 {
     if (documentPattern.test(spec)) {
         throw new Error(
-            `${spec} is a document, not a package: an adventure is imported from it by you, the master, who read it and write its pages with write; `
-                + "package install takes only what has adventure.yaml. Nothing changed.",
+            `${spec} is a document, not a package: make an adventure from it with import; package install takes only what has adventure.yaml. Nothing changed.`,
         );
     }
 
@@ -215,15 +216,19 @@ export function exportAdventure(root: string, context: Context, credits: { autho
     const opening = pages.find((page) => !installed.has(page.path) && textsIn(page.fields.tags).some((tag) => comparableText(tag) === "opening"));
     const start = opening === undefined ? undefined : textsIn(opening.fields.start)[0]?.replace(/^\[\[|\]\]$/g, "");
     const system = campaignSystem(root, context);
+    // The system is needed, with its credits, only where a page uses it (D-489 (6)); pages from the player's documents keep it to the player unless they say otherwise.
+    const usesSystem = settings.system !== undefined && systemUsed(kept, campaignWorld(root, context), system?.fields ?? {});
+    const sourced = pages.filter((page) => kept[page.path] !== undefined && page.fields.source !== undefined).map((page) => basename(page.path, ".md"));
+    const license = credits.license ?? (sourced.length > 0 ? "personal use only" : undefined);
     const manifest: AdventureManifest = {
         title: manifestLine(settings.name, "title"),
         about: manifestLine(settings.premise ?? settings.name, "about"),
         language: settings.language ?? "en",
         version: "1.0.0",
         ...(credits.author === undefined ? {} : { author: credits.author }),
-        ...(credits.license === undefined ? {} : { license: credits.license }),
-        ...(system?.attribution === undefined ? {} : { attribution: system.attribution }),
-        needs: { ...(settings.system === undefined ? {} : { system: settings.system }), extensions: listedExtensions(root) },
+        ...(license === undefined ? {} : { license }),
+        ...(system?.attribution === undefined || !usesSystem ? {} : { attribution: system.attribution }),
+        needs: { ...(usesSystem ? { system: settings.system } : {}), extensions: listedExtensions(root) },
         content: [],
         ...(start === undefined ? {} : { start }),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
@@ -236,8 +241,25 @@ export function exportAdventure(root: string, context: Context, credits: { autho
         from,
         pages: Object.keys(kept).filter((path) => path.startsWith(`${worldFolderName}/`)).length,
         leftOut: { characters: players.map((page) => basename(page.path, ".md")), adventures },
+        ...(sourced.length > 0 && credits.license === undefined ? { sourced } : {}),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
     };
+}
+
+/** Whether the pages kept use the game system: a link to one of its pages, or a number in a field it declares. */
+function systemUsed(kept: Record<string, Uint8Array>, world: World, fields: Record<string, string>): boolean
+{
+    const declared = new Set(Object.keys(fields).map(comparableText));
+
+    return Object.entries(kept).some(([path, bytes]) => {
+        if (!path.startsWith(`${worldFolderName}/`) || !path.endsWith(".md")) {
+            return false;
+        }
+
+        const text = new TextDecoder().decode(bytes);
+        const linked = [...text.matchAll(/\[\[([^\]]+)\]\]/g)].some((link) => pageNamed(world, linkTargetName(link[1] ?? ""))?.system !== undefined);
+        return linked || Object.entries(fieldsOf(path, bytes)).some(([key, value]) => declared.has(comparableText(key)) && /\d/.test(String(value)));
+    });
 }
 
 /** The adventures of a log: those installed, less those taken out after. */

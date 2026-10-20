@@ -5,13 +5,15 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import type { MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { paintedBrief } from "./briefs.ts";
 import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
 const longest = 3 * 60 * 1000;
+// How long a run of the importer may take (D-489).
+const longestReading = 30 * 60 * 1000;
 
 /** Why Codex makes no pictures, for the master, and how the player has them, which the dashboard writes in its language (D-308). */
 export const codexSays = {
@@ -65,6 +67,12 @@ export function codexPictures(): PictureMaker
 export function codexWriter(maker: PictureMaker = codexPictures()): TextWriter
 {
     return { ready: () => maker.ready().ready, write };
+}
+
+/** Codex on this computer as the importer (D-489 (1)): ready where its ChatGPT login makes pictures too. */
+export function codexReader(maker: PictureMaker = codexPictures()): DocumentReader
+{
+    return { ready: () => maker.ready().ready, read };
 }
 
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
@@ -152,6 +160,31 @@ function write(brief: string): Promise<string | undefined>
             const said = existsSync(last) ? readFileSync(last, "utf8").trim() : "";
             rmSync(folder, { recursive: true, force: true });
             done(said === "" ? undefined : said);
+        });
+        child.stdin.end(brief);
+    });
+}
+
+/** One run of the importer: Codex in the import's folder, which its sandbox lets it write in and nowhere else (D-489 (1)); its last words, or why it stopped. */
+function read(folder: string, brief: string): Promise<{ said: string; } | { failed: string; }>
+{
+    const last = join(folder, ".last.txt");
+    // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
+    const line = `${codex} exec --ephemeral --skip-git-repo-check -s workspace-write -o .last.txt --ignore-user-config --ignore-rules -`;
+
+    return new Promise((done) => {
+        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
+        let errors = "";
+        const timer = setTimeout(() => stopTree(child), longestReading);
+        child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
+        child.stdin.on("error", () => undefined);
+        child.on("error", () => undefined);
+        child.on("close", (code) => {
+            clearTimeout(timer);
+            const said = existsSync(last) ? readFileSync(last, "utf8").trim() : "";
+            rmSync(last, { force: true });
+            const stopped = errors.trim().split("\n").at(-1)?.trim() ?? "";
+            done(code === 0 && said !== "" ? { said } : { failed: stopped === "" ? "Codex stopped without an answer" : `Codex said: ${stopped}` });
         });
         child.stdin.end(brief);
     });

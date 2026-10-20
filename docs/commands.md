@@ -160,6 +160,17 @@ Read-only: no. Positional parameters: `page`, `file`.
 - `file` (`string`, optional): the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it out to remove the page's own picture
 - `describe` (`string`, optional): instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, a disguise as the disguise; never what the character does not know. The picture is made where it can be, and comes by itself
 
+### import
+
+Make an adventure from the player's own document: a book, a game module or notes, as a PDF, Word, OpenDocument, EPUB, HTML, RTF, text or markdown file, or a folder of them.
+
+Read-only: no. Positional parameters: `document`.
+
+- `document` (`string`, optional): the document's file or folder: its full path, or one from the folder the command runs in
+- `title` (`string`, optional): the adventure's title; the document's name when left out
+- `start` (`integer`, optional): the starting point the player chose, by its number
+- `cancel` (`boolean`, optional): drop the import under way, and what it wrote; the player's document stays as it is
+
 ### show
 
 Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from.

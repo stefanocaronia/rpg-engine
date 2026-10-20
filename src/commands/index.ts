@@ -6,6 +6,7 @@ import { config } from "./config.ts";
 import { effect } from "./effect.ts";
 import { find } from "./find.ts";
 import { image } from "./image.ts";
+import { importCommand } from "./import.ts";
 import { init } from "./init.ts";
 import { install } from "./install.ts";
 import { instructions } from "./instructions.ts";
@@ -43,6 +44,7 @@ export const commands: Command<any, any>[] = [
     trade,
     reveal,
     image,
+    importCommand,
     show,
     view,
     find,

@@ -69,6 +69,7 @@ world/          the pages: characters/ places/ factions/ quests/ items/ events/ 
 rules/          house rules (optional)
 images/         pictures (optional)
 .saves/         saves, one zip each
+.imports/       documents being made adventures, each with its pieces, notes and adventure
 exports/        adventures exported from the campaign, kept out of the saves
 .player/        the player's notes
 AGENTS.md, CLAUDE.md, .mcp.json, .claude/, .codex/, .gemini/   tell AI hosts where rpg-engine is, memory off
@@ -82,7 +83,7 @@ A page is a markdown file under `world/` ([pages/world.ts](../src/pages/world.ts
 
 ### An adventure
 
-A folder or a `.zip` with `adventure.yaml` (title, about, language, version, author, license, needs, levels, content, length, party, start, opening) and only `world/`, `images/` and `rules/`, as a campaign has them ([adventures/](../src/adventures/)). `package install` copies it into the campaign whole or not at all: pages under `world/<type>/<Adventure>/`, the rest under a folder of its own, the dates of the frontmatter moved to today; the log says which adventures are installed, so they go back with a save. `package export` writes the world as it was at the start, without the player characters ([commands/game-adventures.ts](../src/commands/game-adventures.ts)). A document without `adventure.yaml` is imported by the master, who writes its pages. The Packages page lists them, adds one from a `.zip` and exports the campaign ([dashboard/packages.tsx](../src/dashboard/packages.tsx)).
+A folder or a `.zip` with `adventure.yaml` (title, about, language, version, author, license, needs, levels, content, length, party, start, opening) and only `world/`, `images/` and `rules/`, as a campaign has them ([adventures/](../src/adventures/)). `package install` copies it into the campaign whole or not at all: pages under `world/<type>/<Adventure>/`, the rest under a folder of its own, the dates of the frontmatter moved to today; the log says which adventures are installed, so they go back with a save. `package export` writes the world as it was at the start, without the player characters ([commands/game-adventures.ts](../src/commands/game-adventures.ts)). A document without `adventure.yaml` is made an adventure with `import`: the engine reads its text and pictures ([documents/](../src/documents/)), keeps it in pieces in `.imports/<title>/` with the mark of how far it is ([importer/](../src/importer/)), and a helper outside the chat, the player's Claude Code or Codex, reads it piece after piece, proposes starting points, then sets the world at the one chosen ([commands/game-import.ts](../src/commands/game-import.ts)); the result is an adventure folder for `package install`. The Packages page lists them, adds one from a `.zip` and exports the campaign ([dashboard/packages.tsx](../src/dashboard/packages.tsx)).
 
 ### A game system
 
@@ -118,7 +119,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | State checks | What cannot be true together in the party and the open scene, told to the master; read-only | [commands/game-checks.ts](../src/commands/game-checks.ts) |
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions' | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
 | Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
-| Adventures | Installed, taken out while the story has not touched them, and exported as they were at the start | [adventures/](../src/adventures/), [commands/game-adventures.ts](../src/commands/game-adventures.ts) |
+| Adventures | Installed, taken out while the story has not touched them, exported as they were at the start, and made from the player's documents | [adventures/](../src/adventures/), [documents/](../src/documents/), [importer/](../src/importer/), [commands/game-adventures.ts](../src/commands/game-adventures.ts), [commands/import.ts](../src/commands/import.ts) |
 | Languages | A language's translation made by hand, as a package: the dashboard's phrases, its Guide and a system's words, before the translation on the fly | [languages/](../src/languages/), [page-words.ts](../src/page-words.ts) |
 | Catalog | What npm has for every kind of package and the adventures GitHub has by topic, for the Packages page | [commands/game-catalog.ts](../src/commands/game-catalog.ts) |
 | Consent | The player's yes to a package not ours, in a window of their operating system when the host shows no form | [confirm/](../src/confirm/) |

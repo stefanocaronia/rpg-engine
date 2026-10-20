@@ -726,6 +726,9 @@ function exportText(result: AdventureExported): string
         result.opening === undefined
             ? "It has no opening page: one tagged opening, with the situation, the hooks, what happens if no one steps in and the pages to read first, and its start, makes it ready."
             : `Its opening is [[${result.opening}]].`,
-        "The player shares it as a file, and only what they have the right to share.",
+        result.sourced === undefined
+            ? "The player shares it as a file, and only what they have the right to share."
+            : `${result.sourced.length} of its pages come from the player's own documents (source:): ${result.sourced.slice(0, 5).join(", ")}${result.sourced.length > 5 ? "…" : ""}. `
+                + "So it says personal use only. Ask the player whether they may share it: only with the document's own license, or their rights to it; if so, export again with that license.",
     ].join(" ");
 }

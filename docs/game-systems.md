@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/) and from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/) from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
 
 ## 1. The folder
 
@@ -308,7 +308,7 @@ words: {Cleric: Chierico, long rest: riposo lungo}
 headline: "{classes} di livello {level}"
 ```
 
-**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `mentor-hints`, `mentor-tutorial`, `level-up`.
+**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book.
 
 ## 5. What a campaign adds
 

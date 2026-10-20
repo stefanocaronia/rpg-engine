@@ -26,6 +26,7 @@ import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { datedText, problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, countedByGame, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
+import { importLine } from "./import.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -146,6 +147,8 @@ export const status = defineCommand({
             offerDashboard: offerDashboard(context),
             // Whether to ask for the places' pictures, or to have this one made (D-308).
             pictures: picturesNote(root, context, world, players[0] === undefined ? undefined : locate(world, players[0]).chain.find((holder) => holder.type === "place")),
+            // The player's document being made an adventure, or ready to install (D-489).
+            importing: importLine(root),
             // In the setup, the dashboard translated in the chat where nothing here does it in the background (D-423).
             translation: mode === "setup" ? translationOffer(root, context) : undefined,
             mood: masterMood(root),
@@ -206,6 +209,7 @@ export const status = defineCommand({
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live.`,
             result.pictures ?? "",
+            result.importing,
             result.translation ?? "",
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
