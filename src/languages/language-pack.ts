@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { z } from "zod";
+import { packageFoldersIn } from "../core/files.ts";
 import { files } from "../core/store.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -107,13 +108,17 @@ export function languagePackProblems(pack: LanguagePack, english: string[]): { p
         ...(names(phrase) !== names(translated) ? [`"${translated}" has not the {names} of "${phrase}"`] : []),
         ...(turning.test(translated) ? [`"${translated}" has characters that turn the order of a text`] : []),
     ]);
+    const guide = packGuide(pack);
+
+    if (guide !== undefined && turning.test(guide)) {
+        problems.push("guide.md has characters that turn the order of a text");
+    }
+
     return { problems: problems.slice(0, 10), missing: english.filter((phrase) => !(phrase in phrases)).length };
 }
 
 /** The folders of packages with a language.yaml in these folders, and in their scopes' folders. */
 function packageFolders(folders: string[]): string[]
 {
-    const children = (folder: string): string[] => files().entries(folder).filter((entry) => entry.isFolder).map((entry) => join(folder, entry.name)).sort();
-    const candidates = folders.flatMap((folder) => children(folder).flatMap((child) => (child.split(/[\\/]/).at(-1)?.startsWith("@") === true ? children(child) : [child])));
-    return candidates.filter((candidate) => files().exists(join(candidate, languageFileName)));
+    return packageFoldersIn(folders).filter((candidate) => files().exists(join(candidate, languageFileName)));
 }

@@ -1,6 +1,7 @@
-import { existsSync, lstatSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { packageFoldersIn } from "../core/files.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
@@ -144,9 +145,7 @@ export function shortName(packageName: string): string
 /** The folders of packages with an extension.yaml in these folders, and in their scopes' folders; npm links a package installed from a folder. */
 function packageFolders(folders: string[]): string[]
 {
-    const children = (folder: string): string[] => readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory() || entry.isSymbolicLink()).map((entry) => join(folder, entry.name)).sort();
-    const candidates = folders.filter((folder) => existsSync(folder)).flatMap((folder) => children(folder).flatMap((child) => (child.split(/[\\/]/).at(-1)?.startsWith("@") === true ? children(child) : [child])));
-    return candidates.filter((candidate) => existsSync(join(candidate, extensionFileName)));
+    return packageFoldersIn(folders).filter((candidate) => existsSync(join(candidate, extensionFileName)));
 }
 
 /** The name in a package's package.json; undefined when it has none that reads. */

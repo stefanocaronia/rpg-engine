@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
+import { isLink } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
@@ -384,6 +385,12 @@ async function installed(root: string, context: Context, name: string): Promise<
 async function systemInstalled(root: string, context: Context, spec: string, name: string, described: PackageInfo): Promise<PackageResult>
 {
     const local = isLocalSpec(spec);
+    const named = shortName(described.name).replace(/^system-/, "");
+    const taken = systemsHere(root, context).find((one) => comparableText(one.name) === comparableText(named) && one.package !== described.name);
+
+    if (taken !== undefined) {
+        throw new Error(`There is already a game system named ${taken.name} on this computer${taken.package === undefined ? ", the engine's own" : `, from ${taken.package}`}: ${described.name} would take its name. Nothing changed.`);
+    }
 
     if (!isVerified(described.name, local)) {
         await playerYes(context, local ? name : described.name, local, local ? ` (${described.name} ${described.version})` : "");
@@ -422,7 +429,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
         const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
         // The engine's own have no package of their own here; one npm installed is ours only by our scope, and never from a folder (D-441).
         const shipped = system.folder.startsWith(context.systemFolders[0]);
-        const linked = manifest !== undefined && files().text(join(context.systemFolders.at(-1) ?? "", "..", "local", ...manifest.name.split("/"), "package.json")) !== undefined;
+        const linked = isLink(system.folder);
         return {
             name: system.name,
             title: system.title,
@@ -452,8 +459,8 @@ function packageOf(folder: string): { name: string; version: string; } | undefin
  */
 async function languageInstalled(root: string, context: Context, spec: string, described: PackageInfo): Promise<PackageResult>
 {
-    if (described.code === true) {
-        throw new Error(`${described.name} says it is a language, and brings code: a language package is texts only. Nothing changed.`);
+    if (described.code === true || described.dependencies === true) {
+        throw new Error(`${described.name} says it is a language, and brings code or needs other packages: a language package is texts only. Nothing changed.`);
     }
 
     const before = installedLanguages(context.extensionFolders ?? []);
@@ -479,8 +486,11 @@ async function languageInstalled(root: string, context: Context, spec: string, d
 
     if (checked.problems.length > 0) {
         await packages.uninstall(described.name);
+        // An update refused leaves the version that was there before.
+        const earlier = before.find((one) => one.package === described.name);
+        const back = earlier === undefined || isLocalSpec(spec) ? undefined : await packages.install(`${earlier.package}@${earlier.version}`).then((why) => (why === undefined ? earlier.version : undefined));
         (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
-        throw new Error(`${described.name} cannot be used: ${checked.problems.join("; ")}. It was taken off this computer.`);
+        throw new Error(`${described.name} cannot be used: ${checked.problems.join("; ")}. ${back === undefined ? "It was taken off this computer." : `Version ${back} stays.`}`);
     }
 
     // One language, one package: the one before for the same code goes (D-485 (3)).
@@ -504,7 +514,7 @@ function languagesHere(context: Context): InstalledLanguage[]
         name: pack.name,
         package: pack.package,
         version: pack.version,
-        verified: isVerified(pack.package, files().text(join(pack.folder, "..", "..", "local", ...pack.package.split("/"), "package.json")) !== undefined),
+        verified: isVerified(pack.package, isLink(pack.folder)),
     }));
 }
 

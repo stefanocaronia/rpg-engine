@@ -222,6 +222,7 @@ interface Manifest
     main?: unknown;
     exports?: unknown;
     bin?: unknown;
+    dependencies?: Record<string, unknown>;
     "rpg-engine"?: { kind?: unknown; api?: unknown; };
 }
 
@@ -237,6 +238,7 @@ function infoOf(read: Manifest): PackageInfo
         ...(authorOf(read) === undefined ? {} : { author: authorOf(read) }),
         // What runs: a main, exports or a command; a package of texts alone has none.
         code: read.main !== undefined || read.exports !== undefined || read.bin !== undefined,
+        dependencies: Object.keys(read.dependencies ?? {}).length > 0,
     };
 }
 

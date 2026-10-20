@@ -1,10 +1,11 @@
 // The saves (MECCANICHE, SAV-1–SAV-6; D-54, D-55): the module on files and names made at random, a table of what each mode of saves allows, and a law on runs of
 // writes, saves and loads: loading gives back exactly the game's files of then.
 import fc from "fast-check";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { makeSave } from "../src/commands/game-saves.ts";
 import type { Context } from "../src/core/context.ts";
 import { packFiles, readSaves, saveFileName, unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
@@ -253,6 +254,16 @@ describe("the death of the player character (SAV-7)", () => {
 });
 
 describe("the saves, after a review", () => {
+    it("SAV-2: a link to a folder outside the campaign is no part of the game, so no save holds it (review of 20 October)", async () => {
+        const outside = makeTempFolder();
+        writeFileSync(join(outside, "manuale.txt"), "the player's own book");
+        symlinkSync(outside, join(folder, "library"), "junction");
+        makeSave(folder, context, undefined, "asked");
+        const zip = readdirSync(join(folder, ".saves")).find((name) => name.endsWith(".zip")) as string;
+        expect(Object.keys(unpackFiles(readFileSync(join(folder, ".saves", zip)))).filter((path) => path.startsWith("library"))).toEqual([]);
+        expect(existsSync(join(outside, "manuale.txt"))).toBe(true);
+    });
+
     it("SAV-5: a load that stops halfway leaves its mark, status says so, and save load finishes it in any mode", async () => {
         await scene("Uno");
         await ok("write", "Ossario", "--type", "place", "--text", "Ossa.");

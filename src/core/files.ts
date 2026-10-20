@@ -1,6 +1,6 @@
 // The files of a folder and of the folders inside it, listed one folder at a time: listing a whole tree at once looks at every file again on Windows (D-194).
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, join, relative, sep } from "node:path";
 
 /** The full paths of `folder` and of the folders inside it, however deep; none when there is no such folder. */
 export function foldersIn(folder: string): string[]
@@ -35,4 +35,56 @@ export function filesIn(folder: string, keep: (name: string) => boolean): string
     }
 
     return files;
+}
+
+/**
+ * The folders of the packages in these folders of npm's, in their scopes' folders too (@rpgengine/weather), links to folders included, as npm links a package
+ * installed from a folder (D-441); never followed further.
+ */
+export function packageFoldersIn(folders: string[]): string[]
+{
+    const children = (folder: string): string[] => readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory() || isLinkedFolder(join(folder, entry.name))).map((entry) => join(folder, entry.name)).sort();
+    return folders.filter((folder) => existsSync(folder)).flatMap((folder) => {
+        const chosen = chosenPackages(folder);
+        const found = children(folder).flatMap((child) => (basename(child).startsWith("@") ? children(child) : [child]));
+        // Only the packages the player installed: one npm brought as another's dependency is never theirs to use (D-485).
+        return chosen === undefined ? found : found.filter((child) => chosen.has(relative(folder, child).split(sep).join("/")));
+    });
+}
+
+/**
+ * The packages the player installed in a folder of npm's, as the package.json beside it lists them; undefined where there is none, as for the engine's own
+ * systems or a test's folder.
+ */
+function chosenPackages(folder: string): Set<string> | undefined
+{
+    if (basename(folder) !== "node_modules") {
+        return undefined;
+    }
+
+    try {
+        const read = JSON.parse(readFileSync(join(folder, "..", "package.json"), "utf8")) as { dependencies?: Record<string, unknown>; };
+        return read.dependencies === undefined ? undefined : new Set(Object.keys(read.dependencies));
+    } catch {
+        return undefined;
+    }
+}
+
+/** Whether a path is a link, as npm makes one for a package installed from a folder: such a package is never verified (D-441). */
+export function isLink(path: string): boolean
+{
+    try {
+        return lstatSync(path).isSymbolicLink();
+    } catch {
+        return false;
+    }
+}
+
+function isLinkedFolder(path: string): boolean
+{
+    try {
+        return lstatSync(path).isSymbolicLink() && statSync(path).isDirectory();
+    } catch {
+        return false;
+    }
 }

@@ -84,6 +84,8 @@ export interface PackageInfo
     author?: string;
     /** Whether it brings code that runs, by its package.json: a main, exports or a command. */
     code?: boolean;
+    /** Whether it needs other packages, which npm installs beside it. */
+    dependencies?: boolean;
 }
 
 /** What the window of the player's operating system said: yes, no, or none when it could not be shown. */

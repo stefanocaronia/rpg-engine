@@ -1,11 +1,14 @@
 // The catalog of the packages one may add (D-485, D-486): what npm has for this rpg-engine, extensions, game systems and languages, and the adventures
 // GitHub has by their topic, each with what the player needs to trust it and whether it is here already.
+import { join } from "node:path";
 import { readManifest } from "../adventures/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
+import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { extensionApi, installedExtensions, isVerified, readExtension, shortName } from "../extensions/index.ts";
-import { installedSystems } from "../systems/index.ts";
+import { installedLanguages } from "../languages/index.ts";
+import { systemFolders } from "../systems/index.ts";
 import { installedAdventures } from "./game-adventures.ts";
 
 /** The kinds of packages the catalog lists. */
@@ -99,8 +102,32 @@ function installedVersion(root: string, context: Context, found: PackageInfo): s
         }
     }
 
-    const name = shortName(found.name).replace(/^system-/, "");
-    return found.kind === "system" && installedSystems(context.systemFolders).some((one) => comparableText(one.name) === comparableText(name)) ? "installed" : undefined;
+    if (found.kind === "language") {
+        return installedLanguages(context.extensionFolders ?? []).find((one) => one.package === found.name)?.version;
+    }
+
+    // A system npm installed, by its package's own version.
+    const folder = systemFolders(context.systemFolders).find((one) => packageNameIn(one.folder) === found.name)?.folder;
+    return folder === undefined ? undefined : packageVersionIn(folder);
+}
+
+function packageNameIn(folder: string): string | undefined
+{
+    return packageIn(folder)?.name;
+}
+
+function packageVersionIn(folder: string): string | undefined
+{
+    return packageIn(folder)?.version;
+}
+
+function packageIn(folder: string): { name?: string; version?: string; } | undefined
+{
+    try {
+        return JSON.parse(files().text(join(folder, "package.json")) ?? "") as { name?: string; version?: string; };
+    } catch {
+        return undefined;
+    }
 }
 
 /** The adventures GitHub has by their topic, each read from its adventure.yaml; a repository without one that reads is left out. */

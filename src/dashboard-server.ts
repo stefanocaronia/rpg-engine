@@ -951,7 +951,7 @@ async function catalogNow(response: ServerResponse, served: Served, fresh: boole
 {
     const kept = served.catalog;
 
-    if (kept !== undefined && !fresh && Date.now() - kept.at < catalogLife) {
+    if (kept !== undefined && !fresh && served.context.now().getTime() - kept.at < catalogLife) {
         sendJson(response, 200, kept.catalog);
         return;
     }
@@ -959,7 +959,7 @@ async function catalogNow(response: ServerResponse, served: Served, fresh: boole
     try {
         await served.session.ready();
         const read = await withFiles(served.session, () => catalog(requireCampaign(served.context.folder), served.context));
-        served.catalog = { at: Date.now(), catalog: read };
+        served.catalog = { at: served.context.now().getTime(), catalog: read };
         sendJson(response, 200, read);
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });

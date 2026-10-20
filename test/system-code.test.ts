@@ -31,4 +31,22 @@ describe("the code of a game system (D-448)", () => {
         expect(loaded.other).toBeUndefined();
         expect(systemHasCode(other)).toBe(false);
     });
+
+    it("loads only what the player installed, never a system npm brought as another package's dependency, nor a second of the same name (D-485)", async () => {
+        const modules = join(makeTempFolder(), "node_modules");
+
+        const system = (path: string, title: string): void => {
+            mkdirSync(join(modules, path, "dist"), { recursive: true });
+            writeFileSync(join(modules, path, "package.json"), JSON.stringify({ type: "module", main: "dist/index.js", "rpg-engine": { kind: "system" } }));
+            writeFileSync(join(modules, path, "dist", "index.js"), "export default () => ({});\n");
+            writeFileSync(join(modules, path, "system.yaml"), `title: ${title}\nlanguage: en\n`);
+        };
+
+        system("@test/system-evil", "brought along");
+        system("@test/system-ironsworn", "another Ironsworn");
+        system("@test/system-mine", "the player's own");
+        writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-mine": "1.0.0", "@test/system-ironsworn": "1.0.0" } }));
+        const loaded = await loadSystemCode([...testSystemFolders, modules]);
+        expect(Object.keys(loaded).sort()).toEqual(["5e", "mine"]);
+    });
 });

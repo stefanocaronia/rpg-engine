@@ -131,6 +131,11 @@ function LinkView({ label, target, go }: { label: string; target: string; go: (a
         );
     }
 
+    // A Guide may come from a language package someone else made (D-487): only a web address is a link, never a script.
+    if (!/^https?:\/\//i.test(target)) {
+        return <Inline text={label} go={go} />;
+    }
+
     return (
         <a href={target} target="_blank" rel="noreferrer">
             <Inline text={label} go={go} />

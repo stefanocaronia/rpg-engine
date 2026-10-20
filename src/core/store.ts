@@ -2,7 +2,7 @@
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
 
@@ -98,10 +98,7 @@ export class FileStore
     entries(folder: string): { name: string; isFolder: boolean; }[]
     {
         return existsSync(folder) && statSync(folder).isDirectory()
-            ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isFile() || entry.isDirectory() || linkedFolder(join(folder, entry.name), entry.isSymbolicLink())).map((entry) => ({
-                name: entry.name,
-                isFolder: entry.isDirectory() || entry.isSymbolicLink(),
-            }))
+            ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isFile() || entry.isDirectory()).map((entry) => ({ name: entry.name, isFolder: entry.isDirectory() }))
             : [];
     }
 
@@ -313,15 +310,5 @@ export function readText(path: string): string | undefined
         }
 
         throw error;
-    }
-}
-
-/** Whether a link points to a folder, as npm links a package installed from a folder; a broken link is none. */
-function linkedFolder(path: string, isLink: boolean): boolean
-{
-    try {
-        return isLink && statSync(path).isDirectory();
-    } catch {
-        return false;
     }
 }

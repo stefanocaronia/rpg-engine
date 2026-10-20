@@ -103,10 +103,15 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
 {
     const loaded: Record<string, LoadedSystemCode> = {};
 
+    // The nearest system by a name is the one played, as findSystem reads it: another of that name never brings its code.
+    const seen = new Set<string>();
+
     for (const { name, folder: own } of systemFolders(folders)) {
         const main = systemPackage(own);
+        const first = !seen.has(name.toLowerCase());
+        seen.add(name.toLowerCase());
 
-        if (main === undefined || name in loaded) {
+        if (main === undefined || !first) {
             continue;
         }
 
