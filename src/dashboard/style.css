@@ -11005,9 +11005,9 @@ svg.icon {
 }
 
 /* The catalog, under a line: its heading and search, the chips of the kinds, the rows, then the others on asking. */
-.package-catalog {
+.package-catalog + .package-add {
     margin-top: 14px;
-    padding-top: 6px;
+    padding-top: 14px;
     border-top: 1px solid var(--rule);
 }
 

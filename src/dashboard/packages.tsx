@@ -1,6 +1,6 @@
 // The Packages section (D-485, D-486, D-488), in two tabs: Installed first, what is here by kind: the game system, the campaign's adventures with its own export
 // last, the extensions with whether the campaign uses each, the languages; its tab counts the updates and marks what the campaign lacks. Then Add: one card to
-// add a package, by a link, an npm name, a folder or a file, with the catalog of what npm and GitHub offer under it, always open. One package is worked on at a
+// add a package: the catalog of what npm and GitHub offer first, always open, then a link, an npm name, a folder or a file. One package is worked on at a
 // time; one not ours with code waits for the player's yes in a window of their computer, said in both tabs.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -247,7 +247,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                     {shownTab === "add" && (
                         <section class="package-card" aria-label={t("Add")}>
                             <div class="package-body">
-                                <AddField state={rowState("add")} onAdd={(source) => void add("add", source)} onFile={(file) => void addTheFile(file)} />
+                                {/* The catalog first, for whoever picks with a click; a link, an npm name, a folder or a file after it, for whoever knows what they want (D-488). */}
                                 <CatalogList
                                     catalog={catalog}
                                     view={view}
@@ -256,6 +256,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     onUpdate={(entry) => void change(`catalog:${entry.source}`, "update", entry.source, entryTitle(entry))}
                                     onRetry={() => askCatalog(true)}
                                 />
+                                <AddField state={rowState("add")} onAdd={(source) => void add("add", source)} onFile={(file) => void addTheFile(file)} />
                             </div>
                         </section>
                     )}
