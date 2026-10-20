@@ -467,7 +467,7 @@ export function adventureText(result: AdventureInstalled): string
         levels === undefined ? "" : `It is written for ${levels}: adapt it to the party's.`,
         manifest.content.length === 0 ? "" : `Its content: ${manifest.content.join(", ")}; keep to the player's lines and veils.`,
         result.firstDate === undefined ? "" : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
-        result.textDates === 0 ? "" : `${result.textDates} dates in its text stay as written: count them from today.`,
+        result.textDates === 0 ? "" : result.textDates === 1 ? "1 date in its text stays as written: count it from today." : `${result.textDates} dates in its text stay as written: count them from today.`,
         result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
         result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,
         result.ignored.length === 0 ? "" : `Left out, no part of an adventure: ${result.ignored.join(", ")}.`,

@@ -101,7 +101,7 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
         setDay(5);
         const result = await rpg("package", "install", adventureFolder());
         expect(readFileSync(join(folder, "world", "events", "Il pozzo", "La piena.md"), "utf8")).toContain("date: day 7, 06:00");
-        expect(result.output).toContain("Its dates moved 4 days: the first, [[La piena]], on day 7, 06:00. 1 dates in its text stay as written");
+        expect(result.output).toContain("Its dates moved 4 days: the first, [[La piena]], on day 7, 06:00. 1 date in its text stays as written");
     });
 
     it("refuses it whole when a name or an alias is the campaign's already, or twice its own, and writes nothing (ADV-2)", async () => {
