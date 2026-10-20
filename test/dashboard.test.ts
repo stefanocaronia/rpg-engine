@@ -802,6 +802,7 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(readAddress("#/about")).toEqual({ section: "about" });
         // The packages, a page of the menu (D-475).
         expect(readAddress("#/packages")).toEqual({ section: "packages" });
+        expect(readAddress("#/packages/add")).toEqual({ section: "packages", tab: "add" });
         expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
         expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
     });

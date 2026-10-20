@@ -1460,13 +1460,13 @@ a {
     padding-bottom: 72px;
 }
 
-.journal-tabs {
+:is(.journal-tabs, .package-tabs) {
     display: flex;
     gap: 4px;
     border-bottom: 1px solid var(--rule);
 }
 
-.journal-tabs button {
+:is(.journal-tabs, .package-tabs) button {
     min-height: 40px;
     padding: 0 16px;
     border: 0;
@@ -1478,7 +1478,7 @@ a {
     cursor: pointer;
 }
 
-.journal-tabs button[aria-selected="true"] {
+:is(.journal-tabs, .package-tabs) button[aria-selected="true"] {
     border-bottom-color: var(--accent);
     color: var(--accent);
 }
@@ -2752,7 +2752,7 @@ a {
 
 @media (pointer: coarse) {
     .followed-star,
-    .journal-tabs button {
+    :is(.journal-tabs, .package-tabs) button {
         min-height: var(--target);
         min-width: var(--target);
     }
@@ -10835,6 +10835,100 @@ svg.icon {
     margin: -6px 0 0;
     color: var(--muted);
     font-size: 0.9rem;
+}
+
+/* The two tabs (D-488): Installed with its marks, the updates in the accent with their count and what the campaign lacks in red, each with its tip. */
+.package-tabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.package-tab-mark {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    gap: 3px;
+    min-height: 20px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.package-tab-mark.missing {
+    padding: 0 4px;
+    background: color-mix(in srgb, var(--low) 14%, transparent);
+    color: var(--low);
+}
+
+.package-tab-mark svg.icon {
+    width: 13px;
+    height: 13px;
+}
+
+.package-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gap);
+}
+
+/* A work or what came of it, said in the tab other than its row's: whose it is on its own line. */
+.package-panel > :is(.package-progress, .package-window, .package-said) {
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+}
+
+.package-whose {
+    display: block;
+    color: var(--ink);
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.package-see {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 0 4px;
+    margin-inline-start: -4px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.package-see svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.package-see:hover {
+    text-decoration: underline;
+}
+
+/* What was just added, seen from Add: lit in the accent, which fades. */
+.package-row.fresh {
+    animation: package-fresh 2.4s var(--ease) both;
+}
+
+@keyframes package-fresh {
+    from {
+        background: color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    to {
+        background: transparent;
+    }
 }
 
 .package-card {

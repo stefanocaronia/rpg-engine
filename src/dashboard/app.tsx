@@ -448,7 +448,7 @@ function App()
                                 {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
                                 {address.section === "settings" && <SettingsView version={shown.version} />}
                                 {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
-                                {address.section === "packages" && <PackagesPage version={shown.version} />}
+                                {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
                                 {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
                                 {!["party", "scene", "journal", "world", "about", "help", "settings", "saves", "packages"].includes(address.section) && <Upcoming section={address.section} />}
                                 {address.section === "party" && member && (

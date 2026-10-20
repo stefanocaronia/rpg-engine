@@ -1,8 +1,10 @@
-// The Packages section (D-485, D-486): one card to add a package, by a link, an npm name, a folder or a file, with the catalog of what npm and GitHub offer
-// under it, always open; then what is here, by kind: the game system, the campaign's adventures with its own export last, the extensions with whether the
-// campaign uses each, the languages. One package is worked on at a time; one not ours with code waits for the player's yes in a window of their computer.
+// The Packages section (D-485, D-486, D-488), in two tabs: Installed first, what is here by kind: the game system, the campaign's adventures with its own export
+// last, the extensions with whether the campaign uses each, the languages; its tab counts the updates and marks what the campaign lacks. Then Add: one card to
+// add a package, by a link, an npm name, a folder or a file, with the catalog of what npm and GitHub offer under it, always open. One package is worked on at a
+// time; one not ours with code waits for the player's yes in a window of their computer, said in both tabs.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { sectionAddress } from "./address.ts";
 import {
     addFile,
     addSource,
@@ -42,7 +44,12 @@ interface Said
     why?: string;
     /** The command that does it from the terminal, when no window for the player's yes opens here. */
     command?: string;
+    /** What was added, to see it among the installed. */
+    added?: PackageKind;
 }
+
+/** The page's two tabs (D-488): what is here, first, and what can be added. */
+type PackagesTab = "installed" | "add";
 
 /** A package's work as this page started it, before the server says it: with where it was asked. */
 type Sending = PackageWork & { at: string; };
@@ -56,13 +63,15 @@ interface RowState
     work?: PackageWork;
     said?: Said;
     busy: boolean;
+    /** Shows what was added among the installed, from the tab where it was added. */
+    onSee?(kind: PackageKind): void;
 }
 
 // The rows of the catalog shown before "Show more": fewer on a phone, where the installed come after it.
 const shownWide = 5;
 const shownNarrow = 3;
 
-export function PackagesPage({ version }: { version: number; })
+export function PackagesPage({ version, tab }: { version: number; tab?: string | undefined; })
 {
     const [view, setView] = useState<PackagesView>();
     const [problem, setProblem] = useState<string>();
@@ -74,6 +83,11 @@ export function PackagesPage({ version }: { version: number; })
     const catalogReads = useRef(0);
     const before = useRef<PackageWork>();
     const mine = useRef(0);
+    // The rows here before the last addition: those not among them are new.
+    const known = useRef<Set<string>>();
+    const seeing = useRef<PackageKind>();
+    const tabs = useRef<HTMLDivElement>(null);
+    const shownTab: PackagesTab = tab === "add" ? "add" : "installed";
 
     // Only the last reading counts, as after a change made here and the one the game sends.
     const read = (): void => {
@@ -111,9 +125,34 @@ export function PackagesPage({ version }: { version: number; })
         before.current = view?.working;
     }, [view?.working]);
 
+    const fresh = known.current === undefined || view === undefined ? [] : rowKeys(view).filter((key) => !known.current?.has(key));
+
+    // Seen from Add, what was added gets the focus among the installed: its new row, else its card.
+    useEffect(() => {
+        const kind = seeing.current;
+
+        if (shownTab !== "installed" || kind === undefined) {
+            return;
+        }
+
+        seeing.current = undefined;
+        const row = fresh.find((key) => key.startsWith(`${kind}:`));
+        const target = (row === undefined ? null : document.querySelector<HTMLElement>(`[data-row="${CSS.escape(row)}"]`)) ?? document.getElementById(cardOf[kind]);
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ block: "center" });
+    }, [shownTab]);
+
     const work: Sending | undefined = sending ?? (view?.working === undefined ? undefined : { ...view.working, at: workPlace(view.working, view, catalog.read) });
     const busy = work !== undefined;
-    const rowState = (at: string): RowState => ({ ...(work?.at === at ? { work } : {}), ...(said?.at === at ? { said } : {}), busy });
+    // The tab stays as the player chose it, the work's own included: one in the other tab is said at the top of this one.
+    const choose = (chosen: PackagesTab): void => location.replace(sectionAddress("packages", chosen === "add" ? "add" : undefined));
+
+    const see = (kind: PackageKind): void => {
+        seeing.current = kind;
+        choose("installed");
+    };
+
+    const rowState = (at: string): RowState => ({ ...(work?.at === at ? { work } : {}), ...(said?.at === at ? { said } : {}), busy, ...(tabOf(at) === "add" ? { onSee: see } : {}) });
 
     /** One change, from where it was asked: the work shown there while it lasts, then what came of it; what is here read again, and the catalog when it changed. */
     const run = async (at: string, action: PackageWork["action"], name: string, call: () => Promise<PackageOutcome>, done: (kind?: PackageKind) => string, after?: string): Promise<void> => {
@@ -123,10 +162,12 @@ export function PackagesPage({ version }: { version: number; })
 
         setSaid(undefined);
         setSending({ name, action, phase: "working", at });
+        known.current = view === undefined ? undefined : new Set(rowKeys(view));
         const outcome = await call();
         setSending(undefined);
         const place = outcome.done && after !== undefined ? after : at;
-        setSaid(outcome.done ? { at: place, problem: false, text: `✓ ${done(outcome.kind)}` } : failure(at, action, name, outcome));
+        const added = outcome.done && action === "add" && outcome.kind !== undefined ? { added: outcome.kind } : {};
+        setSaid(outcome.done ? { at: place, problem: false, text: `✓ ${done(outcome.kind)}`, ...added } : failure(at, action, name, outcome));
         read();
 
         if (outcome.done) {
@@ -149,116 +190,177 @@ export function PackagesPage({ version }: { version: number; })
         }
     };
 
+    // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
+    const moveTab = (event: KeyboardEvent): void => {
+        const step = arrowStep(event.key, true);
+        const next = event.key === "Home" ? "installed" : event.key === "End" ? "add" : step === 0 ? undefined : shownTab === "add" ? "installed" : "add";
+
+        if (next !== undefined) {
+            event.preventDefault();
+            choose(next);
+            tabs.current?.querySelector<HTMLElement>(`#packages-tab-${next}`)?.focus();
+        }
+    };
+
     const systems = view?.systems ?? [];
     const adventures = view?.adventures ?? [];
     const languages = view?.languages ?? [];
+    const updates = view === undefined ? 0 : updateCount(view, catalog.read);
+    const missing = view?.missing.length ?? 0;
+    const elsewhere = work !== undefined && tabOf(work.at) !== shownTab ? work : undefined;
+    const saidElsewhere = said !== undefined && tabOf(said.at) !== shownTab ? said : undefined;
     return (
         <section class="page-stack packages" aria-labelledby="packages-title">
             <PageHead section="packages" id="packages-title" />
             <p class="packages-lead">{t("What is added to the game. The master hears of each change at their next move.")}</p>
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
+            <div class="package-tabs" role="tablist" aria-label={t("Packages")} ref={tabs} onKeyDown={moveTab}>
+                <button
+                    type="button"
+                    role="tab"
+                    id="packages-tab-installed"
+                    aria-label={[t("Installed"), ...marksText(updates, missing)].join(", ")}
+                    aria-selected={shownTab === "installed"}
+                    aria-controls={shownTab === "installed" ? "packages-panel" : undefined}
+                    tabIndex={shownTab === "installed" ? 0 : -1}
+                    onClick={() => choose("installed")}
+                >
+                    {t("Installed")}
+                    <TabMarks updates={updates} missing={missing} />
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    id="packages-tab-add"
+                    aria-selected={shownTab === "add"}
+                    aria-controls={shownTab === "add" ? "packages-panel" : undefined}
+                    tabIndex={shownTab === "add" ? 0 : -1}
+                    onClick={() => choose("add")}
+                >
+                    {t("Add")}
+                </button>
+            </div>
             {view !== undefined && (
-                <>
-                    <section class="package-card" aria-labelledby="packages-add">
-                        <CardHead icon={iconPath("plus")} title={<h3 id="packages-add">{t("Add")}</h3>} />
-                        <div class="package-body">
-                            <AddField state={rowState("add")} onAdd={(source) => void add("add", source)} onFile={(file) => void addTheFile(file)} />
-                            <CatalogList
-                                catalog={catalog}
-                                view={view}
-                                state={(entry) => rowState(`catalog:${entry.source}`)}
-                                onAdd={(entry) => void add(`catalog:${entry.source}`, entry.source)}
-                                onUpdate={(entry) => void change(`catalog:${entry.source}`, "update", entry.source, entryTitle(entry))}
-                                onRetry={() => askCatalog(true)}
-                            />
-                        </div>
-                    </section>
-                    <section class="package-card" aria-labelledby="packages-systems">
-                        <CardHead icon={iconPath("dice")} title={<h3 id="packages-systems">{t("Game system")}</h3>} />
-                        <div class="package-body">
-                            <ul class="package-list">
-                                {systems.map((system) => (
-                                    <SystemRow
-                                        key={system.name}
-                                        system={system}
-                                        state={rowState(`system:${system.name}`)}
-                                        onUninstall={(target) => setAsking({ kind: "uninstall", what: "system", name: system.name, target, at: `system:${system.name}` })}
-                                    />
-                                ))}
-                            </ul>
-                            <CardSaid said={said} at="systems" />
-                        </div>
-                    </section>
-                    <section class="package-card" aria-labelledby="packages-adventures">
-                        <CardHead icon={iconPath("world")} title={<h3 id="packages-adventures">{t("Adventures")}</h3>} {...(adventures.length === 0 ? {} : { note: String(adventures.length) })} />
-                        <div class="package-body">
-                            {adventures.length === 0 && <p class="package-note">{t("None yet: add one from the catalog, a .zip or a link.")}</p>}
-                            {adventures.length > 0 && (
-                                <ul class="package-list">
-                                    {adventures.map((adventure) => (
-                                        <AdventureRow
-                                            key={adventure.title}
-                                            adventure={adventure}
-                                            state={rowState(`adventure:${adventure.title}`)}
-                                            onTakeOut={() => setAsking({ kind: "adventure", title: adventure.title })}
-                                        />
-                                    ))}
-                                </ul>
-                            )}
-                            <CardSaid said={said} at="adventures" />
-                            <ShareCampaign />
-                        </div>
-                    </section>
-                    <section class="package-card" aria-labelledby="packages-extensions">
-                        <CardHead
-                            icon={iconPath("packages")}
-                            title={<h3 id="packages-extensions">{t("Extensions")}</h3>}
-                            {...(view.installed.length + view.missing.length === 0 ? {} : { note: t("{count} in use", { count: usedCount(view) }) })}
-                        />
-                        <div class="package-body">
-                            {view.installed.length + view.missing.length === 0 && <p class="package-note">{t("None: an extension adds rules and tools to the game; you find them in the catalog.")}</p>}
-                            {view.installed.length + view.missing.length > 0 && (
-                                <ul class="package-list">
-                                    {view.installed.map((extension) => (
-                                        <ExtensionRow
-                                            key={extension.package}
-                                            extension={extension}
-                                            newer={newerOf(extension, catalog.read)}
-                                            state={rowState(`extension:${extension.package}`)}
-                                            onUse={(use) =>
-                                                void (use
-                                                    ? add(`extension:${extension.package}`, extension.package)
-                                                    : change(`extension:${extension.package}`, "remove", extension.package, phraseLabel(extension.name)))}
-                                            onUpdate={() => void change(`extension:${extension.package}`, "update", extension.package, phraseLabel(extension.name))}
-                                            onUninstall={() => setAsking({ kind: "uninstall", what: "extension", name: phraseLabel(extension.name), target: extension.package, at: `extension:${extension.package}` })}
-                                        />
-                                    ))}
-                                    {view.missing.map((name) => <MissingRow key={name} name={name} state={rowState(`extension:${name}`)} onInstall={() => void add(`extension:${name}`, name)} />)}
-                                </ul>
-                            )}
-                            <CardSaid said={said} at="extensions" />
-                        </div>
-                    </section>
-                    <section class="package-card" aria-labelledby="packages-languages">
-                        <CardHead icon={iconPath("language")} title={<h3 id="packages-languages">{t("Languages")}</h3>} />
-                        <div class="package-body">
-                            {languages.length === 0 && <p class="package-note">{t("None. The dashboard has its own languages; a language package takes the place of one with a translation made by hand.")}</p>}
-                            {languages.length > 0 && (
-                                <ul class="package-list">
-                                    {languages.map((language) => (
-                                        <LanguageRow
-                                            key={language.package}
-                                            language={language}
-                                            state={rowState(`language:${language.code}`)}
-                                            onUninstall={() => setAsking({ kind: "uninstall", what: "language", name: languageTitle(language), target: language.package, at: `language:${language.code}` })}
-                                        />
-                                    ))}
-                                </ul>
-                            )}
-                            <CardSaid said={said} at="languages" />
-                        </div>
-                    </section>
-                </>
+                <div class="package-panel" id="packages-panel" role="tabpanel" aria-label={shownTab === "add" ? t("Add") : t("Installed")}>
+                    {elsewhere !== undefined && <WorkNote work={elsewhere} whose={workTitle(elsewhere, catalog.read)} />}
+                    {saidElsewhere !== undefined && <SaidNote said={saidElsewhere} />}
+                    {shownTab === "add" && (
+                        <section class="package-card" aria-label={t("Add")}>
+                            <div class="package-body">
+                                <AddField state={rowState("add")} onAdd={(source) => void add("add", source)} onFile={(file) => void addTheFile(file)} />
+                                <CatalogList
+                                    catalog={catalog}
+                                    view={view}
+                                    state={(entry) => rowState(`catalog:${entry.source}`)}
+                                    onAdd={(entry) => void add(`catalog:${entry.source}`, entry.source)}
+                                    onUpdate={(entry) => void change(`catalog:${entry.source}`, "update", entry.source, entryTitle(entry))}
+                                    onRetry={() => askCatalog(true)}
+                                />
+                            </div>
+                        </section>
+                    )}
+                    {shownTab === "installed" && (
+                        <>
+                            <section class="package-card" aria-labelledby="packages-systems">
+                                <CardHead icon={iconPath("dice")} title={<h3 id="packages-systems" tabIndex={-1}>{t("Game system")}</h3>} />
+                                <div class="package-body">
+                                    <ul class="package-list">
+                                        {systems.map((system) => (
+                                            <SystemRow
+                                                key={system.name}
+                                                system={system}
+                                                newer={system.package === undefined ? undefined : newerOf(system.package, "system", catalog.read)}
+                                                fresh={fresh.includes(`system:${system.name}`)}
+                                                state={rowState(`system:${system.name}`)}
+                                                onUpdate={(target) => void change(`system:${system.name}`, "update", target, system.name)}
+                                                onUninstall={(target) => setAsking({ kind: "uninstall", what: "system", name: system.name, target, at: `system:${system.name}` })}
+                                            />
+                                        ))}
+                                    </ul>
+                                    <CardSaid said={said} at="systems" />
+                                </div>
+                            </section>
+                            <section class="package-card" aria-labelledby="packages-adventures">
+                                <CardHead
+                                    icon={iconPath("world")}
+                                    title={<h3 id="packages-adventures" tabIndex={-1}>{t("Adventures")}</h3>}
+                                    {...(adventures.length === 0 ? {} : { note: String(adventures.length) })}
+                                />
+                                <div class="package-body">
+                                    {adventures.length === 0 && <p class="package-note">{t("None yet: add one in Add, from the catalog, a .zip or a link.")}</p>}
+                                    {adventures.length > 0 && (
+                                        <ul class="package-list">
+                                            {adventures.map((adventure) => (
+                                                <AdventureRow
+                                                    key={adventure.title}
+                                                    adventure={adventure}
+                                                    fresh={fresh.includes(`adventure:${adventure.title}`)}
+                                                    state={rowState(`adventure:${adventure.title}`)}
+                                                    onTakeOut={() => setAsking({ kind: "adventure", title: adventure.title })}
+                                                />
+                                            ))}
+                                        </ul>
+                                    )}
+                                    <CardSaid said={said} at="adventures" />
+                                    <ShareCampaign />
+                                </div>
+                            </section>
+                            <section class="package-card" aria-labelledby="packages-extensions">
+                                <CardHead
+                                    icon={iconPath("packages")}
+                                    title={<h3 id="packages-extensions" tabIndex={-1}>{t("Extensions")}</h3>}
+                                    {...(view.installed.length + view.missing.length === 0 ? {} : { note: t("{count} in use", { count: usedCount(view) }) })}
+                                />
+                                <div class="package-body">
+                                    {view.installed.length + view.missing.length === 0 && <p class="package-note">{t("None: an extension adds rules and tools to the game; you find them in Add, in the catalog.")}</p>}
+                                    {view.installed.length + view.missing.length > 0 && (
+                                        <ul class="package-list">
+                                            {view.installed.map((extension) => (
+                                                <ExtensionRow
+                                                    key={extension.package}
+                                                    extension={extension}
+                                                    newer={newerOf(extension.package, "extension", catalog.read)}
+                                                    fresh={fresh.includes(`extension:${extension.package}`)}
+                                                    state={rowState(`extension:${extension.package}`)}
+                                                    onUse={(use) =>
+                                                        void (use
+                                                            ? add(`extension:${extension.package}`, extension.package)
+                                                            : change(`extension:${extension.package}`, "remove", extension.package, phraseLabel(extension.name)))}
+                                                    onUpdate={() => void change(`extension:${extension.package}`, "update", extension.package, phraseLabel(extension.name))}
+                                                    onUninstall={() => setAsking({ kind: "uninstall", what: "extension", name: phraseLabel(extension.name), target: extension.package, at: `extension:${extension.package}` })}
+                                                />
+                                            ))}
+                                            {view.missing.map((name) => <MissingRow key={name} name={name} state={rowState(`extension:${name}`)} onInstall={() => void add(`extension:${name}`, name)} />)}
+                                        </ul>
+                                    )}
+                                    <CardSaid said={said} at="extensions" />
+                                </div>
+                            </section>
+                            <section class="package-card" aria-labelledby="packages-languages">
+                                <CardHead icon={iconPath("language")} title={<h3 id="packages-languages" tabIndex={-1}>{t("Languages")}</h3>} />
+                                <div class="package-body">
+                                    {languages.length === 0 && <p class="package-note">{t("None. The dashboard has its own languages; a language package takes the place of one with a translation made by hand.")}</p>}
+                                    {languages.length > 0 && (
+                                        <ul class="package-list">
+                                            {languages.map((language) => (
+                                                <LanguageRow
+                                                    key={language.package}
+                                                    language={language}
+                                                    newer={newerOf(language.package, "language", catalog.read)}
+                                                    fresh={fresh.includes(`language:${language.code}`)}
+                                                    state={rowState(`language:${language.code}`)}
+                                                    onUpdate={() => void change(`language:${language.code}`, "update", language.package, languageTitle(language))}
+                                                    onUninstall={() => setAsking({ kind: "uninstall", what: "language", name: languageTitle(language), target: language.package, at: `language:${language.code}` })}
+                                                />
+                                            ))}
+                                        </ul>
+                                    )}
+                                    <CardSaid said={said} at="languages" />
+                                </div>
+                            </section>
+                        </>
+                    )}
+                </div>
             )}
             {asking?.kind === "adventure" && (
                 <Confirm title={t("Take {name} out of the campaign?", { name: asking.title })} onClose={() => setAsking(undefined)}>
@@ -280,6 +382,36 @@ export function PackagesPage({ version }: { version: number; })
             )}
         </section>
     );
+}
+
+/** On the Installed tab, what asks for the player: the updates npm has, with their count, and a mark when the campaign lists what this computer lacks. */
+function TabMarks({ updates, missing }: { updates: number; missing: number; })
+{
+    const [updatesText, missingText] = [updates > 0 ? marksText(updates, 0)[0] : "", missing > 0 ? marksText(0, missing)[0] : ""];
+    return (
+        <>
+            {updates > 0 && (
+                <span class="package-tab-mark" data-tip={updatesText} aria-hidden="true">
+                    <Icon name="update" />
+                    {updates}
+                </span>
+            )}
+            {missing > 0 && (
+                <span class="package-tab-mark missing" data-tip={missingText} aria-hidden="true">
+                    <Icon name="alert" />
+                </span>
+            )}
+        </>
+    );
+}
+
+/** The marks of the Installed tab in words, for its tips and its name. */
+function marksText(updates: number, missing: number): string[]
+{
+    return [
+        updates === 0 ? "" : updates === 1 ? t("1 update") : t("{count} updates", { count: updates }),
+        missing === 0 ? "" : missing === 1 ? t("1 missing on this computer") : t("{count} missing on this computer", { count: missing }),
+    ].filter((one) => one !== "");
 }
 
 /**
@@ -368,7 +500,7 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
             <p class="package-note" id="package-source-about">{t("It tells the kind by itself: a game system, an adventure, an extension or a language. A file is a .zip or a .tgz.")}</p>
             {empty && state.work === undefined && <p class="package-said problem" role="status">{t("Write a link, an npm name or a folder first.")}</p>}
             <WorkNote work={state.work} />
-            <SaidNote said={state.said} />
+            <SaidNote said={state.said} onSee={state.onSee} />
         </form>
     );
 }
@@ -575,14 +707,27 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
                 : action(asksYes ? t("Add…") : t("Add"), t("Add {name}", { name: entryTitle(entry) }), "plus", onAdd)}
         >
             <WorkNote work={state.work} />
-            <SaidNote said={state.said} />
+            <SaidNote said={state.said} onSee={state.onSee} />
         </PackageRow>
     );
 }
 
-/** A game system here: the campaign's, chosen in its setup and locked; another, for a new campaign, which can go off this computer when npm installed it. */
-function SystemRow({ system, state, onUninstall }: { system: ShownSystem; state: RowState; onUninstall(target: string): void; })
+/**
+ * A game system here: the campaign's, chosen in its setup and locked; another, for a new campaign, which can go off this computer when npm installed it; npm's
+ * newer version, to update it.
+ */
+function SystemRow(
+    { system, newer, fresh, state, onUpdate, onUninstall }: {
+        system: ShownSystem;
+        newer?: string | undefined;
+        fresh: boolean;
+        state: RowState;
+        onUpdate(target: string): void;
+        onUninstall(target: string): void;
+    },
+)
 {
+    const target = system.package ?? system.name;
     return (
         <PackageRow
             tile="dice"
@@ -590,20 +735,27 @@ function SystemRow({ system, state, onUninstall }: { system: ShownSystem; state:
             name={<span class="system-chip">{system.name}</span>}
             badges={<Trust verified={system.verified} code={system.code} />}
             about={systemTitleLabel(system.title)}
-            meta={system.version}
-            actions={system.used
-                ? (
-                    <span class="package-lock">
-                        <Icon name="lock" />
-                        {t("In use · chosen in the setup")}
-                    </span>
-                )
-                : (
-                    <>
-                        <span class="package-quiet">{t("Not in this campaign")}</span>
-                        {system.package !== undefined && <UninstallButton name={system.name} busy={state.busy} onClick={() => onUninstall(system.package ?? system.name)} />}
-                    </>
-                )}
+            meta={<VersionMeta version={system.version} newer={newer} />}
+            row={`system:${system.name}`}
+            fresh={fresh}
+            actions={
+                <>
+                    {newer !== undefined && <UpdateButton name={system.name} version={newer} busy={state.busy} onClick={() => onUpdate(target)} />}
+                    {system.used
+                        ? (
+                            <span class="package-lock">
+                                <Icon name="lock" />
+                                {t("In use · chosen in the setup")}
+                            </span>
+                        )
+                        : (
+                            <>
+                                <span class="package-quiet">{t("Not in this campaign")}</span>
+                                {system.package !== undefined && <UninstallButton name={system.name} busy={state.busy} onClick={() => onUninstall(target)} />}
+                            </>
+                        )}
+                </>
+            }
         >
             <WorkNote work={state.work} />
             <SaidNote said={state.said} />
@@ -612,7 +764,7 @@ function SystemRow({ system, state, onUninstall }: { system: ShownSystem; state:
 }
 
 /** An adventure of the campaign: the day it came in on and its version; taken out while the story has not touched it, else part of the story. */
-function AdventureRow({ adventure, state, onTakeOut }: { adventure: ShownAdventure; state: RowState; onTakeOut(): void; })
+function AdventureRow({ adventure, fresh, state, onTakeOut }: { adventure: ShownAdventure; fresh: boolean; state: RowState; onTakeOut(): void; })
 {
     const since = adventure.since === undefined ? undefined : sinceDateLabel(adventure.since);
     return (
@@ -621,6 +773,8 @@ function AdventureRow({ adventure, state, onTakeOut }: { adventure: ShownAdventu
             tone="cover"
             name={adventure.title}
             meta={since === undefined ? adventure.version : <span title={gameDateLabel(adventure.since ?? "")}>{`${since} · ${adventure.version}`}</span>}
+            row={`adventure:${adventure.title}`}
+            fresh={fresh}
             actions={adventure.removable
                 ? (
                     <button
@@ -649,9 +803,10 @@ function AdventureRow({ adventure, state, onTakeOut }: { adventure: ShownAdventu
 
 /** An extension here: whose it is, what it is, its version and npm's newer one; whether the campaign uses it, as a switch; one that does not read, in red. */
 function ExtensionRow(
-    { extension, newer, state, onUse, onUpdate, onUninstall }: {
+    { extension, newer, fresh, state, onUse, onUpdate, onUninstall }: {
         extension: ShownExtension;
-        newer?: string;
+        newer?: string | undefined;
+        fresh: boolean;
         state: RowState;
         onUse(use: boolean): void;
         onUpdate(): void;
@@ -691,32 +846,12 @@ function ExtensionRow(
             name={name}
             badges={<Trust verified={extension.verified} code={false} />}
             about={`${phraseLabel(extension.about.replace(/\.$/, ""))}.`}
-            meta={
-                <>
-                    {extension.version}
-                    {newer !== undefined && " · "}
-                    {newer !== undefined && (
-                        <span class="package-update">
-                            <Icon name="update" />
-                            {t("new {version}", { version: newer })}
-                        </span>
-                    )}
-                </>
-            }
+            meta={<VersionMeta version={extension.version} newer={newer} />}
+            row={`extension:${extension.package}`}
+            fresh={fresh}
             actions={
                 <>
-                    {newer !== undefined && (
-                        <button
-                            type="button"
-                            class="save-button package-button accent"
-                            aria-label={t("Update {name} to {version}", { name, version: newer })}
-                            aria-disabled={state.busy}
-                            onClick={() => !state.busy && onUpdate()}
-                        >
-                            <Icon name="update" />
-                            {t("Update")}
-                        </button>
-                    )}
+                    {newer !== undefined && <UpdateButton name={name} version={newer} busy={state.busy} onClick={onUpdate} />}
                     <label class="package-use">
                         <input
                             type="checkbox"
@@ -767,17 +902,39 @@ function MissingRow({ name, state, onInstall }: { name: string; state: RowState;
     );
 }
 
-/** A language package: its name, whose it is, its version, and whether this page is written in it. */
-function LanguageRow({ language, state, onUninstall }: { language: ShownLanguage; state: RowState; onUninstall(): void; })
+/** A language package: its name, whose it is, its version and npm's newer one, and whether this page is written in it. */
+function LanguageRow(
+    { language, newer, fresh, state, onUpdate, onUninstall }: {
+        language: ShownLanguage;
+        newer?: string | undefined;
+        fresh: boolean;
+        state: RowState;
+        onUpdate(): void;
+        onUninstall(): void;
+    },
+)
 {
     const page = pageLanguage().toLowerCase().split("-")[0] === language.code.toLowerCase().split("-")[0];
+    const name = languageTitle(language);
     return (
         <PackageRow
             tile="language"
-            name={languageTitle(language)}
+            name={name}
             badges={<Trust verified={language.verified} code={false} />}
-            meta={page ? `${language.version} · ${t("the language of this page")}` : language.version}
-            actions={<UninstallButton name={languageTitle(language)} busy={state.busy} onClick={onUninstall} />}
+            meta={
+                <>
+                    <VersionMeta version={language.version} newer={newer} />
+                    {page && ` · ${t("the language of this page")}`}
+                </>
+            }
+            row={`language:${language.code}`}
+            fresh={fresh}
+            actions={
+                <>
+                    {newer !== undefined && <UpdateButton name={name} version={newer} busy={state.busy} onClick={onUpdate} />}
+                    <UninstallButton name={name} busy={state.busy} onClick={onUninstall} />
+                </>
+            }
         >
             <WorkNote work={state.work} />
             <SaidNote said={state.said} />
@@ -787,7 +944,7 @@ function LanguageRow({ language, state, onUninstall }: { language: ShownLanguage
 
 /** A row of the page: the tile, the words, what can be done at the end; under them, the work going on and what happened. */
 function PackageRow(
-    { tile, tone, name, badges, about, meta, actions, focusable, children }: {
+    { tile, tone, name, badges, about, meta, actions, focusable, row, fresh, children }: {
         tile: IconName;
         tone?: "cover" | "dim" | "broken";
         name: ComponentChildren;
@@ -796,12 +953,16 @@ function PackageRow(
         meta?: ComponentChildren;
         actions?: ComponentChildren;
         focusable?: boolean;
+        /** Its key among the installed, by which what was added is found. */
+        row?: string;
+        /** Just added: lit for a moment, and where the focus goes when it is seen from Add. */
+        fresh?: boolean;
         children?: ComponentChildren;
     },
 )
 {
     return (
-        <li class="package-row" {...(focusable ? { tabIndex: -1 } : {})}>
+        <li class={fresh ? "package-row fresh" : "package-row"} {...(focusable || fresh ? { tabIndex: -1 } : {})} {...(row === undefined ? {} : { "data-row": row })}>
             <span class={tone === undefined ? "package-tile" : `package-tile ${tone}`} aria-hidden="true">
                 <Icon name={tile} />
             </span>
@@ -844,6 +1005,34 @@ function Trust({ verified, code, author }: { verified: boolean; code: boolean; a
     );
 }
 
+/** A version here, and npm's newer one. */
+function VersionMeta({ version, newer }: { version: string | undefined; newer: string | undefined; })
+{
+    return (
+        <>
+            {version}
+            {version !== undefined && newer !== undefined && " · "}
+            {newer !== undefined && (
+                <span class="package-update">
+                    <Icon name="update" />
+                    {t("new {version}", { version: newer })}
+                </span>
+            )}
+        </>
+    );
+}
+
+/** Update, for a row npm has a newer version of. */
+function UpdateButton({ name, version, busy, onClick }: { name: string; version: string; busy: boolean; onClick(): void; })
+{
+    return (
+        <button type="button" class="save-button package-button accent" aria-label={t("Update {name} to {version}", { name, version })} aria-disabled={busy} onClick={() => !busy && onClick()}>
+            <Icon name="update" />
+            {t("Update")}
+        </button>
+    );
+}
+
 /** The bin that takes a package off this computer, after asking. */
 function UninstallButton({ name, busy, onClick }: { name: string; busy: boolean; onClick(): void; })
 {
@@ -862,17 +1051,21 @@ function UninstallButton({ name, busy, onClick }: { name: string; busy: boolean;
 }
 
 /** The work under way here: a bar and what is done, or the window where the player's yes is asked, which may hide behind the browser (D-478). */
-function WorkNote({ work }: { work: PackageWork | undefined; })
+function WorkNote({ work, whose }: { work: PackageWork | undefined; whose?: string; })
 {
     if (work === undefined) {
         return null;
     }
+
+    // Said in the tab other than its row's: with whose work it is.
+    const named = whose === undefined ? null : <span class="package-whose">{whose}</span>;
 
     if (work.phase === "yes") {
         return (
             <div class="package-window" role="status">
                 <Icon name="window" />
                 <span>
+                    {named}
                     <strong>{t("Answer in the window of your computer.")}</strong> {t("It asks whether code that RPG Engine did not publish may run here. Can't see it? It is behind the browser.")}
                 </span>
             </div>
@@ -883,6 +1076,7 @@ function WorkNote({ work }: { work: PackageWork | undefined; })
         <div class="package-progress" role="status">
             <span class="package-bar" aria-hidden="true" />
             <span>
+                {named}
                 <strong>{workingText(work.action)}</strong> {t("You can go to another page: it goes on by itself.")}
             </span>
         </div>
@@ -890,7 +1084,7 @@ function WorkNote({ work }: { work: PackageWork | undefined; })
 }
 
 /** What happened, where it happened: the page's words, the engine's under them, and the terminal's command when no window opens here. */
-function SaidNote({ said, focus }: { said: Said | undefined; focus?: boolean; })
+function SaidNote({ said, focus, onSee }: { said: Said | undefined; focus?: boolean; onSee?: ((kind: PackageKind) => void) | undefined; })
 {
     const note = useRef<HTMLDivElement>(null);
 
@@ -906,6 +1100,12 @@ function SaidNote({ said, focus }: { said: Said | undefined; focus?: boolean; })
             <p>{said.text}</p>
             {said.why !== undefined && <p class="package-why">{said.why}</p>}
             {said.command !== undefined && <Command text={said.command} />}
+            {said.added !== undefined && onSee !== undefined && (
+                <button type="button" class="package-see" onClick={() => said.added !== undefined && onSee(said.added)}>
+                    {t("See it in Installed")}
+                    <Icon name="fold" />
+                </button>
+            )}
         </div>
     );
 }
@@ -1073,23 +1273,59 @@ function hereState(entry: CatalogEntry, view: PackagesView): "used" | "here" | "
         return "here";
     }
 
-    const extension = view.installed.find((one) => sameExtension(entry, one.package));
+    const extension = view.installed.find((one) => samePackage(entry, one.package));
     return extension !== undefined && !("broken" in extension) && extension.used ? "used" : "here";
 }
 
-/** Whether a catalog's extension is this package: ours by its name alone, another's by its npm name. */
-function sameExtension(entry: CatalogEntry, name: string): boolean
+/** Whether a catalog's entry is this package: ours by its name alone, another's by its npm name. */
+function samePackage(entry: CatalogEntry, name: string): boolean
 {
     const source = entry.source.replace(/^npm:/, "");
     return name === source || name === `@rpgengine/${source}`;
 }
 
-/** npm's newer version of an extension here, as the catalog says it. */
-function newerOf(extension: ShownExtension, catalog: Catalog | undefined): string | undefined
+/** npm's newer version of a package here, as the catalog says it. */
+function newerOf(name: string, kind: PackageKind, catalog: Catalog | undefined): string | undefined
 {
-    const entry = catalog?.entries.find((one) => one.kind === "extension" && sameExtension(one, extension.package));
+    const entry = catalog?.entries.find((one) => one.kind === kind && samePackage(one, name));
     return entry?.update === true ? entry.version : undefined;
 }
+
+/** How many packages here npm has a newer version of: the count on the Installed tab. */
+function updateCount(view: PackagesView, catalog: Catalog | undefined): number
+{
+    const systems = (view.systems ?? []).filter((one) => one.package !== undefined && newerOf(one.package, "system", catalog) !== undefined);
+    const extensions = view.installed.filter((one) => newerOf(one.package, "extension", catalog) !== undefined);
+    const languages = (view.languages ?? []).filter((one) => newerOf(one.package, "language", catalog) !== undefined);
+    return systems.length + extensions.length + languages.length;
+}
+
+/** The rows among the installed by their keys, as the page names where a change was made. */
+function rowKeys(view: PackagesView): string[]
+{
+    return [
+        ...(view.systems ?? []).map((one) => `system:${one.name}`),
+        ...(view.adventures ?? []).map((one) => `adventure:${one.title}`),
+        ...view.installed.map((one) => `extension:${one.package}`),
+        ...(view.languages ?? []).map((one) => `language:${one.code}`),
+    ];
+}
+
+/** Whose a work is, said away from its row: a catalog's package by its title, else as it was asked. */
+function workTitle(work: Sending, catalog: Catalog | undefined): string
+{
+    const entry = catalog?.entries.find((one) => `catalog:${one.source}` === work.at);
+    return entry === undefined ? work.name.replace(/^npm:/, "") : entryTitle(entry);
+}
+
+/** The tab of a place of the page: the field and the catalog are Add's, the rest Installed's. */
+function tabOf(at: string): PackagesTab
+{
+    return at === "add" || at.startsWith("catalog:") ? "add" : "installed";
+}
+
+// The card of each kind among the installed, by its heading's id.
+const cardOf: Record<PackageKind, string> = { system: "packages-systems", adventure: "packages-adventures", extension: "packages-extensions", language: "packages-languages" };
 
 /** How many extensions the campaign uses, those this computer lacks among them. */
 function usedCount(view: PackagesView): number

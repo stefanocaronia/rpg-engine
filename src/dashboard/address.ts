@@ -11,11 +11,12 @@ export const menuPages = ["saves", "help", "settings", "packages", "about"] as c
 
 export type Section = (typeof sections)[number] | (typeof menuPages)[number];
 
-/** A place in the page: its section, and for the sheet whom it shows. */
+/** A place in the page: its section, for the sheet whom it shows, and a page's tab, as #/packages/add. */
 export interface Address
 {
     section: Section;
     name?: string;
+    tab?: string;
 }
 
 /** The address a hash says, as #/party/Ettore; the sheet for none or one the page does not know. */
@@ -24,14 +25,16 @@ export function readAddress(hash: string): Address
     const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
     const first = written === "combat" ? "scene" : written;
     const section = [...sections, ...menuPages].find((candidate) => candidate === first) ?? "party";
-    const name = first === "party" || first === "character" ? decoded(rest.join("/")) : "";
-    return name === "" ? { section } : { section, name };
+    const sheet = first === "party" || first === "character";
+    const name = sheet ? decoded(rest.join("/")) : "";
+    const tab = sheet || section !== first ? "" : decoded(rest[0] ?? "");
+    return { section, ...(name === "" ? {} : { name }), ...(tab === "" ? {} : { tab }) };
 }
 
-/** A section's address, as #/scene. */
-export function sectionAddress(section: Section): string
+/** A section's address, as #/scene, or one of its tabs', as #/packages/add. */
+export function sectionAddress(section: Section, tab?: string): string
 {
-    return `#/${section}`;
+    return tab === undefined ? `#/${section}` : `#/${section}/${encodeURIComponent(tab)}`;
 }
 
 /** A section's name as the page writes it, in its language: Scene. */
