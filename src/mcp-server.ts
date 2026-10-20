@@ -10,6 +10,7 @@ import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
 import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder, type Player } from "./core/context.ts";
+import { downloadBytes } from "./core/download.ts";
 import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { FileStore, withFiles } from "./core/store.ts";
@@ -112,7 +113,16 @@ export async function startMcpServer(): Promise<void>
     // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
-    const context: Context = { ...defaultContext(), pictures: hostPictures(host), writer: hostWriter(host), helpers: computerHelpers(), packages: npmPackages(packagesFolder()), confirm: systemConfirm(process.platform, process.env), host };
+    const context: Context = {
+        ...defaultContext(),
+        pictures: hostPictures(host),
+        writer: hostWriter(host),
+        helpers: computerHelpers(),
+        packages: npmPackages(packagesFolder()),
+        confirm: systemConfirm(process.platform, process.env),
+        download: downloadBytes,
+        host,
+    };
     // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
     const session = new SessionStore({ systemFolders: context.systemFolders });

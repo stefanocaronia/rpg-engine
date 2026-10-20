@@ -46,12 +46,14 @@ Read-only: no. Positional parameters: `program`.
 
 ### package
 
-The packages of the campaign: extensions such as weather, from npm.
+The packages of the campaign: extensions such as weather, from npm, and adventures, as a .zip, a folder or a link with adventure.yaml.
 
 Read-only: no. Positional parameters: `action`, `name`.
 
-- `action` (`"list" | "available" | "install" | "remove" | "uninstall"`, required): list, available, install, remove or uninstall
-- `name` (`string`, optional): the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder or a .tgz file on this computer
+- `action` (`"list" | "available" | "install" | "remove" | "uninstall" | "export"`, required): list, available, install, remove, uninstall or export
+- `name` (`string`, optional): the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; a folder or a .tgz file on this computer; an adventure's .zip, folder or https link; an adventure's title to remove it
+- `author` (`string`, optional): export: who wrote the adventure, as the player wants it credited
+- `license` (`string`, optional): export: the licence the player gives it, such as CC BY 4.0; without one, all rights are reserved
 
 ## Game
 

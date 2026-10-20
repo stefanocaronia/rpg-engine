@@ -1,14 +1,13 @@
 // A package's .tgz as npm pack makes it (D-452): a gzipped tar with its files under package/. Read with Node alone and checked whole before anything is
 // written: a path that would leave the folder or that Windows reads otherwise, a link, a device, a duplicate or an archive cut short refuse it.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve, sep } from "node:path";
+import { resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
+import { archivePathParts, insideFolder, refuseTwice } from "../core/archive-paths.ts";
 
 // The most an archive may unpack to: a package is never this big, a malicious archive could be.
 const largest = 512 * 1024 * 1024;
 const block = 512;
-// Names Windows keeps for its devices, whatever their extension.
-const reserved = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
 
 interface Entry
 {
@@ -34,7 +33,7 @@ export function tarballText(archive: string, path: string): string | undefined
 export function unpackTarball(archive: string, folder: string): void
 {
     const root = resolve(folder);
-    const placed = entries(archive).map((entry) => ({ ...entry, target: inside(root, entry.path) }));
+    const placed = entries(archive).map((entry) => ({ ...entry, target: insideFolder(root, entry.path, "the package") }));
     mkdirSync(root, { recursive: true });
 
     for (const entry of placed) {
@@ -106,44 +105,14 @@ function entries(archive: string): Entry[]
 /** The entries, refused when a file comes twice: what was read would not be what is written. */
 function unique(archive: string, found: Entry[]): Entry[]
 {
-    const seen = new Set<string>();
-
-    for (const entry of found.filter((one) => !one.directory)) {
-        const key = entry.path.toLowerCase();
-
-        if (seen.has(key)) {
-            throw new Error(`${archive} holds ${entry.path} twice: it is refused whole.`);
-        }
-
-        seen.add(key);
-    }
-
+    refuseTwice(archive, found.filter((one) => !one.directory).map((one) => one.path));
     return found;
 }
 
 /** A path inside the package, without its first folder (package/), refused when it is absolute, climbs out, or has a part Windows reads otherwise. */
 function packagePath(archive: string, name: string): string
 {
-    const parts = name.replace(/\\/g, "/").split("/").filter((part) => part !== "" && part !== ".");
-    const unsafe = (part: string): boolean => part === ".." || part.includes(":") || /[. ]$/.test(part) || reserved.test(part);
-
-    if (name.startsWith("/") || parts.some(unsafe)) {
-        throw new Error(`${archive} holds ${name}, a path outside the package or one this computer reads otherwise: it is refused whole.`);
-    }
-
-    return parts.slice(1).join("/");
-}
-
-/** Where a path of the package goes in the folder, never outside it. */
-function inside(root: string, path: string): string
-{
-    const target = resolve(root, path);
-
-    if (!target.startsWith(root + sep)) {
-        throw new Error(`${path} would be written outside ${root}: the package is refused.`);
-    }
-
-    return target;
+    return archivePathParts(archive, name, "the package").slice(1).join("/");
 }
 
 function text(header: Buffer, start: number, length: number): string

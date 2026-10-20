@@ -737,7 +737,7 @@ async function packagesNow(response: ServerResponse, served: Served, npm: boolea
                 system: system === undefined ? null : { name: system.name, title: system.title },
                 // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
                 otherSystems: installedSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
-                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing } : {}),
+                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing, adventures: list.adventures } : {}),
                 ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
                 ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
             };

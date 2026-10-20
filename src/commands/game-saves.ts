@@ -15,6 +15,9 @@ import { campaignWorld } from "./game-world.ts";
 /** The folder of the saves, at the top of the campaign. */
 export const savesFolderName = ".saves";
 
+/** The folder where an export writes its adventure's zip (ADV-7): no part of the game, so no save holds it. */
+export const exportsFolderName = "exports";
+
 export type SaveMode = (typeof saveModes)[number];
 
 // The mark of a load under way, with the number of its save: while it is there, save load finishes it (SAV-5).
@@ -245,8 +248,8 @@ function gameFileBytes(root: string): Record<string, Uint8Array>
 }
 
 /**
- * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts and those under a
- * name with a dot at its top, as .saves, .git, .obsidian.
+ * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts, the exports, and those
+ * under a name with a dot at its top, as .saves, .git, .obsidian.
  */
 function gameFiles(root: string): string[]
 {
@@ -265,7 +268,7 @@ export function isGameFile(root: string, path: string): boolean
 /** Whether a name at the top of a campaign is the game's: not the host's, in any case, as Windows reads them, and not starting with a dot. */
 function isGameName(name: string): boolean
 {
-    return !name.startsWith(".") && !hostNames.has(name.toLowerCase());
+    return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName;
 }
 
 function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array

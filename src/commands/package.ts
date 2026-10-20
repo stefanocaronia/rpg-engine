@@ -5,8 +5,10 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
+import { isNewerVersion } from "../core/version.ts";
 import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, shortName, verifiedScope } from "../extensions/index.ts";
 import { chooseAnswer } from "./ask.ts";
+import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure } from "./game-adventures.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
 import { extensionCommandNames, packagesInstalled } from "./game-extensions.ts";
 import { campaignMode } from "./game-mode.ts";
@@ -14,11 +16,14 @@ import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
 type PackageResult =
-    | { kind: "list"; installed: Installed[]; missing: string[]; }
+    | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; }[]; }
     | { kind: "available"; packages: Available[]; failed?: string; }
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
     | { kind: "removed"; name: string; }
-    | { kind: "uninstalled"; name: string; wasUsed: boolean; };
+    | { kind: "uninstalled"; name: string; wasUsed: boolean; }
+    | ({ kind: "adventure-installed"; } & AdventureInstalled)
+    | { kind: "adventure-removed"; title: string; }
+    | ({ kind: "exported"; } & AdventureExported);
 
 /** A package on this computer, as list gives it to the master and to the dashboard; broken when it does not read (D-442). */
 type Installed =
@@ -40,16 +45,23 @@ interface Available
 
 export const packageCommand = defineCommand({
     name: "package",
-    description: "The packages of the campaign: extensions such as weather, from npm. "
+    description: "The packages of the campaign: extensions such as weather, from npm, and adventures, as a .zip, a folder or a link with adventure.yaml. "
         + "list says those on this computer and those the campaign uses; available, those npm has, and updates. install adds or updates one, on this computer and in the campaign, "
         + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
-        + "remove takes one out of the campaign; uninstall takes it off this computer. Example: package install weather.",
+        + "An adventure is installed when you bring its hook into the story, once the player wants it as the next. "
+        + "remove takes one out of the campaign; uninstall takes it off this computer; export writes the campaign's world, as it was at its start, as an adventure. "
+        + "Example: package install weather.",
     group: "campaign",
     positionals: ["action", "name"],
     slow: true,
     input: z.object({
-        action: z.enum(["list", "available", "install", "remove", "uninstall"]).describe("list, available, install, remove or uninstall"),
-        name: z.string().optional().describe("the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; or a folder or a .tgz file on this computer"),
+        action: z.enum(["list", "available", "install", "remove", "uninstall", "export"]).describe("list, available, install, remove, uninstall or export"),
+        name: z.string().optional().describe(
+            "the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; a folder or a .tgz "
+                + "file on this computer; an adventure's .zip, folder or https link; an adventure's title to remove it",
+        ),
+        author: z.string().min(1).optional().describe("export: who wrote the adventure, as the player wants it credited"),
+        license: z.string().min(1).optional().describe("export: the licence the player gives it, such as CC BY 4.0; without one, all rights are reserved"),
     }),
 
     async run(input, context): Promise<PackageResult>
@@ -64,6 +76,10 @@ export const packageCommand = defineCommand({
             return await available(context);
         }
 
+        if (input.action === "export") {
+            return { kind: "exported", ...exportAdventure(root, context, { author: input.author, license: input.license }) };
+        }
+
         const name = input.name?.trim();
 
         if (name === undefined || name === "") {
@@ -71,7 +87,14 @@ export const packageCommand = defineCommand({
         }
 
         if (input.action === "install") {
-            return await installed(root, context, name);
+            return isAdventureSpec(name) ? await adventureInstalled(root, context, name) : await installed(root, context, name);
+        }
+
+        const adventure = installedAdventures(root).find((one) => comparableText(one.title) === comparableText(name));
+
+        if (input.action === "remove" && adventure !== undefined) {
+            removeAdventure(root, context, adventure);
+            return { kind: "adventure-removed", title: adventure.title };
         }
 
         return input.action === "remove" ? removed(root, context, name) : await uninstalled(root, context, name);
@@ -79,6 +102,18 @@ export const packageCommand = defineCommand({
 
     format(result)
     {
+        if (result.kind === "adventure-installed") {
+            return adventureText(result);
+        }
+
+        if (result.kind === "adventure-removed") {
+            return `${result.title} is out of the campaign, with the files it wrote.`;
+        }
+
+        if (result.kind === "exported") {
+            return exportText(result);
+        }
+
         if (result.kind === "removed") {
             return `The campaign no longer uses ${result.name}: its commands and its parts of your instructions are gone; what it kept in the campaign stays, and comes back if it is installed again.`;
         }
@@ -118,6 +153,7 @@ export const packageCommand = defineCommand({
         return [
             `On this computer: ${installedLines.length === 0 ? "none" : installedLines.join("; ")}.`,
             result.missing.length === 0 ? "" : `The campaign lists, not installed here: ${result.missing.join(", ")}; install each with package install.`,
+            result.adventures.length === 0 ? "" : `Its adventures: ${result.adventures.map((one) => `${one.title} ${one.version}${one.since === undefined ? "" : `, since ${one.since}`}`).join("; ")}.`,
             "package available says those npm has, and updates.",
         ].filter((line) => line !== "").join("\n");
     },
@@ -143,7 +179,8 @@ function listed(root: string, context: Context): PackageResult
             return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error) };
         }
     });
-    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)) };
+    const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }) }));
+    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures };
 }
 
 /** The extensions npm has for this rpg-engine's API, ours first, each with the version installed here and whether npm has a newer one (D-442). */
@@ -169,19 +206,10 @@ async function available(context: Context): Promise<PackageResult>
             // What npm has is ours by its scope; the copy here is not, when a file or a folder of this computer took its place (D-452).
             verified: isVerified(one.name, copy?.linked ?? false),
             ...(installed === undefined ? {} : { installed: version ?? "broken" }),
-            update: version !== undefined && newer(one.version, version),
+            update: version !== undefined && isNewerVersion(one.version, version),
         };
     });
     return { kind: "available", packages: packages.sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name)) };
-}
-
-/** Whether a version is newer than another, by its numbers: 0.2.0 after 0.1.10. */
-function newer(version: string, than: string): boolean
-{
-    const numbers = (text: string): number[] => text.split(/[.+-]/).slice(0, 3).map((part) => Number.parseInt(part, 10) || 0);
-    const [one, other] = [numbers(version), numbers(than)];
-    const differs = one.findIndex((part, index) => part !== other[index]);
-    return differs !== -1 && one[differs] > other[differs];
 }
 
 /** Installs a package on this computer and adds it to the campaign (D-27, D-428, D-441): ours, or another once the player wants it; an extension, for this game. */
@@ -411,4 +439,54 @@ async function uninstalled(root: string, context: Context, name: string): Promis
 
     appendLogEntry(root, newDatedLogEntry(root, context, "package-uninstalled", "public", { package: found.package }));
     return { kind: "uninstalled", name: shortName(found.package), wasUsed };
+}
+
+/** Installs an adventure from a .zip, a folder or a link (D-483): no npm, no code, and the same refusals wherever it comes from. */
+async function adventureInstalled(root: string, context: Context, spec: string): Promise<PackageResult>
+{
+    const adventure = await readAdventureSpec(spec, context);
+    return { kind: "adventure-installed", ...installAdventure(root, context, adventure, spec) };
+}
+
+/** What the master hears of an adventure installed (D-483 (5)): what it is in a few lines, then what to read and where it starts, never its text. */
+function adventureText(result: AdventureInstalled): string
+{
+    const { manifest } = result;
+    const by = manifest.author === undefined ? "" : ` by ${manifest.author}`;
+    const rights = manifest.license ?? "all rights reserved";
+    const counts = Object.entries(result.counts).map(([kind, count]) => `${count} ${kind}`).join(", ");
+    const levels = manifest.levels === undefined ? undefined : manifest.levels.from === manifest.levels.to ? `level ${manifest.levels.from}` : `levels ${manifest.levels.from}-${manifest.levels.to}`;
+    const start = result.start === undefined
+        ? ""
+        : result.start.placed
+        ? ` It starts in [[${result.start.name}]].`
+        : ` It starts in [[${result.start.name}]], in no place of the world yet: write it into the place that holds it, with a road if one leads there.`;
+    const read = manifest.opening === undefined ? "Read its places and quests" : `Show [[${manifest.opening}]] and the pages it says to read first`;
+    return [
+        `${result.already ? "The campaign already has" : "Installed"} the adventure ${manifest.title} ${manifest.version}${by} (${rights}): ${manifest.about.replace(/\.$/, "")}. ${counts}.`,
+        levels === undefined ? "" : `It is written for ${levels}: adapt it to the party's.`,
+        manifest.content.length === 0 ? "" : `Its content: ${manifest.content.join(", ")}; keep to the player's lines and veils.`,
+        result.firstDate === undefined ? "" : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
+        result.textDates === 0 ? "" : `${result.textDates} dates in its text stay as written: count them from today.`,
+        result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
+        result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,
+        result.ignored.length === 0 ? "" : `Left out, no part of an adventure: ${result.ignored.join(", ")}.`,
+        `${read} before you narrate.${start} Bring a hook into the story: the adventure begins when the player takes it.`,
+    ].filter((line) => line !== "").join(" ");
+}
+
+/** What the master hears of an export (ADV-7): the file, what it came from and what stayed out. */
+function exportText(result: AdventureExported): string
+{
+    const out = [
+        result.leftOut.characters.length === 0 ? "" : `the player characters (${result.leftOut.characters.join(", ")})`,
+        result.leftOut.adventures.length === 0 ? "" : `the adventures it installed (${result.leftOut.adventures.join(", ")})`,
+    ].filter((part) => part !== "");
+    return [
+        `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,
+        result.opening === undefined
+            ? "It has no opening page: one tagged opening, with the situation, the hooks, what happens if no one steps in and the pages to read first, and its start, makes it ready."
+            : `Its opening is [[${result.opening}]].`,
+        "The player shares it as a file, and only what they have the right to share.",
+    ].join(" ");
 }

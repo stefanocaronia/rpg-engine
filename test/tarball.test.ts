@@ -71,9 +71,9 @@ describe("a package's .tgz (D-452)", () => {
         const bad: [TestEntry[], number, RegExp][] = [
             [[{ name: "package/../../escape.md", text: "x" }], 0, /refused whole/],
             [[{ name: "/etc/escape", text: "x" }], 0, /refused whole/],
-            [[{ name: "package/C:escape.md", text: "x" }], 0, /reads otherwise: it is refused whole/],
-            [[{ name: "package/con/aux.js", text: "x" }], 0, /reads otherwise/],
-            [[{ name: "package/notes. ", text: "x" }], 0, /reads otherwise/],
+            [[{ name: "package/C:escape.md", text: "x" }], 0, /cannot write .*: it is refused whole/],
+            [[{ name: "package/con/aux.js", text: "x" }], 0, /cannot write/],
+            [[{ name: "package/notes. ", text: "x" }], 0, /cannot write/],
             [[{ name: "package/link", type: "2" }], 0, /not a plain file or folder/],
             [[{ name: "package/package.json", text: manifest("9.9.9") }], 0, /holds package.json twice/],
             [[{ name: "package/index.js", text: "x".repeat(3000) }], 2000, /cut short/],

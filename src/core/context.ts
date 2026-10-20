@@ -43,6 +43,8 @@ export interface Context
     packages?: PackageManager;
     /** A window of the player's operating system, for a yes the master cannot give (D-478); only where a player sits, never in the tests. */
     confirm?: Confirm;
+    /** Downloads a file over https, at most `most` bytes (ADV-1); missing where nothing reaches the web, as in the tests. */
+    download?(url: string, most: number, signal?: AbortSignal): Promise<Uint8Array>;
     /** The files as the MCP server keeps them for a whole session (D-137, D-193); without it, each call reads them afresh. */
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */

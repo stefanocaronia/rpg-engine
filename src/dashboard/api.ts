@@ -237,6 +237,8 @@ export interface PackagesView
     otherSystems?: { name: string; title: string; }[];
     installed: ShownPackage[];
     missing: string[];
+    /** The adventures the campaign has installed, with the game date each came in on (D-476). */
+    adventures?: { title: string; version: string; since?: string; }[];
     working?: { name: string; action: PackageAction; };
     available?: NpmPackage[];
     failed?: string;
