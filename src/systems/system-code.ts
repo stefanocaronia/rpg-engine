@@ -1,9 +1,10 @@
 // The code a game system brings where its data is not enough (D-448), as the 5e's dying point: hooks the engine calls after its own writes, given the game
 // they may read and change. A system's package.json says it has code, as an extension's does (D-439); the engine loads it once for the process, as it starts.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { SaveAsked } from "../core/context.ts";
+import { systemFolders } from "./system-folders.ts";
 
 /** A die as it was thrown: its faces, what it showed, and whether it was dropped, as the lower of two kept highest. */
 export interface ThrownDie
@@ -102,29 +103,26 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
 {
     const loaded: Record<string, LoadedSystemCode> = {};
 
-    for (const folder of folders.filter((one) => existsSync(one))) {
-        for (const entry of readdirSync(folder, { withFileTypes: true }).filter((one) => one.isDirectory())) {
-            const own = join(folder, entry.name);
-            const main = systemPackage(own);
+    for (const { name, folder: own } of systemFolders(folders)) {
+        const main = systemPackage(own);
 
-            if (main === undefined || entry.name in loaded) {
-                continue;
+        if (main === undefined || name in loaded) {
+            continue;
+        }
+
+        const source = join(own, "src", "index.ts");
+        const file = import.meta.url.endsWith(".ts") && existsSync(source) ? source : join(own, main);
+
+        try {
+            const module = await import(pathToFileURL(file).href) as { default?: unknown; };
+
+            if (typeof module.default !== "function") {
+                throw new Error(`${file} has no default export that gives its hooks`);
             }
 
-            const source = join(own, "src", "index.ts");
-            const file = import.meta.url.endsWith(".ts") && existsSync(source) ? source : join(own, main);
-
-            try {
-                const module = await import(pathToFileURL(file).href) as { default?: unknown; };
-
-                if (typeof module.default !== "function") {
-                    throw new Error(`${file} has no default export that gives its hooks`);
-                }
-
-                loaded[entry.name] = { hooks: (module.default as SystemEntry)() };
-            } catch (error) {
-                loaded[entry.name] = { problem: error instanceof Error ? error.message : String(error) };
-            }
+            loaded[name] = { hooks: (module.default as SystemEntry)() };
+        } catch (error) {
+            loaded[name] = { problem: error instanceof Error ? error.message : String(error) };
         }
     }
 

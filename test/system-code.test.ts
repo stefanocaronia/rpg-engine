@@ -21,6 +21,8 @@ describe("the code of a game system (D-448)", () => {
         mkdirSync(join(broken, "dist"), { recursive: true });
         writeFileSync(join(broken, "package.json"), JSON.stringify({ type: "module", main: "dist/index.js", "rpg-engine": { kind: "system" } }));
         writeFileSync(join(broken, "dist", "index.js"), "export const nothing = 1;\n");
+        // A system is a folder with a system.yaml: its code is loaded only then.
+        writeFileSync(join(broken, "system.yaml"), "title: a broken system\nlanguage: en\n");
         const other = join(systems, "other");
         mkdirSync(other);
         writeFileSync(join(other, "package.json"), JSON.stringify({ main: "index.js", "rpg-engine": { kind: "extension" } }));

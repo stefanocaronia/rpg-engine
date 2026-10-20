@@ -261,7 +261,10 @@ export async function readPackages(npm: boolean): Promise<PackagesView>
 export async function changePackage(action: PackageAction, name: string): Promise<string | undefined>
 {
     try {
-        const response = await fetch("/api/package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) });
+        // Adding goes the way of everything the page adds; the rest is done to a package by its name (D-485).
+        const response = action === "add"
+            ? await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: name }) })
+            : await fetch("/api/package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, name }) });
 
         if (response.status === 202) {
             return undefined;
@@ -278,7 +281,7 @@ export async function changePackage(action: PackageAction, name: string): Promis
 export async function addAdventure(file: File): Promise<string | undefined>
 {
     try {
-        const response = await fetch("/api/adventure", { method: "POST", headers: { "Content-Type": "application/zip", "X-File-Name": encodeURIComponent(file.name) }, body: file });
+        const response = await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/zip", "X-File-Name": encodeURIComponent(file.name) }, body: file });
 
         if (response.status === 202) {
             return undefined;
@@ -295,7 +298,7 @@ export async function addAdventure(file: File): Promise<string | undefined>
 export async function addAdventureLink(url: string): Promise<string | undefined>
 {
     try {
-        const response = await fetch("/api/adventure", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+        const response = await fetch("/api/add", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: url }) });
 
         if (response.status === 202) {
             return undefined;

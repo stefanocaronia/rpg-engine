@@ -119,6 +119,8 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions' | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
 | Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
 | Adventures | Installed, taken out while the story has not touched them, and exported as they were at the start | [adventures/](../src/adventures/), [commands/game-adventures.ts](../src/commands/game-adventures.ts) |
+| Languages | A language's translation made by hand, as a package: the dashboard's phrases, its Guide and a system's words, before the translation on the fly | [languages/](../src/languages/), [page-words.ts](../src/page-words.ts) |
+| Catalog | What npm has for every kind of package and the adventures GitHub has by topic, for the Packages page | [commands/game-catalog.ts](../src/commands/game-catalog.ts) |
 | Consent | The player's yes to a package not ours, in a window of their operating system when the host shows no form | [confirm/](../src/confirm/) |
 | Translation | The dashboard's phrases and a system's words in the campaign's language | [page-words.ts](../src/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |
 

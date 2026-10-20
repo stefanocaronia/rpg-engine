@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { z } from "zod";
 import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
@@ -7,8 +8,10 @@ import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, shortName, verifiedScope } from "../extensions/index.ts";
+import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
+import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
-import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure } from "./game-adventures.ts";
+import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
 import { extensionCommandNames, packagesInstalled } from "./game-extensions.ts";
 import { campaignMode } from "./game-mode.ts";
@@ -16,11 +19,13 @@ import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
 type PackageResult =
-    | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; }[]; }
+    | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; removable: boolean; }[]; systems: InstalledSystem[]; languages: InstalledLanguage[]; }
     | { kind: "available"; packages: Available[]; failed?: string; }
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
     | { kind: "removed"; name: string; }
     | { kind: "uninstalled"; name: string; wasUsed: boolean; }
+    | { kind: "system-installed"; system: InstalledSystem; plays?: string; }
+    | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
     | { kind: "adventure-removed"; title: string; }
     | ({ kind: "exported"; } & AdventureExported);
@@ -29,6 +34,41 @@ type PackageResult =
 type Installed =
     | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
     | { name: string; package: string; broken: string; };
+
+/** The player's yes to a package not ours, not given (D-478): they said no or closed the question, or no window could be shown here. */
+export class YesRefused extends Error
+{
+    readonly code: "declined" | "no-window";
+
+    constructor(message: string, code: "declined" | "no-window")
+    {
+        super(message);
+        this.code = code;
+    }
+}
+
+/** A game system on this computer (D-485): shipped with the engine, or a package npm installed; the campaign plays one, chosen in its setup. */
+export interface InstalledSystem
+{
+    name: string;
+    title: string;
+    version?: string;
+    package?: string;
+    verified: boolean;
+    used: boolean;
+    /** Whether it brings code, which runs from the next start of the game's server. */
+    code: boolean;
+}
+
+/** A language package on this computer (D-485 (3)), for every campaign: one for each language. */
+export interface InstalledLanguage
+{
+    code: string;
+    name: string;
+    package: string;
+    version: string;
+    verified: boolean;
+}
 
 /** A package on npm for this rpg-engine, with the version installed here, if any, and whether it is newer (D-442). */
 interface Available
@@ -114,6 +154,24 @@ export const packageCommand = defineCommand({
             return exportText(result);
         }
 
+        if (result.kind === "language-installed") {
+            const { language } = result;
+            return [
+                `Installed ${language.name} (${language.code}) ${language.version}, the dashboard's words made by hand${language.verified ? "" : ", by someone else"}, for every campaign on this computer.`,
+                result.replaced === undefined ? "" : `It takes the place of ${result.replaced}.`,
+                result.missing === 0 ? "" : `${result.missing} phrases it lacks come from the translation on the fly.`,
+            ].filter((line) => line !== "").join(" ");
+        }
+
+        if (result.kind === "system-installed") {
+            const { system } = result;
+            return [
+                `Installed the game system ${system.name}${system.version === undefined ? "" : ` ${system.version}`}, ${system.title}${system.verified ? "" : ", not verified: at the player's risk"}.`,
+                system.used ? "The campaign plays it." : `It is for a new campaign, chosen in its setup: this one plays ${result.plays ?? "none yet"}.`,
+                system.code ? "Its code runs from the next start of the game's server." : "",
+            ].filter((line) => line !== "").join(" ");
+        }
+
         if (result.kind === "removed") {
             return `The campaign no longer uses ${result.name}: its commands and its parts of your instructions are gone; what it kept in the campaign stays, and comes back if it is installed again.`;
         }
@@ -179,8 +237,8 @@ function listed(root: string, context: Context): PackageResult
             return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error) };
         }
     });
-    const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }) }));
-    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures };
+    const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }), removable: storyTouching(root, one) === undefined }));
+    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures, systems: systemsHere(root, context), languages: languagesHere(context) };
 }
 
 /** The extensions npm has for this rpg-engine's API, ours first, each with the version installed here and whether npm has a newer one (D-442). */
@@ -229,11 +287,19 @@ async function installed(root: string, context: Context, name: string): Promise<
         throw new Error(`${described.failed}. Nothing changed${spec === name ? "" : `: ${name} alone means ${spec}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`);
     }
 
+    if (described.kind === "system") {
+        return await systemInstalled(root, context, spec, name, described);
+    }
+
+    if (described.kind === "language") {
+        return await languageInstalled(root, context, spec, described);
+    }
+
     if (described.kind !== "extension") {
         throw new Error(
             described.kind === undefined
                 ? `${described.name} is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}. Nothing changed.`
-                : `${described.name} is a package of kind ${described.kind}: for now only extensions are installed this way. Nothing changed.`,
+                : `${described.name} is a package of kind ${described.kind}: for now extensions, game systems and adventures are installed this way. Nothing changed.`,
         );
     }
 
@@ -312,6 +378,153 @@ async function installed(root: string, context: Context, name: string): Promise<
 }
 
 /**
+ * Installs a game system on this computer (D-485), for a new campaign: the campaign keeps the one its setup chose. One not ours only with the player's yes,
+ * as an extension (D-441, D-478); a system that does not read is no system, whatever npm installed.
+ */
+async function systemInstalled(root: string, context: Context, spec: string, name: string, described: PackageInfo): Promise<PackageResult>
+{
+    const local = isLocalSpec(spec);
+
+    if (!isVerified(described.name, local)) {
+        await playerYes(context, local ? name : described.name, local, local ? ` (${described.name} ${described.version})` : "");
+    }
+
+    const why = await (context.packages as NonNullable<Context["packages"]>).install(spec);
+
+    if (why !== undefined) {
+        throw new Error(`${described.name} could not be installed: ${why}. Nothing changed.`);
+    }
+
+    [...context.systemFolders, ...(context.extensionFolders ?? [])].forEach((folder) => files().refresh(folder));
+    let system: InstalledSystem | undefined;
+
+    try {
+        system = systemsHere(root, context).find((one) => one.package === described.name);
+    } catch (error) {
+        throw new Error(`${described.name} was installed, but its system.yaml does not read: ${error instanceof Error ? error.message : String(error)}. Uninstall it with package uninstall ${described.name}.`);
+    }
+
+    if (system === undefined) {
+        throw new Error(`${described.name} was installed, but it has no system.yaml: it is no game system. Uninstall it with package uninstall ${described.name}.`);
+    }
+
+    appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: described.name, version: described.version, verified: system.verified, kind: "system" }));
+    const plays = readTextSetting(root, "system");
+    return { kind: "system-installed", system, ...(plays === undefined ? {} : { plays }) };
+}
+
+/** The game systems on this computer, those shipped with the engine first, with the package each came in when npm installed it (D-485). */
+function systemsHere(root: string, context: Context): InstalledSystem[]
+{
+    const plays = readTextSetting(root, "system") ?? "";
+    const folders = systemFolders(context.systemFolders);
+    return installedSystems(context.systemFolders).map((system): InstalledSystem => {
+        const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
+        // The engine's own have no package of their own here; one npm installed is ours only by our scope, and never from a folder (D-441).
+        const shipped = system.folder.startsWith(context.systemFolders[0]);
+        const linked = manifest !== undefined && files().text(join(context.systemFolders.at(-1) ?? "", "..", "local", ...manifest.name.split("/"), "package.json")) !== undefined;
+        return {
+            name: system.name,
+            title: system.title,
+            ...(manifest === undefined ? {} : { version: manifest.version }),
+            ...(manifest === undefined || shipped ? {} : { package: manifest.name }),
+            verified: shipped || (manifest !== undefined && isVerified(manifest.name, linked)),
+            used: comparableText(system.name) === comparableText(plays),
+            code: systemHasCode(system.folder),
+        };
+    });
+}
+
+/** The name and the version a package.json in this folder gives; undefined when it has none that reads. */
+function packageOf(folder: string): { name: string; version: string; } | undefined
+{
+    try {
+        const read = JSON.parse(files().text(join(folder, "package.json")) ?? "") as { name?: unknown; version?: unknown; };
+        return typeof read.name === "string" && typeof read.version === "string" ? { name: read.name, version: read.version } : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Installs a language package on this computer (D-485 (3)): texts the dashboard shows, never code, so no yes is asked; refused, and taken off again, when its
+ * phrases lose a {name} or turn the order of a text. It takes the place of another package of the same language.
+ */
+async function languageInstalled(root: string, context: Context, spec: string, described: PackageInfo): Promise<PackageResult>
+{
+    if (described.code === true) {
+        throw new Error(`${described.name} says it is a language, and brings code: a language package is texts only. Nothing changed.`);
+    }
+
+    const before = installedLanguages(context.extensionFolders ?? []);
+    const packages = context.packages as NonNullable<Context["packages"]>;
+    const why = await packages.install(spec);
+
+    if (why !== undefined) {
+        throw new Error(`${described.name} could not be installed: ${why}. Nothing changed.`);
+    }
+
+    (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
+    const folder = installedExtensionFolder(context, described.name);
+    let checked: { problems: string[]; missing: number; };
+    let pack: ReturnType<typeof readLanguagePack>;
+
+    try {
+        pack = readLanguagePack(folder ?? "");
+        checked = languagePackProblems(pack, Object.keys(pagePhrases(context)));
+    } catch (error) {
+        checked = { problems: [error instanceof Error ? error.message : String(error)], missing: 0 };
+        pack = { package: described.name, version: described.version, folder: folder ?? "", code: "", name: described.name };
+    }
+
+    if (checked.problems.length > 0) {
+        await packages.uninstall(described.name);
+        (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
+        throw new Error(`${described.name} cannot be used: ${checked.problems.join("; ")}. It was taken off this computer.`);
+    }
+
+    // One language, one package: the one before for the same code goes (D-485 (3)).
+    const replaced = before.find((one) => one.code.toLowerCase() === pack.code.toLowerCase() && one.package !== described.name);
+
+    if (replaced !== undefined) {
+        await packages.uninstall(replaced.package);
+        (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
+    }
+
+    const language = languagesHere(context).find((one) => one.package === described.name) as InstalledLanguage;
+    appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: described.name, version: described.version, verified: language.verified, kind: "language" }));
+    return { kind: "language-installed", language, ...(replaced === undefined ? {} : { replaced: replaced.package }), missing: checked.missing };
+}
+
+/** The language packages on this computer, one for each language (D-485 (3)). */
+function languagesHere(context: Context): InstalledLanguage[]
+{
+    return installedLanguages(context.extensionFolders ?? []).map((pack) => ({
+        code: pack.code,
+        name: pack.name,
+        package: pack.package,
+        version: pack.version,
+        verified: isVerified(pack.package, files().text(join(pack.folder, "..", "..", "local", ...pack.package.split("/"), "package.json")) !== undefined),
+    }));
+}
+
+/** The folder npm installed a package in, among the extensions' folders; undefined when it is not there. */
+function installedExtensionFolder(context: Context, name: string): string | undefined
+{
+    return (context.extensionFolders ?? []).map((folder) => join(folder, ...name.split("/"))).find((folder) => files().exists(join(folder, "package.json")));
+}
+
+/** The dashboard's phrases, by their English, as its curated Italian lists them all; none where the built page is not here. */
+function pagePhrases(context: Context): Record<string, string>
+{
+    try {
+        return JSON.parse(files().text(join(context.pageFolder ?? "", "i18n", "it.json")) ?? "{}") as Record<string, string>;
+    } catch {
+        return {};
+    }
+}
+
+/**
  * The player's own yes to a package not ours (D-441, D-478), where the master cannot give it with its own tools: the host's form first, never the dashboard's
  * page, whose click a local program can forge; else a window of their operating system; else none, and it throws.
  */
@@ -329,12 +542,12 @@ async function playerYes(context: Context, name: string, local: boolean, holds =
     }
 
     if (answer === 1 || (typeof answer === "object" && answer !== null)) {
-        throw new Error(`The player did not want ${name}. Nothing changed.`);
+        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined");
     }
 
     // Closed without an answer is no yes, never a reason to ask again some other way.
     if (answer === undefined) {
-        throw new Error(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`);
+        throw new YesRefused(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`, "declined");
     }
 
     const window = context.confirm === undefined ? "none" : await context.confirm.ask(title, question, context.signal);
@@ -344,12 +557,13 @@ async function playerYes(context: Context, name: string, local: boolean, holds =
     }
 
     if (window === "no") {
-        throw new Error(`The player did not want ${name}. Nothing changed.`);
+        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined");
     }
 
-    throw new Error(
+    throw new YesRefused(
         `${warning} Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here (no desktop, as over SSH; `
             + `on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.`,
+        "no-window",
     );
 }
 
@@ -412,7 +626,16 @@ function removed(root: string, context: Context, name: string): PackageResult
 async function uninstalled(root: string, context: Context, name: string): Promise<PackageResult>
 {
     const packages = context.packages;
-    const found = installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name));
+    const system = systemsHere(root, context).find((one) => one.package !== undefined && (one.package === name || comparableText(one.name) === comparableText(name)));
+
+    if (system?.used === true) {
+        throw new Error(`The campaign plays ${system.name}: it stays on this computer. Nothing changed.`);
+    }
+
+    const other = system?.package ?? languagesHere(context).find((one) => one.package === name || comparableText(one.code) === comparableText(name))?.package;
+    const found = other === undefined
+        ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name))
+        : { package: other };
 
     if (found === undefined) {
         const here = installedExtensions(context.extensionFolders ?? []).map((one) => shortName(one.package));
@@ -429,7 +652,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
         throw new Error(`${found.package} could not be uninstalled: ${why}. Nothing changed.`);
     }
 
-    (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
+    [...context.systemFolders, ...(context.extensionFolders ?? [])].forEach((folder) => files().refresh(folder));
     const listed = listedExtensions(root);
     const wasUsed = Object.hasOwn(listed, found.package);
 

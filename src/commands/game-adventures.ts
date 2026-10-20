@@ -164,10 +164,7 @@ export function installAdventure(root: string, context: Context, adventure: Adve
 /** Takes an adventure out (ADV-6), with the files it wrote, while no line of the log after it names one of its pages; else it throws, saying it stays. */
 export function removeAdventure(root: string, context: Context, adventure: InstalledAdventure): void
 {
-    const log = readLog(root);
-    const names = new Set(adventure.files.filter((path) => path.startsWith(`${worldFolderName}/`)).flatMap((path) => pageNames(root, path)).map(comparableText));
-    const after = log.slice(log.findIndex((entry) => entry.id === adventure.entry) + 1);
-    const touching = after.find((entry) => textsOf(entry.data).some((text) => names.has(comparableText(linkTargetName(unlinked(text))))));
+    const touching = storyTouching(root, adventure);
 
     if (touching !== undefined) {
         throw new Error(`${adventure.title} is part of the story now: the log names its pages${touching.date === undefined ? "" : ` on ${touching.date}`}. It stays; nothing changed.`);
@@ -179,6 +176,15 @@ export function removeAdventure(root: string, context: Context, adventure: Insta
     }
 
     appendLogEntry(root, newDatedLogEntry(root, context, "adventure-removed", "public", { title: adventure.title }));
+}
+
+/** The first line of the log after an adventure came in that names one of its pages (ADV-6): it can no longer be taken out; undefined while none does. */
+export function storyTouching(root: string, adventure: InstalledAdventure): LogEntry | undefined
+{
+    const log = readLog(root);
+    const names = new Set(adventure.files.filter((path) => path.startsWith(`${worldFolderName}/`)).flatMap((path) => pageNames(root, path)).map(comparableText));
+    const after = log.slice(log.findIndex((entry) => entry.id === adventure.entry) + 1);
+    return after.find((entry) => textsOf(entry.data).some((text) => names.has(comparableText(linkTargetName(unlinked(text))))));
 }
 
 /**

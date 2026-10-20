@@ -109,7 +109,7 @@ describe("npm's packages with a .tgz (D-452)", () => {
     it("describes it from its package.json, before any npm run, refusing a missing file, a name npm would not take and an archive refused whole", async () => {
         const packages = npmPackages(join(folder, "packages"), fakeRun());
         const archive = tarball(join(folder, "notes.tgz"), [{ name: "package/package.json", text: manifest() }]);
-        expect(await packages.describe(archive)).toEqual({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1 });
+        expect(await packages.describe(archive)).toEqual({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1, code: false });
         expect(await packages.describe(join(folder, "missing.tgz"))).toEqual({ failed: `There is no file ${join(folder, "missing.tgz")} on this computer (${join(folder, "missing.tgz")}): give its full path` });
         const upper = tarball(join(folder, "upper.tgz"), [{ name: "package/package.json", text: manifest("1.0.0", "Notes") }]);
         expect(await packages.describe(upper)).toEqual({ failed: `${upper} is named "Notes", which is not an npm package's name, such as notes or @me/notes` });

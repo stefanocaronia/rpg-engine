@@ -1,4 +1,3 @@
-import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
@@ -11,6 +10,7 @@ import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 import { systemHasCode } from "./system-code.ts";
+import { systemFolders } from "./system-folders.ts";
 
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";
@@ -598,11 +598,9 @@ export function installedSystems(folders: string[]): GameSystem[]
 {
     const systems: GameSystem[] = [];
 
-    for (const folder of folders.filter((candidate) => existsSync(candidate))) {
-        for (const entry of readdirSync(folder, { withFileTypes: true }).filter((candidate) => candidate.isDirectory()).sort((first, second) => (first.name < second.name ? -1 : 1))) {
-            if (existsSync(join(folder, entry.name, systemFileName)) && !systems.some((system) => comparableText(system.name) === comparableText(entry.name))) {
-                systems.push(readSystem(join(folder, entry.name), entry.name));
-            }
+    for (const found of systemFolders(folders)) {
+        if (!systems.some((system) => comparableText(system.name) === comparableText(found.name))) {
+            systems.push(readSystem(found.folder, found.name));
         }
     }
 
@@ -641,18 +639,8 @@ export function findCampaignSystem(folders: string[], name: string, data: Campai
  */
 export function findSystem(folders: string[], name: string, data?: CampaignData): GameSystem | undefined
 {
-    for (const folder of folders.filter((candidate) => existsSync(candidate))) {
-        const entry = readdirSync(folder, { withFileTypes: true })
-            .filter((candidate) => candidate.isDirectory() && comparableText(candidate.name) === comparableText(name.trim()))
-            .sort((first, second) => (first.name < second.name ? -1 : 1))
-            .find((candidate) => existsSync(join(folder, candidate.name, systemFileName)));
-
-        if (entry !== undefined) {
-            return readSystem(join(folder, entry.name), entry.name, data);
-        }
-    }
-
-    return undefined;
+    const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
+    return found === undefined ? undefined : readSystem(found.folder, found.name, data);
 }
 
 function readSystem(folder: string, name: string, additions?: CampaignData): GameSystem

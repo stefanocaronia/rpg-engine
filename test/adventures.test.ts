@@ -279,13 +279,13 @@ describe("the adventures on the dashboard's page (D-483)", () => {
     }
 
     it("adds one from a .zip the page sends, lists it with its date, and the master hears of it", async () => {
-        const added = await send("POST", "/api/adventure", readFileSync(adventureZip()), { "content-type": "application/zip", "x-file-name": encodeURIComponent("Il pozzo.adventure.zip") });
+        const added = await send("POST", "/api/add", readFileSync(adventureZip()), { "content-type": "application/zip", "x-file-name": encodeURIComponent("Il pozzo.adventure.zip") });
         expect(added.status).toBe(202);
         const listed = JSON.parse((await send("GET", "/api/packages")).body.toString("utf8")) as { adventures: { title: string; }[]; };
         expect(listed.adventures).toMatchObject([{ title: "Il pozzo", version: "1.0.0" }]);
         expect(dashboard.news().lines.join(" ")).toContain("The player, on the dashboard, added an adventure: Installed the adventure Il pozzo 1.0.0");
 
-        const twice = await send("POST", "/api/adventure", new TextEncoder().encode("not a zip"), { "x-file-name": "broken.zip" });
+        const twice = await send("POST", "/api/add", new TextEncoder().encode("not a zip"), { "x-file-name": "broken.zip" });
         expect(twice.status).toBe(400);
         expect(JSON.parse(twice.body.toString("utf8")).error).toContain("broken.zip is not a .zip that reads");
     });
@@ -302,10 +302,10 @@ describe("the adventures on the dashboard's page (D-483)", () => {
         const started = await startDashboard({ ...context, files: session, download }, session, { ports: [0], page: folder });
         dashboard = started as Dashboard;
         port = Number(new URL(dashboard.url).port);
-        const added = await send("POST", "/api/adventure", JSON.stringify({ url: "https://github.com/ada/pozzo/tree/main" }), { "content-type": "application/json" });
+        const added = await send("POST", "/api/add", JSON.stringify({ source: "https://github.com/ada/pozzo/tree/main" }), { "content-type": "application/json" });
         expect(added.status).toBe(202);
         expect(asked).toEqual(["https://codeload.github.com/ada/pozzo/zip/refs/heads/main"]);
-        expect((await send("POST", "/api/adventure", JSON.stringify({ url: "http://example.com/a.zip" }), { "content-type": "application/json" })).status).toBe(400);
+        expect((await send("POST", "/api/add", JSON.stringify({ source: "http://example.com/a.zip" }), { "content-type": "application/json" })).status).toBe(400);
     });
 
     it("exports the campaign, then gives its .zip to download by its name alone", async () => {

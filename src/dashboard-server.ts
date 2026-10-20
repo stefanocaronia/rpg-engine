@@ -10,16 +10,17 @@ import { z } from "zod";
 import { readAdventureZip } from "./adventures/index.ts";
 import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "./campaign/index.ts";
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
-import { installAdventure, readAdventureSpec } from "./commands/game-adventures.ts";
+import { installAdventure } from "./commands/game-adventures.ts";
+import { type Catalog, catalog } from "./commands/game-catalog.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
-import { adventureText, packageCommand } from "./commands/package.ts";
+import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
-import type { Context, Picked, Player, Rows, Said } from "./core/context.ts";
+import { type Context, packagesFolder, type Picked, type Player, type Rows, type Said } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -27,6 +28,7 @@ import { comparableText } from "./core/text.ts";
 import { notationParts } from "./dice/index.ts";
 import { verifiedScope } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
+import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { installedSystems, rollName } from "./systems/index.ts";
@@ -289,11 +291,19 @@ interface Served
     /** The page in a language the package does not ship, translated on the fly (D-406). */
     words: PageTranslator;
     /** The package the player is adding, updating or taking away on the page, while npm works (D-475): one at a time. */
-    packageWork?: { name: string; action: PackageAction; };
+    packageWork?: { name: string; action: PackageAction; phase: PackagePhase; };
+    /** What the page may add, as npm and GitHub said it last, and when (D-486). */
+    catalog?: { at: number; catalog: Catalog; };
 }
 
 /** What the player does with a package on the page (D-475). */
 type PackageAction = "add" | "update" | "remove" | "uninstall";
+
+/** Where a package's work on the page is: at work, or waiting for the player's yes in a window of their computer (D-478). */
+type PackagePhase = "working" | "yes";
+
+// How long the catalog is kept before npm and GitHub are asked again.
+const catalogLife = 10 * 60 * 1000;
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 interface Asked
@@ -387,8 +397,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     }
 
     // An adventure the player adds from a .zip of their computer, and the campaign exported as one (D-483): files, never code.
-    if (request.method === "POST" && path === "/api/adventure" && origin !== undefined) {
-        await addAdventure(request, response, served);
+    if (request.method === "POST" && path === "/api/add" && origin !== undefined) {
+        await addPackage(request, response, served);
         return;
     }
 
@@ -452,6 +462,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (path === "/api/catalog") {
+        await catalogNow(response, served, url.searchParams.get("fresh") === "true");
+        return;
+    }
+
     if (path === "/api/export") {
         exportedFile(response, served, url.searchParams.get("file") ?? "");
         return;
@@ -468,11 +483,42 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         await runCommand(path.slice("/api/".length), url.searchParams, response, served);
     } else if (path.startsWith("/images/")) {
         sendImage(path.slice("/images/".length), request, response, served);
+    } else if (sendPacked(path, response, served)) {
+        // A language package's phrases or Guide, before the page's own (D-485 (3)).
     } else if (path.startsWith("/vendor/")) {
         sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served);
     } else {
         sendFile(pageFile(served.page, path), path, request, response, served);
     }
+}
+
+/**
+ * A language package's phrases over those the page ships, or its Guide, for a language one is installed for (D-485 (3)); false where none is, and the
+ * page's own file is sent.
+ */
+function sendPacked(path: string, response: ServerResponse, served: Served): boolean
+{
+    const match = /^\/(i18n|guide)\/([a-z]{2,3}(?:-[a-z0-9]{2,8})*)\.(json|md)$/i.exec(path);
+    const pack = match === null ? undefined : languagePackFor(served.context.extensionFolders ?? [], match[2]);
+
+    if (match === null || pack === undefined) {
+        return false;
+    }
+
+    if (match[1] === "i18n") {
+        const shipped = JSON.parse(files().text(join(served.page, "i18n", `${match[2]}.json`)) ?? "{}") as Record<string, string>;
+        sendJson(response, 200, { ...shipped, ...packPhrases(pack) });
+        return true;
+    }
+
+    const guide = packGuide(pack);
+
+    if (guide === undefined) {
+        return false;
+    }
+
+    send(response, 200, "text/markdown; charset=utf-8", guide);
+    return true;
 }
 
 /** A file of the built page, by its path in the address: only a script, a style sheet or a picture inside its folder, such as its logo. */
@@ -755,7 +801,7 @@ async function packagesNow(response: ServerResponse, served: Served, npm: boolea
                 system: system === undefined ? null : { name: system.name, title: system.title },
                 // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
                 otherSystems: installedSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
-                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing, adventures: list.adventures } : {}),
+                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing, adventures: list.adventures, systems: list.systems, languages: list.languages } : {}),
                 ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
                 ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
             };
@@ -767,98 +813,156 @@ async function packagesNow(response: ServerResponse, served: Served, npm: boolea
 }
 
 /**
- * A package the player adds to the campaign, updates, takes out of it or off this computer on the page (D-475), as package does with the player as who did it;
- * the master hears of it at the head of their next call. Only ours: one of someone else's the player installs from their terminal, until the page's yes can be
- * told from a forged one (D-441, D-475).
+ * A package the player updates, takes out of the campaign or off this computer on the page (D-475, D-485), as package does with the player as who did it; the
+ * master hears of it at the head of their next call. One not ours is updated with the player's yes in a window of their computer, never the page's click (D-478).
  */
 async function changePackage(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
-    const parsed = z.object({ action: z.enum(["add", "update", "remove", "uninstall"]), name: z.string().trim().min(1).max(214) }).strict().safeParse(await readBody(request));
+    const parsed = z.object({ action: z.enum(["update", "remove", "uninstall"]), name: z.string().trim().min(1).max(214) }).strict().safeParse(await readBody(request));
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: "Send what to do with which package: { action: add, update, remove or uninstall, name }." });
+        sendJson(response, 400, { error: "Send what to do with which package: { action: update, remove or uninstall, name }." });
         return;
     }
 
     const { action, name } = parsed.data;
-    // Ours by our scope, or a name alone, which package reads as ours; never a folder, a file, another scope or npm:.
-    const ours = name.startsWith(verifiedScope) || !/[/:.\\]/.test(name);
+    const done = action === "update" ? "updated" : action === "remove" ? "took out of the campaign" : "uninstalled";
+    await packageWork(response, served, name, action, async (context) => {
+        const result = await packageCommand.run(packageCommand.input.parse({ action: action === "update" ? "install" : action, name }), context);
+        return { kind: result.kind, news: `The player, on the dashboard, ${done} ${name}: ${packageCommand.format(result)}` };
+    });
+}
 
-    if ((action === "add" || action === "update") && !ours) {
-        sendJson(response, 403, { error: `${name} is not one of ours: install it from your terminal, in the campaign's folder, with rpg package install ${name}: a window of your computer asks for your yes.`, code: "not-ours" });
+/**
+ * Something the player adds on the page (D-485 (1)): a .zip or a .tgz as the request's body, named by its X-File-Name, or { source }: a link, an npm name or a
+ * folder of this computer. The engine tells the kind by what it holds; an adventure is read in memory, a .tgz kept in the player's data folder while npm installs it.
+ */
+async function addPackage(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const json = /^application\/json/i.test(String(request.headers["content-type"] ?? ""));
+    const given = json ? z.object({ source: z.string().trim().min(1).max(2000) }).strict().safeParse(await readBody(request)) : undefined;
+    const file = fileName(String(request.headers["x-file-name"] ?? "package.zip")).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 120) || "package.zip";
+    const bytes = json ? undefined : await readBytes(request, largestUpload);
+
+    if (given?.success === false) {
+        sendJson(response, 400, { error: "Send what to add: { source }, a link, an npm name or a folder of this computer; or a .zip or a .tgz as the body." });
         return;
     }
 
+    if (!json && bytes === undefined) {
+        sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: no package is that big.` });
+        return;
+    }
+
+    if (bytes !== undefined && !/\.(zip|tgz|tar\.gz)$/i.test(file)) {
+        sendJson(response, 400, { error: `${file} is neither a .zip nor a .tgz: an adventure comes as a .zip, an extension, a game system or a language as a .tgz.` });
+        return;
+    }
+
+    const source = given?.success === true ? given.data.source : file;
+    await packageWork(response, served, source, "add", async (context) => {
+        if (bytes !== undefined && /\.zip$/i.test(file)) {
+            const root = requireCampaign(context.folder);
+            const installed = installAdventure(root, context, readAdventureZip(bytes, file), file);
+            return { kind: "adventure", news: `The player, on the dashboard, added an adventure: ${adventureText(installed)}` };
+        }
+
+        const kept = bytes === undefined ? undefined : join(served.context.home ?? packagesFolder(), "uploads", file);
+
+        try {
+            if (kept !== undefined && bytes !== undefined) {
+                files().writeBytes(kept, bytes);
+            }
+
+            const result = await packageCommand.run(packageCommand.input.parse({ action: "install", name: kept ?? source }), context);
+            return { kind: kindOf(result.kind), news: `The player, on the dashboard, added ${bytes === undefined ? source : file}: ${packageCommand.format(result)}` };
+        } finally {
+            if (kept !== undefined) {
+                files().remove(kept);
+            }
+        }
+    });
+}
+
+/**
+ * One package's work on the page, one at a time (D-475): while it lasts, the page shows it and its phase, the player's yes waited for in a window of their
+ * computer among them (D-478); then the master hears of it, and the page has the kind the engine recognized, or what went wrong, with a code when the yes was not given.
+ */
+async function packageWork(
+    response: ServerResponse,
+    served: Served,
+    name: string,
+    action: PackageAction,
+    work: (context: Context) => Promise<{ kind: string; news: string; }>,
+): Promise<void>
+{
     if (served.packageWork !== undefined) {
         sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy" });
         return;
     }
 
-    served.packageWork = { name, action };
+    served.packageWork = { name, action, phase: "working" };
     served.notify();
+
+    const phase = (now: PackagePhase): void => {
+        if (served.packageWork !== undefined) {
+            served.packageWork = { ...served.packageWork, phase: now };
+            served.notify();
+        }
+    };
+
+    const confirm = served.context.confirm;
+    // The page's player is asked in a window of their computer only: never the host's form, which the page cannot show, and never the page's click (D-477).
+    const context: Context = {
+        ...served.context,
+        actor: "player",
+        player: undefined,
+        ...(confirm === undefined ? {} : {
+            confirm: {
+                ask: async (title, text, signal) => {
+                    phase("yes");
+                    return await confirm.ask(title, text, signal).finally(() => phase("working"));
+                },
+            },
+        }),
+    };
 
     try {
         await served.session.ready();
-        const news = await withFiles(served.session, async () => {
-            const input = { action: action === "add" || action === "update" ? "install" : action, name };
-            const result = await packageCommand.run(packageCommand.input.parse(input), { ...served.context, actor: "player" });
-            return `The player, on the dashboard, ${action === "update" ? "updated" : action === "add" ? "added" : action === "remove" ? "took out of the campaign" : "uninstalled"} ${name}: ${packageCommand.format(result)}`;
-        });
-        served.events.push(news);
-        sendJson(response, 202, {});
+        const done = await withFiles(served.session, () => work(context));
+        served.events.push(done.news);
+        sendJson(response, 202, { kind: done.kind });
     } catch (error) {
-        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error), ...(error instanceof YesRefused ? { code: error.code } : {}) });
     } finally {
         served.packageWork = undefined;
         served.notify();
     }
 }
 
-/**
- * An adventure the player adds on the page from a .zip of their computer or an https link, GitHub's too (D-483), as package install does with the player as who did it; the zip comes as the
- * request's body, named by its X-File-Name, and is read from a copy that goes once it is installed or refused. The master hears of it at their next call.
- */
-async function addAdventure(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+/** The kind of package a result of package install says it installed. */
+function kindOf(result: string): string
 {
-    const linked = /^application\/json/i.test(String(request.headers["content-type"] ?? ""));
-    const url = linked ? z.object({ url: z.string().trim().regex(/^https:\/\/\S+$/i).max(2000) }).strict().safeParse(await readBody(request)) : undefined;
-    const name = url?.success === true ? url.data.url : fileName(String(request.headers["x-file-name"] ?? "adventure.zip")).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 120) || "adventure.zip";
-    const bytes = linked ? undefined : await readBytes(request, largestUpload);
+    return result === "adventure-installed" ? "adventure" : result === "system-installed" ? "system" : result === "language-installed" ? "language" : "extension";
+}
 
-    if (url?.success === false) {
-        sendJson(response, 400, { error: "Send the adventure's https link, such as https://github.com/someone/an-adventure: { url }." });
+/** What the page may add (D-485, D-486), from npm and GitHub, read again at most every ten minutes, or when the page asks it fresh. */
+async function catalogNow(response: ServerResponse, served: Served, fresh: boolean): Promise<void>
+{
+    const kept = served.catalog;
+
+    if (kept !== undefined && !fresh && Date.now() - kept.at < catalogLife) {
+        sendJson(response, 200, kept.catalog);
         return;
     }
-
-    if (!linked && bytes === undefined) {
-        sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: an adventure is never that big.` });
-        return;
-    }
-
-    if (served.packageWork !== undefined) {
-        sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy" });
-        return;
-    }
-
-    served.packageWork = { name, action: "add" };
-    served.notify();
 
     try {
-        // A link is downloaded before the campaign's files are touched: a slow site never holds them.
-        const adventure = bytes === undefined ? await readAdventureSpec(name, served.context) : readAdventureZip(bytes, name);
         await served.session.ready();
-        const news = withFiles(served.session, () => {
-            const root = requireCampaign(served.context.folder);
-            const installed = installAdventure(root, { ...served.context, actor: "player" }, adventure, name);
-            return `The player, on the dashboard, added an adventure: ${adventureText(installed)}`;
-        });
-        served.events.push(news);
-        sendJson(response, 202, {});
+        const read = await withFiles(served.session, () => catalog(requireCampaign(served.context.folder), served.context));
+        served.catalog = { at: Date.now(), catalog: read };
+        sendJson(response, 200, read);
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
-    } finally {
-        served.packageWork = undefined;
-        served.notify();
     }
 }
 

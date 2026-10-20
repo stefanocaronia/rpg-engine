@@ -82,6 +82,8 @@ export interface PackageInfo
     description?: string;
     /** Who wrote it, as npm gives it. */
     author?: string;
+    /** Whether it brings code that runs, by its package.json: a main, exports or a command. */
+    code?: boolean;
 }
 
 /** What the window of the player's operating system said: yes, no, or none when it could not be shown. */
@@ -221,8 +223,8 @@ export function defaultContext(folder = process.cwd()): Context
         newSalt: () => randomBytes(16).toString("hex"),
         actor: "master",
         platform: process.platform,
-        // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up.
-        systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url))],
+        // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up; then those npm installed (D-485).
+        systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url)), join(packagesFolder(), "node_modules")],
         extensionFolders: [join(packagesFolder(), "node_modules")],
         home: userDataFolder(),
         // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.

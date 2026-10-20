@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { stringify } from "yaml";
 import type { Context } from "./core/context.ts";
 import { files } from "./core/store.ts";
+import { languagePackFor, packPhrases } from "./languages/index.ts";
 import { type SystemWords, systemWords } from "./systems/index.ts";
 
 /** What the page has of a language: its phrases so far, whether they are being translated, whether this computer can, and how many it still lacks. */
@@ -86,7 +87,9 @@ export function pageTranslator(context: Context, page: string, notify: () => voi
 
     return {
         read: (language, system) => {
-            const own = context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`));
+            // A translation made by hand, installed as a package, comes before the one made on the fly (D-485 (3)).
+            const pack = languagePackFor(context.extensionFolders ?? [], language);
+            const own = { ...(context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`))), ...(pack === undefined ? {} : packPhrases(pack)) };
             const missing = Object.keys(reference()).filter((phrase) => !(phrase in own)).length;
             const can = context.writer?.ready() === true && context.home !== undefined;
 

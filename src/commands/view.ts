@@ -9,6 +9,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
+import { languagePackFor, packSystemFolder } from "../languages/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
 import { homeSystemWords } from "../page-words.ts";
 import { declaredKind, entryPage, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
@@ -422,7 +423,10 @@ export const view = defineCommand({
 /** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
 function wordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
 {
-    return systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
+    // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
+    const pack = languagePackFor(context.extensionFolders ?? [], language);
+    const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
+    return (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
 }
 
 /**

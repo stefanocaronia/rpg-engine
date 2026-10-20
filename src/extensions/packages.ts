@@ -219,6 +219,9 @@ interface Manifest
     description?: string;
     // A string as package.json writes it, or a name as the registry gives it back.
     author?: string | { name?: string; };
+    main?: unknown;
+    exports?: unknown;
+    bin?: unknown;
     "rpg-engine"?: { kind?: unknown; api?: unknown; };
 }
 
@@ -232,6 +235,8 @@ function infoOf(read: Manifest): PackageInfo
         ...(typeof marker?.api === "number" ? { api: marker.api } : {}),
         ...(read.description === undefined ? {} : { description: read.description }),
         ...(authorOf(read) === undefined ? {} : { author: authorOf(read) }),
+        // What runs: a main, exports or a command; a package of texts alone has none.
+        code: read.main !== undefined || read.exports !== undefined || read.bin !== undefined,
     };
 }
 

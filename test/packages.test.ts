@@ -3,6 +3,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Confirm, Confirmed, Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
@@ -90,6 +91,54 @@ beforeEach(async () => {
 });
 
 afterEach(() => removeFolder(folder));
+
+describe("a game system as a package (D-485)", () => {
+    it("installs someone else's system with the player's yes, for a new campaign: the campaign keeps its own, and list says both", async () => {
+        const tiny = join(makeTempFolder(), "system-tiny");
+        mkdirSync(tiny, { recursive: true });
+        writeFileSync(join(tiny, "package.json"), JSON.stringify({ name: "@test/system-tiny", version: "1.0.0", "rpg-engine": { kind: "system" } }));
+        writeFileSync(join(tiny, "system.yaml"), "title: a tiny test system\nlanguage: en\n");
+        npm = fakeNpm(modules, { "@test/system-tiny": tiny });
+        context = { ...context, packages: npm, systemFolders: [...context.systemFolders, modules], confirm: windowAnswering("yes") };
+        const result = await rpg("package", "install", "@test/system-tiny");
+        expect(result.output).toBe("Installed the game system tiny 1.0.0, a tiny test system, not verified: at the player's risk. It is for a new campaign, chosen in its setup: this one plays ironsworn.");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", data: { package: "@test/system-tiny", kind: "system", verified: false } });
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("system: ironsworn");
+    });
+});
+
+describe("a language as a package (D-485 (3))", () => {
+    /** A language package for German, its phrases given, as a folder npm would install. */
+    function germanPack(name: string, phrases: Record<string, string>): string
+    {
+        const pack = join(makeTempFolder(), name.split("/").at(-1) ?? name);
+        mkdirSync(pack, { recursive: true });
+        writeFileSync(join(pack, "package.json"), JSON.stringify({ name, version: "1.0.0", "rpg-engine": { kind: "language" } }));
+        writeFileSync(join(pack, "language.yaml"), "code: de\nname: Deutsch\n");
+        writeFileSync(join(pack, "phrases.json"), JSON.stringify(phrases));
+        return pack;
+    }
+
+    it("installs one with no yes, as texts only; refuses one that loses a {name}; and one language has one package", async () => {
+        npm = fakeNpm(modules, {
+            "@test/deutsch": germanPack("@test/deutsch", { "{count} failures": "{count} Fehlschläge" }),
+            "@test/kaputt": germanPack("@test/kaputt", { "{count} failures": "Fehlschläge" }),
+            "@test/besser": germanPack("@test/besser", { "{count} failures": "{count} Misserfolge", "{count} feet": "{count} Fuß" }),
+        });
+        context = { ...context, packages: npm, pageFolder: fileURLToPath(new URL("../src/dashboard/", import.meta.url)) };
+        expect((await rpg("package", "install", "@test/deutsch")).output).toMatch(
+            /^Installed Deutsch \(de\) 1\.0\.0, the dashboard's words made by hand, by someone else, for every campaign on this computer\. \d+ phrases it lacks come from the translation on the fly\.$/,
+        );
+
+        const broken = await rpg("package", "install", "@test/kaputt");
+        expect(broken.output).toBe('@test/kaputt cannot be used: "Fehlschläge" has not the {names} of "{count} failures". It was taken off this computer.');
+        expect(existsSync(join(modules, "@test", "kaputt"))).toBe(false);
+
+        expect((await rpg("package", "install", "@test/besser")).output).toContain("It takes the place of @test/deutsch.");
+        expect(existsSync(join(modules, "@test", "deutsch"))).toBe(false);
+        expect((await rpg("package", "list")).output).toBeDefined();
+    });
+});
 
 describe("rpg package install", () => {
     it("installs one of ours by its name alone, adds it to the campaign with its version, logs it, and gives the part for now (D-27, D-436)", async () => {
@@ -322,7 +371,14 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(before.installed).toEqual([]);
         const shop = JSON.parse((await send("GET", "/api/packages?npm=true")).body);
         expect(shop.available.map((one: { name: string; }) => one.name)).toContain("weather");
-        expect((await send("POST", "/api/package", { action: "add", name: "weather" })).status).toBe(202);
+        const added = await send("POST", "/api/add", { source: "weather" });
+        expect(added.status).toBe(202);
+        expect(JSON.parse(added.body)).toEqual({ kind: "extension" });
+        const listed = JSON.parse((await send("GET", "/api/packages")).body);
+        expect(listed.systems.map((one: { name: string; used: boolean; }) => [one.name, one.used])).toEqual(expect.arrayContaining([["ironsworn", true], ["5e", false]]));
+        const offered = JSON.parse((await send("GET", "/api/catalog")).body);
+        expect(offered.entries).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "extension", title: "weather", source: "weather", verified: true, installed: weatherVersion })]));
+        expect(offered.failed).toMatchObject({ github: expect.stringContaining("reach GitHub") });
         const after = JSON.parse((await send("GET", "/api/packages")).body);
         expect(after.installed).toMatchObject([{ name: "weather", used: true, verified: true }]);
         expect(dashboard.news().lines.join("\n")).toContain("The player, on the dashboard, added weather: Installed weather");
@@ -330,10 +386,24 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "weather", used: false }]);
     });
 
-    it("leaves someone else's package to the player's terminal, until the page's yes cannot be forged (D-441)", async () => {
-        const refused = await send("POST", "/api/package", { action: "add", name: "@test/rumors" });
-        expect(refused.status).toBe(403);
-        expect(JSON.parse(refused.body)).toMatchObject({ code: "not-ours", error: expect.stringContaining("rpg package install @test/rumors: a window of your computer asks for your yes") });
+    it("adds someone else's package only with the player's yes in a window of their computer, never the host's form nor the page's click (D-478, D-485)", async () => {
+        const refused = await send("POST", "/api/add", { source: "@test/rumors" });
+        expect(refused.status).toBe(400);
+        expect(JSON.parse(refused.body)).toMatchObject({ code: "no-window" });
         expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toEqual([]);
+
+        await dashboard.close();
+        const asked: string[] = [];
+        const started = await startDashboard({ ...context, files: session, player: pageAnswering(0), confirm: windowAnswering("no", asked) }, session, { ports: [0], page: folder });
+        dashboard = started as Dashboard;
+        port = Number(new URL(dashboard.url).port);
+        expect(JSON.parse((await send("POST", "/api/add", { source: "@test/rumors" })).body)).toMatchObject({ code: "declined" });
+        expect(asked).toHaveLength(1);
+
+        await dashboard.close();
+        dashboard = await startDashboard({ ...context, files: session, confirm: windowAnswering("yes") }, session, { ports: [0], page: folder }) as Dashboard;
+        port = Number(new URL(dashboard.url).port);
+        expect((await send("POST", "/api/add", { source: "@test/rumors" })).status).toBe(202);
+        expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "rumors", used: true, verified: false }]);
     });
 });
