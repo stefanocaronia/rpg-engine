@@ -32,6 +32,7 @@ import { questText, type ShownChapter, shownJournal, type ShownQuest, type Story
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
+import { importShown, type ShownImport } from "./import.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
 import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock, tokenIcon } from "./sheet.ts";
@@ -95,7 +96,7 @@ export interface PartyMember
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
-    | { kind: "none"; language?: string; }
+    | { kind: "none"; language?: string; importing?: ShownImport; }
     | {
         kind: "overview";
         campaign: string;
@@ -123,6 +124,8 @@ export type ViewResult =
         rollsTotal: number;
         /** How many problems the campaign's files have, which the dashboard tells the player the master fixes (validate). */
         problems: number;
+        /** An import under way, which the dashboard tells the player (D-491 (11)). */
+        importing?: ShownImport;
     }
     | {
         kind: "page";
@@ -240,9 +243,12 @@ export const view = defineCommand({
         // Whose view it is: the player character's, or another character's for the character agent voicing them (VIEW-10).
         const pc = input.as === undefined ? playerCharacter(world) : characterNamed(world, input.as);
 
+        // An import under way, which the dashboard tells the player (D-491 (11)); never the character agent.
+        const importing = input.as === undefined ? importShown(root) : undefined;
+
         if (pc === undefined) {
             const language = readSettings(root).language;
-            return { kind: "none", ...(language === undefined ? {} : { language }) };
+            return { kind: "none", ...(language === undefined ? {} : { language }), ...(importing === undefined ? {} : { importing }) };
         }
 
         const knowledge = knowledgeOf(root, world, pc);
@@ -384,6 +390,7 @@ export const view = defineCommand({
             rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture, seenAt.get(entry.id))),
             rollsTotal: shownRolls.length,
             problems: campaignProblems(root, world, context).length,
+            ...(importing === undefined ? {} : { importing }),
         };
     },
 

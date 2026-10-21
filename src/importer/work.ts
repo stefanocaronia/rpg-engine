@@ -1,6 +1,6 @@
 // The importer's folder in the campaign (D-489): the player's document as text in pieces with its pictures, the mark of how far it is, and what the helper
 // writes there, notes and the adventure. Another process writes in it, so it is read and written here, never through the campaign's store.
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parse, stringify } from "yaml";
 
@@ -105,6 +105,16 @@ export function readImportState(folder: string): ImportState | undefined
     }
 
     return { title: basename(folder), document: "", pieces: 0, phase: "reading", done: 0, failed: "its import.yaml was changed by hand and does not read: drop it with cancel" };
+}
+
+/** How long ago the import's mark was last written, in milliseconds; undefined without one. */
+export function importAge(folder: string): number | undefined
+{
+    try {
+        return Date.now() - statSync(join(folder, "import.yaml")).mtimeMs;
+    } catch {
+        return undefined;
+    }
 }
 
 /** The mark written; never once the import was dropped, so that a run ending late does not bring its folder back. */
@@ -242,11 +252,90 @@ export function hasImport(folder: string): boolean
     return existsSync(folder);
 }
 
+/** A document being opened for an import, before its folder is made (D-491 (11)): its title, the process that reads it, and how far the OCR is. */
+export interface OpeningImport
+{
+    title: string;
+    pid: number;
+    /** Its pages read from their pictures so far, of those that have no readable text. */
+    ocr?: { done: number; of: number; };
+}
+
+/** Marks a document being opened for an import by this process, as the dashboard tells it while the master waits: false while another live process opens one. */
+export function beginOpening(root: string, title: string): boolean
+{
+    if (openingImport(root) !== undefined) {
+        return false;
+    }
+
+    mkdirSync(join(root, importsFolderName), { recursive: true });
+    writeFileSync(openingFile(root), stringify({ title, pid: process.pid }));
+    return true;
+}
+
+/** Marks again how far the OCR is, while the mark is still this process's: one dropped by cancel stays dropped. */
+export function markOpening(root: string, opening: OpeningImport): void
+{
+    if (isOwnOpening(root)) {
+        writeFileSync(openingFile(root), stringify(opening));
+    }
+}
+
+/** The document being opened for an import now, if a live process is opening one; a mark left by a process that is gone is taken away. */
+export function openingImport(root: string): OpeningImport | undefined
+{
+    let opening: OpeningImport | null;
+
+    try {
+        opening = parse(readFileSync(openingFile(root), "utf8")) as OpeningImport | null;
+    } catch {
+        return undefined;
+    }
+
+    if (typeof opening?.title === "string" && typeof opening.pid === "number" && isAlive(opening.pid)) {
+        return opening;
+    }
+
+    rmSync(openingFile(root), { force: true });
+    return undefined;
+}
+
+/** Whether the document being opened is still this process's: false once cancel dropped it. */
+export function isOwnOpening(root: string): boolean
+{
+    return openingImport(root)?.pid === process.pid;
+}
+
+/** The mark taken away: this process's once its document is open or failed to open, or any, as cancel drops it. */
+export function clearOpening(root: string, own = true): void
+{
+    if (!own || isOwnOpening(root)) {
+        rmSync(openingFile(root), { force: true });
+    }
+}
+
 /** The import's folder gone, the player's document untouched. */
 export function dropImport(folder: string): void
 {
     // Windows holds a folder a little after the helper that ran in it stops.
     rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+}
+
+/**
+ * The document's text taken out of the import's folder once the import is done (LIB-8); its pictures too when the adventure has copied those its pages show,
+ * else they stay for the master writing them in the chat.
+ */
+export function dropDocumentText(folder: string, pictures = false): void
+{
+    const document = join(folder, "document");
+
+    for (const name of existsSync(document) ? readdirSync(document).filter((file) => /^\d+\.md$/.test(file)) : []) {
+        rmSync(join(document, name), { force: true });
+    }
+
+    if (pictures) {
+        rmSync(join(document, "pictures"), { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    }
 }
 
 /** A file the helper wrote in the import's folder, such as notes/invented.md; undefined when it wrote none. */
@@ -314,6 +403,11 @@ export function textSize(text: string): number
 {
     const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
     return Math.max(text.split(/\s+/).filter((word) => word !== "").length + letters, Math.ceil(text.length / 6));
+}
+
+function openingFile(root: string): string
+{
+    return join(root, importsFolderName, "opening.yaml");
 }
 
 function isAlive(pid: number): boolean

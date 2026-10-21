@@ -1,11 +1,15 @@
 // The importer's folder (D-489): the player's document in pieces, how far the import is, and the adventure the helper writes. Depends on nothing else in
 // rpg-engine.
 export {
+    beginOpening,
     claimImport,
+    clearOpening,
     doneImports,
+    dropDocumentText,
     dropImport,
     finishAdventure,
     hasImport,
+    importAge,
     importDate,
     importedPages,
     type ImportedText,
@@ -17,7 +21,11 @@ export {
     importStarts,
     type ImportState,
     importStyle,
+    isOwnOpening,
+    markOpening,
     openImport,
+    type OpeningImport,
+    openingImport,
     openLicense,
     pieceName,
     prepareImport,

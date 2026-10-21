@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -214,21 +214,23 @@ Kun pelinjohtaja kysyy sinulta jotain, sen banneri pysyy ylhäällä, missä tah
 
 ### 5.1 Mikä pelijärjestelmä on
 
-Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mitä kuluu ja mitä palautuu. Pelinjohtaja lukee säännöistä, miten ominaisuus toimii, ja päättää, kuten pelipöydässä.
+Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntöteksti. Jokaisessa kampanjassa pelataan yhtä järjestelmää. RPG Engine laskee hahmolomakkeen ja sen, mitä kuluu ja mitä palautuu. Sen, miten jokin kyky toimii, pelinjohtaja lukee säännöistä ja ratkaisee, kuten pelipöydässä.
 
-### 5.2 Viides edtio, mukana
+### 5.2 Viides laitos mukana
 
-SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalla sanamuodolla; täysi hahmolomake, laskettuna valmiiksi.
+SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalta sanamuodolta; täysi hahmolomake laskettuna valmiiksi.
 
-Voit pelata myös sisältöä, jota SRD:stä puuttuu, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee niitä ominaan. RPG Engine toimittaa vain avointa sisältöä. Pelinjohtajasi tietämys ei ole rajattua.
+Voit pelata myös sisältöä, jota SRD:ssä ei ole, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee niitä ominaan. RPG Engine sisältää vain avointa sisältöä. Pelinjohtajan tietoja se ei rajoita.
+
+Omat sääntökirjasi voivat toimia kampanjan kirjastona. Kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, ja vastaa myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee kirjat kerran, tällä tietokoneella. Pelinjohtaja hakee niistä, kun se ratkaisee jonkin säännön SRD:n jälkeen, ja mainitsee kirjan ja sivun. Ne luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden teksti on valittavissa. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta kirjojasi, ei lähetä niiden tekstiä minnekään eikä kopioi sitä kampanjaan.
 
 ### 5.3 Kotisäännöt ja omat lisäykset
 
-Pyydä pelinjohtajalta: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Se pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, kun sellainen tarvitaan. Valmiiksi kirjoitetut kotisäännöt voivat olla tekstitiedostoina kampanjan `rules`-kansiossa.
+Pyydä pelinjohtajaa: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, jos sellainen tarvitaan. Valmiiksi kirjoitetut kotisäännöt voit laittaa tekstitiedostoina kampanjan `rules`-kansioon.
 
 ### 5.4 Oman pelijärjestelmän lisääminen tai tuominen
 
-Ei vielä: nykyisin RPG Engine pelaa vain viidettä editiota ([Tulossa myöhemmin](#9-coming-later)).
+Ei vielä: nykyisin RPG Engine pelaa vain viidettä laitosta ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 
@@ -238,40 +240,39 @@ Ei vielä. Laajennus lisää kampanjaan jotakin pelijärjestelmän päälle: maa
 
 ---
 
-## 7. Mistä kampanja tulee ja sen kieli <!-- icon: world -->
+## 7. Mistä kampanja tulee ja mikä on sen kieli <!-- icon: world -->
 
 ### 7.1 Kolme tapaa saada maailma
 
-- **Tehty lennossa**: lähtökohdastasi pelinjohtaja rakentaa jokaisen paikan, henkilön ja juonen juuri ennen kuin tarvitset sen, ja säilyttää sen.
+- **Tehdään lennosta**: pelinjohtaja rakentaa lähtöajatuksestasi jokaisen paikan, henkilön ja juonen juuri ennen kuin tarvitset sitä, ja muistaa ne.
 - **Valmisteltu alussa**: sama, mutta maailma rakennetaan ennen pelin alkua.
-- **Omasta seikkailusta**: anna pelinjohtajalle teksti tai PDF ja pyydä sitä valmistelemaan se, *[Valmistele tämä seikkailu kampanjaksemme. Älä kerro minulle mitään siitä, mitä siinä on.]* Se kirjoittaa paikat, hahmot ja salaisuudet. Tuontipainiketta ei vielä ole.
+- **Omasta seikkailusta tai kirjasta**: anna pelinjohtajalle sen tiedosto, *[Tuo tämä seikkailu kampanjaksemme: D:\Books\adventure.pdf. Älä kerro minulle mitään siitä, mitä siinä on.]* Se luetaan parhaiten tekstinä, EPUB-tiedostona, Word-asiakirjana tai PDF-tiedostona, jonka teksti on valittavissa. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, hitaasti ja muutamin virhein. Tietokoneellasi toimiva Codex tai Claude Code lukee tiedoston chatin ulkopuolella, ja kojelauta näyttää, miten pitkällä lukeminen on. Romaanista pelinjohtaja ehdottaa aloituskohtaa. Se kirjoittaa paikat, hahmot ja salaisuudet.
 
-Kampanja pelataan kerran: pelataksesi saman seikkailun uudelleen luo uusi kampanja.
+Kampanja pelataan kerran: jos haluat pelata saman seikkailun uudestaan, luo uusi kampanja.
 
 ### 7.2 Kielet
 
-Yksi kieli kampanjaa kohden, pelinjohtajan kieli, jota kojelauta seuraa. Kojelaudan mukana tulee 26 kieltä. Minkä tahansa muun kielen kääntää tietokoneellasi Codex tai Claude Code, tai ilman niitä pelinjohtaja keskustelussa. Viidennen editionin italiankieliset termit tulevat viralliselta italialaiselta SRD:ltä. Sääntöteksti pysyy englanniksi, ja pelinjohtaja kertoo sen sinun kielelläsi.
+Kampanjalla on yksi kieli, pelinjohtajan kieli, jota kojelauta seuraa. Kojelaudassa on 26 kieltä. Minkä tahansa muun kielen käännöksen tekee tietokoneellasi Codex tai Claude Code tai, jos niitä ei ole, pelinjohtaja chatissa. Viidennen laitoksen italialaiset termit tulevat virallisesta italialaisesta SRD:stä. Sääntöteksti pysyy englanniksi, ja pelinjohtaja kertoo sen sinun kielelläsi.
 
 ---
 
 ## 8. Uteliaille: kampanjakansio <!-- icon: list -->
 
-Sinun ei koskaan tarvitse avata sitä, ja siinä on kampanjasi salaisuudet. Kansiossa on `campaign.yaml` (asetuksesi), `state.yaml` (pelin tilanne), `world/` (yksi markdown-sivu jokaista hahmoa, paikkaa, tehtävää ja muuta kohden), `rules/` (talosääntösi), `images/`, `log.jsonl` (jokainen muutos), `.saves/`, `.player/` (muistiinpanosi) sekä pienet tiedostot, jotka kertovat tekoälyagenteille, missä RPG Engine on. Sivut käyttävät Obsidianin muotoa. Jos muokkaat sivua käsin, pelinjohtaja saa tiedon siitä seuraavassa vastauksessaan.
+Sinun ei koskaan tarvitse avata sitä, ja siinä ovat kampanjasi salaisuudet. Siinä on `campaign.yaml` (asetuksesi), `state.yaml` (pelin tilanne), `world/` (yksi markdown-sivu jokaista hahmoa, paikkaa, tehtävää ja muuta kohden), `rules/` (kotisääntösi), `images/`, `log.jsonl` (jokainen muutos), `.saves/`, `.player/` (muistiinpanosi) sekä pienet tiedostot, jotka kertovat tekoälyagenteille, missä RPG Engine on. Sivut käyttävät Obsidianin muotoa. Jos muutat sivua käsin, pelinjohtaja saa siitä tiedon seuraavalla vastauksellaan.
 
-RPG Engine pysyy tässä kansiossa: se lukee ja kirjoittaa peliä vain täällä eikä koske muihin tiedostoihisi. Sen ulkopuolelle se jättää vain oman datakansionsa (kojelaudan käännökset sekä Codexin tai Claude Coden, jos annat sen asentaa ne) ja väliaikaiset kansiot kuvan piirtämisen ajaksi. Jos tekoälyagenttisi haluaa tehdä tietokoneellasi jotain muuta, se kysyy sinulta ensin.
+RPG Engine pysyy tässä kansiossa: se lukee ja kirjoittaa peliä vain täällä eikä koske muihin tiedostoihisi. Sääntökirjojesi kansioita se vain lukee. Sen ulkopuolelle se jättää vain omia tietokansioitaan (kojelaudan käännökset, sääntökirjoistasi luetun tekstin sekä Codexin tai Claude Coden, jos annat asentaa ne) ja väliaikaisia kansioita kuvan piirtämisen ajaksi. Kaikesta muusta, mitä agenttisi haluaa tehdä tietokoneellasi, se kysyy sinulta ensin.
 
-Kaikki pelinjohtajan käyttämät komennot voi ajaa myös kampanjakansiossa: `rpg --help` listaa ne. Monet niistä tulostavat kampanjan salaisuuksia.
+Kaikki pelinjohtajan käyttämät komennot voi ajaa myös kampanjakansiossa: `rpg --help` luettelee ne. Monet tulostavat kampanjan salaisuuksia.
 
 ---
 
 ## 9. Tulossa myöhemmin <!-- icon: hourglass -->
 
 - **Sinä pelinjohtajana**, ja tekoäly pelaa seuruetta.
-- **Tekijätila**: kirjoita seikkailu tekoälyn kanssa, vie se ulos ja jaa se.
-- **Useita pelaajia samalla tietokoneella**, joilla kullakin on oma hahmo ja jotka vuorottelevat samassa keskustelussa.
-- **Laajennukset**: asetukset, seikkailut, ominaisuudet ja kotisäännöt.
-- **Oppaiden ja seikkailujen tuonti**.
-- **Muut pelit**: lisää pelijärjestelmiä ja omat järjestelmät.
+- **Tekijätila**: kirjoita seikkailu tekoälyn kanssa, vie se ja jaa se.
+- **Useita pelaajia samalla tietokoneella**, jokaisella oma hahmo, vuorotellen samassa chatissa.
+- **Laajennukset**: asetuksia, seikkailuja, ominaisuuksia ja kotisääntöjä.
+- **Muut pelit**: lisää pelijärjestelmiä ja omat järjestelmäsi.
 
 ---
 

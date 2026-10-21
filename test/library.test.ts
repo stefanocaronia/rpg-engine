@@ -1,0 +1,464 @@
+// The player's library (D-491, LIB-1–LIB-8): the list a campaign keeps, its books indexed once in the player's data folder, the pages without readable text,
+// the locked files, the search of rules after the system and what it shows. The books here are written for the tests, never a manual's text.
+import { zipSync } from "fflate";
+import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { beforeEach, describe, expect, it } from "vitest";
+import { runCommandLine } from "../src/command-line.ts";
+import { libraryScope } from "../src/commands/game-library.ts";
+import type { Confirmed, Context } from "../src/core/context.ts";
+import { isReadable, pagesWritten, readDocument } from "../src/documents/index.ts";
+import { bookLanguage, claimLibrary, libraryReader, libraryState, readLibrary, releaseLibrary } from "../src/library/index.ts";
+import { findPages, pageExcerpt } from "../src/rules/index.ts";
+import { tinyPdf } from "./pdf-fixture.ts";
+import { makeTempFolder, testContext } from "./support.ts";
+
+const falling = "FALLING\nA creature that drops from a height lands hard: it takes one die of damage for each ten feet it falls, and ends prone unless it avoids the damage. "
+    + "A fall into deep water hurts less, and a creature that can fly falls only when it cannot use its wings. A slope breaks a fall too, if it is steep enough to slide on.";
+const climbing = "CLIMBING\nA climber moves at half speed on a rough wall, and a smooth one needs a check.";
+const englishBook = [
+    "CHAPTER ONE\nThe road north is long and the inns are few. Travellers keep to the river, where the ferries run until the first frost.",
+    `${falling}\nCLIMBING\nA climber moves at half speed on a rough wall, and a smooth one needs a check.`,
+    "THE MOUNTAIN PASS\nSnow covers the pass in winter. A traveller who slips may fall, but the guides know the safe paths and rope the party together.",
+    "FEATHER STEP\nA spell of the wind: the caster drifts down like a leaf and lands on their feet.",
+    "SHORT REST\nA short rest is an hour of quiet: eating, drinking, tending wounds. During a short rest a creature may spend its healing dice.",
+    "RESTING IN THE WILD\nThe wild is never quiet. A party that rests outside keeps watches, and every short watch is a rest broken by noises in the dark.",
+].join("\n\n");
+
+function book(name: string, parts: string[]): { name: string; parts: { label: string; text: string; }[]; }
+{
+    return { name, parts: parts.map((text, index) => ({ label: `p. ${index + 1}`, text })) };
+}
+
+function ascii(text: string): Uint8Array
+{
+    return new TextEncoder().encode(text);
+}
+
+function fileIn(folder: string, name: string, body: string | Uint8Array): string
+{
+    const file = join(folder, name);
+    mkdirSync(join(file, ".."), { recursive: true });
+    writeFileSync(file, body);
+    return file;
+}
+
+/** An EPUB of one chapter, with what META-INF holds besides. */
+function epub(meta: Record<string, string>): Uint8Array
+{
+    const opf = '<package><manifest><item id="c1" href="ch1.xhtml"/></manifest><spine><itemref idref="c1"/></spine></package>';
+    return zipSync({
+        "META-INF/container.xml": ascii('<container><rootfiles><rootfile full-path="OEBPS/book.opf"/></rootfiles></container>'),
+        "OEBPS/book.opf": ascii(opf),
+        "OEBPS/ch1.xhtml": ascii("<html><body><p>The ferryman waits by the river.</p></body></html>"),
+        ...Object.fromEntries(Object.entries(meta).map(([path, text]) => [path, ascii(text)])),
+    });
+}
+
+/** A PDF that asks for a password: its trailer says it is encrypted, with keys no empty password opens. */
+function lockedPdf(): Uint8Array
+{
+    const pdf = new TextDecoder("latin1").decode(tinyPdf([{ text: "Secret page." }]));
+    const key = "0123456789ABCDEF".repeat(4);
+    const locked = pdf.replace(/(\/Root \d+ 0 R) >>/, `$1 /Encrypt << /Filter /Standard /V 1 /R 2 /O <${key}> /U <${key}> /P -4 >> /ID [<${key.slice(0, 32)}> <${key.slice(0, 32)}>] >>`);
+    return Uint8Array.from(locked, (letter) => letter.charCodeAt(0));
+}
+
+describe("pages without readable text (LIB-4)", () => {
+    it("reads a page as text when half of its words with letters are true words; numbers, dice and marks count neither way", () => {
+        expect(isReadable("A creature that falls takes damage.")).toBe(true);
+        expect(isReadable("Longsword 15 gp 1d8 slashing 3 lb. —")).toBe(true);
+        expect(isReadable("12 15 1d6 +2 (3) 50%")).toBe(true);
+        expect(isReadable("<0=?\"=0H <?2H%:6 &0H?5H%6 :0<865&'5='H8: one")).toBe(false);
+        expect(isReadable("")).toBe(false);
+        expect(isReadable("Lancia d'arme, semi-elfo, «Lotta»: niente.")).toBe(true);
+        expect(isReadable("我们走了。他来了，很好。渡し守は川のほとりで待っている。")).toBe(true);
+        expect(isReadable("z.B. 1d6+2, 3,5 kg; (10).")).toBe(true);
+    });
+
+    it("reads a PDF's page without readable text by the OCR given, and leaves it empty, and says so, without one", async () => {
+        const file = fileIn(makeTempFolder(), "scan.pdf", tinyPdf([{ text: "A page of words, as a book writes them." }, { text: "<0=?\"=0H <?2H%:6 &0H?5H%6 :0<865&'5='H8:" }]));
+        const asked: number[][] = [];
+
+        const ocr = (_pdf: string, pages: number[]) => {
+            asked.push(pages);
+            return Promise.resolve(new Map([[2, "The ferryman waits by the river."]]));
+        };
+
+        const read = await readDocument(file, { ocr });
+        expect(asked).toEqual([[2]]);
+        expect(read.parts[1].text).toBe("The ferryman waits by the river.");
+        expect(read.unreadable).toEqual([]);
+        const without = await readDocument(file);
+        expect(without.parts[1].text).toBe("");
+        expect(without.unreadable).toEqual(["p. 2"]);
+    });
+
+    it("takes the pages Windows' OCR wrote, each by its number and its text in base64", () => {
+        const line = (page: number, text: string): string => `${page} ${Buffer.from(text, "utf8").toString("base64")}`;
+        expect([...pagesWritten(`${line(3, "Città\nAFFERRATO")}\r\n${line(4, "")}\nnoise\n`)]).toEqual([[3, "Città\nAFFERRATO"], [4, ""]]);
+    });
+});
+
+describe("locked files (LIB-5)", () => {
+    it("refuses a PDF that asks for a password, a Word document with one, an OpenDocument encrypted and an EPUB with DRM, saying why", async () => {
+        const folder = makeTempFolder();
+        await expect(readDocument(fileIn(folder, "locked.pdf", lockedPdf()))).rejects.toThrow("locked.pdf asks for a password to open: the engine never opens a locked document.");
+        await expect(readDocument(fileIn(folder, "locked.docx", Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])))).rejects.toThrow("locked.docx asks for a password");
+        const odt = zipSync({ "META-INF/manifest.xml": ascii("<manifest><file-entry><encryption-data/></file-entry></manifest>"), "content.xml": ascii("<x/>") });
+        await expect(readDocument(fileIn(folder, "locked.odt", odt))).rejects.toThrow("locked.odt asks for a password to open");
+        const drm = epub({ "META-INF/encryption.xml": '<encryption><EncryptedData><CipherData><CipherReference URI="OEBPS/ch1.xhtml"/></CipherData></EncryptedData></encryption>' });
+        await expect(readDocument(fileIn(folder, "locked.epub", drm))).rejects.toThrow("locked.epub is locked by DRM");
+    });
+
+    it("reads an EPUB whose fonts alone are obfuscated, as its maker may do", async () => {
+        const fonts = epub({ "META-INF/encryption.xml": '<encryption><EncryptedData><CipherData><CipherReference URI="OEBPS/font.otf"/></CipherData></EncryptedData></encryption>' });
+        const read = await readDocument(fileIn(makeTempFolder(), "fonts.epub", fonts));
+        expect(read.parts[0].text).toContain("The ferryman waits by the river.");
+    });
+});
+
+describe("the books and their index (LIB-2, LIB-3)", () => {
+    let home: string;
+    let shelf: string;
+    let reads: string[];
+
+    const reader = async (path: string) => {
+        reads.push(path);
+        const read = await readDocument(path, { pictures: false });
+        return { parts: read.parts, unreadable: read.unreadable, recognized: read.recognized };
+    };
+
+    beforeEach(() => {
+        home = makeTempFolder();
+        shelf = makeTempFolder();
+        reads = [];
+        fileIn(shelf, "Rules of the Road.md", englishBook);
+        fileIn(shelf, "old/Rules of the Road.txt", "An older edition of the road's rules, kept for its maps.");
+        fileIn(shelf, ".hidden/secret.md", "Never read.");
+        fileIn(shelf, "campaign/campaign.yaml", "name: Inside\n");
+        fileIn(shelf, "campaign/world/notes.md", "A campaign's own page.");
+        fileIn(shelf, "cover.png", "not a book");
+    });
+
+    it("takes the documents of the folders, not those whose name starts with a dot nor a campaign's, and names books alike by their kind, then their folder", async () => {
+        const waiting = libraryState(home, [shelf], libraryScope);
+        expect(waiting.books).toEqual([]);
+        expect(waiting.waiting.map((path) => path.slice(shelf.length + 1).replaceAll("\\", "/"))).toEqual(["Rules of the Road.md", "old/Rules of the Road.txt"]);
+        await readLibrary(home, [shelf], libraryScope, reader);
+        const state = libraryState(home, [shelf], libraryScope);
+        expect(state.waiting).toEqual([]);
+        expect(state.books.map((one) => [one.name, one.language])).toEqual([["Rules of the Road.md", "en"], ["Rules of the Road.txt", undefined]]);
+        fileIn(shelf, "old/Rules of the Road.md", "The old rules.");
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(libraryState(home, [shelf], libraryScope).books.map((one) => one.name)).toEqual([
+            `Rules of the Road.md (${shelf.split(/[\\/]/).at(-1)})`,
+            "Rules of the Road.md (old)",
+            "Rules of the Road.txt",
+        ]);
+    });
+
+    it("reads a book once, again only when its size or date changes, and drops the index of a book that is gone", async () => {
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(reads).toHaveLength(2);
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(reads).toHaveLength(2);
+        const changed = join(shelf, "old", "Rules of the Road.txt");
+        writeFileSync(changed, "An older edition of the road's rules, now with its maps and its inns.");
+        utimesSync(changed, new Date(), new Date(Date.now() + 5000));
+        expect(libraryState(home, [shelf], libraryScope).waiting).toEqual([changed]);
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(reads).toHaveLength(3);
+        expect(readdirSync(home).filter((name) => name.endsWith(".json"))).toHaveLength(2);
+        rmSync(changed);
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(readdirSync(home).filter((name) => name.endsWith(".json"))).toHaveLength(1);
+        // Nothing is ever written in the books' folders.
+        expect(readdirSync(shelf).sort()).toEqual([".hidden", "Rules of the Road.md", "campaign", "cover.png", "old"]);
+    });
+
+    it("keeps a book it cannot read as skipped, with why, and reads it again once it changes", async () => {
+        fileIn(shelf, "locked.pdf", lockedPdf());
+        await readLibrary(home, [shelf], libraryScope, reader);
+        const state = libraryState(home, [shelf], libraryScope);
+        expect(state.skipped).toEqual([{ path: join(shelf, "locked.pdf"), why: "locked.pdf asks for a password to open: the engine never opens a locked document." }]);
+        expect(state.waiting).toEqual([]);
+        expect(state.books.map((one) => one.name)).not.toContain("locked");
+    });
+
+    it("tells an entry that is not there, and reads a document given alone", async () => {
+        const alone = fileIn(makeTempFolder(), "Ferries.md", "The ferries run until the first frost.");
+        const state = libraryState(home, [join(shelf, "gone"), alone], libraryScope);
+        expect(state.missing).toEqual([join(shelf, "gone")]);
+        expect(state.waiting).toEqual([alone]);
+    });
+
+    it("lets one process at a time read the library, and takes the mark of one that is gone", () => {
+        // Another live process holds it: the one that started these tests.
+        writeFileSync(join(home, ".reading"), String(process.ppid));
+        expect(claimLibrary(home)).toBe(false);
+        writeFileSync(join(home, ".reading"), "999999999");
+        expect(claimLibrary(home)).toBe(true);
+        expect(libraryReader(home)).toBe(process.pid);
+        expect(claimLibrary(home)).toBe(true);
+        releaseLibrary(home);
+        expect(libraryReader(home)).toBeUndefined();
+        expect(readdirSync(home)).toEqual([]);
+    });
+
+    it("stops reading when another reader took the library meanwhile", async () => {
+        writeFileSync(join(home, ".reading"), String(process.ppid));
+        await readLibrary(home, [shelf], libraryScope, reader);
+        expect(reads).toEqual([]);
+    });
+
+    it("keeps the books of a folder that is not there now, as a disk taken out, and drops those gone from a folder still there", async () => {
+        await readLibrary(home, [shelf], libraryScope, reader);
+        const disk = join(makeTempFolder(), "disk");
+        fileIn(disk, "Ferries.md", "The ferries run until the first frost.");
+        await readLibrary(home, [disk], libraryScope, reader);
+        renameSync(disk, `${disk}-out`);
+        await readLibrary(home, [shelf], libraryScope, reader);
+        renameSync(`${disk}-out`, disk);
+        expect(libraryState(home, [disk], libraryScope).waiting).toEqual([]);
+        expect(reads).toHaveLength(3);
+    });
+
+    it("skips a book that stopped two readers, or that another program kept busy twice, saying how to have it read again", async () => {
+        const hanging = () => new Promise<never>(() => undefined);
+        void readLibrary(home, [shelf], libraryScope, hanging);
+        expect(libraryState(home, [shelf], libraryScope).waiting).toHaveLength(2);
+        void readLibrary(home, [shelf], libraryScope, hanging);
+        const state = libraryState(home, [shelf], libraryScope);
+        expect(state.skipped.map((one) => one.why)).toEqual([
+            "Rules of the Road.md could not be read 2 times, too big or broken for the reader, or kept busy by another program: close that program, or save the file again, which has it read again",
+        ]);
+        const busy = makeTempFolder();
+        fileIn(busy, "Busy.md", "Open elsewhere.");
+        const kept = () => Promise.reject(Object.assign(new Error("resource busy"), { code: "EBUSY" }));
+        await readLibrary(home, [busy], libraryScope, kept);
+        expect(libraryState(home, [busy], libraryScope)).toMatchObject({ waiting: [join(busy, "Busy.md")], skipped: [] });
+        await readLibrary(home, [busy], libraryScope, kept);
+        expect(libraryState(home, [busy], libraryScope).skipped).toHaveLength(1);
+        // A file it may not open is no passing trouble: skipped at once, with why.
+        const denied = makeTempFolder();
+        fileIn(denied, "Denied.md", "Not for you.");
+        await readLibrary(home, [denied], libraryScope, () => Promise.reject(Object.assign(new Error("EACCES: permission denied, open Denied.md"), { code: "EACCES" })));
+        expect(libraryState(home, [denied], libraryScope).skipped.map((one) => one.why)).toEqual(["EACCES: permission denied, open Denied.md"]);
+    });
+
+    it("keeps a book's name while another one is still to read", async () => {
+        await readLibrary(home, [shelf], libraryScope, reader);
+        fileIn(shelf, "old/Rules of the Road.pdf", "not read yet");
+        expect(libraryState(home, [shelf], libraryScope).books.map((one) => one.name)).toEqual(["Rules of the Road.md", "Rules of the Road.txt"]);
+    });
+
+    it.runIf(process.platform === "win32")("takes a book once however its folder is written, where a path is the same in any case", async () => {
+        expect(libraryState(home, [shelf, shelf.toUpperCase()], libraryScope).waiting).toHaveLength(2);
+    });
+
+    it("tells a book's language by the little words it repeats, or by its script", () => {
+        expect(bookLanguage(englishBook)).toBe("en");
+        expect(bookLanguage("La compagnia parte all'alba. Il traghettatore aspetta sulla riva del fiume, e non parla con chi non paga. ".repeat(5))).toBe("it");
+        expect(bookLanguage("渡し守は川のほとりで待っている。".repeat(5))).toBe("ja");
+        expect(bookLanguage("Ferry.")).toBeUndefined();
+    });
+});
+
+describe("the search of the books (LIB-6, LIB-7)", () => {
+    const road = book("Rules of the Road", englishBook.split("\n\n"));
+
+    it("finds first the page whose title has the word, then those that repeat it, the rarest words weighing most", () => {
+        const found = findPages([road], "falling");
+        expect(found.map((finding) => finding.part)).toEqual([1, 2]);
+        expect(found[0].score).toBeGreaterThan(found[1].score * 2);
+    });
+
+    it("counts the words in a row: short rest finds the page that says it before the one that has both words apart", () => {
+        expect(findPages([road], "short rest").map((finding) => finding.part).slice(0, 2)).toEqual([4, 5]);
+    });
+
+    it("finds by a word's forms (RUL-4), and nothing by a word that more than half of the pages have", () => {
+        expect(findPages([road], "climbs").map((finding) => finding.part)).toEqual([1]);
+        expect(findPages([road], "the")).toEqual([]);
+    });
+
+    it("searches the other searches too, as the system's words in the books' language", () => {
+        const italian = book("Regole", ["IL VIAGGIO\nLa compagnia parte all'alba.", "AFFERRATO\nUna creatura afferrata resta dove si trova finché la presa non si scioglie."]);
+        expect(findPages([italian], "grappled")).toEqual([]);
+        expect(findPages([italian], "grappled", ["Afferrato"]).map((finding) => finding.part)).toEqual([1]);
+    });
+
+    it("shows a page's section from the title with the words to the next title once it has sixty words, within the words given, and whether it goes on", () => {
+        expect(pageExcerpt(road, 1, "falling", [], 250)).toEqual({ text: falling, goesOn: false, cut: false });
+        expect(pageExcerpt(road, 1, "climber", [], 250)).toEqual({ text: climbing, goesOn: true, cut: false });
+        expect(pageExcerpt(road, 1, "falling", [], 10)).toEqual({ text: "FALLING\nA creature that drops from a height lands hard: …", goesOn: false, cut: true });
+    });
+
+    it("weighs a title by how much of it the search names, and never starts a section at a title found only by a word of two letters", () => {
+        const fall = book("Cadute", [
+            "CADUTA MORBIDA\nChi lancia questo incantesimo rallenta la caduta di chi cade.",
+            "CADUTE\nUna caduta da tre metri fa un dado di danni.",
+            "IL VIAGGIO\nLa compagnia parte con il sole.",
+            "IL FIUME\nIl traghettatore aspetta sulla riva.",
+        ]);
+        expect(findPages([fall], "caduta")[0].part).toBe(1);
+        const rules = book("Lotta", ["ATTACCHI DI OPPORTUNITÀ\nUna creatura che esce dalla portata subisce un attacco.\nPROVE DI LOTTA\nChi lotta fa una prova di Forza."]);
+        expect(pageExcerpt(rules, 0, "prova di lotta", [], 250).text).toBe("PROVE DI LOTTA\nChi lotta fa una prova di Forza.");
+    });
+
+    it("never ends a section at a page's running head, a column of short words, or a paragraph that opens in capitals", () => {
+        const head = "THE ROAD NORTH | CHAPTER 2";
+        const long = "The river runs north past the old mill and the ford, ".repeat(6).trim();
+        const section = [
+            "RIVER CROSSINGS",
+            long,
+            "STR DEX CON",
+            "10 12 14",
+            head,
+            "THE FERRYMAN",
+            "takes a coin from each traveller, and two from those who look at him.",
+            "WOLVES",
+            "Wolves hunt in packs along the river.",
+        ];
+        const roadBook = book("Road", [section.join("\n"), `${head}\nPage two.`, `${head}\nPage three.`]);
+        expect(pageExcerpt(roadBook, 0, "crossings", [], 250).text).toBe(section.slice(0, 7).join("\n"));
+    });
+});
+
+describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
+    let folder: string;
+    let home: string;
+    let shelf: string;
+    let context: Context;
+    let started: string[][];
+    let asked: string[];
+
+    const rpg = (...args: string[]) => runCommandLine(args, context);
+
+    async function ok(...args: string[]): Promise<string>
+    {
+        const result = await rpg(...args);
+        expect(result.exitCode, result.output).toBe(0);
+        return result.output;
+    }
+
+    function allow(answer: Confirmed): void
+    {
+        context.confirm = { ask: (_title, text) => (asked.push(text), Promise.resolve(answer)) };
+    }
+
+    async function readShelf(): Promise<void>
+    {
+        // The third page of the PDF has no readable text: an OCR reads it.
+        const ocr = () => Promise.resolve(new Map([[3, "IL GUADO\nIl traghettatore chiede una moneta per il guado del fiume, e due a chi lo guarda storto."]]));
+        await readLibrary(home, [shelf], libraryScope, async (path) => {
+            const read = await readDocument(path, { pictures: false, ocr });
+            return { parts: read.parts, unreadable: read.unreadable, recognized: read.recognized };
+        });
+    }
+
+    beforeEach(async () => {
+        folder = makeTempFolder();
+        home = makeTempFolder();
+        shelf = makeTempFolder();
+        started = [];
+        asked = [];
+        context = { ...testContext(folder), bookIndex: home, readLibrary: (entries) => started.push(entries) };
+        await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+        fileIn(shelf, "Rules of the Road.md", englishBook);
+        const regole = [
+            "IL VIAGGIO\nLa compagnia parte con il sole e il traghettatore aspetta sulla riva del fiume. Non parla con chi non paga, ma per una moneta di rame porta una persona e il suo bagaglio.",
+            "AFFERRATO\nUna creatura afferrata resta dove si trova fino a quando la presa non si scioglie. Il suo movimento scende a zero e non sale con altro. La presa finisce se chi afferra non agisce.",
+            "@<=?%:6 &0H?5H%6 :0<865&=H8: <0=?=0H <?2H%:6",
+        ];
+        fileIn(shelf, "Regole del Guado.pdf", tinyPdf(regole.map((text) => ({ text }))));
+    });
+
+    it("adds a folder from the chat only with the player's yes in a window of their computer, as a full path, and starts reading it", async () => {
+        allow("yes");
+        const output = await ok("config", "library", "--add", shelf);
+        expect(asked[0]).toContain(`The game master of Guadoscuro asks to read the documents in ${shelf}`);
+        expect(output).toContain(`library: ${shelf} (0 books read, 2 being read)`);
+        expect(started).toEqual([[shelf]]);
+        // Already there, it asks nothing again.
+        await ok("config", "library", "--add", shelf);
+        expect(asked).toHaveLength(1);
+    });
+
+    it("refuses an addition the player does not allow, or when no window can be shown, saying how to add it in their terminal", async () => {
+        allow("no");
+        expect((await rpg("config", "library", "--add", shelf)).output).toContain("The player did not allow it. Nothing changed");
+        allow("none");
+        expect((await rpg("config", "library", "--add", shelf)).output).toContain(`in the campaign's folder, with rpg config library --add "${shelf}". Nothing changed.`);
+        expect(await ok("config", "library")).toMatch(/^library: \(none\)\n/);
+    });
+
+    it("adds from the player's terminal without a window, and takes an entry off by any spelling of its path", async () => {
+        context.terminal = true;
+        await ok("config", "library", "--add", shelf);
+        expect(asked).toEqual([]);
+        await ok("config", "library", "--remove", `${shelf}/`);
+        expect(await ok("config", "library")).toMatch(/^library: \(none\)\n/);
+    });
+
+    it("refuses what is not there, a file of a kind it does not read, and a folder inside a campaign", async () => {
+        context.terminal = true;
+        expect((await rpg("config", "library", "--add", join(shelf, "gone"))).output).toContain("There is no");
+        expect((await rpg("config", "library", "--add", fileIn(shelf, "map.png", "x"))).output).toContain("map.png is no book the engine reads");
+        mkdirSync(join(folder, "books"));
+        expect((await rpg("config", "library", "--add", join(folder, "books"))).output).toContain("is inside the campaign in");
+    });
+
+    it("searches the books after the system, each excerpt with its book and page, and fewer when the system answered", async () => {
+        context.terminal = true;
+        await ok("config", "library", "--add", shelf);
+        await readShelf();
+        const fall = await ok("rules", "falling");
+        expect(fall).toContain(`From the player's books, in Italian and English:\n\nRules of the Road, part 1:\n${falling}\n\nThe system's`);
+        expect(fall).toContain("The system's sheet numbers win over the books;");
+        expect(fall).toContain('only your own words and the numbers, in ft, with source: "<book>, PDF p. N"');
+        expect(fall).not.toContain("No rule matches");
+        // The system answers Grappled; the Italian book is searched with the system's Italian words, one excerpt beside it.
+        const grappled = await ok("rules", "grappled");
+        expect(grappled).toContain("Grappled (5e)");
+        expect(grappled).toContain("Regole del Guado, PDF p. 2:\nAFFERRATO\nUna creatura afferrata");
+        expect(grappled.match(/PDF p\. \d+:/g)).toHaveLength(1);
+    });
+
+    it("reads a page whole, says when a book has no such page, and lists the books when there is no text", async () => {
+        context.terminal = true;
+        await ok("config", "library", "--add", shelf);
+        await readShelf();
+        expect(await ok("rules", "Regole del Guado, PDF p. 1")).toBe(await ok("rules", "Regole del Guado › p. 1"));
+        expect(await ok("rules", "Regole del Guado › p. 1")).toMatch(/^Regole del Guado, PDF p\. 1:\nIL VIAGGIO\nLa compagnia parte con il sole [^]*bagaglio\.\n\nThe system's sheet numbers/);
+        expect((await rpg("rules", "Regole del Guado › p. 9")).output).toContain("Regole del Guado has no PDF p. 9: it has 3, from 1.");
+        expect(await ok("rules")).toContain('The player\'s books: Regole del Guado (Italian, 3 pages); Rules of the Road (English, 1 part). Search them with words, as rules does; rules "<book> › p. N" reads a page.');
+    });
+
+    it("warns of a page the OCR read, and says when the system, written in another language, found nothing", async () => {
+        context.terminal = true;
+        await ok("config", "library", "--add", shelf);
+        await readShelf();
+        const ford = await ok("rules", "guado");
+        expect(ford).toContain("Nothing in the rules of 5e for these words: it writes its rules in English, so search it with the rule's English name too; the system wins over the books.");
+        expect(ford).toContain("Regole del Guado, PDF p. 3:\nIL GUADO\nIl traghettatore chiede una moneta");
+        expect(ford).toContain("Pages the OCR read may lose a number or misread one (O for 0, l for 1)");
+    });
+
+    it("refuses a folder with more documents than a library takes, as a disk or a folder of everything", async () => {
+        context.terminal = true;
+        const everything = makeTempFolder();
+        Array.from({ length: 301 }, (_, index) => fileIn(everything, `note-${index}.txt`, "A note."));
+        expect((await rpg("config", "library", "--add", everything)).output).toContain(`${everything} holds more than 300 documents: it is no shelf of books.`);
+    });
+
+    it("says how many books are still being read, and starts reading them", async () => {
+        context.terminal = true;
+        await ok("config", "library", "--add", shelf);
+        started = [];
+        expect(await ok("rules", "falling")).toContain("Still being read: 2 of the player's books, which a search finds in a few minutes.");
+        expect(started).toEqual([[shelf]]);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("library:");
+    });
+});

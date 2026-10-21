@@ -10,7 +10,9 @@ import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
 import { FileStore, withFiles } from "./core/store.ts";
 import { firstSentence } from "./core/text.ts";
 import { getVersion } from "./core/version.ts";
+import { systemPageReader } from "./documents/index.ts";
 import { npmPackages } from "./extensions/index.ts";
+import { libraryRunner } from "./library-reader.ts";
 import { hostPictures, hostReader } from "./pictures/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
@@ -35,6 +37,8 @@ export async function runCommandLine(
         reader: hostReader(() => process.env.RPG_HOST || undefined),
         packages: npmPackages(packagesFolder()),
         confirm: systemConfirm(process.platform, process.env),
+        ocr: systemPageReader(process.platform, process.env),
+        readLibrary: libraryRunner(),
         download: downloadBytes,
         terminal: true,
     },

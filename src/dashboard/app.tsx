@@ -6,7 +6,7 @@ import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, readAsked, readView, sendSeen } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
-import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
+import type { Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
 import { DeathSaveCard } from "./death-save.tsx";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
@@ -14,7 +14,7 @@ import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView } from "./journal.tsx";
-import { gameNotices, type Notice, Notices } from "./notices.tsx";
+import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
 import { PackagesPage } from "./packages.tsx";
 import { About, Upcoming } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
@@ -71,6 +71,8 @@ interface Shown
     noCharacter?: boolean;
     /** How many problems the campaign's files have, which the master fixes (validate). */
     problems?: number;
+    /** An import under way (D-491 (11)). */
+    importing?: ShownImport;
     problem?: string;
     /** What a death save's roll changed, kept back while its dice are in the air (D-461). */
     pending?: Steady;
@@ -203,6 +205,7 @@ function App()
                         readAt: new Date(),
                         noCharacter: overview.kind === "none",
                         problems: overview.kind === "overview" ? overview.problems : undefined,
+                        importing: overview.kind === "overview" || overview.kind === "none" ? overview.importing : undefined,
                     }, holding.current !== undefined)
                 );
             }
@@ -355,7 +358,11 @@ function App()
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
         ...gameNotices(shown.problems),
+        // In the setup an import under way is with the page's other notices, in the column of its card (D-491 (11)).
+        ...(inSetup ? importNotices(shown.importing) : []),
     ];
+    // In play, under the player's turn, which counts more in a fight.
+    const importing = inSetup ? [] : importNotices(shown.importing);
     // Each campaign's rolls as the player cleared them there: the list starts again when the campaign is known.
     const rolls = (
         <RollLog
@@ -412,90 +419,93 @@ function App()
                     />
                 )}
                 {live && saving === undefined && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
-                {inSetup ? <SetupView setup={setup} /> : (
-                    <>
-                        {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
-                        {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
-                            <a class="turn-notice" href={sectionAddress("scene")}>
-                                <Icon name="combat" />
-                                <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
-                                <span class="turn-notice-go">{t("Go to the scene")}</span>
-                            </a>
-                        )}
-                        {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-                        {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
-                        <div class="body">
-                            <main>
-                                {address.section === "about" && <About product={productName} system={shown.system} />}
-                                {address.section === "help" && <Help />}
-                                {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
-                                {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
-                                {address.section === "scene" && (
-                                    <SceneView
-                                        place={shown.place}
-                                        scene={shown.openScene}
-                                        lead={lead}
-                                        party={shown.party}
-                                        turnsBeside={table}
-                                        own={{
-                                            sheet: shown.chosen === lead?.name ? shown.sheet : [],
-                                            cards: shown.cards,
-                                            version: shown.version,
-                                            onRoll: throwFromSheet,
-                                        }}
-                                    />
-                                )}
-                                {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
-                                {address.section === "settings" && <SettingsView version={shown.version} />}
-                                {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
-                                {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
-                                {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                                {!["party", "scene", "journal", "world", "about", "help", "settings", "saves", "packages"].includes(address.section) && <Upcoming section={address.section} />}
-                                {address.section === "party" && member && (
-                                    <MemberSheet
-                                        key={member.name}
-                                        member={member}
-                                        headline={shown.headline}
-                                        sheet={shown.sheet}
-                                        cards={shown.cards}
-                                        text={shown.text}
-                                        story={shown.story}
-                                        version={shown.version}
-                                        onRoll={throwFromSheet}
-                                        scene={shown.openScene}
-                                    />
-                                )}
-                            </main>
-                            {table
-                                ? (
-                                    <PlayTable
-                                        entering={tableMoved}
-                                        onFold={() => {
-                                            setTableMoved(true);
-                                            setTableAway(true);
-                                        }}
-                                    >
-                                        {fight && <TurnsCard scene={shown.openScene} party={shown.party} beside />}
-                                        <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
-                                        {rolls}
-                                    </PlayTable>
-                                )
-                                : wide
-                                ? (
-                                    <TableTab
-                                        fight={fight}
-                                        focused={tableMoved}
-                                        onOpen={() => {
-                                            setTableMoved(true);
-                                            setTableAway(false);
-                                        }}
-                                    />
-                                )
-                                : rolls}
-                        </div>
-                        <PageFoot product={productName} system={shown.system} />
-                    </>
-                )}
+                {inSetup
+                    ? <SetupView setup={setup} />
+                    : (
+                        <>
+                            {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
+                            {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
+                                <a class="turn-notice" href={sectionAddress("scene")}>
+                                    <Icon name="combat" />
+                                    <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
+                                    <span class="turn-notice-go">{t("Go to the scene")}</span>
+                                </a>
+                            )}
+                            <Notices notices={importing} />
+                            {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
+                            {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
+                            <div class="body">
+                                <main>
+                                    {address.section === "about" && <About product={productName} system={shown.system} />}
+                                    {address.section === "help" && <Help />}
+                                    {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
+                                    {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
+                                    {address.section === "scene" && (
+                                        <SceneView
+                                            place={shown.place}
+                                            scene={shown.openScene}
+                                            lead={lead}
+                                            party={shown.party}
+                                            turnsBeside={table}
+                                            own={{
+                                                sheet: shown.chosen === lead?.name ? shown.sheet : [],
+                                                cards: shown.cards,
+                                                version: shown.version,
+                                                onRoll: throwFromSheet,
+                                            }}
+                                        />
+                                    )}
+                                    {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
+                                    {address.section === "settings" && <SettingsView version={shown.version} />}
+                                    {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
+                                    {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
+                                    {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
+                                    {!["party", "scene", "journal", "world", "about", "help", "settings", "saves", "packages"].includes(address.section) && <Upcoming section={address.section} />}
+                                    {address.section === "party" && member && (
+                                        <MemberSheet
+                                            key={member.name}
+                                            member={member}
+                                            headline={shown.headline}
+                                            sheet={shown.sheet}
+                                            cards={shown.cards}
+                                            text={shown.text}
+                                            story={shown.story}
+                                            version={shown.version}
+                                            onRoll={throwFromSheet}
+                                            scene={shown.openScene}
+                                        />
+                                    )}
+                                </main>
+                                {table
+                                    ? (
+                                        <PlayTable
+                                            entering={tableMoved}
+                                            onFold={() => {
+                                                setTableMoved(true);
+                                                setTableAway(true);
+                                            }}
+                                        >
+                                            {fight && <TurnsCard scene={shown.openScene} party={shown.party} beside />}
+                                            <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
+                                            {rolls}
+                                        </PlayTable>
+                                    )
+                                    : wide
+                                    ? (
+                                        <TableTab
+                                            fight={fight}
+                                            focused={tableMoved}
+                                            onOpen={() => {
+                                                setTableMoved(true);
+                                                setTableAway(false);
+                                            }}
+                                        />
+                                    )
+                                    : rolls}
+                            </div>
+                            <PageFoot product={productName} system={shown.system} />
+                        </>
+                    )}
                 <DiceTray
                     requested={thrown}
                     sheetThrow={sheetThrow}

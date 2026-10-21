@@ -6,6 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
+import { libraryAnswer, libraryLines } from "./game-library.ts";
 import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
 import { campaignSystem, campaignWorld, foreignLanguage } from "./game-world.ts";
 
@@ -37,7 +38,8 @@ export const rules = defineCommand({
     name: "rules",
     description: "Find the exact text of a rule: the campaign's house rules first, then the game system's rules, then the table's precedents. "
         + "Use it whenever you are unsure how a rule works, before you rule and say what is at stake, and when the player questions a ruling. "
-        + "Give the book's words, such as grappled, opportunity attack or long rest; a heading, or headings joined by ›, reads that section.",
+        + "Give the book's words, such as grappled, opportunity attack or long rest; a heading, or headings joined by ›, reads that section. "
+        + "It searches the player's own books too, after the system, each excerpt with its book and page: Book › p. 194 reads that page.",
     group: "game",
     readOnly: true,
     positionals: ["text"],
@@ -65,7 +67,7 @@ export const rules = defineCommand({
         };
 
         if (text === "") {
-            return { ...common, house: undefined, found: undefined, precedents };
+            return { ...common, house: undefined, found: undefined, precedents, library: libraryAnswer(root, context, system, text, false) };
         }
 
         // One search over both, so that a word is rare or common among all the rules (RUL-5); the house rules come first. A page by that name holds the
@@ -78,6 +80,9 @@ export const rules = defineCommand({
         const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
         const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
         const shownTitles = [...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? "");
+        // Then the player's books, fewer of them when the rules have answered: a section shown holds every word searched (LIB-6, LIB-7).
+        const answered = [...houseAnswer.shown, ...systemAnswer.shown].some((shown) => hasAllWords(`${shown.path.join(" ")} ${shown.text}`, text));
+        const library = libraryAnswer(root, context, system, text, answered);
         return {
             ...common,
             house: houseAnswer,
@@ -85,26 +90,35 @@ export const rules = defineCommand({
             precedents: precedents.filter((precedent) => hasAllWords(precedent, text) || isAboutAny(precedent, text, shownTitles)),
             page,
             pageSections,
+            library,
         };
     },
 
     format(result)
     {
         if (result.house === undefined || result.found === undefined) {
-            return [contents(result), precedentsLine(result.precedents), houseRulesLine(result.houseRules)].filter((line) => line !== "").join("\n");
+            return [contents(result), ...libraryLines(result.library, ""), precedentsLine(result.precedents), houseRulesLine(result.houseRules)].filter((line) => line !== "").join("\n");
+        }
+
+        // A page of a book, which the text names, alone (LIB-7).
+        if (result.library?.page !== undefined) {
+            return libraryLines(result.library, result.text).join("\n\n");
         }
 
         const sections = [...shownBlocks(result.house, "house rule"), ...shownBlocks(result.found, result.system ?? "")];
         const others = [...result.house.others, ...result.found.others];
+        const fromBooks = (result.library?.shown.length ?? 0) > 0;
         const lines = [
             missingSystemLine(result.missingSystem),
             pageLine(result.page),
             sectionsLine(result.pageSections),
             ...sections,
             others.length === 0 ? "" : `Also: ${others.slice(0, namedSections).join("; ")}. Read one by its heading.`,
-            sections.length === 0 ? notFound(result) : "",
+            sections.length === 0 && !fromBooks ? notFound(result) : "",
+            sections.length === 0 && fromBooks && result.page === undefined && (result.pageSections ?? []).length === 0 ? silentSystemLine(result) : "",
+            ...libraryLines(result.library, result.text),
             precedentsLine(result.precedents),
-            result.precedents.length > 0 && result.found.shown.length > 0 ? disagreementAdvice : "",
+            result.precedents.length > 0 && (result.found.shown.length > 0 || fromBooks) ? disagreementAdvice : "",
             houseRulesLine(result.houseRules),
         ];
         return lines.filter((line) => line !== "").join("\n\n");
@@ -237,6 +251,20 @@ function notFound(result: { text: string; system?: string; chapters: string[]; l
     const precedent = result.system === undefined ? "" : ` If you rule without the text, tell the player it is your call, and add it to the precedents: `
         + `config, setting precedents, add "<${name}>: what you said".`;
     return `No rule matches "${result.text}".${book}${precedent}`;
+}
+
+/**
+ * "Nothing in the rules of 5e for these words: …": what the books found holds only where the system says nothing, so a system written in another language is
+ * searched in its own words too (D-491 (7)).
+ */
+function silentSystemLine(result: { system?: string; language?: string; }): string
+{
+    if (result.system === undefined) {
+        return "";
+    }
+
+    const language = result.language === undefined ? "" : ` it writes its rules in ${result.language}, so search it with the rule's ${result.language} name too;`;
+    return `Nothing in the rules of ${result.system} for these words:${language} the system wins over the books.`;
 }
 
 function precedentsLine(precedents: string[]): string

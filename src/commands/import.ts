@@ -7,9 +7,13 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { documentAt, readDocument } from "../documents/index.ts";
 import {
+    beginOpening,
+    clearOpening,
     doneImports,
+    dropDocumentText,
     dropImport,
     hasImport,
+    importAge,
     importDate,
     importedPages,
     importFile,
@@ -19,7 +23,10 @@ import {
     importStarts,
     type ImportState,
     importStyle,
+    isOwnOpening,
+    markOpening,
     openImport,
+    openingImport,
     prepareImport,
     readImportState,
     runElsewhere,
@@ -48,12 +55,15 @@ interface ImportResult
     cancelled?: boolean;
     /** In the chat, the piece given now, with the importer's part of the instructions once in a chat. */
     piece?: { number: number; text: string; instructions: string; pictures: string; };
+    /** How many of the document's pages were read from their pictures, as it started (LIB-4). */
+    recognized?: number;
 }
 
 export const importCommand = defineCommand({
     name: "import",
     description: "Make an adventure from the player's own document: a book, a game module or notes, as a PDF, Word, OpenDocument, EPUB, HTML, RTF, text or markdown file, "
-        + "or a folder of them. A helper on this computer reads it outside the chat, piece after piece, and writes the pages; it takes minutes, and goes on by itself. "
+        + "or a folder of them; text, or a PDF whose text can be selected, reads best: a scan is read from its pictures, on Windows only, slowly and with mistakes. "
+        + "A helper on this computer reads it outside the chat, piece after piece, and writes the pages; it takes minutes, and goes on by itself. "
         + "From a book it proposes three or four starting points: ask the player whether they have read it, let them choose, then give start; the world is then written "
         + "as it stands there. When it is done, install it with package install. Where no helper is on this computer, it gives you the document a piece at each call, to write its pages with write. Call import alone to see how far it is. Example: document C:\\Users\\me\\Books\\novel.pdf.",
     group: "game",
@@ -71,7 +81,16 @@ export const importCommand = defineCommand({
         const root = requireCampaign(context.folder);
         const open = openImport(root);
 
+        const opening = openingImport(root);
+
         if (input.cancel === true) {
+            // A document still being opened: its mark goes, and the call that opens it stops there, never making the import (D-491 (11)).
+            if (open === undefined && opening !== undefined) {
+                clearOpening(root, false);
+                const state: ImportState = { title: opening.title, document: "", pieces: 0, phase: "reading", done: 0 };
+                return { title: opening.title, state, adventure: "", running: false, starts: [], pages: {}, cancelled: true };
+            }
+
             if (open === undefined) {
                 throw new Error("No import is under way. Nothing changed.");
             }
@@ -84,8 +103,9 @@ export const importCommand = defineCommand({
         }
 
         if (input.document !== undefined && input.document.trim() !== "") {
-            if (open !== undefined) {
-                throw new Error(`The import of ${open.state.title} is under way: finish it, or drop it with cancel, before another. Nothing changed.`);
+            if (open !== undefined || opening !== undefined) {
+                const under = open?.state.title ?? opening?.title ?? "";
+                throw new Error(`The import of ${under} is under way: finish it, or drop it with cancel, before another. Nothing changed.`);
             }
 
             return startImport(root, context, resolve(context.folder, input.document.trim()), input.title?.trim());
@@ -121,7 +141,8 @@ export const importCommand = defineCommand({
         return resultOf(root, open.folder, readImportState(open.folder) ?? open.state);
     },
 
-    format: importText,
+    // A document read from its pictures is told first, for the master to tell the player before anything else (LIB-4).
+    format: (result) => [recognizedText(result.recognized), importText(result)].filter((part) => part !== "").join("\n\n"),
 });
 
 async function startImport(root: string, context: Context, document: string, title: string | undefined): Promise<ImportResult>
@@ -139,20 +160,46 @@ async function startImport(root: string, context: Context, document: string, tit
         throw new Error(`An import called ${name} is already in the campaign: give another title. Nothing changed.`);
     }
 
-    const text = await readDocument(document);
+    // The dashboard tells the player the document is being opened, and how far its pages are read from their pictures, while the master waits (D-491 (11)).
+    if (!beginOpening(root, name)) {
+        throw new Error(`Another document is being opened for an import: wait for it, or drop it with cancel. Nothing changed.`);
+    }
+
+    const progress = (done: number, of: number): void => {
+        try {
+            markOpening(root, { title: name, pid: process.pid, ocr: { done, of } });
+        } catch {
+            // The dashboard misses a step; the reading goes on.
+        }
+    };
+
+    const text = await readDocument(document, { ocr: context.ocr, signal: context.signal, progress }).catch((error: unknown) => {
+        clearOpening(root);
+        throw error;
+    });
+
+    // Stopped by the player, or dropped with cancel while it was being opened: nothing is made of it.
+    if (context.signal?.aborted === true || !isOwnOpening(root)) {
+        clearOpening(root);
+        throw new Error(`The import of ${name} was stopped before it began. Nothing changed.`);
+    }
+
+    clearOpening(root);
 
     if (text.parts.every((part) => part.text.trim() === "")) {
-        throw new Error(`${basename(document)} has no text the engine can read: a scan is pictures of pages, which it does not read. Nothing changed.`);
+        const why = context.ocr === undefined ? "a scan is pictures of pages, which it reads only on Windows" : "not even in the pictures of its pages";
+        throw new Error(`${basename(document)} has no text the engine can read: ${why}. Nothing changed.`);
     }
 
     const state = prepareImport(folder, name, document, text);
     // Without a helper, the master reads it here, a piece at each call (D-489 (1)).
     const inChat = context.reader?.ready() !== true;
     appendLogEntry(root, newDatedLogEntry(root, context, "import-started", "hidden", { title: name, document, pieces: state.pieces, ...(inChat ? { inChat } : {}) }));
+    const recognized = text.recognized.length === 0 ? {} : { recognized: text.recognized.length };
 
     if (inChat) {
         writeImportState(folder, { ...state, inChat });
-        return nextPiece(root, context, folder, { ...state, inChat });
+        return { ...nextPiece(root, context, folder, { ...state, inChat }), ...recognized };
     }
 
     const going = goOn(root, context, folder);
@@ -161,7 +208,7 @@ async function startImport(root: string, context: Context, document: string, tit
         await going;
     }
 
-    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length };
+    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized };
 }
 
 /** The next piece for the master to read in the chat, with the importer's instructions once in a chat; the last one ends the import. */
@@ -171,6 +218,12 @@ function nextPiece(root: string, context: Context, folder: string, state: Import
     const done = state.done + 1;
     const next: ImportState = { ...state, done, ...(done >= state.pieces ? { phase: "done" as const } : {}) };
     writeImportState(folder, next);
+
+    // The last piece given, the document's text leaves the campaign (LIB-8).
+    if (next.phase === "done") {
+        dropDocumentText(folder);
+    }
+
     const instructions = situationPart("import", context, campaignSystem(root, context)).replaceAll("{title}", state.title).replaceAll("{language}", readSettings(root).language ?? "en");
     return { ...resultOf(root, folder, next), piece: { number: done, text, instructions, pictures: join(folder, "document", "pictures") } };
 }
@@ -364,6 +417,15 @@ export function importText(result: ImportResult): string
             : `\nThe book starts on ${state.dated.date}: ask the player whether the story should, then config calendar-start ${state.dated.date}.`);
 }
 
+/** What a document read from the pictures of its pages means to the player (LIB-4): slower and with mistakes, so text reads better. */
+function recognizedText(recognized: number | undefined): string
+{
+    return recognized === undefined
+        ? ""
+        : `${recognized} of its pages were read from their pictures, slowly and with a few mistakes: tell the player that a text file, or a PDF whose text can be `
+            + "selected, reads better.";
+}
+
 // What the narration became, or what to ask, as the book is told.
 function followedText(followed: ImportState["followed"]): string
 {
@@ -398,6 +460,55 @@ function chatPieceText(state: ImportState, piece: NonNullable<ImportResult["piec
         piece.instructions,
         piece.text,
     ].filter((part) => part !== "").join("\n\n");
+}
+
+// How long an import that nothing runs may stay still before the dashboard says it waits: a runner just started takes a moment to claim it.
+const pausedAfter = 60_000;
+
+/** An import under way as the dashboard tells it (D-491 (11)): what it is doing, and how far; while its document is opened, its pages read by the OCR. */
+export interface ShownImport
+{
+    title: string;
+    step: "opening" | "pictures" | "reading" | "chat" | "choosing" | "writing" | "waiting" | "stopped";
+    done?: number;
+    of?: number;
+}
+
+/** The import under way as the dashboard tells it, if one is: from the document being opened to the world being written. */
+export function importShown(root: string): ShownImport | undefined
+{
+    const opening = openingImport(root);
+
+    if (opening !== undefined) {
+        return opening.ocr === undefined ? { title: opening.title, step: "opening" } : { title: opening.title, step: "pictures", done: opening.ocr.done, of: opening.ocr.of };
+    }
+
+    const open = openImport(root);
+
+    if (open === undefined) {
+        return undefined;
+    }
+
+    const { state } = open;
+    const running = isImportRunning(open.folder) || runElsewhere(open.folder) !== undefined;
+
+    if (state.failed !== undefined && !running) {
+        return { title: state.title, step: "stopped" };
+    }
+
+    if (state.phase === "choosing") {
+        return { title: state.title, step: "choosing" };
+    }
+
+    // Nothing runs it, as after the computer started again, and it has not moved for a while: it waits for the master to call import (a runner about to start
+    // is given that while).
+    if (!running && state.inChat !== true && (importAge(open.folder) ?? 0) > pausedAfter) {
+        return { title: state.title, step: "waiting" };
+    }
+
+    return state.phase === "writing"
+        ? { title: state.title, step: "writing", done: state.done, of: state.steps?.length ?? 1 }
+        : { title: state.title, step: state.inChat === true ? "chat" : "reading", done: state.done, of: state.pieces };
 }
 
 /** The line status gives while an import is under way, waits for the player, or is ready and not installed yet. */

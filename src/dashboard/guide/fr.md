@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -214,21 +214,23 @@ Quand le MJ te demande quelque chose, son bandeau reste en haut, quelle que soit
 
 ### 5.1 Ce qu'est un système de jeu
 
-Les données d'un jeu : sa fiche, ses nombres, ses créatures, ses objets, ses sorts et le texte de ses règles. Chaque campagne joue un seul système. RPG Engine calcule la fiche, ce qui est dépensé et ce qui revient ; pour savoir comment fonctionne une capacité, le MJ lit les règles et décide, comme à une table.
+Les données d'un jeu : sa fiche, ses chiffres, ses créatures, ses objets, ses sorts et le texte de ses règles. Chaque campagne utilise un seul système. RPG Engine calcule la fiche, ce qui est dépensé et ce qui revient. Pour le fonctionnement d'une capacité, le MJ lit les règles et décide, comme à une table.
 
-### 5.2 La cinquième édition, incluse
+### 5.2 Cinquième édition, incluse
 
-Les races, les classes, les sous-classes, un historique et un don du SRD 5.1 ; les 319 sorts, les armes, les armures, les objets magiques et les monstres ; les chapitres de règles, que le MJ lit dans leur texte exact ; la fiche complète, calculée.
+Les races, les classes, les sous-classes, un historique et un don du SRD 5.1 ; les 319 sorts, les armes, les armures, les objets magiques et les monstres ; les chapitres de règles, que le MJ lit selon leur texte exact ; la fiche complète, calculée.
 
-Tu peux aussi jouer du contenu qui manque au SRD, tiré d'un livre que tu possèdes : le MJ l'écrit sous forme de pages de ta campagne, et RPG Engine les traite comme les siennes. RPG Engine ne fournit que du contenu libre ; ce que ton MJ connaît n'a pas cette limite.
+Tu peux aussi jouer du contenu absent du SRD, tiré d'un livre que tu possèdes. Le MJ l'écrit sous forme de pages de ta campagne, et RPG Engine les traite comme les siennes. RPG Engine ne fournit que du contenu libre. Ce que ton MJ connaît n'a pas cette limite.
+
+Tes propres manuels peuvent devenir la bibliothèque de la campagne. Dis au MJ où ils se trouvent, *[Mes manuels sont dans D:\Books\5e.]*, puis accepte dans la fenêtre que ton ordinateur affiche. RPG Engine les lit une seule fois, sur cet ordinateur. Ensuite, le MJ les consulte quand il tranche une règle, après le SRD, et cite le livre et la page. Ils se lisent mieux sous forme de texte, ou de PDF dont on peut sélectionner le texte. Un PDF scanné est lu à partir des images de ses pages, sous Windows uniquement, en quelques minutes et avec quelques erreurs. RPG Engine ne modifie jamais tes manuels, n'envoie jamais leur texte ailleurs et ne le copie jamais dans une campagne.
 
 ### 5.3 Règles maison et ajouts personnels
 
-Demande au MJ : *[Règle maison : un 1 naturel sur une attaque fait lâcher ton arme.]* Il la garde comme un accord de la table, ou écrit une page ou un nombre de la fiche quand il en faut un. Les règles maison déjà rédigées peuvent aller dans des fichiers texte, dans le dossier `rules` de la campagne.
+Demande au MJ : *[Règle maison : un 1 naturel à une attaque te fait lâcher ton arme.]* Il la garde comme un accord de la table, ou bien il écrit une page ou un chiffre de la fiche quand il en faut un. Les règles maison déjà rédigées peuvent être placées sous forme de fichiers texte dans le dossier `rules` de la campagne.
 
 ### 5.4 Ajouter ou importer ton propre système de jeu
 
-Pas encore : aujourd'hui, RPG Engine ne joue que la cinquième édition ([Plus tard](#9-coming-later)).
+Pas encore : aujourd'hui, RPG Engine ne propose que la cinquième édition ([Prochainement](#9-coming-later)).
 
 ---
 
@@ -242,36 +244,35 @@ Pas encore. Une extension ajoutera quelque chose à une campagne, en plus de son
 
 ### 7.1 Trois façons d'avoir un monde
 
-- **Créé au fil du jeu** : à partir de ton pitch, le MJ construit chaque lieu, personnage et intrigue juste avant que tu en aies besoin, et le garde.
-- **Préparé au début** : pareil, mais avec le monde construit avant le jeu.
-- **À partir de ta propre aventure** : donne au MJ un texte ou un PDF et demande-lui de la mettre en place, *[Mets en place cette aventure comme notre campagne. Ne me dis rien de ce qu'elle contient.]* Il écrit les lieux, les personnages et les secrets. Il n'y a pas encore de bouton d'importation.
+- **Improvisé au fil du jeu** : à partir de ton idée de départ, le MJ construit chaque lieu, chaque personne et chaque intrigue juste avant que tu en aies besoin, et le garde en mémoire.
+- **Préparé au départ** : pareil, mais le monde est construit avant de jouer.
+- **À partir de ta propre aventure ou de ton propre livre** : donne son fichier au MJ, *[Importe cette aventure comme notre campagne : D:\Books\adventure.pdf. Ne me dis rien de ce qu'elle contient.]* Elle se lit mieux sous forme de texte, d'EPUB, de document Word ou de PDF dont on peut sélectionner le texte. Un PDF scanné est lu à partir des images de ses pages, sous Windows uniquement, lentement et avec quelques erreurs. Codex ou Claude Code, sur ton ordinateur, la lit en dehors du chat, et le dashboard montre où en est la lecture. Pour un roman, le MJ propose un point de départ. Il écrit les lieux, les personnages et les secrets.
 
 Une campagne se joue une seule fois : pour rejouer la même aventure, crée une nouvelle campagne.
 
 ### 7.2 Langues
 
-Une langue par campagne, celle du MJ, que le tableau de bord suit. Le tableau de bord est fourni en 26 langues. Toute autre est traduite sur ton ordinateur par Codex ou Claude Code, ou, sans eux, par le MJ dans le chat. Les termes de la cinquième édition en italien viennent du SRD italien officiel ; le texte des règles reste en anglais, et le MJ le raconte dans ta langue.
+Une seule langue par campagne : celle du MJ, que le dashboard suit. Le dashboard est fourni en 26 langues. Toute autre langue est traduite sur ton ordinateur par Codex ou Claude Code, ou, à défaut, par le MJ dans le chat. Les termes de la cinquième édition en italien viennent du SRD italien officiel. Le texte des règles reste en anglais, et le MJ te le raconte dans ta langue.
 
 ---
 
 ## 8. Pour les curieux : le dossier de la campagne <!-- icon: list -->
 
-Tu n'as jamais besoin de l'ouvrir, et il contient les secrets de ta campagne. Il comprend `campaign.yaml` (tes réglages), `state.yaml` (où en est la partie), `world/` (une page markdown pour chaque personnage, lieu, quête et le reste), `rules/` (tes règles maison), `images/`, `log.jsonl` (chaque modification), `.saves/`, `.player/` (tes notes), et les petits fichiers qui indiquent aux agents IA où se trouve RPG Engine. Les pages utilisent le format d'Obsidian. Si tu modifies une page à la main, le MJ l'apprend à sa prochaine réponse.
+Tu n'as jamais besoin de l'ouvrir, et il contient les secrets de ta campagne. Il comprend `campaign.yaml` (tes réglages), `state.yaml` (où en est la partie), `world/` (une page markdown pour chaque personnage, lieu, quête et le reste), `rules/` (tes règles maison), `images/`, `log.jsonl` (chaque changement), `.saves/`, `.player/` (tes notes), et les petits fichiers qui indiquent aux agents IA où se trouve RPG Engine. Les pages utilisent le format d'Obsidian. Si tu modifies une page à la main, le MJ l'apprend à sa prochaine réponse.
 
-RPG Engine reste dans ce dossier : il lit et écrit la partie uniquement ici, et ne touche jamais à tes autres fichiers. En dehors, il garde seulement son propre dossier de données (les traductions du tableau de bord, ainsi que Codex ou Claude Code si tu le laisses les installer) et des dossiers temporaires pendant qu'une image est dessinée. Pour tout le reste, ton agent te demande d'abord la permission avant d'agir sur ton ordinateur.
+RPG Engine reste dans ce dossier : il lit et écrit la partie uniquement ici, et ne touche jamais à tes autres fichiers. Les dossiers de tes manuels, il ne fait que les lire. En dehors de ce dossier, il garde seulement ses propres dossiers de données (les traductions du dashboard, le texte qu'il a lu de tes manuels, ainsi que Codex ou Claude Code si tu le laisses les installer) et des dossiers temporaires pendant qu'une image est dessinée. Pour tout le reste que ton agent veut faire sur ton ordinateur, il te demande d'abord.
 
-Chaque commande que le MJ utilise peut aussi être lancée dans le dossier de la campagne : `rpg --help` les liste. Beaucoup affichent les secrets de la campagne.
+Chaque commande qu'utilise le MJ peut aussi être lancée dans le dossier de la campagne : `rpg --help` les liste. Beaucoup affichent les secrets de la campagne.
 
 ---
 
-## 9. Plus tard <!-- icon: hourglass -->
+## 9. Prochainement <!-- icon: hourglass -->
 
-- **Toi comme MJ**, avec l'IA qui joue le groupe.
-- **Mode auteur** : écrire une aventure avec l'IA, puis l'exporter et la partager.
-- **Plusieurs joueurs et joueuses sur le même ordinateur**, chacun avec son personnage, à tour de rôle dans le même chat.
-- **Extensions** : réglages, aventures, fonctions et règles maison.
-- **Importer** tes manuels et tes aventures.
-- **Autres jeux** : d'autres systèmes de jeu, et les tiens.
+- **Toi en MJ**, avec l'IA qui joue le groupe.
+- **Mode auteur** : écris une aventure avec l'IA, puis exporte-la et partage-la.
+- **Plusieurs joueurs sur le même ordinateur**, chacun avec son personnage, à tour de rôle dans le même chat.
+- **Extensions** : réglages, aventures, fonctionnalités et règles maison.
+- **D'autres jeux** : plus de systèmes de jeu, et les tiens.
 
 ---
 

@@ -1,6 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FileStore } from "./store.ts";
 
@@ -66,6 +66,12 @@ export interface Context
     writer?: TextWriter;
     /** What reads the player's documents outside the chat (D-489 (1)): none where no helper is ready, and in tests. */
     reader?: DocumentReader;
+    /** The OCR of the player's system, which reads pages of a PDF without readable text from their pictures (LIB-4): by page number, those it read; none where there is none. */
+    ocr?: (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: number) => void) => Promise<Map<number, string>>;
+    /** Starts reading the books of a library's entries in a process of its own, one at a time on a computer (LIB-3); none in tests. */
+    readLibrary?: (entries: string[]) => void;
+    /** The folder of the index of the player's books (LIB-3), in their local data, which no profile syncs; none where there is no library. */
+    bookIndex?: string;
     /**
      * Starts the import's runs in a process of their own, apart from the chat, in the campaign's folder: an import outlives a chat closed or an MCP server
      * started again (playtest 18). None on the command line, which runs them itself, and in tests.
@@ -100,10 +106,10 @@ export interface PackageInfo
 /** What the window of the player's operating system said: yes, no, or none when it could not be shown. */
 export type Confirmed = "yes" | "no" | "none";
 
-/** A yes or no asked of the player in a window of their operating system, which the master cannot answer with its own tools (D-478). */
+/** A yes or no asked of the player in a window of their operating system, which the master cannot answer with its own tools (D-478); its buttons, Install by default. */
 export interface Confirm
 {
-    ask(title: string, text: string, signal?: AbortSignal): Promise<Confirmed>;
+    ask(title: string, text: string, signal?: AbortSignal, answers?: { yes: string; no: string; }): Promise<Confirmed>;
 }
 
 /** npm for the packages (D-436): what one is before it is installed, installing it in the engine's folder without running its scripts, and the search. */
@@ -246,6 +252,7 @@ export function defaultContext(folder = process.cwd()): Context
         systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url)), join(packagesFolder(), "node_modules")],
         extensionFolders: [join(packagesFolder(), "node_modules")],
         home: userDataFolder(),
+        bookIndex: join(dirname(packagesFolder()), "library"),
         // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.
         pageFolder: fileURLToPath(new URL("../../dist/dashboard/", import.meta.url)),
     };

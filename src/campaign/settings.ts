@@ -195,6 +195,7 @@ export const settingsSchema = z.object({
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
     precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
+    library: listSetting.describe("the player's library (D-491): folders of their books, or books, by full path, which rules searches after the game system"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
     // Checked by the time module (TIM-8): a mistake there never stops the game, whose date stays day N.
@@ -218,7 +219,7 @@ export type SettingName = keyof typeof settingsSchema.shape;
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "status-line"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "library", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values"];

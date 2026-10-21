@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -214,21 +214,23 @@ Wenn die Spielleitung dich etwas fragt, bleibt ihr Banner oben, in welchem Berei
 
 ### 5.1 Was ein Spielsystem ist
 
-Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und was verbraucht wird und zurückkommt; wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem Tisch.
+Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und das, was verbraucht wird und wiederkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem Spieltisch.
 
 ### 5.2 Fünfte Edition, enthalten
 
-Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent des SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, die die Spielleitung im genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
+Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent des SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, welche die Spielleitung im genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
 
-Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie seine eigenen. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung weiß, ist nicht begrenzt.
+Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene. RPG Engine liefert nur offene Inhalte mit. Was deine Spielleitung kennt, ist nicht begrenzt.
+
+Deine eigenen Regelbücher können die Bibliothek der Kampagne sein. Sag der Spielleitung, wo sie liegen: *[Meine Regelbücher liegen in D:\Books\5e.]* Bestätige dann im Fenster, das dein Computer zeigt. RPG Engine liest sie einmal auf diesem Computer. Die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD, und nennt dabei Buch und Seite. Am besten lassen sie sich als Text lesen oder als PDF, dessen Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in einigen Minuten und mit ein paar Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
 
 ### 5.3 Hausregeln und eigene Ergänzungen
 
-Frag die Spielleitung: *[Hausregel: Eine natürliche 1 bei einem Angriff bedeutet, dass du deine Waffe fallen lässt.]* Sie hält sie als Vereinbarung des Tisches fest oder schreibt eine Seite oder eine Zahl des Charakterbogens, wenn eine nötig ist. Bereits ausgeschriebene Hausregeln können als Textdateien in den Ordner `rules` der Kampagne gelegt werden.
+Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn einer nötig ist. Hausregeln, die schon ausgeschrieben sind, können als Textdateien in den Ordner `rules` der Kampagne gelegt werden.
 
 ### 5.4 Ein eigenes Spielsystem hinzufügen oder importieren
 
-Noch nicht: Heute spielt RPG Engine nur die fünfte Edition ([Später geplant](#9-coming-later)).
+Noch nicht: Heute spielt RPG Engine nur die fünfte Edition ([Kommt später](#9-coming-later)).
 
 ---
 
@@ -242,36 +244,35 @@ Noch nicht. Eine Erweiterung wird einer Kampagne etwas zusätzlich zu ihrem Spie
 
 ### 7.1 Drei Wege zu einer Welt
 
-- **Unterwegs erschaffen**: Aus deiner Prämisse baut die Spielleitung jeden Ort, jede Person und jede Handlung kurz bevor du sie brauchst, und behält sie.
-- **Am Anfang vorbereitet**: dasselbe, mit der Welt, die vor dem Spiel aufgebaut wird.
-- **Aus deinem eigenen Abenteuer**: Gib der Spielleitung einen Text oder ein PDF und bitte sie, es einzurichten: *[Richte dieses Abenteuer als unsere Kampagne ein. Verrate mir nichts, was darin steht.]* Sie schreibt die Orte, die Figuren und die Geheimnisse. Eine Import-Schaltfläche gibt es noch nicht.
+- **Spontan erschaffen**: Aus deiner Idee baut die Spielleitung jeden Ort, jede Person und jeden Handlungsstrang kurz bevor du sie brauchst, und behält sie bei.
+- **Zu Beginn vorbereitet**: Das Gleiche, aber die Welt wird vor dem Spiel gebaut.
+- **Aus deinem eigenen Abenteuer oder Buch**: Gib der Spielleitung die Datei: *[Importiere dieses Abenteuer als unsere Kampagne: D:\Books\adventure.pdf. Verrate mir nichts von dem, was darin steht.]* Am besten ist Text, ein EPUB, ein Word-Dokument oder ein PDF, dessen Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, langsam und mit ein paar Fehlern. Codex oder Claude Code auf deinem Computer liest es außerhalb des Chats, und das Dashboard zeigt, wie weit es ist. Bei einem Roman schlägt die Spielleitung vor, wo es losgehen soll. Sie schreibt die Orte, die Charaktere und die Geheimnisse.
 
-Eine Kampagne wird einmal gespielt: Um dasselbe Abenteuer noch einmal zu spielen, lege eine neue Kampagne an.
+Eine Kampagne wird einmal gespielt: Um dasselbe Abenteuer noch einmal zu spielen, erstelle eine neue Kampagne.
 
 ### 7.2 Sprachen
 
-Eine Sprache pro Kampagne, die der Spielleitung, der das Dashboard folgt. Das Dashboard bringt 26 Sprachen mit. Jede andere wird auf deinem Computer von Codex oder Claude Code übersetzt oder, ohne sie, von der Spielleitung im Chat. Die Begriffe der fünften Edition auf Italienisch stammen aus dem offiziellen italienischen SRD; der Regeltext bleibt auf Englisch, und die Spielleitung erzählt ihn in deiner Sprache.
+Eine Sprache pro Kampagne: die der Spielleitung, der das Dashboard folgt. Das Dashboard bringt 26 Sprachen mit. Jede andere wird auf deinem Computer von Codex oder Claude Code übersetzt oder, ohne sie, von der Spielleitung im Chat. Die Begriffe der fünften Edition auf Italienisch stammen aus dem offiziellen italienischen SRD. Der Regeltext bleibt auf Englisch, und die Spielleitung erzählt ihn in deiner Sprache.
 
 ---
 
 ## 8. Für Neugierige: der Kampagnenordner <!-- icon: list -->
 
-Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er enthält `campaign.yaml` (deine Einstellungen), `state.yaml` (der aktuelle Stand des Spiels), `world/` (eine Markdown-Seite für jeden Charakter, jeden Ort, jede Quest und alles Weitere), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine liegt. Die Seiten nutzen das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung bei der nächsten Antwort davon.
+Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er enthält `campaign.yaml` (deine Einstellungen), `state.yaml` (wo das Spiel steht), `world/` (eine Markdown-Seite für jeden Charakter, jeden Ort, jede Quest und alles Übrige), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine liegt. Die Seiten nutzen das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung davon bei ihrer nächsten Antwort.
 
-RPG Engine bleibt in diesem Ordner: Es liest und schreibt das Spiel nur hier und fasst deine anderen Dateien nie an. Außerhalb davon legt es nur einen eigenen Datenordner an (die Übersetzungen des Dashboards sowie Codex oder Claude Code, wenn du sie installieren lässt) und temporäre Ordner, während ein Bild gezeichnet wird. Alles andere, was dein Agent auf deinem Computer tun will, fragt er vorher bei dir an.
+RPG Engine bleibt in diesem Ordner: Es liest und schreibt das Spiel nur hier und berührt nie deine anderen Dateien. Die Ordner deiner Regelbücher liest es nur. Außerhalb davon hält es nur eigene Datenordner (die Übersetzungen des Dashboards, den Text, den es aus deinen Regelbüchern gelesen hat, und Codex oder Claude Code, wenn du sie installieren lässt) und temporäre Ordner, während ein Bild gezeichnet wird. Alles andere, was dein Agent auf deinem Computer tun will, fragt er vorher bei dir an.
 
-Jeden Befehl, den die Spielleitung nutzt, kannst du auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele davon zeigen die Geheimnisse der Kampagne an.
+Jeden Befehl, den die Spielleitung nutzt, kannst du auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele geben die Geheimnisse der Kampagne aus.
 
 ---
 
-## 9. Später geplant <!-- icon: hourglass -->
+## 9. Kommt später <!-- icon: hourglass -->
 
-- **Du als Spielleitung**, wobei die KI die Gruppe spielt.
-- **Autorenmodus**: ein Abenteuer mit der KI schreiben, dann exportieren und teilen.
-- **Mehrere Spielende am selben Computer**, jede Person mit eigenem Charakter, abwechselnd im selben Chat.
+- **Du als Spielleitung**, während die KI die Gruppe spielt.
+- **Autorenmodus**: Schreibe mit der KI ein Abenteuer, exportiere es und teile es.
+- **Mehrere Spielende am selben Computer**, jeweils mit eigenem Charakter, abwechselnd im selben Chat.
 - **Erweiterungen**: Einstellungen, Abenteuer, Funktionen und Hausregeln.
-- **Import** deiner Regelwerke und Abenteuer.
-- **Andere Spiele**: weitere Spielsysteme und deine eigenen.
+- **Andere Spiele**: mehr Spielsysteme und deine eigenen.
 
 ---
 

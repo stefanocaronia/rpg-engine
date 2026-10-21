@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -214,21 +214,23 @@ Síða á þinni eigin tölvu, opin aðeins í vafra þeirrar tölvu og virk me�
 
 ### 5.1 Hvað leikjakerfi er
 
-Gögn eins leiks: persónublað hans, tölur, skepnur, hlutir, galdrar og reglutexti. Hver herferð spilar eitt kerfi. RPG Engine reiknar persónublaðið og hvað er eytt og hvað kemur aftur; hvernig eiginleiki virkar les sögumaðurinn í reglunum og ákveður, eins og við borð.
+Gögn eins leiks: persónublaðið, tölurnar, verur, hlutir, galdrar og reglutexti. Hver herferð notar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og það sem kemur aftur. Sögumaðurinn les í reglunum hvernig eiginleiki virkar og ákveður það, eins og við borðið.
 
 ### 5.2 Fimmta útgáfa, innifalin
 
-Kynþættir, starfsstéttir, undirstéttir, bakgrunnur og hæfileiki úr SRD 5.1; galdrarnir 319, vopnin, brynjurnar, töfrahlutirnir og skrímslin; reglukaflarnir, sem sögumaðurinn les eftir nákvæmum texta þeirra; fullt persónublað, reiknað.
+Kynþættir, flokkar, undirflokkar, bakgrunnur og kostur (feat) úr SRD 5.1; galdrarnir 319, vopnin, brynjurnar, töfragripirnir og skrímslin; reglukaflarnir, sem sögumaðurinn les eftir nákvæmum texta þeirra; fullt persónublað, útreiknað.
 
-Þú getur líka spilað efni sem vantar í SRD, úr bók sem þú átt: sögumaðurinn skrifar það sem síður herferðarinnar og RPG Engine meðhöndlar þær eins og sínar eigin. RPG Engine fylgir aðeins opið efni; þekking sögumannsins er ekki takmörkuð.
+Þú getur líka spilað efni sem vantar í SRD, úr bók sem þú átt: sögumaðurinn skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar þær eins og sínar eigin. RPG Engine fylgir aðeins opið efni. Það sem sögumaðurinn þekkir er ekki takmarkað.
 
-### 5.3 Húsreglur og eigin viðbætur
+Þínar eigin handbækur geta verið bókasafn herferðarinnar: segðu sögumanninum hvar þær eru, *[Handbækurnar mínar eru í D:\Books\5e.]*, og svaraðu já í glugganum sem tölvan sýnir. RPG Engine les þær einu sinni, á þessari tölvu, og sögumaðurinn leitar í þeim þegar hann ákveður reglu, eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skrár þar sem hægt er að velja textann. Skönnuð PDF-skrá er lesin út frá myndum af síðunum, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir texta þeirra aldrei neitt og afritar hann aldrei í herferð.
 
-Biddu sögumanninn: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Hann geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þarf. Húsreglur sem þegar eru skrifaðar má setja sem textaskrár í möppuna `rules` í herferðinni.
+### 5.3 Húsreglur og þínar eigin viðbætur
+
+Biddu sögumanninn: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaðurinn geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þess þarf. Húsreglur sem þegar eru skrifaðar út geta farið sem textaskrár í `rules` möppu herferðarinnar.
 
 ### 5.4 Að bæta við eða flytja inn eigið leikjakerfi
 
-Ekki enn: í dag spilar RPG Engine aðeins fimmtu útgáfu ([Væntanlegt](#9-coming-later)).
+Ekki enn: í dag spilar RPG Engine aðeins fimmtu útgáfu ([Væntanlegt síðar](#9-coming-later)).
 
 ---
 
@@ -240,37 +242,36 @@ Ekki enn. Viðbót mun bæta einhverju við herferð ofan á leikjakerfið henna
 
 ## 7. Hvaðan herferð kemur og tungumál hennar <!-- icon: world -->
 
-### 7.1 Þrjár leiðir til að eignast heim
+### 7.1 Þrjár leiðir til að fá heim
 
-- **Gerður jafnóðum**: út frá söguforsendu þinni býr sögumaðurinn til hvern stað, hverja persónu og hvern söguþráð rétt áður en þú þarft á þeim að halda og geymir það.
-- **Undirbúinn í byrjun**: það sama, með heiminn byggðan fyrir spilun.
-- **Úr þínu eigin ævintýri**: gefðu sögumanninum texta eða PDF og biddu hann að setja það upp, *[Settu þetta ævintýri upp sem herferðina okkar. Segðu mér ekkert af því sem í því er.]* Hann skrifar staðina, persónurnar og leyndarmálin. Enn er enginn innflutningshnappur.
+- **Búinn til jafnóðum**: út frá forsendu þinni byggir sögumaðurinn hvern stað, hverja persónu og hvern söguþráð rétt áður en þú þarft á því að halda, og geymir það.
+- **Undirbúinn í upphafi**: það sama, en heimurinn er byggður áður en spilun hefst.
+- **Úr þinni eigin ævintýrabók eða bók**: gefðu sögumanninum skrána, *[Fluttu þetta ævintýri inn sem herferðina okkar: D:\Books\adventure.pdf. Segðu mér ekkert af því sem stendur í því.]* Það les best sem texti, EPUB, Word-skjal eða PDF-skrá þar sem hægt er að velja textann. Skönnuð PDF-skrá er lesin út frá myndum af síðunum, aðeins á Windows, hægt og með nokkrum villum. Codex eða Claude Code á tölvunni þinni les það utan spjallsins og stjórnborðið sýnir hve langt það er komið. Úr skáldsögu leggur sögumaðurinn til hvar á að byrja. Hann skrifar staðina, persónurnar og leyndarmálin.
 
 Herferð er spiluð einu sinni: til að spila sama ævintýri aftur skaltu búa til nýja herferð.
 
 ### 7.2 Tungumál
 
-Eitt tungumál á herferð, tungumál sögumannsins, sem mælaborðið fylgir. Mælaborðið kemur með 26 tungumálum. Hvert annað er þýtt á tölvunni þinni af Codex eða Claude Code, eða, án þeirra, af sögumanninum í spjallinu. Hugtök fimmtu útgáfu á ítölsku koma úr opinberu ítölsku SRD; reglutextinn helst á ensku og sögumaðurinn segir hann á þínu tungumáli.
+Eitt tungumál í hverri herferð, tungumál sögumannsins, og stjórnborðið fylgir því. Stjórnborðið kemur á 26 tungumálum. Öll önnur eru þýdd á tölvunni þinni af Codex eða Claude Code, eða, án þeirra, af sögumanninum í spjallinu. Hugtök fimmtu útgáfu á ítölsku koma úr opinberu ítölsku SRD-skránni. Reglutextinn helst á ensku og sögumaðurinn segir hann á þínu tungumáli.
 
 ---
 
-## 8. Fyrir forvitna: möppa herferðarinnar <!-- icon: list -->
+## 8. Fyrir forvitna: herferðarmappan <!-- icon: list -->
 
-Þú þarft aldrei að opna hana og í henni eru leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (hvar leikurinn er staddur), `world/` (ein markdown-síða fyrir hverja persónu, hvern stað, hvert verkefni og allt annað), `rules/` (þínar eigin húsreglur), `images/`, `log.jsonl` (sérhver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarforritum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu í höndunum fær sögumaðurinn að vita af því í næsta svari sínu.
+Þú þarft aldrei að opna hana og hún geymir leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (hvernig leikurinn stendur), `world/` (ein markdown-síða fyrir hverja persónu, hvern stað, hvert verkefni og allt annað), `rules/` (húsreglurnar þínar), `images/`, `log.jsonl` (sérhver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarfulltrúum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu með höndunum frétt sögumaðurinn af því í næsta svari sínu.
 
-RPG Engine heldur sig í þessari möppu: það les og skrifar leikinn aðeins hér og snertir aldrei aðrar skrár þínar. Utan hennar geymir það aðeins sína eigin gagnamöppu (þýðingar stjórnborðsins, og Codex eða Claude Code ef þú leyfir því að setja þau upp) og tímabundnar möppur á meðan mynd er teiknuð. Allt annað sem gervigreindarforritið vill gera á tölvunni þinni spyr það þig um fyrst.
+RPG Engine heldur sig í þessari möppu: það les og skrifar leikinn aðeins þar og snertir aldrei aðrar skrár þínar. Möppur handbókanna þinna les það aðeins. Utan hennar geymir það aðeins eigin gagnamöppur (þýðingar stjórnborðsins, textann sem það las úr handbókunum þínum, og Codex eða Claude Code ef þú leyfir því að setja þau upp) og tímabundnar möppur meðan mynd er teiknuð. Allt annað sem fulltrúinn vill gera á tölvunni þinni spyr hann þig um fyrst.
 
-Sérhverja skipun sem sögumaðurinn notar er líka hægt að keyra í herferðarmöppunni: `rpg --help` sýnir þær allar. Margar þeirra birta leyndarmál herferðarinnar.
+Sérhverja skipun sem sögumaðurinn notar er líka hægt að keyra í herferðarmöppunni: `rpg --help` listar þær. Margar prenta leyndarmál herferðarinnar.
 
 ---
 
-## 9. Væntanlegt <!-- icon: hourglass -->
+## 9. Væntanlegt síðar <!-- icon: hourglass -->
 
 - **Þú sem sögumaður**, með gervigreindina í hlutverki hópsins.
 - **Höfundarhamur**: skrifaðu ævintýri með gervigreindinni, fluttu það svo út og deildu því.
 - **Margir spilarar á sömu tölvu**, hver með sína persónu, til skiptis í sama spjalli.
 - **Viðbætur**: stillingar, ævintýri, eiginleikar og húsreglur.
-- **Innflutningur** á handbókum þínum og ævintýrum.
 - **Aðrir leikir**: fleiri leikjakerfi og þín eigin.
 
 ---

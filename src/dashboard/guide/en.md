@@ -221,6 +221,8 @@ The races, classes, subclasses, a background and a feat of the SRD 5.1; the 319 
 
 You can also play content the SRD lacks, from a book you own: the master writes it as pages of your campaign, and RPG Engine treats them as its own. RPG Engine ships only open content; what your master knows is not limited.
 
+Your own manuals can be the campaign's library: tell the master where they are, *[My manuals are in D:\Books\5e.]*, and say yes in the window your computer shows. RPG Engine reads them once, on this computer, and the master searches them when it decides a rule, after the SRD, citing the book and the page. They read best as text, or as PDFs whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, in a few minutes and with a few mistakes. RPG Engine never changes your manuals, never sends their text anywhere and never copies it into a campaign.
+
 ### 5.3 House rules and your own additions
 
 Ask the master: *[House rule: a natural 1 on an attack means you drop your weapon.]* It keeps it as an agreement of the table, or writes a page or a number of the sheet when one is needed. House rules already written out can go as text files in the campaign's `rules` folder.
@@ -243,7 +245,7 @@ Not yet. An extension will add something to a campaign on top of its game system
 
 - **Made on the fly**: from your premise, the master builds each place, person and plot just before you need it, and keeps it.
 - **Prepared at the start**: the same, with the world built before play.
-- **From your own adventure**: give the master a text or a PDF and ask it to set it up, *[Set up this adventure as our campaign. Don't tell me anything that's in it.]* It writes the places, the characters and the secrets. There is no import button yet.
+- **From your own adventure or book**: give the master its file, *[Import this adventure as our campaign: D:\Books\adventure.pdf. Don't tell me anything that's in it.]* It reads best as text, an EPUB, a Word document or a PDF whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, slowly and with a few mistakes. Codex or Claude Code on your computer reads it outside the chat, and the dashboard shows how far it is; from a novel, the master proposes where to start. It writes the places, the characters and the secrets.
 
 A campaign is played once: to play the same adventure again, create a new campaign.
 
@@ -257,7 +259,7 @@ One language per campaign, the master's, which the dashboard follows. The dashbo
 
 You never need to open it, and it holds the secrets of your campaign. It has `campaign.yaml` (your settings), `state.yaml` (where the game stands), `world/` (one markdown page for each character, place, quest and the rest), `rules/` (your house rules), `images/`, `log.jsonl` (every change), `.saves/`, `.player/` (your notes), and the small files that tell AI agents where RPG Engine is. The pages use Obsidian's format. If you change a page by hand, the master hears of it at its next answer.
 
-RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files. Outside it, it keeps only a data folder of its own (the dashboard's translations, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first.
+RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files; the folders of your manuals it only reads. Outside it, it keeps only data folders of its own (the dashboard's translations, the text it read of your manuals, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first.
 
 Every command the master uses can be run in the campaign folder too: `rpg --help` lists them. Many print the campaign's secrets.
 
@@ -269,7 +271,6 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 - **Author mode**: write an adventure with the AI, then export it and share it.
 - **Several players on the same computer**, each with their own character, taking turns in the same chat.
 - **Extensions**: settings, adventures, features and house rules.
-- **Importing** your manuals and adventures.
 - **Other games**: more game systems, and your own.
 
 ---

@@ -1,8 +1,9 @@
 import { unzipSync } from "fflate";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, extname, join, posix, relative } from "node:path";
+import { basename, extname, join, posix, relative, resolve } from "node:path";
 import { htmlText, openDocumentText, pictureMark, rtfText, wordText } from "./markup.ts";
+import type { PageReader } from "./ocr.ts";
 import { pngOf } from "./png.ts";
 
 /** A piece of a document as its reader gives it: a page of a PDF, or a part of a text of a few hundred words, with how it is cited. */
@@ -28,6 +29,22 @@ export interface DocumentText
 {
     parts: DocumentPart[];
     pictures: DocumentPicture[];
+    /** The labels of the parts without readable text (LIB-4), whose text is left empty. */
+    unreadable: string[];
+    /** The labels of the parts the OCR read, whose numbers and tables may be wrong. */
+    recognized: string[];
+}
+
+/**
+ * How a document is read: the pages of a PDF without readable text read from their pictures, where an OCR is given (LIB-4), stopped by `signal`, `progress`
+ * hearing how many of them are read; without its pictures, as a library does.
+ */
+export interface ReadOptions
+{
+    ocr?: PageReader;
+    pictures?: boolean;
+    signal?: AbortSignal;
+    progress?: (read: number, of: number) => void;
 }
 
 /** The kinds of file a document may be, by their extension. */
@@ -52,11 +69,14 @@ export function documentAt(path: string): "file" | "folder" | undefined
     }
 }
 
-/** A document's text and pictures, from a file or from a folder of them; refused, saying which kinds are read, when it is none of them. */
-export async function readDocument(path: string): Promise<DocumentText>
+/**
+ * A document's text and pictures, from a file or from a folder of them; refused, saying which kinds are read, when it is none of them, and saying why when it
+ * is locked: a password to open it, or DRM (LIB-5).
+ */
+export async function readDocument(path: string, options: ReadOptions = {}): Promise<DocumentText>
 {
     if (statSync(path).isDirectory()) {
-        return readFolder(path);
+        return readFolder(path, options);
     }
 
     const kind = extname(path).toLowerCase();
@@ -65,10 +85,34 @@ export async function readDocument(path: string): Promise<DocumentText>
         throw new Error(`${basename(path)} is no document the engine reads: give a ${documentKinds.join(", ")} file, or a folder of them.`);
     }
 
-    return kind === ".pdf" ? readPdf(readFileSync(path)) : readText(kind, readFileSync(path), "");
+    return kind === ".pdf" ? readPdf(path, options) : withPictures(readText(kind, readFileSync(path), basename(path), ""), options);
 }
 
-async function readFolder(folder: string): Promise<DocumentText>
+/**
+ * Whether a page has readable text (LIB-4): its words cut at spaces and punctuation, at least half of those with letters are true words, two letters or more,
+ * or Chinese, Japanese or Korean script, written without spaces; a single letter, a number or a die counts neither way. A page of numbers alone is
+ * readable; an empty one is not.
+ */
+export function isReadable(text: string): boolean
+{
+    const tokens = text.split(/[\s\p{P}]+/u).filter((token) => token !== "");
+    const counted = tokens.filter((token) => /\p{L}/u.test(token) && !numberPattern.test(token) && !/^\p{L}\p{M}*$/u.test(token));
+
+    if (counted.length === 0) {
+        return tokens.some((token) => numberPattern.test(token));
+    }
+
+    return counted.filter((token) => wordPattern.test(token) || scriptPattern.test(token)).length >= counted.length / 2;
+}
+
+// A true word: letters alone, two or more.
+const wordPattern = /^\p{L}[\p{L}\p{M}]*\p{L}\p{M}*$/u;
+// Chinese, Japanese and Korean, which write no spaces between words.
+const scriptPattern = /^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}ー]+$/u;
+// A number as rules write it, its marks cut away: 15, +1, 2d6+3, 50%, 3×4.
+const numberPattern = /^[+\-–−]?\d+(?:[dDxX×]\d+)?(?:[+\-–−]\d+)?%?$/u;
+
+async function readFolder(folder: string, options: ReadOptions): Promise<DocumentText>
 {
     const found = filesUnder(folder).filter((file) => documentKinds.includes(extname(file).toLowerCase()));
 
@@ -78,11 +122,13 @@ async function readFolder(folder: string): Promise<DocumentText>
 
     const parts: DocumentPart[] = [];
     const pictures: DocumentPicture[] = [];
+    const unreadable: string[] = [];
+    const recognized: string[] = [];
 
     for (const file of found) {
         const name = relative(folder, file).replace(/\\/g, "/");
         const kind = extname(file).toLowerCase();
-        const read = kind === ".pdf" ? await readPdf(readFileSync(file)) : readText(kind, readFileSync(file), name);
+        const read = kind === ".pdf" ? await readPdf(file, options) : withPictures(readText(kind, readFileSync(file), name, name), options);
         const prefix = (label: string): string => (kind === ".pdf" ? `${name}, ${label}` : label);
         // Two files may both have an image1.png: the second's is renamed, and so are its marks.
         const taken = new Set(pictures.map((picture) => picture.name));
@@ -92,18 +138,57 @@ async function readFolder(folder: string): Promise<DocumentText>
         const marked = (text: string): string => text.replace(/\[picture: ([^\]]+)\]/g, (mark, was: string) => (names.has(was) ? `[picture: ${names.get(was)}]` : mark));
         parts.push(...read.parts.map((part) => ({ label: prefix(part.label), text: marked(part.text) })));
         pictures.push(...renamed.map(({ was: _, ...picture }) => picture));
+        unreadable.push(...read.unreadable.map(prefix));
+        recognized.push(...read.recognized.map(prefix));
     }
 
-    return { parts, pictures: pictures.slice(0, mostPictures) };
+    return { parts, pictures: pictures.slice(0, mostPictures), unreadable, recognized };
 }
 
-// A PDF: a part for each page, its text as the page lays it out; its pictures without decorations, each as a PNG.
-async function readPdf(bytes: Uint8Array): Promise<DocumentText>
+/**
+ * A PDF: a part for each page, its text as the page lays it out, or as the OCR reads it when it has no readable text; its pictures without decorations, each
+ * as a PNG. One that asks for a password to open is refused; one that only forbids copying is read, as a reader does (LIB-5).
+ */
+async function readPdf(path: string, options: ReadOptions): Promise<DocumentText>
 {
-    const { extractImages, extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(new Uint8Array(bytes));
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(readFileSync(path))).catch((error: unknown) => {
+        throw (error as Error | undefined)?.name === "PasswordException" ? new Error(`${basename(path)} asks for a password to open: the engine never opens a locked document.`) : error;
+    });
     const { text } = await extractText(pdf, { mergePages: false });
     const parts = text.map((page, index) => ({ label: `p. ${index + 1}`, text: page.trim() }));
+    const { unreadable, recognized } = await readUnreadable(path, parts, options);
+    const pictures = options.pictures === false || options.signal?.aborted === true ? [] : await pdfPictures(pdf, parts);
+    await pdf.cleanup();
+    return { parts, pictures, unreadable, recognized };
+}
+
+/** The pages without readable text read again by the OCR, when there is one: the labels of those it read, and of those still without, their text left empty. */
+async function readUnreadable(path: string, parts: DocumentPart[], options: ReadOptions): Promise<{ unreadable: string[]; recognized: string[]; }>
+{
+    const pages = parts.flatMap((part, index) => (isReadable(part.text) ? [] : [index + 1]));
+    const ocr = options.ocr;
+    const onPage = (done: number): void => options.progress?.(done, pages.length);
+    const read = ocr === undefined || pages.length === 0 ? new Map<number, string>() : await ocr(resolve(path), pages, options.signal, onPage).catch(() => new Map<number, string>());
+    const unreadable: string[] = [];
+    const recognized: string[] = [];
+
+    for (const page of pages) {
+        const part = parts[page - 1];
+        const text = read.get(page)?.trim() ?? "";
+        part.text = isReadable(text) ? text : "";
+        (part.text === "" ? unreadable : recognized).push(part.label);
+    }
+
+    return { unreadable, recognized };
+}
+
+type PdfProxy = Awaited<ReturnType<typeof import("unpdf").getDocumentProxy>>;
+
+// A PDF's pictures without decorations, each marked at the end of the text of its page.
+async function pdfPictures(pdf: PdfProxy, parts: DocumentPart[]): Promise<DocumentPicture[]>
+{
+    const { extractImages } = await import("unpdf");
 
     // Each page's pictures are looked at and let go, then those kept are taken again one page at a time: a book's raw pixels never sit in memory together.
     const big = async (page: number) => {
@@ -149,13 +234,28 @@ async function readPdf(bytes: Uint8Array): Promise<DocumentText>
         }
     }
 
-    await pdf.cleanup();
-    return { parts, pictures };
+    return pictures;
 }
 
-// A document of text: its paragraphs, in parts of about a page, its pictures where they stand.
-function readText(kind: string, bytes: Uint8Array, name: string): DocumentText
+/** A document of text as it was asked for: for a library, without its pictures and their marks. */
+function withPictures(text: Omit<DocumentText, "unreadable" | "recognized">, options: ReadOptions): DocumentText
 {
+    if (options.pictures !== false) {
+        return { ...text, unreadable: [], recognized: [] };
+    }
+
+    return { parts: text.parts.map((part) => ({ ...part, text: part.text.replace(/\n*\[picture: [^\]]+\]/g, "").trim() })), pictures: [], unreadable: [], recognized: [] };
+}
+
+// A document of text: its paragraphs, in parts of about a page labelled with `name`, its pictures where they stand. Locked, it says why, by its `file`.
+function readText(kind: string, bytes: Uint8Array, file: string, name: string): Omit<DocumentText, "unreadable" | "recognized">
+{
+    const locked = lockOf(kind, bytes);
+
+    if (locked !== undefined) {
+        throw new Error(`${file} ${locked}: the engine never opens a locked document.`);
+    }
+
     const { text, files } = kind === ".docx" ? fromWord(bytes) : kind === ".odt" ? fromOpenDocument(bytes) : kind === ".epub" ? fromEpub(bytes) : fromPlain(kind, bytes);
     const pictures: DocumentPicture[] = [];
     const taken = new Set<string>();
@@ -201,6 +301,38 @@ function readText(kind: string, bytes: Uint8Array, name: string): DocumentText
     }
 
     return { parts, pictures };
+}
+
+/**
+ * Why a document of text is locked (LIB-5): a Word document with a password is no zip but an encrypted container, an OpenDocument's manifest says it is
+ * encrypted, an EPUB's text is encrypted by DRM (its fonts may be, harmlessly); undefined when it is not.
+ */
+function lockOf(kind: string, bytes: Uint8Array): string | undefined
+{
+    if (kind === ".docx" && bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0) {
+        return "asks for a password to open (or is an old .doc saved as .docx)";
+    }
+
+    if (kind !== ".odt" && kind !== ".epub") {
+        return undefined;
+    }
+
+    let zip: Record<string, Uint8Array>;
+
+    try {
+        zip = unzipSync(bytes, { filter: (file) => file.name.startsWith("META-INF/") });
+    } catch {
+        return undefined;
+    }
+
+    if (kind === ".odt") {
+        return (textOf(zip, "META-INF/manifest.xml") ?? "").includes("encryption-data") ? "asks for a password to open" : undefined;
+    }
+
+    const encrypted = [...(textOf(zip, "META-INF/encryption.xml") ?? "").matchAll(/<(?:\w+:)?CipherReference\b[^>]*URI="([^"]+)"/g)].map(([, uri]) => uri ?? "");
+    return encrypted.some((uri) => !/\.(otf|ttf|woff2?)$/i.test(uri)) || zip["META-INF/rights.xml"] !== undefined || zip["META-INF/license.lcpl"] !== undefined
+        ? "is locked by DRM"
+        : undefined;
 }
 
 /** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */

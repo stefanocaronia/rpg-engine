@@ -49,6 +49,7 @@ import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
+import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game-library.ts";
 import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
@@ -82,6 +83,8 @@ export const config = defineCommand({
         + "style (the player's own words on how you write); none takes away an author or a style. "
         + "table: what you promise the player about how you play, in the words you said. "
         + "precedents: each ruling you made without the text, the name of the rule in the system's language first, then what you said, such as 'Poisoned: …'. "
+        + "library: the player's own books, folders or files by their full path, which rules searches after the system; add asks the player's yes in a window of their computer; "
+        + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
         + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
         + "The game system may add settings, such as advancement for 5e: config lists them with what each value means. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
@@ -99,108 +102,12 @@ export const config = defineCommand({
 
     run(input, context)
     {
-        const root = requireCampaign(context.folder);
-        const listChange = input.add !== undefined || input.remove !== undefined;
-        const own = input.setting === undefined ? undefined : systemSetting(root, context, input.setting);
-
-        // A setting the game system adds, with one of its values (DAT-10).
-        if (own !== undefined) {
-            return systemSettingResult(root, context, own, input);
+        // What the library holds is checked, and an addition allowed by the player, before it is written (LIB-1).
+        if (input.setting?.trim() === "library" && (input.add !== undefined || input.remove !== undefined)) {
+            return changeLibrary(input, context);
         }
 
-        if (input.setting !== undefined && !(settingNames as string[]).includes(input.setting.trim())) {
-            const added = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
-            throw new Error(`There is no setting "${input.setting}". The settings are: ${[...settingNames, ...added].join(", ")}.`);
-        }
-
-        if (input.add !== undefined && input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting))) {
-            throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
-        }
-
-        if (listChange && (input.setting === undefined || (input.value !== undefined && !mapSettingNames.includes(checkSettingName(input.setting))))) {
-            throw new Error('Give add or remove with a list setting and no value, such as setting lines, add "spiders".');
-        }
-
-        // The master's effort is the player's to choose, in their terminal or on the dashboard, never the master's own (D-462).
-        if (input.setting?.trim() === "effort" && input.value !== undefined && context.terminal !== true && context.actor !== "player") {
-            throw new Error(
-                "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort and low, medium, high or app. Nothing changed.",
-            );
-        }
-
-        // app, or none, takes the effort away: each app keeps its own again (D-462).
-        if (input.setting?.trim() === "effort" && ["app", "none"].includes(input.value?.trim().toLowerCase() ?? "")) {
-            if (clearSetting(root, "effort")) {
-                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: "effort", value: "app" }));
-            }
-
-            const unwritten = writeEffortFiles(root, context.platform, true);
-            return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code, Codex and Gemini CLI: from the next chat each keeps its own.", ...unwritten], part: "" };
-        }
-
-        const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
-        const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
-        let replaced: string[] = [];
-
-        // What the campaign adds to its game system, checked with the system before it is written (CAM-1, CAM-3).
-        if (mapped && input.setting !== undefined && (input.value !== undefined || input.remove !== undefined)) {
-            const change = { set: input.value === undefined ? undefined : entriesOf(input.setting, input.value), remove: input.remove };
-            checkAdditions(root, context, input.setting, change);
-            replaced = replacedEntries(root, context, input.setting, Object.keys(change.set ?? {}));
-
-            if (changeMapSetting(root, input.setting, change)) {
-                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value, remove: input.remove }));
-            }
-        } else if (input.setting !== undefined && listChange && changeListSetting(root, input.setting, { add: input.add, remove: input.remove })) {
-            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, add: input.add, remove: input.remove }));
-        } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && listSettingNames.includes(checkSettingName(input.setting))) {
-            // A list answered with none still answers the setup (MOD-3).
-            if (changeListSettingToNone(root, input.setting)) {
-                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
-            }
-        } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && freeSettingNames.includes(checkSettingName(input.setting))) {
-            if (clearSetting(root, input.setting)) {
-                appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
-            }
-        } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
-            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
-        }
-
-        // The effort written where each app reads it in the campaign's folder (D-462).
-        if (input.setting?.trim() === "effort" && input.value !== undefined) {
-            const unwritten = writeEffortFiles(root, context.platform);
-            replaced = [
-                ...replaced,
-                "Written for Claude Code, Codex and Gemini CLI: it applies from the next chat; in Codex and Gemini CLI only in a folder they trust; an effort picked in the app for one chat wins there.",
-                ...unwritten,
-            ];
-        }
-
-        // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.
-        if (input.setting?.trim() === "calendar" && input.value !== undefined) {
-            replaced = [...replaced, ...campaignCalendar(root, context).problems.map((problem) => `${problem.message.replace(/\.$/, "")}: ${problem.fix ?? "fix it"}.`)];
-        }
-
-        const settings = readSettings(root);
-        // Listed all together, what the campaign adds to its system only when it adds something.
-        const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
-        const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar") || settings[name] !== undefined) : shown;
-        const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
-        // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
-        const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
-        // And of how the master writes, the parts as they are now (D-395).
-        const style = styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
-        // An author or the player's words taken away: what holds now, as the dashboard's news says it.
-        const cleared = changed !== undefined && input.value?.trim().toLowerCase() === "none" ? wordsOf(changed)?.cleared : undefined;
-        const part = changed === "mentor"
-            ? mentorPart(root, context, settings.mentor)
-            : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
-        return {
-            settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
-            note: campaignNote(root, context),
-            replaced,
-            part,
-        };
+        return configure(input, context);
     },
 
     format(result)
@@ -209,6 +116,139 @@ export const config = defineCommand({
         return [[...lines, ...result.replaced].join("\n"), result.note, result.part ?? ""].filter((block) => block !== "").join("\n\n");
     },
 });
+
+interface ConfigInput
+{
+    setting?: string;
+    value?: string;
+    add?: string[];
+    remove?: string[];
+}
+
+interface ConfigResult
+{
+    settings: Record<string, unknown>;
+    note: string;
+    replaced: string[];
+    part?: string;
+}
+
+/** The library changed: additions as full paths, allowed by the player from the chat; removals by any spelling of their path; then its new books read apart (LIB-1, LIB-3). */
+async function changeLibrary(input: ConfigInput, context: Context): Promise<ConfigResult>
+{
+    const root = requireCampaign(context.folder);
+    const add = input.add === undefined ? undefined : await libraryAdditions(root, context, input.add);
+    const remove = input.remove === undefined ? undefined : libraryRemovals(root, context, input.remove);
+    const result = configure({ ...input, add, remove }, context);
+    startLibraryReading(context, readSettings(root).library ?? []);
+    return result;
+}
+
+function configure(input: ConfigInput, context: Context): ConfigResult
+{
+    const root = requireCampaign(context.folder);
+    const listChange = input.add !== undefined || input.remove !== undefined;
+    const own = input.setting === undefined ? undefined : systemSetting(root, context, input.setting);
+
+    // A setting the game system adds, with one of its values (DAT-10).
+    if (own !== undefined) {
+        return systemSettingResult(root, context, own, input);
+    }
+
+    if (input.setting !== undefined && !(settingNames as string[]).includes(input.setting.trim())) {
+        const added = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
+        throw new Error(`There is no setting "${input.setting}". The settings are: ${[...settingNames, ...added].join(", ")}.`);
+    }
+
+    if (input.add !== undefined && input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting))) {
+        throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
+    }
+
+    if (listChange && (input.setting === undefined || (input.value !== undefined && !mapSettingNames.includes(checkSettingName(input.setting))))) {
+        throw new Error('Give add or remove with a list setting and no value, such as setting lines, add "spiders".');
+    }
+
+    // The master's effort is the player's to choose, in their terminal or on the dashboard, never the master's own (D-462).
+    if (input.setting?.trim() === "effort" && input.value !== undefined && context.terminal !== true && context.actor !== "player") {
+        throw new Error(
+            "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort and low, medium, high or app. Nothing changed.",
+        );
+    }
+
+    // app, or none, takes the effort away: each app keeps its own again (D-462).
+    if (input.setting?.trim() === "effort" && ["app", "none"].includes(input.value?.trim().toLowerCase() ?? "")) {
+        if (clearSetting(root, "effort")) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: "effort", value: "app" }));
+        }
+
+        const unwritten = writeEffortFiles(root, context.platform, true);
+        return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code, Codex and Gemini CLI: from the next chat each keeps its own.", ...unwritten], part: "" };
+    }
+
+    const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
+    const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
+    let replaced: string[] = [];
+
+    // What the campaign adds to its game system, checked with the system before it is written (CAM-1, CAM-3).
+    if (mapped && input.setting !== undefined && (input.value !== undefined || input.remove !== undefined)) {
+        const change = { set: input.value === undefined ? undefined : entriesOf(input.setting, input.value), remove: input.remove };
+        checkAdditions(root, context, input.setting, change);
+        replaced = replacedEntries(root, context, input.setting, Object.keys(change.set ?? {}));
+
+        if (changeMapSetting(root, input.setting, change)) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value, remove: input.remove }));
+        }
+    } else if (input.setting !== undefined && listChange && changeListSetting(root, input.setting, { add: input.add, remove: input.remove })) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, add: input.add, remove: input.remove }));
+    } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && listSettingNames.includes(checkSettingName(input.setting))) {
+        // A list answered with none still answers the setup (MOD-3).
+        if (changeListSettingToNone(root, input.setting)) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
+        }
+    } else if (input.setting !== undefined && input.value?.trim().toLowerCase() === "none" && freeSettingNames.includes(checkSettingName(input.setting))) {
+        if (clearSetting(root, input.setting)) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: "none" }));
+        }
+    } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
+    }
+
+    // The effort written where each app reads it in the campaign's folder (D-462).
+    if (input.setting?.trim() === "effort" && input.value !== undefined) {
+        const unwritten = writeEffortFiles(root, context.platform);
+        replaced = [
+            ...replaced,
+            "Written for Claude Code, Codex and Gemini CLI: it applies from the next chat; in Codex and Gemini CLI only in a folder they trust; an effort picked in the app for one chat wins there.",
+            ...unwritten,
+        ];
+    }
+
+    // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.
+    if (input.setting?.trim() === "calendar" && input.value !== undefined) {
+        replaced = [...replaced, ...campaignCalendar(root, context).problems.map((problem) => `${problem.message.replace(/\.$/, "")}: ${problem.fix ?? "fix it"}.`)];
+    }
+
+    const settings = readSettings(root);
+    // Listed all together, what the campaign adds to its system only when it adds something.
+    const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
+    const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar") || settings[name] !== undefined) : shown;
+    const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
+    // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
+    const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
+    // And of how the master writes, the parts as they are now (D-395).
+    const style = styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
+    // An author or the player's words taken away: what holds now, as the dashboard's news says it.
+    const cleared = changed !== undefined && input.value?.trim().toLowerCase() === "none" ? wordsOf(changed)?.cleared : undefined;
+    const part = changed === "mentor"
+        ? mentorPart(root, context, settings.mentor)
+        : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
+    return {
+        settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
+        note: campaignNote(root, context),
+        replaced,
+        part,
+    };
+}
 
 // The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
 const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
@@ -598,6 +638,11 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
 
     if (meaning !== undefined) {
         return `${String(settings[name])}: ${meaning}`;
+    }
+
+    // The library with what is read of each entry, and what is skipped (LIB-5).
+    if (name === "library") {
+        return libraryShown(context, settings.library ?? []);
     }
 
     // Lines and veils not yet answered are missing: [] is the answer none (MOD-3).

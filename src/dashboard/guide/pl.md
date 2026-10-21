@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -210,25 +210,27 @@ Gdy Mistrz Gry o coś zapyta, jego baner zostaje na górze, w której części s
 
 ---
 
-## 5. Systemy gier i zasady domowe <!-- icon: dice -->
+## 5. Systemy gry i zasady domowe <!-- icon: dice -->
 
 ### 5.1 Czym jest system gry
 
-To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania gra w jednym systemie. RPG Engine liczy kartę postaci oraz to, co się zużywa i wraca. Jak działa dana cecha, Mistrz Gry czyta w zasadach i rozstrzyga, jak przy stole.
+To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, czary i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine liczy kartę postaci oraz to, co się zużywa i wraca. Jak działa dana zdolność, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
 
-### 5.2 Piąta edycja, w zestawie
+### 5.2 Piąta edycja w zestawie
 
-Rasy, klasy, podklasy, tło i atut z SRD 5.1; 319 zaklęć, broń, pancerze, magiczne przedmioty i potwory; rozdziały zasad, które Mistrz Gry czyta dokładnie według ich tekstu; pełna karta postaci, z wyliczeniami.
+Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 czarów, broń, pancerze, przedmioty magiczne i potwory; rozdziały z zasadami, które Mistrz Gry czyta dokładnie w ich brzmieniu; pełna karta postaci, z wyliczonymi wartościami.
 
-Możesz też grać treściami, których brakuje w SRD, z podręcznika, który posiadasz: Mistrz Gry zapisuje je jako strony Twojej kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko otwarte treści, ale wiedza Mistrza Gry nie jest ograniczona.
+Można też grać treściami, których brakuje w SRD, z posiadanej książki: Mistrz Gry zapisuje je jako strony kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko otwarte treści, ale wiedza Mistrza Gry nie ma takiego ograniczenia.
+
+Własne podręczniki mogą stać się biblioteką kampanii. Wystarczy powiedzieć Mistrzowi Gry, gdzie leżą: *[Moje podręczniki są w D:\Books\5e.]*, i zgodzić się w oknie, które pokaże komputer. RPG Engine czyta je jednorazowo, na tym komputerze. Później Mistrz Gry przeszukuje je przy rozstrzyganiu zasad, po SRD, i podaje książkę oraz stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z tekstem, który można zaznaczyć. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w Windows, w kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia podręczników, nigdzie nie wysyła ich tekstu i nie kopiuje go do kampanii.
 
 ### 5.3 Zasady domowe i własne dodatki
 
-Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zachowa ją jako ustalenie przy stole albo zapisze stronę lub liczbę na karcie postaci, gdy jest to potrzebne. Gotowe, spisane zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
+Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako umowę stołu albo tworzy stronę czy wartość na karcie postaci, jeśli jest potrzebna. Gotowe zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
 
 ### 5.4 Dodawanie lub importowanie własnego systemu gry
 
-Jeszcze nie: obecnie RPG Engine obsługuje tylko piątą edycję ([Wkrótce](#9-coming-later)).
+Jeszcze nie: dziś RPG Engine obsługuje tylko piątą edycję ([Wkrótce](#9-coming-later)).
 
 ---
 
@@ -238,40 +240,39 @@ Jeszcze nie. Rozszerzenie doda coś do kampanii na wierzchu jej systemu gry: św
 
 ---
 
-## 7. Skąd bierze się kampania i jej język <!-- icon: world -->
+## 7. Skąd się bierze kampania i w jakim języku <!-- icon: world -->
 
 ### 7.1 Trzy sposoby na świat
 
-- **Tworzony na bieżąco**: na podstawie Twojego założenia Mistrz Gry buduje każde miejsce, osobę i wątek tuż przed tym, jak będą potrzebne, i je zachowuje.
-- **Przygotowany na początku**: to samo, ale świat powstaje przed grą.
-- **Z Twojej własnej przygody**: daj Mistrzowi Gry tekst lub PDF i poproś, aby go przygotował, *[Przygotuj tę przygodę jako naszą kampanię. Nie mów mi nic z tego, co w niej jest.]* Mistrz Gry zapisze miejsca, postacie i sekrety. Przycisku importu jeszcze nie ma.
+- **Tworzony na bieżąco**: na podstawie Twojego pomysłu Mistrz Gry buduje każde miejsce, każdą osobę i każdy wątek tuż przed tym, jak będą potrzebne, i zapamiętuje je.
+- **Przygotowany na początku**: tak samo, ale świat powstaje przed grą.
+- **Z własnej przygody lub książki**: podaj Mistrzowi Gry plik: *[Zaimportuj tę przygodę jako naszą kampanię: D:\Books\adventure.pdf. Nie mów mi nic z tego, co w niej jest.]* Najlepiej czyta się tekst, EPUB, dokument Word lub PDF z tekstem, który można zaznaczyć. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w Windows, powoli i z kilkoma błędami. Codex lub Claude Code na Twoim komputerze czyta plik poza czatem, a dashboard pokazuje postęp. Przy powieści Mistrz Gry proponuje, od którego miejsca zacząć. Zapisuje miejsca, postacie i sekrety.
 
-W kampanię gra się raz: aby zagrać w tę samą przygodę ponownie, utwórz nową kampanię.
+Kampanię rozgrywa się raz: aby zagrać tę samą przygodę jeszcze raz, utwórz nową kampanię.
 
 ### 7.2 Języki
 
-Jeden język na kampanię, język Mistrza Gry, za którym podąża dashboard. Dashboard jest dostępny w 26 językach. Każdy inny tłumaczy na Twoim komputerze Codex lub Claude Code, a bez nich Mistrz Gry na czacie. Włoskie terminy piątej edycji pochodzą z oficjalnego włoskiego SRD. Tekst zasad pozostaje po angielsku, a Mistrz Gry opowiada go w Twoim języku.
+Jedna kampania ma jeden język: język Mistrza Gry, za którym podąża dashboard. Dashboard jest dostępny w 26 językach. Każdy inny tłumaczy na Twoim komputerze Codex lub Claude Code, a bez nich Mistrz Gry na czacie. Włoskie nazwy z piątej edycji pochodzą z oficjalnego włoskiego SRD. Tekst zasad zostaje po angielsku, a Mistrz Gry opowiada go w Twoim języku.
 
 ---
 
 ## 8. Dla ciekawskich: folder kampanii <!-- icon: list -->
 
-Nie musisz go nigdy otwierać, a znajdują się w nim sekrety Twojej kampanii. Są w nim: `campaign.yaml` (ustawienia), `state.yaml` (stan gry), `world/` (po jednej stronie markdown dla każdej postaci, każdego miejsca, każdego zadania i reszty), `rules/` (zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (Twoje notatki) oraz małe pliki, które wskazują agentom AI, gdzie jest RPG Engine. Strony mają format Obsidiana. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy następnej odpowiedzi.
+Nigdy nie trzeba go otwierać, a zawiera sekrety kampanii. Znajdują się w nim: `campaign.yaml` (ustawienia), `state.yaml` (stan gry), `world/` (jedna strona markdown dla każdej postaci, miejsca, zadania i reszty), `rules/` (zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (notatki) oraz małe pliki, które mówią agentom AI, gdzie jest RPG Engine. Strony używają formatu Obsidiana. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy następnej odpowiedzi.
 
-RPG Engine zostaje w tym folderze: czyta i zapisuje grę tylko tutaj i nigdy nie rusza Twoich innych plików. Poza nim trzyma tylko własny folder z danymi (tłumaczenia dashboardu oraz Codex lub Claude Code, jeśli pozwolisz je zainstalować) i foldery tymczasowe na czas rysowania obrazu. Wszystko inne, co agent chce zrobić na Twoim komputerze, wymaga wcześniej Twojej zgody.
+RPG Engine pozostaje w tym folderze: czyta i zapisuje grę tylko tutaj i nigdy nie dotyka innych plików. Foldery z podręcznikami tylko czyta. Poza kampanią trzyma wyłącznie własne foldery z danymi (tłumaczenia dashboardu, tekst odczytany z podręczników oraz Codex lub Claude Code, jeśli pozwolisz je zainstalować) i foldery tymczasowe na czas rysowania obrazu. O wszystko inne, co agent chce zrobić na komputerze, najpierw pyta.
 
-Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` wyświetla ich listę. Wiele z nich wyświetla sekrety kampanii.
+Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` wyświetla ich listę. Wiele z nich wypisuje sekrety kampanii.
 
 ---
 
 ## 9. Wkrótce <!-- icon: hourglass -->
 
-- **Ty jako Mistrz Gry**, z AI grającą drużyną.
+- **Ty jako Mistrz Gry**, a AI gra drużyną.
 - **Tryb autora**: napisz przygodę z AI, a potem wyeksportuj ją i udostępnij.
-- **Kilku graczy na tym samym komputerze**, każdy z własną postacią, na zmianę w tym samym czacie.
+- **Kilku graczy na jednym komputerze**, każdy z własną postacią, na zmianę w tym samym czacie.
 - **Rozszerzenia**: ustawienia, przygody, funkcje i zasady domowe.
-- **Importowanie** Twoich podręczników i przygód.
-- **Inne gry**: więcej systemów gier oraz Twoje własne.
+- **Inne gry**: więcej systemów gry i własne.
 
 ---
 

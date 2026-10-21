@@ -2774,6 +2774,12 @@ a {
     margin-inline-start: 0;
 }
 
+/* In the setup the page's notices, as an import under way, stand in the column of its card, under the corner that keeps the top. */
+.setup-corner ~ .notices {
+    max-width: 640px;
+    margin: 72px auto var(--gap);
+}
+
 .setup-corner .icon-button {
     width: 34px;
     height: 34px;
@@ -3859,6 +3865,27 @@ a {
 
 .notice.problem {
     --tone: var(--low);
+}
+
+/* A notice that counts, as an import's (D-491 (11)): its count at the end of its one line, and a thin bar of how far it is along its bottom edge. */
+.notice:has(.count) {
+    position: relative;
+    overflow: hidden;
+}
+
+.notice .count {
+    margin-inline-start: auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.notice .bar {
+    position: absolute;
+    inset-inline-start: 0;
+    bottom: 0;
+    width: var(--done);
+    height: 3px;
+    background: var(--tone);
 }
 
 .notice.away {

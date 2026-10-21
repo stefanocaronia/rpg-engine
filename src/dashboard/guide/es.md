@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -214,21 +214,23 @@ Cuando el máster te pregunta algo, su aviso se queda arriba, en la sección en 
 
 ### 5.1 Qué es un sistema de juego
 
-Los datos de un juego: su ficha, sus números, sus criaturas, objetos, conjuros y el texto de sus reglas. Cada campaña juega con un sistema. RPG Engine calcula la ficha y lo que se gasta y lo que se recupera; cómo funciona un rasgo, lo lee el máster en las reglas y lo decide, como en una mesa.
+Los datos de un juego: su ficha, sus números, sus criaturas, objetos, conjuros y el texto de sus reglas. Cada campaña juega un solo sistema. RPG Engine calcula la ficha y lo que se gasta y se recupera. Cómo funciona una capacidad lo lee el máster en las reglas y lo decide, como en una mesa.
 
 ### 5.2 Quinta edición, incluida
 
-Las razas, las clases, las subclases, un trasfondo y una dote del SRD 5.1; los 319 conjuros, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee por su texto exacto; la ficha completa, calculada.
+Las razas, clases, subclases, un trasfondo y una dote del SRD 5.1; los 319 conjuros, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee según su texto exacto; la ficha completa, ya calculada.
 
-También puedes jugar contenido que el SRD no tiene, de un libro que poseas: el máster lo escribe como páginas de tu campaña, y RPG Engine las trata como propias. RPG Engine incluye solo contenido abierto; lo que sabe tu máster no tiene ese límite.
+También puedes jugar contenido que el SRD no incluye, de un libro que tengas: el máster lo escribe como páginas de tu campaña, y RPG Engine las trata como propias. RPG Engine solo incluye contenido abierto; lo que sabe tu máster no tiene ese límite.
+
+Tus propios manuales pueden ser la biblioteca de la campaña: dile al máster dónde están, *[Mis manuales están en D:\Books\5e.]*, y di que sí en la ventana que te muestre tu equipo. RPG Engine los lee una sola vez, en este equipo, y el máster los consulta cuando decide una regla, después del SRD, y cita el libro y la página. Se leen mejor como texto, o como PDF cuyo texto se pueda seleccionar. Un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, en unos minutos y con algunos errores. RPG Engine nunca modifica tus manuales, nunca envía su texto a ningún sitio y nunca lo copia en una campaña.
 
 ### 5.3 Reglas de la casa y tus propias añadiduras
 
-Pídeselo al máster: *[Regla de la casa: un 1 natural en un ataque significa que sueltas el arma.]* El máster la guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya estén escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
+Pídele al máster: *[Regla de la casa: un 1 natural en un ataque significa que se te cae el arma.]* El máster la guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya tengas escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
 
 ### 5.4 Añadir o importar tu propio sistema de juego
 
-Todavía no: hoy RPG Engine juega solo con la quinta edición ([Próximamente](#9-coming-later)).
+Todavía no: hoy RPG Engine solo juega quinta edición ([Próximamente](#9-coming-later)).
 
 ---
 
@@ -242,23 +244,23 @@ Todavía no. Una extensión añadirá algo a una campaña además de su sistema 
 
 ### 7.1 Tres formas de tener un mundo
 
-- **Creado sobre la marcha**: a partir de tu premisa, el máster construye cada lugar, persona y trama justo antes de que lo necesites, y lo conserva.
-- **Preparado al principio**: lo mismo, con el mundo construido antes de jugar.
-- **A partir de tu propia aventura**: dale al máster un texto o un PDF y pídele que lo prepare, *[Prepara esta aventura como nuestra campaña. No me cuentes nada de lo que contiene.]* El máster escribe los lugares, los personajes y los secretos. Todavía no hay un botón de importación.
+- **Creado sobre la marcha**: a partir de tu premisa, el máster construye cada lugar, personaje y trama justo antes de que lo necesites, y lo conserva.
+- **Preparado al empezar**: lo mismo, pero con el mundo construido antes de jugar.
+- **A partir de tu propia aventura o libro**: dale al máster el archivo, *[Importa esta aventura como nuestra campaña: D:\Books\adventure.pdf. No me cuentes nada de lo que contiene.]* Se lee mejor como texto, un EPUB, un documento de Word o un PDF cuyo texto se pueda seleccionar. Un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, despacio y con algunos errores. Codex o Claude Code, en tu equipo, lo lee fuera del chat, y el dashboard muestra cuánto falta. Si es una novela, el máster propone por dónde empezar. Escribe los lugares, los personajes y los secretos.
 
-Una campaña se juega una sola vez: para jugar otra vez la misma aventura, crea una campaña nueva.
+Una campaña se juega una sola vez: para jugar de nuevo la misma aventura, crea una campaña nueva.
 
 ### 7.2 Idiomas
 
-Un idioma por campaña, el del máster, que el panel sigue. El panel incluye 26 idiomas. Cualquier otro lo traduce en tu equipo Codex o Claude Code o, sin ellos, el máster en el chat. Los términos de la quinta edición en italiano proceden del SRD oficial en italiano; el texto de las reglas sigue en inglés, y el máster lo cuenta en tu idioma.
+Un idioma por campaña: el del máster, que el dashboard sigue. El dashboard incluye 26 idiomas. Cualquier otro lo traduce en tu equipo Codex o Claude Code o, si no los tienes, el máster en el chat. Los términos de la quinta edición en italiano proceden del SRD oficial en italiano. El texto de las reglas sigue en inglés, y el máster lo cuenta en tu idioma.
 
 ---
 
 ## 8. Para curiosos: la carpeta de la campaña <!-- icon: list -->
 
-No necesitas abrirla nunca, y guarda los secretos de tu campaña. Contiene `campaign.yaml` (tus ajustes), `state.yaml` (cómo va el juego), `world/` (una página markdown por cada personaje, lugar, misión y el resto), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los archivos pequeños que indican a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster lo sabrá en su siguiente respuesta.
+Nunca necesitas abrirla, y contiene los secretos de tu campaña. Tiene `campaign.yaml` (tus ajustes), `state.yaml` (cómo va la partida), `world/` (una página markdown por cada personaje, lugar, misión y el resto), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los archivos pequeños que indican a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster lo sabrá en su siguiente respuesta.
 
-RPG Engine se queda en esta carpeta: solo lee y escribe la partida aquí, y nunca toca tus otros archivos. Fuera de ella, solo guarda una carpeta de datos propia (las traducciones del panel, y Codex o Claude Code si dejas que los instale) y carpetas temporales mientras se dibuja una imagen. Para cualquier otra cosa que tu agente quiera hacer en tu equipo, antes te lo pregunta.
+RPG Engine se queda en esta carpeta: solo lee y escribe la partida aquí y nunca toca tus otros archivos. Las carpetas de tus manuales solo las lee. Fuera de ella, solo conserva carpetas de datos propias (las traducciones del dashboard, el texto que leyó de tus manuales, y Codex o Claude Code si dejas que los instale) y carpetas temporales mientras se dibuja una imagen. Cualquier otra cosa que tu agente quiera hacer en tu equipo, te la pregunta antes.
 
 Todos los comandos que usa el máster se pueden ejecutar también en la carpeta de la campaña: `rpg --help` los enumera. Muchos muestran los secretos de la campaña.
 
@@ -266,11 +268,10 @@ Todos los comandos que usa el máster se pueden ejecutar también en la carpeta 
 
 ## 9. Próximamente <!-- icon: hourglass -->
 
-- **Tú como máster**, con la IA interpretando al grupo.
+- **Tú como máster**, con la IA jugando el grupo.
 - **Modo autor**: escribe una aventura con la IA, luego expórtala y compártela.
 - **Varias personas en el mismo equipo**, cada una con su propio personaje, por turnos en el mismo chat.
 - **Extensiones**: ajustes, aventuras, funciones y reglas de la casa.
-- **Importar** tus manuales y aventuras.
 - **Otros juegos**: más sistemas de juego, y los tuyos.
 
 ---

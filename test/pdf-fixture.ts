@@ -20,8 +20,8 @@ export function tinyPdf(pages: { text: string; picture?: "own" | "shared"; }[]):
     const kids = pages.map((page, index) => {
         const image = page.picture === "own" ? picture(100 + index) : page.picture === "shared" ? shared : undefined;
         const draw = image === undefined ? "" : "q 200 0 0 200 72 400 cm /Im1 Do Q\n";
-        // Ten words a line, as a page lays them out: a line past the page's edge is not read.
-        const lines = (page.text.match(/(\S+\s*){1,10}/g) ?? [""]).map((line) => `(${line.trim()}) Tj 0 -12 Td`).join(" ");
+        // Ten words a line, as a page lays them out: a line past the page's edge is not read. A line break of the text starts a line too, as a title's.
+        const lines = page.text.split("\n").flatMap((line) => line.match(/(\S+\s*){1,10}/g) ?? [""]).map((line) => `(${line.trim()}) Tj 0 -12 Td`).join(" ");
         const content = add(stream("", ascii(`${draw}BT /F1 10 Tf 72 760 Td ${lines} ET`)));
         const resources = `/Font << /F1 ${font} 0 R >>${image === undefined ? "" : ` /XObject << /Im1 ${image} 0 R >>`}`;
         return add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ${resources} >> /Contents ${content} 0 R >>`);

@@ -260,7 +260,7 @@ export function systemInStatus(root: string, context: Context): string | undefin
 }
 
 /** A language as messages name it, such as English for en. */
-function languageName(code: string): string
+export function languageName(code: string): string
 {
     try {
         return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? code;

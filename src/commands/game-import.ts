@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { readAdventureFolder } from "../adventures/index.ts";
 import type { DocumentReader } from "../core/context.ts";
-import { claimImport, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState } from "../importer/index.ts";
+import { claimImport, dropDocumentText, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState } from "../importer/index.ts";
 import { masterInstructions } from "../instructions/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { partText } from "./parts.ts";
@@ -124,6 +124,7 @@ function finishImport(folder: string, state: ImportState, language: string): voi
 
     const { fix: _, ...kept } = state;
     writeImportState(folder, { ...kept, phase: "done" });
+    dropDocumentText(folder, true);
 }
 
 // What the helper reads at each run: the importer's part of the instructions, the pages as the core writes them, and what to do now.

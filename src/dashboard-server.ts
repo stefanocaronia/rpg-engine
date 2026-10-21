@@ -17,6 +17,7 @@ import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
+import { importShown } from "./commands/import.ts";
 import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
@@ -333,6 +334,9 @@ const pageReturn = 5000;
 // How long a question waits on pages that are open but that no one sees, as one in a tab behind, before it goes to the form or to words (D-455).
 const pageHidden = 5000;
 
+// How often the server looks at an import under way, for the pages to tell how far it is (D-491 (11)).
+const importLookEvery = 2000;
+
 function serve(server: Server, served: Served): Dashboard
 {
     let notice: NodeJS.Timeout | undefined;
@@ -345,6 +349,18 @@ function serve(server: Server, served: Served): Dashboard
     };
 
     const stopListening = served.session.onChange(() => served.notify());
+    // An import works in another process, or in the call the master waits on, writing where the session does not watch: its state is looked at now and then,
+    // and the pages hear when it changes (D-491 (11)).
+    let importSeen = importNow(served);
+    const importLook = setInterval(() => {
+        const now = importNow(served);
+
+        if (now !== importSeen) {
+            importSeen = now;
+            served.notify();
+        }
+    }, importLookEvery);
+    importLook.unref();
 
     server.on("request", (request: IncomingMessage, response: ServerResponse) => {
         answer(request, response, served).catch((error: unknown) => {
@@ -361,12 +377,24 @@ function serve(server: Server, served: Served): Dashboard
         close: () =>
             new Promise((done) => {
                 stopListening();
+                clearInterval(importLook);
                 clearTimeout(notice);
                 served.asked?.settle("absent");
                 served.pages.forEach((page) => page.end());
                 server.close(() => done());
             }),
     };
+}
+
+/** The import under way as the page tells it, as text to compare; empty without a campaign. */
+function importNow(served: Served): string
+{
+    try {
+        const root = withFiles(served.session, () => findCampaign(served.context.folder));
+        return root === undefined ? "" : JSON.stringify(importShown(root) ?? null);
+    } catch {
+        return "";
+    }
 }
 
 async function answer(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
@@ -922,9 +950,9 @@ async function packageWork(
         player: undefined,
         ...(confirm === undefined ? {} : {
             confirm: {
-                ask: async (title, text, signal) => {
+                ask: async (title, text, signal, answers) => {
                     phase("yes");
-                    return await confirm.ask(title, text, signal).finally(() => phase("working"));
+                    return await confirm.ask(title, text, signal, answers).finally(() => phase("working"));
                 },
             },
         }),

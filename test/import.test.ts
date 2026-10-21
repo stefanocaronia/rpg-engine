@@ -1,10 +1,11 @@
 // The importer (D-483 (10), D-484, D-489): the player's document read by a helper outside the chat piece after piece, the starts proposed, the world set at the
 // one chosen, the pictures its pages show and the license the document gives kept, and an adventure that package install takes.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { runCommandLine } from "../src/command-line.ts";
+import { importShown } from "../src/commands/import.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";
 import { openLicense } from "../src/importer/index.ts";
@@ -132,6 +133,9 @@ describe("import of the player's document (D-489)", () => {
         expect(done.output).toContain("The King is ready: 1 characters, 1 places, 1 topics, in .imports");
         expect(done.output).toContain("Tell the player what was invented to fill the gaps:\n- the name of the pass");
         expect(existsSync(join(work(), "adventure", "images", "p002-1.png"))).toBe(true);
+        // The book leaves the campaign, but for the pictures its pages show, copied into the adventure (LIB-8).
+        expect(existsSync(join(work(), "document", "01.md"))).toBe(false);
+        expect(existsSync(join(work(), "document", "pictures"))).toBe(false);
         const manifest = parse(readFileSync(join(work(), "adventure", "adventure.yaml"), "utf8")) as Record<string, unknown>;
         expect(manifest).toMatchObject({ title: "The King", version: "1.0.0", language: "it", license: "public domain", author: "Rudyard Kipling" });
         expect((await rpg("status")).output).toContain("Imported and not installed: The King");
@@ -181,6 +185,7 @@ describe("import of the player's document (D-489)", () => {
         const last = await rpg("import");
         expect(last.output).toContain("piece 2 of 2");
         expect(last.output).toContain("This is the last piece. For a book, ask the player whether they have read it");
+        expect(existsSync(join(work(), "document", "01.md")) || existsSync(join(work(), "document", "02.md"))).toBe(false);
         // Its pages are the world's already: nothing to install.
         expect((await rpg("status")).output).not.toContain("Import");
     });
@@ -279,6 +284,75 @@ describe("the narration as the book is told (Stefano, 21 October)", () => {
         const done = await rpg("import", book(), "--title", "The King");
         expect(done.output).toContain("The player chose how you write: ask whether to write like Rudyard Kipling, story arcs, as the book is told");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("Kipling");
+    });
+});
+
+describe("the import as the dashboard tells it (D-491 (11))", () => {
+    it("tells the document being opened and its pages read from their pictures while the master waits, then advises text", async () => {
+        context.reader = fakeReader();
+        const scan = join(makeTempFolder(), "scan.pdf");
+        writeFileSync(scan, tinyPdf([{ text: "The road north is long and the river is wide." }, { text: "@<=?%:6 &0H?5H%6 :0<865&=H8: <0=?=0H <?2H%:6" }]));
+        const seen: unknown[] = [];
+
+        context.ocr = (_pdf, pages, _signal, onPage) => {
+            seen.push(importShown(folder));
+            onPage?.(1);
+            seen.push(importShown(folder));
+            return Promise.resolve(new Map(pages.map((page) => [page, "The ferryman asks a coin of each traveller who crosses the river."])));
+        };
+
+        const started = await rpg("import", scan, "--title", "The King");
+        expect(seen).toEqual([{ title: "The King", step: "opening" }, { title: "The King", step: "pictures", done: 1, of: 1 }]);
+        expect(started.output).toContain("1 of its pages were read from their pictures, slowly and with a few mistakes: tell the player that a text file, or a PDF whose text can be selected, reads better.");
+        expect(existsSync(join(folder, ".imports", "opening.yaml"))).toBe(false);
+    });
+
+    it("makes no import of a document stopped or dropped while it is opened, and opens one document at a time", async () => {
+        context.reader = fakeReader();
+        const scan = join(makeTempFolder(), "scan.pdf");
+        writeFileSync(scan, tinyPdf([{ text: "@<=?%:6 &0H?5H%6 :0<865&=H8: <0=?=0H <?2H%:6" }]));
+        const page = new Map([[1, "The ferryman asks a coin of each traveller who crosses the river."]]);
+        // Stopped with Esc while the OCR reads.
+        const stop = new AbortController();
+        context.signal = stop.signal;
+
+        context.ocr = () => {
+            stop.abort();
+            return Promise.resolve(page);
+        };
+
+        expect((await rpg("import", scan, "--title", "The King")).output).toContain("The import of The King was stopped before it began. Nothing changed.");
+        context.signal = undefined;
+
+        // Dropped with cancel while the OCR reads; another document waits for it.
+        context.ocr = async () => {
+            expect((await rpg("import", book(), "--title", "Other")).output).toContain("The import of The King is under way");
+            expect((await rpg("import", "--cancel")).output).toContain("The import of The King is dropped");
+            return page;
+        };
+
+        expect((await rpg("import", scan, "--title", "The King")).output).toContain("was stopped before it began");
+        expect(existsSync(work())).toBe(false);
+        expect(importShown(folder)).toBeUndefined();
+        expect(readLogFile(folder).some((entry) => entry.type === "import-started")).toBe(false);
+    });
+
+    it("says an import waits when nothing runs it for a while, as after the computer started again", async () => {
+        mkdirSync(work(), { recursive: true });
+        writeFileSync(join(work(), "import.yaml"), "title: The King\ndocument: king.pdf\npieces: 4\nphase: reading\ndone: 1\n");
+        expect(importShown(folder)).toEqual({ title: "The King", step: "reading", done: 1, of: 4 });
+        utimesSync(join(work(), "import.yaml"), new Date(Date.now() - 120_000), new Date(Date.now() - 120_000));
+        expect(importShown(folder)).toEqual({ title: "The King", step: "waiting" });
+    });
+
+    it("tells how far the reading and the writing are, the start the player chooses, and an import stopped", async () => {
+        expect(importShown(folder)).toBeUndefined();
+        context.reader = fakeReader({ failOnce: true });
+        await rpg("import", book(), "--title", "The King");
+        expect(importShown(folder)).toEqual({ title: "The King", step: "stopped" });
+        await rpg("import");
+        expect(importShown(folder)).toEqual({ title: "The King", step: "choosing" });
+        expect((await rpg("view", "--json")).output).toContain('"importing"');
     });
 });
 

@@ -77,7 +77,7 @@ export function hasAllWords(text: string, search: string): boolean
 }
 
 /** The words of a text as a search compares them: letters and digits, in any case and however accents are written. */
-function searchWords(text: string): string[]
+export function searchWords(text: string): string[]
 {
     return comparableText(text).match(/[\p{L}\p{N}]+/gu) ?? [];
 }
@@ -111,7 +111,7 @@ function hasForm(words: string[], searched: string): boolean
  * Whether a word of a text is a form of a word searched (RUL-4): the two differ at most in their last three letters, and share at least the first four, or all of a shorter word.
  * Grapple finds grappled and grappling, rest finds resting but not restrained, concentration not conceal; two letters find only themselves.
  */
-function sameWord(searched: string, word: string): boolean
+export function sameWord(searched: string, word: string): boolean
 {
     if (searched.length <= 2) {
         return word === searched;

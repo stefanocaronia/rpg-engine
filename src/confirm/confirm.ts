@@ -15,8 +15,8 @@ export interface DialogCommand
 const mostText = 600;
 // How long the window waits, as a form does.
 const longestWait = 30 * 60 * 1000;
-const install = "Install";
-const decline = "Do not install";
+// The buttons of a window that asks nothing else: a package's install (D-478).
+const installAnswers = { yes: "Install", no: "Do not install" };
 
 // Windows' own PowerShell: a message box, No first, on top of the other windows; none at all without a desktop to show it on.
 const windowsScript = [
@@ -26,10 +26,10 @@ const windowsScript = [
     "if ($answer -eq 'Yes') { exit 10 } else { exit 11 }",
 ].join("; ");
 
-// macOS's AppleScript: the title and the text as its arguments, Do not install first and the answer to Escape.
+// macOS's AppleScript: the title, the text and the buttons as its arguments, the no first and the answer to Escape.
 const macScript = [
     "on run argv",
-    `display dialog (item 2 of argv) with title (item 1 of argv) buttons {"${decline}", "${install}"} default button "${decline}" cancel button "${decline}" with icon caution`,
+    "display dialog (item 2 of argv) with title (item 1 of argv) buttons {item 3 of argv, item 4 of argv} default button (item 3 of argv) cancel button (item 3 of argv) with icon caution",
     'return "yes"',
     "end run",
 ];
@@ -41,8 +41,8 @@ const macScript = [
 export function systemConfirm(platform: string, env: Record<string, string | undefined>, run = runDialog): Confirm
 {
     return {
-        ask: async (title, text, signal) => {
-            for (const command of dialogCommands(platform, env, title, text)) {
+        ask: async (title, text, signal, answers) => {
+            for (const command of dialogCommands(platform, env, title, text, answers)) {
                 const ran = await run(command, signal);
 
                 if (ran !== "missing") {
@@ -55,10 +55,11 @@ export function systemConfirm(platform: string, env: Record<string, string | und
     };
 }
 
-/** The programs that may show the window on this system, in turn: none without a desktop (D-478). */
-export function dialogCommands(platform: string, env: Record<string, string | undefined>, title: string, text: string): DialogCommand[]
+/** The programs that may show the window on this system, in turn, with its buttons, Windows' own Yes and No: none without a desktop (D-478). */
+export function dialogCommands(platform: string, env: Record<string, string | undefined>, title: string, text: string, answers = installAnswers): DialogCommand[]
 {
     const [shownTitle, shownText] = [plainText(title, 100), plainText(text, mostText)];
+    const [yes, no] = [plainText(answers.yes, 40), plainText(answers.no, 40)];
 
     if (platform === "win32") {
         const shell = `${env.SystemRoot ?? "C:\\Windows"}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
@@ -66,7 +67,7 @@ export function dialogCommands(platform: string, env: Record<string, string | un
     }
 
     if (platform === "darwin") {
-        return [{ file: "/usr/bin/osascript", args: [...macScript.flatMap((line) => ["-e", line]), shownTitle, shownText], env: {}, yes: { out: "yes" } }];
+        return [{ file: "/usr/bin/osascript", args: [...macScript.flatMap((line) => ["-e", line]), shownTitle, shownText, no, yes], env: {}, yes: { out: "yes" } }];
     }
 
     if ((env.DISPLAY ?? "") === "" && (env.WAYLAND_DISPLAY ?? "") === "") {
@@ -74,8 +75,8 @@ export function dialogCommands(platform: string, env: Record<string, string | un
     }
 
     return [
-        { file: "zenity", args: ["--question", "--default-cancel", "--no-markup", `--title=${shownTitle}`, `--text=${shownText}`, `--ok-label=${install}`, `--cancel-label=${decline}`], env: {}, yes: { code: 0 } },
-        { file: "kdialog", args: ["--title", shownTitle, "--warningyesno", shownText, "--yes-label", install, "--no-label", decline], env: {}, yes: { code: 0 } },
+        { file: "zenity", args: ["--question", "--default-cancel", "--no-markup", `--title=${shownTitle}`, `--text=${shownText}`, `--ok-label=${yes}`, `--cancel-label=${no}`], env: {}, yes: { code: 0 } },
+        { file: "kdialog", args: ["--title", shownTitle, "--warningyesno", shownText, "--yes-label", yes, "--no-label", no], env: {}, yes: { code: 0 } },
     ];
 }
 

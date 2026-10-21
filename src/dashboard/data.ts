@@ -351,9 +351,21 @@ export interface WorldMap
     trail: MapPoint[];
 }
 
+/**
+ * An import under way (D-491 (11)): its document opened, its pages read from their pictures, its parts read outside the chat or in it, the start the player
+ * chooses, the world written; or stopped.
+ */
+export interface ShownImport
+{
+    title: string;
+    step: "opening" | "pictures" | "reading" | "chat" | "choosing" | "writing" | "waiting" | "stopped";
+    done?: number;
+    of?: number;
+}
+
 /** What view gives: the party, a page with its sheet, one section, the world map, or nothing. */
 export type View =
-    | { kind: "none"; language?: string; }
+    | { kind: "none"; language?: string; importing?: ShownImport; }
     | {
         kind: "overview";
         campaign: string;
@@ -380,6 +392,8 @@ export type View =
         rollsTotal?: number;
         /** How many problems the campaign's files have, which the master fixes. */
         problems?: number;
+        /** An import under way, which the page tells (D-491 (11)). */
+        importing?: ShownImport;
     }
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; story?: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }

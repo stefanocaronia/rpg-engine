@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -214,21 +214,23 @@ Quando o mestre lhe pergunta algo, o banner dele fica no alto, em qualquer seç�
 
 ### 5.1 O que é um sistema de jogo
 
-Os dados de um jogo: a ficha, os números, as criaturas, os itens, as magias e o texto das regras. Cada campanha joga um sistema. O RPG Engine calcula a ficha e o que é gasto e o que volta; como uma característica funciona, o mestre lê nas regras e decide, como em uma mesa.
+Os dados de um jogo: sua ficha, seus números, suas criaturas, itens, magias e o texto das regras. Cada campanha usa um sistema. O RPG Engine calcula a ficha e o que é gasto e recuperado; como uma característica funciona, o mestre lê nas regras e decide, como numa mesa.
 
 ### 5.2 Quinta edição, incluída
 
-As raças, classes, subclasses, um antecedente e uma talento do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, calculada.
+As raças, classes, subclasses, um antecedente e uma característica de talento do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, já calculada.
 
-Você também pode jogar conteúdo que o SRD não tem, de um livro que você possua: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine traz só conteúdo aberto; o que seu mestre sabe não tem esse limite.
+Você também pode jogar com conteúdo que o SRD não tem, de um livro que você possui: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine inclui apenas conteúdo aberto; o que o seu mestre conhece não tem esse limite.
+
+Seus próprios manuais podem ser a biblioteca da campanha: diga ao mestre onde eles estão, *[Meus manuais estão em D:\Books\5e.]*, e responda sim na janela que o seu computador mostrar. O RPG Engine os lê uma vez, neste computador, e o mestre os consulta quando decide uma regra, depois do SRD, citando o livro e a página. Eles são lidos melhor como texto, ou como PDFs cujo texto pode ser selecionado; um PDF escaneado é lido a partir das imagens das páginas, só no Windows, em alguns minutos e com alguns erros. O RPG Engine nunca altera seus manuais, nunca envia o texto deles para lugar nenhum e nunca o copia para uma campanha.
 
 ### 5.3 Regras da casa e acréscimos seus
 
-Peça ao mestre: *[Regra da casa: um 1 natural em um ataque faz você largar a arma.]* Ele a guarda como um acordo da mesa ou escreve uma página ou um número da ficha quando for preciso. Regras da casa já escritas podem ir como arquivos de texto na pasta `rules` da campanha.
+Peça ao mestre: *[Regra da casa: um 1 natural em um ataque significa que você deixa cair a arma.]* O mestre a guarda como um acordo da mesa, ou escreve uma página ou um número da ficha quando for preciso. Regras da casa já escritas podem entrar como arquivos de texto na pasta `rules` da campanha.
 
 ### 5.4 Adicionar ou importar seu próprio sistema de jogo
 
-Ainda não: hoje o RPG Engine joga só a quinta edição ([Em breve](#9-coming-later)).
+Ainda não: hoje o RPG Engine joga apenas a quinta edição ([Em breve](#9-coming-later)).
 
 ---
 
@@ -238,27 +240,27 @@ Ainda não. Uma extensão vai acrescentar algo a uma campanha além do sistema d
 
 ---
 
-## 7. De onde vem uma campanha, e seu idioma <!-- icon: world -->
+## 7. De onde vem uma campanha e o idioma dela <!-- icon: world -->
 
 ### 7.1 Três jeitos de ter um mundo
 
-- **Feito na hora**: a partir da sua premissa, o mestre monta cada local, pessoa e trama pouco antes de você precisar, e os guarda.
-- **Preparado no início**: o mesmo, com o mundo montado antes do jogo.
-- **De uma aventura sua**: dê ao mestre um texto ou um PDF e peça que ele prepare tudo, *[Prepare esta aventura como nossa campanha. Não me conte nada do que está nela.]* Ele escreve os locais, os personagens e os segredos. Ainda não há botão de importar.
+- **Criado na hora**: a partir da sua premissa, o mestre constrói cada local, pessoa e trama logo antes de você precisar, e guarda tudo.
+- **Preparado no início**: o mesmo, com o mundo construído antes do jogo.
+- **A partir de uma aventura ou livro seu**: dê o arquivo ao mestre, *[Importe esta aventura como nossa campanha: D:\Books\adventure.pdf. Não me conte nada do que está nela.]* Ela é lida melhor como texto, EPUB, documento do Word ou PDF cujo texto pode ser selecionado; um PDF escaneado é lido a partir das imagens das páginas, só no Windows, devagar e com alguns erros. O Codex ou o Claude Code no seu computador lê o arquivo fora do chat, e o dashboard mostra quanto falta; se for um romance, o mestre propõe por onde começar. O mestre escreve os locais, os personagens e os segredos.
 
-Uma campanha é jogada uma vez: para jogar a mesma aventura de novo, crie uma campanha nova.
+Uma campanha é jogada uma só vez: para jogar a mesma aventura de novo, crie uma nova campanha.
 
 ### 7.2 Idiomas
 
-Um idioma por campanha, o do mestre, que o painel acompanha. O painel vem com 26 idiomas. Qualquer outro é traduzido no seu computador pelo Codex ou pelo Claude Code ou, sem eles, pelo mestre no chat. Os termos da quinta edição em italiano vêm do SRD italiano oficial; o texto das regras fica em inglês, e o mestre o conta no seu idioma.
+Um idioma por campanha, o do mestre, que o dashboard acompanha. O dashboard vem com 26 idiomas. Qualquer outro é traduzido no seu computador pelo Codex ou pelo Claude Code ou, sem eles, pelo mestre no chat. Os termos da quinta edição em italiano vêm do SRD italiano oficial; o texto das regras continua em inglês, e o mestre o conta no seu idioma.
 
 ---
 
 ## 8. Para os curiosos: a pasta da campanha <!-- icon: list -->
 
-Você nunca precisa abrir essa pasta, e ela guarda os segredos da sua campanha. Nela ficam `campaign.yaml` (suas configurações), `state.yaml` (em que ponto o jogo está), `world/` (uma página em markdown para cada personagem, local, missão e o resto), `rules/` (suas regras da casa), `images/`, `log.jsonl` (cada mudança), `.saves/`, `.player/` (suas notas) e os pequenos arquivos que dizem aos agentes de IA onde o RPG Engine está. As páginas usam o formato do Obsidian. Se você mudar uma página à mão, o mestre fica sabendo na próxima resposta.
+Você nunca precisa abri-la, e ela guarda os segredos da sua campanha. Nela estão `campaign.yaml` (suas configurações), `state.yaml` (em que ponto o jogo está), `world/` (uma página markdown para cada personagem, local, missão e o resto), `rules/` (suas regras da casa), `images/`, `log.jsonl` (cada mudança), `.saves/`, `.player/` (suas notas) e os pequenos arquivos que dizem aos agentes de IA onde o RPG Engine está. As páginas usam o formato do Obsidian. Se você alterar uma página à mão, o mestre fica sabendo na resposta seguinte.
 
-O RPG Engine fica nesta pasta: ele lê e grava o jogo só aqui e nunca mexe nos seus outros arquivos. Fora dela, guarda apenas uma pasta de dados própria (as traduções do painel, e o Codex ou o Claude Code, se você deixar que ele os instale) e pastas temporárias enquanto uma imagem é desenhada. Para qualquer outra coisa que o seu agente queira fazer no seu computador, ele pergunta antes.
+O RPG Engine fica nesta pasta: ele lê e grava o jogo só aqui e nunca mexe nos seus outros arquivos; as pastas dos seus manuais ele apenas lê. Fora dela, guarda somente pastas de dados próprias (as traduções do dashboard, o texto que leu dos seus manuais e o Codex ou o Claude Code, se você deixar que ele os instale) e pastas temporárias enquanto uma imagem é desenhada. Qualquer outra coisa que seu agente queira fazer no seu computador, ele pergunta antes.
 
 Todo comando que o mestre usa também pode ser executado na pasta da campanha: `rpg --help` lista todos. Muitos mostram os segredos da campanha.
 
@@ -270,8 +272,7 @@ Todo comando que o mestre usa também pode ser executado na pasta da campanha: `
 - **Modo autor**: escreva uma aventura com a IA, depois exporte e compartilhe.
 - **Vários jogadores no mesmo computador**, cada um com seu personagem, alternando a vez no mesmo chat.
 - **Extensões**: configurações, aventuras, recursos e regras da casa.
-- **Importar** seus manuais e aventuras.
-- **Outros jogos**: mais sistemas de jogo, e os seus.
+- **Outros jogos**: mais sistemas de jogo, e os seus próprios.
 
 ---
 

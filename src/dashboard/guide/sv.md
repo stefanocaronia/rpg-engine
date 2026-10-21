@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -210,25 +210,27 @@ När spelledaren frågar dig något ligger dess banderoll kvar högst upp, oavse
 
 ---
 
-## 5. Spelsystem och husregler <!-- icon: dice -->
+## 5. Speltyper och egna regler <!-- icon: dice -->
 
 ### 5.1 Vad ett spelsystem är
 
-Data för ett spel: dess rollformulär, dess tal, dess varelser, föremål, besvärjelser och regeltexter. Varje kampanj spelar ett system. RPG Engine räknar ut rollformuläret och vad som förbrukas och kommer tillbaka. Hur en egenskap fungerar läser spelledaren i reglerna och avgör, som vid ett bord.
+Datan för ett spel: dess rollformulär, siffror, varelser, föremål, besvärjelser och regeltext. Varje kampanj spelar ett system. RPG Engine räknar ut rollformuläret och vad som förbrukas och kommer tillbaka. Hur en förmåga fungerar läser spelledaren i reglerna och avgör, precis som vid ett bord.
 
 ### 5.2 Femte utgåvan, ingår
 
-Raserna, klasserna, subklasserna, en bakgrund och en färdighet (feat) i SRD 5.1, de 319 besvärjelserna, vapnen, rustningarna, magiska föremålen och monstren, regelkapitlen som spelledaren läser efter exakt text och det fullständiga rollformuläret, uträknat.
+Raserna, klasserna, subklasserna, en bakgrund och en karaktärsegenskap (feat) från SRD 5.1. Dessutom de 319 besvärjelserna, vapnen, rustningarna, de magiska föremålen och monstren. Där finns också regelkapitlen, som spelledaren läser med exakt text, och hela rollformuläret, färdigräknat.
 
-Du kan också spela innehåll som saknas i SRD, från en bok du äger: spelledaren skriver det som sidor i din kampanj, och RPG Engine behandlar dem som sina egna. RPG Engine levereras bara med öppet innehåll. Det din spelledare kan är inte begränsat.
+Du kan också spela innehåll som SRD saknar, från en bok du äger. Spelledaren skriver det som sidor i din kampanj, och RPG Engine behandlar dem som sina egna. RPG Engine levereras bara med öppet innehåll. Det spelledaren kan är inte begränsat.
 
-### 5.3 Husregler och egna tillägg
+Dina egna regelböcker kan bli kampanjens bibliotek. Berätta för spelledaren var de finns, *[Mina regelböcker ligger i D:\Books\5e.]*, och säg ja i fönstret som din dator visar. RPG Engine läser dem en gång, på den här datorn. Spelledaren söker i dem när en regel ska avgöras, efter SRD, och anger bok och sida. De läses bäst som text eller som PDF-filer där texten går att markera. En skannad PDF läses från bilderna av sidorna, bara på Windows, på några minuter och med några fel. RPG Engine ändrar aldrig dina regelböcker, skickar aldrig deras text någonstans och kopierar den aldrig in i en kampanj.
 
-Fråga spelledaren: *[Husregel: en naturlig 1 på en attack betyder att du tappar ditt vapen.]* Den behåller det som en överenskommelse vid bordet, eller skriver en sida eller ett tal i rollformuläret när det behövs. Husregler som redan är utskrivna kan läggas som textfiler i kampanjens mapp `rules`.
+### 5.3 Egna regler och egna tillägg
 
-### 5.4 Lägga till eller importera ditt eget spelsystem
+Fråga spelledaren: *[Hemregel: en naturlig 1:a på en attack betyder att du tappar ditt vapen.]* Spelledaren behåller den som en överenskommelse vid bordet, eller skriver en sida eller en siffra i rollformuläret när det behövs. Hemregler som redan är utskrivna kan läggas som textfiler i kampanjens mapp `rules`.
 
-Inte än: i dag spelar RPG Engine bara femte utgåvan ([Kommer senare](#9-coming-later)).
+### 5.4 Lägga till eller importera ett eget spelsystem
+
+Inte ännu: i dag spelar RPG Engine bara femte utgåvan ([Kommer senare](#9-coming-later)).
 
 ---
 
@@ -238,39 +240,38 @@ Inte än. Ett tillägg kommer att lägga till något i en kampanj ovanpå dess s
 
 ---
 
-## 7. Var en kampanj kommer ifrån, och dess språk <!-- icon: world -->
+## 7. Varifrån en kampanj kommer, och dess språk <!-- icon: world -->
 
 ### 7.1 Tre sätt att få en värld
 
-- **Skapad allteftersom**: utifrån din premiss bygger spelledaren varje plats, person och intrig strax innan du behöver den, och behåller den.
-- **Förberedd i början**: samma sak, men med världen byggd före spelet.
-- **Från ditt eget äventyr**: ge spelledaren en text eller en PDF och be den ställa in det, *[Ställ in det här äventyret som vår kampanj. Berätta inget av det som står i det.]* Spelledaren skriver platserna, rollpersonerna och hemligheterna. Det finns ingen importknapp än.
+- **Skapad medan du spelar**: utifrån din idé bygger spelledaren varje plats, person och intrig strax innan du behöver den, och sparar den.
+- **Förberedd från start**: samma sak, men med världen byggd före spelet.
+- **Från ditt eget äventyr eller din egen bok**: ge spelledaren filen, *[Importera det här äventyret som vår kampanj: D:\Books\adventure.pdf. Berätta inget som står i det.]* Den läses bäst som text, EPUB, Word-dokument eller PDF där texten går att markera. En skannad PDF läses från bilderna av sidorna, bara på Windows, långsamt och med några fel. Codex eller Claude Code på din dator läser den utanför chatten, och dashboarden visar hur långt den har kommit. Från en roman föreslår spelledaren var ni ska börja. Spelledaren skriver platserna, rollpersonerna och hemligheterna.
 
-En kampanj spelas en gång: för att spela samma äventyr igen skapar du en ny kampanj.
+En kampanj spelas en gång: vill du spela samma äventyr igen, skapa en ny kampanj.
 
 ### 7.2 Språk
 
-Ett språk per kampanj, spelledarens, som dashboarden följer. Dashboarden levereras på 26 språk. Alla andra översätts på din dator av Codex eller Claude Code, eller, utan dem, av spelledaren i chatten. Femte utgåvans termer på italienska kommer från den officiella italienska SRD:n. Regeltexten förblir på engelska, och spelledaren berättar den på ditt språk.
+Ett språk per kampanj, spelledarens, som dashboarden följer. Dashboarden levereras på 26 språk. Alla andra översätts på din dator av Codex eller Claude Code, eller, utan dem, av spelledaren i chatten. Termerna för femte utgåvan på italienska kommer från den officiella italienska SRD:n. Regeltexten förblir på engelska, och spelledaren berättar den på ditt språk.
 
 ---
 
-## 8. För den nyfikne: kampanjmappen <!-- icon: list -->
+## 8. För de nyfikna: kampanjmappen <!-- icon: list -->
 
-Du behöver aldrig öppna den, och den innehåller din kampanjs hemligheter. I den finns `campaign.yaml` (dina inställningar), `state.yaml` (hur långt spelet har kommit), `world/` (en markdownsida för varje rollperson, plats, uppdrag och allt annat), `rules/` (dina egna regler), `images/`, `log.jsonl` (varje ändring), `.saves/`, `.player/` (dina anteckningar) och de små filer som talar om för AI-agenter var RPG Engine finns. Sidorna använder Obsidians format. Om du ändrar en sida för hand får spelledaren veta det vid sitt nästa svar.
+Du behöver aldrig öppna den, och den innehåller kampanjens hemligheter. Där finns `campaign.yaml` (dina inställningar), `state.yaml` (hur spelet står), `world/` (en markdown-sida för varje rollperson, plats, uppdrag och resten), `rules/` (dina hemregler), `images/`, `log.jsonl` (varje ändring), `.saves/`, `.player/` (dina anteckningar) och de små filer som talar om för AI-agenter var RPG Engine finns. Sidorna använder Obsidians format. Om du ändrar en sida för hand får spelledaren veta det vid sitt nästa svar.
 
-RPG Engine håller sig i den här mappen: programmet läser och skriver spelet bara här och rör aldrig dina andra filer. Utanför mappen har det bara en egen datamapp (dashboardens översättningar, samt Codex eller Claude Code om du låter det installera dem) och tillfälliga mappar medan en bild ritas. Allt annat som din agent vill göra på din dator frågar den dig om först.
+RPG Engine håller sig i den här mappen: det läser och skriver spelet bara här och rör aldrig dina andra filer. Mapparna med dina regelböcker läser det bara. Utanför mappen har det bara egna datamappar (dashboardens översättningar, texten det har läst ur dina regelböcker, och Codex eller Claude Code om du låter det installera dem) och tillfälliga mappar medan en bild ritas. Allt annat som din agent vill göra på din dator frågar den dig om först.
 
-Alla kommandon som spelledaren använder kan också köras i kampanjmappen: `rpg --help` listar dem. Många av dem skriver ut kampanjens hemligheter.
+Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg --help` listar dem. Många skriver ut kampanjens hemligheter.
 
 ---
 
 ## 9. Kommer senare <!-- icon: hourglass -->
 
-- **Du som spelledare**, med AI:n som spelar gruppen.
+- **Du som spelledare**, medan AI:n spelar gruppen.
 - **Författarläge**: skriv ett äventyr med AI:n, exportera det och dela det.
 - **Flera spelare på samma dator**, var och en med sin egen rollperson, som turas om i samma chatt.
-- **Tillägg**: inställningar, äventyr, funktioner och husregler.
-- **Import** av dina regelböcker och äventyr.
+- **Tillägg**: inställningar, äventyr, funktioner och hemregler.
 - **Andra spel**: fler spelsystem, och dina egna.
 
 ---

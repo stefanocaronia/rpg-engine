@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -222,6 +222,8 @@ Le razze, le classi, le sottoclassi, un background e un talento della SRD 5.1; i
 
 Puoi giocare anche contenuti che la SRD non ha, da un manuale che possiedi: il master li scrive come pagine della tua campagna, e RPG Engine li tratta come suoi. RPG Engine distribuisce solo contenuti aperti; ciò che il tuo master conosce non ha limiti.
 
+I tuoi manuali possono essere la biblioteca della campagna: di' al master dove sono, *[I miei manuali sono in D:\Libri\5e.]*, e rispondi di sì nella finestra che il computer ti mostra. RPG Engine li legge una volta, su questo computer, e il master li consulta quando decide una regola, dopo la SRD, citando il libro e la pagina. Si leggono meglio come testo, o come PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, in qualche minuto e con qualche errore. RPG Engine non cambia mai i tuoi manuali, non ne manda mai il testo da nessuna parte e non lo copia mai in una campagna.
+
 ### 5.3 Regole della casa e aggiunte tue
 
 Chiedi al master: *[Regola della casa: un 1 naturale in attacco ti fa cadere l'arma.]* La tiene come accordo del tavolo, o scrive una pagina o un numero della scheda quando serve. Le regole della casa già scritte possono stare come file di testo nella cartella `rules` della campagna.
@@ -244,7 +246,7 @@ Non ancora. Un'estensione aggiungerà qualcosa a una campagna oltre al suo siste
 
 - **Creato al momento**: dalla tua premessa, il master costruisce ogni luogo, persona e trama appena prima che ti serva, e lo conserva.
 - **Preparato all'inizio**: lo stesso, con il mondo costruito prima di giocare.
-- **Dalla tua avventura**: dai al master un testo o un PDF e chiedigli di prepararla, *[Prepara questa avventura come nostra campagna. Non dirmi niente di ciò che contiene.]* Scrive i luoghi, i personaggi e i segreti. Un pulsante per importare non c'è ancora.
+- **Dalla tua avventura o da un tuo libro**: dai al master il suo file, *[Importa questa avventura come nostra campagna: D:\Libri\avventura.pdf. Non dirmi niente di ciò che contiene.]* Si legge meglio come testo, EPUB, documento Word o PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, lentamente e con qualche errore. Codex o Claude Code sul tuo computer lo legge fuori dalla chat, e la dashboard mostra a che punto è; da un romanzo, il master propone da dove cominciare. Scrive i luoghi, i personaggi e i segreti.
 
 Una campagna si gioca una volta: per rigiocare la stessa avventura, crea una campagna nuova.
 
@@ -258,7 +260,7 @@ Una lingua per campagna, quella del master, che la dashboard segue. La dashboard
 
 Non devi mai aprirla, e contiene i segreti della tua campagna. Ha `campaign.yaml` (le tue impostazioni), `state.yaml` (a che punto è il gioco), `world/` (una pagina markdown per ogni personaggio, luogo, missione e il resto), `rules/` (le tue regole della casa), `images/`, `log.jsonl` (ogni cambiamento), `.saves/`, `.player/` (le tue note) e i piccoli file che dicono agli agenti IA dov'è RPG Engine. Le pagine usano il formato di Obsidian. Se cambi una pagina a mano, il master lo sente alla sua risposta successiva.
 
-RPG Engine resta in questa cartella: legge e scrive il gioco solo qui, e non tocca mai gli altri tuoi file. Fuori, tiene solo una cartella di dati sua (le traduzioni della dashboard, e Codex o Claude Code se gli permetti di installarli) e cartelle temporanee mentre disegna un'immagine. Qualsiasi altra cosa il tuo agente voglia fare sul tuo computer, te la chiede prima.
+RPG Engine resta in questa cartella: legge e scrive il gioco solo qui, e non tocca mai gli altri tuoi file; le cartelle dei tuoi manuali le legge soltanto. Fuori, tiene solo cartelle di dati sue (le traduzioni della dashboard, il testo che ha letto dei tuoi manuali, e Codex o Claude Code se gli permetti di installarli) e cartelle temporanee mentre disegna un'immagine. Qualsiasi altra cosa il tuo agente voglia fare sul tuo computer, te la chiede prima.
 
 Ogni comando che usa il master si può lanciare anche nella cartella della campagna: `rpg --help` li elenca. Molti stampano i segreti della campagna.
 
@@ -270,7 +272,6 @@ Ogni comando che usa il master si può lanciare anche nella cartella della campa
 - **Modalità autore**: scrivi un'avventura con l'IA, poi la esporti e la condividi.
 - **Più giocatori sullo stesso computer**, ognuno con il suo personaggio, a turno nella stessa chat.
 - **Estensioni**: ambientazioni, avventure, funzioni e regole della casa.
-- **Importare** i tuoi manuali e le tue avventure.
 - **Altri giochi**: altri sistemi di gioco, e il tuo.
 
 ---

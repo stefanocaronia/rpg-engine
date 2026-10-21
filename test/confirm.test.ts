@@ -22,7 +22,7 @@ describe("the window of the player's computer (D-478)", () => {
         const [windows] = dialogCommands("win32", {}, "t", sly);
         expect(windows.args.join(" ")).not.toContain("Remove-Item");
         expect(windows.env.RPG_CONFIRM_TEXT).toBe("Safe'; Remove-Item C:\\ -Recurse; 'exe.txt");
-        expect(dialogCommands("darwin", {}, "t", sly)[0].args.slice(0, -2).join(" ")).not.toContain("Remove-Item");
+        expect(dialogCommands("darwin", {}, "t", sly)[0].args.slice(0, -4).join(" ")).not.toContain("Remove-Item");
         expect(plainText("a".repeat(700), 600)).toHaveLength(600);
     });
 
