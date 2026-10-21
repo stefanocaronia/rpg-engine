@@ -97,3 +97,35 @@ describe("documents of text, in parts of about a page", () => {
         await expect(readDocument(fileOf("sheet.xlsx", "x"))).rejects.toThrow("sheet.xlsx is no document the engine reads: give a .pdf, .docx");
     });
 });
+
+describe("documents that are not written as the reader expects (Matteo's review of 20 October)", () => {
+    it("cuts into pages a text with a line for each paragraph, and one with no spaces between its words", async () => {
+        const lines = Array.from({ length: 300 }, (_, index) => `Line ${index} ${"word ".repeat(9)}`).join("\n");
+        const parts = (await readDocument(fileOf("lines.txt", lines))).parts;
+        expect(parts.length).toBeGreaterThan(5);
+        expect(parts.every((part) => part.text.split(/\s+/).length <= 460)).toBe(true);
+        const chinese = (await readDocument(fileOf("zh.txt", "王".repeat(20000)))).parts;
+        expect(chinese.length).toBe(Math.ceil(20000 / 450));
+    });
+
+    it("reads text in UTF-16 by its mark, and in the Windows encoding where it is no UTF-8", async () => {
+        const utf16 = new Uint8Array([0xff, 0xfe, ...[..."Caffè"].flatMap((char) => [char.charCodeAt(0), 0])]);
+        expect((await readDocument(fileOf("u16.txt", utf16))).parts[0]?.text).toBe("Caffè");
+        expect((await readDocument(fileOf("old.txt", new Uint8Array([0x43, 0x61, 0x66, 0x66, 0xe8, 0x20, 0x93, 0x6f, 0x6b, 0x94])))).parts[0]?.text).toBe("Caffè “ok”");
+    });
+
+    it("renames the second of two pictures with one name in a folder, and its marks with it", async () => {
+        const docx = (text: string, bytes: Uint8Array): Uint8Array =>
+            zipped({
+                "word/document.xml": `<w:document><w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p><w:p><w:r><w:drawing><a:blip r:embed="rId1"/></w:drawing></w:r></w:p></w:body></w:document>`,
+                "word/_rels/document.xml.rels": '<Relationships><Relationship Id="rId1" Type="image" Target="media/image1.png"/></Relationships>',
+                "word/media/image1.png": bytes,
+            });
+        const folder = makeTempFolder();
+        writeFileSync(join(folder, "a.docx"), docx("The inn.", picture));
+        writeFileSync(join(folder, "b.docx"), docx("The road.", new Uint8Array(5000).fill(9)));
+        const document = await readDocument(folder);
+        expect(document.parts.map((part) => part.text)).toEqual(["The inn.\n\n[picture: image1.png]", "The road.\n\n[picture: image1-2.png]"]);
+        expect(document.pictures.map((one) => [one.name, one.label, one.data[0]])).toEqual([["image1.png", "a.docx", 7], ["image1-2.png", "b.docx", 9]]);
+    });
+});

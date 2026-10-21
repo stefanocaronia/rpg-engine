@@ -142,8 +142,8 @@ export interface TextWriter
 export interface DocumentReader
 {
     ready(): boolean;
-    /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. */
-    read(folder: string, brief: string, writable: string[]): Promise<{ said: string; } | { failed: string; }>;
+    /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. Stopped by `signal`. */
+    read(folder: string, brief: string, writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>;
 }
 
 /**

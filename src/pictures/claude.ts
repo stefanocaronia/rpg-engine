@@ -154,7 +154,7 @@ function write(brief: string): Promise<string | undefined>
  * One run of the importer: Claude Code in the import's folder with no settings, memory or session of its own, reading only there and writing only in the
  * folders given, every other tool and path refused (D-489 (1)). Its last words, or why it stopped.
  */
-function read(folder: string, brief: string, writable: string[]): Promise<{ said: string; } | { failed: string; }>
+function read(folder: string, brief: string, writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>
 {
     const allowed = ["Read(./**)", "Glob", ...writable.map((name) => `Edit(./${name}/**)`)].map((rule) => `"${rule}"`).join(" ");
     const line = `${claude} -p --model sonnet --output-format json --setting-sources "" --strict-mcp-config --no-session-persistence --disable-slash-commands `
@@ -163,6 +163,9 @@ function read(folder: string, brief: string, writable: string[]): Promise<{ said
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
+        // Dropped while it runs: the helper stops with all it started.
+        const stop = (): void => stopTree(child);
+        signal?.addEventListener("abort", stop, { once: true });
         let output = "";
         let errors = "";
         const timer = setTimeout(() => stopTree(child), longestReading);
@@ -174,6 +177,7 @@ function read(folder: string, brief: string, writable: string[]): Promise<{ said
         child.on("error", () => undefined);
         child.on("close", () => {
             clearTimeout(timer);
+            signal?.removeEventListener("abort", stop);
             const answer = parsed(output);
             done(answer?.is_error === true || typeof answer?.result !== "string" ? { failed: refusal(answer, errors) } : { said: answer.result });
         });

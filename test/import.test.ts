@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
+import { FileStore } from "../src/core/store.ts";
 import { openLicense } from "../src/importer/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";
@@ -15,8 +16,11 @@ let context: Context;
 const rpg = (...args: string[]) => runCommandLine(args, context);
 const work = () => join(folder, ".imports", "The King");
 
-/** A helper that writes what each brief asks, as a model would, and keeps the briefs; it fails once when told to. */
-function fakeReader(options: { starts?: number; license?: string; failOnce?: boolean; } = {}): DocumentReader & { briefs: string[]; }
+/**
+ * A helper that writes what each brief asks, as a model would, and keeps the briefs; it fails once, writes a manifest the check refuses (once or always), or
+ * waits until it is stopped, when told to.
+ */
+function fakeReader(options: { starts?: number; license?: string; failOnce?: boolean; badManifest?: "once" | "always"; waits?: boolean; } = {}): DocumentReader & { briefs: string[]; }
 {
     const briefs: string[] = [];
     let failed = false;
@@ -29,8 +33,12 @@ function fakeReader(options: { starts?: number; license?: string; failOnce?: boo
     return {
         briefs,
         ready: () => true,
-        read: (root, brief) => {
+        read: (root, brief, _writable, signal) => {
             briefs.push(brief);
+
+            if (options.waits === true) {
+                return new Promise((done) => signal?.addEventListener("abort", () => done({ failed: "stopped" })));
+            }
 
             if (options.failOnce === true && !failed) {
                 failed = true;
@@ -46,12 +54,15 @@ function fakeReader(options: { starts?: number; license?: string; failOnce?: boo
             if (brief.includes("This is the last piece")) {
                 const starts = Array.from({ length: options.starts ?? 3 }, (_, index) => `## ${index + 1}. Start ${index + 1}\nPlay Dravot.\nBack cover: two men.\nReader: chapter ${index + 1}.`);
                 put(root, "notes/starts.md", `${starts.join("\n\n")}\n`);
+                put(root, "notes/style.yaml", "author: Rudyard Kipling\nstory: arcs\n");
             }
 
             if (brief.includes("Last, write the adventure's opening")) {
                 put(root, "adventure/world/topics/Opening.md", "---\ntags: [opening]\n---\n\n> [!secret] Opening\n> Two men at the border.\n");
                 // The book's own title: the import's stays, which status knows it by.
-                put(root, "adventure/adventure.yaml", "title: The Man Who Would Be King\nabout: Two loafers would be kings.\nauthor: Rudyard Kipling\nstart: '[[Kafiristan]]'\nopening: Opening\n");
+                const bad = options.badManifest === "always" || (options.badManifest === "once" && !brief.includes("failed the engine's check"));
+                const about = bad ? "word ".repeat(60).trim() : "Two loafers would be kings.";
+                put(root, "adventure/adventure.yaml", `title: The Man Who Would Be King\nabout: ${about}\nauthor: Rudyard Kipling\nstart: '[[Kafiristan]]'\nopening: Opening\n`);
                 put(root, "notes/source.yaml", `title: The Man Who Would Be King\nauthor: Rudyard Kipling\nlicense: ${options.license ?? "public domain"}\n`);
                 put(root, "notes/invented.md", "- the name of the pass\n");
             }
@@ -156,13 +167,112 @@ describe("import of the player's document (D-489)", () => {
         expect(existsSync(work())).toBe(false);
     });
 
-    it("refuses without a helper, and a document it cannot read", async () => {
+    it("without a helper, gives the master the document a piece at each call, to write its pages in the chat (D-489 (1))", async () => {
         context.reader = { ready: () => false, read: () => Promise.resolve({ failed: "never" }) };
-        expect((await rpg("import", book())).output).toContain("No helper on this computer reads documents: the import needs Claude Code or Codex");
+        const first = await rpg("import", book(), "--title", "The King");
+        expect(first.output).toMatch(/^Importing The King here in the chat, piece 1 of 2: write its pages with write/);
+        expect(first.output).toContain("Then call import for the next piece.");
+        expect(first.output).toContain("## Import");
+        expect(first.output).toContain("[p. 1]\n\nPage 1 ");
+        expect((await rpg("status")).output).toContain("Import of The King in the chat: 1 of 2 pieces read; call import for the next.");
+        const last = await rpg("import");
+        expect(last.output).toContain("piece 2 of 2");
+        expect(last.output).toContain("This is the last piece. For a book, ask the player whether they have read it");
+        // Its pages are the world's already: nothing to install.
+        expect((await rpg("status")).output).not.toContain("Import");
+    });
+
+    it("refuses a document it cannot read", async () => {
         context.reader = fakeReader();
         const scan = join(makeTempFolder(), "scan.pdf");
         writeFileSync(scan, tinyPdf([{ text: "" }]));
         expect((await rpg("import", scan)).output).toContain("scan.pdf has no text the engine can read: a scan is pictures of pages");
+    });
+});
+
+describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () => {
+    it("writes the opening again once with what the check found, and stops when it fails again", async () => {
+        const reader = fakeReader({ starts: 1, badManifest: "once" });
+        context.reader = reader;
+        expect((await rpg("import", book(), "--title", "The King")).output).toContain("The King is ready");
+        expect(reader.briefs.at(-1)).toContain("The adventure you wrote failed the engine's check");
+
+        const stubborn = join(makeTempFolder(), "c");
+        context = testContext(stubborn);
+        await rpg("init", stubborn, "--name", "Prova", "--language", "it", "--system", "5e");
+        context = testContext(stubborn);
+        context.reader = fakeReader({ starts: 1, badManifest: "always" });
+        const stopped = await rpg("import", book(), "--title", "The King");
+        expect(stopped.output).toContain("stopped: the adventure is not right: ");
+        expect(stopped.output).toContain("Call import to write its opening again, or cancel.");
+    });
+
+    it("reads the last piece again when the reading gave no starting point", async () => {
+        context.reader = fakeReader({ starts: 0 });
+        expect((await rpg("import", book(), "--title", "The King")).output).toContain(
+            "stopped: the reading gave no starting points (notes/starts.md): call import to read the last piece again.",
+        );
+    });
+
+    it("stops the helper when it is dropped, in the MCP server, and its folder never comes back", async () => {
+        context.files = new FileStore();
+        context.reader = fakeReader({ waits: true });
+        expect((await rpg("import", book(), "--title", "The King")).output).toContain("Importing The King: piece 1 of 2 being read");
+        expect((await rpg("status")).output).toContain("Import of The King: reading, 0 of 2 done.");
+        expect((await rpg("import", "--cancel")).output).toBe("The import of The King is dropped, with what it wrote.");
+        await new Promise((done) => setTimeout(done, 50));
+        expect(existsSync(work())).toBe(false);
+    });
+
+    it("leaves an import to the live process that runs it, and tells one whose mark was broken by hand", async () => {
+        context.reader = fakeReader({ waits: true });
+        context.files = new FileStore();
+        await rpg("import", book(), "--title", "The King");
+        await rpg("import", "--cancel");
+        context.files = undefined;
+        context.reader = fakeReader();
+        mkdirSync(work(), { recursive: true });
+        writeFileSync(join(work(), "import.yaml"), "title: [unclosed");
+        expect((await rpg("status")).output).toContain("Import of The King stopped: call import to try again.");
+        expect((await rpg("import")).output).toContain("its import.yaml was changed by hand and does not read: drop it with cancel");
+        expect((await rpg("import", "--cancel")).exitCode).toBe(0);
+
+        // Another live process holds it: this one does not read the same piece.
+        const reader = fakeReader();
+        context.reader = reader;
+        await rpg("import", book(), "--title", "The King");
+        const state = readFileSync(join(work(), "import.yaml"), "utf8");
+        writeFileSync(join(work(), "import.yaml"), state.replace(/phase: choosing\n/, "phase: reading\n").replace(/done: \d+/, "done: 0"));
+        writeFileSync(join(work(), ".running"), String(process.ppid));
+        const before = reader.briefs.length;
+        await rpg("import");
+        expect(reader.briefs.length).toBe(before);
+    });
+
+    it("credits a Creative Commons document in the manifest", async () => {
+        context.reader = fakeReader({ starts: 1, license: "CC BY 4.0, https://example.org/king" });
+        await rpg("import", book(), "--title", "The King");
+        expect(parse(readFileSync(join(work(), "adventure", "adventure.yaml"), "utf8"))).toMatchObject({
+            license: "CC BY 4.0",
+            attribution: '"The Man Who Would Be King" by Rudyard Kipling, CC BY 4.0; adapted as an adventure.',
+        });
+    });
+});
+
+describe("the narration as the book is told (Stefano, 21 October)", () => {
+    it("writes like the book's author when the player chose nothing of how the master writes, and tells the master to say so", async () => {
+        context.reader = fakeReader({ starts: 1 });
+        const done = await rpg("import", book(), "--title", "The King");
+        expect(done.output).toContain("You now write like Rudyard Kipling, story arcs, as the book is told: tell the player, who changes it in Settings.");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toMatch(/author: Rudyard Kipling[\s\S]*story: arcs|story: arcs[\s\S]*author: Rudyard Kipling/);
+    });
+
+    it("asks instead when the player chose how the master writes", async () => {
+        await rpg("config", "prose", "literary");
+        context.reader = fakeReader({ starts: 1 });
+        const done = await rpg("import", book(), "--title", "The King");
+        expect(done.output).toContain("The player chose how you write: ask whether to write like Rudyard Kipling, story arcs, as the book is told");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("Kipling");
     });
 });
 

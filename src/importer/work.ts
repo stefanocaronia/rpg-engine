@@ -29,6 +29,12 @@ export interface ImportState
     start?: number;
     /** Why the last run stopped; the next call of import tries it again. */
     failed?: string;
+    /** What the engine's check found wrong in the adventure, for the helper's one more try. */
+    fix?: string;
+    /** Read by the master in the chat, a piece at each call, where no helper is on this computer: its pages go straight into the world. */
+    inChat?: boolean;
+    /** How the book is told, which the narration follows (Stefano, 21 October): set when the player had chosen nothing, else asked. */
+    followed?: { author: string; story?: string; set: boolean; };
 }
 
 /** A starting point the reading proposed, as notes/starts.md writes it. */
@@ -70,20 +76,74 @@ export function doneImports(root: string): string[]
     return existsSync(imports)
         ? readdirSync(imports, { withFileTypes: true }).filter((entry) => entry.isDirectory()).flatMap((entry) => {
             const state = readImportState(join(imports, entry.name));
-            return state?.phase === "done" ? [state.title] : [];
+            return state?.phase === "done" && state.inChat !== true ? [state.title] : [];
         })
         : [];
 }
 
+/** How far an import is; one whose import.yaml does not read is stopped, under its folder's name, for the master to drop it. */
 export function readImportState(folder: string): ImportState | undefined
 {
     const file = join(folder, "import.yaml");
-    return existsSync(file) ? (parse(readFileSync(file, "utf8")) as ImportState) : undefined;
+
+    if (!existsSync(file)) {
+        return undefined;
+    }
+
+    try {
+        const state = parse(readFileSync(file, "utf8")) as ImportState | null;
+
+        if (typeof state?.title === "string" && typeof state.phase === "string" && typeof state.done === "number") {
+            return state;
+        }
+    } catch {
+        // Told below as a stopped import.
+    }
+
+    return { title: basename(folder), document: "", pieces: 0, phase: "reading", done: 0, failed: "its import.yaml was changed by hand and does not read: drop it with cancel" };
 }
 
+/** The mark written; never once the import was dropped, so that a run ending late does not bring its folder back. */
 export function writeImportState(folder: string, state: ImportState): void
 {
-    writeFileSync(join(folder, "import.yaml"), stringify(state));
+    if (existsSync(folder)) {
+        writeFileSync(join(folder, "import.yaml"), stringify(state));
+    }
+}
+
+/**
+ * Takes the import for this process, so that a second one, a command line beside the MCP server, never reads the same piece at the same time: false while
+ * another live process holds it.
+ */
+export function claimImport(folder: string): boolean
+{
+    const file = join(folder, ".running");
+    const holder = existsSync(file) ? Number(readFileSync(file, "utf8")) : undefined;
+
+    if (holder !== undefined && holder !== process.pid && isAlive(holder)) {
+        return false;
+    }
+
+    writeFileSync(file, String(process.pid));
+    return true;
+}
+
+/** Whether another live process runs the import now, as the MCP server while a command line asks. */
+export function runElsewhere(folder: string): boolean
+{
+    const file = join(folder, ".running");
+    const holder = existsSync(file) ? Number(readFileSync(file, "utf8")) : undefined;
+    return holder !== undefined && holder !== process.pid && isAlive(holder);
+}
+
+/** Lets the import go, once this process stops running it. */
+export function releaseImport(folder: string): void
+{
+    const file = join(folder, ".running");
+
+    if (existsSync(file) && Number(readFileSync(file, "utf8")) === process.pid) {
+        rmSync(file, { force: true });
+    }
 }
 
 /** The import's folder made from a document: its text in pieces, each part headed by its label, its pictures, and the mark at the start of the reading. */
@@ -94,7 +154,7 @@ export function prepareImport(folder: string, title: string, document: string, t
 
     for (const part of text.parts) {
         const block = `[${part.label}]\n\n${part.text}`;
-        const count = part.text.split(/\s+/).length;
+        const count = textSize(part.text);
 
         if (pieces.length === 0 || words + count > pieceWords) {
             pieces.push(block);
@@ -149,6 +209,22 @@ export function importedPages(folder: string): Record<string, string[]>
     return pages;
 }
 
+/** How a novel or a story is told, as the reading wrote it in notes/style.yaml: its author, and how it is built; nothing for a module or notes. */
+export function importStyle(folder: string): { author?: string; story?: string; }
+{
+    const style = yamlOf(join(folder, "notes", "style.yaml"));
+    const text = (value: unknown): string | undefined => (typeof value === "string" && value.trim() !== "" && !/^unknown$/i.test(value.trim()) ? value.trim() : undefined);
+    const author = text(style.author);
+    const story = text(style.story);
+    return { ...(author === undefined ? {} : { author }), ...(story === undefined ? {} : { story }) };
+}
+
+/** A piece of the document as it was written in the import's folder. */
+export function importPiece(folder: string, index: number): string
+{
+    return readFileSync(join(folder, "document", pieceName(index)), "utf8").trim();
+}
+
 /** Whether the campaign has an import in this folder, done or not. */
 export function hasImport(folder: string): boolean
 {
@@ -158,7 +234,8 @@ export function hasImport(folder: string): boolean
 /** The import's folder gone, the player's document untouched. */
 export function dropImport(folder: string): void
 {
-    rmSync(folder, { recursive: true, force: true });
+    // Windows holds a folder a little after the helper that ran in it stops.
+    rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }
 
 /** A file the helper wrote in the import's folder, such as notes/invented.md; undefined when it wrote none. */
@@ -190,9 +267,17 @@ export function finishAdventure(folder: string, title: string, language: string)
 
     const manifestFile = join(folder, "adventure", "adventure.yaml");
     const manifest = yamlOf(manifestFile);
-    const license = openLicense(String(yamlOf(join(folder, "notes", "source.yaml")).license ?? ""));
+    const source = yamlOf(join(folder, "notes", "source.yaml"));
+    const license = openLicense(String(source.license ?? ""));
+    // A Creative Commons work is credited by its title, author, license and link, and says it was changed (CC BY 4.0 §3(a)(1)).
+    const credited = license?.startsWith("CC BY") === true
+        ? {
+            attribution: [`"${String(source.title ?? title)}"`, source.author === undefined ? "" : ` by ${String(source.author)}`, `, ${license}`, source.link === undefined ? "" : `, ${String(source.link)}`, "; adapted as an adventure."]
+                .join(""),
+        }
+        : {};
     // The import's own title, which status and the log know it by, over the one the helper wrote.
-    writeFileSync(manifestFile, stringify({ version: "1.0.0", ...manifest, title, language, license: license ?? "personal use only" }));
+    writeFileSync(manifestFile, stringify({ version: "1.0.0", ...manifest, ...credited, title, language, license: license ?? "personal use only" }));
 }
 
 /** The license as a shared adventure may carry it: public domain or a Creative Commons one that allows adapting; undefined for any other or none. */
@@ -207,9 +292,27 @@ export function openLicense(license: string): string | undefined
     return creative === null || /\bND\b/i.test(license) ? undefined : `CC BY${creative[1] === undefined ? "" : `-${creative[1].toUpperCase().replace(" ", "-")}`} ${creative[2] ?? "4.0"}`;
 }
 
-function pieceName(index: number): string
+/** The file of a piece of the document, from the first. */
+export function pieceName(index: number): string
 {
     return `${String(index + 1).padStart(2, "0")}.md`;
+}
+
+/** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */
+export function textSize(text: string): number
+{
+    const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
+    return Math.max(text.split(/\s+/).filter((word) => word !== "").length + letters, Math.ceil(text.length / 6));
+}
+
+function isAlive(pid: number): boolean
+{
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        return (error as NodeJS.ErrnoException).code === "EPERM";
+    }
 }
 
 // A page's frontmatter as YAML; nothing when it has none or it does not read.

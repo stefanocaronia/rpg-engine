@@ -84,9 +84,14 @@ async function readFolder(folder: string): Promise<DocumentText>
         const kind = extname(file).toLowerCase();
         const read = kind === ".pdf" ? await readPdf(readFileSync(file)) : readText(kind, readFileSync(file), name);
         const prefix = (label: string): string => (kind === ".pdf" ? `${name}, ${label}` : label);
-        parts.push(...read.parts.map((part) => ({ ...part, label: prefix(part.label) })));
+        // Two files may both have an image1.png: the second's is renamed, and so are its marks.
         const taken = new Set(pictures.map((picture) => picture.name));
-        pictures.push(...read.pictures.map((picture) => ({ ...picture, name: freeName(taken, picture.name), label: prefix(picture.label) })));
+        const renamed = read.pictures.map((picture) => ({ ...picture, name: freeName(taken, picture.name), label: prefix(picture.label), was: picture.name }));
+        // In one pass, so that a name given to one picture is never renamed again as another's.
+        const names = new Map(renamed.map((picture) => [picture.was, picture.name]));
+        const marked = (text: string): string => text.replace(/\[picture: ([^\]]+)\]/g, (mark, was: string) => (names.has(was) ? `[picture: ${names.get(was)}]` : mark));
+        parts.push(...read.parts.map((part) => ({ label: prefix(part.label), text: marked(part.text) })));
+        pictures.push(...renamed.map(({ was: _, ...picture }) => picture));
     }
 
     return { parts, pictures: pictures.slice(0, mostPictures) };
@@ -99,11 +104,20 @@ async function readPdf(bytes: Uint8Array): Promise<DocumentText>
     const pdf = await getDocumentProxy(new Uint8Array(bytes));
     const { text } = await extractText(pdf, { mergePages: false });
     const parts = text.map((page, index) => ({ label: `p. ${index + 1}`, text: page.trim() }));
-    const found: { page: number; key: string; image: Awaited<ReturnType<typeof extractImages>>[number]; }[] = [];
+
+    // Each page's pictures are looked at and let go, then those kept are taken again one page at a time: a book's raw pixels never sit in memory together.
+    const big = async (page: number) => {
+        const images = await extractImages(pdf, page).catch(() => []);
+        // pdf.js keeps a page's decoded pictures until the page is cleaned up.
+        await pdf.getPage(page).then((proxy) => proxy.cleanup(), () => undefined);
+        return images.filter((image) => Math.min(image.width, image.height) >= smallestSide);
+    };
+
+    const keyOf = (data: Uint8ClampedArray): string => createHash("sha1").update(data).digest("hex");
+    const found: { page: number; key: string; }[] = [];
 
     for (let page = 1; page <= pdf.numPages; page++) {
-        const images = await extractImages(pdf, page).catch(() => []);
-        found.push(...images.filter((image) => Math.min(image.width, image.height) >= smallestSide).map((image) => ({ page, key: createHash("sha1").update(image.data).digest("hex"), image })));
+        found.push(...(await big(page)).map((image) => ({ page, key: keyOf(image.data) })));
     }
 
     const pagesOf = new Map<string, Set<number>>();
@@ -113,10 +127,19 @@ async function readPdf(bytes: Uint8Array): Promise<DocumentText>
     }
 
     const kept = found.filter(({ key }, index) => (pagesOf.get(key)?.size ?? 0) <= decorationPages && found.findIndex((other) => other.key === key) === index).slice(0, mostPictures);
-    const pictures = kept.map(({ page, image }, index) => {
-        const onPage = kept.slice(0, index).filter((other) => other.page === page).length + 1;
-        return { name: `p${String(page).padStart(3, "0")}-${onPage}.png`, label: `p. ${page}`, data: pngOf(image, longestSide) };
-    });
+    const pictures: DocumentPicture[] = [];
+
+    for (const page of [...new Set(kept.map((one) => one.page))]) {
+        const images = await big(page);
+        const here = kept.filter((one) => one.page === page);
+        here.forEach(({ key }, index) => {
+            const image = images.find((candidate) => keyOf(candidate.data) === key);
+
+            if (image !== undefined) {
+                pictures.push({ name: `p${String(page).padStart(3, "0")}-${index + 1}.png`, label: `p. ${page}`, data: pngOf(image, longestSide) });
+            }
+        });
+    }
 
     for (const picture of pictures) {
         const part = parts.find((candidate) => candidate.label === picture.label);
@@ -157,8 +180,8 @@ function readText(kind: string, bytes: Uint8Array, name: string): DocumentText
     const parts: DocumentPart[] = [];
     let words = 0;
 
-    for (const block of blocks.filter((one) => one.trim() !== "")) {
-        const count = block.split(/\s+/).length;
+    for (const block of blocks.filter((one) => one.trim() !== "").flatMap(pageSized)) {
+        const count = sizeOf(block);
 
         if (parts.length === 0 || words + count > partWords) {
             parts.push({ label: "", text: block });
@@ -180,6 +203,61 @@ function readText(kind: string, bytes: Uint8Array, name: string): DocumentText
     return { parts, pictures };
 }
 
+/** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */
+function sizeOf(text: string): number
+{
+    const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
+    return Math.max(text.split(/\s+/).filter((word) => word !== "").length + letters, Math.ceil(text.length / 6));
+}
+
+// A block longer than a page, as a text with a line for each paragraph or with no spaces, cut by its lines, then by its length.
+function pageSized(block: string): string[]
+{
+    if (sizeOf(block) <= partWords) {
+        return [block];
+    }
+
+    const lines = block.split("\n");
+
+    if (lines.length > 1) {
+        const cut: string[] = [];
+
+        for (const line of lines) {
+            const last = cut.at(-1);
+
+            if (last !== undefined && sizeOf(`${last}\n${line}`) <= partWords) {
+                cut[cut.length - 1] = `${last}\n${line}`;
+            } else {
+                cut.push(line);
+            }
+        }
+
+        return cut.flatMap(pageSized);
+    }
+
+    // A block of one line is cut by its length: as many letters as make a page by sizeOf.
+    const letters = Math.max(1, Math.floor((block.length * partWords) / sizeOf(block)));
+    return Array.from({ length: Math.ceil(block.length / letters) }, (_, index) => block.slice(index * letters, (index + 1) * letters));
+}
+
+// A text file in UTF-8, or in UTF-16 by its mark, or else in the Windows encoding older editors wrote.
+function decoded(bytes: Uint8Array): string
+{
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) {
+        return new TextDecoder("utf-16le").decode(bytes);
+    }
+
+    if (bytes[0] === 0xfe && bytes[1] === 0xff) {
+        return new TextDecoder("utf-16be").decode(bytes);
+    }
+
+    try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch {
+        return new TextDecoder("windows-1252").decode(bytes);
+    }
+}
+
 interface Unpacked
 {
     text: string;
@@ -189,7 +267,7 @@ interface Unpacked
 
 function fromPlain(kind: string, bytes: Uint8Array): Unpacked
 {
-    const text = new TextDecoder().decode(bytes).replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+    const text = decoded(bytes).replace(/^﻿/, "").replace(/\r\n?/g, "\n");
     return { text: kind === ".rtf" ? rtfText(text) : kind === ".txt" || kind === ".md" ? text.trim() : htmlText(text), files: {} };
 }
 
@@ -251,17 +329,27 @@ function fromEpub(bytes: Uint8Array): Unpacked
 
     const folder = posix.dirname(root);
     const items = new Map([...opf.matchAll(/<item\b[^>]*>/g)].map(([tag]) => [/\bid="([^"]+)"/.exec(tag)?.[1] ?? "", /\bhref="([^"]+)"/.exec(tag)?.[1] ?? ""]));
-    const chapters = [...opf.matchAll(/<itemref\b[^>]*?idref="([^"]+)"/g)].map(([, id]) => posix.normalize(posix.join(folder, decodeURIComponent(items.get(id ?? "") ?? ""))));
+    const chapters = [...opf.matchAll(/<itemref\b[^>]*?idref="([^"]+)"/g)].map(([, id]) => posix.normalize(posix.join(folder, uriDecoded(items.get(id ?? "") ?? ""))));
     const text = chapters
         .map((path) => {
             const html = textOf(zip, path) ?? "";
             const here = posix.dirname(path);
             // A picture's path is made the book's own, so that the mark finds its file.
-            return htmlText(html).replace(/\u0000([^\u0000]+)\u0000/g, (_, source: string) => pictureMark(posix.normalize(posix.join(here, decodeURIComponent(source)))));
+            return htmlText(html).replace(/\u0000([^\u0000]+)\u0000/g, (_, source: string) => pictureMark(posix.normalize(posix.join(here, uriDecoded(source)))));
         })
         .filter((chapter) => chapter !== "")
         .join("\n\n");
     return { text, files: zip };
+}
+
+// A path an EPUB writes encoded, as it is when it is not: a % in a file's name.
+function uriDecoded(path: string): string
+{
+    try {
+        return decodeURIComponent(path);
+    } catch {
+        return path;
+    }
 }
 
 function textOf(zip: Record<string, Uint8Array>, path: string): string | undefined

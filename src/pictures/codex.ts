@@ -166,7 +166,7 @@ function write(brief: string): Promise<string | undefined>
 }
 
 /** One run of the importer: Codex in the import's folder, which its sandbox lets it write in and nowhere else (D-489 (1)); its last words, or why it stopped. */
-function read(folder: string, brief: string): Promise<{ said: string; } | { failed: string; }>
+function read(folder: string, brief: string, _writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>
 {
     const last = join(folder, ".last.txt");
     // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
@@ -174,6 +174,9 @@ function read(folder: string, brief: string): Promise<{ said: string; } | { fail
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
+        // Dropped while it runs: the helper stops with all it started.
+        const stop = (): void => stopTree(child);
+        signal?.addEventListener("abort", stop, { once: true });
         let errors = "";
         const timer = setTimeout(() => stopTree(child), longestReading);
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
@@ -181,6 +184,7 @@ function read(folder: string, brief: string): Promise<{ said: string; } | { fail
         child.on("error", () => undefined);
         child.on("close", (code) => {
             clearTimeout(timer);
+            signal?.removeEventListener("abort", stop);
             const said = existsSync(last) ? readFileSync(last, "utf8").trim() : "";
             rmSync(last, { force: true });
             const stopped = errors.trim().split("\n").at(-1)?.trim() ?? "";
