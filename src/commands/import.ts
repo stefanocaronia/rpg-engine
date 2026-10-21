@@ -10,6 +10,7 @@ import {
     doneImports,
     dropImport,
     hasImport,
+    importDate,
     importedPages,
     importFile,
     importFolder,
@@ -27,8 +28,9 @@ import {
 import { stopProcess } from "../pictures/index.ts";
 import { installedAdventures } from "./game-adventures.ts";
 import { isImportRunning, runImport, stopImport, writingState } from "./game-import.ts";
+import { campaignMode } from "./game-mode.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem } from "./game-world.ts";
+import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { situationPart } from "./parts.ts";
 
 interface ImportResult
@@ -225,7 +227,7 @@ function goOn(root: string, context: Context, folder: string): Promise<void>
 
         if (done?.phase === "done") {
             appendLogEntry(root, newDatedLogEntry(root, context, "import-done", "hidden", { title: state.title }));
-            writeImportState(folder, { ...done, ...followBook(root, context, folder) });
+            writeImportState(folder, { ...done, ...followBook(root, context, folder), ...followDate(root, context, folder) });
         }
     });
     going.catch(() => undefined);
@@ -291,6 +293,28 @@ function followBook(root: string, context: Context, folder: string): Pick<Import
     return { followed: { author, ...(built === undefined ? {} : { story: built }), set: true } };
 }
 
+/** The day the book starts on, as the campaign's first day (Stefano, 21 October): set while the campaign has none and is in its setup, else asked. */
+function followDate(root: string, context: Context, folder: string): Pick<ImportState, "dated">
+{
+    const date = importDate(folder);
+
+    if (date === undefined) {
+        return {};
+    }
+
+    const settings = readSettings(root);
+
+    if (settings["calendar-start"] !== undefined || campaignMode(root, campaignWorld(root, context)) !== "setup") {
+        return settings["calendar-start"] === date ? {} : { dated: { date, set: false } };
+    }
+
+    if (changeSetting(root, "calendar-start", date)) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: "calendar-start", value: date }));
+    }
+
+    return { dated: { date, set: true } };
+}
+
 /** The import as the master reads it: how far it is, what to tell the player, and what comes next. */
 export function importText(result: ImportResult): string
 {
@@ -321,8 +345,7 @@ export function importText(result: ImportResult): string
     if (state.phase === "choosing") {
         const starts = result.starts.map((start) => `${start.number}. ${start.title}\n${start.text}`).join("\n\n");
         return `${state.title} is read (${pages}). Ask the player whether they have read it; give each start its Back cover lines if not, its Reader line if so, `
-            + "and the character they would play; to one who has not read it, a start's name tells nothing of what comes after, in a question's choices too: give it "
-            + `one of yours where its own does. Then call import with the start they choose and the character they play.\n\n${starts}`;
+            + `and the character they would play. Then call import with the start they choose and the character they play.\n\n${starts}`;
     }
 
     if (state.phase === "writing") {
@@ -333,7 +356,12 @@ export function importText(result: ImportResult): string
     return `${state.title} is ready: ${pages}, in ${result.adventure}. Install it with package install "${result.adventure}" when the story reaches it, at the setup if it is the start. `
         + "What its pages say of the world stays so: find before you invent, and invent only where they are silent."
         + (result.invented === undefined ? "" : `\nTell the player what was invented to fill the gaps:\n${result.invented}`)
-        + followedText(state.followed);
+        + followedText(state.followed)
+        + (state.dated === undefined
+            ? ""
+            : state.dated.set
+            ? `\nThe story starts on ${state.dated.date}, as the book's: calendar-start is set to it.`
+            : `\nThe book starts on ${state.dated.date}: ask the player whether the story should, then config calendar-start ${state.dated.date}.`);
 }
 
 // What the narration became, or what to ask, as the book is told.
@@ -356,7 +384,7 @@ function chatPieceText(state: ImportState, piece: NonNullable<ImportResult["piec
     const last = piece.number >= state.pieces;
     const then = last
         ? "This is the last piece. For a book, ask the player whether they have read it, then propose three or four starting points spread over the story, each just "
-            + "before a choice of it, never its end, with who could be played there: as its back cover would to one who has not read it, its name too. Once they choose, set the "
+            + "before a choice of it, never its end, with who could be played there: as its back cover would to one who has not read it. Once they choose, set the "
             + "world as it stands there with write: day 1 is that moment; an event before it is happened, one after stays planned with its date moved; whoever is "
             + "dead by then is dead; knows is what each knew there; what comes after is secret; nothing written decides what the character they play will do, "
             + "choose or suffer, their death included. A module keeps its own start. Then write the opening, a topic tagged "

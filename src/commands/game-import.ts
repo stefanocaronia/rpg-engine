@@ -154,7 +154,7 @@ function task(folder: string, state: ImportState): string
             + "Write the pages for what it tells, as the document tells them, and add to the pages already written what it adds. Then update notes/notes.md.",
             last
                 ? "This is the last piece. Then write notes/starts.md. For a book, three or four starting points spread over the story, each just before a choice of it, "
-                    + "never its end; for a module or notes, its own start alone. Each as `## 1. A short name`, which tells nothing of what comes after, as the player sees it on a button; then: who could be played there, the characters who act "
+                    + "never its end; for a module or notes, its own start alone. Each as `## 1. A short name`, then: who could be played there, the characters who act "
                     + "in the story first, and the part's label; "
                     + "`Back cover:` two lines for a player who has not read it, telling nothing that comes after; `Reader:` one line by chapter and event. "
                     + "Last, for a novel or a story, notes/style.yaml with author, its author's name as readers know it, and story, one word of these four for how it "
@@ -186,6 +186,7 @@ function task(folder: string, state: ImportState): string
     return `${chosen}${fix}\n\nLast, write the adventure's opening: a page adventure/world/topics/${opening}.md with tags: [opening], all of it secret, in four parts: `
         + "the situation at the start, the hooks (one tied to the character who will be played), what happens if no one acts, the pages to read first. "
         + "Then adventure/adventure.yaml with title, about (one line, no secret), version: 1.0.0, author (the document's), start (the place it starts in) "
-        + `and opening: ${opening}. Then notes/source.yaml with the document's title, author, license as the document states it (or unknown) and link if it gives one, `
+        + `and opening: ${opening}. Then notes/start.yaml with date, the day of the world's calendar the start falls on, as the document gives or suggests it, `
+        + "such as 14 April 1885, or none if it gives none. Then notes/source.yaml with the document's title, author, license as the document states it (or unknown) and link if it gives one, "
         + "and notes/invented.md, a short list of what you invented to fill gaps, with no secret in it.";
 }

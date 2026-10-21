@@ -37,6 +37,8 @@ export interface ImportState
     inChat?: boolean;
     /** How the book is told, which the narration follows (Stefano, 21 October): set when the player had chosen nothing, else asked. */
     followed?: { author: string; story?: string; set: boolean; };
+    /** The day of the world's calendar the story starts on, as the book gives it (Stefano, 21 October): set when the campaign had none, else asked. */
+    dated?: { date: string; set: boolean; };
 }
 
 /** A starting point the reading proposed, as notes/starts.md writes it. */
@@ -219,6 +221,13 @@ export function importStyle(folder: string): { author?: string; story?: string; 
     const author = text(style.author);
     const story = text(style.story);
     return { ...(author === undefined ? {} : { author }), ...(story === undefined ? {} : { story }) };
+}
+
+/** The day of the world's calendar the chosen start falls on, as notes/start.yaml writes it; undefined when the document gives none. */
+export function importDate(folder: string): string | undefined
+{
+    const date = yamlOf(join(folder, "notes", "start.yaml")).date;
+    return typeof date === "string" && date.trim() !== "" && !/^(unknown|none)$/i.test(date.trim()) ? date.trim() : undefined;
 }
 
 /** A piece of the document as it was written in the import's folder. */

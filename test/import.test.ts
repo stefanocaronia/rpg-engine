@@ -65,6 +65,7 @@ function fakeReader(options: { starts?: number; license?: string; failOnce?: boo
                 put(root, "adventure/adventure.yaml", `title: The Man Who Would Be King\nabout: ${about}\nauthor: Rudyard Kipling\nstart: '[[Kafiristan]]'\nopening: Opening\n`);
                 put(root, "notes/source.yaml", `title: The Man Who Would Be King\nauthor: Rudyard Kipling\nlicense: ${options.license ?? "public domain"}\n`);
                 put(root, "notes/invented.md", "- the name of the pass\n");
+                put(root, "notes/start.yaml", "date: 14 April 1885\n");
             }
 
             return Promise.resolve({ said: "done" });
@@ -266,6 +267,9 @@ describe("the narration as the book is told (Stefano, 21 October)", () => {
         context.reader = fakeReader({ starts: 1 });
         const done = await rpg("import", book(), "--title", "The King");
         expect(done.output).toContain("You now write like Rudyard Kipling, story arcs, as the book is told: tell the player, who changes it in Settings.");
+        // The book's date is the campaign's first day, in its setup (Stefano, 21 October).
+        expect(done.output).toContain("The story starts on 14 April 1885, as the book's: calendar-start is set to it.");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("calendar-start: 14 April 1885");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toMatch(/author: Rudyard Kipling[\s\S]*story: arcs|story: arcs[\s\S]*author: Rudyard Kipling/);
     });
 

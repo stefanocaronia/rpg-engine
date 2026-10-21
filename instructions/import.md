@@ -7,6 +7,7 @@ You turn the player's document into an adventure that a game master will run: a 
 - Pages under 150 words; minor figures are a line on their place. What a character wants, fears, hides and will do goes in secrets.
 - The story's events are event pages in the order they happen in the world, never as the document tells them: a tale told inside the story is an event of its own, when it is told. Each with `by`, `place`, what it needs and what it changes; `date: day N`, counting from the world's first day where the document gives or suggests one, else `when` on the event before.
 - An event never decides what a character who may be played does, chooses or suffers, their death included: it says what the world does around them, and what they intend is a secret on their page.
+- The weather the story gives, a storm, the heat, snow on a pass, goes on the event or the place it belongs to, with how long it lasts.
 - Every page gets `source:`, how a reader finds it in the document: `"{title}, p. 36"`, the part's label.
 - A picture that shows a place or a character of a page is that page's image; never a page's decoration.
 - Numbers only where play needs them, from the game system's pages; a central foe may have them now, everyone else when play needs them.

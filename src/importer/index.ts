@@ -6,6 +6,7 @@ export {
     dropImport,
     finishAdventure,
     hasImport,
+    importDate,
     importedPages,
     type ImportedText,
     importFile,
