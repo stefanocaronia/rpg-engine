@@ -14,6 +14,20 @@ export function startInstructions(): string
     return readInstructions("start.md");
 }
 
+/** What a campaign's host files carry of the instructions: the start lines, and the character agent's, which a host that has agents gives the one that voices a character (D-490). */
+export function hostInstructions(): { start: string; character: string; }
+{
+    return { start: startInstructions(), character: readInstructions("character.md") };
+}
+
+/** When and how the master calls the character agent, in play, where the host has it (D-490). */
+export function voicesInstructions(way: string): string
+{
+    // Always for the main characters, or for everyone, as the player chose, on top of the key moments (D-490).
+    const more = way === "important" || way === "always" ? `\n\n${readInstructions(`voices-${way}.md`)}` : "";
+    return `${readInstructions("voices.md")}${more}`;
+}
+
 /** The line that sends the master to the buttons, where the player sees them (D-148, D-279); for choices alone when the player rolls their own dice (ASK-8). */
 export function buttonsInstructions(physicalDice: boolean): string
 {

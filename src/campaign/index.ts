@@ -1,7 +1,7 @@
 // The campaign: a folder with campaign.yaml, its settings, the present, the sessions and the files an AI host reads.
 export { createCampaign } from "./create-campaign.ts";
 export { campaignFileName, findCampaign, houseRulesFolderName, requireCampaign } from "./find-campaign.ts";
-export { hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
+export { hasCharacterAgent, hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
 export {
     type CampaignSettings,
     changeExtensions,
@@ -42,5 +42,6 @@ export {
     styleTextLengths,
     unansweredSettings,
     unitSystems,
+    voiceWays,
 } from "./settings.ts";
 export { type CampaignState, changeState, changeStateAt, readState, readStateValues } from "./state.ts";

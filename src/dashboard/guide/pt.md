@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -38,9 +38,9 @@ Hoje o RPG Engine joga um sistema de jogo, a **quinta edição**, a partir do Sy
 ### 2.1 O que você precisa
 
 - Um computador com Windows, macOS ou Linux, e um navegador.
-- **Node.js 22** ou mais novo, em [nodejs.org](https://nodejs.org). Ele traz o `npm`, que instala o RPG Engine.
-- Um **terminal**: no Windows, Terminal ou PowerShell; no macOS, Terminal. Para abrir um terminal em uma pasta, clique nela com o botão direito e escolha **Abrir no Terminal** (Windows) ou **Serviços > Novo Terminal na Pasta** (macOS).
-- Um **agente de IA** para o mestre ([2.4](#24-connect-your-ai)), com o **maior modelo** que ele oferecer: um modelo pequeno é mais fácil de convencer a revelar segredos ou a burlar as regras.
+- **Node.js 22** ou mais recente, em [nodejs.org](https://nodejs.org). Ele traz o `npm`, que instala o RPG Engine.
+- Um **terminal**: no Windows, Terminal ou PowerShell; no macOS, Terminal. Para abrir um terminal em uma pasta, clique com o botão direito na pasta e escolha **Abrir no Terminal** (Windows) ou **Serviços > Novo Terminal na Pasta** (macOS).
+- Um **agente de IA** para o mestre ([2.4](#24-connect-your-ai)), com o **maior modelo** que ele oferecer: um modelo pequeno é mais fácil de convencer a revelar segredos ou a quebrar as regras.
 
 ### 2.2 Instalar
 
@@ -58,7 +58,7 @@ Abra um terminal na pasta onde você guarda seus jogos ([2.1](#21-what-you-need)
 rpg init "The Salt Isles"
 ```
 
-Isso cria a pasta `The Salt Isles` com uma campanha nova dentro; entre nela com `cd "The Salt Isles"`. Lembre onde ela está: você volta a ela toda vez que jogar. O resto você escolhe depois, no chat ou no painel; `rpg init --help` lista as opções para escolher algumas agora, como `--language it` ou `--difficulty hard`.
+Isso cria a pasta `The Salt Isles` com uma campanha nova dentro. Entre nela com `cd "The Salt Isles"`. Lembre onde ela fica: você volta a ela toda vez que for jogar. Todo o resto você escolhe depois, no chat ou no painel. `rpg init --help` lista as opções para escolher algumas agora, como `--language it` ou `--difficulty hard`.
 
 O mestre não pode criar uma campanha para você: antes do `init`, nada diz ao seu agente onde está o RPG Engine.
 
@@ -66,47 +66,48 @@ O mestre não pode criar uma campanha para você: antes do `init`, nada diz ao s
 
 O mestre roda em um **agente de IA**: um aplicativo de IA, no terminal ou no desktop, que consegue trabalhar com os arquivos do seu computador, como o Claude Code ou o Codex. Um chat comum, como o claude.ai ou o ChatGPT, ou um aplicativo de celular, não basta: o mestre precisa acessar os arquivos da campanha no seu computador. Cada agente exige seu próprio plano e login: o Claude Code, um plano pago do Claude; o Codex, um login do ChatGPT. Você o instala uma vez, pela página dele: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: na pasta da campanha, escreva `claude`. Quando ele perguntar se você confia na pasta, escolha **Yes, I trust this folder**; cuidado, a resposta já selecionada é *No, exit*.
-- **Codex**: na pasta da campanha, escreva `codex` e diga sim quando ele perguntar se você confia na pasta. No aplicativo desktop dele, confira nas configurações se as memórias estão desligadas para os chats do jogo.
+- **Claude Code**: na pasta da campanha, digite `claude`. Quando ele perguntar se você confia na pasta, escolha **Yes, I trust this folder**. Atenção: a resposta que já vem selecionada é *No, exit*.
+- **Codex**: na pasta da campanha, digite `codex` e responda que sim quando ele perguntar se você confia na pasta. No aplicativo desktop dele, confira nas configurações se as memórias estão desligadas para os chats do jogo.
 - **Outro agente**: inicie-o na pasta da campanha e dê a ele o servidor MCP `rpg mcp`. O RPG Engine é um servidor MCP padrão: qualquer agente que aceite MCP pode ser o mestre, inclusive os locais.
 
-Nós jogamos e testamos com o **Claude Code**; o **Codex** está conectado e verificado, mas ainda não se jogou uma campanha inteira com ele; o `init` também configura o **Gemini CLI**. A campanha desliga a memória própria do agente: o jogo vive nos arquivos, para que voltar a um jogo salvo realmente volte.
+Nós jogamos e testamos com o **Claude Code**. O **Codex** está conectado e verificado, mas ainda não se jogou uma campanha inteira com ele. O `init` também configura o **Gemini CLI**. A campanha desliga a memória própria do agente: o jogo vive nos arquivos dela, para que voltar a um jogo salvo realmente volte no tempo.
 
 ### 2.5 O primeiro chat
 
-Escreva qualquer coisa, como *Oi! Vamos começar.* Na primeira resposta de cada chat, o mestre dá o **link do seu painel**, algo como `http://127.0.0.1:4750`: abra-o e deixe-o ao lado do chat.
+Escreva qualquer coisa, como *Oi! Vamos começar.* Na primeira resposta de cada chat, o mestre dá o **link do seu painel**, algo como `http://127.0.0.1:4750`. Abra-o e deixe-o ao lado do chat.
 
-Entre as mensagens do mestre, seu agente mostra as ferramentas que usa: não abra os detalhes delas (no Claude Code, ctrl+o), pois podem revelar segredos.
+Entre as mensagens do mestre, seu agente mostra as ferramentas que usa. Não abra os detalhes delas (no Claude Code, ctrl+o), pois podem mostrar segredos.
 
-Uma campanha nova passa por três etapas, mostradas no topo do painel: **1 Configurações** (como você quer jogar), **2 Sessão zero** (você cria seu personagem, jogando), **3 Jogar**.
+Uma campanha nova passa por três etapas, mostradas no alto do painel: **1 Configurações** (como você quer jogar), **2 Sessão zero** (você cria seu personagem, jogando), **3 Jogo**.
 
-### 2.6 Configurações: escolhendo como jogar
+### 2.6 Configurações: escolher como jogar
 
-O mestre pergunta só o que ainda falta, algumas perguntas por vez; a etapa **Configurações** do painel mostra as mesmas perguntas em cartões. Escreva "você decide" e o mestre escolhe. Tudo pode mudar depois, no chat ou em **Configurações**.
+O mestre pergunta só o que ainda falta, algumas perguntas por vez. A etapa **Configurações** do painel mostra as mesmas perguntas em cartões. Escreva "você decide" e o mestre escolhe. Tudo pode mudar depois, no chat ou em **Configurações**.
 
 | Configuração | O que decide | Valores |
 |---|---|---|
 | **Mentor** | Quanto o mestre ensina as regras a você | desligado, dicas, tutorial |
-| **Dificuldade** | Quão duro o mundo joga | história, fácil, normal, difícil, brutal |
+| **Dificuldade** | Quão difícil é o mundo | história, fácil, normal, difícil, brutal |
 | **Letalidade** | O que significa cair em um combate | narrativa (nunca morre), épica (só quando importa), dados |
 | **Jogos salvos** | Quando você pode voltar | morte permanente, ponto de controle, livre ([3.8](#38-saves-and-going-back)) |
 | **Rigor** | Quão de perto comida, luz e viagem seguem as regras | fluido, regras, simulação |
-| **Dados** | Quem rola seus dados | digitais, físicos |
-| **Unidades** | Distâncias e pesos | métrico, imperial |
+| **Dados** | Quem rola os seus dados | digitais, físicos |
+| **Unidades** | Distâncias e pesos | métricas, imperiais |
+| **Voices** | Quem fala pelos personagens que você encontra: em momentos-chave o próprio personagem, sabendo só o que ele sabe, conforme o mestre escolher; sempre o mestre; ou sempre o próprio personagem, para os principais ou para todos, com mais lentidão e custo, onde seu aplicativo de IA permitir | auto, mestre, importantes, sempre |
 | **Companheiros** | Quem viaja com você | nenhum, criados com você, criados pelo mestre, encontrados no jogo |
-| **Imagens** | Imagens de locais, missões e de quem você encontra | nenhuma, sob pedido, novos locais, missões e quem você encontra ([3.11](#311-pictures)) |
-| **Linhas** e **Véus** | O que nunca aparece e o que acontece só fora de cena | listas |
+| **Imagens** | Imagens de locais, missões e de quem você encontra | nenhuma, sob pedido, locais novos, missões e quem você encontra ([3.11](#311-pictures)) |
+| **Linhas** e **Véus** | O que nunca aparece, e o que acontece só fora de cena | listas |
 | **Idioma** | O idioma do jogo e do painel | qualquer um |
 
 A quinta edição acrescenta o **avanço**: pontos de experiência ou marcos.
 
-Sem um mundo escrito, o mestre também pergunta uma **premissa** (gênero, tom, alguns elementos, com suas palavras) e a **preparação**: montar o mundo na hora, conforme você avança, ou tudo no início.
+Sem um mundo escrito, o mestre também pergunta uma **premissa** (gênero, tom, alguns elementos, em suas palavras) e a **preparação**: construir o mundo na hora, conforme você avança, ou tudo no início.
 
-**O estilo do mestre** nunca é perguntado, mas você pode mudá-lo no chat ou em **Configurações**: a **prosa** (simples, literária, pulp, irônica), as **histórias** que ele inventa (situações, arcos, episódios, mistério), um autor para **escrever como** ou qualquer outra coisa **com suas palavras**.
+**O estilo do mestre** nunca é perguntado, mas você pode mudá-lo no chat ou em **Configurações**: a **prosa** (simples, literária, pulp, irônica), as **histórias** que ele inventa (situações, arcos, episódios, mistério), um autor para **escrever como**, ou qualquer outra coisa **em suas palavras**.
 
 ### 2.7 Sessão zero: seu personagem
 
-Você cria seu personagem com o mestre, como em uma mesa. Toda escolha é sua, a menos que você peça ao mestre para fazê-la: venha com uma ideia completa, uma ideia vaga ou nada. O mestre explica como os valores de habilidade são feitos antes de qualquer dado ser rolado. A história do personagem nunca é obrigatória; se você der uma, o mestre a escreve com suas palavras. Depois, o mestre pede uma imagem do personagem ([3.7](#37-your-characters-story-and-picture)). O RPG Engine calcula a ficha: você nunca faz as contas.
+Você cria seu personagem com o mestre, como em uma mesa. Toda escolha é sua, a menos que você peça ao mestre para fazê-la: venha com uma ideia completa, uma vaga ou nada. O mestre explica como os valores de habilidade são definidos antes de qualquer dado ser rolado. Sua história nunca é obrigatória. Se você der uma, o mestre a escreve em suas palavras. Depois, o mestre pede uma imagem do seu personagem ([3.7](#37-your-characters-story-and-picture)). O RPG Engine calcula a ficha: você nunca faz as contas.
 
 ---
 

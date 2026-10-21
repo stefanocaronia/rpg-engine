@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -35,11 +35,11 @@ Aujourd'hui, RPG Engine joue un seul système de jeu, la **cinquième édition**
 
 ## 2. Pour commencer <!-- icon: path -->
 
-### 2.1 Ce qu'il te faut
+### 2.1 Ce dont tu as besoin
 
 - Un ordinateur sous Windows, macOS ou Linux, et un navigateur web.
-- **Node.js 22** ou plus récent, depuis [nodejs.org](https://nodejs.org). Il apporte `npm`, qui installe RPG Engine.
-- Un **terminal** : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau terminal au dossier** (macOS).
+- **Node.js 22** ou plus récent, à télécharger sur [nodejs.org](https://nodejs.org). Il installe aussi `npm`, qui sert à installer RPG Engine.
+- Un **terminal** : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau Terminal au dossier** (macOS).
 - Un **agent IA** pour le MJ ([2.4](#24-connect-your-ai)), avec le **plus grand modèle** qu'il propose : un petit modèle se laisse plus facilement convaincre de révéler des secrets ou de contourner les règles.
 
 ### 2.2 Installer
@@ -48,7 +48,7 @@ Aujourd'hui, RPG Engine joue un seul système de jeu, la **cinquième édition**
 npm install -g rpg-engine
 ```
 
-`rpg --version` vérifie que tout a marché. Tu utilises `rpg` une seule fois par campagne, pour la créer. Ensuite, ton agent lance RPG Engine tout seul.
+`rpg --version` vérifie que tout a fonctionné. Tu utilises `rpg` une seule fois par campagne, pour la créer ; ensuite, ton agent lance RPG Engine tout seul.
 
 ### 2.3 Créer une campagne
 
@@ -58,55 +58,56 @@ Ouvre un terminal dans le dossier où tu ranges tes parties ([2.1](#21-what-you-
 rpg init "The Salt Isles"
 ```
 
-Cela crée le dossier `The Salt Isles` avec une nouvelle campagne dedans. Entres-y avec `cd "The Salt Isles"`. Retiens où il se trouve : tu y reviens à chaque partie. Tu choisis tout le reste plus tard, dans le chat ou sur le tableau de bord. `rpg init --help` liste les options pour en choisir dès maintenant, comme `--language it` ou `--difficulty hard`.
+Cela crée le dossier `The Salt Isles`, avec une nouvelle campagne dedans. Entres-y avec `cd "The Salt Isles"`. Retiens où il se trouve : tu y reviens à chaque partie. Tu choisis tout le reste plus tard, dans le chat ou sur le tableau de bord. `rpg init --help` liste les options pour en choisir dès maintenant, comme `--language it` ou `--difficulty hard`.
 
 Le MJ ne peut pas créer une campagne à ta place : avant `init`, rien n'indique à ton agent où se trouve RPG Engine.
 
 ### 2.4 Connecter ton IA
 
-Le MJ fonctionne dans un **agent IA** : une appli d'IA, dans le terminal ou sur le bureau, qui peut travailler avec les fichiers de ton ordinateur, comme Claude Code ou Codex. Un simple chat comme claude.ai ou ChatGPT, ou une appli de téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque agent demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT. Tu l'installes une fois, depuis sa propre page : [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Le MJ tourne dans un **agent IA** : une application d'IA, dans le terminal ou sur le bureau, qui peut travailler avec les fichiers de ton ordinateur, comme Claude Code ou Codex. Un simple chat comme claude.ai ou ChatGPT, ou une application sur téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque agent a besoin de son propre abonnement et de sa propre connexion : Claude Code demande un abonnement Claude payant, Codex une connexion ChatGPT. Tu l'installes une seule fois, depuis sa propre page : [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code** : dans le dossier de la campagne, écris `claude`. Quand il demande si tu fais confiance au dossier, choisis **Yes, I trust this folder** ; attention, la réponse déjà sélectionnée est *No, exit*.
-- **Codex** : dans le dossier de la campagne, écris `codex`, et réponds oui quand il demande si tu fais confiance au dossier. Dans son appli de bureau, vérifie dans les paramètres que les mémoires sont désactivées pour les chats du jeu.
-- **Un autre agent** : lance-le dans le dossier de la campagne et donne-lui le serveur MCP `rpg mcp`. RPG Engine est un serveur MCP standard : tout agent qui gère MCP peut être le MJ, y compris les agents locaux.
+- **Claude Code** : dans le dossier de la campagne, écris `claude`. Quand il demande si tu fais confiance au dossier, choisis **Yes, I trust this folder**. Attention, la réponse déjà sélectionnée est *No, exit*.
+- **Codex** : dans le dossier de la campagne, écris `codex`, et réponds oui quand il demande si tu fais confiance au dossier. Dans son application de bureau, vérifie dans les paramètres que les mémoires sont désactivées pour les chats du jeu.
+- **Un autre agent** : lance-le dans le dossier de la campagne et donne-lui le serveur MCP `rpg mcp`. RPG Engine est un serveur MCP standard : tout agent compatible avec MCP peut être le MJ, y compris les agents qui tournent en local.
 
-Nous jouons et testons avec **Claude Code**. **Codex** est connecté et vérifié, mais aucune campagne entière n'a encore été jouée avec lui. `init` prépare aussi **Gemini CLI**. La campagne désactive la mémoire propre de l'agent : la partie vit dans ses fichiers, pour qu'un retour à une sauvegarde revienne vraiment en arrière.
+Nous jouons et testons avec **Claude Code**. **Codex** est connecté et vérifié, mais aucune campagne entière n'a encore été jouée avec lui. `init` configure aussi **Gemini CLI**. La campagne désactive la mémoire propre à l'agent : la partie vit dans ses fichiers, pour qu'un retour à une sauvegarde revienne vraiment en arrière.
 
 ### 2.5 Le premier chat
 
-Écris ce que tu veux, par exemple *Salut ! On commence.* Dans sa première réponse de chaque chat, le MJ te donne le **lien vers ton tableau de bord**, quelque chose comme `http://127.0.0.1:4750` : ouvre-le et garde-le à côté du chat.
+Écris ce que tu veux, par exemple *Salut ! On commence.* Dans sa première réponse de chaque chat, le MJ te donne le **lien vers ton tableau de bord**, qui ressemble à `http://127.0.0.1:4750` : ouvre-le et garde-le à côté du chat.
 
-Entre les messages du MJ, ton agent montre les outils qu'il utilise. N'ouvre pas leurs détails (dans Claude Code, ctrl+o) : ils peuvent révéler des secrets.
+Entre les messages du MJ, ton agent affiche les outils qu'il utilise. N'ouvre pas leurs détails (dans Claude Code, ctrl+o) : ils peuvent montrer des secrets.
 
 Une nouvelle campagne passe par trois étapes, affichées en haut du tableau de bord : **1 Paramètres** (comment tu veux jouer), **2 Session zéro** (tu crées ton personnage, en jouant), **3 Jeu**.
 
 ### 2.6 Paramètres : choisir comment jouer
 
-Le MJ ne demande que ce qui manque encore, quelques questions à la fois. L'étape **Paramètres** du tableau de bord montre les mêmes questions sous forme de cartes. Écris « choisis toi-même » et le MJ décide. Tout peut changer plus tard, dans le chat ou dans **Paramètres**.
+Le MJ ne demande que ce qui manque encore, quelques questions à la fois. L'étape **Paramètres** du tableau de bord montre les mêmes questions sous forme de cartes. Écris « décide toi-même » et le MJ choisit. Tout peut changer plus tard, dans le chat ou dans **Paramètres**.
 
-| Réglage | Ce qu'il décide | Valeurs |
+| Paramètre | Ce qu'il décide | Valeurs |
 |---|---|---|
-| **Mentor** | Combien le MJ t'enseigne les règles | désactivé, conseils, tutoriel |
-| **Difficulté** | Le niveau d'exigence du monde | histoire, facile, normal, difficile, brutal |
-| **Létalité** | Ce que signifie tomber en combat | narrative (jamais de mort), épique (seulement quand c'est important), dés |
-| **Sauvegardes** | Quand tu peux revenir en arrière | mort définitive, point de contrôle, libre ([3.8](#38-saves-and-going-back)) |
-| **Rigueur** | À quel point la nourriture, la lumière et les voyages suivent les règles | fluide, règles, simulation |
-| **Dés** | Qui lance tes dés | numériques, physiques |
-| **Unités** | Distances et poids | métriques, impériales |
-| **Compagnons** | Qui voyage avec toi | aucun, créés avec toi, créés par le MJ, rencontrés en jeu |
-| **Images** | Images des lieux, des quêtes et des personnes rencontrées | aucune, sur demande, nouveaux lieux, quêtes et personnes rencontrées ([3.11](#311-pictures)) |
+| **Mentor** | Combien le MJ t'enseigne les règles | off, hints, tutorial |
+| **Difficulté** | La dureté du monde | story, easy, normal, hard, brutal |
+| **Létalité** | Ce que signifie tomber en combat | narrative (jamais de mort), epic (seulement quand c'est important), dice |
+| **Sauvegardes** | Quand tu peux revenir en arrière | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
+| **Rigueur** | À quel point la nourriture, la lumière et les voyages suivent les règles | smooth, rules, simulation |
+| **Dés** | Qui lance tes dés | digital, physical |
+| **Unités** | Distances et poids | metric, imperial |
+| **Voices** | Qui parle pour les personnages que tu rencontres : aux moments clés, le personnage lui-même, qui ne sait que ce qu'il sait, au choix du MJ ; toujours le MJ ; ou toujours le personnage, pour les principaux ou pour tous, plus lent et plus coûteux, là où ton application d'IA le permet | auto, master, important, always |
+| **Compagnons** | Qui voyage avec toi | none, made with you, made by the master, met in play |
+| **Images** | Images des lieux, des quêtes et des personnes rencontrées | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Lignes** et **Voiles** | Ce qui n'apparaît jamais, et ce qui se passe seulement hors champ | listes |
-| **Langue** | La langue du jeu et du tableau de bord | toutes |
+| **Langue** | La langue du jeu et du tableau de bord | au choix |
 
-La cinquième édition ajoute la **progression** : points d'expérience ou paliers.
+La cinquième édition ajoute l'**avancement** : points d'expérience ou étapes clés.
 
-Sans monde déjà écrit, le MJ demande aussi un **pitch** (genre, ton, quelques éléments, avec tes mots) et la **préparation** : construire le monde au fil du jeu, ou tout au début.
+Sans monde écrit, le MJ demande aussi une **prémisse** (genre, ton, quelques éléments, avec tes mots) et la **préparation** : construire le monde au fil de l'eau, en jouant, ou tout au début.
 
-**Le style du MJ** n'est jamais demandé, mais tu peux le changer dans le chat ou dans **Paramètres** : la **prose** (simple, littéraire, pulp, pince-sans-rire), les **histoires** qu'il invente (situations, arcs, épisodes, mystère), un auteur ou une autrice dont **imiter l'écriture**, ou tout autre souhait **avec tes mots**.
+**Le style du MJ** n'est jamais demandé, mais tu peux le changer dans le chat ou dans **Paramètres** : la **prose** (sobre, littéraire, pulp, ironique), les **histoires** qu'il invente (situations, arcs, épisodes, mystère), un auteur dont **imiter le style**, ou autre chose **avec tes mots**.
 
 ### 2.7 Session zéro : ton personnage
 
-Tu crées ton personnage avec le MJ, comme à une table. Chaque choix est le tien, sauf si tu demandes au MJ de le faire : viens avec une idée précise, une idée floue, ou rien du tout. Le MJ t'explique comment sont déterminés les scores de caractéristiques avant qu'un seul dé soit lancé. Ton histoire n'est jamais obligatoire. Si tu en donnes une, le MJ l'écrit avec tes mots. Ensuite, le MJ demande une image de ton personnage ([3.7](#37-your-characters-story-and-picture)). RPG Engine calcule la fiche : tu ne fais jamais les additions.
+Tu crées ton personnage avec le MJ, comme à une table. Chaque choix t'appartient, sauf si tu demandes au MJ de le faire : viens avec une idée complète, une idée vague, ou rien du tout. Le MJ t'explique comment les valeurs de caractéristiques sont déterminées avant qu'un seul dé ne soit lancé. Ton histoire n'est jamais obligatoire ; si tu en donnes une, le MJ l'écrit avec tes mots. Ensuite, le MJ te propose de créer une image de ton personnage ([3.7](#37-your-characters-story-and-picture)). RPG Engine calcule la fiche : tu ne fais jamais les calculs.
 
 ---
 

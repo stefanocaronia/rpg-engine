@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -93,6 +93,7 @@ Il master chiede solo ciò che manca, poche domande alla volta; il passo **Impos
 | **Rigore** | Quanto cibo, luce e viaggi seguono le regole | scorrevole, regole, simulazione |
 | **Dadi** | Chi tira i tuoi dadi | digitali, fisici |
 | **Unità di misura** | Distanze e pesi | metrico, imperiale |
+| **Voci** | Chi dà voce ai personaggi che incontri: nei momenti chiave il personaggio stesso, che sa solo ciò che sa, quando il master lo sceglie; sempre il master; oppure sempre il personaggio, per i principali o per tutti, più lento e costoso, dove la tua app di AI lo permette | auto, master, important, always |
 | **Compagni** | Chi viaggia con te | nessuno, creati con te, fatti dal master, incontrati in gioco |
 | **Immagini** | Immagini di luoghi, missioni e di chi incontri | niente, su richiesta, luoghi, missioni e chi incontri ([3.11](#311-pictures)) |
 | **Linee** e **Veli** | Cosa non compare mai, e cosa succede solo fuori scena | elenchi |

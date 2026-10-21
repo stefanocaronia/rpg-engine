@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -38,9 +38,9 @@ Astăzi RPG Engine joacă un singur sistem de joc, **ediția a cincea**, din Sys
 ### 2.1 Ce îți trebuie
 
 - Un calculator cu Windows, macOS sau Linux și un browser web.
-- **Node.js 22** sau mai nou, de pe [nodejs.org](https://nodejs.org). Vine cu `npm`, care instalează RPG Engine.
-- Un **terminal**: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un folder, dă clic dreapta pe folder și alege **Open in Terminal** (Windows) sau **Services > New Terminal at Folder** (macOS).
-- Un **agent IA** pentru maestrul de joc ([2.4](#24-connect-your-ai)), cu **cel mai mare model** pe care îl oferă: un model mic poate fi convins mai ușor să dezvăluie secrete sau să încalce regulile.
+- **Node.js 22** sau mai nou, de la [nodejs.org](https://nodejs.org). Vine cu `npm`, care instalează RPG Engine.
+- Un **terminal**: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un dosar, fă clic dreapta pe dosar și alege **Open in Terminal** (Windows) sau **Services > New Terminal at Folder** (macOS).
+- Un **agent AI** pentru maestrul de joc ([2.4](#24-connect-your-ai)), cu **cel mai mare model** pe care îl oferă: un model mic poate fi convins mai ușor să dezvăluie secrete sau să încalce regulile.
 
 ### 2.2 Instalare
 
@@ -48,65 +48,66 @@ Astăzi RPG Engine joacă un singur sistem de joc, **ediția a cincea**, din Sys
 npm install -g rpg-engine
 ```
 
-`rpg --version` verifică dacă a mers. Folosești `rpg` o dată pe campanie, ca s-o creezi; după aceea agentul pornește singur RPG Engine.
+`rpg --version` verifică dacă a mers. Folosești `rpg` o singură dată pentru fiecare campanie, ca să o creezi; după aceea, agentul tău pornește singur RPG Engine.
 
 ### 2.3 Creează o campanie
 
-Deschide un terminal în folderul unde ții jocurile ([2.1](#21-what-you-need) spune cum):
+Deschide un terminal în dosarul în care îți ții jocurile ([2.1](#21-what-you-need) îți arată cum):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Aceasta creează folderul `The Salt Isles` cu o campanie nouă înăuntru; intră în el cu `cd "The Salt Isles"`. Ține minte unde se află: te întorci la el de fiecare dată când joci. Restul îl alegi mai târziu, în chat sau în dashboard; `rpg init --help` listează opțiunile pe care le poți alege chiar acum, cum ar fi `--language it` sau `--difficulty hard`.
+Comanda creează dosarul `The Salt Isles`, cu o campanie nouă în el; intră în el cu `cd "The Salt Isles"`. Ține minte unde se află: te întorci la el de fiecare dată când joci. Restul îl alegi mai târziu, în chat sau pe dashboard; `rpg init --help` arată opțiunile pe care le poți alege de pe acum, cum ar fi `--language it` sau `--difficulty hard`.
 
-Maestrul de joc nu poate crea o campanie în locul tău: înainte de `init`, nimic nu-i spune agentului unde se află RPG Engine.
+Maestrul de joc nu poate crea o campanie în locul tău: înainte de `init`, nimic nu-i spune agentului tău unde se află RPG Engine.
 
-### 2.4 Conectează-ți IA
+### 2.4 Conectează-ți AI-ul
 
-Maestrul de joc rulează într-un **agent IA**: o aplicație IA, în terminal sau pe desktop, care poate lucra cu fișierele de pe calculatorul tău, cum ar fi Claude Code sau Codex. Un chat simplu, precum claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să ajungă la fișierele campaniei de pe calculatorul tău. Fiecare agent cere propriul abonament și propria autentificare: Claude Code un abonament Claude plătit, Codex o autentificare ChatGPT. Îl instalezi o singură dată, de pe pagina lui: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Maestrul de joc rulează într-un **agent AI**: o aplicație AI, în terminal sau pe desktop, care poate lucra cu fișierele de pe calculatorul tău, cum ar fi Claude Code sau Codex. Un chat obișnuit, cum ar fi claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să poată accesa fișierele campaniei de pe calculatorul tău. Fiecare agent are nevoie de propriul abonament și de propria autentificare: Claude Code un abonament Claude plătit, Codex o autentificare ChatGPT. Îl instalezi o singură dată, de pe pagina lui: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: în folderul campaniei scrie `claude`. Când te întreabă dacă ai încredere în folder, alege **Yes, I trust this folder**; atenție, răspunsul deja selectat este *No, exit*.
-- **Codex**: în folderul campaniei scrie `codex` și spune da când te întreabă dacă ai încredere în folder. În aplicația lui desktop, verifică în setări că memoriile sunt dezactivate pentru chaturile jocului.
-- **Alt agent**: pornește-l în folderul campaniei și dă-i serverul MCP `rpg mcp`. RPG Engine este un server MCP standard: orice agent care suportă MCP poate fi maestrul de joc, inclusiv cei locali.
+- **Claude Code**: în dosarul campaniei scrie `claude`. Când te întreabă dacă ai încredere în dosar, alege **Yes, I trust this folder**; atenție, răspunsul selectat deja este *No, exit*.
+- **Codex**: în dosarul campaniei scrie `codex` și spune da când te întreabă dacă ai încredere în dosar. În aplicația lui desktop, verifică în setări că memoriile sunt dezactivate pentru chaturile jocului.
+- **Alt agent**: pornește-l în dosarul campaniei și dă-i serverul MCP `rpg mcp`. RPG Engine este un server MCP standard: orice agent care acceptă MCP poate fi maestrul de joc, inclusiv cei locali.
 
-Jucăm și testăm cu **Claude Code**; **Codex** este conectat și verificat, dar încă nu s-a jucat o campanie întreagă cu el; `init` configurează și **Gemini CLI**. Campania dezactivează memoria proprie a agentului: jocul trăiește în fișierele lui, ca revenirea la o salvare să fie cu adevărat o revenire.
+Jucăm și testăm cu **Claude Code**; **Codex** este conectat și verificat, dar încă nu s-a jucat o campanie întreagă cu el; `init` configurează și **Gemini CLI**. Campania dezactivează memoria proprie a agentului: jocul trăiește în fișierele lui, astfel încât revenirea la o salvare să însemne cu adevărat o revenire în timp.
 
 ### 2.5 Primul chat
 
 Scrie orice, de exemplu *Salut! Hai să începem.* În primul răspuns din fiecare chat, maestrul de joc îți dă **linkul către dashboard**, ceva de genul `http://127.0.0.1:4750`: deschide-l și ține-l lângă chat.
 
-Între mesajele maestrului de joc, agentul tău arată uneltele pe care le folosește: nu deschide detaliile lor (în Claude Code, ctrl+o), pentru că pot arăta secrete.
+Între mesajele maestrului de joc, agentul tău arată uneltele pe care le folosește: nu deschide detaliile lor (în Claude Code, ctrl+o), pentru că pot dezvălui secrete.
 
-O campanie nouă trece prin trei etape, afișate sus în dashboard: **1 Setări** (cum vrei să joci), **2 Sesiunea zero** (îți faci personajul, jucând), **3 Joc**.
+O campanie nouă trece prin trei etape, afișate în partea de sus a dashboardului: **1 Setări** (cum vrei să joci), **2 Sesiunea zero** (îți creezi personajul, în joc), **3 Joc**.
 
 ### 2.6 Setări: alegi cum joci
 
-Maestrul de joc întreabă doar ce mai lipsește, câteva întrebări odată; pasul **Setări** din dashboard arată aceleași întrebări sub formă de cartonașe. Scrie „alege tu” și maestrul de joc hotărăște. Totul se poate schimba mai târziu, în chat sau în **Setări**.
+Maestrul de joc întreabă doar ce mai lipsește, câteva întrebări odată; pasul **Setări** al dashboardului arată aceleași întrebări sub formă de carduri. Scrie „decide tu” și maestrul de joc alege. Tot ce setezi poate fi schimbat mai târziu, în chat sau în **Setări**.
 
 | Setare | Ce hotărăște | Valori |
 |---|---|---|
-| **Mentor** | Cât de mult te învață maestrul de joc regulile | oprit, indicii, tutorial |
-| **Dificultate** | Cât de grea e lumea | poveste, ușor, normal, greu, brutal |
-| **Letalitate** | Ce înseamnă să cazi într-o luptă | narativ (nu mori niciodată), epic (doar când contează), zaruri |
-| **Salvări** | Când te poți întoarce | moarte definitivă, punct de control, liber ([3.8](#38-saves-and-going-back)) |
-| **Rigoare** | Cât de strict urmează regulile hrana, lumina și călătoria | fluid, reguli, simulare |
-| **Zaruri** | Cine aruncă zarurile tale | digitale, fizice |
-| **Unități de măsură** | Distanțe și greutăți | metrice, imperiale |
-| **Însoțitori** | Cine călătorește cu tine | niciunul, făcuți împreună cu tine, făcuți de maestrul de joc, întâlniți în joc |
-| **Imagini** | Imagini cu locuri, misiuni și cei pe care îi întâlnești | niciuna, la cerere, locuri noi, misiuni și cei pe care îi întâlnești ([3.11](#311-pictures)) |
+| **Mentor** | Cât de mult te învață maestrul de joc regulile | off, hints, tutorial |
+| **Dificultate** | Cât de greu e jocul în lume | story, easy, normal, hard, brutal |
+| **Letalitate** | Ce înseamnă să cazi într-o luptă | narrative (nu mori niciodată), epic (doar când contează), dice |
+| **Salvări** | Când te poți întoarce în timp | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
+| **Rigoare** | Cât de strict urmează regulile mâncarea, lumina și călătoria | smooth, rules, simulation |
+| **Zaruri** | Cine aruncă zarurile tale | digital, physical |
+| **Unități de măsură** | Distanțe și greutăți | metric, imperial |
+| **Voices** | Cine vorbește în numele personajelor pe care le întâlnești: în momentele cheie personajul însuși, știind doar ce știe el, după cum alege maestrul de joc; mereu maestrul de joc; sau mereu personajul, pentru cele principale ori pentru toate, mai lent și mai costisitor, acolo unde aplicația ta AI poate | auto, master, important, always |
+| **Însoțitori** | Cine călătorește cu tine | none, made with you, made by the master, met in play |
+| **Imagini** | Imagini cu locuri, misiuni și cei pe care îi întâlnești | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Linii** și **Văluri** | Ce nu apare niciodată și ce se petrece doar în afara scenei | liste |
 | **Limbă** | Limba jocului și a dashboardului | oricare |
 
 Ediția a cincea adaugă **progresia**: puncte de experiență sau borne.
 
-Dacă nu ai o lume scrisă, maestrul de joc îți cere și o **premisă** (gen, ton, câteva elemente, în cuvintele tale) și **pregătirea**: lumea se construiește din mers, pe parcurs, sau toată la început.
+Fără o lume scrisă, maestrul de joc cere și o **premisă** (gen, ton, câteva elemente, în cuvintele tale) și **pregătirea**: lumea se construiește din mers, pe parcurs, sau toată la început.
 
-**Stilul maestrului de joc** nu se întreabă niciodată, dar îl poți schimba în chat sau în **Setări**: **proza** (simplă, literară, pulp, ironică), **poveștile** pe care le inventează (situații, arcuri, episoade, mister), un autor după care să **scrie** sau orice altceva **în cuvintele tale**.
+**Stilul maestrului de joc** nu este întrebat niciodată, dar îl poți schimba în chat sau în **Setări**: **proza** (simplă, literară, pulp, ironică), **poveștile** pe care le inventează (situații, arcuri, episoade, mister), un autor după care să **scrie** sau orice altceva **în cuvintele tale**.
 
 ### 2.7 Sesiunea zero: personajul tău
 
-Îți faci personajul împreună cu maestrul de joc, ca la o masă de joc. Fiecare alegere îți aparține, dacă nu-i ceri maestrului de joc s-o facă el: vino cu o idee completă, cu una vagă sau cu nimic. Maestrul de joc îți spune cum se obțin valorile abilităților înainte să se arunce vreun zar. Povestea ta nu este niciodată obligatorie; dacă dai una, maestrul de joc o scrie în cuvintele tale. Apoi maestrul de joc cere o imagine a personajului tău ([3.7](#37-your-characters-story-and-picture)). RPG Engine calculează fișa: nu faci tu niciodată socotelile.
+Îți creezi personajul împreună cu maestrul de joc, ca la o masă de joc. Fiecare alegere îți aparține, dacă nu îi ceri maestrului de joc să o facă el: vino cu o idee completă, cu una vagă sau cu nimic. Maestrul de joc îți spune cum se obțin scorurile de abilitate înainte să se arunce vreun zar. Povestea personajului nu e obligatorie; dacă îi dai una, maestrul de joc o scrie în cuvintele tale. Apoi maestrul de joc cere o imagine a personajului tău ([3.7](#37-your-characters-story-and-picture)). RPG Engine calculează fișa: nu faci tu niciodată socotelile.
 
 ---
 

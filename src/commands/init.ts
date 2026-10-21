@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createCampaign, difficulties, lethalities } from "../campaign/index.ts";
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { startInstructions } from "../instructions/index.ts";
+import { hostInstructions } from "../instructions/index.ts";
 import { createWorld } from "../pages/index.ts";
 import { campaignNote } from "./game-mode.ts";
 import { installedSystemName } from "./game-world.ts";
@@ -31,7 +31,7 @@ export const init = defineCommand({
         // Only an installed system (D-167), as it is installed.
         const system = input.system === undefined ? undefined : installedSystemName(input.system, context, "init");
         const settings = { name: input.name ?? basename(folder), language: input.language, system, difficulty: input.difficulty, lethality: input.lethality };
-        const root = createCampaign(folder, settings, context.platform, startInstructions());
+        const root = createCampaign(folder, settings, context.platform, hostInstructions());
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
         return { root, name: settings.name, note: campaignNote(root, context) };

@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "node:child_process";
-import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
+import { findCampaign, hasCharacterAgent, refreshHostFiles } from "./campaign/index.ts";
 import { extensionCommands } from "./commands/game-extensions.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
@@ -18,7 +18,7 @@ import { FileStore, withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { npmPackages } from "./extensions/index.ts";
-import { startInstructions } from "./instructions/index.ts";
+import { hostInstructions, startInstructions } from "./instructions/index.ts";
 import type { World } from "./pages/index.ts";
 import { computerHelpers, hostPictures, hostReader, hostWriter } from "./pictures/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
@@ -171,7 +171,9 @@ async function preload(context: Context, session: SessionStore): Promise<void>
 
             if (root !== undefined) {
                 session.track(root);
-                refreshHostFiles(root, startInstructions(), context.platform);
+                // An agent written now reaches only the chats after this one (D-490).
+                context.characterAgent = hasCharacterAgent(root);
+                refreshHostFiles(root, hostInstructions(), context.platform);
                 campaignWorld(root, context);
             }
         });

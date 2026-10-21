@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -37,10 +37,10 @@ RPG Engine bugün tek bir oyun sistemi oynatır: ücretsiz System Reference Docu
 
 ### 2.1 Neye ihtiyacın var
 
-- Windows, macOS ya da Linux çalıştıran bir bilgisayar ve bir web tarayıcısı.
-- **Node.js 22** veya daha yenisi, [nodejs.org](https://nodejs.org) adresinden. Yanında `npm` gelir, RPG Engine'i o kurar.
-- Bir **terminal**: Windows'ta Terminal ya da PowerShell, macOS'ta Terminal. Terminali bir klasörde açmak için klasöre sağ tıkla ve **Terminalde Aç** (Windows) ya da **Klasörde Yeni Terminal** (macOS) seçeneğini seç.
-- Oyun yöneticisi için bir **yapay zekâ ajanı** ([2.4](#24-connect-your-ai)). Sunduğu **en büyük modeli** kullan: küçük bir modeli sır söylemeye ya da kuralları esnetmeye ikna etmek daha kolaydır.
+- Windows, macOS veya Linux yüklü bir bilgisayar ve bir web tarayıcısı.
+- [nodejs.org](https://nodejs.org) adresinden **Node.js 22** veya daha yeni bir sürüm. Yanında `npm` gelir. RPG Engine'i `npm` kurar.
+- Bir **terminal**: Windows'ta Terminal ya da PowerShell, macOS'ta Terminal. Terminali bir klasörde açmak için klasöre sağ tıkla ve **Terminalde aç** (Windows) ya da **Hizmetler > Klasörde Yeni Terminal** (macOS) seçeneğini seç.
+- Oyun yöneticisi için bir **yapay zekâ ajanı** ([2.4](#24-connect-your-ai)). Ajanın sunduğu **en büyük modeli** kullan: küçük bir modeli sır vermeye ya da kuralları esnetmeye ikna etmek daha kolaydır.
 
 ### 2.2 Kurulum
 
@@ -52,61 +52,62 @@ npm install -g rpg-engine
 
 ### 2.3 Kampanya oluşturma
 
-Oyunlarını tuttuğun klasörde bir terminal aç ([2.1](#21-what-you-need) nasıl yapılacağını anlatır):
+Oyunlarını sakladığın klasörde bir terminal aç ([2.1](#21-what-you-need) nasıl yapılacağını anlatır):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Bu komut `The Salt Isles` klasörünü ve içinde yeni bir kampanya oluşturur. `cd "The Salt Isles"` ile klasöre gir. Nerede olduğunu aklında tut: her oynayışında buraya dönersin. Geri kalan her şeyi sonra, sohbette ya da gösterge panelinde seçersin. Bazılarını şimdiden seçmek istersen `rpg init --help` seçenekleri listeler, örneğin `--language it` ya da `--difficulty hard`.
+Bu komut `The Salt Isles` adlı bir klasör ve içinde yeni bir kampanya oluşturur. `cd "The Salt Isles"` ile klasöre gir. Klasörün yerini unutma: her oynayışında buraya döneceksin. Geri kalan her şeyi sonra, sohbette ya da kontrol panelinde seçersin. `rpg init --help` komutu, bazılarını şimdiden seçmen için seçenekleri listeler. Örneğin `--language it` ya da `--difficulty hard`.
 
-Oyun yöneticisi senin için kampanya oluşturamaz: `init` çalışmadan önce ajanına RPG Engine'in nerede olduğunu söyleyen hiçbir şey yoktur.
+Oyun yöneticisi senin yerine kampanya oluşturamaz: `init` çalışmadan önce ajanına RPG Engine'in nerede olduğunu söyleyen hiçbir şey yoktur.
 
 ### 2.4 Yapay zekânı bağla
 
-Oyun yöneticisi bir **yapay zekâ ajanının** içinde çalışır. Bu, terminalde ya da masaüstünde çalışan ve bilgisayarındaki dosyalarla iş yapabilen bir yapay zekâ uygulamasıdır; örneğin Claude Code ya da Codex. claude.ai ya da ChatGPT gibi sade bir sohbet ya da telefon uygulaması yetmez: oyun yöneticisinin bilgisayarındaki kampanya dosyalarına erişmesi gerekir. Her ajanın kendi planı ve girişi vardır: Claude Code için ücretli bir Claude planı, Codex için bir ChatGPT girişi. Ajanı bir kez, kendi sayfasından kurarsın: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Oyun yöneticisi bir **yapay zekâ ajanında** çalışır. Bu, bilgisayarındaki dosyalarla çalışabilen bir yapay zekâ uygulamasıdır; terminalde ya da masaüstünde olabilir. Claude Code ve Codex bunun örnekleridir. claude.ai ya da ChatGPT gibi sade bir sohbet veya bir telefon uygulaması yetmez: oyun yöneticisinin bilgisayarındaki kampanya dosyalarına erişmesi gerekir. Her ajanın kendi planı ve girişi vardır: Claude Code için ücretli bir Claude planı, Codex için bir ChatGPT girişi. Ajanı bir kez, kendi sayfasından kurarsın: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: kampanya klasöründe `claude` yaz. Klasöre güvenip güvenmediğini sorduğunda **Yes, I trust this folder** seçeneğini seç. Dikkat: önceden seçili gelen yanıt *No, exit* olur.
-- **Codex**: kampanya klasöründe `codex` yaz ve klasöre güvenip güvenmediğini sorduğunda evet de. Masaüstü uygulamasında, ayarlardan oyunun sohbetleri için belleklerin kapalı olduğunu kontrol et.
-- **Başka bir ajan**: kampanya klasöründe başlat ve ona `rpg mcp` MCP sunucusunu ver. RPG Engine standart bir MCP sunucusudur: MCP destekleyen her ajan oyun yöneticisi olabilir, yerel olanlar da.
+- **Claude Code**: kampanya klasöründe `claude` yaz. Klasöre güvenip güvenmediğini sorduğunda **Yes, I trust this folder** seçeneğini seç. Dikkat: önceden seçili gelen cevap *No, exit* olur.
+- **Codex**: kampanya klasöründe `codex` yaz. Klasöre güvenip güvenmediğini sorduğunda evet de. Masaüstü uygulamasında, ayarlardan oyunun sohbetleri için belleklerin kapalı olduğunu kontrol et.
+- **Başka bir ajan**: ajanı kampanya klasöründe başlat ve ona `rpg mcp` MCP sunucusunu ver. RPG Engine standart bir MCP sunucusudur: MCP destekleyen her ajan, yerel olanlar dahil, oyun yöneticisi olabilir.
 
-Biz **Claude Code** ile oynuyor ve test ediyoruz. **Codex** bağlı ve kontrol edildi, ama onunla henüz tam bir kampanya oynanmadı. `init` ayrıca **Gemini CLI**'ı da hazırlar. Kampanya ajanın kendi belleğini kapatır: oyun dosyalarında yaşar, böylece bir kaydın öncesine dönmek gerçekten geri dönmek olur.
+Oyunu **Claude Code** ile oynuyor ve test ediyoruz. **Codex** bağlı ve kontrol edildi, ama onunla henüz tam bir kampanya oynanmadı. `init` ayrıca **Gemini CLI**'ı da hazırlar. Kampanya, ajanın kendi belleğini kapatır: oyun dosyalarında yaşar, böylece bir kayda dönmek gerçekten geri dönmek olur.
 
 ### 2.5 İlk sohbet
 
-*Merhaba! Başlayalım.* gibi herhangi bir şey yaz. Oyun yöneticisi her sohbetteki ilk yanıtında sana **gösterge panelinin bağlantısını** verir; `http://127.0.0.1:4750` gibi bir şeydir. Bağlantıyı aç ve sohbetin yanında açık tut.
+İstediğini yaz, örneğin *Merhaba! Başlayalım.* Oyun yöneticisi, her sohbetin ilk cevabında sana **kontrol paneli bağlantını** verir. Bağlantı `http://127.0.0.1:4750` gibi bir şeydir. Bağlantıyı aç ve sohbetin yanında tut.
 
-Oyun yöneticisinin mesajları arasında ajanın kullandığı araçları gösterir. Ayrıntılarını açma (Claude Code'da ctrl+o), çünkü sırları gösterebilirler.
+Oyun yöneticisinin mesajları arasında ajanın kullandığı araçları gösterir. Ayrıntılarını açma (Claude Code'da ctrl+o): sırları gösterebilirler.
 
-Yeni bir kampanya, gösterge panelinin üstünde görünen üç aşamadan geçer: **1 Ayarlar** (nasıl oynamak istediğin), **2 Sıfırıncı oturum** (karakterini oyun içinde yaparsın), **3 Oyun**.
+Yeni bir kampanya, kontrol panelinin üstünde gösterilen üç aşamadan geçer: **1 Ayarlar** (nasıl oynamak istediğin), **2 Sıfırıncı oturum** (karakterini oyun içinde yaratırsın), **3 Oyun**.
 
 ### 2.6 Ayarlar: nasıl oynayacağını seçmek
 
-Oyun yöneticisi yalnızca eksik kalan şeyleri sorar, her seferinde birkaç soru. Gösterge panelindeki **Ayarlar** adımı aynı soruları kartlar olarak gösterir. "Sen karar ver" yazarsan oyun yöneticisi seçer. Her şey sonradan, sohbette ya da **Ayarlar**'da değiştirilebilir.
+Oyun yöneticisi yalnızca eksik kalanı sorar, her seferinde birkaç soru. Kontrol panelinin **Ayarlar** adımı aynı soruları kartlar olarak gösterir. "Sen karar ver" yazarsan oyun yöneticisi seçer. Her şey sonradan, sohbette ya da **Ayarlar**'da değiştirilebilir.
 
-| Ayar | Neye karar verir | Değerler |
+| Ayar | Neyi belirler | Değerler |
 |---|---|---|
 | **Akıl hocası** | Oyun yöneticisinin sana kuralları ne kadar öğrettiği | kapalı, ipuçları, öğretici |
-| **Zorluk** | Dünyanın ne kadar zor oynadığı | hikâye, kolay, normal, zor, acımasız |
-| **Ölümcüllük** | Bir çatışmada yere düşmenin ne anlama geldiği | anlatısal (asla ölmezsin), epik (yalnızca önemli olduğunda), zar |
-| **Kayıtlar** | Ne zaman geri dönebileceğin | kalıcı ölüm, kontrol noktası, serbest ([3.8](#38-saves-and-going-back)) |
-| **Kural sıkılığı** | Yiyecek, ışık ve yolculuğun kuralları ne kadar yakından izlediği | akıcı, kurallar, simülasyon |
-| **Zarlar** | Zarlarını kimin attığı | dijital, fiziksel |
-| **Birimler** | Mesafeler ve ağırlıklar | metrik, imparatorluk |
-| **Yoldaşlar** | Seninle kimin yolculuk ettiği | yok, seninle yapılan, oyun yöneticisinin yaptığı, oyunda tanışılan |
-| **Görseller** | Yerlerin, görevlerin ve tanışılanların görselleri | yok, istek üzerine, yeni yerler, görevler ve tanışılanlar ([3.11](#311-pictures)) |
-| **Sınırlar** ve **Perdeler** | Hiç görünmeyecekler ve yalnızca sahne dışında olacaklar | listeler |
-| **Dil** | Oyunun ve gösterge panelinin dili | herhangi biri |
+| **Zorluk** | Dünyanın ne kadar zor oynadığı | story, easy, normal, hard, brutal |
+| **Ölümcüllük** | Bir çatışmada yere düşmenin ne anlama geldiği | narrative (asla ölmezsin), epic (yalnızca önemli olduğunda), dice |
+| **Kayıtlar** | Ne zaman geri dönebileceğin | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
+| **Kural sıkılığı** | Yiyecek, ışık ve yolculuğun kuralları ne kadar yakından izlediği | smooth, rules, simulation |
+| **Zarlar** | Zarlarını kimin attığı | digital, physical |
+| **Birimler** | Mesafeler ve ağırlıklar | metric, imperial |
+| **Sesler** | Karşılaştığın karakterler adına kimin konuştuğu: önemli anlarda karakterin kendisi, yalnızca kendi bildiğini bilerek, oyun yöneticisinin seçtiği gibi; her zaman oyun yöneticisi; ya da yapay zekâ uygulaman destekliyorsa her zaman karakterin kendisi, ana karakterler için ya da herkes için, daha yavaş ve daha pahalı | auto, master, important, always |
+| **Yoldaşlar** | Seninle kimin yolculuk ettiği | none, made with you, made by the master, met in play |
+| **Görseller** | Yerlerin, görevlerin ve karşılaştığın kişilerin görselleri | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
+| **Sınırlar** ve **Perdeler** | Hiç görünmeyecek olanlar ve yalnızca sahne dışında olanlar | listeler |
+| **Dil** | Oyunun ve kontrol panelinin dili | herhangi biri |
 
-Beşinci edisyon bir de **ilerleme** ekler: deneyim puanları ya da kilometre taşları.
+Beşinci sürüm **gelişim** ekler: deneyim puanı ya da kilometre taşları.
 
-Yazılı bir dünya yoksa oyun yöneticisi bir de **öncül** (tür, ton, birkaç öğe; kendi sözlerinle) ve **hazırlık** sorar: dünyayı oynarken anında mı kuracak, yoksa baştan hepsini mi.
+Yazılı bir dünya yoksa oyun yöneticisi ayrıca bir **öncül** (tür, ton, birkaç öğe; kendi sözlerinle) ve **hazırlık** sorar: dünyayı oynarken anında kurmak ya da hepsini baştan kurmak.
 
-**Oyun yöneticisinin üslubu** hiç sorulmaz, ama sohbette ya da **Ayarlar**'da değiştirebilirsin: **anlatım** (sade, edebî, pulp, alaycı), oyun yöneticisinin uydurduğu **hikâyeler** (durumlar, yaylar, bölümler, gizem), **tarzını örnek alacağı** bir yazar ya da **kendi sözlerinle** başka herhangi bir şey.
+**Oyun yöneticisinin üslubu** hiç sorulmaz, ama sohbette ya da **Ayarlar**'da değiştirebilirsin: **anlatım** (sade, edebî, pulp, esprili), oyun yöneticisinin uydurduğu **hikâyeler** (durumlar, yaylar, bölümler, gizem), **tarzını örnek alacağı** bir yazar ya da **kendi sözlerinle** başka her şey.
 
 ### 2.7 Sıfırıncı oturum: karakterin
 
-Karakterini bir masadaki gibi oyun yöneticisiyle birlikte yaparsın. Her seçim senindir, oyun yöneticisinden yapmasını istemediğin sürece. Dolu bir fikirle, belirsiz bir fikirle ya da hiçbir şeyle gelebilirsin. Oyun yöneticisi, daha hiçbir zar atılmadan önce yetenek puanlarının nasıl belirleneceğini söyler. Bir hikâye şart değildir. Verirsen oyun yöneticisi onu senin sözlerinle yazar. Sonra oyun yöneticisi karakterin için bir görsel ister ([3.7](#37-your-characters-story-and-picture)). Karakter kağıdını RPG Engine hesaplar: hiç toplama yapmazsın.
+Karakterini oyun yöneticisiyle, bir masadaki gibi yaratırsın. Her seçim senindir, ta ki oyun yöneticisinden onu yapmasını isteyene kadar: dolu bir fikirle, belirsiz bir fikirle ya da hiçbir şeyle gel. Oyun yöneticisi, hiçbir zar atılmadan önce yetenek puanlarının nasıl belirleneceğini söyler. Bir hikâye şart değildir. Verirsen oyun yöneticisi onu senin sözlerinle yazar. Sonra oyun yöneticisi karakterin için bir görsel ister ([3.7](#37-your-characters-story-and-picture)). Karakter kağıdını RPG Engine hesaplar: toplamları sen hiç yapmazsın.
 
 ---
 

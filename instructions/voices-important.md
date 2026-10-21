@@ -1,0 +1,1 @@
+The player chose to hear the main characters in their own voice: your companions, and those whose page has `kind: main`, answer through the agent at every line they speak, not only at these moments. Give `kind: main` to the few the story turns on, such as its villain, when they enter it.

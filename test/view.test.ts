@@ -240,6 +240,84 @@ describe("the player's view, after a review", () => {
     });
 });
 
+describe("the view of another character, for the character agent voicing them (VIEW-10, D-490)", () => {
+    it("knows the party and the quests only when it is of the party; an NPC knows itself, where it is and what it lived", async () => {
+        await ok("write", "La lanterna", "--type", "quest", "--set", "status=open");
+        await ok("write", "Mulino", "--add", "contains=[[Varro]]");
+        expect(await ok("view", "Kira", "--as", "Bran")).toMatch(/^Kira \(character\)/);
+        expect(await ok("view", "La lanterna", "--as", "Bran")).toBe("La lanterna (quest)");
+        expect(await ok("view", "Kira", "--as", "Varro")).toBe("Varro does not know Kira.");
+        expect(await ok("view", "La lanterna", "--as", "Varro")).toBe("Varro does not know La lanterna.");
+        expect(await ok("view", "Mulino", "--as", "Varro")).toBe("Mulino (place)\n\nUna ruota che gira.");
+        await ok("scene", "open", "--title", "Al mulino", "--type", "social", "--place", "Mulino", "--with", "Kira", "--with", "Varro");
+        await ok("scene", "close", "--summary", "Kira parla con Varro.");
+        // Met in a scene, Kira is known, but her sheet is the party's.
+        expect(await ok("view", "Kira", "--as", "Varro")).toBe("Kira (character)\n\nUna cacciatrice.");
+    });
+
+    it("gives alone their page, now, the pages they know in a line, the secrets discovered and the scenes lived; their own secrets only from their knows", async () => {
+        await ok("write", "Mulino", "--add", "contains=[[Varro]]");
+        await ok("advance", "--to", "day 1, 18:00");
+        await ok("scene", "open", "--title", "Al mulino", "--type", "social", "--place", "Mulino", "--with", "Kira", "--with", "Varro");
+        await ok("scene", "close", "--summary", "Kira parla con Varro.");
+        await ok("reveal", "Coppa#Veleno", "Varro#Colpa", "--to", "Varro");
+        await ok("scene", "open", "--title", "Di nuovo", "--type", "social", "--place", "Mulino", "--with", "Kira", "--with", "Varro", "--with", "Strega", "--seen", "Strega=vecchia");
+        expect(await ok("view", "--as", "Varro")).toBe(
+            [
+                "Varro (character)",
+                // Colpa is in his knows, Paura is the master's.
+                "Il mugnaio.\n\n## Passato\n\nEra un soldato.\n\n> [!secret] Colpa\n> Ha ucciso il fratello.",
+                "Now: day 1, 18:00, in Mulino",
+                "Scene: Di nuovo (social), at Mulino, with Kira and vecchia",
+                "Known:\n- Coppa (item): Una coppa d'argento.\n- Mulino (place): Una ruota che gira.\n- Kira (character): Una cacciatrice.",
+                "Discovered:\n- Coppa#Veleno: Il vino è avvelenato.",
+                "Lived:\n- day 1, 18:00 · Al mulino: Kira parla con Varro.",
+            ].join("\n\n"),
+        );
+        // The player's view is as it was: no secret of Varro's.
+        expect(await ok("view", "Varro")).not.toContain("Colpa");
+    });
+
+    it("gives a companion's memory with the party and the quests, and a secret once discovered; the player character knows the other ones of the party", async () => {
+        await ok("write", "La lanterna", "--type", "quest", "--set", "status=open");
+        const before = await ok("view", "--as", "Bran");
+        expect(before).toContain("Known:\n- Kira (character): Una cacciatrice.\n- La lanterna (quest)");
+        expect(before).not.toContain("Discovered");
+        await ok("reveal", "Coppa#Veleno", "--to", "Bran");
+        expect(await ok("view", "--as", "Bran")).toContain("Discovered:\n- Coppa#Veleno: Il vino è avvelenato.");
+        // Another player character is of the party: Kira knows her, with her whole sheet (VIEW-2, VIEW-3).
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc", "--set", "str=16", "--set", "classes=[[Fighter]] 1");
+        expect(await ok("view", "Lia")).toMatch(/^Lia \(character\)\n\n.*str 16 \(\+3\)/s);
+    });
+
+    it("reads a secret of knows on the page that writes it: by an alias, of two pages by one name, in any case; once, when it is its own creature's", async () => {
+        await ok("write", "Coppa", "--add", "aliases=Calice");
+        writeFileSync(join(folder, "world", "characters", "Varro.md"), '---\nrole: npc\nknows: ["[[Calice#Veleno]]"]\n---\nIl mugnaio.\n');
+        expect(await ok("view", "Coppa", "--as", "Varro")).toBe("Coppa (item)\n\nUna coppa d'argento.\n\n> [!secret] Veleno\n> Il vino è avvelenato.");
+        writeFileSync(join(folder, "world", "characters", "Varro.md"), '---\nrole: npc\nknows: ["[[coppa#VELENO]]"]\n---\nIl mugnaio.\n');
+        expect(await ok("view", "--as", "Varro")).toContain("Discovered:\n- Coppa#Veleno: Il vino è avvelenato.");
+        // An innkeeper written by hand with the cup's name: the view gives the cup, which writes the secret.
+        await ok("reveal", "Coppa#Veleno", "--to", "Kira");
+        writeFileSync(join(folder, "world", "characters", "Coppa.md"), "---\nrole: npc\n---\nUn oste.\n");
+        expect(await ok("view", "Coppa")).toBe("Coppa (item)\n\nUna coppa d'argento.\n\n> [!secret] Veleno\n> Il vino è avvelenato.");
+        expect(await ok("view", "--as", "Varro")).toContain("- Coppa (item): Una coppa d'argento.");
+        await ok("write", "Bandito", "--type", "creature", "--text", "Un bandito.");
+        await ok("write", "Bandito#Covo", "--secret", "--text", "Nella grotta.");
+        await ok("write", "Ugo", "--type", "character", "--set", "role=npc", "--set", "creature=[[Bandito]]", "--add", "knows=[[Bandito#Covo]]");
+        const ugo = await ok("view", "--as", "Ugo");
+        expect(ugo.match(/Nella grotta/g)).toHaveLength(1);
+        expect(ugo).not.toContain("Discovered");
+    });
+
+    it("takes only a character, alone or with page", async () => {
+        expect((await rpg("view", "--as", " ")).output).toBe("Give as the name of a character's page, such as as Varro: whose view it is.");
+        expect((await rpg("view", "--as", "Mulino")).output).toBe("Mulino is a place: as takes a character, whose view it is.");
+        expect((await rpg("view", "--as", "Nessuno")).output).toBe("There is no character named Nessuno: give as the name of a character's page, such as as Varro.");
+        expect((await rpg("view", "--as", "Varro", "--diary", "3")).output).toContain("Give as alone or with page");
+        expect((await rpg("view", "--as", "Varro", "--map")).output).toContain("Give as alone or with page");
+    });
+});
+
 // Pages made at random: an introduction, public sections, secrets with a name or not, from the page or from its base; knows that lists some of them.
 // Names are unique in each page; a secret without a name may come more than once.
 const parts = fc.uniqueArray(fc.record({ name: fc.constantFrom("Uno", "Due", "Tre", "Quattro", ""), secret: fc.boolean(), base: fc.boolean(), id: fc.nat() }), {

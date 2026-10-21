@@ -1,6 +1,8 @@
 // What an AI host reads in a campaign besides .mcp.json: AGENTS.md, opening with the start lines (D-97); CLAUDE.md, which imports it; Claude Code's settings,
-// with its auto memory off, so that the master keeps nothing outside the campaign (D-242), and the rpg server approved with its tools allowed (D-412); Codex's,
-// with the rpg server and its memories off, and Gemini CLI's, with the rpg server, AGENTS.md and no writing of files by itself, where a memory would go (D-362).
+// with its auto memory off, so that the master keeps nothing outside the campaign (D-242), the rpg server approved with its tools allowed (D-412) and no tasks in
+// the background, so that the character agent answers within the master's turn (D-490); Codex's,
+// with the rpg server and its memories off, and Gemini CLI's, with the rpg server, AGENTS.md and no writing of files by itself, where a memory would go (D-362);
+// Claude Code's character agent, the agent the master calls to voice a character (D-490).
 import { join } from "node:path";
 import { files } from "../core/store.ts";
 import { efforts, readTextSetting } from "./settings.ts";
@@ -8,11 +10,28 @@ import { efforts, readTextSetting } from "./settings.ts";
 /** The files of the AI hosts at the top of a campaign, which are not the game's: a save leaves them as they are (SAV-2). */
 export const hostFileNames = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "GEMINI.md"];
 
-/** A file to write, with its new text. */
+/** The engine's texts a campaign's host files carry: the start lines, and the character agent's instructions (D-490). */
+export interface HostInstructions
+{
+    start: string;
+    character: string;
+}
+
+/** A file to write, with its new text; without one, a file that goes, as the character agent's when the master voices every character (D-490). */
 export interface HostFile
 {
     path: string;
-    text: string;
+    text?: string;
+}
+
+/** Writes a host file, or takes it away when it has no text. */
+export function writeHostFile(file: HostFile): void
+{
+    if (file.text === undefined) {
+        files().remove(file.path);
+    } else {
+        files().write(file.path, file.text);
+    }
 }
 
 // The marks around the start lines in AGENTS.md: rpg rewrites what lies between them, and the player's own text stays around them.
@@ -26,21 +45,21 @@ export function rpgServer(platform: string): { command: string; args: string[]; 
     return platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
 }
 
-/** The host files of a campaign that are missing or out of date, with the start lines given; a broken settings file of a host stops it with how to fix it. */
-export function hostFileChanges(root: string, startLines: string, platform: string): HostFile[]
+/** The host files of a campaign that are missing or out of date, with the engine's texts given; a broken settings file of a host stops it with how to fix it. */
+export function hostFileChanges(root: string, instructions: HostInstructions, platform: string): HostFile[]
 {
-    return hostFiles(root, startLines, platform).map((file) => file()).filter((file) => file !== undefined);
+    return hostFiles(root, instructions, platform).map((file) => file()).filter((file) => file !== undefined);
 }
 
 /** Brings the host files of a campaign up to date, as the MCP server starts: a file that cannot be read or written stays as it is. */
-export function refreshHostFiles(root: string, startLines: string, platform: string): void
+export function refreshHostFiles(root: string, instructions: HostInstructions, platform: string): void
 {
-    for (const change of hostFiles(root, startLines, platform)) {
+    for (const change of hostFiles(root, instructions, platform)) {
         try {
             const file = change();
 
             if (file !== undefined) {
-                files().write(file.path, file.text);
+                writeHostFile(file);
             }
         } catch {
             // The game goes on with the file as it is.
@@ -60,7 +79,7 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
             const file = change();
 
             if (file !== undefined) {
-                files().write(file.path, file.text);
+                writeHostFile(file);
             }
 
             return [];
@@ -70,9 +89,16 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
     });
 }
 
-function hostFiles(root: string, startLines: string, platform: string): (() => HostFile | undefined)[]
+function hostFiles(root: string, instructions: HostInstructions, platform: string): (() => HostFile | undefined)[]
 {
-    return [() => agentsFile(root, startLines), () => claudeFile(root), () => claudeSettingsFile(root), () => codexConfigFile(root, platform), () => geminiSettingsFile(root, platform)];
+    return [
+        () => agentsFile(root, instructions.start),
+        () => claudeFile(root),
+        () => claudeSettingsFile(root),
+        () => characterAgentFile(root, instructions.character),
+        () => codexConfigFile(root, platform),
+        () => geminiSettingsFile(root, platform),
+    ];
 }
 
 /** An effort for the hosts' files (D-462): one the player chose, or app, the player's choice to take it away. */
@@ -101,6 +127,49 @@ function agentsFile(root: string, startLines: string): HostFile | undefined
     return updated === lines ? undefined : { path, text: text.includes("\r\n") ? updated.replace(/\n/g, "\r\n") : updated };
 }
 
+/**
+ * Whether the campaign has the character agent as a Claude Code agent (D-490): looked at as the MCP server starts, before it writes its host files, it says whether
+ * the chat found the agent, as Claude Code reads its agents only when a chat starts.
+ */
+export function hasCharacterAgent(root: string): boolean
+{
+    return files().fresh(characterAgentPath(root)) !== undefined;
+}
+
+function characterAgentPath(root: string): string
+{
+    return join(root, ".claude", "agents", "rpg-character.md");
+}
+
+/**
+ * The character agent as a Claude Code agent (D-490): the engine's, rewritten when it changed. It reads only its character's view, and not the campaign's CLAUDE.md,
+ * the master's instructions.
+ */
+function characterAgentFile(root: string, instructions: string): HostFile | undefined
+{
+    const path = characterAgentPath(root);
+
+    // The player wants the master to voice every character.
+    if (readTextSetting(root, "voices") === "master") {
+        return files().fresh(path) === undefined ? undefined : { path };
+    }
+
+    const text = [
+        "---",
+        "# Written by rpg, which writes it again as the game starts: a change made here does not last.",
+        "name: rpg-character",
+        "description: Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.",
+        "tools: mcp__rpg__view",
+        "model: inherit",
+        "omitClaudeMd: true",
+        "---",
+        "",
+        instructions,
+        "",
+    ].join("\n");
+    return files().fresh(path)?.replace(/\r\n/g, "\n") === text ? undefined : { path, text };
+}
+
 /** CLAUDE.md, which Claude Code reads, importing AGENTS.md: added first to one that does not. */
 function claudeFile(root: string): HostFile | undefined
 {
@@ -125,11 +194,14 @@ function claudeSettingsFile(root: string, effort = chosenEffort(root) as Effort 
     const text = files().fresh(path);
     const settings = text === undefined ? {} : jsonObject(path, text, "Claude Code cannot be set up for the game in it");
     const permissions = isObject(settings.permissions) ? settings.permissions : {};
+    const environment = isObject(settings.env) ? settings.env : {};
     const wanted: Record<string, unknown> = {
         ...settings,
         autoMemoryEnabled: settings.autoMemoryEnabled ?? false,
         enabledMcpjsonServers: settings.enabledMcpjsonServers ?? ["rpg"],
         permissions: { ...permissions, allow: permissions.allow ?? ["mcp__rpg"] },
+        // The character agent answers within the master's turn, never after it (D-490): no task of the chat runs in the background.
+        env: { ...environment, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: environment.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS ?? "1" },
         ...(effort === undefined || effort === "app" ? {} : { effortLevel: effort }),
     };
 

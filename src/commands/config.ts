@@ -35,6 +35,7 @@ import {
     storyWays,
     styleTextLengths,
     unitSystems,
+    voiceWays,
     writeEffortFiles,
 } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
@@ -69,6 +70,8 @@ export const config = defineCommand({
         + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
         + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
         + "dice, who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values). units: metric or imperial. "
+        + "voices, who voices the characters where your app has subagents: auto (a subagent at key moments, as you choose), master (you, always), "
+        + "important (always a subagent for the companions and the characters with kind main), always (always a subagent); unset, auto. "
         + "companions: none, made with the player or made by the master in session zero, or met in play. "
         + "Without a written world: premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start). "
         + "lines (what never appears in the game) and veils (what happens only off screen) change with add and remove, or value none when the player wants none; when the player signals stop, add that content to lines. "
@@ -212,7 +215,7 @@ const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
 const styleSettingNames = ["prose", "story", "author", "style"];
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
-export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "pictures", "effort", "lines", "veils", "language"] as const;
+export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "voices", "pictures", "effort", "lines", "veils", "language"] as const;
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -309,6 +312,17 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
     },
     dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
     units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
+    voices: {
+        about: "who speaks for the characters you meet",
+        values: voiceWays,
+        means: {
+            auto: "at key moments, as the master chooses, the character themselves, knowing only what they know, where your AI app can",
+            master: "the master, always",
+            important: "always the character themselves for your companions and the main characters, the others as in auto: slower answers, and more of your plan",
+            always: "always the character themselves, for everyone: much slower answers, and much more of your plan",
+        },
+        unset: "auto",
+    },
     pictures: {
         about: "the pictures of places, quests and those you meet, made on this computer",
         values: pictureWays,
@@ -596,13 +610,14 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
     }
 
     // How the master writes, unset: the core's own ways, never missing (D-395).
-    // And the master's effort, unset: each app's own, the player's to choose (D-462).
+    // And the master's effort, unset: each app's own, the player's to choose (D-462); who voices the characters, unset: auto (D-490).
     const own: Record<string, string> = {
         prose: "plain (as your instructions write)",
         story: "situations (as your instructions write)",
         author: "(none)",
         style: "(none)",
         effort: "(the app's own: the player's to choose)",
+        voices: "auto (a subagent at key moments, as you choose, where the app has them)",
     };
 
     if (settings[name] === undefined && Object.hasOwn(own, name)) {

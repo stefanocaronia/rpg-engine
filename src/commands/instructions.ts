@@ -2,11 +2,14 @@ import { z } from "zod";
 import { findCampaign, readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
-import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
+import { buttonsInstructions, dashboardInstructions, masterInstructions, voicesInstructions } from "../instructions/index.ts";
 import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { mentorPart, situationPart, stylePart } from "./parts.ts";
+
+// The name Claude Code gives itself to the MCP server: the host whose campaign has the character agent as an agent (D-490).
+const claudeCode = "claude-code";
 
 export const instructions = defineCommand({
     name: "instructions",
@@ -26,6 +29,7 @@ export const instructions = defineCommand({
         const parts = [
             masterInstructions(),
             modeText(context.folder, context),
+            voicesText(context.folder, context),
             mentorText(context.folder, context),
             styleText(context.folder, context),
             sceneText(context.folder, context),
@@ -59,6 +63,20 @@ function sceneText(folder: string, context: Context): string
 
     try {
         return situationPart(scene.type, context, campaignSystem(root, context));
+    } catch {
+        return "";
+    }
+}
+
+/** When and how to call the character agent (D-490): in play, in Claude Code, when the chat has it as an agent of the campaign; none elsewhere. */
+function voicesText(folder: string, context: Context): string
+{
+    const root = findCampaign(folder);
+
+    try {
+        const way = root === undefined ? undefined : (readSettings(root).voices ?? "auto");
+        const off = root === undefined || context.host?.() !== claudeCode || context.characterAgent !== true || way === "master";
+        return off || way === undefined || campaignMode(root, campaignWorld(root, context)) !== "play" ? "" : voicesInstructions(way);
     } catch {
         return "";
     }

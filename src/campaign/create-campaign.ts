@@ -4,14 +4,14 @@ import { stringify } from "yaml";
 import { z } from "zod";
 import { files } from "../core/store.ts";
 import { campaignFileName, findCampaign } from "./find-campaign.ts";
-import { hostFileChanges, rpgServer } from "./host-files.ts";
+import { hostFileChanges, type HostInstructions, rpgServer, writeHostFile } from "./host-files.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
 /**
  * Creates a campaign in `folder`: campaign.yaml, state.yaml, the sessions folder, the .mcp.json through which AI hosts such as Claude Code find the rpg tools,
- * and the host files that send them to the start lines (D-97, D-242). `platform` is the operating system, as Node names it. Returns the campaign's full path.
+ * and the host files that send them to the start lines and give Claude Code the character agent (D-97, D-242, D-490). `platform` is the operating system, as Node names it. Returns the campaign's full path.
  */
-export function createCampaign(folder: string, settings: CampaignSettings, platform: string, startLines: string): string
+export function createCampaign(folder: string, settings: CampaignSettings, platform: string, instructions: HostInstructions): string
 {
     const root = resolve(folder);
     checkNoOtherCampaign(root);
@@ -22,13 +22,13 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     }
 
     const mcpConfig = mcpConfigWithRpg(root, platform);
-    const hostFiles = hostFileChanges(root, startLines, platform);
+    const hostFiles = hostFileChanges(root, instructions, platform);
     files().makeFolder(join(root, "sessions"));
     files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
     // A new campaign starts in setup (MOD-1).
     files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: mode, date and current scene.\nmode: setup\n");
     files().write(join(root, ".mcp.json"), JSON.stringify(mcpConfig, null, 2) + "\n");
-    hostFiles.forEach((file) => files().write(file.path, file.text));
+    hostFiles.forEach(writeHostFile);
     return root;
 }
 

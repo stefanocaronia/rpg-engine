@@ -95,6 +95,12 @@ export function settingMeaning(name: string, value: unknown, counted?: CountedBy
 /** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
 export const diceWays = ["digital", "physical"] as const;
 
+/**
+ * Who voices the characters (D-490), where the AI app has subagents: a character as a subagent of its own at key moments, the master chooses (auto); the master
+ * always; always for the companions and the main characters; always for everyone.
+ */
+export const voiceWays = ["auto", "master", "important", "always"] as const;
+
 export { unitSystems };
 
 /** Which pictures the engine has made, where it can (D-308, D-388, D-420): none, only those the player asks for, or one for each new place, quest and one met. */
@@ -168,6 +174,10 @@ export const settingsSchema = z.object({
     rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
+    voices: z.enum(voiceWays).optional().describe(
+        "who voices the characters, where the AI app has subagents: auto (at key moments, as the master chooses, a character answers as a subagent of its own, knowing only what it knows), "
+            + "master (the master, always), important (always a subagent for the companions and the characters with kind main), always (always a subagent, for everyone); unset, auto",
+    ),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     // Checked by the time module against the calendar (TIM-8).
     "calendar-start": z.string().min(1).optional().describe("when the story starts: day 1 to count only the days, or the day of the world's calendar that is day 1, such as 14 April 1491"),
@@ -223,7 +233,7 @@ export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 // The pictures: status asks for them once, only where they can be made (D-308).
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {

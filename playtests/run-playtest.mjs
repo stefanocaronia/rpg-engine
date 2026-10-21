@@ -27,8 +27,10 @@ const playerChatFile = join(out, "player-session.txt");
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
 // Codex plays the master instead of Claude Code (codex-master.mjs).
 const codexHost = options["master-host"] === "codex";
+// The character agent, which a campaign with voices: master lacks (D-490).
+const characterAgent = join(".claude", "agents", "rpg-character.md");
 // What an AI host reads in a campaign, as rpg init writes it: the master must find exactly these.
-const hostFileNames = ["AGENTS.md", "CLAUDE.md", join(".claude", "settings.json")];
+const hostFileNames = ["AGENTS.md", "CLAUDE.md", join(".claude", "settings.json"), characterAgent];
 const playerSchema = JSON.stringify({
     type: "object",
     required: ["message", "endSession"],
@@ -226,7 +228,7 @@ function stopReason(master, playerEnded, atHardCap)
  */
 function masterArgs(folder)
 {
-    const isolation = "--setting-sources project,local --strict-mcp-config --mcp-config .mcp.json --permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch";
+    const isolation = "--setting-sources project,local --strict-mcp-config --mcp-config .mcp.json --permission-mode dontAsk --allowedTools mcp__rpg Agent(rpg-character) WebSearch WebFetch";
     const path = (file) => `"${resolve(file).replaceAll("\\", "/")}"`;
     const command = ["node", path(join(repo, "playtests", "answer-form.mjs")), path(out), path(folder), path(options.profile), options["player-model"]].join(" ");
     const hooks = { hooks: { Elicitation: [{ matcher: "rpg", hooks: [{ type: "command", command, timeout: 300 }] }] } };
@@ -631,20 +633,31 @@ function checkCampaign(campaign, hostFiles)
     }
 
     for (const [name, wanted] of Object.entries(hostFiles)) {
-        if (text(name) !== wanted) {
+        // With voices: master the campaign has no character agent (D-490).
+        const expected = name === characterAgent && voicedByMaster(campaign) ? undefined : wanted;
+
+        if (text(name) !== expected) {
             throw new Error(`${join(campaign, name)} is not what this commit's rpg init writes: copy it from a campaign made now with rpg init, or start a new run.`);
         }
     }
 
     const claudeFolder = join(campaign, ".claude");
+    // Every file under .claude, the character agent among them (D-490), not only those at its top.
+    const claudeFiles = readdirSync(claudeFolder, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => relative(campaign, join(entry.parentPath, entry.name)));
     const extras = [
-        ...readdirSync(claudeFolder).filter((name) => !hostFileNames.includes(join(".claude", name))).map((name) => join(claudeFolder, name)),
+        ...claudeFiles.filter((name) => !hostFileNames.includes(name)).map((name) => join(campaign, name)),
         ...(existsSync(join(campaign, "CLAUDE.local.md")) ? [join(campaign, "CLAUDE.local.md")] : []),
     ];
 
     if (extras.length > 0) {
         throw new Error(`The campaign holds ${extras.join(" and ")}, which Claude Code would load: remove it.`);
     }
+}
+
+/** Whether the campaign wants the master to voice every character, with no character agent (D-490). */
+function voicedByMaster(campaign)
+{
+    return /^voices:\s*master\s*$/m.test(readFileSync(join(campaign, "campaign.yaml"), "utf8"));
 }
 
 /** Stops unless the master would load exactly the campaign's CLAUDE.md and AGENTS.md and only the rpg server; /context costs nothing. */
@@ -666,12 +679,21 @@ function checkIsolation(campaign, contextFile)
         ...expected.filter((path) => !memoryFiles.some((file) => isSame(file, path))).map((path) => `${path} not loaded`),
         ...[...servers].filter((server) => server !== "rpg"),
         ...(servers.has("rpg") ? [] : ["the rpg server is missing"]),
-        ...(context.includes("### Custom Agents") ? ["custom agents"] : []),
+        ...agentsOf(context).filter((agent) => agent !== "rpg-character" || voicedByMaster(campaign)).map((agent) => `the agent ${agent}`),
+        ...(agentsOf(context).includes("rpg-character") || voicedByMaster(campaign) ? [] : ["the rpg-character agent is missing"]),
     ];
 
     if (problems.length > 0) {
         throw new Error(`The master is not isolated: ${problems.join(", ")}. See ${contextFile}; fix the setup, delete ${dirname(contextFile)} and run again.`);
     }
+}
+
+/** The agent type of every row of /context's "Custom Agents" table: the campaign's character agent (D-490), and any other the master must not have. */
+function agentsOf(context)
+{
+    const table = context.replace(/\r\n/g, "\n").split(/^### Custom Agents[ \t]*$/m)[1]?.split(/\n#/)[0] ?? "";
+    const rows = table.split("\n").filter((line) => line.startsWith("|") && !/^\|[\s:|-]*$/.test(line)).slice(1);
+    return rows.map((row) => row.split("|")[1]?.trim() || row);
 }
 
 /** The path of every row of /context's "Memory Files" table, whatever its type: user, project, local, auto memory or any other. */

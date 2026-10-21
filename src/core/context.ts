@@ -49,6 +49,8 @@ export interface Context
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
     told?: Set<string>;
+    /** Whether the chat has the character agent as an agent, which the campaign had as the MCP server started (D-490); instructions then gives Voices. */
+    characterAgent?: boolean;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
     /** Whether status has already had the master offer the dashboard in this chat, as its first status does (D-353). */

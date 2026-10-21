@@ -350,12 +350,14 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
 
 /**
  * Who is in the open scene, by the words the page gives them (D-416): a character by name when the character knows them, else by what it sees of them, else
- * someone; a copy by its name when it knows its creature, else by what it sees of its kind and its number, else creature 1.
+ * someone; a copy by its name when it knows its creature, else by what it sees of its kind and its number, else creature 1. Without the one left out, as whose view
+ * a character agent's is (VIEW-10).
  */
-export function sceneNames(sight: PlaceSight): string[]
+export function sceneNames(sight: PlaceSight, leftOut?: Page): string[]
 {
     const { scene } = readOpenScene(sight.root);
-    const names = scene === undefined ? [] : [...scene.with.map((link) => parsePageReference(link).name), ...Object.keys(scene.copies)];
+    const characters = scene === undefined ? [] : scene.with.map((link) => parsePageReference(link).name).filter((name) => leftOut === undefined || pagesWithName(sight.world, name)[0] !== leftOut);
+    const names = scene === undefined ? [] : [...characters, ...Object.keys(scene.copies)];
     return scene === undefined ? [] : names.map((name) => shownTurn(sight, scene, name));
 }
 

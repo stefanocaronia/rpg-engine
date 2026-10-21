@@ -6,13 +6,13 @@ import { lengthsInUnits } from "../core/length.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, firstSentence, withArticle } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { languagePackFor, packSystemFolder } from "../languages/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
 import { homeSystemWords } from "../page-words.ts";
-import { declaredKind, entryPage, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { declaredKind, entryPage, isPartyMember, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
@@ -20,7 +20,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, type SeenEffect } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
-import { type Knowledge, knowledgeOf, knownPart, knownText, knowsPage, playerCharacter, playerStory } from "./game-knowledge.ts";
+import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownText, knowsPage, playerCharacter, playerStory, scenesLivedBy } from "./game-knowledge.ts";
 import { blockingMode, campaignMode, type Mode, modes } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
@@ -137,6 +137,24 @@ export type ViewResult =
         story?: string;
     }
     | { kind: "section"; title: string; lines: string[]; text: string; }
+    /** What another character knows and lived, for the character agent voicing them (VIEW-10): their own page as they know it, now, the pages they know, the secrets, the scenes. */
+    | {
+        kind: "memory";
+        title: string;
+        sheet: SheetGroupData[];
+        text: string;
+        now?: string;
+        /** The places that hold them, the nearest first, those they know. */
+        place: string[];
+        /** The open scene, when they are in it, as they see it. */
+        scene?: string;
+        /** "Marta (character): A shepherd's widow of Whitecrag.": each page they know, in a line. */
+        known: string[];
+        /** "Piet#Fate: Killed by orcs.": the secrets of other pages they discovered. */
+        discovered: string[];
+        /** "day 3, 19:05 · Ambush at Mill Ford: Four orcs ambushed the party.": the scenes they were in. */
+        lived: string[];
+    }
     /** The world map as the player character knows it (VIEW-7). */
     | ({ kind: "map"; } & ShownMap)
     /** The player's settings, which the dashboard changes (D-341). */
@@ -155,6 +173,7 @@ export const view = defineCommand({
         + "Alone, it gives the player character and the companions, where they are and their numbers, the open quests, the open scene and the diary, without your reasons. "
         + "With a page, the page as the player character knows it: its introduction and public sections, only the secrets they discovered, and the whole sheet of the character or a companion; "
         + "a page they do not know reads as one that does not exist. "
+        + "With as, the same for another character, for the character agent voicing them: alone, their page, now, the pages they know in a line, the secrets they discovered and the scenes they lived. "
         + "Example: page Varro; or diary 30.",
     group: "game",
     readOnly: true,
@@ -168,11 +187,16 @@ export const view = defineCommand({
         saves: z.boolean().optional().describe("for the dashboard: the saves, and what the player may do with each"),
         setup: z.boolean().optional().describe("for the dashboard: the campaign's mode and name, what the next mode needs, and the setup's questions"),
         journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes"),
+        as: z.string().optional().describe("for a character agent: the character whose view this is, other than the player's; alone or with page"),
     }),
 
     run(input, context): ViewResult
     {
         const root = requireCampaign(context.folder);
+
+        if (input.as !== undefined && [input.diary, input.rolls, input.map, input.settings, input.saves, input.setup, input.journal].some((given) => given !== undefined)) {
+            throw new Error("Give as alone or with page: it is what that character knows, apart from the diary, the rolls, the map, the settings, the saves, the setup and the journal.");
+        }
 
         // The player's settings, with or without a player character (D-341).
         if (input.settings === true) {
@@ -213,7 +237,8 @@ export const view = defineCommand({
         }
 
         const world = campaignWorld(root, context);
-        const pc = playerCharacter(world);
+        // Whose view it is: the player character's, or another character's for the character agent voicing them (VIEW-10).
+        const pc = input.as === undefined ? playerCharacter(world) : characterNamed(world, input.as);
 
         if (pc === undefined) {
             const language = readSettings(root).language;
@@ -254,7 +279,8 @@ export const view = defineCommand({
                 return { kind: "unknown", text: `${pc.name} does not know ${reference.name}.` };
             }
 
-            const party = page === pc || page.fields.role === "companion";
+            // The sheet of the one whose view it is, and of the party when they are of it (VIEW-3, VIEW-10).
+            const party = page === pc || (isPartyMember(pc) && isPartyMember(page));
 
             if (reference.section !== undefined && reference.section !== "") {
                 const part = knownPart(world, knowledge, page, reference.section);
@@ -268,26 +294,7 @@ export const view = defineCommand({
                 return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "" };
             }
 
-            // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
-            const sheet = withItemImages(
-                root,
-                context,
-                world,
-                withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
-            );
-            const language = readSettings(root).language;
-            const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : wordsOf(system, language, context)) : undefined;
-            const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
-            const story = page === pc ? playerStory(page) : undefined;
-            return {
-                kind: "page",
-                title: `${page.name} (${page.type ?? "page"})`,
-                ...(headline === undefined ? {} : { headline }),
-                sheet,
-                ...(cards === undefined ? {} : { cards }),
-                text: knownText(world, knowledge, page),
-                ...(story === undefined ? {} : { story }),
-            };
+            return shownPage(root, context, world, knowledge, page, party);
         }
 
         const { coins } = campaignCoins(root, context);
@@ -296,6 +303,10 @@ export const view = defineCommand({
         const open = readJourney(root)?.at !== undefined;
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
         const sight = { root, context, world, knowledge, party: [pc, ...companions] };
+
+        if (input.as !== undefined) {
+            return memoryOf({ ...sight, party: isPartyMember(pc) ? world.pages.filter((page) => page.type === "character" && isPartyMember(page)) : [pc] });
+        }
 
         if (input.map === true) {
             return { kind: "map", ...shownMap(sight, measuresOf(root, system), readSettings(root).name) };
@@ -387,6 +398,8 @@ export const view = defineCommand({
                 return [result.title, sheetText(result.sheet).join("\n"), result.text].filter((block) => block !== "").join("\n\n");
             case "section":
                 return [result.title, result.lines.join("\n"), result.text].filter((block) => block !== "").join("\n\n");
+            case "memory":
+                return memoryText(result);
             case "map":
                 return mapText(result);
             case "settings":
@@ -419,6 +432,101 @@ export const view = defineCommand({
         }
     },
 });
+
+/** A page as the one whose view it is knows it (VIEW-3): its text, and the whole sheet when it is theirs or of their party. */
+function shownPage(root: string, context: Context, world: World, knowledge: Knowledge, page: Page, party: boolean): Extract<ViewResult, { kind: "page"; }>
+{
+    const system = campaignSystem(root, context);
+    // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
+    const sheet = withItemImages(
+        root,
+        context,
+        world,
+        withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
+    );
+    const language = readSettings(root).language;
+    const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : wordsOf(system, language, context)) : undefined;
+    const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
+    const story = page === knowledge.pc ? playerStory(page) : undefined;
+    return {
+        kind: "page",
+        title: `${page.name} (${page.type ?? "page"})`,
+        ...(headline === undefined ? {} : { headline }),
+        sheet,
+        ...(cards === undefined ? {} : { cards }),
+        text: knownText(world, knowledge, page),
+        ...(story === undefined ? {} : { story }),
+    };
+}
+
+/**
+ * What a character other than the player's knows and lived, for the character agent voicing them (VIEW-10): their page as they know it, with their sheet; now; the pages they know,
+ * each in a line; the secrets of other pages they discovered; the scenes they were in.
+ */
+function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory"; }>
+{
+    const { root, context, world, knowledge } = sight;
+    const self = knowledge.pc;
+    const own = shownPage(root, context, world, knowledge, self, true);
+    const now = readPresent(root).date;
+    const { scene } = readOpenScene(root);
+    const inScene = scene !== undefined && scene.with.some((link) => pagesWithNameOrAlias(world, parsePageReference(link).name)[0] === self);
+    const line = inScene ? sceneLine(sight, (name) => shownName(world, knowledge, name), self) : undefined;
+    const known = [...knowledge.pages].filter((page) => page !== self && page.system === undefined).map((page) => {
+        const introduction = firstSentence(knownIntroduction(world, knowledge, page).split("\n")[0]);
+        return `${page.name} (${page.type ?? "page"})${introduction === "" ? "" : `: ${introduction}`}`;
+    });
+    return {
+        kind: "memory",
+        title: own.title,
+        sheet: own.sheet,
+        text: own.text,
+        ...(now === undefined ? {} : { now: formatGameDate(now) }),
+        place: locate(world, self).chain.filter((holder) => knowsPage(knowledge, holder)).map((holder) => holder.name),
+        ...(line === undefined ? {} : { scene: line }),
+        known,
+        discovered: discoveredSecrets(world, knowledge).map((secret) => `${secret.page}#${secret.name}: ${secret.text.replace(/\s*\n\s*/g, " ")}`),
+        lived: scenesLivedBy(root, world, self).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.title}${one.summary === "" ? "" : `: ${one.summary}`}`),
+    };
+}
+
+/** What a character knows and lived, as the character agent voicing them reads it in the chat (VIEW-10). */
+function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): string
+{
+    const list = (title: string, lines: string[]): string => (lines.length === 0 ? "" : `${title}:\n${lines.map((line) => `- ${line}`).join("\n")}`);
+    const where = result.place.length === 0 ? "" : `in ${result.place.join(" › ")}`;
+    const now = [result.now ?? "", where].filter((part) => part !== "").join(", ");
+    return [
+        result.title,
+        sheetText(result.sheet).join("\n"),
+        result.text,
+        now === "" ? "" : `Now: ${now}`,
+        result.scene === undefined ? "" : `Scene: ${result.scene}`,
+        list("Known", result.known),
+        list("Discovered", result.discovered),
+        list("Lived", result.lived),
+    ].filter((block) => block !== "").join("\n\n");
+}
+
+/** The character a character agent's view is for (VIEW-10), by name or alias; stops the command for any other page. */
+function characterNamed(world: World, name: string): Page
+{
+    if (name.trim() === "") {
+        throw new Error("Give as the name of a character's page, such as as Varro: whose view it is.");
+    }
+
+    const page = pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
+
+    if (page?.type !== "character") {
+        throw new Error(
+            page === undefined
+                ? `There is no character named ${name.trim()}: give as the name of a character's page, such as as Varro.`
+                : `${page.name} is ${withArticle(page.type ?? "free page")}: as takes a character, whose view it is.`,
+        );
+    }
+
+    return page;
+}
 
 /** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
 function wordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
@@ -569,7 +677,7 @@ function diaryCount(asked: string | undefined): number
  * "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, uomo col coltello, brigante 1 and brigante 2": the open scene as the player sees it, with the words
  * of the page (D-254, D-416): who the character does not know by what it sees of them, else someone, and two or more of them as others.
  */
-function sceneLine(sight: PlaceSight, named: (name: unknown) => string | undefined): string | undefined
+function sceneLine(sight: PlaceSight, named: (name: unknown) => string | undefined, self?: Page): string | undefined
 {
     const { scene } = readOpenScene(sight.root);
 
@@ -577,7 +685,8 @@ function sceneLine(sight: PlaceSight, named: (name: unknown) => string | undefin
         return undefined;
     }
 
-    const names = sceneNames(sight);
+    // A character agent's view leaves out the one whose view it is (VIEW-10).
+    const names = sceneNames(sight, self);
     const strangers = names.filter((name) => name === "someone").length;
     // Who is someone, counted where the first of them stands.
     const present = names.flatMap((name, index) => (name !== "someone" ? [name] : names.indexOf("someone") === index ? [strangers === 1 ? "someone" : `${strangers} others`] : []));

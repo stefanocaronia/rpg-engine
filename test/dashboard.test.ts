@@ -158,6 +158,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "style",
             "dice",
             "units",
+            "voices",
             "pictures",
             "effort",
             "lines",
@@ -544,6 +545,10 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(shown.body).not.toContain("fratello");
         expect(JSON.parse(shown.body).error).toBe("The dashboard has no command show: it has view.");
         expect((await get("/api/view?pagina=Varro")).status).toBe(400);
+        // Another character's view is the character agent's, never the player's (VIEW-10).
+        const companion = await get("/api/view?as=Varro");
+        expect(companion.status).toBe(400);
+        expect(JSON.parse(companion.body).error).toBe("The dashboard gives only what the player may see: as is the master's.");
         // A flag comes in the address as true (VIEW-7, D-341).
         expect(JSON.parse((await get("/api/view?map=true")).body)).toEqual(JSON.parse(await ok("view", "--map", "--json")));
         expect(JSON.parse((await get("/api/view?settings=true")).body)).toEqual(JSON.parse(await ok("view", "--settings", "--json")));
@@ -714,7 +719,8 @@ describe("the page's reading of a sheet (D-273)", () => {
 
     // The types are checked by npm run lint, which compiles the tests: what runs here only uses them.
     it("reads what view gives with types of its own, which view's result fits", () => {
-        const fits = (result: ViewResult): View => result;
+        // A character agent's view is not the dashboard's: it never asks as (VIEW-10).
+        const fits = (result: Exclude<ViewResult, { kind: "memory"; }>): View => result;
         expect(fits({ kind: "none" })).toEqual({ kind: "none" });
     });
 

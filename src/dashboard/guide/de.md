@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -38,9 +38,9 @@ Heute spielt RPG Engine ein Spielsystem: die **fünfte Edition**, aus dem freien
 ### 2.1 Was du brauchst
 
 - Einen Computer mit Windows, macOS oder Linux und einen Webbrowser.
-- **Node.js 22** oder neuer, von [nodejs.org](https://nodejs.org). Es bringt `npm` mit, womit RPG Engine installiert wird.
-- Ein **Terminal**: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klicke den Ordner mit der rechten Maustaste an und wähle **Im Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS).
-- Einen **KI-Agenten** für die Spielleitung ([2.4](#24-connect-your-ai)), mit dem **größten Modell**, das er anbietet: Ein kleines Modell lässt sich leichter dazu überreden, Geheimnisse zu verraten oder Regeln zu beugen.
+- **Node.js 22** oder neuer, von [nodejs.org](https://nodejs.org). Es bringt `npm` mit, das RPG Engine installiert.
+- Ein **Terminal**: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klickst du den Ordner mit der rechten Maustaste an und wählst **In Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS).
+- Einen **KI-Agenten** für die Spielleitung ([2.4](#24-connect-your-ai)), mit dem **größten Modell**, das er bietet: Ein kleines Modell lässt sich leichter dazu überreden, Geheimnisse zu verraten oder die Regeln zu verbiegen.
 
 ### 2.2 Installieren
 
@@ -48,65 +48,66 @@ Heute spielt RPG Engine ein Spielsystem: die **fünfte Edition**, aus dem freien
 npm install -g rpg-engine
 ```
 
-Mit `rpg --version` prüfst du, ob es geklappt hat. Du benutzt `rpg` einmal pro Kampagne, um sie anzulegen; danach startet dein Agent RPG Engine von selbst.
+Mit `rpg --version` prüfst du, ob es geklappt hat. Du brauchst `rpg` nur einmal pro Kampagne, um sie zu erstellen. Danach startet dein Agent RPG Engine von selbst.
 
-### 2.3 Eine Kampagne anlegen
+### 2.3 Eine Kampagne erstellen
 
-Öffne ein Terminal in dem Ordner, in dem du deine Spiele aufbewahrst ([2.1](#21-what-you-need) erklärt, wie):
+Öffne ein Terminal in dem Ordner, in dem du deine Spiele aufbewahrst ([2.1](#21-what-you-need) zeigt, wie):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Das erzeugt den Ordner `The Salt Isles` mit einer neuen Kampagne darin; wechsle mit `cd "The Salt Isles"` hinein. Merke dir, wo er liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Alles andere wählst du später, im Chat oder im Dashboard; `rpg init --help` listet die Optionen auf, mit denen du schon jetzt einiges festlegen kannst, etwa `--language it` oder `--difficulty hard`.
+Das legt den Ordner `The Salt Isles` mit einer neuen Kampagne darin an. Mit `cd "The Salt Isles"` wechselst du hinein. Merk dir, wo er liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Alles Weitere legst du später fest, im Chat oder auf dem Dashboard. `rpg init --help` listet die Optionen auf, mit denen du einiges schon jetzt wählen kannst, zum Beispiel `--language it` oder `--difficulty hard`.
 
-Die Spielleitung kann keine Kampagne für dich anlegen: Vor `init` sagt nichts deinem Agenten, wo RPG Engine ist.
+Die Spielleitung kann keine Kampagne für dich erstellen: Vor `init` sagt deinem Agenten nichts, wo RPG Engine liegt.
 
 ### 2.4 Deine KI verbinden
 
-Die Spielleitung läuft in einem **KI-Agenten**: einer KI-App im Terminal oder auf dem Desktop, die mit den Dateien auf deinem Computer arbeiten kann, wie Claude Code oder Codex. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine Handy-App reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen. Jeder Agent braucht seinen eigenen Tarif und sein eigenes Login: Claude Code einen kostenpflichtigen Claude-Tarif, Codex ein ChatGPT-Login. Du installierst ihn einmal, über seine eigene Seite: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Die Spielleitung läuft in einem **KI-Agenten**: einer KI-App im Terminal oder auf dem Desktop, die mit den Dateien auf deinem Computer arbeiten kann, zum Beispiel Claude Code oder Codex. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine App auf dem Handy reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen können. Jeder Agent braucht seinen eigenen Tarif und sein eigenes Login: Claude Code einen kostenpflichtigen Claude-Tarif, Codex ein ChatGPT-Login. Du installierst ihn einmal, über seine eigene Seite: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: Schreibe im Kampagnenordner `claude`. Wenn es fragt, ob du dem Ordner vertraust, wähle **Yes, I trust this folder**; Vorsicht, die vorausgewählte Antwort ist *No, exit*.
-- **Codex**: Schreibe im Kampagnenordner `codex` und bestätige mit Ja, wenn es fragt, ob du dem Ordner vertraust. Prüfe in der Desktop-App in den Einstellungen, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
+- **Claude Code**: Schreib im Kampagnenordner `claude`. Wenn es fragt, ob du dem Ordner vertraust, wähle **Yes, I trust this folder**. Vorsicht: Die vorausgewählte Antwort ist *No, exit*.
+- **Codex**: Schreib im Kampagnenordner `codex` und antworte mit Ja, wenn es fragt, ob du dem Ordner vertraust. Prüfe in der Desktop-App von Codex in den Einstellungen, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
 - **Ein anderer Agent**: Starte ihn im Kampagnenordner und gib ihm den MCP-Server `rpg mcp`. RPG Engine ist ein Standard-MCP-Server: Jeder Agent, der MCP unterstützt, kann die Spielleitung sein, auch lokale.
 
-Wir spielen und testen mit **Claude Code**; **Codex** ist angebunden und geprüft, aber mit ihm wurde noch keine ganze Kampagne gespielt; `init` richtet außerdem **Gemini CLI** ein. Die Kampagne schaltet das eigene Gedächtnis des Agenten aus: Das Spiel lebt in seinen Dateien, damit ein Zurückgehen zu einem Spielstand wirklich zurückführt.
+Wir spielen und testen mit **Claude Code**. **Codex** ist angebunden und geprüft, aber bisher wurde noch keine ganze Kampagne damit gespielt. `init` richtet außerdem die **Gemini CLI** ein. Die Kampagne schaltet das eigene Gedächtnis des Agenten aus: Das Spiel lebt in seinen Dateien, damit eine Rückkehr zu einem Spielstand wirklich zurückführt.
 
 ### 2.5 Der erste Chat
 
-Schreibe irgendetwas, zum Beispiel *Hallo! Lass uns anfangen.* In ihrer ersten Antwort jedes Chats gibt dir die Spielleitung den **Link zu deinem Dashboard**, etwa `http://127.0.0.1:4750`: Öffne ihn und lass ihn neben dem Chat offen.
+Schreib irgendetwas, zum Beispiel *Hallo! Lass uns anfangen.* In ihrer ersten Antwort jedes Chats gibt dir die Spielleitung den **Link zu deinem Dashboard**, etwa `http://127.0.0.1:4750`. Öffne ihn und lass ihn neben dem Chat offen.
 
-Zwischen den Nachrichten der Spielleitung zeigt dein Agent die Werkzeuge, die er benutzt: Öffne ihre Details nicht (in Claude Code mit ctrl+o), sie können Geheimnisse zeigen.
+Zwischen den Nachrichten der Spielleitung zeigt dein Agent die Werkzeuge, die er benutzt. Öffne ihre Details nicht (in Claude Code mit ctrl+o), sie können Geheimnisse zeigen.
 
-Eine neue Kampagne durchläuft drei Stufen, die oben im Dashboard stehen: **1 Einstellungen** (wie du spielen willst), **2 Session Zero** (du erschaffst deinen Charakter, im Spiel), **3 Spielen**.
+Eine neue Kampagne durchläuft drei Phasen, die oben auf dem Dashboard stehen: **1 Einstellungen** (wie du spielen willst), **2 Session Zero** (du erschaffst deinen Charakter, im Spiel), **3 Spiel**.
 
-### 2.6 Einstellungen: festlegen, wie du spielst
+### 2.6 Einstellungen: wie du spielst
 
-Die Spielleitung fragt nur, was noch fehlt, ein paar Fragen auf einmal; der Schritt **Einstellungen** im Dashboard zeigt dieselben Fragen als Karten. Schreibe „entscheide du", dann wählt die Spielleitung. Alles lässt sich später ändern, im Chat oder in den **Einstellungen**.
+Die Spielleitung fragt nur, was noch fehlt, ein paar Fragen auf einmal. Der Schritt **Einstellungen** auf dem Dashboard zeigt dieselben Fragen als Karten. Schreib „entscheide du“, dann wählt die Spielleitung. Alles lässt sich später ändern, im Chat oder unter **Einstellungen**.
 
 | Einstellung | Was sie bestimmt | Werte |
 |---|---|---|
-| **Mentor** | Wie viel die Spielleitung dir über die Regeln beibringt | aus, Hinweise, Tutorial |
+| **Mentor** | Wie viel dir die Spielleitung über die Regeln beibringt | aus, Hinweise, Tutorial |
 | **Schwierigkeit** | Wie hart die Welt spielt | Geschichte, leicht, normal, schwer, brutal |
-| **Tödlichkeit** | Was es bedeutet, in einem Kampf zu fallen | erzählerisch (nie sterben), episch (nur wenn es zählt), Würfel |
+| **Tödlichkeit** | Was es bedeutet, im Kampf zu fallen | erzählerisch (nie sterben), episch (nur wenn es zählt), Würfel |
 | **Spielstände** | Wann du zurückgehen darfst | Permadeath, Checkpoint, frei ([3.8](#38-saves-and-going-back)) |
 | **Strenge** | Wie genau Nahrung, Licht und Reisen den Regeln folgen | flüssig, Regeln, Simulation |
 | **Würfel** | Wer deine Würfel wirft | digital, physisch |
 | **Maßeinheiten** | Entfernungen und Gewichte | metrisch, imperial |
+| **Stimmen** | Wer für die Figuren spricht, denen du begegnest: in Schlüsselmomenten die Figur selbst, die nur weiß, was sie weiß, nach Wahl der Spielleitung; immer die Spielleitung; oder immer die Figur, für die wichtigen oder für alle, langsamer und teurer, wo deine KI-App es kann | auto, Spielleitung, wichtige, immer |
 | **Begleiter** | Wer mit dir reist | keine, mit dir erschaffen, von der Spielleitung erschaffen, im Spiel getroffen |
-| **Bilder** | Bilder von Orten, Quests und den Menschen, denen du begegnest | keine, auf Wunsch, neue Orte, Quests und Begegnungen ([3.11](#311-pictures)) |
+| **Bilder** | Bilder von Orten, Quests und denen, die du triffst | keine, auf Wunsch, neue Orte, Quests und Begegnungen ([3.11](#311-pictures)) |
 | **Linien** und **Schleier** | Was nie vorkommt und was nur abseits der Szene geschieht | Listen |
 | **Sprache** | Die Sprache des Spiels und des Dashboards | beliebig |
 
-Die fünfte Edition fügt den **Aufstieg** hinzu: Erfahrungspunkte oder Meilensteine.
+Die fünfte Edition fügt den **Fortschritt** hinzu: Erfahrungspunkte oder Meilensteine.
 
-Gibt es keine geschriebene Welt, fragt die Spielleitung außerdem nach einer **Prämisse** (Genre, Ton, ein paar Elemente, in deinen Worten) und nach der **Vorbereitung**: die Welt unterwegs aufbauen, während ihr spielt, oder ganz am Anfang.
+Gibt es keine vorgegebene Welt, fragt die Spielleitung außerdem nach einer **Prämisse** (Genre, Ton, ein paar Elemente, in deinen Worten) und nach der **Vorbereitung**: die Welt unterwegs aufbauen, beim Spielen, oder ganz am Anfang.
 
-Nach dem **Stil der Spielleitung** wird nie gefragt, aber du kannst ihn im Chat oder in den **Einstellungen** ändern: die **Prosa** (schlicht, literarisch, Pulp, trocken-witzig), die **Geschichten**, die sie erfindet (Situationen, Handlungsbögen, Episoden, Rätsel), eine Autorin oder ein Autor, **in deren Stil geschrieben** wird, oder alles andere **in deinen Worten**.
+Der **Stil der Spielleitung** wird nie abgefragt, aber du kannst ihn im Chat oder unter **Einstellungen** ändern: die **Prosa** (schlicht, literarisch, Pulp, trocken-witzig), die **Geschichten**, die sie erfindet (Situationen, Handlungsbögen, Episoden, Rätsel), eine Autorin oder ein Autor, **in deren Stil** geschrieben wird, oder alles andere **in deinen Worten**.
 
 ### 2.7 Session Zero: dein Charakter
 
-Du erschaffst deinen Charakter gemeinsam mit der Spielleitung, wie an einem Tisch. Jede Entscheidung liegt bei dir, es sei denn, du bittest die Spielleitung, sie zu treffen: Komm mit einer fertigen Idee, einer vagen oder mit nichts. Die Spielleitung sagt dir, wie die Attributswerte bestimmt werden, bevor ein Würfel fällt. Eine Hintergrundgeschichte ist nie Pflicht; wenn du eine gibst, schreibt die Spielleitung sie in deinen Worten auf. Danach fragt die Spielleitung nach einem Bild deines Charakters ([3.7](#37-your-characters-story-and-picture)). RPG Engine berechnet den Charakterbogen: Du musst nie rechnen.
+Du erschaffst deinen Charakter gemeinsam mit der Spielleitung, wie am Spieltisch. Jede Entscheidung liegt bei dir, es sei denn, du bittest die Spielleitung, sie zu treffen. Komm mit einer fertigen Idee, mit einer vagen oder mit gar nichts. Die Spielleitung sagt dir, wie die Attributswerte bestimmt werden, bevor ein Würfel fällt. Eine Geschichte für deinen Charakter ist nie Pflicht. Wenn du eine mitbringst, schreibt die Spielleitung sie in deinen Worten auf. Danach bittet die Spielleitung um ein Bild deines Charakters ([3.7](#37-your-characters-story-and-picture)). RPG Engine rechnet den Charakterbogen aus: Du musst nie selbst rechnen.
 
 ---
 

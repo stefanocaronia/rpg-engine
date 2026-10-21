@@ -106,6 +106,8 @@ describe("rpg init", () => {
             autoMemoryEnabled: false,
             enabledMcpjsonServers: ["rpg"],
             permissions: { allow: ["mcp__rpg"] },
+            // The character agent answers within the master's turn (D-490).
+            env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" },
         });
         // Codex: the rpg server, waiting for the player's click, and its memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself.
         const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
@@ -168,10 +170,11 @@ describe("rpg init", () => {
             autoMemoryEnabled: false,
             enabledMcpjsonServers: ["rpg"],
             permissions: { allow: ["mcp__rpg"] },
+            env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" },
         });
 
         mkdirSync(join(folder, "scelta", ".claude"), { recursive: true });
-        const chosen = '{ "autoMemoryEnabled": true, "enabledMcpjsonServers": [], "permissions": { "allow": ["Read"], "deny": ["Bash"] } }';
+        const chosen = '{ "autoMemoryEnabled": true, "enabledMcpjsonServers": [], "permissions": { "allow": ["Read"], "deny": ["Bash"] }, "env": { "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "0" } }';
         writeFileSync(join(folder, "scelta", ".claude", "settings.json"), chosen);
         await runCommandLine(["init", "scelta"], context);
         expect(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8")).toBe(chosen);
@@ -203,7 +206,7 @@ describe("rpg config", () => {
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, free, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, free, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
         );
     });
@@ -320,7 +323,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

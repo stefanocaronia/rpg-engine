@@ -23,7 +23,7 @@ Show or change the campaign settings.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, learned, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, learned, status-line), repeatable
@@ -194,6 +194,7 @@ Read-only: yes. Positional parameters: `page`.
 - `saves` (`boolean`, optional): for the dashboard: the saves, and what the player may do with each
 - `setup` (`boolean`, optional): for the dashboard: the campaign's mode and name, what the next mode needs, and the setup's questions
 - `journal` (`boolean`, optional): for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes
+- `as` (`string`, optional): for a character agent: the character whose view this is, other than the player's; alone or with page
 
 ### find
 

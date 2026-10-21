@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb f4fdeebb 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d b8f80c05 8c9f41da 0b4a6ef8 338535a6 728ca4a5 e2839149. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -38,9 +38,9 @@ Heimurinn helst eins frá einu kvöldi til annars, jafnvel í nýju spjalli og j
 ### 2.1 Það sem þú þarft
 
 - Tölvu með Windows, macOS eða Linux og vafra.
-- **Node.js 22** eða nýrra, frá [nodejs.org](https://nodejs.org). Því fylgir `npm`, sem setur RPG Engine upp.
-- **Skipanaglugga**: á Windows Terminal eða PowerShell; á macOS Terminal. Til að opna hann í möppu skaltu hægrismella á möppuna og velja **Open in Terminal** (Windows) eða **Services > New Terminal at Folder** (macOS).
-- **Gervigreindarforrit** fyrir sögumanninn ([2.4](#24-connect-your-ai)), með **stærsta líkaninu** sem það býður: minna líkan er auðveldara að tala til að ljóstra upp leyndarmálum eða víkja frá reglunum.
+- **Node.js 22** eða nýrra, frá [nodejs.org](https://nodejs.org). Með því fylgir `npm`, sem setur upp RPG Engine.
+- **Skipanalínu** (terminal): í Windows er það Terminal eða PowerShell, í macOS Terminal. Til að opna hana í möppu skaltu hægrismella á möppuna og velja **Open in Terminal** (Windows) eða **Services > New Terminal at Folder** (macOS).
+- **gervigreindarforrit** (AI agent) fyrir sögumanninn ([2.4](#24-connect-your-ai)), með **stærsta líkaninu** sem það býður: með litlu líkani er auðveldara að fá sögumanninn til að ljóstra upp leyndarmálum eða beygja reglurnar.
 
 ### 2.2 Uppsetning
 
@@ -48,65 +48,66 @@ Heimurinn helst eins frá einu kvöldi til annars, jafnvel í nýju spjalli og j
 npm install -g rpg-engine
 ```
 
-`rpg --version` athugar hvort þetta tókst. Þú notar `rpg` einu sinni fyrir hverja herferð, til að búa hana til; eftir það ræsir gervigreindarforritið þitt RPG Engine sjálft.
+`rpg --version` sýnir hvort uppsetningin tókst. Þú notar `rpg` einu sinni fyrir hverja herferð, til að búa hana til. Eftir það ræsir gervigreindarforritið RPG Engine sjálft.
 
-### 2.3 Að búa til herferð
+### 2.3 Búa til herferð
 
-Opnaðu skipanaglugga í möppunni þar sem þú geymir leikina þína ([2.1](#21-what-you-need) segir hvernig):
+Opnaðu skipanalínu í möppunni þar sem þú geymir leikina þína ([2.1](#21-what-you-need) segir hvernig):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Þetta býr til möppuna `The Salt Isles` með nýrri herferð; farðu inn í hana með `cd "The Salt Isles"`. Mundu hvar hún er: þú kemur aftur í hana í hvert sinn sem þú spilar. Allt annað velurðu síðar, í spjallinu eða á mælaborðinu; `rpg init --help` sýnir valkostina til að velja eitthvað strax, til dæmis `--language it` eða `--difficulty hard`.
+Þetta býr til möppuna `The Salt Isles` með nýrri herferð. Farðu inn í hana með `cd "The Salt Isles"`. Mundu hvar hún er: þú kemur aftur í hana í hvert sinn sem þú spilar. Allt annað velur þú síðar, í spjallinu eða á mælaborðinu. `rpg init --help` sýnir valkostina ef þú vilt velja eitthvað strax, til dæmis `--language it` eða `--difficulty hard`.
 
-Sögumaðurinn getur ekki búið til herferð fyrir þig: fyrir `init` segir ekkert gervigreindarforritinu þínu hvar RPG Engine er.
+Sögumaðurinn getur ekki búið til herferð fyrir þig: fyrir `init` veit gervigreindarforritið ekki hvar RPG Engine er.
 
-### 2.4 Tengdu gervigreindina þína
+### 2.4 Tengja gervigreindina
 
-Sögumaðurinn keyrir í **gervigreindarforriti**: gervigreindarappi, í skipanaglugga eða á skjáborði, sem getur unnið með skrárnar á tölvunni þinni, eins og Claude Code eða Codex. Venjulegt spjall eins og claude.ai eða ChatGPT, eða símaapp, dugar ekki: sögumaðurinn þarf að komast í skrár herferðarinnar á tölvunni þinni. Hvert forrit þarf sína eigin áskrift og innskráningu: Claude Code þarf greidda Claude-áskrift, Codex ChatGPT-innskráningu. Þú setur það upp einu sinni, frá þess eigin síðu: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Sögumaðurinn keyrir í **gervigreindarforriti** (AI agent): forriti í skipanalínu eða á skjáborði sem getur unnið með skrárnar á tölvunni þinni, eins og Claude Code eða Codex. Venjulegt spjall eins og claude.ai eða ChatGPT, eða símaforrit, dugar ekki: sögumaðurinn þarf aðgang að skrám herferðarinnar á tölvunni þinni. Hvert forrit þarf sína áskrift og sína innskráningu: Claude Code þarf greidda Claude-áskrift, Codex þarf ChatGPT-innskráningu. Þú setur forritið upp einu sinni, frá þess eigin síðu: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: skrifaðu `claude` í herferðarmöppunni. Þegar það spyr hvort þú treystir möppunni skaltu velja **Yes, I trust this folder**; farðu varlega, svarið sem er valið fyrirfram er *No, exit*.
-- **Codex**: skrifaðu `codex` í herferðarmöppunni og segðu já þegar það spyr hvort þú treystir möppunni. Í skjáborðsforritinu skaltu athuga í stillingunum að minni sé slökkt fyrir spjöll leiksins.
-- **Annað forrit**: ræstu það í herferðarmöppunni og gefðu því MCP-þjóninn `rpg mcp`. RPG Engine er hefðbundinn MCP-þjónn: hvaða forrit sem styður MCP getur verið sögumaður, líka staðbundin.
+- **Claude Code**: skrifaðu `claude` í möppu herferðarinnar. Þegar það spyr hvort þú treystir möppunni skaltu velja **Yes, I trust this folder**. Farðu varlega: svarið sem er valið fyrirfram er *No, exit*.
+- **Codex**: skrifaðu `codex` í möppu herferðarinnar og svaraðu já þegar það spyr hvort þú treystir möppunni. Í skjáborðsforritinu skaltu athuga í stillingunum að minni (memories) sé slökkt fyrir spjöll leiksins.
+- **Annað forrit**: ræstu það í möppu herferðarinnar og gefðu því MCP-þjóninn `rpg mcp`. RPG Engine er hefðbundinn MCP-þjónn: hvaða forrit sem styður MCP getur verið sögumaður, líka forrit sem keyra á þinni eigin tölvu.
 
-Við spilum og prófum með **Claude Code**; **Codex** er tengt og athugað, en engin heil herferð hefur enn verið spiluð með því; `init` setur líka upp **Gemini CLI**. Herferðin slekkur á eigin minni forritsins: leikurinn lifir í skránum þess, svo að það að fara aftur í vistun fari í raun aftur.
+Við spilum og prófum með **Claude Code**. **Codex** er tengt og athugað, en engin heil herferð hefur enn verið spiluð með því. `init` setur líka upp **Gemini CLI**. Herferðin slekkur á eigin minni forritsins: leikurinn lifir í skrám sínum, þannig að þegar farið er aftur í vistun er í raun farið aftur í tímann.
 
 ### 2.5 Fyrsta spjallið
 
-Skrifaðu hvað sem er, til dæmis *Hæ! Byrjum.* Í fyrsta svari hvers spjalls gefur sögumaðurinn þér **tengilinn á mælaborðið þitt**, eitthvað á borð við `http://127.0.0.1:4750`: opnaðu hann og hafðu hann við hliðina á spjallinu.
+Skrifaðu hvað sem er, til dæmis *Halló! Byrjum.* Í fyrsta svari hvers spjalls gefur sögumaðurinn þér **hlekkinn á mælaborðið þitt**, eitthvað á borð við `http://127.0.0.1:4750`. Opnaðu hann og hafðu hann við hliðina á spjallinu.
 
-Á milli skilaboða sögumannsins sýnir forritið þitt verkfærin sem það notar: opnaðu ekki nánari upplýsingar þeirra (í Claude Code ctrl+o), þær geta sýnt leyndarmál.
+Á milli skilaboða sögumannsins sýnir forritið verkfærin sem það notar. Ekki opna upplýsingar um þau (í Claude Code ctrl+o), því þær geta sýnt leyndarmál.
 
-Ný herferð fer í gegnum þrjú stig, sýnd efst á mælaborðinu: **1 Stillingar** (hvernig þú vilt spila), **2 Núllti fundur** (þú býrð til persónuna þína, í spilun), **3 Spilun**.
+Ný herferð fer í gegnum þrjú stig, sem sjást efst á mælaborðinu: **1 Stillingar** (hvernig þú vilt spila), **2 Núllti fundur** (þú býrð til persónuna þína, í leiknum), **3 Spilun**.
 
-### 2.6 Stillingar: hvernig þú spilar
+### 2.6 Stillingar: hvernig þú vilt spila
 
-Sögumaðurinn spyr aðeins um það sem vantar enn, nokkrar spurningar í einu; skrefið **Stillingar** á mælaborðinu sýnir sömu spurningar sem spjöld. Skrifaðu „þú ákveður“ og sögumaðurinn velur. Allt má breyta síðar, í spjallinu eða í **Stillingar**.
+Sögumaðurinn spyr aðeins um það sem vantar enn, nokkrar spurningar í einu. Skrefið **Stillingar** á mælaborðinu sýnir sömu spurningar sem spjöld. Skrifaðu „þú ákveður“ og sögumaðurinn velur. Allt má breyta síðar, í spjallinu eða í **Stillingar**.
 
 | Stilling | Hvað hún ákveður | Gildi |
 |---|---|---|
-| **Leiðbeinandi** | Hve mikið sögumaðurinn kennir þér reglurnar | slökkt, ábendingar, kennsla |
-| **Erfiðleikastig** | Hve erfiður heimurinn er | saga, auðvelt, venjulegt, erfitt, grimmt |
-| **Banvænleiki** | Hvað það þýðir að falla í bardaga | frásögn (aldrei dauði), hetjusaga (aðeins þegar það skiptir máli), teningar |
-| **Vistanir** | Hvenær þú mátt fara aftur | varanlegur dauði, varðpunktur, frjálst ([3.8](#38-saves-and-going-back)) |
-| **Strangleiki** | Hve nákvæmlega matur, ljós og ferðalög fylgja reglunum | létt, reglur, hermun |
-| **Teningar** | Hver kastar teningunum þínum | stafrænir, raunverulegir |
-| **Mælieiningar** | Vegalengdir og þyngd | metrakerfi, breskar einingar |
-| **Félagar** | Hver ferðast með þér | engir, gerðir með þér, gerðir af sögumanni, hitt í spilun |
-| **Myndir** | Myndir af stöðum, verkefnum og þeim sem þú hittir | engar, að beiðni, nýir staðir, verkefni og þau sem þú hittir ([3.11](#311-pictures)) |
+| **Leiðbeinandi** | Hve mikið sögumaðurinn kennir þér reglurnar | off, hints, tutorial |
+| **Erfiðleikastig** | Hve erfiður heimurinn er | story, easy, normal, hard, brutal |
+| **Banvænleiki** | Hvað það þýðir að falla í bardaga | narrative (aldrei dauði), epic (aðeins þegar það skiptir máli), dice |
+| **Vistanir** | Hvenær þú mátt fara til baka | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
+| **Strangleiki** | Hve nákvæmlega matur, ljós og ferðalög fylgja reglunum | smooth, rules, simulation |
+| **Teningar** | Hver kastar teningunum þínum | digital, physical |
+| **Mælieiningar** | Vegalengdir og þyngd | metric, imperial |
+| **Voices** | Hver talar fyrir persónurnar sem þú hittir: á lykilstundum persónan sjálf, sem veit aðeins það sem hún veit, eins og sögumaðurinn velur; sögumaðurinn alltaf; eða alltaf persónan, fyrir helstu persónur eða allar, hægar og dýrara, þar sem gervigreindarforritið þitt getur það | auto, master, important, always |
+| **Félagar** | Hver ferðast með þér | none, made with you, made by the master, met in play |
+| **Myndir** | Myndir af stöðum, verkefnum og þeim sem þú hittir | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Línur** og **Slæður** | Það sem birtist aldrei og það sem gerist aðeins utan sviðs | listar |
-| **Tungumál** | Tungumál leiksins og mælaborðsins | hvaða sem er |
+| **Tungumál** | Tungumál leiksins og mælaborðsins | hvaða tungumál sem er |
 
-Fimmta útgáfa bætir við **framvindu**: reynslustigum eða áfanga.
+Fimmta útgáfa bætir við **framvindu**: reynslustigum eða áföngum.
 
-Ef enginn heimur er skrifaður spyr sögumaðurinn líka um **söguforsendu** (tegund, tón og nokkur atriði, með þínum orðum) og **undirbúning**: að byggja heiminn jafnóðum, eftir því sem líður á, eða allan í byrjun.
+Ef enginn heimur er skrifaður spyr sögumaðurinn líka um **forsendu** (tegund, tón og nokkra þætti, með þínum orðum) og **undirbúning**: hvort heimurinn er byggður jafnóðum, eftir því sem líður á, eða allur í upphafi.
 
-**Stíll sögumanns** er aldrei spurt um, en þú getur breytt honum í spjallinu eða í **Stillingar**: **textann** (einfaldur, bókmenntalegur, reyfarastíll, kímilegur), **sögurnar** sem hann býr til (aðstæður, söguþræðir, þættir, ráðgáta), höfund til að **skrifa eins og**, eða hvað annað sem er **með þínum orðum**.
+**Stíll sögumanns** er aldrei spurt um, en þú getur breytt honum í spjallinu eða í **Stillingar**: **textinn** (einfaldur, bókmenntalegur, pulp, kaldhæðinn), **sögurnar** sem sögumaðurinn býr til (aðstæður, söguþræðir, þættir, ráðgáta), höfundur til að **skrifa eins og**, eða hvað annað sem er **með þínum orðum**.
 
 ### 2.7 Núllti fundur: persónan þín
 
-Þú býrð til persónuna þína með sögumanninum, eins og við borð. Hvert val er þitt, nema þú biðjir sögumanninn að velja: komdu með fullmótaða hugmynd, óljósa eða enga. Sögumaðurinn segir þér hvernig eiginleikastig eru ákvörðuð áður en nokkrum teningi er kastað. Saga þín er aldrei skylda; ef þú gefur hana skrifar sögumaðurinn hana með þínum orðum. Síðan biður sögumaðurinn um mynd af persónunni þinni ([3.7](#37-your-characters-story-and-picture)). RPG Engine reiknar persónublaðið: þú þarft aldrei að reikna sjálf/ur.
+Þú býrð til persónuna með sögumanninum, eins og við borð. Hvert val er þitt, nema þú biðjir sögumanninn að taka það: komdu með fullmótaða hugmynd, óljósa eða enga. Sögumaðurinn segir þér hvernig hæfnigildi eru búin til áður en nokkrum teningi er kastað. Saga persónunnar er aldrei skilyrði. Ef þú gefur hana skrifar sögumaðurinn hana með þínum orðum. Síðan biður sögumaðurinn um mynd af persónunni þinni ([3.7](#37-your-characters-story-and-picture)). RPG Engine reiknar persónublaðið: þú þarft aldrei að reikna sjálf(ur).
 
 ---
 
