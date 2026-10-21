@@ -117,7 +117,7 @@ describe("import of the player's document (D-489)", () => {
         context.reader = reader;
         await rpg("import", book(), "--title", "The King");
         expect((await rpg("import", "--start", "5")).output).toContain("There is no starting point 5: choose one of 1, 2, 3.");
-        await rpg("import", "--start", "2");
+        await rpg("import", "--start", "2", "--character", "Dravot");
         // The command line waits for the runs only when import is called again.
         const done = await rpg("import");
         expect(reader.briefs.slice(2).map((brief) => /adventure\/world\/(\w+)\/ as the world stands|Last, write the adventure's opening/.exec(brief)?.[1] ?? "opening")).toEqual([
@@ -126,6 +126,8 @@ describe("import of the player's document (D-489)", () => {
             "opening",
         ]);
         expect(reader.briefs[2]).toContain("The player chose to start at 2. Start 2:");
+        // Who the player plays is theirs: nothing written decides what they do (playtest 18).
+        expect(reader.briefs[2]).toContain("The player plays Dravot. On their page keep their past, bonds and nature");
         expect(done.output).toContain("The King is ready: 1 characters, 1 places, 1 topics, in .imports");
         expect(done.output).toContain("Tell the player what was invented to fill the gaps:\n- the name of the pass");
         expect(existsSync(join(work(), "adventure", "images", "p002-1.png"))).toBe(true);

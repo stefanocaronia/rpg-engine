@@ -93,11 +93,11 @@ async function steps(folder: string, reader: DocumentReader, system: GameSystem 
 }
 
 /** The import set to write the world at the start chosen: a step for each folder of pages, then the opening. */
-export function writingState(folder: string, state: ImportState, start: number): ImportState
+export function writingState(folder: string, state: ImportState, start: number, character?: string): ImportState
 {
     const steps = [...Object.keys(importedPages(folder)), "opening"];
     const { failed: _, ...kept } = state;
-    return { ...kept, phase: "writing", done: 0, start, steps };
+    return { ...kept, phase: "writing", done: 0, start, steps, ...(character === undefined ? {} : { character }) };
 }
 
 /**
@@ -154,17 +154,23 @@ function task(folder: string, state: ImportState): string
             + "Write the pages for what it tells, as the document tells them, and add to the pages already written what it adds. Then update notes/notes.md.",
             last
                 ? "This is the last piece. Then write notes/starts.md. For a book, three or four starting points spread over the story, each just before a choice of it, "
-                    + "never its end; for a module or notes, its own start alone. Each as `## 1. A short name`, then: who could be played there, the characters who act "
+                    + "never its end; for a module or notes, its own start alone. Each as `## 1. A short name`, which tells nothing of what comes after, as the player sees it on a button; then: who could be played there, the characters who act "
                     + "in the story first, and the part's label; "
                     + "`Back cover:` two lines for a player who has not read it, telling nothing that comes after; `Reader:` one line by chapter and event. "
-                    + "Last, for a novel or a story, notes/style.yaml with author, its author's name as readers know it, and story, how it is built: arcs, episodes, "
-                    + "mystery or situations; for a module or notes, no such file."
+                    + "Last, for a novel or a story, notes/style.yaml with author, its author's name as readers know it, and story, one word of these four for how it "
+                    + "is built: arcs, episodes, mystery or situations; for a module or notes, no such file."
                 : "",
         ].filter((line) => line !== "").join(" ");
     }
 
     const start = importStarts(folder).find((one) => one.number === state.start);
-    const chosen = `The player chose to start at ${state.start}. ${start?.title ?? ""}:\n${start?.text ?? ""}`;
+    // Who the player plays is theirs from the start: nothing written decides what they do (playtest 18).
+    const played = state.character === undefined
+        ? ""
+        : `\n\nThe player plays ${state.character}. On their page keep their past, bonds and nature, and in knows what they knew there; never what they `
+            + `will do, choose or suffer after it, their death included. Remove the events after the start that ${state.character} makes happen, and let no event `
+            + `decide their acts: the player does.`;
+    const chosen = `The player chose to start at ${state.start}. ${start?.title ?? ""}:\n${start?.text ?? ""}${played}`;
     const step = state.steps?.[state.done] ?? "opening";
 
     if (step !== "opening") {

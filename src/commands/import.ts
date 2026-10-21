@@ -59,6 +59,7 @@ export const importCommand = defineCommand({
     input: z.object({
         document: z.string().optional().describe("the document's file or folder: its full path, or one from the folder the command runs in"),
         title: z.string().optional().describe("the adventure's title; the document's name when left out"),
+        character: z.string().optional().describe("with start, the character of the document the player chose to play, by the name of their page"),
         start: z.preprocess((value) => (typeof value === "string" && /^\d+$/.test(value.trim()) ? Number(value) : value), z.number().int().positive()).optional().describe("the starting point the player chose, by its number"),
         cancel: z.boolean().optional().describe("drop the import under way, and what it wrote; the player's document stays as it is"),
     }),
@@ -105,7 +106,7 @@ export const importCommand = defineCommand({
         }
 
         if (input.start !== undefined) {
-            chooseStart(root, context, open.folder, open.state, input.start);
+            chooseStart(root, context, open.folder, open.state, input.start, input.character?.trim() || undefined);
         }
 
         // A run stopped by a failure, or by a server that was restarted, goes on from where it stopped; the command line waits for it.
@@ -172,7 +173,7 @@ function nextPiece(root: string, context: Context, folder: string, state: Import
     return { ...resultOf(root, folder, next), piece: { number: done, text, instructions, pictures: join(folder, "document", "pictures") } };
 }
 
-function chooseStart(root: string, context: Context, folder: string, state: ImportState, start: number): void
+function chooseStart(root: string, context: Context, folder: string, state: ImportState, start: number, character: string | undefined): void
 {
     const starts = importStarts(folder);
 
@@ -184,8 +185,8 @@ function chooseStart(root: string, context: Context, folder: string, state: Impo
         throw new Error(`There is no starting point ${start}: choose one of ${starts.map((one) => one.number).join(", ")}. Nothing changed.`);
     }
 
-    writeImportState(folder, writingState(folder, state, start));
-    appendLogEntry(root, newDatedLogEntry(root, context, "import-start-chosen", "hidden", { title: state.title, start }));
+    writeImportState(folder, writingState(folder, state, start, character));
+    appendLogEntry(root, newDatedLogEntry(root, context, "import-start-chosen", "hidden", { title: state.title, start, ...(character === undefined ? {} : { character }) }));
 }
 
 // The helper's runs, in the background while the MCP server lives on; the command line waits for them.
@@ -312,13 +313,16 @@ export function importText(result: ImportResult): string
     if (state.phase === "reading") {
         const minutes = Math.max(1, (state.pieces - state.done) * 4);
         return `Importing ${state.title}: piece ${Math.min(state.done + 1, state.pieces)} of ${state.pieces} being read${result.pictures === undefined ? "" : `, ${result.pictures} pictures found`}; `
-            + `about ${minutes} minutes more, by itself${pages === "" ? "" : `; pages so far: ${pages}`}. Tell the player, and go on with them meanwhile; status says when it is ready.`;
+            + `about ${minutes} minutes more, by itself${
+                pages === "" ? "" : `; pages so far: ${pages}`
+            }. Tell the player, then end your turn and go on with them, the setup or the character: never wait for it in your turn; status says when it is ready.`;
     }
 
     if (state.phase === "choosing") {
         const starts = result.starts.map((start) => `${start.number}. ${start.title}\n${start.text}`).join("\n\n");
         return `${state.title} is read (${pages}). Ask the player whether they have read it; give each start its Back cover lines if not, its Reader line if so, `
-            + `and the character they would play; then call import with the start they choose.\n\n${starts}`;
+            + "and the character they would play; to one who has not read it, a start's name tells nothing of what comes after, in a question's choices too: give it "
+            + `one of yours where its own does. Then call import with the start they choose and the character they play.\n\n${starts}`;
     }
 
     if (state.phase === "writing") {
@@ -326,7 +330,8 @@ export function importText(result: ImportResult): string
             + "status says when it is ready.";
     }
 
-    return `${state.title} is ready: ${pages}, in ${result.adventure}. Install it with package install "${result.adventure}" when the story reaches it, at the setup if it is the start.`
+    return `${state.title} is ready: ${pages}, in ${result.adventure}. Install it with package install "${result.adventure}" when the story reaches it, at the setup if it is the start. `
+        + "What its pages say of the world stays so: find before you invent, and invent only where they are silent."
         + (result.invented === undefined ? "" : `\nTell the player what was invented to fill the gaps:\n${result.invented}`)
         + followedText(state.followed);
 }
@@ -351,9 +356,10 @@ function chatPieceText(state: ImportState, piece: NonNullable<ImportResult["piec
     const last = piece.number >= state.pieces;
     const then = last
         ? "This is the last piece. For a book, ask the player whether they have read it, then propose three or four starting points spread over the story, each just "
-            + "before a choice of it, never its end, with who could be played there: as its back cover would to one who has not read it. Once they choose, set the "
+            + "before a choice of it, never its end, with who could be played there: as its back cover would to one who has not read it, its name too. Once they choose, set the "
             + "world as it stands there with write: day 1 is that moment; an event before it is happened, one after stays planned with its date moved; whoever is "
-            + "dead by then is dead; knows is what each knew there; what comes after is secret. A module keeps its own start. Then write the opening, a topic tagged "
+            + "dead by then is dead; knows is what each knew there; what comes after is secret; nothing written decides what the character they play will do, "
+            + "choose or suffer, their death included. A module keeps its own start. Then write the opening, a topic tagged "
             + "opening, all secret: the situation, the hooks, what happens if no one acts, the pages to read first; and tell the player the gaps you filled. "
             + "A novel or a story is told as its author tells it: unless the player chose how you write, config author with the author's name and story with how "
             + "it is built (arcs, episodes, mystery or situations), and tell them; if they chose, ask whether to switch."

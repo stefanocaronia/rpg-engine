@@ -168,6 +168,7 @@ Read-only: no. Positional parameters: `document`.
 
 - `document` (`string`, optional): the document's file or folder: its full path, or one from the folder the command runs in
 - `title` (`string`, optional): the adventure's title; the document's name when left out
+- `character` (`string`, optional): with start, the character of the document the player chose to play, by the name of their page
 - `start` (`integer`, optional): the starting point the player chose, by its number
 - `cancel` (`boolean`, optional): drop the import under way, and what it wrote; the player's document stays as it is
 

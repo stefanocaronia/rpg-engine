@@ -27,6 +27,8 @@ export interface ImportState
     /** The steps of the writing: the folders of pages, then the opening. */
     steps?: string[];
     start?: number;
+    /** The character of the document the player plays, when they chose one. */
+    character?: string;
     /** Why the last run stopped; the next call of import tries it again. */
     failed?: string;
     /** What the engine's check found wrong in the adventure, for the helper's one more try. */
