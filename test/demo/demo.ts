@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { runCommandLine } from "../../src/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { makeSave } from "../../src/commands/game-saves.ts";
+import { systemConfirm } from "../../src/confirm/index.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
+import { downloadBytes } from "../../src/core/download.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
 import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
+import { npmPackages } from "../../src/extensions/index.ts";
 import { codexPictures, hostWriter } from "../../src/pictures/index.ts";
 import { inPlay } from "../support.ts";
 
@@ -42,7 +45,21 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 {
     // Codex as the chat has it, for Settings to say whether pictures can be made here (D-341); the demo never has one made.
     // And what translates the page into a language the package does not ship, with a data folder of the demo's own, never the player's (D-406).
-    const context: Context = { ...defaultContext(demoFolder), pictures: codexPictures(), writer: hostWriter(() => undefined), home: `${demoFolder}-home` };
+    // And npm, the web and the window of the player's yes, for the Packages page's catalog to list, add and take away for real: in a folder of packages of the
+    // demo's own, so that the player's campaigns never see what the demo installs (D-436, D-485).
+    const own = defaultContext(demoFolder);
+    const packages = `${demoFolder}-packages`;
+    const context: Context = {
+        ...own,
+        systemFolders: [own.systemFolders[0], join(packages, "node_modules")],
+        extensionFolders: [join(packages, "node_modules")],
+        packages: npmPackages(packages),
+        download: downloadBytes,
+        confirm: systemConfirm(process.platform, process.env),
+        pictures: codexPictures(),
+        writer: hostWriter(() => undefined),
+        home: `${demoFolder}-home`,
+    };
 
     if (!existsSync(join(demoFolder, "campaign.yaml"))) {
         await makeDemo(context);
