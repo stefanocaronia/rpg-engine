@@ -64,6 +64,11 @@ export interface Context
     writer?: TextWriter;
     /** What reads the player's documents outside the chat (D-489 (1)): none where no helper is ready, and in tests. */
     reader?: DocumentReader;
+    /**
+     * Starts the import's runs in a process of their own, apart from the chat, in the campaign's folder: an import outlives a chat closed or an MCP server
+     * started again (playtest 18). None on the command line, which runs them itself, and in tests.
+     */
+    importRunner?: (root: string) => void;
     /** The folder of this player's data on this computer, apart from any campaign: the page's words translated on the fly (D-406). */
     home?: string;
     /** The folder of the dashboard's built page, whose i18n/ lists every phrase it has (D-423). */

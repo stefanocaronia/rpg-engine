@@ -5,4 +5,5 @@ export { hostPictures, hostReader, hostWriter } from "./chosen.ts";
 export { claudePictures, claudeReader, claudeSays, claudeWriter } from "./claude.ts";
 export { codexPictures, codexReader, codexSays, codexWriter } from "./codex.ts";
 export { computerHelpers, helperChanges, helperEnvironment, helperLine, helperState, toolsFolder } from "./helpers.ts";
+export { stopProcess } from "./stop.ts";
 export { cleanSvg, svgIn } from "./svg.ts";

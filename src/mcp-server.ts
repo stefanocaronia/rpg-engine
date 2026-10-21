@@ -2,6 +2,7 @@ import { McpServer, type RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
+import { spawn } from "node:child_process";
 import { findCampaign, refreshHostFiles } from "./campaign/index.ts";
 import { extensionCommands } from "./commands/game-extensions.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
@@ -118,6 +119,8 @@ export async function startMcpServer(): Promise<void>
         pictures: hostPictures(host),
         writer: hostWriter(host),
         reader: hostReader(host),
+        // The command line that started this server runs the import apart, `rpg import` in the campaign's folder, with the chat's own helper.
+        importRunner: (root) => spawn(process.execPath, [process.argv[1] ?? "", "import"], { cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: { ...process.env, RPG_HOST: host() ?? "" } }).unref(),
         helpers: computerHelpers(),
         packages: npmPackages(packagesFolder()),
         confirm: systemConfirm(process.platform, process.env),

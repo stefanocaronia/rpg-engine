@@ -128,12 +128,12 @@ export function claimImport(folder: string): boolean
     return true;
 }
 
-/** Whether another live process runs the import now, as the MCP server while a command line asks. */
-export function runElsewhere(folder: string): boolean
+/** The live process that runs the import now, other than this one, as the runner the MCP server started apart; undefined when none does. */
+export function runElsewhere(folder: string): number | undefined
 {
     const file = join(folder, ".running");
     const holder = existsSync(file) ? Number(readFileSync(file, "utf8")) : undefined;
-    return holder !== undefined && holder !== process.pid && isAlive(holder);
+    return holder !== undefined && holder !== process.pid && isAlive(holder) ? holder : undefined;
 }
 
 /** Lets the import go, once this process stops running it. */

@@ -24,6 +24,7 @@ import {
     runElsewhere,
     writeImportState,
 } from "../importer/index.ts";
+import { stopProcess } from "../pictures/index.ts";
 import { installedAdventures } from "./game-adventures.ts";
 import { isImportRunning, runImport, stopImport, writingState } from "./game-import.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -72,10 +73,7 @@ export const importCommand = defineCommand({
                 throw new Error("No import is under way. Nothing changed.");
             }
 
-            if (runElsewhere(open.folder)) {
-                throw new Error(`The import of ${open.state.title} runs in another process, the MCP server of the chat: drop it from there, with import cancel in the chat. Nothing changed.`);
-            }
-
+            await stopRunner(open.folder);
             await stopImport(open.folder);
             dropImport(open.folder);
             appendLogEntry(root, newDatedLogEntry(root, context, "import-cancelled", "hidden", { title: open.state.title }));
@@ -204,9 +202,20 @@ function goOn(root: string, context: Context, folder: string): Promise<void>
         return Promise.resolve();
     }
 
-    if (state.failed !== undefined && !isImportRunning(folder)) {
+    const elsewhere = runElsewhere(folder) !== undefined;
+
+    if (state.failed !== undefined && !isImportRunning(folder) && !elsewhere) {
         const { failed: _, ...kept } = state;
         writeImportState(folder, kept);
+    }
+
+    // In the MCP server the runs go on in a process of their own, which outlives the chat (playtest 18); one at a time.
+    if (context.files !== undefined && context.importRunner !== undefined) {
+        if (!elsewhere) {
+            context.importRunner(root);
+        }
+
+        return Promise.resolve();
     }
 
     const language = readSettings(root).language ?? "en";
@@ -222,6 +231,22 @@ function goOn(root: string, context: Context, folder: string): Promise<void>
     return going;
 }
 
+/** Stops the process that runs the import apart, if one does, and waits for it to end, so that its folder can go. */
+async function stopRunner(folder: string): Promise<void>
+{
+    const pid = runElsewhere(folder);
+
+    if (pid === undefined) {
+        return;
+    }
+
+    stopProcess(pid);
+
+    for (let waited = 0; waited < 15_000 && runElsewhere(folder) !== undefined; waited += 200) {
+        await new Promise((done) => setTimeout(done, 200));
+    }
+}
+
 function resultOf(root: string, folder: string, state: ImportState): ImportResult
 {
     const invented = state.phase === "done" ? importFile(folder, "notes/invented.md") : undefined;
@@ -229,7 +254,7 @@ function resultOf(root: string, folder: string, state: ImportState): ImportResul
         title: state.title,
         state,
         adventure: relative(root, join(folder, "adventure")),
-        running: isImportRunning(folder),
+        running: isImportRunning(folder) || runElsewhere(folder) !== undefined,
         starts: state.phase === "choosing" ? importStarts(folder) : [],
         pages: Object.fromEntries(Object.entries(importedPages(folder)).map(([type, names]) => [type, names.length])),
         ...(invented === undefined || invented === "" ? {} : { invented }),
@@ -358,7 +383,9 @@ export function importLine(root: string): string
         return `Import of ${state.title} in the chat: ${state.done} of ${state.pieces} pieces read; call import for the next.`;
     }
 
-    if (state.failed !== undefined && !isImportRunning(open.folder)) {
+    const running = isImportRunning(open.folder) || runElsewhere(open.folder) !== undefined;
+
+    if (state.failed !== undefined && !running) {
         return `Import of ${state.title} stopped: call import to try again.`;
     }
 
@@ -368,5 +395,5 @@ export function importLine(root: string): string
 
     // After the MCP server started again, nothing runs it until import is called.
     const told = `Import of ${state.title}: ${state.phase}, ${state.done} of ${state.phase === "reading" ? state.pieces : (state.steps?.length ?? 1)} done`;
-    return isImportRunning(open.folder) ? `${told}.` : `${told}; call import to go on, if it stopped.`;
+    return running ? `${told}.` : `${told}; call import to go on.`;
 }

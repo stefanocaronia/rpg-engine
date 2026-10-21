@@ -31,7 +31,8 @@ export async function runCommandLine(
     context: Context = {
         ...defaultContext(),
         pictures: hostPictures(() => undefined),
-        reader: hostReader(() => undefined),
+        // An import run apart by the MCP server uses the helper of the chat that started it.
+        reader: hostReader(() => process.env.RPG_HOST || undefined),
         packages: npmPackages(packagesFolder()),
         confirm: systemConfirm(process.platform, process.env),
         download: downloadBytes,
