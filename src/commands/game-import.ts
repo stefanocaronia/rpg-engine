@@ -167,7 +167,7 @@ function task(folder: string, state: ImportState): string
     // Who the player plays is theirs from the start: nothing written decides what they do (playtest 18).
     const played = state.character === undefined
         ? ""
-        : `\n\nThe player plays ${state.character}. On their page keep their past, bonds and nature, and in knows what they knew there; never what they `
+        : `\n\nThe player plays ${state.character}. On their page keep their past, bonds, nature and plans, and in knows what they knew there; never what they `
             + `will do, choose or suffer after it, their death included. Remove the events after the start that ${state.character} makes happen, and let no event `
             + `decide their acts: the player does.`;
     const chosen = `The player chose to start at ${state.start}. ${start?.title ?? ""}:\n${start?.text ?? ""}${played}`;

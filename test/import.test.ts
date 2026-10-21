@@ -127,7 +127,7 @@ describe("import of the player's document (D-489)", () => {
         ]);
         expect(reader.briefs[2]).toContain("The player chose to start at 2. Start 2:");
         // Who the player plays is theirs: nothing written decides what they do (playtest 18).
-        expect(reader.briefs[2]).toContain("The player plays Dravot. On their page keep their past, bonds and nature");
+        expect(reader.briefs[2]).toContain("The player plays Dravot. On their page keep their past, bonds, nature and plans");
         expect(done.output).toContain("The King is ready: 1 characters, 1 places, 1 topics, in .imports");
         expect(done.output).toContain("Tell the player what was invented to fill the gaps:\n- the name of the pass");
         expect(existsSync(join(work(), "adventure", "images", "p002-1.png"))).toBe(true);
