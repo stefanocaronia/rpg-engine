@@ -62,7 +62,7 @@ async function steps(folder: string, reader: DocumentReader, system: GameSystem 
             continue;
         }
 
-        const read = await reader.read(folder, brief(folder, state, system), ["adventure", "notes"], signal);
+        const read = await reader.read(folder, brief(folder, state, system, language), ["adventure", "notes"], signal);
 
         if (signal.aborted) {
             return;
@@ -127,9 +127,9 @@ function finishImport(folder: string, state: ImportState, language: string): voi
 }
 
 // What the helper reads at each run: the importer's part of the instructions, the pages as the core writes them, and what to do now.
-function brief(folder: string, state: ImportState, system: GameSystem | undefined): string
+function brief(folder: string, state: ImportState, system: GameSystem | undefined, language: string): string
 {
-    const instructions = (partText("import", system) ?? "").replaceAll("{title}", state.title);
+    const instructions = (partText("import", system) ?? "").replaceAll("{title}", state.title).replaceAll("{language}", language);
     const pagesSection = /## 3\. The world's pages\n([\s\S]*?)\n## /.exec(masterInstructions())?.[1]?.trim() ?? "";
     const written = Object.entries(importedPages(folder)).map(([type, names]) => `- ${type}: ${names.join(", ")}`);
     const pages = written.length === 0 ? "No pages yet." : `The pages written so far (read one before you add to it; never write a page twice):\n${written.join("\n")}`;

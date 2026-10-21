@@ -30,6 +30,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `15-lingua-e-lunghezza/` | the campaign of 13 in English (`en/`) and in German (`de/`), three evenings each, the first cut short in the fight: the language, the dashboard's words, a new master resuming mid-fight, continuity |
 | `16-i-controlli/` | the plateau of 11 with Bless kept by Corrado, goblin archers and a bugbear on him: the engine's checks of its state, silent while it is coherent (D-473) |
 | `17-un-avventura-a-meta/` | the party of 11 safe at the inn on the evening of day 6, and an adventure a friend gave the player (`adventure/`, copied beside the campaign): installed, read, its start put into the world, its dates moved, a hook brought into the story (D-483) |
+| `18-un-libro/` | a new campaign in its setup, and a book the player owns as a PDF, Kipling's «The Man Who Would Be King»: imported from the chat, a start chosen, the world set there, the narration as the book's, session zero with the book's character (D-484, D-489) |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
 

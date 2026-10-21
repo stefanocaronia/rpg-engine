@@ -170,7 +170,7 @@ function nextPiece(root: string, context: Context, folder: string, state: Import
     const done = state.done + 1;
     const next: ImportState = { ...state, done, ...(done >= state.pieces ? { phase: "done" as const } : {}) };
     writeImportState(folder, next);
-    const instructions = situationPart("import", context, campaignSystem(root, context)).replaceAll("{title}", state.title);
+    const instructions = situationPart("import", context, campaignSystem(root, context)).replaceAll("{title}", state.title).replaceAll("{language}", readSettings(root).language ?? "en");
     return { ...resultOf(root, folder, next), piece: { number: done, text, instructions, pictures: join(folder, "document", "pictures") } };
 }
 
