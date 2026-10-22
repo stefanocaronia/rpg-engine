@@ -1,6 +1,6 @@
 // The player's library as the commands use it (D-491): the entries config adds, checked and allowed by the player; what config shows of each; and what rules
 // finds in the books, after the game system's rules.
-import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { campaignFileName, findCampaign, readListSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
@@ -63,7 +63,8 @@ export async function libraryAdditions(root: string, context: Context, given: st
             throw new Error(`${basename(entry)} is no book the engine reads: give a ${documentKinds.join(", ")} file, or a folder of them. Nothing changed.`);
         }
 
-        const campaign = findCampaign(entry);
+        // A book is looked for from its folder: a file is no folder to hold a campaign.yaml, and Linux says so.
+        const campaign = findCampaign(found === "file" ? dirname(entry) : entry);
 
         if (campaign !== undefined) {
             throw new Error(`${entry} is inside the campaign in ${campaign}: the library is the player's own books, outside every campaign. Nothing changed.`);
