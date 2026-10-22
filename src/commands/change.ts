@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
+import { readSettings, requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry, type LogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
@@ -53,6 +53,7 @@ import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.t
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
 import { keptRolls } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
+import { faceValues } from "./roll.ts";
 import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources, startingAtZero } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
@@ -108,6 +109,7 @@ export const change = defineCommand({
             "the type of the damage, with by negative and as rolled, never halved or doubled by you, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type",
         ),
         recipe: z.string().optional().describe("a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest"),
+        values: faceValues.optional().describe("with spend and a recipe, the faces the player rolled with physical dice, one for each die, such as 6,1"),
     }),
 
     run(input, context)
@@ -117,6 +119,10 @@ export const change = defineCommand({
 
         if (input.recipe !== undefined) {
             return recipeResult(root, context, world, { ...input, recipe: input.recipe });
+        }
+
+        if (input.values !== undefined) {
+            throw new Error('Give values with the dice of a recipe: page, field, spend and recipe, such as page Bruna, field hit-dice-d8, spend 2, recipe "short rest", values 6,1. Nothing changed.');
         }
 
         if (input.page === undefined || input.field === undefined) {
@@ -534,8 +540,8 @@ function recipeResult(
     root: string,
     context: Context,
     world: World,
-    input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; },
-): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; spent?: string; }
+    input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; values?: number[]; },
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; physical?: boolean; spent?: string; }
 {
     const named = campaignSystem(root, context);
     const page = input.page?.trim() === "" ? undefined : input.page;
@@ -545,10 +551,10 @@ function recipeResult(
     if (input.field !== undefined && input.spend !== undefined && input.by === undefined && input.to === undefined && page !== undefined) {
         const { system, recipe } = recipeNamed(named, input.recipe);
         const why = input.why === undefined || input.why.trim() === "" ? recipe.name : input.why;
-        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, { system, recipe }, page, input.field, input.spend, why).text };
+        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, { system, recipe }, page, input.field, input.spend, { why, values: input.values }).text };
     }
 
-    if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined) {
+    if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined || input.values !== undefined) {
         throw new Error('A recipe changes by itself the fields it names: give it with the page, or alone for the player character and the companions with them, such as recipe "long rest". Nothing changed.');
     }
 
@@ -572,8 +578,9 @@ function recipeResult(
         current = applied.world;
         return applied.outcome;
     });
-    // Where the dashboard serves a page, the player spends their dice there with ask (ASK-14).
-    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, buttons: context.page?.spendDice !== undefined };
+    // Where the dashboard serves a page, the player spends their dice there with ask (ASK-14); with physical dice, they roll their own (ASK-8).
+    const physical = readSettings(root).dice === "physical";
+    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, buttons: context.page?.spendDice !== undefined, physical };
 }
 
 /**
@@ -674,7 +681,7 @@ function recipePage(root: string, world: World, name: string): Page
  * "Long rest (a recipe of the system 5e):", then for each page what ended and changed, as in "Ennio: Prosciugato ended; hp 8/12 → 12/12. Not brought back:
  * hit-dice 1/3.", with the thresholds it touched; the rules for the rest; the game date, which a recipe does not move.
  */
-function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; }): string
+function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; physical?: boolean; }): string
 {
     const notes = result.outcomes.flatMap((outcome) => outcome.steps.flatMap(stepNotes));
     const lines = result.outcomes.flatMap((outcome) => {
@@ -698,7 +705,7 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
  * The dice a rest lets a page spend, left to who chooses them (ASK-14): the player for the player character, with ask's buttons where they are, the master for
  * a companion.
  */
-function spendText(outcome: RecipeOutcome, result: { recipe: string; buttons?: boolean; }): string
+function spendText(outcome: RecipeOutcome, result: { recipe: string; buttons?: boolean; physical?: boolean; }): string
 {
     if (outcome.spendable.length === 0) {
         return "";
@@ -711,7 +718,11 @@ function spendText(outcome: RecipeOutcome, result: { recipe: string; buttons?: b
         return ` Choose whether ${outcome.page} spends ${dice}: ${spend}.`;
     }
 
-    return result.buttons === true ? ` Ask the player how many of ${dice} they spend: ask with recipe "${result.recipe}".` : ` Ask the player how many of ${dice} they spend, then ${spend}.`;
+    if (result.physical === true) {
+        return ` Ask the player how many of ${dice} they spend and roll with their own dice, then ${spend} and values, the faces they tell.`;
+    }
+
+    return result.buttons === true ? ` The player spends ${dice} on the page, one die at a time: ask with recipe "${result.recipe}", even when they already said how many.` : ` Ask the player how many of ${dice} they spend, then ${spend}.`;
 }
 
 /** "hp 20/34 → 34/34 (in Forma d'orso)": a step of a recipe, with the effect it changed on or the base the page reads again. */

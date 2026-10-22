@@ -38,8 +38,8 @@ export interface RestDice
 /**
  * Spends dice of a counter named after its die, as hit-dice-d8, in a recipe that lets one (D-449): each die rolled with what the recipe adds, at least 0, the
  * total given to its counter up to the maximum, the dice taken from theirs, each on the effect that gives it, if one does (EFF-7); the line that says it, with the
- * rules a party member's counters touch (DAT-3).
- * `check` names the roll in the log, as the player's own rolls are named (ASK-14). Refused when the recipe spends no such counter, or there are not as many.
+ * rules a party member's counters touch (DAT-3). `how` gives the why, the check that names the roll in the log, as the player's own rolls are named (ASK-14),
+ * and the faces of physical dice, one for each die (ASK-8). Refused when the recipe spends no such counter, there are not as many, or the faces are not one a die.
  */
 export function spendDice(
     root: string,
@@ -49,8 +49,7 @@ export function spendDice(
     name: string,
     field: string,
     amount: unknown,
-    why: string,
-    check?: string,
+    how: { why: string; check?: string; values?: number[]; },
 ): DiceSpent
 {
     const { system, recipe } = spending;
@@ -75,7 +74,13 @@ export function spendDice(
         throw new Error(`${page.name} has ${dice === undefined ? "no" : dice.value} ${field}: spend a whole number of them, from 1 up to that. Nothing changed.`);
     }
 
-    const roll = rollDice(`${count}d${sides}`, { random: context.random });
+    const { why, check, values } = how;
+
+    if (values !== undefined && values.length !== count) {
+        throw new Error(`Give one face for each die spent: ${count} ${field}, ${values.length} ${values.length === 1 ? "face" : "faces"}. Nothing changed.`);
+    }
+
+    const roll = rollDice(`${count}d${sides}`, values === undefined ? { random: context.random } : { values });
     const adds = formulaValue(world, fields, rule.adds) ?? 0;
     const healed = roll.faces.reduce((total, face) => total + Math.max(0, face + adds), 0);
     const target = readCounter(valueNamed(fields, rule.gives)) ?? { value: 0 };
@@ -91,7 +96,7 @@ export function spendDice(
         why,
         who: page.name,
         ...(check === undefined ? {} : { check }),
-        physical: false,
+        physical: values !== undefined,
         dice: roll.dice,
     });
     appendLogEntry(root, entry);

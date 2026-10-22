@@ -163,10 +163,27 @@ describe("hit dice in a short rest (D-449)", () => {
         expect(rested).toContain('Lena: nothing changed. Choose whether Lena spends hit-dice-d6 2/2: change with spend and recipe "short rest".');
         const page = { choose: async () => undefined, spendDice: async () => 0 as const };
         const asking = change.format(await change.run(change.input.parse({ recipe: "short rest" }), { ...context, page }));
-        expect(asking).toContain('Ask the player how many of hit-dice-d10 3/3 they spend: ask with recipe "short rest".');
+        expect(asking).toContain('The player spends hit-dice-d10 3/3 on the page, one die at a time: ask with recipe "short rest", even when they already said how many.');
         // A form alone spends no dice: the player chooses them in words.
         const form = change.format(await change.run(change.input.parse({ recipe: "short rest" }), { ...context, player: { choose: async () => undefined } }));
         expect(form).toContain("Ask the player how many of hit-dice-d10 3/3 they spend, then change with spend and recipe");
+    });
+
+    it("takes the faces of physical dice, one for each die, and logs the roll as physical (ASK-8, ASK-14)", async () => {
+        await ok("config", "dice", "physical");
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
+        expect(await ok("change", "--recipe", "short rest")).toContain(
+            'Ettore: nothing changed. Ask the player how many of hit-dice-d10 3/3 they spend and roll with their own dice, then change with spend and recipe "short rest" and values, the faces they tell.',
+        );
+        expect(await ok("change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest", "--values", "6,1")).toBe(
+            "Ettore spends 2 hit-dice-d10: 2d10 = [6, 1] + 2 each, 11; hp 5/26 → 16/26; hit-dice-d10 3/3 → 1/3.",
+        );
+        const logged = readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as { type: string; data: { physical?: boolean; }; });
+        expect(logged.filter((entry) => entry.type === "roll").at(-1)?.data.physical).toBe(true);
+        const refused = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "short rest", "--values", "6,1"], context);
+        expect(refused.output).toBe("Give one face for each die spent: 1 hit-dice-d10, 2 faces. Nothing changed.");
+        const alone = await runCommandLine(["change", "Ettore", "hp", "--by", "3", "--values", "3"], context);
+        expect(alone.output).toContain("Give values with the dice of a recipe");
     });
 
     it("heals on the effect that gives the hit points, under which the page keeps its own (EFF-7)", async () => {

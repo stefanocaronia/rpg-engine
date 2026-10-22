@@ -82,7 +82,7 @@ export const ask = defineCommand({
         + "In a fight, each roll the player's character makes is its own ask, in the order the game's rules give them. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
-        + "recipe, without options, once the player agreed to a rest whose recipe lets one spend dice, as hit dice in a short rest, and you applied it with change: the player spends their character's dice one at a time and you get what they gave. "
+        + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice, as hit dice, one at a time, and you get what they gave. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
         + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who Bruna.',
     group: "game",
@@ -92,7 +92,7 @@ export const ask = defineCommand({
         options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4"),
         who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
         square: z.boolean().optional().describe("true to ask where the player's character moves on its place's map"),
-        recipe: z.string().optional().describe("a rest's recipe that lets one spend dice, such as short rest: the player spends their character's dice of it, one at a time"),
+        recipe: z.string().optional().describe("the rest's recipe, such as short rest"),
     }),
 
     async run(input, context): Promise<AskResult>
@@ -181,7 +181,7 @@ export const ask = defineCommand({
             case "spent":
                 return result.text;
             case "dice in words":
-                return `Ask the player in words this time, without a word about buttons: ${result.asked}. Then stop.`;
+                return `Ask the player in words, without a word about buttons: ${result.asked}. Then stop.`;
             default:
                 return `No answer from the buttons: ask the player in words what the call held: ${result.asked}. Then stop.`;
         }
@@ -321,7 +321,7 @@ async function diceSpent(root: string, context: Context, question: string, recip
 
     // The player rolls their own dice: asked in words, and the master writes what each gives (ASK-8).
     if (settings.dice === "physical") {
-        return { kind: "dice in words", asked: `${question} (${offered}; for each die they roll and tell, change its counter with spend 1, and ${gives} with by the face and what it adds)` };
+        return { kind: "dice in words", asked: `${question} (${offered}; they roll them with their own dice: then change with page ${who}, the dice's counter, spend, recipe "${recipe.name}" and values, the faces they tell)` };
     }
 
     if (context.page?.spendDice === undefined) {
@@ -358,7 +358,7 @@ async function diceSpent(root: string, context: Context, question: string, recip
                     return `${who} has no ${asked} that ${recipe.name} lets one spend.`;
                 }
 
-                const spent = spendDice(root, { ...context, actor: "player" }, now, spending, who, field, 1, `${label(field)}: ${question}`, label(field));
+                const spent = spendDice(root, { ...context, actor: "player" }, now, spending, who, field, 1, { why: `${label(field)}: ${question}`, check: label(field) });
                 rolls.push({ id: spent.id, field, face: spent.faces[0] ?? 0, adds: spent.adds, total: spent.total });
                 notes.push(...spent.notes.filter((note) => !notes.includes(note)));
                 return undefined;
@@ -386,12 +386,12 @@ async function diceSpent(root: string, context: Context, question: string, recip
     // A page closed before the button that ends it, with dice left: what was spent stays, and the master asks in words whether there is more (ASK-14).
     const more = done === 0 || now.dice.every((dice) => dice.value <= 0)
         ? ""
-        : ` The player left before they were done: ask in words whether they spend more, then change with page ${who}, the dice's counter, spend and recipe "${recipe.name}".`;
+        : ` The player closed the page before they were done: ask in words whether they spend more, then change with page ${who}, the dice's counter, spend and recipe "${recipe.name}".`;
     const spent = spentText(before, now);
     return { kind: "spent", text: [`${spent.charAt(0).toUpperCase()}${spent.slice(1)}${more}`, ...notes].join("\n") };
 }
 
-/** "the player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, …; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Tell it in the story." */
+/** "the player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, …; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Already written: tell it in the story." */
 function spentText(before: RestDice[], now: SpendAsked): string
 {
     const max = now.gives.max === undefined ? "" : `/${now.gives.max}`;
@@ -400,7 +400,7 @@ function spentText(before: RestDice[], now: SpendAsked): string
         return `${dice.field} ${dice.value}/${dice.max} → ${after}/${dice.max}`;
     });
     const faces = now.rolls.map((roll) => `${roll.field} ${roll.face}${roll.adds === 0 ? "" : ` ${roll.adds > 0 ? "+" : "-"} ${Math.abs(roll.adds)}`} = ${roll.total}`).join(", ");
-    return `the player spent ${now.rolls.length} of ${now.who}'s dice: ${faces}; ${[`${now.gives.field} ${now.gives.from}${max} → ${now.gives.value}${max}`, ...counters].join("; ")}. Tell it in the story.`;
+    return `the player spent ${now.rolls.length} of ${now.who}'s dice: ${faces}; ${[`${now.gives.field} ${now.gives.from}${max} → ${now.gives.value}${max}`, ...counters].join("; ")}. Already written: tell it in the story.`;
 }
 
 /** A counter of dice as the page shows it, without the counter it gives to. */

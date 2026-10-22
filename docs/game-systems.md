@@ -149,7 +149,7 @@ recipes:
 
 - `rewards`: what the creatures overcome in a scene give the party, which `scene close` proposes.
 - `thresholds`: the rule a counter touches at a value, or at every change.
-- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount or a formula, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`, or by the player one die at a time on the dashboard, through `ask` with the recipe), the counter it `needs` above 0 to give anything (`needs: hp`), how often it gives anything (`once-per: 24h`, counted from the last time it gave a page something, less how long it `lasts`, as the master may advance its hours before or after), the occasions it `ends`, the rules it leaves to the master.
+- `recipes`: what a rest does: counters `set`, partly `regain`ed or `lower`ed by an amount or a formula, never below 0 (`lower: {exhaustion: 1}`), dice one may `spend`, each rolled with what it `adds` and the total given to a counter (`spend: {hit-dice-*: {gives: hp, adds: con-mod}}`, used as `change Bruna hit-dice-d8 --spend 2 --recipe "short rest"`, with `--values 6,1` for physical dice, or by the player one die at a time on the dashboard, through `ask` with the recipe), the counter it `needs` above 0 to give anything (`needs: hp`), how often it gives anything (`once-per: 24h`, counted from the last time it gave a page something, less how long it `lasts`, as the master may advance its hours before or after), the occasions it `ends`, the rules it leaves to the master.
 
 ### upkeep, burning
 

@@ -344,7 +344,7 @@ describe("the dice of a rest, spent one at a time on the page (ASK-14, D-492)", 
     it("shows the dice and the hit points, spends a die at each click as the player's roll, and gives the master what they healed", async () => {
         const seen = { shown: [] as SpendAsked[], refused: [] as (string | undefined)[] };
         expect(await spent(pageSpending(["hit-dice-d10", "HIT-DICE-D10"], 0, seen))).toBe(
-            "The player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, hit-dice-d10 4 + 2 = 6; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Tell it in the story.",
+            "The player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, hit-dice-d10 4 + 2 = 6; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Already written: tell it in the story.",
         );
         expect(shown).toEqual([{ question: rest.question, title: "Riposo", labels: ["Ho finito"] }]);
         expect(seen.refused).toEqual([undefined, undefined]);
@@ -363,17 +363,17 @@ describe("the dice of a rest, spent one at a time on the page (ASK-14, D-492)", 
         expect(seen.refused).toEqual(["Bruna has no hit-dice-d8 that short rest lets one spend."]);
         const left = await spent(pageSpending(["hit-dice-d10"], "absent", seen));
         expect(left).toContain("The player spent 1 of Bruna's dice: hit-dice-d10 4 + 2 = 6; hp 5/26 → 11/26; hit-dice-d10 3/3 → 2/3.");
-        expect(left).toContain('The player left before they were done: ask in words whether they spend more, then change with page Bruna, the dice\'s counter, spend and recipe "short rest".');
+        expect(left).toContain('The player closed the page before they were done: ask in words whether they spend more, then change with page Bruna, the dice\'s counter, spend and recipe "short rest".');
     });
 
     it("has the master ask in words without a page, and with physical dice", async () => {
         const inWords = ask.format(await ask.run(ask.input.parse(rest), { ...context, player: playerClicking(0) }));
         expect(inWords).toBe(
-            'Ask the player in words this time, without a word about buttons: Riposo breve sotto il mulino: quanti dadi vita spendi? (the dice of Bruna: hit-dice-d10 3/3, each 1d10+2; they give hp; then change with page Bruna, the dice\'s counter, spend and recipe "short rest", which rolls them). Then stop.',
+            'Ask the player in words, without a word about buttons: Riposo breve sotto il mulino: quanti dadi vita spendi? (the dice of Bruna: hit-dice-d10 3/3, each 1d10+2; they give hp; then change with page Bruna, the dice\'s counter, spend and recipe "short rest", which rolls them). Then stop.',
         );
         await rpg("config", "dice", "physical");
         const physical = ask.format(await ask.run(ask.input.parse(rest), { ...context, page: pageSpending([], 0, { shown: [], refused: [] }) }));
-        expect(physical).toContain("for each die they roll and tell, change its counter with spend 1, and hp with by the face and what it adds");
+        expect(physical).toContain('they roll them with their own dice: then change with page Bruna, the dice\'s counter, spend, recipe "short rest" and values, the faces they tell');
     });
 
     it("is refused with options, for a recipe that spends no dice, and when no die is left", async () => {

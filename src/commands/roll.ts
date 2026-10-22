@@ -17,7 +17,7 @@ import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.t
 import { itemList, signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
-const faceValues = z.preprocess(
+export const faceValues = z.preprocess(
     (value) => (typeof value === "string" ? value.split(/[\s,;]+/).filter(Boolean).map(Number) : value),
     z.array(z.number()),
 );
