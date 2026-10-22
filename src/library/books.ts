@@ -61,6 +61,13 @@ export interface BookText
     recognized: string[];
 }
 
+/** What a reader stopped half way left of a book: the pages the OCR read, by number, to go on from; and what hears each page it reads now. */
+export interface BookResume
+{
+    known: Map<number, string>;
+    keep(read: Map<number, string>): void;
+}
+
 /** The library of these entries, folders or documents, as the index in `folder` has it now (LIB-2, LIB-3). */
 export function libraryState(folder: string, entries: string[], scope: LibraryScope): LibraryState
 {
@@ -97,9 +104,16 @@ export function libraryState(folder: string, entries: string[], scope: LibrarySc
 /**
  * Reads the library's files still to read, one at a time, and writes the index of each in `folder`: its text, or why it was skipped (LIB-3, LIB-5); then drops
  * the index of a file that is gone from a folder still there. The entries, and their folders, are looked at again once all were read, so that a book added or
- * changed meanwhile is read too. A book is marked before it is read: one that stopped the reader twice is skipped. Stops when `signal` does.
+ * changed meanwhile is read too. A book is marked before it is read, and the pages the OCR reads are kept as it goes: the next reader goes on from them, and
+ * one that stopped two readers with no page read between is skipped. Stops when `signal` does.
  */
-export async function readLibrary(folder: string, entries: () => string[], scope: LibraryScope, read: (path: string) => Promise<BookText>, signal?: AbortSignal): Promise<void>
+export async function readLibrary(
+    folder: string,
+    entries: () => string[],
+    scope: LibraryScope,
+    read: (path: string, resume: BookResume) => Promise<BookText>,
+    signal?: AbortSignal,
+): Promise<void>
 {
     const tried = new Map<string, string>();
     const stopped = (): boolean => signal?.aborted === true;
@@ -130,11 +144,9 @@ export async function readLibrary(folder: string, entries: () => string[], scope
             }
 
             tried.set(file.path, stampOf(file));
-            const before = loadIndex(folder, file.path);
             const stamp = { format: 1 as const, path: file.path, size: file.size, modified: file.modified };
-            writeIndex(folder, { ...stamp, reading: (before !== undefined && isCurrent(before, file) ? (before.reading ?? 0) : 0) + 1 });
             // A file another program keeps busy keeps its mark, to be read the next time: twice, and it is skipped as one that stops the reader.
-            const index = await indexOf(stamp, read);
+            const index = await indexOf(stamp, (path) => read(path, resumeOf(folder, file, stamp)));
 
             if (index !== undefined) {
                 writeIndex(folder, index);
@@ -143,6 +155,16 @@ export async function readLibrary(folder: string, entries: () => string[], scope
     }
 
     dropGone(folder);
+}
+
+/** The folders right inside a folder, by name, without those whose name starts with a dot: where one too big for a library may keep a game's books. */
+export function foldersIn(folder: string): string[]
+{
+    try {
+        return readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith(".")).map((entry) => entry.name).sort((one, other) => one.localeCompare(other));
+    } catch {
+        return [];
+    }
 }
 
 /** Takes the reading of the library for this process, at once or not at all: false while another live process reads it, one at a time on a computer. */
@@ -218,6 +240,9 @@ interface BookIndex
     recognized?: string[];
     skipped?: string;
     reading?: number;
+    /** While it is read: the pages the OCR read so far, by number, and how many there were when the last reader began. */
+    ocrPages?: Record<string, string>;
+    startedWith?: number;
 }
 
 interface FoundFile
@@ -314,7 +339,8 @@ async function indexOf(stamp: Omit<BookIndex, "parts">, read: (path: string) => 
         const language = bookLanguage(text.parts.map((part) => part.text).join("\n"));
         return { ...stamp, ...(language === undefined ? {} : { language }), parts: text.parts, unreadable: text.unreadable, recognized: text.recognized };
     } catch (error) {
-        if (["EBUSY", "EMFILE", "EAGAIN"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+        // Kept busy by another program, or its OCR stopped half way, as by the app closed: read the next time, from the pages read.
+        if (["EBUSY", "EMFILE", "EAGAIN", "EINTR"].includes((error as NodeJS.ErrnoException).code ?? "")) {
             return undefined;
         }
 
@@ -329,10 +355,43 @@ function skippedWhy(index: BookIndex): string | undefined
         return index.skipped;
     }
 
-    return index.parts === undefined && (index.reading ?? 0) >= mostReaders
+    return index.parts === undefined && (index.reading ?? 0) >= mostReaders && !hasMoved(index)
         ? `${basename(index.path)} could not be read ${mostReaders} times, too big or broken for the reader, or kept busy by another program: close that program, `
             + "or save the file again, which has it read again"
         : undefined;
+}
+
+/**
+ * A book marked as read by one more reader, from the pages a reader before it left (LIB-3): a reader stopped after the reading moved on, as by the app closed,
+ * is no reader the book stopped. The pages read are kept every few, so that the next goes on from there.
+ */
+function resumeOf(folder: string, file: FoundFile, stamp: Omit<BookIndex, "parts">): BookResume
+{
+    const before = loadIndex(folder, file.path);
+    const left = before !== undefined && isCurrent(before, file) ? before : undefined;
+    const known = new Map(Object.entries(left?.ocrPages ?? {}).map(([page, text]) => [Number(page), text]));
+    const reading = left !== undefined && !hasMoved(left) ? (left.reading ?? 0) + 1 : 1;
+    const mark = (pages: Map<number, string>): void => writeIndex(folder, { ...stamp, reading, startedWith: known.size, ocrPages: Object.fromEntries(pages) });
+    let kept = 0;
+    mark(known);
+    return {
+        known,
+        keep: (read) => {
+            if (read.size - kept >= savedEvery) {
+                kept = read.size;
+                mark(new Map([...known, ...read]));
+            }
+        },
+    };
+}
+
+// How many pages the OCR reads between two saves of what it has read: a few seconds of its work.
+const savedEvery = 10;
+
+/** Whether the last reader of a book read some pages before it stopped. */
+function hasMoved(index: BookIndex): boolean
+{
+    return Object.keys(index.ocrPages ?? {}).length > (index.startedWith ?? 0);
 }
 
 function isWaiting(folder: string, file: FoundFile): boolean

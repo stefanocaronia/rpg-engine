@@ -3,7 +3,7 @@
 import { zipSync } from "fflate";
 import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { libraryEntries, libraryScope, skippedKind } from "../src/commands/game-library.ts";
@@ -11,7 +11,7 @@ import type { Confirmed, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { isReadable, pagesWritten, readDocument } from "../src/documents/index.ts";
-import { bookLanguage, claimLibrary, dropUnlisted, libraryFolders, libraryReader, libraryState, readLibrary, releaseLibrary, saveLibraryFolders } from "../src/library/index.ts";
+import { bookLanguage, type BookResume, claimLibrary, dropUnlisted, libraryFolders, libraryReader, libraryState, readLibrary, releaseLibrary, saveLibraryFolders } from "../src/library/index.ts";
 import { findPages, pageExcerpt } from "../src/rules/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -270,6 +270,74 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
         fileIn(denied, "Denied.md", "Not for you.");
         await readLibrary(home, () => [denied], libraryScope, () => Promise.reject(Object.assign(new Error("EACCES: permission denied, open Denied.md"), { code: "EACCES" })));
         expect(libraryState(home, [denied], libraryScope).skipped.map((one) => one.why)).toEqual(["EACCES: permission denied, open Denied.md"]);
+    });
+
+    it("goes on from the pages the OCR read before a reader stopped, which counts as a reader the book stopped only when it read none (LIB-3)", () => {
+        const pages = (from: number, to: number) => new Map(Array.from({ length: to - from + 1 }, (_, at) => [from + at, `Page ${from + at}`]));
+        const known: number[] = [];
+
+        // Each reader stops on the first book, as when the app is closed: after the pages it reads, if any.
+        const stopping = (read?: Map<number, string>) => (_path: string, resume: BookResume) => {
+            known.push(resume.known.size);
+
+            if (read !== undefined) {
+                resume.keep(read);
+            }
+
+            return new Promise<never>(() => undefined);
+        };
+
+        const skipped = () => libraryState(home, [shelf], libraryScope).skipped.length;
+        void readLibrary(home, () => [shelf], libraryScope, stopping(pages(1, 12)));
+        void readLibrary(home, () => [shelf], libraryScope, stopping(pages(13, 24)));
+        expect(skipped()).toBe(0);
+        void readLibrary(home, () => [shelf], libraryScope, stopping());
+        expect(skipped()).toBe(0);
+        void readLibrary(home, () => [shelf], libraryScope, stopping());
+        expect(known).toEqual([0, 12, 24, 24]);
+        expect(skipped()).toBe(1);
+    });
+
+    it("leaves a book whose OCR stopped half way to be read again from its pages, never closed with holes; the importer keeps what it read", async () => {
+        const pages = new Map(Array.from({ length: 10 }, (_, at) => [at + 1, `Page ${at + 1}`]));
+        const stoppedOcr = Object.assign(new Error("The OCR stopped before its last page."), { code: "EINTR", read: pages });
+        const known: string[] = [];
+
+        await readLibrary(home, () => [shelf], libraryScope, (path, resume) => {
+            known.push(`${basename(path)} ${resume.known.size}`);
+            resume.keep(pages);
+            return Promise.reject(stoppedOcr);
+        });
+
+        expect(libraryState(home, [shelf], libraryScope)).toMatchObject({ skipped: [] });
+        expect(libraryState(home, [shelf], libraryScope).waiting).toContain(join(shelf, "Rules of the Road.md"));
+        await readLibrary(home, () => [shelf], libraryScope, (path, resume) => (known.push(`${basename(path)} ${resume.known.size}`), reader(path)));
+        expect(known).toEqual(["Rules of the Road.md 0", "Rules of the Road.txt 0", "Rules of the Road.md 10", "Rules of the Road.txt 10"]);
+        // A document's reading: stopped for a library, which goes on from it; whole with the pages read, for the importer.
+        const pdf = fileIn(makeTempFolder(), "Scan.pdf", tinyPdf([{ text: "@<=?%:6 &0H?5H%6" }, { text: ":0<865&=H8: <0=?=0H" }]));
+        const stopping = () => Promise.reject(Object.assign(new Error("The OCR stopped before its last page."), { code: "EINTR", read: new Map([[1, "THE FORD\nThe ferryman waits by the river for the travellers."]]) }));
+        await expect(readDocument(pdf, { pictures: false, ocr: stopping, resume: { known: new Map(), keep: () => undefined } })).rejects.toMatchObject({ code: "EINTR" });
+        expect((await readDocument(pdf, { pictures: false, ocr: stopping })).recognized).toEqual(["p. 1"]);
+    });
+
+    it("reads by the OCR only the pages it has not read before, and tells each page it reads", async () => {
+        const pdf = fileIn(makeTempFolder(), "Scan.pdf", tinyPdf([{ text: englishBook }, { text: "@<=?%:6 &0H?5H%6" }, { text: ":0<865&=H8: <0=?=0H" }]));
+        const asked: number[][] = [];
+        const heard: number[][] = [];
+
+        const ocr = (_pdf: string, wanted: number[], _signal?: AbortSignal, onPage?: (read: Map<number, string>) => void) => {
+            asked.push(wanted);
+            const read = new Map(wanted.map((page) => [page, `THE FORD\nThe ferryman waits by the river for the travellers of page ${page}.`]));
+            onPage?.(read);
+            return Promise.resolve(read);
+        };
+
+        const known = new Map([[2, "THE ROAD\nThe road north is long, and the river is wide where the ferryman waits."]]);
+        const read = await readDocument(pdf, { pictures: false, ocr, resume: { known, keep: (fresh) => heard.push([...fresh.keys()]) } });
+        expect(asked).toEqual([[3]]);
+        expect(heard).toEqual([[3]]);
+        expect(read.recognized).toEqual(["p. 2", "p. 3"]);
+        expect(read.parts[1].text).toContain("The road north is long");
     });
 
     it("keeps a book's name while another one is still to read", async () => {
@@ -536,7 +604,17 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         context.terminal = true;
         const everything = makeTempFolder();
         Array.from({ length: 301 }, (_, index) => fileIn(everything, `note-${index}.txt`, "A note."));
-        expect((await rpg("config", "library", "--add", everything)).output).toContain(`${everything} holds more than 300 documents: it is no shelf of books.`);
+        expect((await rpg("config", "library", "--add", everything)).output).toContain(
+            `${everything} holds more than 300 documents, and a shelf of a game's books has from 5 to 50: give the folder inside it with this game's books. Nothing changed.`,
+        );
+        // With folders inside, it names some, for the player to choose among.
+        Array.from({ length: 8 }, (_, index) => fileIn(everything, `shelf-${index}/book.md`, "A book."));
+        const refused = (await rpg("config", "library", "--add", everything)).output;
+        expect(refused).toContain(`with this game's books, such as ${join(everything, "shelf-0")}, ${join(everything, "shelf-1")}, `);
+        expect(refused).toContain(`${join(everything, "shelf-5")}, or another of its 8. Nothing changed.`);
+        // Never to the master, before the player allowed anything there.
+        context.terminal = false;
+        expect((await rpg("config", "library", "--add", everything)).output).toContain("with this game's books. Nothing changed.");
     });
 
     it("says how many books are still being read, and starts reading them", async () => {

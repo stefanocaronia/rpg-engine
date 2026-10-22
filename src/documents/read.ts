@@ -45,6 +45,8 @@ export interface ReadOptions
     pictures?: boolean;
     signal?: AbortSignal;
     progress?: (read: number, of: number) => void;
+    /** The pages the OCR read before, by number, which it does not read again; and what hears those it reads now, as it goes. */
+    resume?: { known: Map<number, string>; keep(read: Map<number, string>): void; };
 }
 
 /** The kinds of file a document may be, by their extension. */
@@ -167,9 +169,24 @@ async function readPdf(path: string, options: ReadOptions): Promise<DocumentText
 async function readUnreadable(path: string, parts: DocumentPart[], options: ReadOptions): Promise<{ unreadable: string[]; recognized: string[]; }>
 {
     const pages = parts.flatMap((part, index) => (isReadable(part.text) ? [] : [index + 1]));
+    const known = options.resume?.known ?? new Map<number, string>();
+    const asked = pages.filter((page) => !known.has(page));
     const ocr = options.ocr;
-    const onPage = (done: number): void => options.progress?.(done, pages.length);
-    const read = ocr === undefined || pages.length === 0 ? new Map<number, string>() : await ocr(resolve(path), pages, options.signal, onPage).catch(() => new Map<number, string>());
+
+    const onPage = (fresh: Map<number, string>): void => {
+        options.progress?.(pages.length - asked.length + fresh.size, pages.length);
+        options.resume?.keep(fresh);
+    };
+
+    const fresh = ocr === undefined || asked.length === 0 ? new Map<number, string>() : await ocr(resolve(path), asked, options.signal, onPage).catch((error: unknown) => {
+        // Stopped half way: a library's reader goes on from the pages it read the next time; the importer keeps them.
+        if (options.resume !== undefined && (error as NodeJS.ErrnoException | undefined)?.code === "EINTR") {
+            throw error;
+        }
+
+        return (error as { read?: Map<number, string>; } | undefined)?.read ?? new Map<number, string>();
+    });
+    const read = new Map([...known, ...fresh]);
     const unreadable: string[] = [];
     const recognized: string[] = [];
 

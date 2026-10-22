@@ -296,7 +296,7 @@ describe("the import as the dashboard tells it (D-491 (11))", () => {
 
         context.ocr = (_pdf, pages, _signal, onPage) => {
             seen.push(importShown(folder));
-            onPage?.(1);
+            onPage?.(new Map([[pages[0] ?? 2, "The ferryman"]]));
             seen.push(importShown(folder));
             return Promise.resolve(new Map(pages.map((page) => [page, "The ferryman asks a coin of each traveller who crosses the river."])));
         };

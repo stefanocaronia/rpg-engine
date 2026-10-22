@@ -2,8 +2,11 @@
 // and 11; nothing to install. Mac and Linux have none yet.
 import { spawn } from "node:child_process";
 
-/** Reads some pages of a PDF from their pictures: the text of each it could read, by page number from 1; `onPage` hears how many are read so far. */
-export type PageReader = (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: number) => void) => Promise<Map<number, string>>;
+/**
+ * Reads some pages of a PDF from their pictures: the text of each it could read, by page number from 1; `onPage` hears those read so far. Stopped before its
+ * last page, as by its time or `signal` running out or its process failing, it fails with the code EINTR and those it read as `read`.
+ */
+export type PageReader = (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: Map<number, string>) => void) => Promise<Map<number, string>>;
 
 // Windows' own PowerShell: Windows.Data.Pdf draws a page, Windows.Media.Ocr reads it in the languages of the user's profile. Each page read is written as its
 // number and its text in base64, so that no console code page changes a letter; a page that fails is left out. No OCR language installed ends it with 3.
@@ -58,50 +61,64 @@ export function systemPageReader(platform: string, env: Record<string, string | 
 export function pagesWritten(out: string): Map<number, string>
 {
     const pages = new Map<number, string>();
-
-    for (const line of out.split(/\r?\n/)) {
-        // A page read empty is its number alone.
-        const match = /^(\d+)(?: ([A-Za-z0-9+/=]*))?$/.exec(line.trim());
-
-        if (match !== null) {
-            pages.set(Number(match[1]), Buffer.from(match[2] ?? "", "base64").toString("utf8"));
-        }
-    }
-
+    out.split(/\r?\n/).forEach((line) => pageLine(line, pages));
     return pages;
 }
 
-function windowsPages(shell: string, pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: number) => void): Promise<Map<number, string>>
+/** Adds to `pages` the page a line of Windows' script wrote, if it is one. */
+function pageLine(line: string, pages: Map<number, string>): void
+{
+    // A page read empty is its number alone.
+    const match = /^(\d+)(?: ([A-Za-z0-9+/=]*))?$/.exec(line.trim());
+
+    if (match !== null) {
+        pages.set(Number(match[1]), Buffer.from(match[2] ?? "", "base64").toString("utf8"));
+    }
+}
+
+function windowsPages(shell: string, pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: Map<number, string>) => void): Promise<Map<number, string>>
 {
     if (pages.length === 0) {
         return Promise.resolve(new Map());
     }
 
-    return new Promise((done) => {
+    return new Promise((done, fail) => {
         const env = { ...process.env, RPG_OCR_PDF: pdf, RPG_OCR_PAGES: pages.join(",") };
         const child = spawn(shell, ["-NoProfile", "-NonInteractive", "-Command", windowsScript], { env, stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
-        let out = "";
+        const read = new Map<number, string>();
+        let rest = "";
+        let stopped = false;
 
         const stop = (): void => {
+            stopped = true;
             child.kill();
         };
 
         const timer = setTimeout(stop, (30 + pages.length * secondsAPage) * 1000);
         signal?.addEventListener("abort", stop, { once: true });
         child.stdout.setEncoding("utf8");
+        // Each line whole is a page read, heard at once; a line cut in two waits for its end.
         child.stdout.on("data", (chunk: string) => {
-            out += chunk;
-            onPage?.(out.split("\n").length - 1);
+            const lines = (rest + chunk).split("\n");
+            rest = lines.pop() ?? "";
+            lines.forEach((line) => pageLine(line, read));
+            onPage?.(read);
         });
 
-        // What it read before it stopped or failed still counts.
-        const end = (): void => {
+        // What it read before it stopped or failed still counts. No OCR language (3), or no PowerShell, is no OCR at all.
+        const end = (code: number | null | "no shell"): void => {
             clearTimeout(timer);
             signal?.removeEventListener("abort", stop);
-            done(pagesWritten(out));
+            pageLine(rest, read);
+
+            if (stopped || (code !== 0 && code !== 3 && code !== "no shell")) {
+                fail(Object.assign(new Error("The OCR stopped before its last page."), { code: "EINTR", read }));
+            } else {
+                done(read);
+            }
         };
 
-        child.on("error", end);
+        child.on("error", () => end("no shell"));
         child.on("close", end);
     });
 }

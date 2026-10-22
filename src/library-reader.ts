@@ -31,8 +31,8 @@ export async function readLibraryHere(folder = defaultContext().bookIndex): Prom
     try {
         // The text left by a reader stopped after its folder was taken off the computer.
         dropUnlisted(folder, libraryFolders(folder));
-        await readLibrary(folder, () => libraryFolders(folder), libraryScope, async (path) => {
-            const read = await readDocument(path, { ocr, pictures: false });
+        await readLibrary(folder, () => libraryFolders(folder), libraryScope, async (path, resume) => {
+            const read = await readDocument(path, { ocr, pictures: false, resume });
             return { parts: read.parts, unreadable: read.unreadable, recognized: read.recognized };
         });
         dropUnlisted(folder, libraryFolders(folder));

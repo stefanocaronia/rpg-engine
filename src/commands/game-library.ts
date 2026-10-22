@@ -1,11 +1,11 @@
 // The player's library as the commands use it (D-491): the entries config adds, checked and allowed by the player; what config shows of each; and what rules
 // finds in the books, after the game system's rules.
-import { basename, isAbsolute, relative, resolve } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { campaignFileName, findCampaign, readListSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
 import { documentAt, documentKinds } from "../documents/index.ts";
-import { dropUnlisted, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../library/index.ts";
+import { dropUnlisted, foldersIn, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../library/index.ts";
 import { findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../rules/index.ts";
 import { systemWords } from "../systems/index.ts";
 import { languageName } from "./game-world.ts";
@@ -70,7 +70,7 @@ export async function libraryAdditions(root: string, context: Context, given: st
         }
 
         if (found === "folder" && context.bookIndex !== undefined && libraryState(context.bookIndex, [entry], libraryScope).crowded.length > 0) {
-            throw new Error(`${entry} holds more than ${mostBooks} documents: it is no shelf of books. Give the folder of this game's books. Nothing changed.`);
+            throw new Error(`${entry} holds more than ${mostBooks} documents, and a shelf of a game's books has from 5 to 50: give the folder inside it with this game's books${insideOf(context, entry)}. Nothing changed.`);
         }
     }
 
@@ -491,6 +491,16 @@ function libraryPath(context: Context, given: string): string
 export function unquoted(entry: string): string
 {
     return entry.trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
+}
+
+/**
+ * The folders inside one too big for a library, a few by name, for the player to choose the game's books among: in their terminal or on the dashboard, never
+ * to the master, before the player allowed anything there.
+ */
+function insideOf(context: Context, entry: string): string
+{
+    const inside = context.terminal === true || context.actor === "player" ? foldersIn(entry) : [];
+    return inside.length === 0 ? "" : `, such as ${inside.slice(0, 6).map((name) => join(entry, name)).join(", ")}${inside.length > 6 ? `, or another of its ${inside.length}` : ""}`;
 }
 
 /** An entry as this computer's library writes it, by any spelling of its path; none when the computer has not it. */
