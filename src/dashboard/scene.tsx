@@ -1,6 +1,7 @@
 // The Scene section (D-309, VIEW-6, D-444): where the party is, its picture with the places around it, its name, what holds there and its text; the open
 // scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
 import { useEffect, useRef, useState } from "preact/hooks";
+import { TalkName } from "./act-names.tsx";
 import type { DyingCounter, Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
@@ -329,13 +330,28 @@ function People({ people }: { people: ShownPerson[]; })
                                 number={person.stranger ? letterOf(person.name) : undefined}
                             />
                         )}
-                    <span>
-                        {person.stranger ? strangerLabel(person.name) : person.name}
-                        {person.count !== undefined && person.count > 1 && <span class="count">{` ×${person.count}`}</span>}
-                    </span>
+                    {/* Anyone but the player's own character is someone to talk to (D-495). */}
+                    {person.role === "pc"
+                        ? <PersonName person={person} />
+                        : (
+                            <TalkName name={person.stranger ? strangerLabel(person.name) : person.name}>
+                                <PersonName person={person} />
+                            </TalkName>
+                        )}
                 </li>
             ))}
         </ul>
+    );
+}
+
+/** Someone's name under their token, as the page shows it, with how many copies. */
+function PersonName({ person }: { person: ShownPerson; })
+{
+    return (
+        <span>
+            {person.stranger ? strangerLabel(person.name) : person.name}
+            {person.count !== undefined && person.count > 1 && <span class="count">{` ×${person.count}`}</span>}
+        </span>
     );
 }
 

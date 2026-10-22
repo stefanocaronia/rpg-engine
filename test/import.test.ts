@@ -95,6 +95,8 @@ describe("import of the player's document (D-489)", () => {
         context.reader = reader;
         const result = await rpg("import", book(), "--title", "The King");
         expect(result.exitCode).toBe(0);
+        // The reading done within the call: the player still hears whose plan read it (D-493).
+        expect(result.output).toContain("their own Claude Code or Codex reads it");
         expect(readFileSync(join(work(), "document", "01.md"), "utf8")).toMatch(/^\[p\. 1\]\n\nPage 1 /);
         expect(existsSync(join(work(), "document", "pictures", "p002-1.png"))).toBe(true);
         expect(readFileSync(join(work(), "document", "01.md"), "utf8")).toContain("[p. 2]");
@@ -178,6 +180,7 @@ describe("import of the player's document (D-489)", () => {
         context.reader = { ready: () => false, read: () => Promise.resolve({ failed: "never" }) };
         const first = await rpg("import", book(), "--title", "The King");
         expect(first.output).toMatch(/^Importing The King here in the chat, piece 1 of 2: write its pages with write/);
+        expect(first.output).not.toContain("under the terms of their account");
         expect(first.output).toContain("Then call import for the next piece.");
         expect(first.output).toContain("## Import");
         expect(first.output).toContain("[p. 1]\n\nPage 1 ");
@@ -224,8 +227,12 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
 
     it("stops the helper when it is dropped, in the MCP server, and its folder never comes back", async () => {
         context.files = new FileStore();
-        context.reader = fakeReader({ waits: true });
-        expect((await rpg("import", book(), "--title", "The King")).output).toContain("Importing The King: piece 1 of 2 being read");
+        context.reader = { ...fakeReader({ waits: true }), program: () => "Codex" };
+        const started = (await rpg("import", book(), "--title", "The King")).output;
+        expect(started).toContain("Importing The King: piece 1 of 2 being read");
+        // Whose plan reads it, and under whose terms, said once as it begins (D-493).
+        expect(started).toContain("their own Codex reads it, on their plan and its limits, and that the whole document goes to OpenAI under the terms of their account, its choice on training included");
+        expect((await rpg("import")).output).not.toContain("under the terms of their account");
         expect((await rpg("status")).output).toContain("Import of The King: reading, 0 of 2 done.");
         expect((await rpg("import", "--cancel")).output).toBe("The import of The King is dropped, with what it wrote.");
         await new Promise((done) => setTimeout(done, 50));

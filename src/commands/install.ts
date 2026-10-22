@@ -83,7 +83,8 @@ export const install = defineCommand({
         const { name, account, gives } = programs[result.program];
 
         if (result.kind === "ready") {
-            return `${name} is ready on this computer with the player's ${account}: ${gives}. Tell the player in a few words, and go on.`;
+            return `${name} is ready on this computer with the player's ${account}: ${gives}. Tell the player in a few words, and that it runs on their own plan and its limits, `
+                + "imports of their documents too; then go on.";
         }
 
         if (result.kind === "waiting") {

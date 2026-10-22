@@ -4987,6 +4987,60 @@ button.row,
     font-weight: 550;
 }
 
+/* A name that acts (D-495): the name acts, the number rolls. A dotted line in the accent under it and a chevron after it; in a chip or a line, its whole
+   width the target. */
+.act {
+    display: inline-block;
+    max-width: 100%;
+    margin: -2px -4px;
+    padding: 2px 4px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-indent: 0;
+    text-decoration: underline dotted color-mix(in srgb, var(--accent) 75%, transparent) 1px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+/* Inline, a character after the last word, so that it never goes to a line of its own; mirrored by itself from right to left. */
+.act-mark {
+    margin-inline-start: 0.25em;
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.chips.acting li {
+    padding: 0;
+}
+
+.chips.acting .act {
+    margin: 0;
+    padding: 3px 9px;
+    border-radius: inherit;
+}
+
+@media (pointer: coarse) {
+    .chips.acting .act {
+        min-height: 36px;
+    }
+
+    .items th .act {
+        min-height: 36px;
+    }
+}
+
+/* Someone to talk to: in the turns and under a token, the name alone, without the chevron. */
+.present .act.talk {
+    display: block;
+    margin: 0;
+    padding: 2px;
+    text-align: center;
+}
+
 /* What the character's parts always give: outlined, not chosen. */
 .always {
     display: grid;
@@ -7375,6 +7429,147 @@ svg.icon {
 }
 
 /* The dice's button (D-284): a square with soft corners, always at hand; open, a cross, or with dice chosen the throw itself, its right edge still. */
+/* The player's sentences after they go (D-495), low at the side of the dice wherever the page is: the sentence in quotes, how it stands in words and a sign. */
+.act-strip {
+    position: fixed;
+    inset-inline: 20px 96px;
+    bottom: 20px;
+    z-index: 21;
+    display: grid;
+    gap: 6px;
+    max-width: 560px;
+}
+
+.act-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 8px 8px 8px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    font-size: 0.875rem;
+}
+
+.act-line.said {
+    border-color: var(--accent);
+}
+
+.act-line.lost {
+    border-color: var(--low);
+}
+
+.act-sign {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+    color: var(--accent);
+}
+
+.act-line.heard .act-sign {
+    background: color-mix(in srgb, var(--ally) 16%, var(--panel));
+    color: var(--ally);
+}
+
+.act-line.lost .act-sign {
+    background: color-mix(in srgb, var(--low) 14%, var(--panel));
+    color: var(--low);
+}
+
+.act-sign svg.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.act-said {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.act-said q {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-weight: 600;
+}
+
+.act-state {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.act-line.lost .act-state {
+    color: var(--low);
+    font-weight: 600;
+}
+
+.act-small {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: none;
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+.act-close {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+}
+
+.act-strip .act-problem {
+    padding: 8px 12px;
+    border-radius: var(--radius-m);
+    background: var(--float);
+    box-shadow: var(--overlay);
+}
+
+/* On a phone the whole width over the dice's button, which is over the bar; a sentence's button under its words. */
+@media (max-width: 600px) {
+    .act-strip {
+        inset-inline: 12px;
+        bottom: 152px;
+        max-width: none;
+    }
+
+    .act-line {
+        flex-wrap: wrap;
+    }
+
+    .act-said {
+        flex-basis: 0;
+    }
+
+    .act-small {
+        order: 1;
+        margin-inline-start: 38px;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .act-line {
+        animation: act-in var(--medium) var(--ease-out);
+    }
+}
+
+@keyframes act-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
 .dice-fab {
     position: fixed;
     inset-inline-end: 20px;
@@ -9990,6 +10185,273 @@ svg.icon {
 .map-sheet-go:disabled {
     background: color-mix(in srgb, var(--gold) 35%, var(--panel));
     color: var(--muted);
+}
+
+/* The sheet of an action (D-495): over the whole page with the map, else a card in the middle; the verbs, on whom, then the sentence and its buttons. */
+.act-sheet[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.act-sheet:not(.full) {
+    width: min(560px, calc(100% - 24px));
+    height: fit-content;
+    max-height: calc(100% - 24px);
+    margin: auto;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--overlay);
+}
+
+.act-verbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 16px 0;
+    border: 0;
+}
+
+.act-verb {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.act-verb:has(input:checked) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.act-verb:has(input:focus-visible),
+.act-who-one:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.act-verb input,
+.act-who-one input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.act-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 12px 16px;
+}
+
+.act-sheet:not(.full) .act-body {
+    padding-top: 4px;
+}
+
+/* On a narrow screen the list first, the names at hand; the map under it, which scrolls to keep its tokens large enough to touch. */
+@media (max-width: 899px) {
+    .act-sheet.full .act-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .act-sheet.full .act-who {
+        order: -1;
+    }
+}
+
+@media (min-width: 900px) {
+    .act-sheet.full .act-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .act-sheet.full .act-body .lm {
+        margin: 0;
+    }
+}
+
+.act-who {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.act-who legend {
+    margin-bottom: 8px;
+    padding: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+/* One to choose, as on the map's list of who is where: a line in the side's colour, red for a foe the master marked; chosen, ringed in the accent. */
+.act-who-one {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--panel);
+    box-shadow: inset 3px 0 0 var(--ally);
+    cursor: pointer;
+}
+
+.act-who-one.other {
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.act-who-one.hostile {
+    box-shadow: inset 3px 0 0 var(--low);
+}
+
+.act-who-one.plain {
+    box-shadow: none;
+}
+
+.act-who-one:has(input:checked) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+/* A sign beside the one chosen, not only the colour. */
+.act-who-one:has(input:checked)::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    margin-inline-start: auto;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.act-who-name {
+    font-weight: 600;
+}
+
+.act-square {
+    width: 6em;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    text-transform: uppercase;
+}
+
+.act-bar {
+    display: grid;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+    background: var(--panel);
+}
+
+.act-words {
+    width: 100%;
+    min-height: 3.2em;
+    padding: 10px 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+.act-words:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.act-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.act-note svg.icon {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+}
+
+.act-problem {
+    margin: 0;
+    color: var(--low);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.act-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.act-cancel {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: none;
+}
+
+.act-go {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 18px;
+}
+
+.act-go svg.icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* A token to choose on the map of the sheet, or to talk to on the page (D-495): a ring at the pointer, the one chosen ringed in gold. */
+.lm-token.choosable {
+    cursor: pointer;
+}
+
+.lm-choice {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 3;
+}
+
+.lm-token.choosable:hover .lm-choice {
+    stroke: color-mix(in srgb, var(--l-gold) 80%, transparent);
+}
+
+.lm-token.chosen .lm-choice {
+    fill: var(--l-gold);
+    fill-opacity: 0.35;
+    stroke: #8a5a00;
+    stroke-width: 3;
 }
 
 .lm-pick {

@@ -4,6 +4,7 @@
 // is where in words, the map's twin.
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { TalkName, usePlayerActs } from "./act-names.tsx";
 import { CardHead } from "./card.tsx";
 import type { DyingCounter, ShownGrid } from "./data.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
@@ -30,16 +31,36 @@ export interface Picking
     onSelect(square: string): void;
 }
 
-export function PlaceMap({ map, place, acting, picking, dying }: {
+/** Whom the player chooses for an action (D-495): the one chosen so far, by the name the page shows, and what a touch on a token does; undefined for their own. */
+export interface Choosing
+{
+    selected?: string | undefined;
+    onChoose(name: string | undefined): void;
+}
+
+export function PlaceMap({ map, place, acting, picking, choosing, bare = false, dying }: {
     map: ShownGrid;
     place: string;
     acting?: string;
     picking?: Picking;
+    choosing?: Choosing;
+    /** Without its key and who is where, as in a sheet whose list says it. */
+    bare?: boolean;
     /** Where those of the party at their dying point stand, by name, for their tokens (D-461). */
     dying?: ReadonlyMap<string, DyingCounter[]>;
 })
 {
     const svg = useRef<SVGSVGElement>(null);
+    const where = useRef<HTMLUListElement>(null);
+    const acts = usePlayerActs();
+    // On the page, a token touched starts talking to them, the focus coming back to their line of who is where (D-495).
+    const talking: Choosing | undefined = acts === undefined || picking !== undefined ? undefined : {
+        onChoose: (name) => {
+            const line = [...(where.current?.querySelectorAll<HTMLElement>("button.talk") ?? [])].find((button) => button.dataset.name === name);
+            return name !== undefined && acts.start({ talk: name }, line ?? svg.current ?? document.body);
+        },
+    };
+    const tokens = choosing ?? talking;
     const scale = useScale(svg);
     const sides = map.exits.map((exit) => exitSide(map, squareOf(exit.square) ?? { column: 0, row: 0 }));
     const [left, top] = [30 + (sides.includes("left") ? 30 : 0), 30 + (sides.includes("top") ? 36 : 0)];
@@ -105,13 +126,13 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
     return (
         <section class="lm" aria-labelledby="lm-title">
             <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />
-            <div class={picking === undefined ? "lm-frame" : "lm-frame panned"}>
-                {/* To choose a square, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
+            <div class={picking === undefined && choosing === undefined ? "lm-frame" : "lm-frame panned"}>
+                {/* To choose a square or someone, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
                 <svg
                     ref={svg}
                     class={`lm-svg lm-look-${map.ground}`}
                     viewBox={`0 0 ${width} ${height}`}
-                    {...(picking === undefined ? {} : { width: width * 1.2 })}
+                    {...(picking === undefined && choosing === undefined ? {} : { width: width * 1.2 })}
                     role="img"
                     aria-label={t("Map of {place}", { place })}
                 >
@@ -169,18 +190,27 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
                         {Array.from({ length: map.rows }, (_, row) => <text key={`r${row}`} x={left - 10} y={Y(row) + size / 2} text-anchor="end" dominant-baseline="middle">{row + 1}</text>)}
                     </g>
                     <g class="lm-tokens">
-                        {standing.map((one, index) => (
-                            <Token
-                                key={index}
-                                one={{ ...one, party: one.role !== "other", dying: dyingState(dying?.get(one.name)), counters: dying?.get(one.name) }}
-                                index={index}
-                                acting={one.name === acting}
-                                hostile={one.hostile === true}
-                                x={middle(one)[0]}
-                                y={middle(one)[1]}
-                                scale={scale}
-                            />
-                        ))}
+                        {standing.map((one, index) => {
+                            const shown = one.role === "pc" ? undefined : one.stranger ? strangerLabel(one.name) : one.name;
+                            // Talking needs someone else; choosing for an action takes the player's own character too, as themselves.
+                            const choice = tokens === undefined || (shown === undefined && choosing === undefined) ? undefined : {
+                                chosen: choosing !== undefined && choosing.selected === shown && shown !== undefined,
+                                onChoose: () => tokens.onChoose(shown),
+                            };
+                            return (
+                                <Token
+                                    key={index}
+                                    one={{ ...one, party: one.role !== "other", dying: dyingState(dying?.get(one.name)), counters: dying?.get(one.name) }}
+                                    index={index}
+                                    acting={one.name === acting}
+                                    hostile={one.hostile === true}
+                                    x={middle(one)[0]}
+                                    y={middle(one)[1]}
+                                    scale={scale}
+                                    {...(choice === undefined ? {} : { choice })}
+                                />
+                            );
+                        })}
                     </g>
                     {picking !== undefined && (
                         <g class="lm-picks">
@@ -202,40 +232,19 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
                     )}
                 </svg>
             </div>
-            <ul class="lm-key" aria-label={t("Legend")}>
-                {/* What the veil on the player's turn is (D-335, D-340). */}
-                {reach.length > 0 && (
-                    <li>
-                        <svg class={`lm-swatch lm-look-${map.ground}`} viewBox="0 0 40 40" aria-hidden="true">
-                            <rect class="lm-floor-fill" width={40} height={40} />
-                            <g class="lm-out">
-                                <rect width={40} height={40} />
-                            </g>
-                        </svg>
-                        <span class="lm-key-name">{t("out of your move this turn")}</span>
-                    </li>
-                )}
-                {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
-                    <li key={feature.symbol}>
-                        <Swatch feature={feature} ground={map.ground} />
-                        <span class="lm-key-name">{featureName(feature)}</span>
-                        {feature.blocks && !["wall", "rock"].includes(feature.kind) && <span class="lm-key-note">{t("blocks")}</span>}
-                        {feature.difficult && <span class="lm-key-note">{t("difficult")}</span>}
-                    </li>
-                ))}
-                {map.exits.map((exit) => (
-                    <li key={exit.square} class="lm-key-exit">
-                        <span class="lm-key-square">{exit.square}</span>
-                        <span>{`→ ${exit.to ?? t("somewhere")}`}</span>
-                    </li>
-                ))}
-            </ul>
-            {standing.length > 0 && (
-                <ul class="lm-where" aria-label={t("Who is where")}>
+            {!bare && <MapKey map={map} reach={reach.length > 0} />}
+            {!bare && standing.length > 0 && (
+                <ul ref={where} class="lm-where" aria-label={t("Who is where")}>
                     {/* The player's character first, then the companions, then the others, each as the map lists them. */}
                     {standing.toSorted((first, second) => roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
                         <li key={index} class={`lm-where-${one.role}${one.hostile === true ? " hostile" : ""}`}>
-                            <span class="lm-where-name">{one.stranger ? strangerLabel(one.name) : one.name}</span>
+                            {one.role === "pc"
+                                ? <span class="lm-where-name">{one.name}</span>
+                                : (
+                                    <TalkName name={one.stranger ? strangerLabel(one.name) : one.name}>
+                                        <span class="lm-where-name">{one.stranger ? strangerLabel(one.name) : one.name}</span>
+                                    </TalkName>
+                                )}
                             <span class="lm-key-square">{one.square}</span>
                             {one.distance !== undefined
                                 ? <span class="lm-where-far">{one.distance}</span>
@@ -245,6 +254,41 @@ export function PlaceMap({ map, place, acting, picking, dying }: {
                 </ul>
             )}
         </section>
+    );
+}
+
+/** The map's key: the veil of the player's turn, the things of the legend, where the squares lead. */
+function MapKey({ map, reach }: { map: ShownGrid; reach: boolean; })
+{
+    return (
+        <ul class="lm-key" aria-label={t("Legend")}>
+            {/* What the veil on the player's turn is (D-335, D-340). */}
+            {reach && (
+                <li>
+                    <svg class={`lm-swatch lm-look-${map.ground}`} viewBox="0 0 40 40" aria-hidden="true">
+                        <rect class="lm-floor-fill" width={40} height={40} />
+                        <g class="lm-out">
+                            <rect width={40} height={40} />
+                        </g>
+                    </svg>
+                    <span class="lm-key-name">{t("out of your move this turn")}</span>
+                </li>
+            )}
+            {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (
+                <li key={feature.symbol}>
+                    <Swatch feature={feature} ground={map.ground} />
+                    <span class="lm-key-name">{featureName(feature)}</span>
+                    {feature.blocks && !["wall", "rock"].includes(feature.kind) && <span class="lm-key-note">{t("blocks")}</span>}
+                    {feature.difficult && <span class="lm-key-note">{t("difficult")}</span>}
+                </li>
+            ))}
+            {map.exits.map((exit) => (
+                <li key={exit.square} class="lm-key-exit">
+                    <span class="lm-key-square">{exit.square}</span>
+                    <span>{`→ ${exit.to ?? t("somewhere")}`}</span>
+                </li>
+            ))}
+        </ul>
     );
 }
 
@@ -701,7 +745,19 @@ function Exit({ side, to, x, y, letters }: { side: string; to?: string; x: numbe
  * red a little (D-415); one of the party has the pip of their side at the lower left, with their class's symbol or the side's (D-414); anyone the pip of
  * their state at the lower right, and its words in the token's title (D-419).
  */
-function Token({ one, index, acting, hostile, x, y, scale }: { one: Standing; index: number; acting: boolean; hostile: boolean; x: number; y: number; scale: number; })
+function Token(
+    { one, index, acting, hostile, x, y, scale, choice }: {
+        one: Standing;
+        index: number;
+        acting: boolean;
+        hostile: boolean;
+        x: number;
+        y: number;
+        scale: number;
+        /** A token touched to choose them, or to talk to them (D-495), ringed when chosen. */
+        choice?: { chosen: boolean; onChoose(): void; };
+    },
+)
 {
     const [symbols] = usePref(tokenSymbolsPref);
     const side = one.side ?? 1;
@@ -718,7 +774,11 @@ function Token({ one, index, acting, hostile, x, y, scale }: { one: Standing; in
     const pipPaper = pip === "you" ? 3 : 1.5;
     return (
         // Whoever acts grows from the middle of their square, which stays where it is seen from above.
-        <g class={["lm-token", one.role, acting ? "acting" : "", fallenOf(one)].filter((name) => name !== "").join(" ")} style={acting ? { transformOrigin: `${x}px ${y}px` } : undefined}>
+        <g
+            class={["lm-token", one.role, acting ? "acting" : "", fallenOf(one), choice === undefined ? "" : "choosable", choice?.chosen === true ? "chosen" : ""].filter((name) => name !== "").join(" ")}
+            style={acting ? { transformOrigin: `${x}px ${y}px` } : undefined}
+            onClick={choice?.onChoose}
+        >
             <title>{[`${one.stranger ? strangerLabel(one.name) : one.name}, ${one.square}`, ...statusWords(one)].join(" · ")}</title>
             {hostile && (
                 <>
@@ -726,6 +786,7 @@ function Token({ one, index, acting, hostile, x, y, scale }: { one: Standing; in
                     <circle class="lm-hostile" cx={x} cy={y} r={r + 2.4} />
                 </>
             )}
+            {choice !== undefined && <circle class="lm-choice" cx={x} cy={y} r={r + 4} />}
             {/* A token under glass, its shadow on the paper. */}
             <g filter="url(#lm-drop)">
                 <circle class="lm-disc" cx={x} cy={y} r={r} />

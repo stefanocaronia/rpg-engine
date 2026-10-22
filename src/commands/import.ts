@@ -57,6 +57,8 @@ interface ImportResult
     piece?: { number: number; text: string; instructions: string; pictures: string; };
     /** How many of the document's pages were read from their pictures, as it started (LIB-4). */
     recognized?: number;
+    /** Begun now by a helper, named when known: the player hears whose plan reads the document, and under whose terms (D-493). */
+    helper?: "Claude Code" | "Codex" | "a helper";
 }
 
 export const importCommand = defineCommand({
@@ -142,7 +144,7 @@ export const importCommand = defineCommand({
     },
 
     // A document read from its pictures is told first, for the master to tell the player before anything else (LIB-4).
-    format: (result) => [recognizedText(result.recognized), importText(result)].filter((part) => part !== "").join("\n\n"),
+    format: (result) => [recognizedText(result.recognized), helperText(result.helper), importText(result)].filter((part) => part !== "").join("\n\n"),
 });
 
 async function startImport(root: string, context: Context, document: string, title: string | undefined): Promise<ImportResult>
@@ -202,13 +204,15 @@ async function startImport(root: string, context: Context, document: string, tit
         return { ...nextPiece(root, context, folder, { ...state, inChat }), ...recognized };
     }
 
+    // Asked before the reading, which a program that stops being ready would change.
+    const program = context.reader?.program?.() ?? "a helper";
     const going = goOn(root, context, folder);
 
     if (context.files === undefined) {
         await going;
     }
 
-    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized };
+    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized, helper: program };
 }
 
 /** The next piece for the master to read in the chat, with the importer's instructions once in a chat; the last one ends the import. */
@@ -424,6 +428,18 @@ function recognizedText(recognized: number | undefined): string
         ? ""
         : `${recognized} of its pages were read from their pictures, slowly and with a few mistakes: tell the player that a text file, or a PDF whose text can be `
             + "selected, reads better.";
+}
+
+/** Whose plan reads the document, and under whose terms it goes out (D-493): said once, as a helper begins it. */
+function helperText(helper: ImportResult["helper"]): string
+{
+    if (helper === undefined) {
+        return "";
+    }
+
+    const [program, company] = helper === "Codex" ? ["Codex", "OpenAI"] : helper === "Claude Code" ? ["Claude Code", "Anthropic"] : ["Claude Code or Codex", "Anthropic or OpenAI"];
+    return `Tell the player in a few words that their own ${program} reads it, on their plan and its limits, and that the whole document goes to ${company} `
+        + "under the terms of their account, its choice on training included.";
 }
 
 // What the narration became, or what to ask, as the book is told.

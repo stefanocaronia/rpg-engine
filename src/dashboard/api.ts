@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { Asked, PlayerSetting, ResetPoint, View, WorldMap } from "./data.ts";
+import type { ActsShown, Asked, PlayerSetting, ResetPoint, View, WorldMap } from "./data.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -472,6 +472,41 @@ export async function answer(asked: string, reply: number | string | { square: s
     const body = typeof reply === "number" ? { asked, choice: reply } : typeof reply === "string" ? { asked, text: reply } : { asked, ...reply };
     const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return response.status === 202;
+}
+
+/** The sentences said on the page that the master has not heard yet, those heard lately, and whether this chat hears one at once (D-495). */
+export async function readActs(): Promise<ActsShown>
+{
+    const response = await fetch("/api/act");
+
+    if (!response.ok) {
+        throw new Error(t("It did not reach the game: try again."));
+    }
+
+    return await response.json() as ActsShown;
+}
+
+/** Says a sentence to the master (D-495): its id, with how the sentences stand now; else what went wrong. */
+export async function sayAct(text: string): Promise<{ id: string; shown: ActsShown; } | { error: string; }>
+{
+    try {
+        const response = await fetch("/api/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        const body = await response.json().catch(() => ({})) as ActsShown & { id?: string; error?: string; };
+        return response.status === 202 && body.id !== undefined ? { id: body.id, shown: body } : { error: body.error ?? t("It did not reach the game: try again.") };
+    } catch {
+        return { error: t("It did not reach the game: try again.") };
+    }
+}
+
+/** Takes a sentence back before the master hears it: how the sentences stand now, "heard" when it is too late, or undefined when the game is away. */
+export async function withdrawAct(id: string): Promise<ActsShown | "heard" | undefined>
+{
+    try {
+        const response = await fetch("/api/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ withdraw: id }) });
+        return response.status === 409 ? "heard" : response.ok ? await response.json() as ActsShown : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 /** How each number of a group of someone's sheet is made, by field: what view gives for Page#Group. */

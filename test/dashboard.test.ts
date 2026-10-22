@@ -665,7 +665,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
             }
         }
 
-        const dashboarded = { ...context, dashboard: "http://localhost:4747" };
+        const dashboarded = { ...context, dashboard: "http://localhost:4747", chat: { calls: 0 } };
         const status = await runCommandLine(["status"], dashboarded);
         expect(status.output).toMatch(/^Offer the player their dashboard in your first answer, with its link: http:\/\/localhost:4747\. /);
         expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live.");

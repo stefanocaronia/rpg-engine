@@ -36,10 +36,12 @@ export function codexVersion(environment)
  * One master turn by Codex; `session` keeps the thread across turns. Returns the events in Claude Code's shape, the text the player sees and what went wrong:
  * a tool of a server other than rpg breaks the isolation.
  */
-export function codexTurn({ campaign, home, environment, session, prompt })
+export function codexTurn({ campaign, home, environment, session, prompt, oss })
 {
     const started = Date.now();
-    const args = session.started ? ["exec", "resume", session.id, "--json", "--skip-git-repo-check", ...config, "-"] : ["exec", "--json", "--skip-git-repo-check", ...config, "-"];
+    // A local model through Ollama (--master-oss): Codex knows no metadata for it, so the rpg tools are given whole instead of behind a tool search it lacks.
+    const local = oss === undefined ? [] : ["-c", 'model_provider="ollama"', "-m", oss, "--disable", "tool_search_always_defer_mcp_tools"];
+    const args = session.started ? ["exec", "resume", session.id, "--json", "--skip-git-repo-check", ...config, ...local, "-"] : ["exec", "--json", "--skip-git-repo-check", ...config, ...local, "-"];
     const [command, first] = codexCommand();
     const run = spawnSync(command, [...first, ...args], { cwd: campaign, input: prompt, encoding: "utf8", env: { ...environment, CODEX_HOME: home }, maxBuffer: 1 << 28 });
     const raw = (run.stdout ?? "").split("\n").map((line) => {

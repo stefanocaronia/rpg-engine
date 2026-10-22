@@ -14,6 +14,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary |
 | [src/library-reader.ts](../src/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server |
+| [src/bell-listener.ts](../src/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
 | [systems/](../systems/) | Built-in game systems: [5e](../systems/5e/) |
 | [extensions/](../extensions/) | Our extensions, each an npm package of its own: [weather](../extensions/weather/); see [extensions.md](extensions.md) |
@@ -73,7 +74,7 @@ images/         pictures (optional)
 .imports/       documents being made adventures, each with its pieces, notes and adventure
 exports/        adventures exported from the campaign, kept out of the saves
 .player/        the player's notes
-AGENTS.md, CLAUDE.md, .mcp.json, .claude/, .codex/, .gemini/   tell AI hosts where rpg-engine is, memory off
+AGENTS.md, CLAUDE.md, .mcp.json, .claude/, .codex/   tell AI hosts where rpg-engine is, memory off
 ```
 
 `init` creates it ([campaign/create-campaign.ts](../src/campaign/create-campaign.ts), host files in [campaign/host-files.ts](../src/campaign/host-files.ts)). A campaign is the nearest folder upwards with a `campaign.yaml`.
@@ -129,7 +130,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 
 ### The dashboard
 
-The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours), sends `/events` when files change (no data: the page reads `view` again), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
+The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours, and what their character does, a sentence the master hears at the head of their next call: [player-acts.ts](../src/player-acts.ts), rung in by the hook or queued in Codex's thread), sends `/events` when files change (no data: the page reads `view` again), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
 
 ## 6. Tests
 

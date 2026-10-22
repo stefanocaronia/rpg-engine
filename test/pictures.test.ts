@@ -1,7 +1,7 @@
 // The pictures by the chat in use (D-390): Codex first, Claude's SVG where Codex is not ready, never Claude in Codex; the SVG cleaned from a white list (D-342).
 import { describe, expect, it } from "vitest";
-import type { PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
-import { cleanSvg, hostPictures, svgBrief, svgIn } from "../src/pictures/index.ts";
+import type { DocumentReader, PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
+import { cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/pictures/index.ts";
 
 /** A maker that says whether it is ready and records what it was asked to make. */
 function maker(said: PicturesReady): PictureMaker & { made: PictureSubject[]; }
@@ -29,6 +29,21 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(hostPictures(() => "codex-mcp-client", away, claude).ready()).toEqual({ ready: false, why: "Codex is not installed on this computer" });
         // With neither, Codex's no and how to have it.
         expect(hostPictures(() => undefined, away, maker({ ready: false, why: "Claude Code is not logged in on this computer" })).ready()).toMatchObject({ ready: false, why: "Codex is not installed on this computer" });
+    });
+
+    it("names the program that would read a document, which the player is told it goes to (D-493)", () => {
+        const reader = (ready: boolean, program: "Claude Code" | "Codex"): DocumentReader => ({ ready: () => ready, program: () => program, read: () => Promise.resolve({ said: "" }) });
+        expect(hostReader(() => "claude-code", reader(true, "Codex"), reader(true, "Claude Code")).program?.()).toBe("Claude Code");
+        expect(hostReader(() => "claude-code", reader(true, "Codex"), reader(false, "Claude Code")).program?.()).toBe("Codex");
+        expect(hostReader(() => "codex-mcp-client", reader(false, "Codex"), reader(true, "Claude Code")).program?.()).toBeUndefined();
+    });
+
+    it("passes the stop on to the program that reads", async () => {
+        const signals: (AbortSignal | undefined)[] = [];
+        const claude: DocumentReader = { ready: () => true, read: (_folder, _brief, _writable, signal) => (signals.push(signal), Promise.resolve({ said: "" })) };
+        const stop = new AbortController();
+        await hostReader(() => "claude-code", claude, claude).read("folder", "brief", [], stop.signal);
+        expect(signals).toEqual([stop.signal]);
     });
 
     it("asks Claude for an SVG of the same subject, in the shapes the engine keeps, never what the table keeps out", () => {

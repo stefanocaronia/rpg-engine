@@ -1,13 +1,13 @@
 // What an AI host reads in a campaign besides .mcp.json: AGENTS.md, opening with the start lines (D-97); CLAUDE.md, which imports it; Claude Code's settings,
 // with its auto memory off, so that the master keeps nothing outside the campaign (D-242), the rpg server approved with its tools allowed (D-412) and no tasks in
-// the background, so that the character agent answers within the master's turn (D-490); Codex's,
-// with the rpg server and its memories off, and Gemini CLI's, with the rpg server, AGENTS.md and no writing of files by itself, where a memory would go (D-362);
-// Claude Code's character agent, the agent the master calls to voice a character (D-490).
+// the background, so that the character agent answers within the master's turn (D-490), and the doorbell of the player's sentences (D-495); Codex's, with
+// the rpg server and its memories off (D-362); Claude Code's character agent, the agent the master calls to voice a character (D-490). Gemini CLI is no
+// longer set up (D-493): a campaign's .gemini/ stays as it is.
 import { join } from "node:path";
 import { files } from "../core/store.ts";
 import { efforts, readTextSetting } from "./settings.ts";
 
-/** The files of the AI hosts at the top of a campaign, which are not the game's: a save leaves them as they are (SAV-2). */
+/** The files of the AI hosts at the top of a campaign, which are not the game's: a save leaves them as they are (SAV-2), Gemini CLI's of an older campaign too. */
 export const hostFileNames = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "GEMINI.md"];
 
 /** The engine's texts a campaign's host files carry: the start lines, and the character agent's instructions (D-490). */
@@ -74,7 +74,7 @@ export function refreshHostFiles(root: string, instructions: HostInstructions, p
 export function writeEffortFiles(root: string, platform: string, cleared = false): string[]
 {
     const effort: Effort | undefined = cleared ? "app" : chosenEffort(root);
-    return [() => claudeSettingsFile(root, effort), () => codexConfigFile(root, platform, effort), () => geminiSettingsFile(root, platform, effort)].flatMap((change) => {
+    return [() => claudeSettingsFile(root, effort), () => codexConfigFile(root, platform, effort)].flatMap((change) => {
         try {
             const file = change();
 
@@ -97,7 +97,6 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => claudeSettingsFile(root),
         () => characterAgentFile(root, instructions.character),
         () => codexConfigFile(root, platform),
-        () => geminiSettingsFile(root, platform),
     ];
 }
 
@@ -195,6 +194,9 @@ function claudeSettingsFile(root: string, effort = chosenEffort(root) as Effort 
     const settings = text === undefined ? {} : jsonObject(path, text, "Claude Code cannot be set up for the game in it");
     const permissions = isObject(settings.permissions) ? settings.permissions : {};
     const environment = isObject(settings.env) ? settings.env : {};
+    const hooks = isObject(settings.hooks) ? settings.hooks : {};
+    const stops = Array.isArray(hooks.Stop) ? hooks.Stop as unknown[] : [];
+    const belled = stops.some((entry) => isObject(entry) && Array.isArray(entry.hooks) && entry.hooks.some((hook) => isObject(hook) && hook.command === bellHook.command));
     const wanted: Record<string, unknown> = {
         ...settings,
         autoMemoryEnabled: settings.autoMemoryEnabled ?? false,
@@ -202,6 +204,9 @@ function claudeSettingsFile(root: string, effort = chosenEffort(root) as Effort 
         permissions: { ...permissions, allow: permissions.allow ?? ["mcp__rpg"] },
         // The character agent answers within the master's turn, never after it (D-490): no task of the chat runs in the background.
         env: { ...environment, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: environment.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS ?? "1" },
+        // The doorbell of the player's sentences on the dashboard (D-495), put back beside the player's own hooks whenever it is missing; a Stop of theirs
+        // that is no list stays theirs.
+        hooks: hooks.Stop !== undefined && !Array.isArray(hooks.Stop) ? hooks : { ...hooks, Stop: belled ? stops : [...stops, { hooks: [bellHook] }] },
         ...(effort === undefined || effort === "app" ? {} : { effortLevel: effort }),
     };
 
@@ -212,9 +217,14 @@ function claudeSettingsFile(root: string, effort = chosenEffort(root) as Effort 
     return text !== undefined && JSON.stringify(wanted) === JSON.stringify(settings) ? undefined : { path, text: settingsText(wanted) };
 }
 
+// Claude Code's Stop hook for the doorbell (D-495): it waits in the background from the end of each turn, and wakes the chat only for a sentence the player
+// said on the dashboard; a day at most, until the next turn starts another.
+const bellHook = { type: "command", command: "rpg --listen", asyncRewake: true, timeout: 86_400 };
+
 /**
  * Codex's settings for the campaign, read when the player trusts the folder: the rpg server, its tools approved and its calls waiting for the player's click
- * as long as the server does (D-412), and its memories off; a table already written is the player's, and stays. The effort the player chose (D-462) is a key
+ * as long as the server does (D-412), with Codex's own home, where its queue takes the player's sentences (D-495), and its memories off; a table already
+ * written is the player's, and stays. The effort the player chose (D-462) is a key
  * of the top, before the first table, where Codex reads it; under a table it would belong to that table, and be ignored.
  */
 function codexConfigFile(root: string, platform: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
@@ -224,7 +234,7 @@ function codexConfigFile(root: string, platform: string, effort = chosenEffort(r
     const text = effort === undefined ? before : withTopKey(before, "model_reasoning_effort", effort === "app" ? undefined : effort);
     const server = rpgServer(platform);
     const tables: [string, string][] = [
-        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"`],
+        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]`],
         ["memories", "generate_memories = false\nuse_memories = false"],
     ];
     // A table's header with a comment after it is that table all the same.
@@ -249,75 +259,6 @@ function withTopKey(text: string, key: string, value: string | undefined): strin
     const head = [...(value === undefined ? [] : [`${key} = ${JSON.stringify(value)}`]), ...top].join("\n").trimEnd();
     const joined = [head, rest.join("\n")].filter((part) => part.trim() !== "").join("\n\n");
     return joined.trimEnd() === plain.trimEnd() ? text : joined;
-}
-
-/**
- * Gemini CLI's settings for the campaign, read when the player trusts the folder: the rpg server, trusted so that its tools ask no confirmation, AGENTS.md as
- * the file it reads, and write_file and replace excluded, so that the master writes only through rpg's tools and keeps no memory in files; what the player
- * already wrote there stays, a trust they set included.
- */
-function geminiSettingsFile(root: string, platform: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
-{
-    const path = join(root, ".gemini", "settings.json");
-    const text = files().fresh(path);
-    const settings = text === undefined ? {} : jsonObject(path, text, "Gemini CLI cannot be set to find the rpg server in it");
-
-    // Each value the player already wrote stays where it is: the file is written again only for what is missing.
-    const withDefault = (name: string, key: string, value: unknown): Record<string, unknown> => {
-        const part = isObject(settings[name]) ? settings[name] : {};
-        return key in part ? part : { ...part, [key]: value };
-    };
-
-    const servers = isObject(settings.mcpServers) ? settings.mcpServers : {};
-    const rpg = isObject(servers.rpg) ? servers.rpg : rpgServer(platform);
-    const wanted: Record<string, unknown> = {
-        ...settings,
-        mcpServers: { ...servers, rpg: "trust" in rpg ? rpg : { ...rpg, trust: true } },
-        context: withDefault("context", "fileName", ["AGENTS.md"]),
-        tools: withDefault("tools", "exclude", ["write_file", "replace"]),
-    };
-    const configs = effort === undefined ? settings.modelConfigs : geminiThinking(settings.modelConfigs, effort);
-
-    if (configs === undefined) {
-        delete wanted.modelConfigs;
-    } else {
-        wanted.modelConfigs = configs;
-    }
-
-    return text !== undefined && JSON.stringify(wanted) === JSON.stringify(settings) ? undefined : { path, text: settingsText(wanted) };
-}
-
-// How Gemini CLI thinks at each effort (D-462): a level for its third models, a budget for the 2.5 ones, whose default is the high one. Its preview of 3 Pro
-// takes only low and high: medium there is high.
-const geminiThinkingOf = {
-    low: { level: "LOW", budget: 1024, preview: undefined },
-    medium: { level: "MEDIUM", budget: 4096, preview: "HIGH" },
-    high: { level: "HIGH", budget: 8192, preview: undefined },
-};
-
-// The models whose overrides are the engine's, which an effort writes again or takes away.
-const geminiChatModels = ["chat-base-3", "chat-base-2.5", "gemini-3-pro-preview"];
-
-/**
- * Gemini CLI's model configs with the effort's thinking for its chat models, in place of the overrides for them; with app, those taken away. The player's
- * other overrides stay; undefined when nothing is left.
- */
-function geminiThinking(configs: unknown, effort: Effort): Record<string, unknown> | undefined
-{
-    const own = isObject(configs) ? configs : {};
-    const overrides = (Array.isArray(own.customOverrides) ? own.customOverrides : []) as unknown[];
-    const ours = (override: unknown): boolean => isObject(override) && isObject(override.match) && geminiChatModels.includes(String(override.match.model));
-    const override = (model: string, config: Record<string, unknown>): Record<string, unknown> => ({ match: { model }, modelConfig: { generateContentConfig: { thinkingConfig: config } } });
-    const thinking = effort === "app" ? undefined : geminiThinkingOf[effort];
-    const written = thinking === undefined ? [] : [
-        override("chat-base-3", { thinkingLevel: thinking.level }),
-        override("chat-base-2.5", { thinkingBudget: thinking.budget }),
-        ...(thinking.preview === undefined ? [] : [override("gemini-3-pro-preview", { thinkingLevel: thinking.preview })]),
-    ];
-    const kept = [...overrides.filter((one) => !ours(one)), ...written];
-    const { customOverrides: _replaced, ...rest } = own;
-    const result = kept.length === 0 ? rest : { ...rest, customOverrides: kept };
-    return Object.keys(result).length === 0 ? undefined : result;
 }
 
 /** A host's settings file read as a JSON object; refused, with how to fix it, when it is not one. */

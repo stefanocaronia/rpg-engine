@@ -51,6 +51,17 @@ export interface SheetGroup
     items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; image?: { file: string; version: number; }; }[];
 }
 
+/** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */
+export type ActVerb = "attack" | "cast" | "use" | "equip" | "unequip" | "prepare";
+
+/** A sentence the player said on the page: waiting for the master, who may not have heard it yet, and whether this chat hears one at once (D-495). */
+export interface ActsShown
+{
+    pending: { id: string; text: string; }[];
+    heard: string[];
+    bell: boolean;
+}
+
 /** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295); those at hand in a fight (D-315). */
 export interface SheetCards
 {
@@ -405,7 +416,7 @@ export type View =
         /** An import under way, which the page tells (D-491 (11)). */
         importing?: ShownImport;
     }
-    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; text: string; story?: string; }
+    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }

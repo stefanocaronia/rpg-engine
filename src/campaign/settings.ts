@@ -187,7 +187,7 @@ export const settingsSchema = z.object({
             + "or new elements (one for each new place and quest, and for each character and kind of creature the character meets)",
     ),
     effort: z.enum(efforts).optional().describe(
-        "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code, Codex and Gemini CLI read it in the campaign's folder; "
+        "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code and Codex read it in the campaign's folder; "
             + "unset, each app keeps its own",
     ),
     lines: listSetting.describe("what never appears in the game"),

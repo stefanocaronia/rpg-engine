@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { type ChildProcessByStdio, spawn } from "node:child_process";
-import { readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -152,6 +152,37 @@ describe("what the player changed on the dashboard (D-341)", () => {
         const failed = await plain.callTool({ name: "show", arguments: { page: "Nessuno" } });
         expect(failed.isError).toBe(true);
         expect((failed.content as { text: string; }[])[0].text).toMatch(/^The player took "ragni" off lines on the dashboard\.\n\n\S/);
+        await plain.close();
+    });
+
+    it("tells the dashboard whether a call runs, Codex's thread, and when each call ends, for the player's sentences (D-495)", async () => {
+        await runCommandLine(["init", "--name", "Rocca"], testContext(folder));
+        const ended: number[] = [];
+        const chat: NonNullable<Context["chat"]> = { calls: 0, afterCall: () => ended.push(chat.calls) };
+        let during = 0;
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), chat, news: () => ((during = chat.calls), { lines: [], restore: () => undefined }) }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        await plain.callTool({ name: "status", arguments: {} });
+        expect([during, chat.calls, ended, chat.thread]).toEqual([1, 0, [0], undefined]);
+        await plain.callTool({ name: "status", arguments: {}, _meta: { threadId: "019a-thread" } });
+        await plain.callTool({ name: "show", arguments: { page: "Nessuno" } });
+        expect([chat.calls, ended, chat.thread]).toEqual([0, [0, 0, 0], "019a-thread"]);
+        await plain.close();
+    });
+
+    it("has the master offer the dashboard in the chat's first status only, though each call has its own copy of the context (D-353)", async () => {
+        await runCommandLine(["init", "--name", "Rocca"], testContext(folder));
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), dashboard: "http://localhost:4747" }, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        const status = async (): Promise<string> => ((await plain.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
+        expect(await status()).toContain("Offer the player their dashboard in your first answer");
+        const next = await status();
+        expect(next).not.toContain("Offer the player their dashboard");
+        expect(next).toContain("Dashboard: http://localhost:4747");
         await plain.close();
     });
 
@@ -502,7 +533,7 @@ describe("MCP server, starting a session (D-194)", () => {
         await host.connect(clientTransport);
 
         try {
-            // As Claude Code and Gemini CLI do, some 40 milliseconds after initialized.
+            // As Claude Code does, some 40 milliseconds after initialized.
             await new Promise((done) => setTimeout(done, 50));
             await host.listTools();
             order.push("tools");
@@ -533,7 +564,7 @@ describe("MCP server, starting a session (D-194)", () => {
             expect(readFileSync(join(folder, "CLAUDE.md"), "utf8")).toBe("@AGENTS.md\n");
             expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ autoMemoryEnabled: false, permissions: { allow: ["mcp__rpg"] } });
             expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toContain("use_memories = false");
-            expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8"))).toMatchObject({ tools: { exclude: ["write_file", "replace"] } });
+            expect(existsSync(join(folder, ".gemini"))).toBe(false);
         } finally {
             await host.close();
             session.close();

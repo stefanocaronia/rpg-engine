@@ -5,6 +5,8 @@
 // block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
 import { useEffect, useId, useRef, useState } from "preact/hooks";
+import { ActName, usePlayerActs } from "./act-names.tsx";
+import { itemVerbs } from "./acts.ts";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
@@ -363,6 +365,7 @@ function RollMark({ roll }: { roll: SheetRoll; })
  */
 function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<string>; })
 {
+    const acts = usePlayerActs();
     const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
     const items = group.items ?? [];
     const columns = items[0]?.values.map((value) => value.field) ?? [];
@@ -408,6 +411,8 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                             {said !== "" && <span class="visually-hidden">{said}</span>}
                         </>
                     );
+                    // The name acts, when the system names a verb for it; a container's opens and closes what it holds (D-495).
+                    const verbs = holds(index) ? undefined : itemVerbs(acts?.actions, item);
                     return (
                         <tr key={key(index)} class={item.depth === undefined ? undefined : "inside"}>
                             <th scope="row" class={holds(index) ? "holds" : undefined} style={item.depth === undefined ? undefined : { "--depth": item.depth }}>
@@ -418,7 +423,9 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                                             {words}
                                         </button>
                                     )
-                                    : words}
+                                    : verbs === undefined
+                                    ? words
+                                    : <ActName verbs={verbs} item={name} said={`${count(item) === "" ? "" : ` (${count(item)})`}${said}`}>{words}</ActName>}
                             </th>
                             {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
                         </tr>

@@ -3,7 +3,7 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import type { HelperLogin, HelperName, Helpers, HelperState } from "../core/context.ts";
 import { stopTree } from "./stop.ts";
 
@@ -141,6 +141,7 @@ export function helperChanges(): number
 export function helperEnvironment(name: HelperName): NodeJS.ProcessEnv
 {
     const kept = new Set(["CLAUDE_CONFIG_DIR", "CLAUDE_CODE_GIT_BASH_PATH", "CODEX_HOME"]);
+    // Never an API key (D-493): it pays by the call, and a player could spend thousands without noticing; only the player's own plan.
     const dropped = name === "codex" ? /^(OPENAI_API_KEY|CODEX_API_KEY)$/i : /^(CLAUDE|ANTHROPIC)/i;
     const own = Object.fromEntries(Object.entries(process.env).filter(([variable]) => kept.has(variable.toUpperCase()) || !dropped.test(variable)));
     return { ...own, NoDefaultCurrentDirectoryInExePath: "1" };
@@ -216,18 +217,77 @@ export function startLogin(name: HelperName, line: string, wait = linkWait): Pro
 /** The line that starts a program installed in the engine's folder, from its package's own bin: node and a script, or the program itself; undefined where it is not there. */
 export function installedLine(name: HelperName, folder: string): string | undefined
 {
-    const packageFolder = join(folder, "node_modules", ...packages[name].split("/"));
+    const file = packageBin(name, join(folder, "node_modules"));
+
+    if (file === undefined) {
+        return undefined;
+    }
+
+    return /\.[cm]?js$/i.test(file) ? `"${process.execPath}" "${file}"` : `"${file}"`;
+}
+
+/**
+ * A program as it starts without a shell, for words the player wrote that no shell may read (D-495): node and its package's script, or the program itself;
+ * from the engine's folder, else from npm's beside a folder of the PATH. Undefined where neither has it.
+ */
+export function helperCommand(name: HelperName, folder = toolsFolder()): { command: string; args: string[]; } | undefined
+{
+    const folders = (process.env.PATH ?? "").split(delimiter).filter((one) => one !== "");
+    const roots = [join(folder, "node_modules"), ...folders.flatMap((one) => [join(one, "node_modules"), join(one, "..", "lib", "node_modules")])];
+
+    for (const root of roots) {
+        const file = packageBin(name, root);
+
+        if (file !== undefined) {
+            return /\.[cm]?js$/i.test(file) ? { command: process.execPath, args: [file] } : { command: file, args: [] };
+        }
+    }
+
+    return undefined;
+}
+
+/** Queues a message in a Codex thread, as the player's own (D-495): whether Codex took it, in fifteen seconds at most. */
+export function queueInCodex(thread: string, message: string, folder = toolsFolder()): Promise<boolean>
+{
+    const codex = helperCommand("codex", folder);
+
+    if (codex === undefined) {
+        return Promise.resolve(false);
+    }
+
+    return new Promise((done) => {
+        let child: ChildProcess;
+
+        try {
+            // The message joined to its option, so that one that begins with a dash is never read as another.
+            child = spawn(codex.command, [...codex.args, "queue", "--thread", thread, `--message=${message}`], { windowsHide: true, cwd: tmpdir(), env: helperEnvironment("codex"), stdio: "ignore" });
+        } catch {
+            done(false);
+            return;
+        }
+
+        const timer = setTimeout(() => stopTree(child), queueWait).unref();
+        child.on("error", () => done(false));
+        child.on("exit", (code) => {
+            clearTimeout(timer);
+            done(code === 0);
+        });
+    });
+}
+
+// How long Codex may take to queue a message: the probe's took well under a second.
+const queueWait = 15_000;
+
+/** The file a package's bin names for a program, in a node_modules folder; undefined where it is not there. */
+function packageBin(name: HelperName, modules: string): string | undefined
+{
+    const packageFolder = join(modules, ...packages[name].split("/"));
 
     try {
         const bin = (JSON.parse(readFileSync(join(packageFolder, "package.json"), "utf8")) as { bin?: string | Record<string, string>; }).bin;
         const relative = typeof bin === "string" ? bin : bin?.[name];
         const file = relative === undefined ? undefined : join(packageFolder, relative);
-
-        if (file === undefined || !existsSync(file)) {
-            return undefined;
-        }
-
-        return /\.[cm]?js$/i.test(file) ? `"${process.execPath}" "${file}"` : `"${file}"`;
+        return file !== undefined && existsSync(file) ? file : undefined;
     } catch {
         return undefined;
     }

@@ -34,7 +34,7 @@ export function claudeWriter(maker: PictureMaker = claudePictures()): TextWriter
 /** Claude Code on this computer as the importer (D-489 (1)): ready where the player's Claude login lets it draw too. */
 export function claudeReader(maker: PictureMaker = claudePictures()): DocumentReader
 {
-    return { ready: () => maker.ready().ready, read };
+    return { ready: () => maker.ready().ready, program: () => "Claude Code", read };
 }
 
 /** Why Claude draws no pictures, for the master and the player (D-390). */

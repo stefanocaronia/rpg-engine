@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -38,9 +38,9 @@ I dag spiller RPG Engine ett spillsystem, **femte utgave**, fra det frie System 
 ### 2.1 Dette trenger du
 
 - En datamaskin med Windows, macOS eller Linux, og en nettleser.
-- **Node.js 22** eller nyere, fra [nodejs.org](https://nodejs.org). Den følger med `npm`, som installerer RPG Engine.
+- **Node.js 22** eller nyere, fra [nodejs.org](https://nodejs.org). Den kommer med `npm`, som installerer RPG Engine.
 - En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. For å åpne en terminal i en mappe høyreklikker du på mappen og velger **Åpne i Terminal** (Windows) eller **Tjenester > Ny terminal i mappen** (macOS).
-- En **AI-agent** til spillederen ([2.4](#24-connect-your-ai)), med den **største modellen** den tilbyr. En liten modell er lettere å snakke til å røpe hemmeligheter eller bøye reglene.
+- En **AI-agent** til spilleder ([2.4](#24-connect-your-ai)), med den **største modellen** den tilbyr. En liten modell er lettere å lure til å avsløre hemmeligheter eller bøye reglene.
 
 ### 2.2 Installer
 
@@ -48,9 +48,9 @@ I dag spiller RPG Engine ett spillsystem, **femte utgave**, fra det frie System 
 npm install -g rpg-engine
 ```
 
-`rpg --version` sjekker at det gikk bra. Du bruker `rpg` én gang per kampanje, for å opprette den. Etter det starter agenten din RPG Engine av seg selv.
+`rpg --version` sjekker at det gikk bra. Du bruker `rpg` én gang per kampanje, for å lage den. Etter det starter agenten din RPG Engine av seg selv.
 
-### 2.3 Opprett en kampanje
+### 2.3 Lag en kampanje
 
 Åpne en terminal i mappen der du har spillene dine ([2.1](#21-what-you-need) forklarer hvordan):
 
@@ -58,60 +58,60 @@ npm install -g rpg-engine
 rpg init "The Salt Isles"
 ```
 
-Dette lager mappen `The Salt Isles` med en ny kampanje i. Gå inn i den med `cd "The Salt Isles"`. Husk hvor den ligger, for du kommer tilbake til den hver gang du spiller. Alt annet velger du senere, i chatten eller på dashbordet. `rpg init --help` viser valgene du kan ta allerede nå, for eksempel `--language it` eller `--difficulty hard`.
+Dette lager mappen `The Salt Isles` med en ny kampanje i. Gå inn i den med `cd "The Salt Isles"`. Husk hvor den ligger: du kommer tilbake hit hver gang du spiller. Alt annet velger du senere, i chatten eller på dashbordet. `rpg init --help` viser valgene du kan ta med en gang, for eksempel `--language it` eller `--difficulty hard`.
 
-Spillederen kan ikke opprette en kampanje for deg. Før `init` er det ingenting som forteller agenten din hvor RPG Engine er.
+Spilleder kan ikke lage en kampanje for deg: før `init` er det ingenting som forteller agenten din hvor RPG Engine er.
 
 ### 2.4 Koble til AI-en din
 
-Spillederen kjører i en **AI-agent**: en AI-app, i terminalen eller på skrivebordet, som kan arbeide med filene på datamaskinen din, for eksempel Claude Code eller Codex. En vanlig chat som claude.ai eller ChatGPT, eller en app på telefonen, er ikke nok. Spillederen må kunne nå kampanjens filer på datamaskinen din. Hver agent trenger sitt eget abonnement og sin egen pålogging: Claude Code et betalt Claude-abonnement, Codex en ChatGPT-pålogging. Du installerer den én gang, fra agentens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Spilleder kjører i en **AI-agent**: en AI-app, i terminalen eller på skrivebordet, som kan arbeide med filene på datamaskinen din, for eksempel Claude Code eller Codex. En vanlig chat som claude.ai eller ChatGPT, eller en mobilapp, er ikke nok: spilleder må komme til kampanjens filer på datamaskinen din. Hver agent trenger sitt eget abonnement og sin egen innlogging: Claude Code et betalt Claude-abonnement, Codex en ChatGPT-innlogging. Du installerer agenten én gang, fra dens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: skriv `claude` i kampanjemappen. Når den spør om du stoler på mappen, velger du **Yes, I trust this folder**. Pass opp: svaret som er valgt på forhånd, er *No, exit*.
-- **Codex**: skriv `codex` i kampanjemappen, og svar ja når den spør om du stoler på mappen. I skrivebordsappen sjekker du i innstillingene at minner er skrudd av for spillets chatter.
-- **En annen agent**: start den i kampanjemappen og gi den MCP-serveren `rpg mcp`. RPG Engine er en vanlig MCP-server. Enhver agent som støtter MCP, kan være spilleder, også lokale.
+- **Claude Code**: skriv `claude` i kampanjemappen. Når den spør om du stoler på mappen, velger du **Yes, I trust this folder**. Pass på: svaret som er valgt på forhånd, er *No, exit*. Kampanjen har også en liten hook, `rpg --listen`, som spørsmålet ikke viser: den forteller spilleder med en gang når du gjør noe fra dashbordet.
+- **Codex**: skriv `codex` i kampanjemappen, og si ja når den spør om du stoler på mappen. I skrivebordsappen sjekker du i innstillingene at minner er av for spillets chatter.
+- **En annen agent**: start den i kampanjemappen og gi den MCP-serveren `rpg mcp`. RPG Engine er en standard MCP-server: enhver agent som støtter MCP, kan være spilleder, også lokale.
 
-Vi spiller og tester med **Claude Code**. **Codex** er koblet til og kontrollert, men ingen hel kampanje er spilt med den ennå. `init` setter også opp **Gemini CLI**. Kampanjen skrur av agentens eget minne: spillet bor i filene, slik at det å gå tilbake til et lagret spill virkelig går tilbake.
+Vi spiller og tester med **Claude Code**. **Codex** er koblet til og kontrollert, men ingen hel kampanje er spilt med den ennå. Kampanjen slår av agentens eget minne: spillet bor i filene, slik at et lagret spill virkelig tar deg tilbake.
 
 ### 2.5 Den første chatten
 
-Skriv hva som helst, for eksempel *Hei! La oss begynne.* I det første svaret i hver chat gir spillederen deg **lenken til dashbordet ditt**, noe sånt som `http://127.0.0.1:4750`. Åpne den og ha den ved siden av chatten.
+Skriv hva som helst, for eksempel *Hei! La oss starte.* I det første svaret i hver chat gir spilleder deg **lenken til dashbordet ditt**, noe slikt som `http://127.0.0.1:4750`. Åpne den og ha den ved siden av chatten.
 
-Mellom spillederens meldinger viser agenten din verktøyene den bruker. Ikke åpne detaljene deres (i Claude Code, ctrl+o), for de kan vise hemmeligheter.
+Mellom spillederens meldinger viser agenten verktøyene den bruker. Ikke åpne detaljene deres (i Claude Code, ctrl+o), for de kan vise hemmeligheter.
 
-En ny kampanje går gjennom tre trinn, vist øverst på dashbordet: **1 Innstillinger** (hvordan du vil spille), **2 Sesjon null** (du lager karakteren din, i selve spillet), **3 Spill**.
+En ny kampanje går gjennom tre trinn, vist øverst på dashbordet: **1 Innstillinger** (hvordan du vil spille), **2 Sesjon null** (du lager karakteren din, i spillet), **3 Spill**.
 
-### 2.6 Innstillinger: velg hvordan du vil spille
+### 2.6 Innstillinger: velg hvordan du spiller
 
-Spillederen spør bare om det som fortsatt mangler, noen få spørsmål om gangen. Trinnet **Innstillinger** på dashbordet viser de samme spørsmålene som kort. Skriv «du bestemmer», så velger spillederen. Alt kan endres senere, i chatten eller i **Innstillinger**.
+Spilleder spør bare om det som fortsatt mangler, noen få spørsmål om gangen. Trinnet **Innstillinger** på dashbordet viser de samme spørsmålene som kort. Skriv «du bestemmer», så velger spilleder. Alt kan endres senere, i chatten eller i **Innstillinger**.
 
 | Innstilling | Hva den bestemmer | Verdier |
 |---|---|---|
-| **Mentor** | Hvor mye spillederen lærer deg om reglene | av, hint, veiledning |
-| **Vanskelighetsgrad** | Hvor hard verden er å spille i | historie, lett, normal, vanskelig, brutal |
+| **Mentor** | Hvor mye spilleder lærer deg om reglene | av, hint, veiledning |
+| **Vanskelighetsgrad** | Hvor hard verdenen er å spille i | historie, lett, normal, vanskelig, brutal |
 | **Dødelighet** | Hva det betyr å falle i en kamp | fortellende (aldri død), episk (bare når det teller), terninger |
-| **Lagrede spill** | Når du kan gå tilbake | permadød, sjekkpunkt, fritt ([3.8](#38-saves-and-going-back)) |
+| **Lagrede spill** | Når du kan gå tilbake | permadød, sjekkpunkt, ledig ([3.8](#38-saves-and-going-back)) |
 | **Strenghet** | Hvor nøye mat, lys og reiser følger reglene | smidig, regler, simulering |
 | **Terninger** | Hvem som kaster terningene dine | digitale, fysiske |
-| **Måleenheter** | Avstander og vekter | metriske, imperiske |
-| **Stemmer** | Hvem som snakker for karakterene du møter: i viktige øyeblikk selve karakteren, som bare vet det den vet, slik spillederen velger; alltid spillederen; eller alltid selve karakteren, for de viktigste eller for alle, tregere og dyrere, der AI-appen din kan det | auto, spilleder, viktige, alltid |
-| **Følgesvenner** | Hvem som reiser sammen med deg | ingen, laget sammen med deg, laget av spillederen, møtt i spillet |
+| **Måleenheter** | Avstander og vekter | metriske, imperiale |
+| **Stemmer** | Hvem som snakker for karakterene du møter: i sentrale øyeblikk karakteren selv, som bare vet det karakteren vet, slik spilleder velger; alltid spilleder; eller alltid karakteren, for de viktigste eller for alle, tregere og dyrere, der AI-appen din kan det | auto, spilleder, viktige, alltid |
+| **Følgesvenner** | Hvem som reiser med deg | ingen, laget sammen med deg, laget av spilleder, møtt i spillet |
 | **Bilder** | Bilder av steder, oppdrag og de du møter | ingen, på forespørsel, nye steder, oppdrag og de du møter ([3.11](#311-pictures)) |
 | **Linjer** og **Slør** | Det som aldri dukker opp, og det som bare skjer utenfor scenen | lister |
-| **Språk** | Språket i spillet og på dashbordet | alle |
+| **Språk** | Språket i spillet og på dashbordet | hvilket som helst |
 
 Femte utgave legger til **utvikling**: erfaringspoeng eller milepæler.
 
-Hvis det ikke finnes en ferdig skrevet verden, spør spillederen også om en **premiss** (sjanger, tone, noen få elementer, med dine ord) og om **forberedelsen**: bygge verden underveis, mens dere spiller, eller alt på forhånd.
+Hvis det ikke finnes en skrevet verden, spør spilleder også om en **premiss** (sjanger, tone, noen få elementer, med dine egne ord) og om **forberedelsen**: bygge verdenen underveis, mens dere spiller, eller alt i starten.
 
-**Spillederens stil** blir aldri spurt om, men du kan endre den i chatten eller i **Innstillinger**: **prosaen** (enkel, litterær, pulp, ironisk), **historiene** spillederen finner på (situasjoner, buer, episoder, mysterium), en forfatter å **skrive som**, eller noe helt annet **med dine egne ord**.
+**Spillederens stil** blir aldri spurt om, men du kan endre den i chatten eller i **Innstillinger**: **prosaen** (enkel, litterær, pulp, tørr), **historiene** spilleder finner på (situasjoner, buer, episoder, mysterium), en forfatter å **skrive som**, eller hva som helst annet **med dine ord**.
 
 ### 2.7 Sesjon null: karakteren din
 
-Du lager karakteren sammen med spillederen, som rundt et bord. Hvert valg er ditt, med mindre du ber spillederen ta det: kom med en full idé, en vag en, eller ingenting. Spillederen forteller deg hvordan egenskapspoeng lages før noen terning blir kastet. Du må aldri ha en bakgrunnshistorie. Gir du en, skriver spillederen den med dine ord. Så ber spillederen om et bilde av karakteren din ([3.7](#37-your-characters-story-and-picture)). RPG Engine regner ut karakterarket: du slipper å gjøre noe regnestykke selv.
+Du lager karakteren din sammen med spilleder, som ved et bord. Alle valg er dine, med mindre du ber spilleder ta dem: kom med en full idé, en vag idé eller ingenting. Spilleder forteller hvordan egenskapspoengene lages før noen terning kastes. Historien til karakteren er aldri påkrevd. Hvis du gir en, skriver spilleder den med dine ord. Deretter ber spilleder om et bilde av karakteren din ([3.7](#37-your-characters-story-and-picture)). RPG Engine regner ut karakterarket: du slipper å gjøre noe regnestykke.
 
 ---
 
-## 3. Spilling <!-- icon: chat -->
+## 3. Å spille <!-- icon: chat -->
 
 ### 3.1 Å snakke med spilleder
 
@@ -119,79 +119,81 @@ Skriv hva karakteren din gjør eller sier, med dine egne ord:
 
 > Jeg spør vertshusverten hvem andre som kom innom i kveld.
 
-Skal du si noe utenfor historien, skriv det mellom hakeparenteser: *[Hvordan fungerer det å gripe tak i noen?]* Spilleder svarer også i hakeparenteser.
+Utenfor historien skriver du mellom hakeparenteser: *[Hvordan fungerer det å gripe tak i noen?]* Spilleder svarer også i hakeparenteser.
 
-Du sier hva du prøver. Spilleder sier hva som skjer. Spilleder bestemmer aldri for karakteren din, og snakker aldri om motoren. Du kan spørre spilleder hvordan du bruker dashbordet.
+Du sier hva du prøver. Spilleder sier hva som skjer. Spilleder bestemmer aldri for karakteren din, og snakker aldri om motoren. Du kan spørre spilleder hvordan dashbordet brukes.
+
+**Å handle fra dashbordet**: klikk på et navn på karakterarket, for eksempel et våpen, en trylleformel eller noe du bærer, og deretter på hvem det gjelder. Du kan også klikke på en person for å snakke med vedkommende. Dashbordet skriver setningen din, *Jeg angriper Hettekledd banditt 1 med køllen.*, og du kan endre den før **Si til spilleder**. Spilleder hører den som om den var sagt i chatten, og avgjør den som alt annet. Der AI-appen din ikke kan høre den selv, gjør **Kopier** den klar til å limes inn i chatten.
 
 ### 3.2 Kast
 
-Spilleder ber om et kast bare når utfallet er usikkert og betyr noe, og sier først hva som står på spill. Deretter:
+Spilleder ber om et kast bare når utfallet er usikkert og har betydning, og sier først hva som står på spill. Så:
 
-- **På dashbordet** viser et banner en knapp for hver prøve, for eksempel *Acrobatics +4 · with advantage*. Klikk på den: Terningene faller på siden, og spilleder får se resultatet. Du kan også klikke på linjen på karakterarket som lyser, kaste terningene fra terningbrettet eller skrive noe annet i banneret.
-- **For hånd**, i hjørnet av banneret eller i **Innstillinger**: Banneret sier hva du skal kaste, og du kaster det fra karakterarket eller terningbrettet.
-- **Fysiske terninger**, når terninginnstillingen står på fysiske: Du skriver sifrene du kastet, *[Jeg kastet 14.]*, og RPG Engine legger til modifikatorene dine.
+- **På dashbordet** viser et banner en knapp for hver prøve, for eksempel *Akrobatikk +4 · med vantage*. Klikk på den: terningene faller på siden, og spilleder hører resultatet. Du kan også klikke på linjen på karakterarket som lyser, kaste terningene fra terningbrettet, eller skrive noe annet i banneret.
+- **For hånd**, i hjørnet av banneret eller i **Innstillinger**: banneret forteller hva du skal kaste, og du kaster det fra karakterarket eller terningbrettet.
+- **Fysiske terninger**, når innstillingen Terninger står på fysiske: du skriver tallene du kastet, *[Jeg kastet 14.]*, og RPG Engine legger til modifikatorene dine.
 
-**Frie kast**: Klikk på et tall på karakterarket, eller åpne terningbrettet, for å kaste for moro skyld. De teller aldri, og spilleder ser dem aldri.
+**Frie kast**: klikk på et hvilket som helst tall på karakterarket, eller åpne terningbrettet, for å kaste for moro skyld. De teller aldri, og spilleder ser dem aldri.
 
-**Spillederens kast** vises i kastkolonnen din, bortsett fra de hemmelige. Du kan alltid spørre *[Var det kastet ekte?]*: For et hemmelig kast gir spilleder et fingeravtrykk som beviser at det ble gjort før du spurte.
+**Spillederens kast** vises i kastkolonnen din, bortsett fra de hemmelige. Du kan alltid spørre *[Var det kastet ekte?]*: for et hemmelig kast gir spilleder et fingeravtrykk som beviser at det ble gjort før du spurte.
 
 ### 3.3 Scener og kamper
 
-Historien går i **scener**: en kamp, en samtale, utforsking, reise eller hvile. Når en scene er slutt, lagrer spillet av seg selv, og scenen havner i dagboken din.
+Historien går i **scener**: en kamp, en samtale, utforsking, reise, en hvile. Ved slutten av hver scene lagres spillet av seg selv, og scenen havner i dagboken din.
 
-I en kamp forteller spilleder om hver tur som ikke er din, og stopper der du kan bestemme. **Scene** viser øverst hvem sin tur det er og hvem som kommer etter, og karakterkortet ditt ved siden av kartet. Rekkefølgen på turene, gruppens treffpoeng og hvor skadet fiendene ser ut, med ord, står ved siden av siden. Hvis karakteren din faller, vises dødsredningene stort på siden.
+I en kamp forteller spilleder om hver tur som ikke er din, og stopper der du kan bestemme. **Scene** viser øverst hvem sin tur det er og hvem som kommer etterpå, og karakterens kort ved siden av kartet. Turrekkefølgen, gruppens treffpoeng og hvor skadet fiendene ser ut, i ord, står ved siden av siden. Hvis karakteren din faller, vises redningskastene mot døden store på siden.
 
-### 3.4 Tid, reise og verden som beveger seg
+### 3.4 Tid, reiser og verdenen som beveger seg
 
-RPG Engine holder styr på datoen. Det går ingen tid mellom sesjonene. Si at dere hviler, *Vi tar en lang hvile*, og når spilleder er enig, gir hvilen tilbake det den skal. Ved en kort hvile kan spilleder spørre på dashbordet hvor mange treffterninger du bruker: Kast dem én om gangen, se hvor mye hver av dem leger, og stopp når du vil. Si hvor dere drar, *Vi tar veien nordover til Rocca*, og RPG Engine regner ut veien, avstanden og dagene, og stopper når noe skjer underveis. Penger telles i spillets mynter, med vekslepenger.
+RPG Engine holder styr på datoen. Det går ingen tid mellom sesjonene. Si at dere hviler, *Vi tar en lang hvile*, og når spilleder går med på det, gir hvilen tilbake det den skal. I en kort hvile kan spilleder spørre på dashbordet hvor mange treffterninger du bruker: kast dem én og én, se hva hver av dem helbreder, og stopp når du vil. Si hvor dere drar, *Vi tar veien nordover til Rocca*, så regner RPG Engine ut veien, avstanden og dagene, og stopper når noe skjer underveis. Penger telles i spillets mynter, med vekslepenger.
 
-Skurker har planer med frister. Hver nye dag flytter spilleder de truslene som tiden har rykket nærmere, og du ser tegnene på dem, aldri selve klokken.
+Skurker har planer med frister. Hver nye dag flytter spilleder truslene som tiden har rykket fram, og du ser tegnene på dem, aldri selve klokken.
 
 ### 3.5 Kart
 
-**Verden** viser stedene karakteren din kjenner, veiene mellom dem og stien du har gått, med tåke over resten. **Scene** viser kartet over stedet der dere er, når det har et, med hvem som står hvor. I en kamp, på din tur, er rutene du ikke kan nå, tildekket. Når spilleder spør hvor du flytter deg, trykk på en rute, eller skriv den, for eksempel *E4*.
+**Verden** viser stedene karakteren din kjenner, veiene mellom dem og sporet du har gått, med tåke over resten. **Scene** viser kartet over stedet der du er, når det har et, med hvem som står hvor. I en kamp, på din tur, er rutene du ikke kan nå, tilslørt. Når spilleder spør hvor du flytter deg, trykker du på en rute, eller skriver den, for eksempel *E4*.
 
 ### 3.6 Oppdrag, dagbok og notater
 
-En oppgave karakteren din tar på seg, blir et oppdrag i **Dagbok**, med mål, frist og det den måler. Sett stjerne på det for å ha det i syne øverst i Scene. Dagboken forteller også **historien** din, scene for scene, og rommer **notatene** dine: De er private, med mindre du **Del**er ett. Spilleder hører det som det du tenker, aldri som et faktum.
+En oppgave karakteren din tar på seg, blir et oppdrag i **Dagbok**, med mål, frist og det den måler. Sett stjerne på det for å ha det i sikte øverst i Scene. Dagboken forteller også **historien** din, scene for scene, og rommer **notatene** dine: private, med mindre du **Del**er ett, som spilleder hører som det du tenker, aldri som et faktum.
 
 ### 3.7 Karakterens historie og bilde
 
-På karakterarket har kortet **Beskrivelse** et felt for karakterens historie: Spilleder skriver den inn etter at du har sagt ja. For et bilde kan du gi spilleder en fil (PNG, JPEG, WebP eller SVG, opptil 5 MB) sammen med hvor den ligger på datamaskinen din, eller du kan få laget et portrett ([3.11](#311-pictures)): *[Lag et portrett av meg: grått hår i en flette, et arr på haken.]*
+På karakterarket har kortet **Beskrivelse** et felt for karakterens historie: spilleder skriver den inn, etter at du har sagt ja. For et bilde gir du spilleder en fil (PNG, JPEG, WebP eller SVG, opptil 5 MB) med stedet den ligger på datamaskinen din, eller du kan få laget et portrett ([3.11](#311-pictures)): *[Lag et portrett av meg: grått hår i en flette, et arr på haken.]*
 
-### 3.8 Lagrede spill og det å gå tilbake
+### 3.8 Lagrede spill og å gå tilbake
 
-RPG Engine lagrer hele kampanjen når hver scene er slutt. Innstillingen for **lagrede spill** bestemmer resten:
+RPG Engine lagrer hele kampanjen ved slutten av hver scene. Innstillingen **Lagrede spill** bestemmer resten:
 
 | Lagrede spill | Lagre når du vil | Gå tilbake |
 |---|---|---|
-| **permadeath** | nei | aldri |
-| **checkpoint** | nei | til siste lagrede spill, bare når karakteren din dør |
+| **permadød** | nei | aldri |
+| **sjekkpunkt** | nei | til det siste lagrede spillet, bare når karakteren din dør |
 | **ledig** | ja | til et hvilket som helst lagret spill |
 
-I alle moduser kan du **begynne på nytt**, fra starten av spillet eller fra sesjon null. Gjør det i chatten eller under **Lagrede spill**.
+I alle moduser kan du **begynne på nytt**, fra starten av spillet eller fra sesjon null. Gjør det i chatten eller i **Lagrede spill**.
 
-Etter at du har gått tilbake, **åpne en ny chat**: Den gamle husker det som ble angret. Skriv *fortsett* i den nye chatten, og trykk deretter på **Jeg har åpnet en ny chat** under Lagrede spill.
+Etter at du har gått tilbake, **åpne en ny chat**: den gamle husker det som ble angret. Skriv *fortsett* i den nye chatten, og trykk deretter på **Jeg har åpnet en ny chat** i Lagrede spill.
 
 ### 3.9 Sesjoner: å stoppe og komme tilbake
 
-Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake starter du agenten din i kampanjemappen og skriver *fortsett*: Spilleder gir deg en kort oppsummering og fortsetter.
+Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake starter du agenten din i kampanjemappen og skriver *fortsett*. Spilleder gir deg en kort oppsummering og går videre.
 
 ### 3.10 Spillederens humør
 
-Roboten øverst på dashbordet er spilleder: Ansiktet følger tonen i historien, og røper aldri det du ikke vet ennå. Når chatten er lukket, sover den.
+Roboten øverst på dashbordet er spilleder: ansiktet følger tonen i historien, og avslører aldri det du ikke vet ennå. Når chatten er lukket, sover den.
 
 ### 3.11 Bilder
 
-RPG Engine kan få laget bilder av stedene du kommer til, oppdragene du tar på deg og dem du møter, slik innstillingen for **bilder** sier, og et portrett av karakteren din når du ber om det. Den bruker det som finnes på datamaskinen din, med din egen innlogging: **Codex** maler dem, ellers tegner **Claude Code** dem. **Innstillinger** forteller om denne datamaskinen kan lage dem, og hvordan du setter det opp hvis ikke. Du kan alltid gi spilleder et bilde du har selv.
+RPG Engine kan få laget bilder av stedene du kommer til, oppdragene du tar og de du møter, slik innstillingen **Bilder** sier, og et portrett av karakteren din når du ber om det. Den bruker din egen Codex eller Claude Code, med din innlogging, på ditt abonnement og dets grenser: **Codex** maler dem, ellers tegner **Claude Code** dem. **Innstillinger** sier om denne datamaskinen kan lage dem, og hvordan du setter det opp hvis ikke. Du kan alltid gi spilleder et bilde du har selv.
 
 ### 3.12 Trygghet: linjer, slør og stopp
 
-**Linjer** dukker aldri opp i spillet, og **slør** skjer bare utenfor scenen. Når som helst kan du skrive *[stopp]*: Spilleder dropper det innholdet med en gang og legger det til i linjene dine.
+**Linjer** dukker aldri opp i spillet. **Slør** skjer bare utenfor scenen. Skriv *[stopp]* når som helst: spilleder dropper det innholdet med en gang og legger det til i linjene dine.
 
 ### 3.13 Å ombestemme seg
 
-Alle innstillinger kan endres, i chatten eller under **Innstillinger**. En avgjørelse spilleder tar uten regelboken, blir en **presedens**, slik at det samme spørsmålet får det samme svaret neste gang.
+Alle innstillinger kan endres, i chatten eller i **Innstillinger**. En avgjørelse spilleder tar uten regelboken, blir en **presedens**, slik at det samme spørsmålet får det samme svaret neste gang.
 
 ---
 
@@ -244,15 +246,15 @@ Ikke ennå. En utvidelse vil legge til noe i en kampanje oppå spillsystemet: en
 
 ### 7.1 Tre måter å få en verden på
 
-- **Laget underveis**: ut fra premisset ditt bygger spilleder hvert sted, hver person og hvert plott like før du trenger det, og husker det.
-- **Forberedt fra start**: det samme, men med verden bygget før spillet begynner.
-- **Fra ditt eget eventyr eller din egen bok**: gi spilleder filen, *[Importer dette eventyret som kampanjen vår: D:\Books\adventure.pdf. Ikke fortell meg noe av det som står i det.]* Det leses best som tekst, en EPUB, et Word-dokument eller en PDF der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, langsomt og med noen feil. Codex eller Claude Code på datamaskinen din leser det utenfor chatten, og dashbordet viser hvor langt det har kommet. Fra en roman foreslår spilleder hvor du kan begynne. Spilleder skriver stedene, karakterene og hemmelighetene.
+- **Laget underveis**: ut fra premissen din bygger spillederen hvert sted, hver person og hvert plott rett før du trenger det, og husker det.
+- **Forberedt i starten**: det samme, men med verden bygget før spillet.
+- **Fra ditt eget eventyr eller din egen bok**: gi spillederen filen, *[Importer dette eventyret som kampanjen vår: D:\Books\adventure.pdf. Ikke fortell meg noe av det som står i det.]* Det leses best som tekst, en EPUB, et Word-dokument eller en PDF der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, sakte og med noen feil. Din egen Codex eller Claude Code leser den utenfor chatten, ellers spilleder i chatten, på abonnementet ditt: hele dokumentet går til OpenAI eller Anthropic, under vilkårene for kontoen din og dens valg om trening. Dashbordet viser hvor langt det har kommet. Fra en roman foreslår spillederen hvor dere kan begynne. Spillederen skriver stedene, karakterene og hemmelighetene.
 
-En kampanje spilles én gang: vil du spille det samme eventyret på nytt, oppretter du en ny kampanje.
+En kampanje spilles én gang: for å spille det samme eventyret igjen, opprett en ny kampanje.
 
 ### 7.2 Språk
 
-Ett språk per kampanje, spillederens, og dashbordet følger det. Dashbordet leveres med 26 språk. Alle andre språk oversettes på datamaskinen din av Codex eller Claude Code, eller, uten dem, av spilleder i chatten. Begrepene fra femte utgave på italiensk kommer fra den offisielle italienske SRD-en. Regelteksten forblir på engelsk, og spilleder forteller den på ditt språk.
+Ett språk per kampanje, spillederens, som dashbordet følger. Dashbordet leveres med 26 språk. Alle andre oversettes på datamaskinen din av Codex eller Claude Code, eller, uten dem, av spillederen i chatten. Termene fra femte utgave på italiensk kommer fra den offisielle italienske SRD-en. Regelteksten forblir på engelsk, og spillederen forteller den på ditt språk.
 
 ---
 
@@ -280,11 +282,11 @@ Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help`
 
 ### Spørsmål
 
-**Må jeg kunne reglene?** Nei. Velg mentoren med veiledning, og spør mellom hakeparenteser når du vil.
+**Må jeg kunne reglene?** Nei. Velg mentor med opplæring, og spør mellom hakeparenteser når du vil.
 
-**Kan spillederen jukse?** Spillederen kan ikke endre et kast RPG Engine har gjort, unntatt på vanskelighetsgraden fortelling, og heller ikke fakta som allerede er fastsatt.
+**Kan spillederen jukse?** Spillederen kan ikke endre et kast RPG Engine har gjort, unntatt på vanskelighetsgrad historie, og heller ikke fakta som allerede er fastsatt.
 
-**Koster det noe?** RPG Engine er gratis. Spillederen kjører på agentens abonnement, eller på din egen datamaskin med en lokal modell. En spillkveld er en lang chat: på de minste abonnementene kan du nå grensen for abonnementet før kvelden er over. Bilder og oversettelser bruker det samme abonnementet.
+**Koster det noe?** RPG Engine er gratis. Spillederen kjører på agentens abonnement, eller på din egen datamaskin med en lokal modell. En spillkveld er en lang chat: på de minste abonnementene kan du nå abonnementets grense før kvelden er slutt. Bilder, oversettelser og importer bruker det samme abonnementet. RPG Engine selv bruker aldri en API-nøkkel, som betales per kall: logg agenten din inn med kontoen din, ikke med en nøkkel.
 
 **Kan jeg spille på telefonen?** Nei: spillederen kjører på datamaskinen din, og dashbordet åpnes bare der.
 
@@ -294,16 +296,16 @@ Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help`
 
 ### Problemer
 
-**Dashbordet åpner seg ikke.** Spør spillederen: `[Hva er lenken til dashbordet?]`. Det fungerer bare mens en chat er åpen i den kampanjen, etter spillederens første svar.
+**Dashbordet åpnes ikke.** Spør spillederen: `[Hva er lenken til dashbordet?]`. Det fungerer bare mens en chat er åpen i den kampanjen, etter spillederens første svar.
 
 **Spillederen ser ikke ut til å kunne spillet.** Agenten din lastet ikke RPG Engine. Sjekk at du startet den i kampanjemappen og stolte på den. I Claude Code, skriv `/mcp` og koble til `rpg` på nytt. I Codex må `codex mcp list` i kampanjemappen vise `rpg`. Hvis `rpg --version` ikke blir funnet, installer RPG Engine på nytt ([2.2](#22-install)).
 
-**Oppdatering.** Kjør `npm install -g rpg-engine` på nytt, og åpne så en ny chat: en spilleder som allerede kjører, beholder versjonen den startet med.
+**Oppdatering.** Kjør `npm install -g rpg-engine` på nytt, og åpne deretter en ny chat: en spilleder som kjører, beholder versjonen den startet med.
 
 **Spillederen husker noe jeg angret.** Åpne en ny chat og trykk på **Jeg har åpnet en ny chat** i Lagrede spill.
 
 **Ingen bilder vises.** Innstillinger > Bilder viser om denne datamaskinen kan lage dem, og hvordan.
 
-**Installeringen mislykkes, eller `rpg` vil ikke starte.** `node --version` må vise 22 eller nyere. På Windows, hold RPG Engine og kampanjene dine unna stier som inneholder `&`.
+**Installasjonen mislykkes, eller `rpg` vil ikke starte.** `node --version` må vise 22 eller nyere. På Windows, hold RPG Engine og kampanjene dine unna stier som inneholder `&`.
 
-**Dashbordlenken endret seg.** Et annet program tok den vanlige adressen. Spillederen gir deg den nye lenken.
+**Lenken til dashbordet endret seg.** Et annet program tok den vanlige adressen. Spillederen gir deg den nye lenken.

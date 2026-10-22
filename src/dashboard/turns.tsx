@@ -3,6 +3,7 @@
 // strip that lights up on their turn, their counter, the party's as numbers and a foe's in words, their state as icons, what they keep, the death saves at 0;
 // and the player's character's card, the fields and groups of its sheet the system names. The page never decides a rule: it shows.
 import { useEffect, useRef } from "preact/hooks";
+import { TalkName } from "./act-names.tsx";
 import { CardHead, CardHeader, useOpen } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
 import { DeathSaves } from "./dying.tsx";
@@ -214,8 +215,14 @@ function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; memb
             <FighterToken fighter={fighter} state={false} />
             <div class="turn-main">
                 <p class="turn-name">
-                    {shownName(fighter)}
-                    {fighter.role === "pc" && <span class="you">{t("You")}</span>}
+                    {fighter.role === "pc"
+                        ? (
+                            <>
+                                {shownName(fighter)}
+                                <span class="you">{t("You")}</span>
+                            </>
+                        )
+                        : <TalkName name={shownName(fighter)}>{shownName(fighter)}</TalkName>}
                 </p>
                 {counter !== undefined && <Bar value={counter} label={fieldLabel(counter.field)} />}
                 <div class="turn-facts">

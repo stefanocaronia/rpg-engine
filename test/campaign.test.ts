@@ -35,6 +35,9 @@ beforeEach(() => {
 
 afterEach(() => removeFolder(folder));
 
+// The doorbell init writes for Claude Code (D-495).
+const bell = { type: "command", command: "rpg --listen", asyncRewake: true, timeout: 86_400 };
+
 describe("rpg init", () => {
     it("creates the files and folders of a campaign", async () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
@@ -108,53 +111,36 @@ describe("rpg init", () => {
             permissions: { allow: ["mcp__rpg"] },
             // The character agent answers within the master's turn (D-490).
             env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" },
+            // The doorbell of the player's sentences on the dashboard (D-495).
+            hooks: { Stop: [{ hooks: [bell] }] },
         });
-        // Codex: the rpg server, waiting for the player's click, and its memories off; Gemini CLI with the rpg server, AGENTS.md and no writing of files by itself.
+        // Codex: the rpg server, waiting for the player's click, and its memories off; nothing for Gemini CLI, no longer set up (D-493).
         const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
         expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
             `[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
                 rpg.args.map((arg) => `"${arg}"`).join(", ")
-            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
-        expect(JSON.parse(readFileSync(join(folder, "nuova", ".gemini", "settings.json"), "utf8"))).toEqual({
-            mcpServers: { rpg: { ...rpg, trust: true } },
-            context: { fileName: ["AGENTS.md"] },
-            tools: { exclude: ["write_file", "replace"] },
-        });
+        expect(existsSync(join(folder, "nuova", ".gemini"))).toBe(false);
     });
 
-    it("keeps what the player wrote in Codex's and Gemini CLI's settings, and adds only what is missing (D-362)", async () => {
+    it("keeps what the player wrote in Codex's settings, and adds only what is missing (D-362)", async () => {
         mkdirSync(join(folder, "mia", ".codex"), { recursive: true });
-        mkdirSync(join(folder, "mia", ".gemini"), { recursive: true });
         writeFileSync(join(folder, "mia", ".codex", "config.toml"), 'model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n');
-        writeFileSync(join(folder, "mia", ".gemini", "settings.json"), '{ "mcpServers": { "altro": { "command": "x" } }, "tools": { "exclude": [] } }');
         await runCommandLine(["init", "mia"], context);
         expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
-        expect(JSON.parse(readFileSync(join(folder, "mia", ".gemini", "settings.json"), "utf8"))).toMatchObject({
-            mcpServers: { altro: { command: "x" }, rpg: expect.objectContaining({ trust: true }) },
-            context: { fileName: ["AGENTS.md"] },
-            tools: { exclude: [] },
-        });
 
-        // A server written before trust existed gains it; a trust the player set stays.
+        // Gemini CLI's settings of an older campaign stay as they are, broken ones too (D-493).
         mkdirSync(join(folder, "vecchia", ".gemini"), { recursive: true });
-        writeFileSync(join(folder, "vecchia", ".gemini", "settings.json"), '{ "mcpServers": { "rpg": { "command": "rpg-dev" } } }');
+        writeFileSync(join(folder, "vecchia", ".gemini", "settings.json"), "{ non è json");
         await runCommandLine(["init", "vecchia"], context);
-        expect(JSON.parse(readFileSync(join(folder, "vecchia", ".gemini", "settings.json"), "utf8")).mcpServers).toEqual({ rpg: { command: "rpg-dev", trust: true } });
-        mkdirSync(join(folder, "prudente", ".gemini"), { recursive: true });
-        writeFileSync(join(folder, "prudente", ".gemini", "settings.json"), '{ "mcpServers": { "rpg": { "command": "rpg", "trust": false } } }');
-        await runCommandLine(["init", "prudente"], context);
-        expect(JSON.parse(readFileSync(join(folder, "prudente", ".gemini", "settings.json"), "utf8")).mcpServers).toEqual({ rpg: { command: "rpg", trust: false } });
+        expect(existsSync(join(folder, "vecchia", "campaign.yaml"))).toBe(true);
+        expect(readFileSync(join(folder, "vecchia", ".gemini", "settings.json"), "utf8")).toBe("{ non è json");
 
         mkdirSync(join(folder, "scelta", ".codex"), { recursive: true });
         writeFileSync(join(folder, "scelta", ".codex", "config.toml"), "[memories]\nuse_memories = true\n");
         await runCommandLine(["init", "scelta"], context);
         expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toMatch(/^\[memories\]\nuse_memories = true\n\n\[mcp_servers\.rpg\]\n/);
-
-        mkdirSync(join(folder, "rotto", ".gemini"), { recursive: true });
-        writeFileSync(join(folder, "rotto", ".gemini", "settings.json"), "{ non è json");
-        expect((await runCommandLine(["init", "rotto"], context)).output).toContain("settings.json is not valid JSON, so Gemini CLI cannot be set to find the rpg server in it");
-        expect(existsSync(join(folder, "rotto", "campaign.yaml"))).toBe(false);
     });
 
     it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and the player's choices", async () => {
@@ -171,13 +157,21 @@ describe("rpg init", () => {
             enabledMcpjsonServers: ["rpg"],
             permissions: { allow: ["mcp__rpg"] },
             env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1" },
+            hooks: { Stop: [{ hooks: [bell] }] },
         });
 
+        // The player's choices stay; the doorbell is put back beside their own hooks, once.
         mkdirSync(join(folder, "scelta", ".claude"), { recursive: true });
-        const chosen = '{ "autoMemoryEnabled": true, "enabledMcpjsonServers": [], "permissions": { "allow": ["Read"], "deny": ["Bash"] }, "env": { "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "0" } }';
-        writeFileSync(join(folder, "scelta", ".claude", "settings.json"), chosen);
+        const chosen = {
+            autoMemoryEnabled: true,
+            enabledMcpjsonServers: [],
+            permissions: { allow: ["Read"], deny: ["Bash"] },
+            env: { CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "0" },
+            hooks: { Stop: [{ hooks: [{ type: "command", command: "mine" }] }] },
+        };
+        writeFileSync(join(folder, "scelta", ".claude", "settings.json"), JSON.stringify(chosen));
         await runCommandLine(["init", "scelta"], context);
-        expect(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8")).toBe(chosen);
+        expect(JSON.parse(readFileSync(join(folder, "scelta", ".claude", "settings.json"), "utf8"))).toEqual({ ...chosen, hooks: { Stop: [...chosen.hooks.Stop, { hooks: [bell] }] } });
     });
 
     it("refuses a broken Claude Code settings file before creating anything", async () => {
@@ -218,31 +212,21 @@ describe("rpg config", () => {
             "effort is the player's to choose, never yours: tell them they can set it on the dashboard's Settings, or in their terminal with rpg config effort and low, medium, high or app. Nothing changed.",
         );
         const set = await runCommandLine(["config", "effort", "low"], { ...context, terminal: true });
-        expect(set.output).toContain("effort: low\nWritten for Claude Code, Codex and Gemini CLI: it applies from the next chat");
-        expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ effortLevel: "low", autoMemoryEnabled: false });
+        expect(set.output).toContain("effort: low\nWritten for Claude Code and Codex: it applies from the next chat");
+        expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ effortLevel: "low", autoMemoryEnabled: false, hooks: { Stop: [{ hooks: [bell] }] } });
         // A key of Codex's top, before its first table, in place of the player's: under a table it would be ignored.
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "low"\nmodel = "gpt-5"\n\n\[mcp_servers\.rpg\]\ncommand = "rpg"\n/);
-        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs.customOverrides).toEqual([
-            { match: { model: "chat-base-3" }, modelConfig: { generateContentConfig: { thinkingConfig: { thinkingLevel: "LOW" } } } },
-            { match: { model: "chat-base-2.5" }, modelConfig: { generateContentConfig: { thinkingConfig: { thinkingBudget: 1024 } } } },
-        ]);
+        expect(existsSync(join(folder, ".gemini"))).toBe(false);
         // The player's own change on the dashboard, and the same written twice stays one key.
         await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
         await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8").match(/model_reasoning_effort/g)).toHaveLength(1);
         expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBe("high");
-        // Medium: Gemini's preview of 3 Pro takes only low and high (review of 17 October).
-        await runCommandLine(["config", "effort", "medium"], { ...context, actor: "player" });
-        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs.customOverrides.at(-1)).toEqual({
-            match: { model: "gemini-3-pro-preview" },
-            modelConfig: { generateContentConfig: { thinkingConfig: { thinkingLevel: "HIGH" } } },
-        });
         // app takes it away from every file: each app keeps its own again.
-        expect((await runCommandLine(["config", "effort", "app"], { ...context, terminal: true })).output).toContain("Taken away for Claude Code, Codex and Gemini CLI");
+        expect((await runCommandLine(["config", "effort", "app"], { ...context, terminal: true })).output).toContain("Taken away for Claude Code and Codex");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("effort");
         expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBeUndefined();
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model = "gpt-5"\n\n\[mcp_servers\.rpg\]/);
-        expect(JSON.parse(readFileSync(join(folder, ".gemini", "settings.json"), "utf8")).modelConfigs).toBeUndefined();
     });
 
     it("puts the effort first in a Codex file with a byte order mark, a quoted key, an array of brackets and a commented table (review of 17 October)", async () => {

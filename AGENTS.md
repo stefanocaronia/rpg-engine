@@ -40,7 +40,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run betasim`: build, then run betasim's flows and simulated testers on the dashboard, at 1280 and at 375 (`test/betasim/`): its usability alone, never the game. Reports in `test/betasim/report/`.
 - `npm run translate`: translate the dashboard's phrases that a shipped language lacks (`src/dashboard/i18n/<code>.json`), a game system's words from its Italian list (`systems/<name>/words/<code>.yaml`), and the guide of Help where a language lacks it or has one from an older English (`src/dashboard/guide/<code>.md`), with Claude Code and your own login; `-- --only fr,de` for some. Italian is curated: read what it writes there.
 - Releasing: a tag `v<version>` equal to `package.json`'s version publishes it to npm through GitHub Actions (`.github/workflows/publish.yml`), after lint, build and tests; an extension of `extensions/` with a tag `<name>-v<version>` (`publish-extension.yml`); only on Stefano's word.
-- `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code, `/mcp refresh` in Gemini CLI) or open a new chat.
+- `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code) or open a new chat.
 
 ## Development vs game
 

@@ -11,7 +11,7 @@ import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.
 import { readEffect } from "../effects/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
 import { declaredKind, entryPage, isPartyMember, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
-import type { GameSystem, SystemWords } from "../systems/index.ts";
+import type { ActVerb, GameSystem, SystemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -133,6 +133,8 @@ export type ViewResult =
         sheet: SheetGroupData[];
         /** Where the dashboard puts the groups of the sheet, as the system says (D-295), and those at hand in a fight (D-315). */
         cards?: { rail: string[]; order: string[]; atHand: string[]; };
+        /** The fields whose items the player acts with, each with its verbs, as the system says (D-495). */
+        actions?: Record<string, ActVerb[]>;
         text: string;
         /** The player character's opening text, which the player may propose on the dashboard (D-373, D-386); left out on other pages. */
         story?: string;
@@ -452,6 +454,8 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     const language = readSettings(root).language;
     const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
+    // Only the player's own character acts from the sheet: the others act as the master says (D-495).
+    const actions = page === knowledge.pc ? system?.sheetActions : undefined;
     const story = page === knowledge.pc ? playerStory(page) : undefined;
     return {
         kind: "page",
@@ -459,6 +463,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         ...(headline === undefined ? {} : { headline }),
         sheet,
         ...(cards === undefined ? {} : { cards }),
+        ...(actions === undefined ? {} : { actions }),
         text: knownText(world, knowledge, page),
         ...(story === undefined ? {} : { story }),
     };

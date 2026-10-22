@@ -55,7 +55,9 @@ describe("Codex and Claude Code installed with the player's yes (D-424, D-425)",
 
         // The player signed in: the page hears that it can be translated now.
         states.codex = "ready";
-        expect(await ok("install", "codex")).toContain("Codex is ready on this computer with the player's ChatGPT account: the dashboard is translated in the background from now on");
+        const ready = await ok("install", "codex");
+        expect(ready).toContain("Codex is ready on this computer with the player's ChatGPT account: the dashboard is translated in the background from now on");
+        expect(ready).toContain("that it runs on their own plan and its limits, imports of their documents too");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "helper-ready", visibility: "hidden" });
     });
 

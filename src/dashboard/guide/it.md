@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -66,11 +66,11 @@ Il master non può creare una campagna per te: prima di `init`, niente dice al t
 
 Il master gira in un **agente IA**: un'app di IA, nel terminale o sul desktop, che sa lavorare con i file del tuo computer, come Claude Code o Codex. Una chat semplice come claude.ai o ChatGPT, o un'app del telefono, non basta: il master deve arrivare ai file della campagna sul tuo computer. Ogni agente vuole il suo piano e il suo accesso: Claude Code un piano Claude a pagamento, Codex un accesso ChatGPT. Si installa una volta sola, dalla sua pagina: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: nella cartella della campagna scrivi `claude`. Quando chiede se ti fidi della cartella, scegli **Yes, I trust this folder**; attento, la risposta già selezionata è *No, exit*.
+- **Claude Code**: nella cartella della campagna scrivi `claude`. Quando chiede se ti fidi della cartella, scegli **Yes, I trust this folder**; attento, la risposta già selezionata è *No, exit*. La campagna ha anche un piccolo hook, `rpg --listen`, che la domanda non mostra: avvisa subito il master quando agisci dalla dashboard.
 - **Codex**: nella cartella della campagna scrivi `codex`, e rispondi di sì quando chiede se ti fidi della cartella. Nella sua app desktop, controlla nelle impostazioni che le memorie siano spente per le chat del gioco.
 - **Un altro agente**: avvialo nella cartella della campagna e dagli il server MCP `rpg mcp`. RPG Engine è un server MCP standard: qualsiasi agente che supporta MCP può fare il master, anche locale.
 
-Noi lo giochiamo e lo proviamo con **Claude Code**; **Codex** è collegato e verificato, ma non ci abbiamo ancora giocato una campagna intera; `init` prepara anche **Gemini CLI**. La campagna spegne la memoria propria dell'agente: il gioco vive nei suoi file, così tornare a un salvataggio torna davvero indietro.
+Noi lo giochiamo e lo proviamo con **Claude Code**; **Codex** è collegato e verificato, ma non ci abbiamo ancora giocato una campagna intera. La campagna spegne la memoria propria dell'agente: il gioco vive nei suoi file, così tornare a un salvataggio torna davvero indietro.
 
 ### 2.5 La prima chat
 
@@ -122,6 +122,8 @@ Scrivi cosa fa o dice il tuo personaggio, con parole tue:
 Fuori dalla storia, scrivi tra parentesi quadre: *[Come funziona la lotta?]* Il master risponde anche lui tra parentesi.
 
 Tu dici cosa tenti; il master dice cosa succede. Il master non decide mai per il tuo personaggio, e non parla mai del motore. Puoi chiedergli come si usa la dashboard.
+
+**Agire dalla dashboard**: clicca un nome della tua scheda, come un'arma, un incantesimo o una cosa che porti, poi su chi; oppure clicca una persona per parlarle. La dashboard scrive la tua frase, *Attacco Brigante incappucciato 1 con Mazza.*, che puoi cambiare prima di **Di' al master**. Il master la sente come detta in chat, e la decide come ogni altra. Dove la tua app di AI non la sente da sola, **Copia** te la prepara da incollare in chat.
 
 ### 3.2 I tiri
 
@@ -183,7 +185,7 @@ Il robot in cima alla dashboard è il master: il suo volto segue il tono della s
 
 ### 3.11 Le immagini
 
-RPG Engine può far fare immagini dei luoghi che raggiungi, delle missioni che prendi e di chi incontri, come dice l'impostazione **immagini**, e il ritratto del tuo personaggio quando lo chiedi. Usa ciò che c'è sul tuo computer, con il tuo account: **Codex** le dipinge, altrimenti **Claude Code** le disegna. Le **Impostazioni** dicono se questo computer può farle, e se no come prepararlo. Puoi sempre dare al master un'immagine tua.
+RPG Engine può far fare immagini dei luoghi che raggiungi, delle missioni che prendi e di chi incontri, come dice l'impostazione **immagini**, e il ritratto del tuo personaggio quando lo chiedi. Usa il tuo Codex o il tuo Claude Code, col tuo account, sul tuo piano e i suoi limiti: **Codex** le dipinge, altrimenti **Claude Code** le disegna. Le **Impostazioni** dicono se questo computer può farle, e se no come prepararlo. Puoi sempre dare al master un'immagine tua.
 
 ### 3.12 Sicurezza: linee, veli e stop
 
@@ -246,7 +248,7 @@ Non ancora. Un'estensione aggiungerà qualcosa a una campagna oltre al suo siste
 
 - **Creato al momento**: dalla tua premessa, il master costruisce ogni luogo, persona e trama appena prima che ti serva, e lo conserva.
 - **Preparato all'inizio**: lo stesso, con il mondo costruito prima di giocare.
-- **Dalla tua avventura o da un tuo libro**: dai al master il suo file, *[Importa questa avventura come nostra campagna: D:\Libri\avventura.pdf. Non dirmi niente di ciò che contiene.]* Si legge meglio come testo, EPUB, documento Word o PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, lentamente e con qualche errore. Codex o Claude Code sul tuo computer lo legge fuori dalla chat, e la dashboard mostra a che punto è; da un romanzo, il master propone da dove cominciare. Scrive i luoghi, i personaggi e i segreti.
+- **Dalla tua avventura o da un tuo libro**: dai al master il suo file, *[Importa questa avventura come nostra campagna: D:\Libri\avventura.pdf. Non dirmi niente di ciò che contiene.]* Si legge meglio come testo, EPUB, documento Word o PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, lentamente e con qualche errore. Lo legge fuori dalla chat il tuo Codex o il tuo Claude Code, altrimenti il master nella chat, sul tuo piano: tutto il documento va a OpenAI o ad Anthropic, sotto i termini del tuo account e la sua scelta sull'addestramento. La dashboard mostra a che punto è; da un romanzo, il master propone da dove cominciare. Scrive i luoghi, i personaggi e i segreti.
 
 Una campagna si gioca una volta: per rigiocare la stessa avventura, crea una campagna nuova.
 
@@ -284,7 +286,7 @@ Ogni comando che usa il master si può lanciare anche nella cartella della campa
 
 **Il master può barare?** Non può cambiare un tiro fatto da RPG Engine, tranne alla difficoltà storia, né i fatti già stabiliti.
 
-**Costa qualcosa?** RPG Engine è gratuito. Il master gira sul piano del tuo agente, o sul tuo computer con un modello locale. Una serata di gioco è una chat lunga: con i piani più piccoli puoi arrivare al limite prima della fine della serata. Immagini e traduzioni usano lo stesso piano.
+**Costa qualcosa?** RPG Engine è gratuito. Il master gira sul piano del tuo agente, o sul tuo computer con un modello locale. Una serata di gioco è una chat lunga: con i piani più piccoli puoi arrivare al limite prima della fine della serata. Immagini, traduzioni e import usano lo stesso piano. RPG Engine da sé non usa mai una chiave API, che si paga a chiamata: collega il tuo agente col tuo account, non con una chiave.
 
 **Posso giocare dal telefono?** No: il master gira sul tuo computer, e la dashboard si apre solo lì.
 

@@ -33,6 +33,8 @@ import { findHiddenImage, findImage } from "./images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
 import { samePath } from "./library/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
+import { codexClient, helperCommand, queueInCodex } from "./pictures/index.ts";
+import { type Acts, actText, giveBackAct, markHeard, markRung, newActs, takeActs, withdrawAct } from "./player-acts.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { installedSystems, rollName } from "./systems/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
@@ -79,6 +81,15 @@ export interface DashboardOptions
     pageReturn?: number;
     /** How long a question waits on pages that no one sees, before it goes to the form or to words (D-455); less in the tests. */
     pageHidden?: number;
+    /** Codex's queue for the player's sentences (D-495): Codex's own command, else a fake in the tests. */
+    queue?: CodexQueue;
+}
+
+/** Codex's queue: whether this computer has the command, and a message queued in a thread, as the player's own (D-495). */
+export interface CodexQueue
+{
+    ready(): boolean;
+    send(thread: string, text: string): Promise<boolean>;
 }
 
 // The commands the page may run: what the player may see, never the master's (VIEW-1). Roles will say more (phase 2).
@@ -206,12 +217,21 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 shared: new Map<string, string>(),
                 notify: () => undefined,
                 words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
+                acts: newActs(),
+                queue: options.queue ?? codexQueue(),
             };
             return serve(server, served);
         }
     }
 
     return undefined;
+}
+
+/** Codex's own queue on this computer, the command looked for once. */
+function codexQueue(): CodexQueue
+{
+    let found: boolean | undefined;
+    return { ready: () => (found ??= helperCommand("codex") !== undefined), send: queueInCodex };
 }
 
 /** Whether a program answers at a port of this machine, on 127.0.0.1 or on ::1. */
@@ -300,6 +320,16 @@ interface Served
     packageWork?: { name: string; action: PackageAction; phase: PackagePhase; };
     /** What the page may add, as npm and GitHub said it last, and when (D-486). */
     catalog?: { at: number; catalog: Catalog; };
+    /** The player's sentences said on the page, waiting for the master or heard lately (D-495). */
+    acts: Acts;
+    /** The doorbell of Claude Code's hook, waiting for a sentence; and whether one ever came, so that this chat has one (D-495). */
+    bell?: ServerResponse;
+    belled?: boolean;
+    /** Codex's queue, and the sentences being put in it now (D-495). */
+    queue: CodexQueue;
+    queueing?: Promise<void>;
+    /** Codex refused a sentence once: the others wait for the master's next call (D-495). */
+    queueBroken?: boolean;
 }
 
 /** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
@@ -353,6 +383,13 @@ function serve(server: Server, served: Served): Dashboard
     };
 
     const stopListening = served.session.onChange(() => served.notify());
+    // A call of the master that ends leaves the player's sentences said meanwhile for the doorbell, or for Codex's queue (D-495).
+    const chat = served.context.chat;
+
+    if (chat !== undefined) {
+        chat.afterCall = () => deliverActs(served);
+    }
+
     // An import works in another process, or in the call the master waits on, writing where the session does not watch: its state is looked at now and then,
     // and the pages hear when it changes (D-491 (11)).
     let importSeen = importNow(served);
@@ -384,6 +421,12 @@ function serve(server: Server, served: Served): Dashboard
                 clearInterval(importLook);
                 clearTimeout(notice);
                 served.asked?.settle("absent");
+                served.bell?.end("gone");
+
+                if (chat !== undefined) {
+                    chat.afterCall = undefined;
+                }
+
                 served.pages.forEach((page) => page.end());
                 server.close(() => done());
             }),
@@ -418,6 +461,17 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     // The page answers the master's question with a click, and changes the player's settings: what it sends, and only from itself (D-279, D-341).
     if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
         await answerAsked(request, response, served);
+        return;
+    }
+
+    if (path === "/api/act" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
+        await act(request, response, served);
+        return;
+    }
+
+    // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).
+    if (request.method === "GET" && path === "/api/bell") {
+        listenForBell(request, response, served, url.searchParams.has("probe"));
         return;
     }
 
@@ -1409,23 +1463,169 @@ async function setupWord(request: IncomingMessage, response: ServerResponse, ser
 function pageNews(served: Served): { lines: string[]; restore(): void; }
 {
     const events = served.events.splice(0);
+    const acts = takeActs(served.acts, quotedLines);
     const shares = [...served.shared];
     const settings = settingNews(served);
     served.shared.clear();
 
-    // The page hears that the shared notes were read: they can no longer be taken back.
-    if (shares.length > 0) {
+    // The page hears that the shared notes and the sentences were read: they can no longer be taken back.
+    if (shares.length > 0 || acts.lines.length > 0) {
         served.notify();
     }
 
     return {
-        lines: [...events, ...shares.map(([, news]) => news), ...settings.lines],
+        lines: [...events, ...acts.lines, ...shares.map(([, news]) => news), ...settings.lines],
         restore: () => {
             served.events.unshift(...events);
+            acts.restore();
             shares.forEach(([id, news]) => served.shared.set(id, news));
             settings.restore();
         },
     };
+}
+
+/**
+ * A sentence the player says on the page, in their own words (D-493 (1), D-495): it waits for the master's next call, at once with the doorbell or Codex's queue,
+ * or is taken back while the master has not heard it. GET gives those waiting, those heard lately, and whether this chat has a doorbell.
+ */
+async function act(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    if (request.method === "GET") {
+        sendJson(response, 200, actsShown(served));
+        return;
+    }
+
+    const parsed = z.union([
+        z.object({ text: z.string().max(mostSaid).transform(actText).pipe(z.string().min(1)) }).strict(),
+        z.object({ withdraw: z.string().min(1).max(64) }).strict(),
+    ]).safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: `Send the player's sentence, { text }, up to ${mostSaid} characters, or { withdraw } with its id.` });
+        return;
+    }
+
+    if ("withdraw" in parsed.data) {
+        const withdrawn = withdrawAct(served.acts, parsed.data.withdraw);
+
+        if (withdrawn !== "withdrawn") {
+            const [status, error] = withdrawn === "heard" ? [409, "The master has heard it already: it can no longer be taken back."] : [404, "No sentence with that id is waiting: reload the page."];
+            sendJson(response, status, { error });
+            return;
+        }
+
+        served.notify();
+        sendJson(response, 200, actsShown(served));
+        return;
+    }
+
+    const id = served.context.newId();
+    served.acts.pending.push({ id, text: parsed.data.text });
+    served.notify();
+    deliverActs(served);
+    sendJson(response, 202, { id, ...actsShown(served) });
+}
+
+function actsShown(served: Served): { pending: Acts["pending"]; heard: string[]; bell: boolean; }
+{
+    return { pending: served.acts.pending, heard: served.acts.heard, bell: hasBell(served) };
+}
+
+/** Whether a sentence said on the page reaches the master at once (D-495): Claude Code's doorbell came in this chat, or Codex named its thread. */
+function hasBell(served: Served): boolean
+{
+    return served.belled === true || (inCodex(served) && served.context.chat?.thread !== undefined && served.queueBroken !== true && served.queue.ready());
+}
+
+function inCodex(served: Served): boolean
+{
+    return served.context.host?.() === codexClient;
+}
+
+/**
+ * Brings the sentences waiting to the master while no call of theirs runs, which would take them at its head (D-495): into Codex's queue, as the player's own
+ * messages, else by Claude Code's doorbell. Every ring comes from a sentence the player said, never from time.
+ */
+function deliverActs(served: Served): void
+{
+    const chat = served.context.chat;
+
+    if (served.acts.pending.length === 0 || (chat?.calls ?? 0) > 0) {
+        return;
+    }
+
+    const thread = chat?.thread;
+
+    if (inCodex(served) && thread !== undefined && served.queueBroken !== true) {
+        // One said while the queue works goes after it.
+        served.queueing ??= queueActs(served, thread).finally(() => {
+            served.queueing = undefined;
+            deliverActs(served);
+        });
+        return;
+    }
+
+    if (served.bell !== undefined) {
+        markRung(served.acts);
+        served.bell.end("ring");
+        served.bell = undefined;
+    }
+}
+
+/** Puts the sentences waiting in Codex's queue, one at a time; one Codex refuses stays for the master's next call, and the queue is tried no more. */
+async function queueActs(served: Served, thread: string): Promise<void>
+{
+    for (const one of [...served.acts.pending]) {
+        // Taken back, or heard by a call that began meanwhile.
+        if (!served.acts.pending.includes(one) || (served.context.chat?.calls ?? 0) > 0) {
+            return;
+        }
+
+        // Heard as it goes, so that it is no longer taken back nor told at a call's head.
+        markHeard(served.acts, [one.id]);
+        served.notify();
+
+        if (!(await served.queue.send(thread, one.text).catch(() => false))) {
+            giveBackAct(served.acts, one);
+            served.queueBroken = true;
+            served.notify();
+            return;
+        }
+    }
+}
+
+/**
+ * Claude Code's doorbell (D-495): the hook of the chat that ended its turn waits here, one at a time, and hears "ring" when the player says a sentence, or one
+ * already waits. With probe, the chat's session and campaign, for the hook to find its own server.
+ */
+function listenForBell(request: IncomingMessage, response: ServerResponse, served: Served, probe: boolean): void
+{
+    if (probe) {
+        const root = withFiles(served.session, () => findCampaign(served.context.folder)) ?? null;
+        sendJson(response, 200, { session: process.env.CLAUDE_CODE_SESSION_ID ?? null, root });
+        return;
+    }
+
+    response.writeHead(200, { ...securityHeaders, "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+
+    if (served.belled !== true) {
+        served.belled = true;
+        served.notify();
+    }
+
+    if (served.acts.pending.length > 0 && (served.context.chat?.calls ?? 0) === 0) {
+        markRung(served.acts);
+        response.end("ring");
+        return;
+    }
+
+    served.bell?.end("dismissed");
+    served.bell = response;
+    request.on("close", () => {
+        if (served.bell === response) {
+            served.bell = undefined;
+        }
+    });
 }
 
 /**

@@ -37,6 +37,8 @@ export interface Context
     extensionFolders?: string[];
     /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */
     host?: () => string | undefined;
+    /** The chat the MCP server serves, as the dashboard needs it for the player's sentences (D-495); missing on the command line. */
+    chat?: ChatState;
     /** The command was typed by the player in their own terminal: their own hands, as the yes to a package not ours needs (D-441). */
     terminal?: boolean;
     /** npm on this computer, which installs the packages in the engine's own folder (D-436); missing where nothing installs, as in most tests. */
@@ -53,8 +55,6 @@ export interface Context
     characterAgent?: boolean;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
-    /** Whether status has already had the master offer the dashboard in this chat, as its first status does (D-353). */
-    dashboardOffered?: boolean;
     /**
      * What the player changed on the dashboard since the master's last call, taken for the head of the next call's answer, and given back when that answer
      * never goes, as for a call the user stopped (D-341).
@@ -134,6 +134,18 @@ export type HelperState = "missing" | "logged out" | "api key" | "ready";
 /** The player's sign-in of a helper program: waiting for them in the browser, with the link it gave; done; or failed, and why. */
 export type HelperLogin = { state: "waiting"; link?: string; } | { state: "done"; } | { state: "failed"; why: string; };
 
+/**
+ * The chat of an MCP server, kept across its calls: the master's calls running now, the Codex thread of the last one, and what the dashboard does as each
+ * ends (D-495); whether status has already had the master offer the dashboard, as its first does (D-353).
+ */
+export interface ChatState
+{
+    calls: number;
+    thread?: string;
+    afterCall?: () => void;
+    dashboardOffered?: boolean;
+}
+
 /** Codex and Claude Code on this computer (D-424, D-425): how each stands, installing one in the engine's own folder, and the player's sign-in. */
 export interface Helpers
 {
@@ -155,6 +167,8 @@ export interface TextWriter
 export interface DocumentReader
 {
     ready(): boolean;
+    /** The program that would read now, which the player is told the document goes to (D-493). */
+    program?(): "Claude Code" | "Codex" | undefined;
     /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. Stopped by `signal`. */
     read(folder: string, brief: string, writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>;
 }

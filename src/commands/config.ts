@@ -195,7 +195,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         }
 
         const unwritten = writeEffortFiles(root, context.platform, true);
-        return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code, Codex and Gemini CLI: from the next chat each keeps its own.", ...unwritten], part: "" };
+        return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code and Codex: from the next chat each keeps its own.", ...unwritten], part: "" };
     }
 
     const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
@@ -231,7 +231,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         const unwritten = writeEffortFiles(root, context.platform);
         replaced = [
             ...replaced,
-            "Written for Claude Code, Codex and Gemini CLI: it applies from the next chat; in Codex and Gemini CLI only in a folder they trust; an effort picked in the app for one chat wins there.",
+            "Written for Claude Code and Codex: it applies from the next chat; in Codex only in a folder it trusts; an effort picked in the app for one chat wins there.",
             ...unwritten,
         ];
     }

@@ -114,6 +114,7 @@ sheet-notes: {Personality: "..."}
 sheet-icons: {Abilities: "M4.5 13.5h3v6h-3Z ..."}
 sheet-headline: "Level {level} {classes}"
 sheet-cards: {rail: [Abilities], order: [Skills, Combat], at-hand: [ac, hp, Attacks]}
+sheet-actions: {spells: [cast, prepare], inventory: [use, equip]}
 sheet-dice: {1d20: [str-mod, dex-mod, athletics, initiative, attack]}
 token-icons: {field: classes, icons: {Cleric: "M12 4v16 M7 9h10"}}
 status-line: [level, hp, temp-hp?, ac]
@@ -126,6 +127,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-icons`, `token-icons`: SVG path data on a 24 grid, for a group's card and for a token's mark by class.
 - `sheet-headline`: the line under a name on the dashboard.
 - `sheet-cards`: where the dashboard puts the groups.
+- `sheet-actions`: the fields whose items the player acts with on the dashboard, each with the engine's verbs (`attack`, `cast`, `use`, `equip`, `unequip`, `prepare`), the first the one a click says. The page makes it the player's own sentence to the master, who rules it; it checks nothing. Without it, the sheet only shows.
 - `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)"}]}`.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
 - `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).

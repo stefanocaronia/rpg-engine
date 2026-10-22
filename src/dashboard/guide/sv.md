@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -33,14 +33,14 @@ I dag spelar RPG Engine ett spelsystem, **femte utgåvan**, från det fria Syste
 
 ---
 
-## 2. Kom igång <!-- icon: path -->
+## 2. Komma igång <!-- icon: path -->
 
 ### 2.1 Det här behöver du
 
 - En dator med Windows, macOS eller Linux, och en webbläsare.
-- **Node.js 22** eller nyare, från [nodejs.org](https://nodejs.org). Med det följer `npm`, som installerar RPG Engine.
-- En **terminal**: i Windows Terminal eller PowerShell, i macOS Terminal. Du öppnar en terminal i en mapp genom att högerklicka på mappen och välja **Öppna i Terminal** (Windows) eller **Tjänster > Ny terminal i mappen** (macOS).
-- En **AI-agent** som spelledare ([2.4](#24-connect-your-ai)), med den **största modellen** den erbjuder. En liten modell är lättare att övertala att avslöja hemligheter eller bryta mot reglerna.
+- **Node.js 22** eller nyare, från [nodejs.org](https://nodejs.org). Där ingår `npm`, som installerar RPG Engine.
+- En **terminal**: i Windows Terminal eller PowerShell, i macOS Terminal. Om du vill öppna en terminal i en mapp högerklickar du på mappen och väljer **Öppna i Terminal** (Windows) eller **Tjänster > Ny terminal i mappen** (macOS).
+- En **AI-agent** som spelledare ([2.4](#24-connect-your-ai)), med den **största modellen** den erbjuder. En liten modell går lättare att övertala att avslöja hemligheter eller bryta mot reglerna.
 
 ### 2.2 Installera
 
@@ -48,7 +48,7 @@ I dag spelar RPG Engine ett spelsystem, **femte utgåvan**, från det fria Syste
 npm install -g rpg-engine
 ```
 
-Med `rpg --version` kontrollerar du att det fungerade. Du använder `rpg` en gång per kampanj, för att skapa den. Sedan startar din agent RPG Engine själv.
+Med `rpg --version` kontrollerar du att det fungerade. Du använder `rpg` en gång per kampanj, för att skapa den. Därefter startar din agent RPG Engine själv.
 
 ### 2.3 Skapa en kampanj
 
@@ -58,60 +58,60 @@ Med `rpg --version` kontrollerar du att det fungerade. Du använder `rpg` en gå
 rpg init "The Salt Isles"
 ```
 
-Då skapas mappen `The Salt Isles` med en ny kampanj i. Gå in i den med `cd "The Salt Isles"`. Kom ihåg var den ligger: du återvänder hit varje gång du spelar. Allt annat väljer du senare, i chatten eller på dashboarden. Med `rpg init --help` ser du alternativen för att välja något redan nu, till exempel `--language it` eller `--difficulty hard`.
+Det skapar mappen `The Salt Isles` med en ny kampanj i. Gå in i den med `cd "The Salt Isles"`. Kom ihåg var den ligger: du återvänder hit varje gång du spelar. Allt annat väljer du senare, i chatten eller på dashboarden. `rpg init --help` listar alternativen för att välja något redan nu, till exempel `--language it` eller `--difficulty hard`.
 
 Spelledaren kan inte skapa en kampanj åt dig: före `init` finns inget som talar om för din agent var RPG Engine finns.
 
 ### 2.4 Anslut din AI
 
-Spelledaren körs i en **AI-agent**: en AI-app, i terminalen eller på skrivbordet, som kan arbeta med filerna på din dator, till exempel Claude Code eller Codex. En vanlig chatt som claude.ai eller ChatGPT, eller en app i mobilen, räcker inte: spelledaren måste komma åt kampanjens filer på din dator. Varje agent kräver sin egen plan och inloggning: Claude Code en betald Claude-plan, Codex en ChatGPT-inloggning. Du installerar den en gång, från dess egen sida: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Spelledaren körs i en **AI-agent**: en AI-app, i terminalen eller på skrivbordet, som kan arbeta med filerna på din dator, till exempel Claude Code eller Codex. En vanlig chatt som claude.ai eller ChatGPT, eller en app i mobilen, räcker inte: spelledaren måste nå kampanjens filer på din dator. Varje agent kräver sitt eget abonnemang och sin egen inloggning: Claude Code ett betalt Claude-abonnemang, Codex en ChatGPT-inloggning. Du installerar den en gång, från dess egen sida: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: skriv `claude` i kampanjens mapp. När den frågar om du litar på mappen väljer du **Yes, I trust this folder**. Se upp: svaret som är förvalt är *No, exit*.
-- **Codex**: skriv `codex` i kampanjens mapp och svara ja när den frågar om du litar på mappen. I skrivbordsappen kontrollerar du i inställningarna att minnen är avstängda för spelets chattar.
-- **En annan agent**: starta den i kampanjens mapp och ge den MCP-servern `rpg mcp`. RPG Engine är en vanlig MCP-server: alla agenter som stöder MCP kan vara spelledare, även lokala.
+- **Claude Code**: skriv `claude` i kampanjmappen. När den frågar om du litar på mappen väljer du **Yes, I trust this folder**. Se upp: det förvalda svaret är *No, exit*. Kampanjen har också en liten hook, `rpg --listen`, som frågan inte visar: den talar direkt om för spelledaren när du agerar från dashboarden.
+- **Codex**: skriv `codex` i kampanjmappen och svara ja när den frågar om du litar på mappen. I dess skrivbordsapp kontrollerar du i inställningarna att minnen är avstängda för spelets chattar.
+- **En annan agent**: starta den i kampanjmappen och ge den MCP-servern `rpg mcp`. RPG Engine är en standard-MCP-server: vilken agent som helst med stöd för MCP kan vara spelledare, även lokala.
 
-Vi spelar och testar med **Claude Code**. **Codex** är ansluten och kontrollerad, men ingen hel kampanj har ännu spelats med den. `init` ställer också in **Gemini CLI**. Kampanjen stänger av agentens eget minne: spelet finns i dess filer, så att det verkligen går tillbaka när du återgår till ett sparat spel.
+Vi spelar och testar med **Claude Code**. **Codex** är ansluten och kontrollerad, men ingen hel kampanj har spelats med den ännu. Kampanjen stänger av agentens eget minne: spelet finns i dess filer, så att en återgång till ett sparat spel verkligen går tillbaka.
 
 ### 2.5 Den första chatten
 
-Skriv vad du vill, till exempel *Hej! Nu kör vi.* I sitt första svar i varje chatt ger spelledaren dig **länken till din dashboard**, ungefär `http://127.0.0.1:4750`. Öppna den och ha den bredvid chatten.
+Skriv vad som helst, till exempel *Hej! Nu börjar vi.* I sitt första svar i varje chatt ger spelledaren dig **länken till din dashboard**, något i stil med `http://127.0.0.1:4750`. Öppna den och ha den bredvid chatten.
 
-Mellan spelledarens meddelanden visar din agent de verktyg den använder. Öppna inte deras detaljer (i Claude Code ctrl+o): de kan visa hemligheter.
+Mellan spelledarens meddelanden visar din agent de verktyg den använder. Öppna inte deras detaljer (i Claude Code, ctrl+o): de kan visa hemligheter.
 
 En ny kampanj går igenom tre steg, som visas högst upp på dashboarden: **1 Inställningar** (hur du vill spela), **2 Session noll** (du skapar din rollperson, i spelet), **3 Spela**.
 
-### 2.6 Inställningar: välj hur du spelar
+### 2.6 Inställningar: så väljer du hur du spelar
 
-Spelledaren frågar bara efter det som fortfarande saknas, några frågor åt gången. Dashboardens steg **Inställningar** visar samma frågor som kort. Skriv "bestäm du" så väljer spelledaren. Allt kan ändras senare, i chatten eller under **Inställningar**.
+Spelledaren frågar bara det som fortfarande saknas, några frågor åt gången. Dashboardens steg **Inställningar** visar samma frågor som kort. Skriv "du bestämmer" så väljer spelledaren. Allt kan ändras senare, i chatten eller under **Inställningar**.
 
-| Inställning | Vad den bestämmer | Värden |
+| Inställning | Vad den avgör | Värden |
 |---|---|---|
 | **Mentor** | Hur mycket spelledaren lär dig reglerna | av, tips, handledning |
 | **Svårighetsgrad** | Hur hård världen är | berättelse, lätt, normal, svår, brutal |
-| **Dödlighet** | Vad det innebär att falla i en strid | berättande (du dör aldrig), episk (bara när det spelar roll), tärningar |
-| **Sparade spel** | När du får gå tillbaka | permadöd, kontrollpunkt, fri ([3.8](#38-saves-and-going-back)) |
-| **Stränghet** | Hur noga mat, ljus och resor följer reglerna | flytande, regler, simulering |
+| **Dödlighet** | Vad det betyder att falla i en strid | berättande (ingen dör), episk (bara när det spelar roll), tärningar |
+| **Sparade spel** | När du får gå tillbaka | permadöd, kontrollpunkt, ledig ([3.8](#38-saves-and-going-back)) |
+| **Stränghet** | Hur noga mat, ljus och resor följer reglerna | smidig, regler, simulering |
 | **Tärningar** | Vem som slår dina tärningar | digitala, fysiska |
-| **Måttenheter** | Avstånd och vikter | metriska, imperiska |
-| **Röster** | Vem som talar för de rollpersoner du möter: i avgörande ögonblick rollpersonen själv, som bara vet det den vet, eller så som spelledaren väljer; alltid spelledaren; eller alltid rollpersonen, för de viktigaste eller för alla, långsammare och dyrare, där din AI-app klarar det | auto, spelledare, viktiga, alltid |
+| **Måttenheter** | Avstånd och vikter | metriska, brittiska |
+| **Röster** | Vem som talar för rollpersonerna du möter: i avgörande ögonblick rollpersonen själv, som bara vet det den vet, så som spelledaren väljer; alltid spelledaren; eller alltid rollpersonen, för de viktigaste eller för alla, långsammare och dyrare, där din AI-app klarar det | auto, spelledare, viktiga, alltid |
 | **Följeslagare** | Vem som reser med dig | inga, skapade med dig, skapade av spelledaren, möts i spelet |
-| **Bilder** | Bilder av platser, uppdrag och dem du möter | inga, på begäran, nya platser, uppdrag och dem du möter ([3.11](#311-pictures)) |
-| **Gränser** och **Slöjor** | Det som aldrig förekommer, och det som bara sker utanför scenen | listor |
+| **Bilder** | Bilder av platser, uppdrag och de du möter | inga, på begäran, nya platser, uppdrag och de du möter ([3.11](#311-pictures)) |
+| **Gränser** och **Slöjor** | Vad som aldrig förekommer, och vad som bara sker utanför scenen | listor |
 | **Språk** | Spelets och dashboardens språk | valfritt |
 
 Femte utgåvan lägger till **utveckling**: erfarenhetspoäng eller milstolpar.
 
-Om det inte finns någon färdig värld frågar spelledaren också efter en **premiss** (genre, ton, några inslag, med dina ord) och **förberedelsen**: bygg världen allt eftersom, medan du spelar, eller allt i början.
+Utan en färdig värld frågar spelledaren också efter en **premiss** (genre, ton, några element, med dina ord) och **förberedelsen**: bygga världen allteftersom du spelar, eller allt i början.
 
-**Spelledarens stil** efterfrågas aldrig, men du kan ändra den i chatten eller under **Inställningar**: **prosan** (enkel, litterär, pulp, ironisk), vilka **berättelser** spelledaren hittar på (situationer, bågar, episoder, mysterier), en författare att **skriva som**, eller något annat **med dina ord**.
+**Spelledarens stil** efterfrågas aldrig, men du kan ändra den i chatten eller under **Inställningar**: **prosan** (enkel, litterär, pulp, torr humor), **berättelserna** spelledaren hittar på (situationer, bågar, episoder, mysterium), en författare att **skriva som**, eller något annat **med dina ord**.
 
 ### 2.7 Session noll: din rollperson
 
-Du skapar din rollperson tillsammans med spelledaren, som vid ett bord. Varje val är ditt, om du inte ber spelledaren göra det åt dig: kom med en färdig idé, en vag eller ingenting alls. Spelledaren berättar hur karaktärsvärdena tas fram innan någon tärning slås. Din berättelse är aldrig ett krav. Om du ger en skriver spelledaren den med dina ord. Sedan ber spelledaren om en bild av din rollperson ([3.7](#37-your-characters-story-and-picture)). RPG Engine räknar ut rollformuläret: du behöver aldrig räkna själv.
+Du skapar din rollperson tillsammans med spelledaren, som vid ett bord. Varje val är ditt, om du inte ber spelledaren göra det: kom med en färdig idé, en vag eller ingenting alls. Spelledaren berättar hur förmågepoäng tas fram innan någon tärning slås. Du behöver aldrig ha en bakgrundshistoria. Om du ger en skriver spelledaren in den med dina ord. Sedan ber spelledaren om en bild av din rollperson ([3.7](#37-your-characters-story-and-picture)). RPG Engine räknar ut rollformuläret: du gör aldrig några uträkningar.
 
 ---
 
-## 3. Att spela <!-- icon: chat -->
+## 3. Spela <!-- icon: chat -->
 
 ### 3.1 Prata med spelledaren
 
@@ -119,79 +119,81 @@ Skriv vad din rollperson gör eller säger, med egna ord:
 
 > Jag frågar värdshusvärden vilka andra som kom förbi i kväll.
 
-Vill du säga något utanför berättelsen, skriv inom hakparenteser: *[Hur fungerar grappling?]* Spelledaren svarar också inom hakparenteser.
+Utanför berättelsen skriver du inom hakparenteser: *[Hur fungerar brottning?]* Spelledaren svarar också inom hakparenteser.
 
-Du säger vad du försöker göra. Spelledaren säger vad som händer. Spelledaren bestämmer aldrig något åt din rollperson och pratar aldrig om motorn. Du kan fråga spelledaren hur man använder dashboarden.
+Du säger vad du försöker, spelledaren säger vad som händer. Spelledaren bestämmer aldrig åt din rollperson och pratar aldrig om motorn. Du kan fråga hur dashboarden används.
+
+**Agera från dashboarden**: klicka på ett namn i ditt rollformulär, till exempel ett vapen, en besvärjelse eller något du bär, och sedan på vem det gäller. Du kan också klicka på en person för att prata med den. Dashboarden skriver din mening, *Jag attackerar Huvförsedd bandit 1 med Mace.*, som du kan ändra innan du väljer **Säg till spelledaren**. Spelledaren hör den som om den sagts i chatten och avgör den som vilken annan handling som helst. Om din AI-app inte kan höra den själv gör **Kopiera** den klar att klistra in i chatten.
 
 ### 3.2 Slag
 
-Spelledaren ber om ett slag bara när utfallet är osäkert och spelar roll. Först berättar spelledaren vad som står på spel. Sedan:
+Spelledaren ber om ett slag bara när utgången är osäker och spelar roll, och säger först vad som står på spel. Sedan gäller:
 
-- **På dashboarden** visar en banner en knapp för varje slag, till exempel *Acrobatics +4 · with advantage*. Klicka på den: tärningarna faller på sidan och spelledaren får se resultatet. Du kan också klicka på den rad i ditt rollformulär som lyser, slå tärningarna från tärningsbrickan eller skriva något annat i bannern.
-- **För hand**, i bannerns hörn eller i **Inställningar**: bannern talar om vad du ska slå, och du slår det från ditt rollformulär eller från tärningsbrickan.
-- **Fysiska tärningar**, när tärningsinställningen står på fysiska: du skriver vad tärningarna visade, *[Jag slog 14.]*, och RPG Engine lägger till dina modifikationer.
+- **På dashboarden** visar en banderoll en knapp för varje slag, till exempel *Akrobatik +4 · med fördel*. Klicka på den: tärningarna faller på sidan och spelledaren hör resultatet. Du kan också klicka på den rad i ditt rollformulär som lyser, kasta tärningarna från tärningsbrickan eller skriva något annat i banderollen.
+- **För hand**, i banderollens hörn eller under **Inställningar**: banderollen talar om vad du ska slå, och du slår det från ditt rollformulär eller tärningsbrickan.
+- **Fysiska tärningar**, när inställningen **Tärningar** står på fysiska: du skriver vilka tal du slog, *[Jag slog 14.]*, och RPG Engine lägger till dina modifikationer.
 
-**Fria slag**: klicka på valfritt tal i ditt rollformulär, eller öppna tärningsbrickan, för att slå på skoj. De räknas aldrig, och spelledaren ser dem aldrig.
+**Fria slag**: klicka på valfritt tal i ditt rollformulär, eller öppna tärningsbrickan, för att slå på skoj. De räknas aldrig och spelledaren ser dem aldrig.
 
-**Spelledarens slag** syns i din slagkolumn, utom de hemliga. Du kan alltid fråga *[Var det slaget på riktigt?]*: för ett hemligt slag ger spelledaren ett fingeravtryck som bevisar att det gjordes innan du frågade.
+**Spelledarens slag** visas i din slagkolumn, utom de hemliga. Du kan alltid fråga *[Var det slaget på riktigt?]*: för ett hemligt slag ger spelledaren ett fingeravtryck som bevisar att det gjordes innan du frågade.
 
 ### 3.3 Scener och strider
 
-Berättelsen går i **scener**: en strid, ett samtal, utforskande, resa eller vila. När en scen är slut sparas spelet av sig självt, och scenen hamnar i din dagbok.
+Berättelsen löper i **scener**: en strid, ett samtal, utforskande, resa, en vila. I slutet av varje scen sparas spelet av sig självt, och scenen hamnar i din dagbok.
 
-I en strid berättar spelledaren varje tur som inte är din, och stannar där du kan bestämma. **Scen** visar högst upp vems tur det är och vem som kommer härnäst, och din rollpersons kort bredvid kartan. Turordningen, gruppens träffpoäng och hur skadade fienderna ser ut, i ord, finns kvar bredvid sidan. Om din rollperson faller visas dödsslagen stort på sidan.
+I en strid berättar spelledaren varje tur som inte är din, och stannar där du kan bestämma. **Scen** visar överst vems tur det är och vem som kommer härnäst, samt din rollpersons kort bredvid kartan. Turordningen, gruppens träffpoäng och hur skadade fienderna ser ut, i ord, finns kvar vid sidan av sidan. Om din rollperson faller visas dödsräddningarna stort på sidan.
 
 ### 3.4 Tid, resor och världen som rör sig
 
-RPG Engine håller reda på datumet. Ingen tid går mellan sessionerna. Säg att ni vilar, *Vi tar en lång vila*, så ger vilan tillbaka det den ska när spelledaren går med på det. Vid en kort vila kan spelledaren fråga på dashboarden hur många träffärgstärningar du använder. Slå dem en i taget, se hur mycket var och en läker, och sluta när du vill. Säg vart ni går, *Vi tar vägen norrut mot Rocca*, så räknar RPG Engine ut vägen, avståndet och dagarna. Ni stannar när något händer på vägen. Pengar räknas i spelets mynt, med växel.
+RPG Engine håller reda på datumet. Ingen tid går mellan spelpassen. Säg att ni vilar, *Vi tar en lång vila*, och när spelledaren går med på det ger vilan tillbaka det den ska. Vid en kort vila kan spelledaren fråga på dashboarden hur många träffpoängstärningar du använder: slå dem en i taget, se hur mycket varje läker och sluta när du vill. Säg vart ni går, *Vi tar vägen norrut mot Rocca*, så räknar RPG Engine ut vägen, avståndet och dagarna, och stannar när något händer på vägen. Pengar räknas i spelets mynt, växel inräknad.
 
-Skurkar har planer med tidsfrister. Varje ny dag flyttar spelledaren fram hoten som tiden har fört framåt. Du ser deras tecken, aldrig själva klockan.
+Skurkar har planer med tidsfrister. Varje ny dag flyttar spelledaren fram hoten som tiden har fört framåt, och du ser deras tecken, aldrig själva klockan.
 
 ### 3.5 Kartor
 
-**Värld** visar de platser din rollperson känner till, vägarna mellan dem och spåret du har gått, med dimma över resten. **Scen** visar kartan över platsen där du är, när det finns en, med vem som står var. I en strid, på din tur, är de rutor du inte kan nå dolda. När spelledaren frågar vart du går, tryck på en ruta eller skriv den, till exempel *E4*.
+**Värld** visar de platser din rollperson känner till, vägarna mellan dem och spåret du har gått, med dimma över resten. **Scen** visar kartan över platsen där du är, när den har en, med vem som står var. I en strid, på din tur, är rutorna du inte kan nå dolda. När spelledaren frågar vart du går trycker du på en ruta, eller skriver den, till exempel *E4*.
 
 ### 3.6 Uppdrag, dagbok och anteckningar
 
-En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med mål, tidsfrist och det den mäter. Stjärnmärk det för att ha det i sikte högst upp i Scen. Dagboken berättar också din **berättelse**, scen för scen, och sparar dina **anteckningar**: de är privata, om du inte **delar** en. Då hör spelledaren den som vad du tänker, aldrig som ett faktum.
+En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med sina mål, sin tidsfrist och vad det mäter. Stjärnmärk det för att ha det i sikte överst i Scen. Dagboken berättar också din **berättelse**, scen för scen, och innehåller dina **anteckningar**: privata, om du inte väljer att **Dela** en. Spelledaren hör den då som vad du tänker, aldrig som ett faktum.
 
-### 3.7 Din rollpersons historia och bild
+### 3.7 Din rollpersons berättelse och bild
 
-På ditt rollformulär har kortet **Beskrivning** en ruta för din rollpersons historia. Spelledaren skriver in den, efter att du har sagt ja. För en bild kan du ge spelledaren en fil (PNG, JPEG, WebP eller SVG, upp till 5 MB) tillsammans med var den ligger på din dator, eller be om ett porträtt ([3.11](#311-pictures)): *[Gör ett porträtt av mig: grått hår i en fläta, ett ärr på hakan.]*
+I ditt rollformulär har kortet **Beskrivning** en ruta för din rollpersons berättelse: spelledaren skriver in den, efter att du har sagt ja. För en bild ger du spelledaren en fil (PNG, JPEG, WebP eller SVG, upp till 5 MB) tillsammans med var den finns på din dator, eller låter ta fram ett porträtt ([3.11](#311-pictures)): *[Gör ett porträtt åt mig: grått hår i en fläta, ett ärr på hakan.]*
 
 ### 3.8 Sparade spel och att gå tillbaka
 
-RPG Engine sparar hela kampanjen i slutet av varje scen. Inställningen **sparade spel** avgör resten:
+RPG Engine sparar hela kampanjen i slutet av varje scen. Inställningen **Sparade spel** avgör resten:
 
 | Sparade spel | Spara när du vill | Gå tillbaka |
 |---|---|---|
-| **permadeath** | nej | aldrig |
-| **checkpoint** | nej | till senaste sparade spelet, bara när din rollperson dör |
+| **permadöd** | nej | aldrig |
+| **kontrollpunkt** | nej | till det senaste sparade spelet, bara när din rollperson dör |
 | **ledig** | ja | till vilket sparat spel som helst |
 
-I alla lägen kan du **börja om**, från spelets början eller från session noll. Gör det i chatten eller i **Sparade spel**.
+I alla lägen kan du **börja om**, från spelets början eller från session noll. Gör det i chatten eller under **Sparade spel**.
 
-När du har gått tillbaka ska du **öppna en ny chatt**: den gamla minns det som ogjordes. Skriv *fortsätt* i den nya chatten och tryck sedan på **Jag har öppnat en ny chatt** i Sparade spel.
+När du har gått tillbaka ska du **öppna en ny chatt**: den gamla minns vad som ogjordes. Skriv *fortsätt* i den nya chatten och tryck sedan på **Jag har öppnat en ny chatt** under Sparade spel.
 
-### 3.9 Sessioner: att sluta och komma tillbaka
+### 3.9 Spelpass: att sluta och komma tillbaka
 
-Sluta när du vill: *[Vi slutar här för i kväll.]* Allt är redan sparat i filerna. För att komma tillbaka startar du din agent i kampanjmappen och skriver *fortsätt*. Spelledaren ger dig en kort sammanfattning och spelet går vidare.
+Sluta när du vill: *[Nu slutar vi för i kväll.]* Allt är redan sparat i filerna. För att komma tillbaka startar du din agent i kampanjmappen och skriver *fortsätt*: spelledaren ger dig en kort sammanfattning och fortsätter.
 
 ### 3.10 Spelledarens sinnesstämning
 
-Roboten högst upp på dashboarden är spelledaren. Dess ansikte följer berättelsens ton och avslöjar aldrig vad du ännu inte vet. När chatten är stängd sover den.
+Roboten högst upp på dashboarden är spelledaren: dess ansikte följer berättelsens ton och avslöjar aldrig det du ännu inte vet. När chatten är stängd sover den.
 
 ### 3.11 Bilder
 
-RPG Engine kan låta göra bilder av platserna du når, uppdragen du tar och de du möter, så som inställningen **bilder** säger, och din rollpersons porträtt när du ber om det. Det använder det som finns på din dator, med din egen inloggning: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge spelledaren en egen bild.
+RPG Engine kan låta ta fram bilder av platserna du når, uppdragen du tar och de du möter, så som inställningen **Bilder** anger, och din rollpersons porträtt när du ber om det. Det använder din egen Codex eller Claude Code, med din inloggning, på ditt abonnemang och inom dess gränser: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge spelledaren en egen bild.
 
 ### 3.12 Trygghet: gränser, slöjor och stopp
 
-**Gränser** syns aldrig i spelet. **Slöjor** händer bara utanför bild. När som helst kan du skriva *[stopp]*: spelledaren släpper det innehållet direkt och lägger till det i dina gränser.
+**Gränser** förekommer aldrig i spelet. **Slöjor** sker bara utanför scenen. När som helst kan du skriva *[stopp]*: spelledaren lämnar det innehållet direkt och lägger till det i dina gränser.
 
 ### 3.13 Att ändra sig
 
-Varje inställning kan ändras, i chatten eller i **Inställningar**. Ett avgörande som spelledaren gör utan regelboken blir ett **prejudikat**, så att samma fråga får samma svar nästa gång.
+Varje inställning kan ändras, i chatten eller under **Inställningar**. Ett avgörande som spelledaren gör utan regelboken blir ett **prejudikat**, så att samma fråga får samma svar nästa gång.
 
 ---
 
@@ -244,15 +246,15 @@ Inte än. Ett tillägg kommer att lägga till något i en kampanj ovanpå dess s
 
 ### 7.1 Tre sätt att få en värld
 
-- **Skapad medan du spelar**: utifrån din idé bygger spelledaren varje plats, person och intrig strax innan du behöver den, och sparar den.
-- **Förberedd från start**: samma sak, men med världen byggd före spelet.
-- **Från ditt eget äventyr eller din egen bok**: ge spelledaren filen, *[Importera det här äventyret som vår kampanj: D:\Books\adventure.pdf. Berätta inget som står i det.]* Den läses bäst som text, EPUB, Word-dokument eller PDF där texten går att markera. En skannad PDF läses från bilderna av sidorna, bara på Windows, långsamt och med några fel. Codex eller Claude Code på din dator läser den utanför chatten, och dashboarden visar hur långt den har kommit. Från en roman föreslår spelledaren var ni ska börja. Spelledaren skriver platserna, rollpersonerna och hemligheterna.
+- **Skapad allteftersom**: utifrån din premiss bygger spelledaren varje plats, person och intrig strax innan du behöver den, och sparar den.
+- **Förberedd i början**: samma sak, men med världen byggd före spelet.
+- **Från ditt eget äventyr eller din egen bok**: ge spelledaren filen, *[Importera det här äventyret som vår kampanj: D:\Books\adventure.pdf. Berätta inget som står i det.]* Det läses bäst som text, en EPUB, ett Word-dokument eller en PDF vars text går att markera. En inskannad PDF läses från bilderna av sina sidor, bara i Windows, långsamt och med några fel. Ditt eget Codex eller Claude Code läser det utanför chatten, annars spelledaren i chatten, på din plan: hela dokumentet skickas till OpenAI eller Anthropic, enligt villkoren för ditt konto och dess val om träning. Dashboarden visar hur långt det har kommit. Från en roman föreslår spelledaren var du ska börja. Spelledaren skriver platserna, personerna och hemligheterna.
 
 En kampanj spelas en gång: vill du spela samma äventyr igen, skapa en ny kampanj.
 
 ### 7.2 Språk
 
-Ett språk per kampanj, spelledarens, som dashboarden följer. Dashboarden levereras på 26 språk. Alla andra översätts på din dator av Codex eller Claude Code, eller, utan dem, av spelledaren i chatten. Termerna för femte utgåvan på italienska kommer från den officiella italienska SRD:n. Regeltexten förblir på engelska, och spelledaren berättar den på ditt språk.
+Ett språk per kampanj, spelledarens, som dashboarden följer. Dashboarden levereras med 26 språk. Vilket annat som helst översätts på din dator av Codex eller Claude Code, eller, utan dem, av spelledaren i chatten. Femte utgåvans termer på italienska kommer från den officiella italienska SRD:n. Regeltexten förblir på engelska, och spelledaren berättar den på ditt språk.
 
 ---
 
@@ -280,15 +282,15 @@ Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg
 
 ### Frågor
 
-**Måste jag kunna reglerna?** Nej. Välj mentorn handledning och fråga inom hakparenteser när du vill.
+**Måste jag kunna reglerna?** Nej. Välj handledning som mentor och fråga inom hakparenteser när du vill.
 
-**Kan spelledaren fuska?** Den kan inte ändra ett slag som RPG Engine har gjort, utom på svårighetsgraden berättelse, och inte heller fakta som redan är fastställda.
+**Kan spelledaren fuska?** Spelledaren kan inte ändra ett slag som RPG Engine har gjort, utom på svårighetsgraden berättelse, och inte heller fakta som redan är fastslagna.
 
-**Kostar det något?** RPG Engine är gratis. Spelledaren körs på din agents plan, eller på din egen dator med en lokal modell. En spelkväll är en lång chatt: på de minsta planerna kan du nå planens gräns innan kvällen är slut. Bilder och översättningar använder samma plan.
+**Kostar det något?** RPG Engine är gratis. Spelledaren körs på din agents plan, eller på din egen dator med en lokal modell. En spelkväll är en lång chatt: på de minsta planerna kan du nå planens gräns innan kvällen är slut. Bilder, översättningar och importer använder samma plan. RPG Engine använder aldrig själv en API-nyckel, som betalas per anrop: logga in din agent med ditt konto, inte med en nyckel.
 
 **Kan jag spela i telefonen?** Nej: spelledaren körs på din dator, och dashboarden öppnas bara där.
 
-**Kan jag spela med vänner?** Inte än: i dag en spelare, en rollperson, plus följeslagare ([Kommer senare](#9-coming-later)).
+**Kan jag spela med vänner?** Inte ännu: i dag en spelare, en rollperson, plus följeslagare ([Kommer senare](#9-coming-later)).
 
 **Kan jag använda en annan AI nästa gång?** Ja: öppna kampanjen i en annan agent och skriv *fortsätt*.
 
@@ -296,14 +298,14 @@ Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg
 
 **Dashboarden öppnas inte.** Fråga spelledaren: `[Vad är länken till dashboarden?]`. Den fungerar bara medan en chatt är öppen i den kampanjen, efter spelledarens första svar.
 
-**Spelledaren verkar inte kunna spelet.** Din agent har inte laddat RPG Engine. Kontrollera att du startade den i kampanjmappen och att du litade på den. I Claude Code skriver du `/mcp` och ansluter `rpg` igen. I Codex måste `codex mcp list` i kampanjmappen visa `rpg`. Om `rpg --version` inte hittas, installera RPG Engine igen ([2.2](#22-install)).
+**Spelledaren verkar inte kunna spelet.** Din agent laddade inte RPG Engine. Kontrollera att du startade den i kampanjmappen och att du litade på den. I Claude Code skriver du `/mcp` och återansluter `rpg`. I Codex måste `codex mcp list` i kampanjmappen visa `rpg`. Om `rpg --version` inte hittas, installera RPG Engine igen ([2.2](#22-install)).
 
 **Uppdatera.** Kör `npm install -g rpg-engine` igen och öppna sedan en ny chatt: en spelledare som redan körs behåller den version den startade med.
 
-**Spelledaren minns något som jag ångrade.** Öppna en ny chatt och tryck på **Jag har öppnat en ny chatt** i Sparade spel.
+**Spelledaren minns något jag ångrade.** Öppna en ny chatt och tryck på **Jag har öppnat en ny chatt** i Sparade spel.
 
 **Inga bilder visas.** Inställningar > Bilder visar om den här datorn kan göra dem, och hur.
 
-**Installationen misslyckas, eller `rpg` startar inte.** `node --version` måste visa 22 eller nyare. I Windows ska du hålla RPG Engine och dina kampanjer borta från sökvägar som innehåller `&`.
+**Installationen misslyckas, eller `rpg` startar inte.** `node --version` måste visa 22 eller senare. I Windows: håll RPG Engine och dina kampanjer borta från sökvägar som innehåller `&`.
 
-**Dashboardlänken har ändrats.** Ett annat program tog den vanliga adressen. Spelledaren ger dig den nya länken.
+**Dashboardlänken ändrades.** Ett annat program tog den vanliga adressen. Spelledaren ger dig den nya länken.

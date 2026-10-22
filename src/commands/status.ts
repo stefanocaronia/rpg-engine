@@ -388,7 +388,12 @@ function namesLine(label: string, names: string[], more: string, separator = " Â
 /** Whether this status is the chat's first with a dashboard, which has the master offer it; the next ones only give its link (D-353). */
 function offerDashboard(context: Context): boolean
 {
-    const first = context.dashboard !== undefined && context.dashboardOffered !== true;
-    context.dashboardOffered ||= first;
+    const first = context.dashboard !== undefined && context.chat?.dashboardOffered !== true;
+
+    // In the chat's own state, which each call's copy of the context shares.
+    if (first && context.chat !== undefined) {
+        context.chat.dashboardOffered = true;
+    }
+
     return first;
 }

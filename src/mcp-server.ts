@@ -56,6 +56,7 @@ export function createMcpServer(context: Context = defaultContext(), environment
     const askingTools: RegisteredTool[] = [];
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
+    context.chat ??= { calls: 0 };
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
     const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
 
@@ -130,6 +131,7 @@ export async function startMcpServer(): Promise<void>
         readLibrary: libraryRunner(),
         download: downloadBytes,
         host,
+        chat: { calls: 0 },
     };
     // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
@@ -258,6 +260,15 @@ async function runTool(
     let changedOutside: string[] = [];
     // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
     const told = new Set(context.told);
+    const chat = context.chat;
+    const offered = chat?.dashboardOffered;
+    // Codex names its thread at each call: the player's sentences go to it (D-495).
+    const thread = extra._meta?.threadId;
+
+    if (chat !== undefined) {
+        chat.calls++;
+        chat.thread = typeof thread === "string" && thread !== "" ? thread : chat.thread;
+    }
 
     try {
         // In a session, the files that changed since the last call are read again; instructions starts a chat, or follows a summary: everything is checked (D-193).
@@ -293,6 +304,15 @@ async function runTool(
             outside.giveBack(changedOutside);
             context.told?.clear();
             told.forEach((name) => context.told?.add(name));
+
+            if (chat !== undefined) {
+                chat.dashboardOffered = offered;
+            }
+        }
+
+        if (chat !== undefined) {
+            chat.calls--;
+            chat.afterCall?.();
         }
     }
 }

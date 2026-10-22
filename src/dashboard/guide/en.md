@@ -65,11 +65,11 @@ The master cannot create a campaign for you: before `init`, nothing tells your a
 
 The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: in the campaign folder write `claude`. When it asks whether you trust the folder, choose **Yes, I trust this folder**; careful, the answer already selected is *No, exit*.
+- **Claude Code**: in the campaign folder write `claude`. When it asks whether you trust the folder, choose **Yes, I trust this folder**; careful, the answer already selected is *No, exit*. The campaign also has a small hook, `rpg --listen`, which the question does not show: it tells the master at once when you act from the dashboard.
 - **Codex**: in the campaign folder write `codex`, and say yes when it asks whether you trust the folder. In its desktop app, check in the settings that memories are off for the game's chats.
 - **Another agent**: start it in the campaign folder and give it the MCP server `rpg mcp`. RPG Engine is a standard MCP server: any agent that supports MCP can be the master, local ones included.
 
-We play and test it with **Claude Code**; **Codex** is connected and checked, but no whole campaign has been played with it yet; `init` also sets up **Gemini CLI**. The campaign turns off the agent's own memory: the game lives in its files, so that going back to a save really goes back.
+We play and test it with **Claude Code**; **Codex** is connected and checked, but no whole campaign has been played with it yet. The campaign turns off the agent's own memory: the game lives in its files, so that going back to a save really goes back.
 
 ### 2.5 The first chat
 
@@ -121,6 +121,8 @@ Write what your character does or says, in your own words:
 Out of the story, write between square brackets: *[How does grappling work?]* The master answers in brackets too.
 
 You say what you try; the master says what happens. The master never decides for your character, and never talks about the engine. You can ask it how to use the dashboard.
+
+**Acting from the dashboard**: click a name on your sheet, such as a weapon, a spell or something you carry, then whom it is for; or click a person to talk to. The dashboard writes your sentence, *I attack Hooded Bandit 1 with Mace.*, which you can change before **Tell the master**. The master hears it as said in the chat, and rules it as any other. Where your AI app cannot hear it by itself, **Copy** gets it ready to paste in the chat.
 
 ### 3.2 Rolls
 
@@ -182,7 +184,7 @@ The robot at the top of the dashboard is the master: its face follows the tone o
 
 ### 3.11 Pictures
 
-RPG Engine can have pictures made of the places you reach, the quests you take and those you meet, as the **pictures** setting says, and your character's portrait when you ask. It uses what is on your computer, with your own login: **Codex** paints them, otherwise **Claude Code** draws them. **Settings** says whether this computer can make them, and how to set it up if not. You can always give the master a picture of your own.
+RPG Engine can have pictures made of the places you reach, the quests you take and those you meet, as the **pictures** setting says, and your character's portrait when you ask. It uses your own Codex or Claude Code, with your login, on your plan and its limits: **Codex** paints them, otherwise **Claude Code** draws them. **Settings** says whether this computer can make them, and how to set it up if not. You can always give the master a picture of your own.
 
 ### 3.12 Safety: lines, veils and stop
 
@@ -245,7 +247,7 @@ Not yet. An extension will add something to a campaign on top of its game system
 
 - **Made on the fly**: from your premise, the master builds each place, person and plot just before you need it, and keeps it.
 - **Prepared at the start**: the same, with the world built before play.
-- **From your own adventure or book**: give the master its file, *[Import this adventure as our campaign: D:\Books\adventure.pdf. Don't tell me anything that's in it.]* It reads best as text, an EPUB, a Word document or a PDF whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, slowly and with a few mistakes. Codex or Claude Code on your computer reads it outside the chat, and the dashboard shows how far it is; from a novel, the master proposes where to start. It writes the places, the characters and the secrets.
+- **From your own adventure or book**: give the master its file, *[Import this adventure as our campaign: D:\Books\adventure.pdf. Don't tell me anything that's in it.]* It reads best as text, an EPUB, a Word document or a PDF whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, slowly and with a few mistakes. Your own Codex or Claude Code reads it outside the chat, or else the master in the chat, on your plan: the whole document goes to OpenAI or Anthropic, under the terms of your account and its choice on training. The dashboard shows how far it is; from a novel, the master proposes where to start. It writes the places, the characters and the secrets.
 
 A campaign is played once: to play the same adventure again, create a new campaign.
 
@@ -283,7 +285,7 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 **Can the master cheat?** It cannot change a roll RPG Engine made, except at difficulty story, nor facts already set.
 
-**Does it cost anything?** RPG Engine is free. The master runs on your agent's plan, or on your own computer with a local model. An evening of play is a long chat: on the smallest plans you may reach the plan's limit before the evening ends. Pictures and translations use the same plan.
+**Does it cost anything?** RPG Engine is free. The master runs on your agent's plan, or on your own computer with a local model. An evening of play is a long chat: on the smallest plans you may reach the plan's limit before the evening ends. Pictures, translations and imports use the same plan. RPG Engine itself never uses an API key, which is paid by the call: sign your agent in with your account, not with a key.
 
 **Can I play on my phone?** No: the master runs on your computer, and the dashboard opens only there.
 

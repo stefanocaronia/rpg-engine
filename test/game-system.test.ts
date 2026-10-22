@@ -183,6 +183,17 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(findSystem([far], "altro")?.sheetDice).toEqual({});
     });
 
+    it("reads the fields the player acts with on the dashboard, with the engine's verbs, and refuses another verb or a field the sheet lacks (D-495)", () => {
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza, doti]\nsheet-actions: { doti: [use, equip] }\n`);
+        expect(findSystem([near], "prova")?.sheetActions).toEqual({ doti: ["use", "equip"] });
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza, doti]\nsheet-actions: { doti: [throw] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow(`sheet-actions.doti.0: Invalid option: expected one of "attack"|"cast"|"use"|"equip"|"unequip"|"prepare"`);
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-actions: { doti: [use] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-actions: the sheet has no field doti.");
+        system(far, "altro", declared);
+        expect(findSystem([far], "altro")?.sheetActions).toBeUndefined();
+    });
+
     it("reads the headline under a character's name, and refuses one that names a field it does not declare (D-288)", () => {
         system(near, "prova", `${declared}sheet-headline: "Vigore {vigore} {doti}"\n`);
         expect(findSystem([near], "prova")?.sheetHeadline).toBe("Vigore {vigore} {doti}");

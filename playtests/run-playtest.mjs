@@ -17,7 +17,7 @@ const usage = [
     '  node playtests/run-playtest.mjs --campaign <folder> --profile <player.md> --out <folder> --session 1 --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50] [--hard 60] [--budget 15]',
     '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
-    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; --master-effort low|medium|high|xhigh|max, the master's effort; and --master-host codex, Codex as the master instead of Claude Code.",
+    "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; --master-effort low|medium|high|xhigh|max, the master's effort; and --master-host codex, Codex as the master instead of Claude Code, with --master-oss <model> for a local model of Ollama (CODEX_OSS_BASE_URL for another server).",
     "  The first may add --check: the checks before the first turn, /context included, and nothing played.",
 ].join("\n");
 const options = readOptions();
@@ -249,7 +249,7 @@ function masterArgs(folder)
 /** One master turn by Codex: its own events beside the turn, and in the turn's file the same in Claude Code's shape, for the counts. */
 function hostTurn(campaign, host, session, prompt, streamFile)
 {
-    const turn = codexTurn({ campaign, home: host.home, environment, session, prompt });
+    const turn = codexTurn({ campaign, home: host.home, environment, session, prompt, oss: options["master-oss"] });
     const lines = (events) => events.map((event) => JSON.stringify(event)).join("\n") + "\n";
     writeFileSync(streamFile.replace(/\.jsonl$/, ".codex.jsonl"), lines(turn.raw));
     writeFileSync(streamFile, lines(turn.events));
@@ -764,6 +764,7 @@ function readOptions()
                 "master-host": { type: "string", default: "claude" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
                 "master-effort": { type: "string" },
+                "master-oss": { type: "string" },
             },
         });
         const required = values.questionnaire ? ["profile", "out"] : ["campaign", "profile", "out", "first"];
@@ -777,6 +778,10 @@ function readOptions()
 
         if (!["claude", "codex"].includes(values["master-host"])) {
             throw new Error(`--master-host is claude or codex, not ${values["master-host"]}.`);
+        }
+
+        if (values["master-oss"] !== undefined && values["master-host"] !== "codex") {
+            throw new Error("--master-oss names a local model for Codex: add --master-host codex.");
         }
 
         if (values["master-host"] === "codex" && values.dashboard) {

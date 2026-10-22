@@ -1,5 +1,6 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
+import { ActName, usePlayerActs } from "./act-names.tsx";
 import { Coins } from "./coins.tsx";
 import type { Member, SheetValue } from "./data.ts";
 import { besideLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
@@ -106,21 +107,31 @@ export function Chips({ value, fields }: { value: SheetValue; fields?: ReadonlyS
 {
     return (
         <span class="chips-block">
-            <Items items={value.items ?? []} fields={fields} />
+            <Items items={value.items ?? []} field={value.field} fields={fields} />
             {value.always && (
                 <span class="always">
                     <span class="always-from">{t("Always, from {sources}", { sources: value.always.from.join(` ${t("and")} `) })}</span>
-                    <Items items={value.always.items} fields={fields} />
+                    <Items items={value.always.items} field={value.field} fields={fields} />
                 </span>
             )}
         </span>
     );
 }
 
-function Items({ items, fields }: { items: string[]; fields?: ReadonlySet<string>; })
+/** A list's items, each a button that acts when the system names verbs for its field (D-495). */
+function Items({ items, field, fields }: { items: string[]; field: string; fields?: ReadonlySet<string>; })
 {
+    const verbs = usePlayerActs()?.actions[field];
+    const acting = verbs !== undefined && verbs.length > 0;
     const sentences = items.some((item) => item.trim().split(/\s+/).length >= sentenceWords);
-    return <ul class={sentences ? "notes" : "chips"}>{items.map((item) => <li key={item}>{itemLabel(item, fields)}</li>)}</ul>;
+    return (
+        <ul class={[sentences ? "notes" : "chips", acting ? "acting" : ""].filter((name) => name !== "").join(" ")}>
+            {items.map((item) => {
+                const label = itemLabel(item, fields);
+                return <li key={item}>{acting ? <ActName verbs={verbs} item={label}>{label}</ActName> : label}</li>;
+            })}
+        </ul>
+    );
 }
 
 /** Someone's effects as tags, each with its end; past `most`, how many more. */

@@ -72,7 +72,7 @@ export function codexWriter(maker: PictureMaker = codexPictures()): TextWriter
 /** Codex on this computer as the importer (D-489 (1)): ready where its ChatGPT login makes pictures too. */
 export function codexReader(maker: PictureMaker = codexPictures()): DocumentReader
 {
-    return { ready: () => maker.ready().ready, read };
+    return { ready: () => maker.ready().ready, program: () => "Codex", read };
 }
 
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */

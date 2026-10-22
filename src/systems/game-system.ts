@@ -15,6 +15,14 @@ import { systemFolders } from "./system-folders.ts";
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";
 
+/**
+ * What the player does with an item of the sheet on the dashboard, said as their own sentence to the master (D-495): the engine's verbs, whose sentences
+ * the page has in every language; a system says which fields take which. Talking to someone comes from the people, never from the sheet.
+ */
+export const actVerbs = ["attack", "cast", "use", "equip", "unequip", "prepare"] as const;
+
+export type ActVerb = (typeof actVerbs)[number];
+
 // An entry of the sheet: a field, ? when it is written only when it applies, and a field shown beside it in parentheses.
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
 // The dice a number of the sheet is rolled with: dice alone, as 1d20 or 2d6+1d4 (D-280).
@@ -110,6 +118,9 @@ const systemSchema = z.object({
     "sheet-cards": z.object({ rail: z.array(z.string().min(1)).optional(), order: z.array(z.string().min(1)).optional(), "at-hand": z.array(z.string().min(1)).optional() }, {
         error: "write it as the groups the dashboard puts in its rail, the order of the others, and the fields and groups at hand in a fight, such as {rail: [Abilities], order: [Skills, Combat], at-hand: [ac, hp, Attacks]}",
     }).strict().optional(),
+    "sheet-actions": z.record(z.string().min(1), z.array(z.enum(actVerbs)).min(1), {
+        error: `write it as the fields whose items the player acts with on the dashboard, each with its verbs among ${actVerbs.join(", ")}, such as {spells: [cast], inventory: [use, equip]}`,
+    }).optional(),
     "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "token-icons": z.object({
@@ -486,6 +497,8 @@ export interface GameSystem
     rollNames: Record<string, Record<string, string>>;
     /** Where the dashboard puts the groups of the sheet (D-295): those of its rail, in order, the order of the others, and the fields and groups at hand in a fight (D-315). */
     sheetCards?: { rail: string[]; order: string[]; atHand: string[]; };
+    /** The fields whose items the player acts with on the dashboard, each with its verbs, the first the one a click says (D-495). */
+    sheetActions?: Record<string, ActVerb[]>;
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The names a list field accepts on a page that keeps the sheet, the player character's and a companion's, as the languages (D-435). */
@@ -778,6 +791,13 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         }
     }
 
+    // The fields the player acts with are fields of the sheet (D-495).
+    const actless = Object.keys(data["sheet-actions"] ?? {}).find((field) => !sheet.some((group) => group.entries.some((entry) => entry.field === field)));
+
+    if (actless !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-actions: the sheet has no field ${actless}.`);
+    }
+
     // Each field the headline names is a declared one (D-288).
     const unnamed = [...(data["sheet-headline"] ?? "").matchAll(headlineFieldPattern)].map((match) => match[1]).find((field) => kindOf(field) === undefined);
 
@@ -843,6 +863,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
         rollNames: Object.fromEntries(Object.entries(data["roll-names"] ?? {}).map(([dice, names]) => [plainRoll(dice), typeof names === "string" ? { [data.language]: names } : names])),
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
+        ...(data["sheet-actions"] === undefined ? {} : { sheetActions: data["sheet-actions"] }),
         ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,
         sheetValues,
