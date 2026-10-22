@@ -142,7 +142,7 @@ In a fight the master tells every turn that is not yours, and stops where you ca
 
 ### 3.4 Time, travel and the world that moves
 
-RPG Engine keeps the date; no time passes between sessions. Say you rest, *We take a long rest*, and the rest brings back what it should. Say where you go, *We take the road north to Rocca*, and RPG Engine works out the way, the distance and the days, stopping when something happens on the way. Money is counted in the game's coins, change included.
+RPG Engine keeps the date; no time passes between sessions. Say you rest, *We take a long rest*, and once the master agrees the rest brings back what it should. In a short rest the master may ask on the dashboard how many hit dice you spend: roll them one at a time, see what each heals, and stop when you like. Say where you go, *We take the road north to Rocca*, and RPG Engine works out the way, the distance and the days, stopping when something happens on the way. Money is counted in the game's coins, change included.
 
 Villains have plans with deadlines. Each new day the master moves the threats that time has advanced, and you see their signs, never the clock itself.
 

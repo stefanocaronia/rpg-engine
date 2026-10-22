@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
-import type { Context, Picked, Player, Rows } from "../src/core/context.ts";
+import type { Context, Picked, Player, Rows, SpendAsked } from "../src/core/context.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -314,5 +314,72 @@ describe("the page and the form at once (ASK-13, D-455)", () => {
     it("leaves the page to answer when the host shows no form, and asks in words when neither shows", async () => {
         expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: answering(0), player: answering("unavailable") }))).toBe("The player chose: Sì.");
         expect(ask.format(await ask.run(ask.input.parse(choice), { ...context, page: answering("absent"), player: answering("unavailable") }))).toContain("The player has no buttons open now");
+    });
+});
+
+describe("the dice of a rest, spent one at a time on the page (ASK-14, D-492)", () => {
+    /** A page that shows the dice of the rest, spends one at each of the player's clicks, then ends it or is left; with what it showed and what was refused. */
+    const pageSpending = (clicks: string[], end: 0 | "absent", seen: { shown: SpendAsked[]; refused: (string | undefined)[]; }): Player => ({
+        choose: async () => undefined,
+        spendDice: async (question, title, done, spending) => {
+            shown.push({ question, title, labels: [done] });
+            seen.shown.push(spending.shown());
+
+            for (const field of clicks) {
+                seen.refused.push(spending.spend(field));
+                seen.shown.push(spending.shown());
+            }
+
+            return end;
+        },
+    });
+
+    const rest = { question: "Riposo breve sotto il mulino: quanti dadi vita spendi?", recipe: "short rest", who: "Bruna" };
+    const spent = async (page: Player): Promise<string> => ask.format(await ask.run(ask.input.parse(rest), { ...context, page }));
+
+    beforeEach(async () => {
+        await rpg("write", "Bruna", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26", "--set", "con=14");
+    });
+
+    it("shows the dice and the hit points, spends a die at each click as the player's roll, and gives the master what they healed", async () => {
+        const seen = { shown: [] as SpendAsked[], refused: [] as (string | undefined)[] };
+        expect(await spent(pageSpending(["hit-dice-d10", "HIT-DICE-D10"], 0, seen))).toBe(
+            "The player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, hit-dice-d10 4 + 2 = 6; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Tell it in the story.",
+        );
+        expect(shown).toEqual([{ question: rest.question, title: "Riposo", labels: ["Ho finito"] }]);
+        expect(seen.refused).toEqual([undefined, undefined]);
+        expect(seen.shown[0]).toEqual({ who: "Bruna", dice: [{ field: "hit-dice-d10", sides: 10, value: 3, max: 3, adds: 2 }], gives: { field: "hp", from: 5, value: 5, max: 26 }, rolls: [] });
+        expect(seen.shown[2]).toMatchObject({ dice: [{ field: "hit-dice-d10", value: 1 }], gives: { from: 5, value: 17 }, rolls: [{ field: "hit-dice-d10", face: 4, adds: 2, total: 6 }, { face: 4 }] });
+        const log = readLogFile(folder);
+        const rolls = log.filter((entry) => entry.type === "roll");
+        expect(rolls.slice(-2)).toMatchObject([{ by: "player", visibility: "public", data: { who: "Bruna", check: "Dadi vita d10", total: 6 } }, { by: "player" }]);
+        expect(seen.shown[2].rolls.map((roll) => roll.id)).toEqual(rolls.slice(-2).map((entry) => entry.id));
+        expect(log.filter((entry) => entry.type === "asked").at(-1)).toMatchObject({ by: "player", data: { question: rest.question, answer: "Ho finito" } });
+    });
+
+    it("spends none when the player ends it at once, refuses a die they lack, and keeps what was spent when the page closes first", async () => {
+        const seen = { shown: [] as SpendAsked[], refused: [] as (string | undefined)[] };
+        expect(await spent(pageSpending(["hit-dice-d8"], 0, seen))).toBe("The player spends none of Bruna's dice (hit-dice-d10 3/3).");
+        expect(seen.refused).toEqual(["Bruna has no hit-dice-d8 that short rest lets one spend."]);
+        const left = await spent(pageSpending(["hit-dice-d10"], "absent", seen));
+        expect(left).toContain("The player spent 1 of Bruna's dice: hit-dice-d10 4 + 2 = 6; hp 5/26 → 11/26; hit-dice-d10 3/3 → 2/3.");
+        expect(left).toContain('The player left before they were done: ask in words whether they spend more, then change with page Bruna, the dice\'s counter, spend and recipe "short rest".');
+    });
+
+    it("has the master ask in words without a page, and with physical dice", async () => {
+        const inWords = ask.format(await ask.run(ask.input.parse(rest), { ...context, player: playerClicking(0) }));
+        expect(inWords).toBe(
+            'Ask the player in words this time, without a word about buttons: Riposo breve sotto il mulino: quanti dadi vita spendi? (the dice of Bruna: hit-dice-d10 3/3, each 1d10+2; they give hp; then change with page Bruna, the dice\'s counter, spend and recipe "short rest", which rolls them). Then stop.',
+        );
+        await rpg("config", "dice", "physical");
+        const physical = ask.format(await ask.run(ask.input.parse(rest), { ...context, page: pageSpending([], 0, { shown: [], refused: [] }) }));
+        expect(physical).toContain("for each die they roll and tell, change its counter with spend 1, and hp with by the face and what it adds");
+    });
+
+    it("is refused with options, for a recipe that spends no dice, and when no die is left", async () => {
+        expect(await refused({ ...rest, options: ["Sì", "No"] })).toContain("Give recipe without options or square");
+        expect(await refused({ ...rest, recipe: "long rest" })).toBe("long rest lets one spend no dice: there is nothing to ask.");
+        await rpg("change", "Bruna", "hit-dice-d10", "--to", "0");
+        expect(await refused(rest)).toBe("Bruna has no dice left that short rest lets one spend (hit-dice-d10 0/3): there is nothing to ask.");
     });
 });

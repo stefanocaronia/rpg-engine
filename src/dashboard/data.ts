@@ -294,6 +294,16 @@ export interface Asked
         lowest?: number;
         highest?: { field: string; value: number; };
     };
+    /**
+     * The dice a rest lets the player's character spend, one at a time until its one button (ASK-14, D-492): each counter of dice with what a die adds, the
+     * counter they give to as it was at the question and as it is, and the dice rolled so far, by the id of their roll.
+     */
+    spend?: {
+        who: string;
+        dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
+        gives: { field: string; from: number; value: number; max?: number; };
+        rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
+    };
 }
 
 /** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */

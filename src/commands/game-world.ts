@@ -4,8 +4,10 @@ import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
+import { languagePackFor, packSystemFolder } from "../languages/index.ts";
+import { homeSystemWords } from "../page-words.ts";
 import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
-import { findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemSetting, withSettings } from "../systems/index.ts";
+import { findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemSetting, type SystemWords, systemWords, withSettings } from "../systems/index.ts";
 import { campaignExtensions, extensionSources, layeredParts } from "./game-extension-list.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
@@ -25,6 +27,15 @@ export function campaignWorld(root: string, context: Context): World
             rigor: readTextSetting(root, "rigor"),
         });
     });
+}
+
+/** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
+export function systemWordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
+{
+    // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
+    const pack = languagePackFor(context.extensionFolders ?? [], language);
+    const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
+    return (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
 }
 
 /**

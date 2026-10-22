@@ -22,7 +22,7 @@ import { importShown } from "./commands/import.ts";
 import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
-import { type Context, packagesFolder, type Picked, type Player, type Rows, type Said } from "./core/context.ts";
+import { type Context, packagesFolder, type Picked, type Player, type Rows, type Said, type SpendAsked, type Spending } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -321,6 +321,8 @@ interface Asked
     square?: true;
     /** Whose sheet the checks read and the field of each, for the page to light its row (ASK-12). */
     rows?: Rows;
+    /** The dice of a rest the player spends one at a time, until its one button (ASK-14). */
+    spending?: Spending;
     settle(choice: number | Said | Picked | undefined | "absent"): void;
 }
 
@@ -487,10 +489,23 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         // And the name the game gives its roll, in the campaign's language, as "with advantage" (D-399).
         const names = asked === undefined ? undefined : rollNamesOf(asked.labels, served);
         const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};
+        // The dice of a rest as they are now, read again at each look (ASK-14).
+        const spend = asked?.spending === undefined ? undefined : spendShown(asked.spending, served);
         sendJson(response, 200, {
             asked: asked === undefined
                 ? null
-                : { id: asked.id, question: asked.question, title: asked.title, labels: asked.labels, words, names, ...rows, ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }), ...(asked.square ? { square: true } : {}) },
+                : {
+                    id: asked.id,
+                    question: asked.question,
+                    title: asked.title,
+                    labels: asked.labels,
+                    words,
+                    names,
+                    ...rows,
+                    ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }),
+                    ...(asked.square ? { square: true } : {}),
+                    ...(spend === undefined ? {} : { who: spend.who, spend }),
+                },
         });
         return;
     }
@@ -621,7 +636,7 @@ function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: U
  */
 function pagePlayer(served: Served): Player
 {
-    const put = (question: string, title: string, labels: string[], square: boolean, signal?: AbortSignal, rows?: Rows): Promise<number | Said | Picked | undefined | "absent"> => {
+    const put = (question: string, title: string, labels: string[], signal?: AbortSignal, more: Pick<Asked, "square" | "rows" | "spending"> = {}): Promise<number | Said | Picked | undefined | "absent"> => {
         if (served.pages.size === 0) {
             return Promise.resolve("absent");
         }
@@ -649,7 +664,7 @@ function pagePlayer(served: Served): Player
             };
 
             const stop = (): void => settle(undefined);
-            const asked: Asked = { id: randomUUID(), question, title, labels, ...(square ? { square: true as const } : {}), ...(rows === undefined ? {} : { rows }), settle };
+            const asked: Asked = { id: randomUUID(), question, title, labels, ...more, settle };
             served.asked = asked;
             signal?.addEventListener("abort", stop);
             served.notify();
@@ -661,13 +676,25 @@ function pagePlayer(served: Served): Player
         asking: () => served.asked !== undefined,
         async choose(question, title, labels, signal, rows)
         {
-            const chosen = await put(question, title, labels, false, signal, rows);
+            const chosen = await put(question, title, labels, signal, rows === undefined ? {} : { rows });
             return typeof chosen === "object" && "square" in chosen ? undefined : chosen;
         },
         async chooseSquare(question, title, change, signal)
         {
-            const chosen = await put(question, title, [change], true, signal);
+            const chosen = await put(question, title, [change], signal, { square: true });
             return typeof chosen === "number" ? (chosen === 0 ? 0 : undefined) : chosen;
+        },
+        async spendDice(question, title, done, spending, signal)
+        {
+            const chosen = await put(question, title, [done], signal, { spending });
+            // The call stopped, its answer never goes: the dice spent reach the master at the next one, as the player's other news (ASK-14).
+            const told = signal?.aborted === true ? spending.spent() : undefined;
+
+            if (told !== undefined) {
+                served.events.push(told);
+            }
+
+            return chosen === 0 || chosen === "absent" ? chosen : undefined;
         },
     };
 }
@@ -719,18 +746,63 @@ async function answerAsked(request: IncomingMessage, response: ServerResponse, s
         z.object({ asked: z.string(), choice: z.number().int().min(0) }).strict(),
         z.object({ asked: z.string(), text: z.string().trim().min(1).max(mostSaid) }).strict(),
         z.object({ asked: z.string(), square: z.string().regex(/^[A-Za-z]{1,3}\d{1,3}$/) }).strict(),
+        z.object({ asked: z.string(), spend: z.string().trim().min(1).max(100) }).strict(),
     ]).safeParse(body);
     const asked = served.asked;
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: `Send which button was clicked, { asked, choice }, the player's words, { asked, text }, up to ${mostSaid} characters, or a square of the map, { asked, square }.` });
+        sendJson(response, 400, {
+            error: `Send which button was clicked, { asked, choice }, the player's words, { asked, text }, up to ${mostSaid} characters, a square of the map, { asked, square }, or a die of a rest to spend, { asked, spend }.`,
+        });
+    } else if ("spend" in parsed.data) {
+        await spendOne(response, served, parsed.data.asked, parsed.data.spend);
     } else if (
         asked === undefined || asked.id !== parsed.data.asked || ("choice" in parsed.data && parsed.data.choice >= asked.labels.length) || ("square" in parsed.data && asked.square !== true)
+        // The dice of a rest take no words, which the master would never hear (ASK-14).
+        || ("text" in parsed.data && asked.spending !== undefined)
     ) {
         sendJson(response, 409, { error: "The master no longer asks this." });
     } else {
         asked.settle("choice" in parsed.data ? parsed.data.choice : "square" in parsed.data ? { square: parsed.data.square.toUpperCase() } : { said: parsed.data.text });
         sendJson(response, 202, {});
+    }
+}
+
+/** A die of a rest spent from the page (ASK-14): the engine rolls it and the question stays, read again; refused for a question that asks no dice, or no longer. */
+async function spendOne(response: ServerResponse, served: Served, id: string, field: string): Promise<void>
+{
+    const asked = served.asked;
+
+    if (asked?.spending === undefined || asked.id !== id) {
+        sendJson(response, 409, { error: "The master no longer asks this." });
+        return;
+    }
+
+    await served.session.ready();
+
+    // The question may have ended while the files were read again, as with the button that ends it from another page.
+    if (served.asked !== asked) {
+        sendJson(response, 409, { error: "The master no longer asks this." });
+        return;
+    }
+
+    const refused = withFiles(served.session, () => asked.spending?.spend(field));
+    served.notify();
+
+    if (refused === undefined) {
+        sendJson(response, 202, {});
+    } else {
+        sendJson(response, 409, { error: refused });
+    }
+}
+
+/** The dice of a rest as the page draws them now (ASK-14); undefined when the campaign does not read, as the question then waits for nothing to show. */
+function spendShown(spending: Spending, served: Served): SpendAsked | undefined
+{
+    try {
+        return withFiles(served.session, () => spending.shown());
+    } catch {
+        return undefined;
     }
 }
 

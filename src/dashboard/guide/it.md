@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -143,7 +143,7 @@ In uno scontro il master racconta ogni turno che non è tuo, e si ferma dove puo
 
 ### 3.4 Il tempo, i viaggi e il mondo che si muove
 
-RPG Engine tiene la data; tra una sessione e l'altra il tempo non passa. Di' che riposate, *Facciamo un riposo lungo*, e il riposo restituisce ciò che deve. Di' dove andate, *Prendiamo la strada a nord verso Rocca*, e RPG Engine calcola la via, la distanza e i giorni, fermandosi quando succede qualcosa lungo la strada. Il denaro si conta nelle monete del gioco, resto compreso.
+RPG Engine tiene la data; tra una sessione e l'altra il tempo non passa. Di' che riposate, *Facciamo un riposo lungo*, e quando il master è d'accordo il riposo restituisce ciò che deve. In un riposo breve il master può chiederti sulla dashboard quanti dadi vita spendi: tirali uno alla volta, guarda quanto cura ciascuno e smetti quando vuoi. Di' dove andate, *Prendiamo la strada a nord verso Rocca*, e RPG Engine calcola la via, la distanza e i giorni, fermandosi quando succede qualcosa lungo la strada. Il denaro si conta nelle monete del gioco, resto compreso.
 
 I cattivi hanno piani con scadenze. A ogni giorno nuovo il master fa avanzare le minacce che il tempo ha spinto avanti, e tu ne vedi i segni, mai l'orologio.
 

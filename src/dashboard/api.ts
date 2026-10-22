@@ -453,10 +453,6 @@ export async function readAsked(): Promise<Asked | undefined>
     return body.asked ?? undefined;
 }
 
-/**
- * The player's answer to what the master asks, a button by its place, their own words (ASK-10) or a square of the map (ASK-11): true when it counted, false when
- * the master no longer asks it.
- */
 /** Tells the server whether this page is seen now (D-455); a page that cannot tell it is taken as seen. */
 export async function sendSeen(page: string, seen: boolean): Promise<void>
 {
@@ -467,9 +463,13 @@ export async function sendSeen(page: string, seen: boolean): Promise<void>
     }
 }
 
-export async function answer(asked: string, reply: number | string | { square: string; }): Promise<boolean>
+/**
+ * The player's answer to what the master asks, a button by its place, their own words (ASK-10), a square of the map (ASK-11) or a die of a rest to spend
+ * (ASK-14): true when it counted, false when the master no longer asks it.
+ */
+export async function answer(asked: string, reply: number | string | { square: string; } | { spend: string; }): Promise<boolean>
 {
-    const body = typeof reply === "number" ? { asked, choice: reply } : typeof reply === "string" ? { asked, text: reply } : { asked, square: reply.square };
+    const body = typeof reply === "number" ? { asked, choice: reply } : typeof reply === "string" ? { asked, text: reply } : { asked, ...reply };
     const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return response.status === 202;
 }

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { change } from "../src/commands/change.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
@@ -151,6 +152,31 @@ describe("hit dice in a short rest (D-449)", () => {
         expect(refused.output).toBe("Ettore has 1 hit-dice-d10: spend a whole number of them, from 1 up to that. Nothing changed.");
         const long = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "long rest"], context);
         expect(long.output).toBe("long rest spends no dice, not hit-dice-d10. Nothing changed.");
+    });
+
+    it("says who chooses the dice the rest lets one spend: the player for the player character, with ask where its buttons are, the master for a companion (DAT-4, ASK-14)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
+        await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "classes=[[Wizard]] 2", "--set", "hp-base=6", "--set", "hp=3/10");
+        await ok("write", "Bosco", "--add", "contains=[[Lena]]");
+        const rested = await ok("change", "--recipe", "short rest");
+        expect(rested).toContain('Ettore: nothing changed. Ask the player how many of hit-dice-d10 3/3 they spend, then change with spend and recipe "short rest".');
+        expect(rested).toContain('Lena: nothing changed. Choose whether Lena spends hit-dice-d6 2/2: change with spend and recipe "short rest".');
+        const page = { choose: async () => undefined, spendDice: async () => 0 as const };
+        const asking = change.format(await change.run(change.input.parse({ recipe: "short rest" }), { ...context, page }));
+        expect(asking).toContain('Ask the player how many of hit-dice-d10 3/3 they spend: ask with recipe "short rest".');
+        // A form alone spends no dice: the player chooses them in words.
+        const form = change.format(await change.run(change.input.parse({ recipe: "short rest" }), { ...context, player: { choose: async () => undefined } }));
+        expect(form).toContain("Ask the player how many of hit-dice-d10 3/3 they spend, then change with spend and recipe");
+    });
+
+    it("heals on the effect that gives the hit points, under which the page keeps its own (EFF-7)", async () => {
+        await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
+        await ok("effect", "add", "Ettore", "Forma d'orso", "--set", "hp=10");
+        const spent = await ok("change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "short rest");
+        expect(spent).toMatch(/^Ettore spends 1 hit-dice-d10: 1d10 = \[\d+\] \+ 2 each, \d+; hp 10\/26 → \d+\/26 in Forma d'orso; hit-dice-d10 3\/3 → 2\/3\.$/);
+        const page = readFileSync(join(folder, "world", "characters", "Ettore.md"), "utf8");
+        expect(page).toContain("hp: 5/26");
+        expect(page).not.toMatch(/Forma d'orso[^\n]*hp=10\b/);
     });
 
     it("says the rules the hit points touch, as change does, when they leave 0 (DAT-3)", async () => {

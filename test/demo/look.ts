@@ -47,7 +47,7 @@ try {
 
     // The demo asks on the page, and the call waits for the click of the steps: what it said comes at the end.
     const question = values.ask === undefined ? undefined : demoQuestions[(Number(values.ask) - 1) % demoQuestions.length];
-    const asking = question === undefined ? undefined : demo?.ask(question.question, question.options);
+    const asking = question === undefined ? undefined : demo?.ask(question);
 
     if (asking !== undefined) {
         await page.waitForSelector(".asked", { timeout: 5_000 });

@@ -1,47 +1,52 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context, Rows, Said } from "../core/context.ts";
+import type { Context, Rows, Said, SpendAsked, Spending } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { comparableText, valueNamed } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
+import { effectiveFields } from "./effect-layer.ts";
 import { placeGrid } from "./game-grids.ts";
+import { type RestDice, restDice, spendDice } from "./game-hit-dice.ts";
+import { recipeNamed } from "./game-recipes.ts";
 import { allSaid, systemAsking, systemRolled } from "./game-system-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem } from "./game-world.ts";
+import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, withSheetValues } from "./roll.ts";
 
 // The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7).
-const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; }> = {
-    en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move" },
-    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento" },
-    ar: { roll: "رمية", change: "غيّرت رأيي", choice: "اختيار", square: "حركة" },
-    cs: { roll: "Hod", change: "Rozmyslet si to", choice: "Volba", square: "Pohyb" },
-    da: { roll: "Slag", change: "Jeg fortryder", choice: "Valg", square: "Bevægelse" },
-    de: { roll: "Wurf", change: "Ich überlege es mir anders", choice: "Wahl", square: "Bewegung" },
-    el: { roll: "Ζαριά", change: "Άλλαξα γνώμη", choice: "Επιλογή", square: "Κίνηση" },
-    es: { roll: "Tirada", change: "Cambio de idea", choice: "Elección", square: "Movimiento" },
-    fi: { roll: "Heitto", change: "Muutan mieleni", choice: "Valinta", square: "Liike" },
-    fr: { roll: "Jet", change: "Je change d'avis", choice: "Choix", square: "Déplacement" },
-    he: { roll: "הטלה", change: "שיניתי את דעתי", choice: "בחירה", square: "תנועה" },
-    hi: { roll: "पासा", change: "मैंने मन बदल लिया", choice: "चुनाव", square: "चाल" },
-    hu: { roll: "Dobás", change: "Meggondoltam magam", choice: "Választás", square: "Mozgás" },
-    is: { roll: "Kast", change: "Ég skipti um skoðun", choice: "Val", square: "Hreyfing" },
-    ja: { roll: "判定", change: "やっぱりやめる", choice: "選択", square: "移動" },
-    ko: { roll: "굴림", change: "마음을 바꿀게요", choice: "선택", square: "이동" },
-    nb: { roll: "Kast", change: "Jeg ombestemmer meg", choice: "Valg", square: "Forflytning" },
-    nl: { roll: "Worp", change: "Ik bedenk me", choice: "Keuze", square: "Verplaatsen" },
-    pl: { roll: "Rzut", change: "Zmieniam zdanie", choice: "Wybór", square: "Ruch" },
-    pt: { roll: "Rolagem", change: "Mudei de ideia", choice: "Escolha", square: "Movimento" },
-    ro: { roll: "Aruncare", change: "M-am răzgândit", choice: "Alegere", square: "Mișcare" },
-    ru: { roll: "Бросок", change: "Передумать", choice: "Выбор", square: "Перемещение" },
-    sv: { roll: "Slag", change: "Jag ångrar mig", choice: "Val", square: "Förflyttning" },
-    tr: { roll: "Zar", change: "Fikrimi değiştirdim", choice: "Seçim", square: "Hareket" },
-    uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення" },
-    zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动" },
+const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; rest: string; done: string; }> = {
+    en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move", rest: "Rest", done: "Done" },
+    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento", rest: "Riposo", done: "Ho finito" },
+    ar: { roll: "رمية", change: "غيّرت رأيي", choice: "اختيار", square: "حركة", rest: "استراحة", done: "انتهيت" },
+    cs: { roll: "Hod", change: "Rozmyslet si to", choice: "Volba", square: "Pohyb", rest: "Odpočinek", done: "Hotovo" },
+    da: { roll: "Slag", change: "Jeg fortryder", choice: "Valg", square: "Bevægelse", rest: "Hvile", done: "Færdig" },
+    de: { roll: "Wurf", change: "Ich überlege es mir anders", choice: "Wahl", square: "Bewegung", rest: "Rast", done: "Fertig" },
+    el: { roll: "Ζαριά", change: "Άλλαξα γνώμη", choice: "Επιλογή", square: "Κίνηση", rest: "Ανάπαυση", done: "Τελείωσα" },
+    es: { roll: "Tirada", change: "Cambio de idea", choice: "Elección", square: "Movimiento", rest: "Descanso", done: "He terminado" },
+    fi: { roll: "Heitto", change: "Muutan mieleni", choice: "Valinta", square: "Liike", rest: "Lepo", done: "Valmis" },
+    fr: { roll: "Jet", change: "Je change d'avis", choice: "Choix", square: "Déplacement", rest: "Repos", done: "J'ai fini" },
+    he: { roll: "הטלה", change: "שיניתי את דעתי", choice: "בחירה", square: "תנועה", rest: "מנוחה", done: "סיימתי" },
+    hi: { roll: "पासा", change: "मैंने मन बदल लिया", choice: "चुनाव", square: "चाल", rest: "विश्राम", done: "हो गया" },
+    hu: { roll: "Dobás", change: "Meggondoltam magam", choice: "Választás", square: "Mozgás", rest: "Pihenő", done: "Kész" },
+    is: { roll: "Kast", change: "Ég skipti um skoðun", choice: "Val", square: "Hreyfing", rest: "Hvíld", done: "Búið" },
+    ja: { roll: "判定", change: "やっぱりやめる", choice: "選択", square: "移動", rest: "休息", done: "終わり" },
+    ko: { roll: "굴림", change: "마음을 바꿀게요", choice: "선택", square: "이동", rest: "휴식", done: "다 했어요" },
+    nb: { roll: "Kast", change: "Jeg ombestemmer meg", choice: "Valg", square: "Forflytning", rest: "Hvile", done: "Ferdig" },
+    nl: { roll: "Worp", change: "Ik bedenk me", choice: "Keuze", square: "Verplaatsen", rest: "Rust", done: "Klaar" },
+    pl: { roll: "Rzut", change: "Zmieniam zdanie", choice: "Wybór", square: "Ruch", rest: "Odpoczynek", done: "Gotowe" },
+    pt: { roll: "Rolagem", change: "Mudei de ideia", choice: "Escolha", square: "Movimento", rest: "Descanso", done: "Terminei" },
+    ro: { roll: "Aruncare", change: "M-am răzgândit", choice: "Alegere", square: "Mișcare", rest: "Odihnă", done: "Am terminat" },
+    ru: { roll: "Бросок", change: "Передумать", choice: "Выбор", square: "Перемещение", rest: "Отдых", done: "Готово" },
+    sv: { roll: "Slag", change: "Jag ångrar mig", choice: "Val", square: "Förflyttning", rest: "Vila", done: "Klar" },
+    tr: { roll: "Zar", change: "Fikrimi değiştirdim", choice: "Seçim", square: "Hareket", rest: "Dinlenme", done: "Bitirdim" },
+    uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення", rest: "Відпочинок", done: "Готово" },
+    zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动", rest: "休息", done: "完成" },
 };
 
 // A list, or one text, as an MCP client may send it.
@@ -56,7 +61,7 @@ interface Option
 }
 
 // What the call asked, for the master to ask it again in words: the player has not seen it.
-type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical"; asked: string; };
+type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical" | "dice in words"; asked: string; };
 
 type AskResult =
     | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; notes?: string[]; }
@@ -65,6 +70,7 @@ type AskResult =
     | { kind: "said"; words: string; }
     | { kind: "moved"; text: string; }
     | { kind: "stays"; }
+    | { kind: "spent"; text: string; }
     | InWords;
 
 export const ask = defineCommand({
@@ -76,6 +82,7 @@ export const ask = defineCommand({
         + "In a fight, each roll the player's character makes is its own ask, in the order the game's rules give them. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
+        + "recipe, without options, once the player agreed to a rest whose recipe lets one spend dice, as hit dice in a short rest, and you applied it with change: the player spends their character's dice one at a time and you get what they gave. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
         + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who Bruna.',
     group: "game",
@@ -85,6 +92,7 @@ export const ask = defineCommand({
         options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4"),
         who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
         square: z.boolean().optional().describe("true to ask where the player's character moves on its place's map"),
+        recipe: z.string().optional().describe("a rest's recipe that lets one spend dice, such as short rest: the player spends their character's dice of it, one at a time"),
     }),
 
     async run(input, context): Promise<AskResult>
@@ -100,6 +108,14 @@ export const ask = defineCommand({
 
         if (question === "") {
             throw new Error("Give the question: for a roll, what is at stake either way; for a choice, what the player chooses.");
+        }
+
+        if (input.recipe !== undefined) {
+            if (input.options !== undefined || input.square === true) {
+                throw new Error("Give recipe without options or square: the player spends the dice the recipe lets their character spend, one at a time, and says when they are done.");
+            }
+
+            return diceSpent(root, context, question, input.recipe, input.who, words);
         }
 
         if (input.square === true) {
@@ -162,6 +178,10 @@ export const ask = defineCommand({
                 return `The player has no buttons open now: ask them this time what the call held, which they have not seen: ${result.asked}. Ask with your app's own tool for questions with options, if it has one: each check an option, and a change of mind; then roll the chosen check with roll. Else in words. No word about buttons; then stop.`;
             case "physical":
                 return `The player rolls their own dice: tell first in the story what happened before this roll, such as the blow that calls for it, then ask it in words, with what is at stake and the checks: ${result.asked}. Then stop; they will tell the values.`;
+            case "spent":
+                return result.text;
+            case "dice in words":
+                return `Ask the player in words this time, without a word about buttons: ${result.asked}. Then stop.`;
             default:
                 return `No answer from the buttons: ask the player in words what the call held: ${result.asked}. Then stop.`;
         }
@@ -264,6 +284,159 @@ async function squareChosen(root: string, context: Context, question: string, gi
 
     logAnswer(root, context, question, [words.change], chosen.square);
     return { kind: "moved", text: placeOnMap(root, context, who, chosen.square) };
+}
+
+/**
+ * The dice a rest lets the player's character spend, one at a time (ASK-14): only the page shows them. Each click spends one as change with spend and recipe,
+ * as the player's roll, and the question stays with the numbers as they are now, until the button that ends it; the master gets what the dice gave.
+ */
+async function diceSpent(root: string, context: Context, question: string, recipeName: string, given: string | undefined, words: typeof buttonWords.en): Promise<AskResult>
+{
+    const world = campaignWorld(root, context);
+    const who = playerCharacter(world, given);
+    const spending = recipeNamed(campaignSystem(root, context), recipeName);
+    const { system, recipe } = spending;
+
+    if (Object.keys(recipe.spend).length === 0) {
+        throw new Error(`${recipe.name} lets one spend no dice: there is nothing to ask.`);
+    }
+
+    const before = restDice(world, recipe, pageNamed(world, who));
+    const left = before.filter((dice) => dice.value > 0);
+    const settings = readSettings(root);
+
+    if (left.length === 0) {
+        throw new Error(`${who} has no dice left that ${recipe.name} lets one spend${before.length === 0 ? "" : ` (${before.map(diceText).join(", ")})`}: there is nothing to ask.`);
+    }
+
+    const gives = left[0].gives;
+    const offered = `the dice of ${who}: ${left.map((dice) => `${diceText(dice)}, each 1d${dice.sides}${signedText(dice.adds)}`).join("; ")}; they give ${gives}`;
+    const inWords = `${question} (${offered}; then change with page ${who}, the dice's counter, spend and recipe "${recipe.name}", which rolls them)`;
+
+    // The page shows one counter the dice give to: dice that give to several are spent in words (D-230).
+    if (left.some((dice) => comparableText(dice.gives) !== comparableText(gives))) {
+        const each = left.map((dice) => `${dice.field} to ${dice.gives}`).join(", ");
+        throw new Error(`${recipe.name} lets ${who} spend dice that give to more than one counter (${each}): ask in words, then change with spend and recipe.`);
+    }
+
+    // The player rolls their own dice: asked in words, and the master writes what each gives (ASK-8).
+    if (settings.dice === "physical") {
+        return { kind: "dice in words", asked: `${question} (${offered}; for each die they roll and tell, change its counter with spend 1, and ${gives} with by the face and what it adds)` };
+    }
+
+    if (context.page?.spendDice === undefined) {
+        return { kind: "dice in words", asked: inWords };
+    }
+
+    const fieldWords = systemWordsOf(system, settings.language ?? system.language ?? "en", context)?.fields ?? {};
+    const label = (field: string): string => String(valueNamed(fieldWords, field) ?? field);
+    const from = counterOn(world, who, gives)?.value ?? 0;
+    const rolls: SpendAsked["rolls"] = [];
+    const notes: string[] = [];
+    // The dice as last read: what the page and the master are told when the campaign does not read for a moment, as while a page is rewritten.
+    let last: SpendAsked = { who, dice: before.map(shownDice), gives: { field: gives, from, value: from }, rolls: [] };
+
+    const page: Spending = {
+        shown: () => {
+            try {
+                const now = campaignWorld(root, context);
+                const target = counterOn(now, who, gives);
+                const dice = restDice(now, recipe, pageNamed(now, who)).map(shownDice);
+                last = { who, dice, gives: { field: gives, from, value: target?.value ?? 0, ...(target?.max === undefined ? {} : { max: target.max }) }, rolls: [...rolls] };
+            } catch {
+                last = { ...last, rolls: [...rolls] };
+            }
+
+            return last;
+        },
+        spend: (asked) => {
+            try {
+                const now = campaignWorld(root, context);
+                const field = restDice(now, recipe, pageNamed(now, who)).find((dice) => comparableText(dice.field) === comparableText(asked))?.field;
+
+                if (field === undefined) {
+                    return `${who} has no ${asked} that ${recipe.name} lets one spend.`;
+                }
+
+                const spent = spendDice(root, { ...context, actor: "player" }, now, spending, who, field, 1, `${label(field)}: ${question}`, label(field));
+                rolls.push({ id: spent.id, field, face: spent.faces[0] ?? 0, adds: spent.adds, total: spent.total });
+                notes.push(...spent.notes.filter((note) => !notes.includes(note)));
+                return undefined;
+            } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+            }
+        },
+        // A call stopped after some dice: what they gave reaches the master at the next one (ASK-14).
+        spent: () => (rolls.length === 0 ? undefined : [`While your ask was stopped, ${spentText(before, page.shown())}`, ...notes].join("\n")),
+    };
+
+    const done = await context.page.spendDice(question, words.rest, words.done, page, context.signal);
+
+    if (done === 0) {
+        logAnswer(root, context, question, [words.done], words.done);
+    }
+
+    const now = page.shown();
+
+    if (rolls.length === 0) {
+        const kept = now.dice.filter((dice) => dice.value > 0).map(diceText).join(", ");
+        return done === 0 ? { kind: "spent", text: `The player spends none of ${who}'s dice (${kept === "" ? "none left" : kept}).` } : { kind: "dice in words", asked: inWords };
+    }
+
+    // A page closed before the button that ends it, with dice left: what was spent stays, and the master asks in words whether there is more (ASK-14).
+    const more = done === 0 || now.dice.every((dice) => dice.value <= 0)
+        ? ""
+        : ` The player left before they were done: ask in words whether they spend more, then change with page ${who}, the dice's counter, spend and recipe "${recipe.name}".`;
+    const spent = spentText(before, now);
+    return { kind: "spent", text: [`${spent.charAt(0).toUpperCase()}${spent.slice(1)}${more}`, ...notes].join("\n") };
+}
+
+/** "the player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, …; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Tell it in the story." */
+function spentText(before: RestDice[], now: SpendAsked): string
+{
+    const max = now.gives.max === undefined ? "" : `/${now.gives.max}`;
+    const counters = before.filter((dice) => now.rolls.some((roll) => roll.field === dice.field)).map((dice) => {
+        const after = now.dice.find((counter) => counter.field === dice.field)?.value ?? dice.value;
+        return `${dice.field} ${dice.value}/${dice.max} → ${after}/${dice.max}`;
+    });
+    const faces = now.rolls.map((roll) => `${roll.field} ${roll.face}${roll.adds === 0 ? "" : ` ${roll.adds > 0 ? "+" : "-"} ${Math.abs(roll.adds)}`} = ${roll.total}`).join(", ");
+    return `the player spent ${now.rolls.length} of ${now.who}'s dice: ${faces}; ${[`${now.gives.field} ${now.gives.from}${max} → ${now.gives.value}${max}`, ...counters].join("; ")}. Tell it in the story.`;
+}
+
+/** A counter of dice as the page shows it, without the counter it gives to. */
+function shownDice({ field, sides, value, max, adds }: RestDice): SpendAsked["dice"][number]
+{
+    return { field, sides, value, max, adds };
+}
+
+/** "hit-dice-d8 2/3": a counter of dice as it stands. */
+function diceText(dice: { field: string; value: number; max: number; }): string
+{
+    return `${dice.field} ${dice.value}/${dice.max}`;
+}
+
+/** What a die adds, as written after it: "+2", "-1", or nothing. */
+function signedText(adds: number): string
+{
+    return adds === 0 ? "" : `${adds > 0 ? "+" : "-"}${Math.abs(adds)}`;
+}
+
+/** A counter of a page as the page reads it, effects included. */
+function counterOn(world: World, name: string, field: string): { value: number; max?: number; } | undefined
+{
+    return readCounter(valueNamed(effectiveFields(world, pageNamed(world, name)), field));
+}
+
+/** The page of the player's character, which ask has found. */
+function pageNamed(world: World, name: string): Page
+{
+    const page = findPage(world, name);
+
+    if (page === undefined) {
+        throw new Error(`There is no page named ${name}. Nothing changed.`);
+    }
+
+    return page;
 }
 
 /** The place the character is right in, with its map, as the world is. */

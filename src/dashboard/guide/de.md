@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -117,61 +117,61 @@ Du erschaffst deinen Charakter gemeinsam mit der Spielleitung, wie am Spieltisch
 
 Schreib, was dein Charakter tut oder sagt, in deinen eigenen Worten:
 
-> Ich frage den Wirt, wer heute Nacht sonst noch vorbeigekommen ist.
+> Ich frage die Wirtin, wer heute Nacht sonst noch vorbeigekommen ist.
 
-Willst du außerhalb der Geschichte sprechen, schreib in eckigen Klammern: *[Wie funktioniert Ringen?]* Die Spielleitung antwortet ebenfalls in Klammern.
+Willst du aus der Geschichte heraus etwas fragen, schreib es in eckigen Klammern: *[Wie funktioniert Ringen?]* Die Spielleitung antwortet ebenfalls in Klammern.
 
-Du sagst, was du versuchst; die Spielleitung sagt, was geschieht. Die Spielleitung entscheidet nie für deinen Charakter und redet nie über die Engine. Du kannst sie fragen, wie das Dashboard funktioniert.
+Du sagst, was du versuchst. Die Spielleitung sagt, was passiert. Die Spielleitung entscheidet nie für deinen Charakter und spricht nie über die Engine. Du kannst die Spielleitung fragen, wie das Dashboard funktioniert.
 
 ### 3.2 Würfe
 
-Die Spielleitung verlangt nur dann einen Wurf, wenn der Ausgang unsicher ist und etwas davon abhängt. Vorher sagt sie, was auf dem Spiel steht. Dann:
+Die Spielleitung verlangt nur dann einen Wurf, wenn der Ausgang ungewiss ist und etwas davon abhängt. Vorher sagt sie, worum es geht. Dann gilt:
 
-- **Auf dem Dashboard** zeigt ein Banner für jede Probe einen Button, zum Beispiel *Akrobatik +4 · mit Vorteil*. Klick darauf: Die Würfel fallen auf der Seite, und die Spielleitung erfährt das Ergebnis. Du kannst auch auf die Zeile deines Charakterbogens klicken, die aufleuchtet, die Würfel aus der Würfelschale werfen oder im Banner etwas anderes schreiben.
-- **Von Hand**, in der Ecke des Banners oder in den **Einstellungen**: Das Banner sagt dir, was du würfeln sollst, und du würfelst es mit deinem Charakterbogen oder der Würfelschale.
-- **Echte Würfel**, wenn die Würfel-Einstellung auf „physisch" steht: Du schreibst die gewürfelten Augen, *[Ich habe eine 14 gewürfelt.]*, und RPG Engine rechnet deine Modifikatoren dazu.
+- **Auf dem Dashboard** zeigt ein Banner für jede Probe eine Schaltfläche, zum Beispiel *Akrobatik +4 · mit Vorteil*. Klick darauf: Die Würfel fallen auf der Seite, und die Spielleitung erfährt das Ergebnis. Du kannst auch auf die Zeile deines Charakterbogens klicken, die aufleuchtet, die Würfel aus der Würfelschale werfen oder im Banner etwas anderes schreiben.
+- **Von Hand**, in der Ecke des Banners oder in den **Einstellungen**: Das Banner sagt dir, was du würfeln sollst, und du würfelst es auf deinem Charakterbogen oder in der Würfelschale.
+- **Echte Würfel**, wenn die Würfel-Einstellung auf physisch steht: Du schreibst die gewürfelten Augen, *[Ich habe eine 14 gewürfelt.]*, und RPG Engine addiert deine Modifikatoren.
 
-**Freie Würfe**: Klick auf eine beliebige Zahl auf deinem Charakterbogen oder öffne die Würfelschale, um just for fun zu würfeln. Sie zählen nie, und die Spielleitung sieht sie nie.
+**Freie Würfe**: Klick auf eine beliebige Zahl auf deinem Charakterbogen oder öffne die Würfelschale, um zum Spaß zu würfeln. Sie zählen nie, und die Spielleitung sieht sie nie.
 
-**Die Würfe der Spielleitung** erscheinen in deiner Wurfspalte, außer den geheimen. Du kannst jederzeit fragen: *[War dieser Wurf echt?]* Bei einem geheimen Wurf nennt die Spielleitung einen Fingerabdruck, der beweist, dass er gemacht wurde, bevor du gefragt hast.
+**Die Würfe der Spielleitung** erscheinen in deiner Wurfspalte, außer den geheimen. Du kannst jederzeit fragen: *[War dieser Wurf echt?]* Bei einem geheimen Wurf gibt die Spielleitung einen Fingerabdruck, der beweist, dass er gemacht wurde, bevor du gefragt hast.
 
 ### 3.3 Szenen und Kämpfe
 
-Die Geschichte läuft in **Szenen** ab: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast. Am Ende jeder Szene speichert das Spiel von selbst, und die Szene kommt in dein Tagebuch.
+Die Geschichte läuft in **Szenen**: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast. Am Ende jeder Szene speichert das Spiel von selbst, und die Szene kommt in dein Tagebuch.
 
-In einem Kampf erzählt die Spielleitung jeden Zug, der nicht deiner ist, und hält an, wo du entscheiden kannst. Die **Szene** zeigt oben, wer am Zug ist und wer als Nächstes kommt, und neben der Karte die Karte deines Charakters. Die Zugreihenfolge, die Trefferpunkte deiner Gruppe und in Worten, wie angeschlagen die Gegner aussehen, bleiben neben der Seite. Wenn dein Charakter stürzt, erscheinen die Todesrettungswürfe groß auf der Seite.
+Im Kampf erzählt die Spielleitung jeden Zug, der nicht deiner ist, und hält an, wo du entscheiden kannst. Die **Szene** zeigt oben, wer am Zug ist und wer als Nächstes kommt, und die Karte deines Charakters neben der Karte. Die Zugreihenfolge, die Trefferpunkte deiner Gruppe und in Worten, wie verletzt die Gegner aussehen, bleiben neben der Seite. Fällt dein Charakter, erscheinen die Todesrettungswürfe groß auf der Seite.
 
 ### 3.4 Zeit, Reisen und die Welt in Bewegung
 
-RPG Engine führt das Datum; zwischen den Sessions vergeht keine Zeit. Sag, dass ihr rastet, *Wir machen eine lange Rast*, und die Rast gibt zurück, was sie soll. Sag, wohin du gehst, *Wir nehmen die Straße nach Norden Richtung Rocca*, und RPG Engine berechnet den Weg, die Entfernung und die Tage. Es hält an, wenn unterwegs etwas geschieht. Geld wird in den Münzen des Spiels gezählt, Wechselgeld inbegriffen.
+RPG Engine führt das Datum. Zwischen den Sessions vergeht keine Zeit. Sag, dass ihr rastet, *Wir machen eine lange Rast*, und sobald die Spielleitung zustimmt, gibt die Rast zurück, was sie zurückgeben soll. Bei einer kurzen Rast kann die Spielleitung auf dem Dashboard fragen, wie viele Trefferwürfel du ausgibst: Würfle sie einzeln, sieh, wie viel jeder heilt, und hör auf, wann du willst. Sag, wohin ihr geht, *Wir nehmen die Straße nach Norden Richtung Rocca*, und RPG Engine berechnet den Weg, die Entfernung und die Tage. Es hält an, wenn unterwegs etwas geschieht. Geld wird in den Münzen des Spiels gezählt, Wechselgeld inklusive.
 
-Schurken haben Pläne mit Fristen. Mit jedem neuen Tag bewegt die Spielleitung die Bedrohungen, die die Zeit vorangebracht hat. Du siehst ihre Anzeichen, nie die Uhr selbst.
+Schurken haben Pläne mit Fristen. Mit jedem neuen Tag bewegt die Spielleitung die Bedrohungen weiter, die die Zeit vorangebracht hat. Du siehst ihre Zeichen, nie die Uhr selbst.
 
 ### 3.5 Karten
 
-**Welt** zeigt die Orte, die dein Charakter kennt, die Straßen dazwischen und den Weg, den du gegangen bist, mit Nebel über dem Rest. **Szene** zeigt die Karte des Ortes, an dem du bist, sofern es eine gibt, und wer wo steht. In einem Kampf sind auf deinem Zug die Felder verhüllt, die du nicht erreichen kannst. Wenn die Spielleitung fragt, wohin du dich bewegst, tippe auf ein Feld oder schreib es, zum Beispiel *E4*.
+**Welt** zeigt die Orte, die dein Charakter kennt, die Straßen dazwischen und den Weg, den ihr gegangen seid, mit Nebel über dem Rest. **Szene** zeigt die Karte des Ortes, an dem du bist, wenn es eine gibt, und wer wo steht. Im Kampf sind auf deinem Zug die Felder verhüllt, die du nicht erreichen kannst. Wenn die Spielleitung fragt, wohin du dich bewegst, tippe auf ein Feld oder schreib es auf, zum Beispiel *E4*.
 
 ### 3.6 Quests, Tagebuch und Notizen
 
-Eine Aufgabe, die dein Charakter annimmt, wird im **Tagebuch** zu einer Quest, mit ihren Zielen, ihrer Frist und dem, was sie misst. Markiere sie mit einem Stern, um sie oben in der Szene im Blick zu behalten. Das Tagebuch erzählt auch deine **Geschichte**, Szene für Szene, und bewahrt deine **Notizen** auf: privat, solange du sie nicht **teilst**. Die Spielleitung hört eine geteilte Notiz als das, was du denkst, nie als Tatsache.
+Eine Aufgabe, die dein Charakter übernimmt, wird im **Tagebuch** zur Quest, mit ihren Zielen, ihrer Frist und dem, was sie misst. Markiere sie mit einem Stern, um sie oben in der Szene im Blick zu behalten. Das Tagebuch erzählt auch deine **Geschichte**, Szene für Szene, und bewahrt deine **Notizen** auf: privat, es sei denn, du **teilst** eine. Die Spielleitung hört sie dann als das, was du denkst, nie als Tatsache.
 
-### 3.7 Die Geschichte und das Bild deines Charakters
+### 3.7 Geschichte und Bild deines Charakters
 
-Auf deinem Charakterbogen hat die Karte **Beschreibung** ein Feld für die Geschichte deines Charakters: Die Spielleitung schreibt sie hinein, nachdem du ja gesagt hast. Für ein Bild gib der Spielleitung eine Datei (PNG, JPEG, WebP oder SVG, bis zu 5 MB) und sag, wo sie auf deinem Computer liegt. Oder lass ein Porträt anfertigen ([3.11](#311-pictures)): *[Mach mir ein Porträt: graues Haar in einem Zopf, eine Narbe am Kinn.]*
+Auf deinem Charakterbogen hat die Karte **Beschreibung** ein Feld für die Geschichte deines Charakters: Die Spielleitung schreibt sie hinein, nachdem du Ja gesagt hast. Für ein Bild gib der Spielleitung eine Datei (PNG, JPEG, WebP oder SVG, bis 5 MB) und sag, wo sie auf deinem Computer liegt. Oder lass ein Porträt erstellen ([3.11](#311-pictures)): *[Mach mir ein Porträt: graues Haar in einem Zopf, eine Narbe am Kinn.]*
 
 ### 3.8 Spielstände und zurückgehen
 
 RPG Engine speichert die ganze Kampagne am Ende jeder Szene. Die Einstellung **Spielstände** bestimmt den Rest:
 
-| Spielstände | Speichern, wann du willst | Zurückgehen |
+| Spielstände | Speichern, wenn du willst | Zurückgehen |
 |---|---|---|
 | **permadeath** | nein | nie |
 | **checkpoint** | nein | zum letzten Spielstand, nur wenn dein Charakter stirbt |
-| **free** | ja | zu jedem Spielstand |
+| **frei** | ja | zu jedem Spielstand |
 
-In jedem Modus kannst du **neu beginnen**, vom Anfang des Spiels oder von Session Zero an. Mach es im Chat oder unter **Spielstände**.
+In jedem Modus kannst du **neu beginnen**, vom Spielbeginn oder von Session Zero an. Mach das im Chat oder unter **Spielstände**.
 
-Nach dem Zurückgehen **öffne einen neuen Chat**: Der alte erinnert sich an das, was rückgängig gemacht wurde. Schreib im neuen Chat *weiter*, dann drück unter Spielstände auf **Ich habe einen neuen Chat geöffnet**.
+Öffne nach dem Zurückgehen **einen neuen Chat**: Der alte erinnert sich an das, was rückgängig gemacht wurde. Schreib *weiter* im neuen Chat und drück dann unter Spielstände auf **Ich habe einen neuen Chat geöffnet**.
 
 ### 3.9 Sessions: aufhören und zurückkommen
 
@@ -179,19 +179,19 @@ Hör auf, wann du willst: *[Lass uns für heute Abend hier aufhören.]* Alles is
 
 ### 3.10 Die Stimmung der Spielleitung
 
-Der Roboter oben auf dem Dashboard ist die Spielleitung: Sein Gesicht folgt dem Ton der Geschichte und verrät nie, was du noch nicht weißt. Wenn der Chat geschlossen ist, schläft er.
+Der Roboter oben auf dem Dashboard ist die Spielleitung. Sein Gesicht folgt dem Ton der Geschichte und verrät nie, was du noch nicht weißt. Wenn der Chat geschlossen ist, schläft er.
 
 ### 3.11 Bilder
 
-RPG Engine kann Bilder von den Orten anfertigen lassen, die du erreichst, von den Quests, die du annimmst, und von denen, die du triffst, je nach Einstellung **Bilder**. Auf Wunsch entsteht auch das Porträt deines Charakters. Es nutzt, was auf deinem Computer ist, mit deinem eigenen Login: **Codex** malt sie, sonst zeichnet **Claude Code** sie. Die **Einstellungen** zeigen, ob dieser Computer sie erstellen kann und wie du es einrichtest, falls nicht. Du kannst der Spielleitung jederzeit ein eigenes Bild geben.
+RPG Engine kann Bilder machen lassen von den Orten, die ihr erreicht, den Quests, die du annimmst, und denen, die du triffst, so wie es die Einstellung **Bilder** sagt, und auf Wunsch das Porträt deines Charakters. Es nutzt, was auf deinem Computer ist, mit deinem eigenen Login: **Codex** malt sie, sonst zeichnet sie **Claude Code**. Die **Einstellungen** sagen, ob dieser Computer sie erstellen kann und wie du es einrichtest, falls nicht. Du kannst der Spielleitung immer ein eigenes Bild geben.
 
 ### 3.12 Sicherheit: Linien, Schleier und Stopp
 
-**Linien** erscheinen nie im Spiel; **Schleier** geschehen nur außerhalb der Szene. Schreib jederzeit *[stopp]*: Die Spielleitung lässt diesen Inhalt sofort fallen und fügt ihn deinen Linien hinzu.
+**Linien** erscheinen nie im Spiel. **Schleier** geschehen nur abseits der Szene. Schreib jederzeit *[stopp]*: Die Spielleitung lässt diesen Inhalt sofort fallen und nimmt ihn in deine Linien auf.
 
-### 3.13 Deine Meinung ändern
+### 3.13 Die Meinung ändern
 
-Jede Einstellung lässt sich ändern, im Chat oder in den **Einstellungen**. Eine Entscheidung, die die Spielleitung ohne Regelbuch trifft, wird zum **Präzedenzfall**, damit dieselbe Frage beim nächsten Mal dieselbe Antwort bekommt.
+Jede Einstellung lässt sich ändern, im Chat oder in den **Einstellungen**. Eine Entscheidung, die die Spielleitung ohne Regelbuch trifft, wird zum **Präzedenzfall**, damit dieselbe Frage das nächste Mal dieselbe Antwort bekommt.
 
 ---
 

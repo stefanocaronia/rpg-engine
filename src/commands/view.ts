@@ -9,11 +9,9 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, firstSentence, withArticle } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
-import { languagePackFor, packSystemFolder } from "../languages/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
-import { homeSystemWords } from "../page-words.ts";
 import { declaredKind, entryPage, isPartyMember, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
-import { type GameSystem, type SystemWords, systemWords } from "../systems/index.ts";
+import type { GameSystem, SystemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -31,7 +29,7 @@ import { calendarDayOf, readPresent } from "./game-time.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
-import { campaignSystem, campaignWorld } from "./game-world.ts";
+import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { importShown, type ShownImport } from "./import.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
 import { campaignProblems } from "./problems.ts";
@@ -319,7 +317,7 @@ export const view = defineCommand({
         }
 
         const language = readSettings(root).language;
-        const memberWords = system === undefined || language === undefined ? undefined : wordsOf(system, language, context);
+        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context);
 
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
@@ -370,7 +368,7 @@ export const view = defineCommand({
         const openScene = shownScene(sight);
         const settings = readSettings(root);
         const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
-        const words = system === undefined || settings.language === undefined ? undefined : wordsOf(system, settings.language, context);
+        const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(system, settings.language, context);
         return {
             kind: "overview",
             campaign: settings.name,
@@ -452,7 +450,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
     );
     const language = readSettings(root).language;
-    const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : wordsOf(system, language, context)) : undefined;
+    const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
     const story = page === knowledge.pc ? playerStory(page) : undefined;
     return {
@@ -533,15 +531,6 @@ function characterNamed(world: World, name: string): Page
     }
 
     return page;
-}
-
-/** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
-function wordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
-{
-    // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
-    const pack = languagePackFor(context.extensionFolders ?? [], language);
-    const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
-    return (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
 }
 
 /**

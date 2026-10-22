@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -111,7 +111,7 @@ Du lager karakteren sammen med spillederen, som rundt et bord. Hvert valg er dit
 
 ---
 
-## 3. Spille <!-- icon: chat -->
+## 3. Spilling <!-- icon: chat -->
 
 ### 3.1 Å snakke med spilleder
 
@@ -119,79 +119,79 @@ Skriv hva karakteren din gjør eller sier, med dine egne ord:
 
 > Jeg spør vertshusverten hvem andre som kom innom i kveld.
 
-Skal du si noe utenfor historien, skriv det i hakeparenteser: *[Hvordan fungerer grappling?]* Spilleder svarer også i hakeparenteser.
+Skal du si noe utenfor historien, skriv det mellom hakeparenteser: *[Hvordan fungerer det å gripe tak i noen?]* Spilleder svarer også i hakeparenteser.
 
-Du sier hva du prøver. Spilleder sier hva som skjer. Spilleder bestemmer aldri for karakteren din, og snakker aldri om selve motoren. Du kan spørre spilleder om hvordan du bruker dashbordet.
+Du sier hva du prøver. Spilleder sier hva som skjer. Spilleder bestemmer aldri for karakteren din, og snakker aldri om motoren. Du kan spørre spilleder hvordan du bruker dashbordet.
 
 ### 3.2 Kast
 
-Spilleder ber om et kast bare når utfallet er uvisst og betyr noe, og sier først hva som står på spill. Deretter:
+Spilleder ber om et kast bare når utfallet er usikkert og betyr noe, og sier først hva som står på spill. Deretter:
 
-- **På dashbordet** viser et banner en knapp for hver prøve, for eksempel *Acrobatics +4 · with advantage*. Klikk på den: terningene faller på siden, og spilleder får vite resultatet. Du kan også klikke på linjen på karakterarket som lyser, kaste terningene fra terningbrettet eller skrive noe annet i banneret.
-- **For hånd**, i hjørnet av banneret eller i **Innstillinger**: banneret forteller hva du skal kaste, og du kaster det fra karakterarket eller terningbrettet.
-- **Fysiske terninger**, når terningvalget står på fysiske: du skriver tallet du kastet, *[Jeg kastet 14.]*, og RPG Engine legger til modifikatorene dine.
+- **På dashbordet** viser et banner en knapp for hver prøve, for eksempel *Acrobatics +4 · with advantage*. Klikk på den: Terningene faller på siden, og spilleder får se resultatet. Du kan også klikke på linjen på karakterarket som lyser, kaste terningene fra terningbrettet eller skrive noe annet i banneret.
+- **For hånd**, i hjørnet av banneret eller i **Innstillinger**: Banneret sier hva du skal kaste, og du kaster det fra karakterarket eller terningbrettet.
+- **Fysiske terninger**, når terninginnstillingen står på fysiske: Du skriver sifrene du kastet, *[Jeg kastet 14.]*, og RPG Engine legger til modifikatorene dine.
 
-**Frie kast**: klikk på et hvilket som helst tall på karakterarket, eller åpne terningbrettet, for å kaste for moro skyld. De teller aldri, og spilleder ser dem aldri.
+**Frie kast**: Klikk på et tall på karakterarket, eller åpne terningbrettet, for å kaste for moro skyld. De teller aldri, og spilleder ser dem aldri.
 
-**Spillederens kast** vises i kastkolonnen din, bortsett fra de hemmelige. Du kan alltid spørre *[Var det kastet ekte?]*: for et hemmelig kast gir spilleder et fingeravtrykk som beviser at kastet ble gjort før du spurte.
+**Spillederens kast** vises i kastkolonnen din, bortsett fra de hemmelige. Du kan alltid spørre *[Var det kastet ekte?]*: For et hemmelig kast gir spilleder et fingeravtrykk som beviser at det ble gjort før du spurte.
 
 ### 3.3 Scener og kamper
 
-Historien går i **scener**: en kamp, en samtale, utforsking, reise, en hvile. Ved slutten av hver scene lagrer spillet av seg selv, og scenen havner i dagboken din.
+Historien går i **scener**: en kamp, en samtale, utforsking, reise eller hvile. Når en scene er slutt, lagrer spillet av seg selv, og scenen havner i dagboken din.
 
-I en kamp forteller spilleder om hver tur som ikke er din, og stopper der du kan bestemme. **Scene** viser øverst hvem sin tur det er og hvem som kommer etter, og karakterens kort ved siden av kartet. Turrekkefølgen, hit points for gruppen din og hvor skadet fiendene ser ut, i ord, står ved siden av siden. Hvis karakteren din faller, vises dødsredningskastene store på siden.
+I en kamp forteller spilleder om hver tur som ikke er din, og stopper der du kan bestemme. **Scene** viser øverst hvem sin tur det er og hvem som kommer etter, og karakterkortet ditt ved siden av kartet. Rekkefølgen på turene, gruppens treffpoeng og hvor skadet fiendene ser ut, med ord, står ved siden av siden. Hvis karakteren din faller, vises dødsredningene stort på siden.
 
 ### 3.4 Tid, reise og verden som beveger seg
 
-RPG Engine holder styr på datoen. Det går ingen tid mellom sesjoner. Si at dere hviler, *Vi tar en lang hvile*, så gir hvilen tilbake det den skal. Si hvor dere drar, *Vi tar veien nordover til Rocca*, så regner RPG Engine ut veien, avstanden og dagene, og stopper når noe skjer underveis. Penger telles i spillets mynter, med vekslepenger.
+RPG Engine holder styr på datoen. Det går ingen tid mellom sesjonene. Si at dere hviler, *Vi tar en lang hvile*, og når spilleder er enig, gir hvilen tilbake det den skal. Ved en kort hvile kan spilleder spørre på dashbordet hvor mange treffterninger du bruker: Kast dem én om gangen, se hvor mye hver av dem leger, og stopp når du vil. Si hvor dere drar, *Vi tar veien nordover til Rocca*, og RPG Engine regner ut veien, avstanden og dagene, og stopper når noe skjer underveis. Penger telles i spillets mynter, med vekslepenger.
 
-Skurker har planer med frister. Hver nye dag flytter spilleder de truslene som tiden har rykket videre, og du ser tegnene på dem, aldri selve klokken.
+Skurker har planer med frister. Hver nye dag flytter spilleder de truslene som tiden har rykket nærmere, og du ser tegnene på dem, aldri selve klokken.
 
 ### 3.5 Kart
 
-**Verden** viser stedene karakteren din kjenner, veiene mellom dem og sporet du har gått, med tåke over resten. **Scene** viser kartet over stedet der du er, når det har et, med hvem som står hvor. I en kamp, på din tur, er rutene du ikke kan nå, tilslørt. Når spilleder spør hvor du flytter deg, trykk på en rute eller skriv den, for eksempel *E4*.
+**Verden** viser stedene karakteren din kjenner, veiene mellom dem og stien du har gått, med tåke over resten. **Scene** viser kartet over stedet der dere er, når det har et, med hvem som står hvor. I en kamp, på din tur, er rutene du ikke kan nå, tildekket. Når spilleder spør hvor du flytter deg, trykk på en rute, eller skriv den, for eksempel *E4*.
 
 ### 3.6 Oppdrag, dagbok og notater
 
-En oppgave karakteren din tar på seg, blir et oppdrag i **Dagbok**, med mål, frist og det den måler. Merk det med stjerne for å ha det i sikte øverst i Scene. Dagboken forteller også **historien** din, scene for scene, og holder på **notatene** dine: de er private, med mindre du **Del**er et. Spilleder oppfatter det som noe du tenker, aldri som et faktum.
+En oppgave karakteren din tar på seg, blir et oppdrag i **Dagbok**, med mål, frist og det den måler. Sett stjerne på det for å ha det i syne øverst i Scene. Dagboken forteller også **historien** din, scene for scene, og rommer **notatene** dine: De er private, med mindre du **Del**er ett. Spilleder hører det som det du tenker, aldri som et faktum.
 
 ### 3.7 Karakterens historie og bilde
 
-På karakterarket har kortet **Beskrivelse** et felt for karakterens historie: spilleder skriver den inn etter at du har sagt ja. For et bilde kan du gi spilleder en fil (PNG, JPEG, WebP eller SVG, opptil 5 MB) sammen med hvor den ligger på datamaskinen din, eller du kan få laget et portrett ([3.11](#311-pictures)): *[Lag et portrett av meg: grått hår i flette, et arr på haken.]*
+På karakterarket har kortet **Beskrivelse** et felt for karakterens historie: Spilleder skriver den inn etter at du har sagt ja. For et bilde kan du gi spilleder en fil (PNG, JPEG, WebP eller SVG, opptil 5 MB) sammen med hvor den ligger på datamaskinen din, eller du kan få laget et portrett ([3.11](#311-pictures)): *[Lag et portrett av meg: grått hår i en flette, et arr på haken.]*
 
-### 3.8 Lagrede spill og å gå tilbake
+### 3.8 Lagrede spill og det å gå tilbake
 
-RPG Engine lagrer hele kampanjen ved slutten av hver scene. Innstillingen **lagrede spill** avgjør resten:
+RPG Engine lagrer hele kampanjen når hver scene er slutt. Innstillingen for **lagrede spill** bestemmer resten:
 
 | Lagrede spill | Lagre når du vil | Gå tilbake |
 |---|---|---|
 | **permadeath** | nei | aldri |
 | **checkpoint** | nei | til siste lagrede spill, bare når karakteren din dør |
-| **free** | ja | til et hvilket som helst lagret spill |
+| **ledig** | ja | til et hvilket som helst lagret spill |
 
-I alle moduser kan du **begynne på nytt**, fra starten av spillet eller fra sesjon null. Gjør det i chatten eller i **Lagrede spill**.
+I alle moduser kan du **begynne på nytt**, fra starten av spillet eller fra sesjon null. Gjør det i chatten eller under **Lagrede spill**.
 
-Etter at du har gått tilbake, **åpne en ny chat**: den gamle husker det som er angret. Skriv *fortsett* i den nye chatten, og trykk deretter på **Jeg har åpnet en ny chat** i Lagrede spill.
+Etter at du har gått tilbake, **åpne en ny chat**: Den gamle husker det som ble angret. Skriv *fortsett* i den nye chatten, og trykk deretter på **Jeg har åpnet en ny chat** under Lagrede spill.
 
 ### 3.9 Sesjoner: å stoppe og komme tilbake
 
-Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake starter du agenten din i kampanjemappen og skriver *fortsett*: spilleder gir deg en kort oppsummering og går videre.
+Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake starter du agenten din i kampanjemappen og skriver *fortsett*: Spilleder gir deg en kort oppsummering og fortsetter.
 
 ### 3.10 Spillederens humør
 
-Roboten øverst på dashbordet er spilleder: ansiktet følger tonen i historien, og røper aldri det du ikke vet ennå. Når chatten er lukket, sover den.
+Roboten øverst på dashbordet er spilleder: Ansiktet følger tonen i historien, og røper aldri det du ikke vet ennå. Når chatten er lukket, sover den.
 
 ### 3.11 Bilder
 
-RPG Engine kan lage bilder av stedene du kommer til, oppdragene du tar på deg og dem du møter, slik innstillingen **bilder** sier, og et portrett av karakteren din når du ber om det. Det bruker det som finnes på datamaskinen din, med din egen pålogging: **Codex** maler dem, ellers tegner **Claude Code** dem. **Innstillinger** viser om denne datamaskinen kan lage dem, og hvordan du setter det opp hvis ikke. Du kan alltid gi spilleder et eget bilde.
+RPG Engine kan få laget bilder av stedene du kommer til, oppdragene du tar på deg og dem du møter, slik innstillingen for **bilder** sier, og et portrett av karakteren din når du ber om det. Den bruker det som finnes på datamaskinen din, med din egen innlogging: **Codex** maler dem, ellers tegner **Claude Code** dem. **Innstillinger** forteller om denne datamaskinen kan lage dem, og hvordan du setter det opp hvis ikke. Du kan alltid gi spilleder et bilde du har selv.
 
 ### 3.12 Trygghet: linjer, slør og stopp
 
-**Linjer** dukker aldri opp i spillet, og **slør** skjer bare utenfor scenen. Skriv *[stopp]* når som helst: spilleder dropper det innholdet med en gang og legger det til i linjene dine.
+**Linjer** dukker aldri opp i spillet, og **slør** skjer bare utenfor scenen. Når som helst kan du skrive *[stopp]*: Spilleder dropper det innholdet med en gang og legger det til i linjene dine.
 
-### 3.13 Å skifte mening
+### 3.13 Å ombestemme seg
 
-Alle innstillinger kan endres, i chatten eller i **Innstillinger**. En avgjørelse spilleder tar uten regelboken, blir en **presedens**, slik at det samme spørsmålet får det samme svaret neste gang.
+Alle innstillinger kan endres, i chatten eller under **Innstillinger**. En avgjørelse spilleder tar uten regelboken, blir en **presedens**, slik at det samme spørsmålet får det samme svaret neste gang.
 
 ---
 

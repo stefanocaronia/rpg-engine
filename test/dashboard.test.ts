@@ -1247,6 +1247,41 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         page.close();
     });
 
+    it("asks the dice of a rest on the page: each spend rolls one die and the question stays with the numbers as they are, until its button (ASK-14, D-492)", async () => {
+        await runCommandLine(["write", "Ettore", "--set", "classes=[[Cleric]] 3"], served);
+        await runCommandLine(["change", "Ettore", "hp", "--to", "10"], served);
+        const page = await openPage();
+        const asking = ask.run(ask.input.parse({ question: "Riposo breve: quanti dadi vita spendi?", recipe: "short rest" }), served);
+        const asked = await waitAsked();
+        expect(asked).toMatchObject({ title: "Riposo", labels: ["Ho finito"], who: "Ettore", spend: { who: "Ettore", dice: [{ field: "hit-dice-d8", sides: 8, value: 3, max: 3 }], gives: { field: "hp", from: 10, value: 10 }, rolls: [] } });
+        expect((await send("POST", "/api/answer", { asked: "altro", spend: "hit-dice-d8" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d12" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d8" })).status).toBe(202);
+        const after = await askedNow() as Asked | null;
+        expect(after).toMatchObject({ id: asked.id, spend: { dice: [{ field: "hit-dice-d8", value: 2 }], rolls: [{ field: "hit-dice-d8", face: 4 }] } });
+        expect(readLogFile(folder).find((entry) => entry.id === after?.spend?.rolls[0]?.id)).toMatchObject({ type: "roll", by: "player", data: { who: "Ettore", check: "Dadi vita d8" } });
+        expect((await send("POST", "/api/answer", { asked: asked.id, text: "Canto una canzone di riposo" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
+        expect(ask.format(await asking)).toMatch(/^The player spent 1 of Ettore's dice: hit-dice-d8 4/);
+        expect(await askedNow()).toBeNull();
+        page.close();
+    });
+
+    it("tells the master at the next call the dice spent before the call that asked them was stopped (ASK-14, ASK-9)", async () => {
+        await runCommandLine(["write", "Ettore", "--set", "classes=[[Cleric]] 3"], served);
+        await runCommandLine(["change", "Ettore", "hp", "--to", "10"], served);
+        const page = await openPage();
+        const stop = new AbortController();
+        const asking = ask.run(ask.input.parse({ question: "Riposo breve: quanti dadi vita spendi?", recipe: "short rest" }), { ...served, signal: stop.signal });
+        const asked = await waitAsked();
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d8" })).status).toBe(202);
+        stop.abort();
+        await asking;
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^While your ask was stopped, the player spent 1 of Ettore's dice: hit-dice-d8 4 \+ \d = \d+; hp 10\/\d+ → \d+\/\d+; hit-dice-d8 3\/3 → 2\/3\./)]);
+        expect(dashboard.news().lines).toEqual([]);
+        page.close();
+    });
+
     it("gives each check's dice in words for its button's tooltip, when they say more than their dice (D-297)", async () => {
         const page = await openPage();
         const asking = ask.run(ask.input.parse({ question: "Lo spettro ti stringe la gola", options: ["Tiro salvezza Saggezza 2d20kh1+5"] }), served);

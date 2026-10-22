@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 21501b79 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -113,85 +113,85 @@ Teet hahmosi yhdessä pelinjohtajan kanssa, kuten pelipöydän ääressä. Jokai
 
 ## 3. Pelaaminen <!-- icon: chat -->
 
-### 3.1 Puhuminen pelinjohtajan kanssa
+### 3.1 Keskustelu pelinjohtajan kanssa
 
-Kirjoita, mitä hahmosi tekee tai sanoo. Käytä omia sanojasi:
+Kirjoita, mitä hahmosi tekee tai sanoo, omin sanoin:
 
-> Kysyn majatalon isännältä, kuka muu kävi täällä illalla.
+> Kysyn majatalon isännältä, ketkä muut kävivät täällä tänä iltana.
 
-Jos haluat puhua tarinan ulkopuolelta, kirjoita hakasulkeiden sisään: *[Miten painiminen toimii?]* Pelinjohtaja vastaa myös hakasulkeissa.
+Jos haluat puhua tarinan ulkopuolelta, kirjoita hakasulkeisiin: *[Miten kamppailu toimii?]* Pelinjohtaja vastaa myös hakasulkeissa.
 
-Sinä kerrot, mitä yrität. Pelinjohtaja kertoo, mitä tapahtuu. Pelinjohtaja ei koskaan päätä hahmosi puolesta eikä puhu pelimoottorista. Voit kysyä häneltä, miten dashboardia käytetään.
+Sinä kerrot, mitä yrität. Pelinjohtaja kertoo, mitä tapahtuu. Pelinjohtaja ei koskaan päätä hahmosi puolesta eikä puhu pelimoottorista. Voit kysyä pelinjohtajalta, miten kojelautaa käytetään.
 
 ### 3.2 Heitot
 
-Pelinjohtaja pyytää heittoa vain silloin, kun lopputulos on epävarma ja sillä on merkitystä. Ensin pelinjohtaja kertoo, mitä on pelissä. Sitten:
+Pelinjohtaja pyytää heiton vain silloin, kun lopputulos on epävarma ja sillä on merkitystä. Ensin pelinjohtaja kertoo, mitä on pelissä. Sitten:
 
-- **Dashboardilla** banneri näyttää painikkeen jokaiselle heitolle, esimerkiksi *Acrobatics +4 · with advantage*. Napsauta sitä: nopat putoavat sivulle ja pelinjohtaja näkee tuloksen. Voit myös napsauttaa hahmolomakkeen valaistua riviä, heittää nopat noppa-alustalta tai kirjoittaa banneriin jotain muuta.
+- **Kojelaudalla** banneri näyttää painikkeen jokaiselle heitolle, esimerkiksi *Acrobatics +4 · with advantage*. Napsauta sitä: nopat putoavat sivulle ja pelinjohtaja kuulee tuloksen. Voit myös napsauttaa hahmolomakkeen riviä, joka syttyy valoon, heittää nopat noppa-alustalta tai kirjoittaa bannerissa jotain muuta.
 - **Käsin**, bannerin kulmassa tai kohdassa **Asetukset**: banneri kertoo, mitä heitetään, ja heität itse hahmolomakkeesta tai noppa-alustalta.
-- **Fyysiset nopat**, kun noppa-asetuksena on fyysiset: kirjoitat heittämäsi silmäluvut, *[Heitin 14.]*, ja RPG Engine lisää muuntimesi.
+- **Fyysiset nopat**, kun noppa-asetuksena on fyysinen: kirjoitat heittämäsi silmäluvut, *[Heitin 14.]*, ja RPG Engine lisää muuntimesi.
 
-**Vapaat heitot**: napsauta mitä tahansa hahmolomakkeen lukua tai avaa noppa-alusta, niin voit heittää huvin vuoksi. Ne eivät koskaan lasketa mukaan, eikä pelinjohtaja näe niitä.
+**Vapaat heitot**: napsauta mitä tahansa lukua hahmolomakkeessa tai avaa noppa-alusta, niin voit heittää huvikseen. Ne eivät koskaan lasketa, eikä pelinjohtaja näe niitä.
 
-**Pelinjohtajan heitot** näkyvät heittosarakkeessasi, salaisia lukuun ottamatta. Voit aina kysyä *[Oliko tuo heitto oikea?]*. Salaisesta heitosta pelinjohtaja antaa sormenjäljen, joka todistaa, että heitto tehtiin ennen kuin kysyit.
+**Pelinjohtajan heitot** näkyvät heittosarakkeessasi, salaisia lukuun ottamatta. Voit aina kysyä *[Oliko tuo heitto oikea?]*: salaisesta heitosta pelinjohtaja antaa sormenjäljen, joka todistaa heiton tehdyn ennen kysymystäsi.
 
 ### 3.3 Kohtaukset ja taistelut
 
-Tarina etenee **kohtauksina**: taistelu, keskustelu, tutkiminen, matkustaminen, lepo. Jokaisen kohtauksen lopussa peli tallentaa itsestään, ja kohtaus siirtyy päiväkirjaasi.
+Tarina etenee **kohtauksina**: taistelu, keskustelu, tutkiminen, matkustus, lepo. Jokaisen kohtauksen lopussa peli tallentaa itsestään, ja kohtaus siirtyy päiväkirjaasi.
 
-Taistelussa pelinjohtaja kertoo jokaisen vuoron, joka ei ole sinun, ja pysähtyy kohtaan, jossa voit tehdä päätöksen. **Kohtaus** näyttää ylhäällä, kenen vuoro on ja kuka on seuraava, sekä hahmosi kortin kartan vieressä. Vuorojärjestys, seurueesi osumapisteet ja vihollisten kunto sanoin kuvattuna pysyvät sivun reunassa. Jos hahmosi kaatuu, kuolemanpelastusheitot näkyvät suurina sivulla.
+Taistelussa pelinjohtaja kertoo jokaisen vuoron, joka ei ole sinun, ja pysähtyy kohtaan, jossa voit päättää. **Kohtaus** näyttää ylhäällä, kenen vuoro on ja kuka tulee seuraavaksi, sekä hahmosi kortin kartan vieressä. Vuorojärjestys, seurueesi osumapisteet ja se, kuinka haavoittuneilta viholliset näyttävät, sanoin kuvattuna, pysyvät sivun reunassa. Jos hahmosi kaatuu, kuolemanpelastusheitot näkyvät suurina sivulla.
 
-### 3.4 Aika, matkustaminen ja liikkuva maailma
+### 3.4 Aika, matkustus ja maailma, joka liikkuu
 
-RPG Engine pitää kirjaa päivämäärästä. Istuntojen välillä aikaa ei kulu. Sano, että lepäätte, *Levätään pitkään*, ja lepo palauttaa sen, minkä pitääkin. Kerro, minne menet, *Lähdemme pohjoiseen kohti Roccaa*, ja RPG Engine laskee reitin, matkan ja päivät. Matka keskeytyy, jos matkalla tapahtuu jotain. Raha lasketaan pelin kolikoissa, vaihtorahat mukaan lukien.
+RPG Engine pitää kirjaa päivämäärästä. Istuntojen välillä aika ei kulu. Sano, että lepäätte, *Lepäämme pitkän levon*, ja kun pelinjohtaja hyväksyy sen, lepo palauttaa sen, minkä pitääkin. Lyhyessä levossa pelinjohtaja voi kysyä kojelaudalla, montako osumanoppaa käytät: heitä ne yksi kerrallaan, katso, paljonko kukin parantaa, ja lopeta, kun haluat. Sano, minne menette, *Lähdemme pohjoiseen johtavaa tietä Roccaan*, niin RPG Engine laskee reitin, matkan ja päivät ja pysähtyy, kun matkalla tapahtuu jotain. Raha lasketaan pelin kolikoissa, vaihtorahat mukaan lukien.
 
-Konnilla on suunnitelmia, joilla on määräajat. Joka uusi päivä pelinjohtaja siirtää uhkia, joita aika on edistänyt. Näet niiden merkit, mutta et koskaan itse kelloa.
+Konnilla on suunnitelmia määräaikoineen. Joka uusi päivä pelinjohtaja siirtää uhkia, joita aika on edistänyt, ja näet niiden merkit, mutta et koskaan itse kelloa.
 
 ### 3.5 Kartat
 
-**Maailma** näyttää paikat, jotka hahmosi tuntee, niiden väliset tiet ja kulkemasi reitin. Muu on sumun peitossa. **Kohtaus** näyttää kartan paikasta, jossa olet, jos sillä on sellainen, ja kuka missäkin seisoo. Taistelussa omalla vuorollasi ruudut, joihin et ylety, on peitetty. Kun pelinjohtaja kysyy, minne liikut, kosketa ruutua tai kirjoita se, esimerkiksi *E4*.
+**Maailma** näyttää paikat, jotka hahmosi tuntee, niiden väliset tiet ja kulkemasi reitin. Muu on sumun peitossa. **Kohtaus** näyttää sen paikan kartan, jossa olet, jos kartta on olemassa, ja kuka seisoo missä. Taistelussa omalla vuorollasi ruudut, joihin et ulotu, on verhottu. Kun pelinjohtaja kysyy, minne siirryt, kosketa ruutua tai kirjoita se, esimerkiksi *E4*.
 
 ### 3.6 Tehtävät, päiväkirja ja muistiinpanot
 
-Tehtävä, jonka hahmosi ottaa vastaan, muuttuu tehtäväksi **Päiväkirjaan**, tavoitteineen, määräaikoineen ja mittareineen. Merkitse se tähdellä, niin se pysyy näkyvissä Kohtauksen yläosassa. Päiväkirja kertoo myös **tarinasi** kohtaus kohtaukselta ja säilyttää **muistiinpanosi**: ne ovat yksityisiä, ellet **Jaa** jotakin. Pelinjohtaja kuulee jaetun muistiinpanon sinun ajatuksenasi, ei koskaan tosiasiana.
+Tehtävä, jonka hahmosi ottaa vastaan, tulee **Päiväkirjaan** tehtäväksi tavoitteineen, määräaikoineen ja mittareineen. Merkitse se tähdellä, niin se pysyy näkyvissä Kohtauksen yläosassa. Päiväkirja kertoo myös **tarinasi** kohtaus kohtaukselta ja säilyttää **muistiinpanosi**: ne ovat yksityisiä, ellet **Jaa** jotakin. Pelinjohtaja kuulee jaetun muistiinpanon ajatuksenasi, ei koskaan tosiasiana.
 
 ### 3.7 Hahmosi tarina ja kuva
 
-Hahmolomakkeen **Kuvaus**-kortissa on kenttä hahmosi tarinalle. Pelinjohtaja kirjoittaa sen siihen, kun olet sanonut kyllä. Kuvaa varten anna pelinjohtajalle tiedosto (PNG, JPEG, WebP tai SVG, enintään 5 MB) ja kerro, missä se on tietokoneellasi. Voit myös teettää muotokuvan ([3.11](#311-pictures)): *[Tee minulle muotokuva: harmaat hiukset palmikossa, arpi leuassa.]*
+Hahmolomakkeen **Kuvaus**-kortissa on kenttä hahmosi tarinalle: pelinjohtaja kirjoittaa sen siihen, kun olet sanonut kyllä. Kuvaa varten anna pelinjohtajalle tiedosto (PNG, JPEG, WebP tai SVG, enintään 5 Mt) ja kerro, missä se on tietokoneellasi, tai teetä muotokuva ([3.11](#311-pictures)): *[Tee minulle muotokuva: harmaat hiukset letillä, arpi leuassa.]*
 
 ### 3.8 Tallennukset ja takaisin palaaminen
 
-RPG Engine tallentaa koko kampanjan jokaisen kohtauksen lopussa. **Tallennukset**-asetus ratkaisee lopun:
+RPG Engine tallentaa koko kampanjan jokaisen kohtauksen lopussa. Loput ratkaisee **tallennus**-asetus:
 
-| Tallennukset | Tallenna, kun haluat | Palaa |
+| Tallennukset | Tallenna, kun haluat | Palaa takaisin |
 |---|---|---|
 | **permadeath** | ei | ei koskaan |
 | **checkpoint** | ei | viimeiseen tallennukseen, vain kun hahmosi kuolee |
-| **free** | kyllä | mihin tahansa tallennukseen |
+| **vapaa** | kyllä | mihin tahansa tallennukseen |
 
-Kaikissa tiloissa voit **aloittaa alusta**, joko pelin alusta tai nollasessiosta. Tee se keskustelussa tai kohdassa **Tallennukset**.
+Kaikissa tiloissa voit **aloittaa alusta**, pelin alusta tai nollasessiosta. Tee se keskustelussa tai kohdassa **Tallennukset**.
 
-Kun olet palannut taaksepäin, **avaa uusi keskustelu**: vanha keskustelu muistaa sen, mikä peruttiin. Kirjoita uuteen keskusteluun *jatka*. Paina sitten Tallennukset-kohdassa **Avasin uuden keskustelun**.
+Kun olet palannut taaksepäin, **avaa uusi keskustelu**: vanha muistaa sen, mikä peruttiin. Kirjoita uudessa keskustelussa *jatka*, ja paina sitten Tallennuksissa **Avasin uuden keskustelun**.
 
 ### 3.9 Istunnot: lopettaminen ja palaaminen
 
-Lopeta milloin haluat: *[Lopetetaan tältä illalta.]* Kaikki on jo tallennettu tiedostoihin. Kun haluat palata, käynnistä agenttisi kampanjan kansiossa ja kirjoita *jatka*. Pelinjohtaja kertoo lyhyen yhteenvedon ja jatkaa peliä.
+Lopeta milloin haluat: *[Lopetetaan tältä illalta.]* Kaikki on jo tallennettu tiedostoihin. Kun haluat palata, käynnistä agenttisi kampanjan kansiossa ja kirjoita *jatka*: pelinjohtaja antaa lyhyen kertauksen ja jatkaa.
 
 ### 3.10 Pelinjohtajan mieliala
 
-Dashboardin yläreunan robotti on pelinjohtaja. Sen kasvot seuraavat tarinan sävyä, eivätkä koskaan paljasta sitä, mitä et vielä tiedä. Kun keskustelu on suljettu, robotti nukkuu.
+Kojelaudan yläreunan robotti on pelinjohtaja: sen kasvot seuraavat tarinan sävyä eivätkä koskaan paljasta sitä, mitä et vielä tiedä. Kun keskustelu on suljettu, robotti nukkuu.
 
 ### 3.11 Kuvat
 
-RPG Engine voi teettää kuvia paikoista, joihin saavut, tehtävistä, jotka otat vastaan, ja kohtaamistasi hahmoista. Se tapahtuu **kuvat**-asetuksen mukaan. Hahmosi muotokuvan se tekee pyydettäessä. Se käyttää tietokoneellasi olevia ohjelmia ja omaa kirjautumistasi: **Codex** maalaa kuvat, muuten **Claude Code** piirtää ne. **Asetukset** kertoo, voiko tämä tietokone tehdä kuvia, ja miten sen saa toimimaan, jos ei voi. Voit aina antaa pelinjohtajalle oman kuvasi.
+RPG Engine voi teettää kuvia paikoista, joihin saavut, tehtävistä, jotka otat vastaan, ja kohtaamistasi hahmoista, **kuvat**-asetuksen mukaan. Hahmosi muotokuvan se teettää, kun pyydät. Se käyttää sitä, mitä tietokoneellasi on, omalla kirjautumisellasi: **Codex** maalaa ne, muuten **Claude Code** piirtää ne. **Asetukset** kertoo, voiko tämä tietokone tehdä niitä, ja miten sen saa käyttöön, jos ei voi. Voit aina antaa pelinjohtajalle oman kuvasi.
 
 ### 3.12 Turvallisuus: rajat, verhot ja stop
 
-**Rajat** eivät koskaan näy pelissä. **Verhot** tapahtuvat vain kuvan ulkopuolella. Voit milloin tahansa kirjoittaa *[stop]*: pelinjohtaja jättää sen sisällön heti pois ja lisää sen rajoihisi.
+**Rajat** eivät koskaan näy pelissä. **Verhot** tapahtuvat vain kuvan ulkopuolella. Voit milloin tahansa kirjoittaa *[stop]*: pelinjohtaja hylkää sen sisällön heti ja lisää sen rajoihisi.
 
 ### 3.13 Mielen muuttaminen
 
-Jokaista asetusta voi muuttaa keskustelussa tai kohdassa **Asetukset**. Päätös, jonka pelinjohtaja tekee ilman sääntökirjaa, tallentuu **ennakkotapaukseksi**, jotta samaan kysymykseen vastataan jatkossa samoin.
+Jokaista asetusta voi muuttaa, keskustelussa tai kohdassa **Asetukset**. Päätös, jonka pelinjohtaja tekee ilman sääntökirjaa, muuttuu **ennakkotapaukseksi**, jotta sama kysymys saa ensi kerralla saman vastauksen.
 
 ---
 

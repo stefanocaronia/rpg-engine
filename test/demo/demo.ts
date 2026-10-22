@@ -13,12 +13,19 @@ import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { npmPackages } from "../../src/extensions/index.ts";
 import { readLibraryHere } from "../../src/library-reader.ts";
 import { codexPictures, hostWriter } from "../../src/pictures/index.ts";
+import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
 
 export const demoFolder = join(import.meta.dirname, "..", "..", "tmp", "dashboard-demo");
 
-/** The checks and the choice the demo asks in turn, of Ettore, a cleric of the third level: one die, two with advantage, an answer, dice rerolled. */
-export const demoQuestions: { question: string; options: string[]; }[] = [
+/** A question the demo asks as the master does with ask: checks or answers, or the dice of a rest (ASK-14). */
+export type DemoQuestion = { question: string; options: string[]; } | { question: string; recipe: string; };
+
+/**
+ * The checks and the choice the demo asks in turn, of Ettore, a cleric of the third level: one die, two with advantage, an answer, dice rerolled, the hit dice
+ * of a short rest.
+ */
+export const demoQuestions: DemoQuestion[] = [
     { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"] },
     { question: "Lo spettro ti stringe la gola: se cedi, il gelo ti toglie le forze", options: ["Tiro salvezza Saggezza 2d20kh1+wis-save"] },
     { question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+insight"] },
@@ -28,6 +35,7 @@ export const demoQuestions: { question: string; options: string[]; }[] = [
         question: "Il capitano delle guardie vi sbarra la strada del ponte",
         options: ["Gli mostro il sigillo del vescovo", "Provo a corromperlo con le monete d'argento", "Torniamo indietro e cerchiamo il guado", "Lo sfido a duello davanti ai suoi uomini"],
     },
+    { question: "Riposo breve sotto il mulino, mentre la pioggia batte sulle pale: quanti dadi vita spendi?", recipe: "short rest" },
 ];
 
 /**
@@ -36,7 +44,7 @@ export const demoQuestions: { question: string; options: string[]; }[] = [
  */
 export interface DemoDashboard extends Dashboard
 {
-    ask(question: string, options: string[]): Promise<string>;
+    ask(asked: DemoQuestion): Promise<string>;
     askSquare(question: string): Promise<string>;
     roll(...args: string[]): Promise<string>;
 }
@@ -69,6 +77,9 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
         await makeDemo(context);
     }
 
+    // The systems' code, as the MCP server loads it, for what the demo asks to follow as in a game (D-448).
+    context.systemCode = await loadSystemCode(context.systemFolders);
+
     const session = new SessionStore({ systemFolders: context.systemFolders });
     const dashboard = await startDashboard({ ...context, files: session }, session, { ports });
 
@@ -82,9 +93,16 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 
     return {
         ...dashboard,
-        ask: async (question, options) => {
+        ask: async (asked) => {
             await session.ready();
-            return withFiles(session, async () => ask.format(await ask.run(ask.input.parse({ question, options }), { ...context, files: session, page: dashboard.player })));
+
+            // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
+            if ("recipe" in asked) {
+                await runCommandLine(["change", "Ettore", "hit-dice-d8", "--to", "2"], { ...context, files: session });
+                await runCommandLine(["change", "Ettore", "hp", "--to", "14"], { ...context, files: session });
+            }
+
+            return withFiles(session, async () => ask.format(await ask.run(ask.input.parse(asked), { ...context, files: session, page: dashboard.player })));
         },
         askSquare: async (question) => {
             await session.ready();

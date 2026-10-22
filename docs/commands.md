@@ -242,6 +242,7 @@ Read-only: no.
 - `options` (`string | string[]`, optional): for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4
 - `who` (`string`, optional): for a roll or a square, the player's character, such as Bruna; the only one there is, if left out
 - `square` (`boolean`, optional): true to ask where the player's character moves on its place's map
+- `recipe` (`string`, optional): a rest's recipe that lets one spend dice, such as short rest: the player spends their character's dice of it, one at a time
 
 ### change
 

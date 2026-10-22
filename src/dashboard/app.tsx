@@ -27,6 +27,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
+import { SpendCard } from "./spend.tsx";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
@@ -74,14 +75,14 @@ interface Shown
     /** An import under way (D-491 (11)). */
     importing?: ShownImport;
     problem?: string;
-    /** What a death save's roll changed, kept back while its dice are in the air (D-461). */
+    /** What a death save's roll, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
     pending?: Steady;
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
 type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "story" | "openScene">;
 
-// How long at most what a death save changed waits for its dice, when they never land.
+// How long at most what a death save or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
 
 function App()
@@ -178,7 +179,10 @@ function App()
                 savingNow.current = shownCard;
                 setSaving(shownCard);
 
-                if (asking !== undefined && card !== undefined && card.roll === undefined && holding.current === undefined) {
+                // So does a die of a rest the player spends, whose card shows it once it lands (D-492).
+                const spent = asked?.spend?.rolls.some((roll) => roll.id === asking?.id) === true;
+
+                if (asking !== undefined && ((card !== undefined && card.roll === undefined) || spent) && holding.current === undefined) {
                     holding.current = { roll: asking, timer: window.setTimeout(() => land(asking.id), longestHold) };
                 }
 
@@ -216,7 +220,7 @@ function App()
         }
     };
 
-    // The death save's dice have landed: its outcome on the card, and the sheet as the roll left it (D-461).
+    // The death save's dice, or a rest's die, have landed: its outcome on the card, and the sheet as the roll left it (D-461, D-492).
     const land = (roll: string): void => {
         const held = holding.current;
 
@@ -236,14 +240,18 @@ function App()
         setShown((before) => (before.pending === undefined ? before : { ...before, ...before.pending, pending: undefined }));
     };
 
-    // The card of the death save closed, the focus goes to the notice of the turn, or else to the page (D-461).
-    const closeSave = (): void => {
-        setSaving(undefined);
+    // A card of the master's closed, the focus goes to the notice of the turn, or else to the page (D-461, D-492).
+    const focusAfterCard = (): void => {
         requestAnimationFrame(() => {
             const page = document.querySelector<HTMLElement>("main");
             page?.setAttribute("tabindex", "-1");
             (document.querySelector<HTMLElement>(".turn-notice") ?? page)?.focus({ preventScroll: true });
         });
+    };
+
+    const closeSave = (): void => {
+        setSaving(undefined);
+        focusAfterCard();
     };
 
     // The player rolls the death save from its card, as from a check's button.
@@ -335,6 +343,13 @@ function App()
         void read();
     };
 
+    // A die of a rest spent, or the rest's question ended, from its card (D-492): whether the engine took it; the page read again.
+    const answerSpend = async (id: string | undefined, reply: 0 | { spend: string; }): Promise<boolean> => {
+        const taken = id === undefined ? false : await answer(id, reply).catch(() => false);
+        void read();
+        return taken;
+    };
+
     const requested = live ? requestedOf(answering === shown.asked?.id ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
     // The open scene goes by turns, as a fight, and whether the turn is the player's character's (D-314, D-315, D-444).
     const fight = hasTurns(shown.openScene);
@@ -418,7 +433,35 @@ function App()
                         onClose={closeSave}
                     />
                 )}
-                {live && saving === undefined && shown.asked && <AskedBanner asked={shown.asked} yourTurn={yourTurn} map={shown.place?.map} place={shown.place?.name} answered={answering === shown.asked.id} onAnswered={() => void read()} />}
+                {live && saving === undefined && shown.asked?.spend !== undefined && (
+                    <SpendCard
+                        key={shown.asked.id}
+                        asked={shown.asked}
+                        spend={shown.asked.spend}
+                        member={shown.party.find((candidate) => candidate.name === shown.asked?.spend?.who)}
+                        flying={holding.current?.roll.id}
+                        onSpend={(field) => answerSpend(shown.asked?.id, { spend: field })}
+                        onDone={async (focused) => {
+                            const taken = await answerSpend(shown.asked?.id, 0);
+
+                            if (taken && focused) {
+                                focusAfterCard();
+                            }
+
+                            return taken;
+                        }}
+                    />
+                )}
+                {live && saving === undefined && shown.asked && shown.asked.spend === undefined && (
+                    <AskedBanner
+                        asked={shown.asked}
+                        yourTurn={yourTurn}
+                        map={shown.place?.map}
+                        place={shown.place?.name}
+                        answered={answering === shown.asked.id}
+                        onAnswered={() => void read()}
+                    />
+                )}
                 {inSetup
                     ? <SetupView setup={setup} />
                     : (

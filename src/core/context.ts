@@ -67,7 +67,7 @@ export interface Context
     /** What reads the player's documents outside the chat (D-489 (1)): none where no helper is ready, and in tests. */
     reader?: DocumentReader;
     /** The OCR of the player's system, which reads pages of a PDF without readable text from their pictures (LIB-4): by page number, those it read; none where there is none. */
-    ocr?: (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: number) => void) => Promise<Map<number, string>>;
+    ocr?: (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: Map<number, string>) => void) => Promise<Map<number, string>>;
     /** Starts reading the books of this computer's library in a process of its own, one at a time on a computer (LIB-3); none in tests. */
     readLibrary?: () => void;
     /** The folder of the index of the player's books (LIB-3), in their local data, which no profile syncs; none where there is no library. */
@@ -229,11 +229,36 @@ export interface Picked
     square: string;
 }
 
+/**
+ * The dice a rest lets the player's character spend (ASK-14): each counter of dice with what a die adds, the counter they give to as it was at the question
+ * and as it is, and the dice rolled so far, each by the id of its line in the log.
+ */
+export interface SpendAsked
+{
+    who: string;
+    dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
+    gives: { field: string; from: number; value: number; max?: number; };
+    rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
+}
+
+/**
+ * The dice of a rest as a page asks them (ASK-14): what it shows now, a die of a counter spent, or why not, and what the master hears of the dice spent when
+ * the call that asks them is stopped; none when none was.
+ */
+export interface Spending
+{
+    shown(): SpendAsked;
+    spend(field: string): string | undefined;
+    spent(): string | undefined;
+}
+
 export interface Player
 {
     choose(question: string, title: string, labels: string[], signal?: AbortSignal, rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">;
     /** Asks where the player's character moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
     chooseSquare?(question: string, title: string, change: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
+    /** Asks the player to spend the dice of a rest one at a time (ASK-14), until the button that ends it (0); only a page can. */
+    spendDice?(question: string, title: string, done: string, spending: Spending, signal?: AbortSignal): Promise<0 | undefined | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
     asking?(): boolean;
 }

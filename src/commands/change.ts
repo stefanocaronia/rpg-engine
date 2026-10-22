@@ -39,7 +39,7 @@ import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
-import { spendDice } from "./game-hit-dice.ts";
+import { spendableDice, spendDice } from "./game-hit-dice.ts";
 import { campaignCoins } from "./game-money.ts";
 import { logRecipeApplied, tooSoonNote } from "./game-recipe-pace.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
@@ -388,6 +388,8 @@ interface RecipeOutcome
     ended: string[];
     steps: StepOutcome[];
     choices: string[];
+    /** The dice the recipe lets the page spend that would give something, as hit-dice-d8 2/3, which the player chooses for the player character (ASK-14). */
+    spendable: string[];
     notBroughtBack: string[];
     kept: string[];
     /** The effects without an end still on the page, which a rest may ask something of (EFF-15). */
@@ -533,7 +535,7 @@ function recipeResult(
     context: Context,
     world: World,
     input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; },
-): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; spent?: string; }
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; spent?: string; }
 {
     const named = campaignSystem(root, context);
     const page = input.page?.trim() === "" ? undefined : input.page;
@@ -543,7 +545,7 @@ function recipeResult(
     if (input.field !== undefined && input.spend !== undefined && input.by === undefined && input.to === undefined && page !== undefined) {
         const { system, recipe } = recipeNamed(named, input.recipe);
         const why = input.why === undefined || input.why.trim() === "" ? recipe.name : input.why;
-        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, { system, recipe }, page, input.field, input.spend, why) };
+        return { recipe: recipe.name, system: system.name, outcomes: [], rules: [], spent: spendDice(root, context, world, { system, recipe }, page, input.field, input.spend, why).text };
     }
 
     if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined) {
@@ -570,7 +572,8 @@ function recipeResult(
         current = applied.world;
         return applied.outcome;
     });
-    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules };
+    // Where the dashboard serves a page, the player spends their dice there with ask (ASK-14).
+    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, buttons: context.page?.spendDice !== undefined };
 }
 
 /**
@@ -618,6 +621,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         ended: ending.map((effect) => effect.name),
         steps,
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
+        spendable: barred ? [] : spendableDice(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
         resting: [atZero ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : tooSoon ?? "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
@@ -670,14 +674,14 @@ function recipePage(root: string, world: World, name: string): Page
  * "Long rest (a recipe of the system 5e):", then for each page what ended and changed, as in "Ennio: Prosciugato ended; hp 8/12 → 12/12. Not brought back:
  * hit-dice 1/3.", with the thresholds it touched; the rules for the rest; the game date, which a recipe does not move.
  */
-function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; }): string
+function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; }): string
 {
     const notes = result.outcomes.flatMap((outcome) => outcome.steps.flatMap(stepNotes));
     const lines = result.outcomes.flatMap((outcome) => {
         const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
         const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
         // The player chooses and rolls for the player character, the master for a companion (D-206, D-213).
-        const chosen = outcome.choices.map((choice) => ` ${outcome.pc ? "Ask the player" : `Choose for ${outcome.page}`}: ${choice}.`).join("");
+        const chosen = [...outcome.choices.map((choice) => ` ${outcome.pc ? "Ask the player" : `Choose for ${outcome.page}`}: ${choice}.`), spendText(outcome, result)].join("");
         // Rolls kept for later: if this rest brings them back, they are rolled again (KEP-4).
         const roller = outcome.pc ? "the player rolls" : "roll";
         const kept = outcome.kept.length === 0 ? "" : ` ${outcome.page} keeps ${outcome.kept.join("; ")}: if this rest brings them back, ${roller} them again, with roll and keep.`;
@@ -688,6 +692,26 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;
     const text = [title, ...lines, rules, "The game date did not move: advance the hours of the rest, if you have not yet."].filter((line) => line !== "").join("\n");
     return [text, ...notes.filter((note) => note.includes("\n"))].join("\n\n");
+}
+
+/**
+ * The dice a rest lets a page spend, left to who chooses them (ASK-14): the player for the player character, with ask's buttons where they are, the master for
+ * a companion.
+ */
+function spendText(outcome: RecipeOutcome, result: { recipe: string; buttons?: boolean; }): string
+{
+    if (outcome.spendable.length === 0) {
+        return "";
+    }
+
+    const dice = outcome.spendable.join(", ");
+    const spend = `change with spend and recipe "${result.recipe}"`;
+
+    if (!outcome.pc) {
+        return ` Choose whether ${outcome.page} spends ${dice}: ${spend}.`;
+    }
+
+    return result.buttons === true ? ` Ask the player how many of ${dice} they spend: ask with recipe "${result.recipe}".` : ` Ask the player how many of ${dice} they spend, then ${spend}.`;
 }
 
 /** "hp 20/34 → 34/34 (in Forma d'orso)": a step of a recipe, with the effect it changed on or the base the page reads again. */
