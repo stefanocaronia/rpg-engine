@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -214,19 +214,19 @@ Wenn die Spielleitung dich etwas fragt, bleibt ihr Banner oben, in welchem Berei
 
 ### 5.1 Was ein Spielsystem ist
 
-Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und das, was verbraucht wird und wiederkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem Spieltisch.
+Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und das, was verbraucht wird und wiederkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem echten Spieltisch.
 
-### 5.2 Fünfte Edition, enthalten
+### 5.2 Fünfte Edition, inklusive
 
-Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent des SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, welche die Spielleitung im genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
+Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent aus dem SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, die die Spielleitung in ihrem genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
 
-Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene. RPG Engine liefert nur offene Inhalte mit. Was deine Spielleitung kennt, ist nicht begrenzt.
+Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene Inhalte. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung kennt, ist nicht begrenzt.
 
-Deine eigenen Regelbücher können die Bibliothek der Kampagne sein. Sag der Spielleitung, wo sie liegen: *[Meine Regelbücher liegen in D:\Books\5e.]* Bestätige dann im Fenster, das dein Computer zeigt. RPG Engine liest sie einmal auf diesem Computer. Die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD, und nennt dabei Buch und Seite. Am besten lassen sie sich als Text lesen oder als PDF, dessen Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in einigen Minuten und mit ein paar Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
+Deine eigenen Regelbücher können deine Bibliothek sein: Sag der Spielleitung, wo sie liegen, *[Meine Regelbücher liegen in D:\Books\5e.]*, oder füge ihren Ordner unter Pakete › Bibliothek hinzu und bestätige einmal mit „Ja" im Fenster, das dein Computer zeigt. RPG Engine liest sie auf diesem Computer. Jede Kampagne nutzt die Ordner, die du dort aktivierst. Die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD, und nennt dabei das Buch und die Seite. Am besten lassen sie sich als Text lesen oder als PDF, dessen Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in einigen Minuten und mit ein paar Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
 
 ### 5.3 Hausregeln und eigene Ergänzungen
 
-Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn einer nötig ist. Hausregeln, die schon ausgeschrieben sind, können als Textdateien in den Ordner `rules` der Kampagne gelegt werden.
+Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn das nötig ist. Hausregeln, die schon ausgeschrieben sind, kannst du als Textdateien in den Ordner `rules` der Kampagne legen.
 
 ### 5.4 Ein eigenes Spielsystem hinzufügen oder importieren
 

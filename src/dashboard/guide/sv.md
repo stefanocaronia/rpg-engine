@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -210,25 +210,25 @@ När spelledaren frågar dig något ligger dess banderoll kvar högst upp, oavse
 
 ---
 
-## 5. Speltyper och egna regler <!-- icon: dice -->
+## 5. Spelsystem och husregler <!-- icon: dice -->
 
 ### 5.1 Vad ett spelsystem är
 
-Datan för ett spel: dess rollformulär, siffror, varelser, föremål, besvärjelser och regeltext. Varje kampanj spelar ett system. RPG Engine räknar ut rollformuläret och vad som förbrukas och kommer tillbaka. Hur en förmåga fungerar läser spelledaren i reglerna och avgör, precis som vid ett bord.
+Allt som hör till ett spel: rollformulär, siffror, varelser, föremål, besvärjelser och regeltext. Varje kampanj spelar ett system. RPG Engine räknar ut rollformuläret och vad som går åt och kommer tillbaka. Hur en förmåga fungerar läser spelledaren i reglerna och avgör, som vid ett bord.
 
-### 5.2 Femte utgåvan, ingår
+### 5.2 Femte utgåvan ingår
 
-Raserna, klasserna, subklasserna, en bakgrund och en karaktärsegenskap (feat) från SRD 5.1. Dessutom de 319 besvärjelserna, vapnen, rustningarna, de magiska föremålen och monstren. Där finns också regelkapitlen, som spelledaren läser med exakt text, och hela rollformuläret, färdigräknat.
+Raser, klasser, subklasser, en bakgrund och en färdighet (feat) ur SRD 5.1. Dessutom de 319 besvärjelserna, vapnen, rustningarna, magiska föremålen och monstren, regelkapitlen som spelledaren läser efter deras exakta text och det fullständiga, uträknade rollformuläret.
 
-Du kan också spela innehåll som SRD saknar, från en bok du äger. Spelledaren skriver det som sidor i din kampanj, och RPG Engine behandlar dem som sina egna. RPG Engine levereras bara med öppet innehåll. Det spelledaren kan är inte begränsat.
+Du kan också spela innehåll som SRD saknar, från en bok du äger. Spelledaren skriver det som sidor i din kampanj, och RPG Engine behandlar dem som sina egna. RPG Engine levererar bara öppet innehåll. Vad din spelledare kan är inte begränsat av det.
 
-Dina egna regelböcker kan bli kampanjens bibliotek. Berätta för spelledaren var de finns, *[Mina regelböcker ligger i D:\Books\5e.]*, och säg ja i fönstret som din dator visar. RPG Engine läser dem en gång, på den här datorn. Spelledaren söker i dem när en regel ska avgöras, efter SRD, och anger bok och sida. De läses bäst som text eller som PDF-filer där texten går att markera. En skannad PDF läses från bilderna av sidorna, bara på Windows, på några minuter och med några fel. RPG Engine ändrar aldrig dina regelböcker, skickar aldrig deras text någonstans och kopierar den aldrig in i en kampanj.
+Dina egna regelböcker kan bli ditt bibliotek. Berätta för spelledaren var de finns, *[Mina regelböcker finns i D:\Books\5e.]*, eller lägg till deras mapp i Packages › Library. Svara sedan ja i fönstret som din dator visar, en enda gång. RPG Engine läser dem på den här datorn. Varje kampanj använder de mappar du slår på där. Spelledaren söker i dem när en regel ska avgöras, efter SRD, och anger bok och sida. De läses bäst som text eller som PDF-filer där texten går att markera. En inskannad PDF läses från bilderna av sidorna, bara på Windows, på några minuter och med några fel. RPG Engine ändrar aldrig dina regelböcker, skickar aldrig deras text någonstans och kopierar den aldrig in i en kampanj.
 
-### 5.3 Egna regler och egna tillägg
+### 5.3 Husregler och egna tillägg
 
-Fråga spelledaren: *[Hemregel: en naturlig 1:a på en attack betyder att du tappar ditt vapen.]* Spelledaren behåller den som en överenskommelse vid bordet, eller skriver en sida eller en siffra i rollformuläret när det behövs. Hemregler som redan är utskrivna kan läggas som textfiler i kampanjens mapp `rules`.
+Fråga spelledaren: *[Husregel: en naturlig 1 på en attack betyder att du tappar ditt vapen.]* Spelledaren behåller den som en överenskommelse vid bordet, eller skriver en sida eller en siffra på rollformuläret när det behövs. Husregler som redan är skrivna kan läggas som textfiler i kampanjens mapp `rules`.
 
-### 5.4 Lägga till eller importera ett eget spelsystem
+### 5.4 Lägg till eller importera ett eget spelsystem
 
 Inte ännu: i dag spelar RPG Engine bara femte utgåvan ([Kommer senare](#9-coming-later)).
 

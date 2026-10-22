@@ -1348,6 +1348,7 @@ a {
 .confirm h2 {
     margin: 0 0 12px;
     font-size: 1.2rem;
+    overflow-wrap: anywhere;
 }
 
 .confirm p {
@@ -6099,6 +6100,12 @@ button.row,
     border-radius: 50%;
     background: var(--float);
     box-shadow: var(--lift);
+}
+
+/* Off, the knob is dark on the light track and light on the dark one: the state reads at a glance, never only by the gold of on. */
+:is(.asked-hand, .package-use) input:not(:checked)::after {
+    background: var(--muted);
+    box-shadow: none;
 }
 
 :is(.asked-hand, .package-use) input:checked {
@@ -10897,6 +10904,19 @@ svg.icon {
     height: 13px;
 }
 
+/* The last tab's mark is near the page's edge: its tip ends at the mark, else on a phone the page grows wider. */
+.package-tabs > [role="tab"]:last-child .package-tab-mark[data-tip]::before {
+    left: auto;
+    inset-inline-end: 0;
+    translate: 0 4px;
+}
+
+@media (hover: hover) {
+    .package-tabs > [role="tab"]:last-child .package-tab-mark[data-tip]:hover::before {
+        translate: 0 0;
+    }
+}
+
 .package-panel {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -11031,13 +11051,15 @@ svg.icon {
     min-height: 40px;
 }
 
-/* The catalog, under a line: its heading and search, the chips of the kinds, the rows, then the others on asking. */
-.package-catalog + .package-add {
+/* The field under a line, after the catalog or the library's folders. */
+.package-catalog + .package-add,
+.package-list + .package-add {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid var(--rule);
 }
 
+/* The catalog: its heading and search, the chips of the kinds, the rows, then the others on asking. */
 .package-catalog-head {
     display: flex;
     align-items: center;
@@ -11486,6 +11508,43 @@ svg.icon {
     color: var(--ink);
 }
 
+/* The library (D-491 (13)): first, in the accent, that a folder is added once to the computer and turned on in each campaign. */
+.library-scope {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    font-size: 0.9rem;
+}
+
+.library-scope > svg.icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--accent);
+}
+
+/* A folder's path under its name, on its own line, broken between its folders. */
+.library-path {
+    display: block;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+/* A folder's books skipped, each with the engine's words. */
+.library-skipped {
+    grid-column: 2 / -1;
+    margin: 4px 0 0;
+    padding-inline-start: 18px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
 /* npm or GitHub away: the rest is added all the same. */
 .package-offline {
     display: flex;
@@ -11601,6 +11660,11 @@ svg.icon {
     .package-tile {
         width: 32px;
         height: 32px;
+    }
+
+    /* Three tabs and a mark fit 360 only a little tighter. */
+    .package-tabs button {
+        padding: 0 12px;
     }
 
     .package-tile svg.icon {

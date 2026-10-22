@@ -174,7 +174,7 @@ describe("the store of a session", () => {
     });
 
     it("sees house rules in a rules folder made by hand", async () => {
-        expect(await warm("rules", "veleno ragni")).toContain('No rule matches "veleno ragni"');
+        expect(await warm("rules", "veleno ragni")).not.toContain("(house rule)");
         byHand("rules/Veleni.md", "# Veleni\n\nIl veleno dei ragni dura un'ora.\n", false);
         tell(folder, "rules");
         expect(await warm("rules", "veleno ragni")).toContain("Veleni (house rule)");

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -222,7 +222,7 @@ Le razze, le classi, le sottoclassi, un background e un talento della SRD 5.1; i
 
 Puoi giocare anche contenuti che la SRD non ha, da un manuale che possiedi: il master li scrive come pagine della tua campagna, e RPG Engine li tratta come suoi. RPG Engine distribuisce solo contenuti aperti; ciò che il tuo master conosce non ha limiti.
 
-I tuoi manuali possono essere la biblioteca della campagna: di' al master dove sono, *[I miei manuali sono in D:\Libri\5e.]*, e rispondi di sì nella finestra che il computer ti mostra. RPG Engine li legge una volta, su questo computer, e il master li consulta quando decide una regola, dopo la SRD, citando il libro e la pagina. Si leggono meglio come testo, o come PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, in qualche minuto e con qualche errore. RPG Engine non cambia mai i tuoi manuali, non ne manda mai il testo da nessuna parte e non lo copia mai in una campagna.
+I tuoi manuali possono essere la tua biblioteca: di' al master dove sono, *[I miei manuali sono in D:\Libri\5e.]*, o aggiungi la loro cartella in Pacchetti › Biblioteca, e rispondi di sì nella finestra che il computer ti mostra, una volta sola. RPG Engine li legge su questo computer; ogni campagna usa le cartelle che lì attivi, e il master li consulta quando decide una regola, dopo la SRD, citando il libro e la pagina. Si leggono meglio come testo, o come PDF con il testo selezionabile; un PDF scansionato si legge dalle immagini delle sue pagine, solo su Windows, in qualche minuto e con qualche errore. RPG Engine non cambia mai i tuoi manuali, non ne manda mai il testo da nessuna parte e non lo copia mai in una campagna.
 
 ### 5.3 Regole della casa e aggiunte tue
 

@@ -221,7 +221,7 @@ The races, classes, subclasses, a background and a feat of the SRD 5.1; the 319 
 
 You can also play content the SRD lacks, from a book you own: the master writes it as pages of your campaign, and RPG Engine treats them as its own. RPG Engine ships only open content; what your master knows is not limited.
 
-Your own manuals can be the campaign's library: tell the master where they are, *[My manuals are in D:\Books\5e.]*, and say yes in the window your computer shows. RPG Engine reads them once, on this computer, and the master searches them when it decides a rule, after the SRD, citing the book and the page. They read best as text, or as PDFs whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, in a few minutes and with a few mistakes. RPG Engine never changes your manuals, never sends their text anywhere and never copies it into a campaign.
+Your own manuals can be your library: tell the master where they are, *[My manuals are in D:\Books\5e.]*, or add their folder in Packages › Library, and say yes in the window your computer shows, once. RPG Engine reads them on this computer; each campaign uses the folders you turn on there, and the master searches them when it decides a rule, after the SRD, citing the book and the page. They read best as text, or as PDFs whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, in a few minutes and with a few mistakes. RPG Engine never changes your manuals, never sends their text anywhere and never copies it into a campaign.
 
 ### 5.3 House rules and your own additions
 

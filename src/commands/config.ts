@@ -83,7 +83,8 @@ export const config = defineCommand({
         + "style (the player's own words on how you write); none takes away an author or a style. "
         + "table: what you promise the player about how you play, in the words you said. "
         + "precedents: each ruling you made without the text, the name of the rule in the system's language first, then what you said, such as 'Poisoned: …'. "
-        + "library: the player's own books, folders or files by their full path, which rules searches after the system; add asks the player's yes in a window of their computer; "
+        + "library: the player's own books, folders or files by their full path, which rules searches after the system: added once to this computer, with the player's yes "
+        + "in a window of their computer, then turned on in each campaign with add and off with remove; remove with computer takes one off this computer; "
         + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
         + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
         + "The game system may add settings, such as advancement for 5e: config lists them with what each value means. "
@@ -98,10 +99,15 @@ export const config = defineCommand({
         value: z.string().optional().describe("new value of the setting"),
         add: z.array(z.string()).optional().describe(`items to add to a list setting (${listSettingNames.join(", ")}), repeatable`),
         remove: z.array(z.string()).optional().describe(`items to remove from a list setting (${listSettingNames.join(", ")}), repeatable`),
+        computer: z.boolean().optional().describe("with library and remove: off this computer too, out of every campaign, its books' text deleted"),
     }),
 
     run(input, context)
     {
+        if (input.computer !== undefined && (input.setting?.trim() !== "library" || input.remove === undefined)) {
+            throw new Error("computer goes only with setting library and remove: it takes those folders off this computer. Nothing changed.");
+        }
+
         // What the library holds is checked, and an addition allowed by the player, before it is written (LIB-1).
         if (input.setting?.trim() === "library" && (input.add !== undefined || input.remove !== undefined)) {
             return changeLibrary(input, context);
@@ -123,6 +129,7 @@ interface ConfigInput
     value?: string;
     add?: string[];
     remove?: string[];
+    computer?: boolean;
 }
 
 interface ConfigResult
@@ -133,14 +140,18 @@ interface ConfigResult
     part?: string;
 }
 
-/** The library changed: additions as full paths, allowed by the player from the chat; removals by any spelling of their path; then its new books read apart (LIB-1, LIB-3). */
+/**
+ * The library changed (LIB-1, LIB-3): additions as full paths, added to this computer first, from the chat with the player's yes; removals by any spelling of
+ * their path, off this computer too with computer; then the new books read apart.
+ */
 async function changeLibrary(input: ConfigInput, context: Context): Promise<ConfigResult>
 {
     const root = requireCampaign(context.folder);
     const add = input.add === undefined ? undefined : await libraryAdditions(root, context, input.add);
-    const remove = input.remove === undefined ? undefined : libraryRemovals(root, context, input.remove);
-    const result = configure({ ...input, add, remove }, context);
-    startLibraryReading(context, readSettings(root).library ?? []);
+    const remove = input.remove === undefined ? undefined : libraryRemovals(root, context, input.remove, input.computer === true);
+    // Taken off the computer only: the campaign did not use it.
+    const result = configure(add === undefined && remove?.length === 0 ? { setting: "library" } : { ...input, add, remove }, context);
+    startLibraryReading(context);
     return result;
 }
 
@@ -642,7 +653,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
 
     // The library with what is read of each entry, and what is skipped (LIB-5).
     if (name === "library") {
-        return libraryShown(context, settings.library ?? []);
+        return libraryShown(root, context);
     }
 
     // Lines and veils not yet answered are missing: [] is the answer none (MOD-3).

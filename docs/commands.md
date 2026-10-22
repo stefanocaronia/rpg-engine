@@ -27,6 +27,7 @@ Read-only: no. Positional parameters: `setting`, `value`.
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
+- `computer` (`boolean`, optional): with library and remove: off this computer too, out of every campaign, its books' text deleted
 
 ### translate
 

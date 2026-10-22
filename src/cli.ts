@@ -11,7 +11,7 @@ if (args.length === 1 && args[0] === "mcp") {
     await startMcpServer();
 } else if (args[0] === "--read-library") {
     const { readLibraryHere } = await import("./library-reader.ts");
-    await readLibraryHere(args.slice(1));
+    await readLibraryHere();
 } else {
     const { output, exitCode } = await runCommandLine(args);
 

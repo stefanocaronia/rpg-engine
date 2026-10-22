@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -214,19 +214,19 @@ Quando o mestre lhe pergunta algo, o banner dele fica no alto, em qualquer seç�
 
 ### 5.1 O que é um sistema de jogo
 
-Os dados de um jogo: sua ficha, seus números, suas criaturas, itens, magias e o texto das regras. Cada campanha usa um sistema. O RPG Engine calcula a ficha e o que é gasto e recuperado; como uma característica funciona, o mestre lê nas regras e decide, como numa mesa.
+Os dados de um jogo: sua ficha, seus números, suas criaturas, itens, magias e o texto das regras. Cada campanha usa um sistema. O RPG Engine calcula a ficha e o que é gasto e recuperado. Como uma característica funciona, o mestre lê nas regras e decide, como em uma mesa.
 
 ### 5.2 Quinta edição, incluída
 
-As raças, classes, subclasses, um antecedente e uma característica de talento do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, já calculada.
+As raças, classes, subclasses, um antecedente e uma façanha do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, já calculada.
 
-Você também pode jogar com conteúdo que o SRD não tem, de um livro que você possui: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine inclui apenas conteúdo aberto; o que o seu mestre conhece não tem esse limite.
+Você também pode jogar com conteúdo que o SRD não traz, de um livro que você tenha: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine inclui apenas conteúdo aberto; o que o seu mestre conhece não tem esse limite.
 
-Seus próprios manuais podem ser a biblioteca da campanha: diga ao mestre onde eles estão, *[Meus manuais estão em D:\Books\5e.]*, e responda sim na janela que o seu computador mostrar. O RPG Engine os lê uma vez, neste computador, e o mestre os consulta quando decide uma regra, depois do SRD, citando o livro e a página. Eles são lidos melhor como texto, ou como PDFs cujo texto pode ser selecionado; um PDF escaneado é lido a partir das imagens das páginas, só no Windows, em alguns minutos e com alguns erros. O RPG Engine nunca altera seus manuais, nunca envia o texto deles para lugar nenhum e nunca o copia para uma campanha.
+Seus próprios manuais podem ser sua biblioteca: diga ao mestre onde estão, *[Meus manuais estão em D:\Books\5e.]*, ou adicione a pasta deles em Packages › Library, e diga sim na janela que o seu computador mostrar, uma única vez. O RPG Engine lê os manuais neste computador; cada campanha usa as pastas que você ativar ali, e o mestre as consulta quando decide uma regra, depois do SRD, citando o livro e a página. Eles são lidos melhor como texto, ou como PDFs cujo texto pode ser selecionado. Um PDF escaneado é lido a partir das imagens das páginas, apenas no Windows, em alguns minutos e com alguns erros. O RPG Engine nunca altera seus manuais, nunca envia o texto deles para lugar nenhum e nunca o copia para uma campanha.
 
 ### 5.3 Regras da casa e acréscimos seus
 
-Peça ao mestre: *[Regra da casa: um 1 natural em um ataque significa que você deixa cair a arma.]* O mestre a guarda como um acordo da mesa, ou escreve uma página ou um número da ficha quando for preciso. Regras da casa já escritas podem entrar como arquivos de texto na pasta `rules` da campanha.
+Peça ao mestre: *[Regra da casa: um 1 natural em um ataque faz você largar a arma.]* O mestre a guarda como um acordo da mesa, ou escreve uma página ou um número da ficha quando for preciso. Regras da casa que você já tenha escrito podem entrar como arquivos de texto na pasta `rules` da campanha.
 
 ### 5.4 Adicionar ou importar seu próprio sistema de jogo
 

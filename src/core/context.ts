@@ -68,8 +68,8 @@ export interface Context
     reader?: DocumentReader;
     /** The OCR of the player's system, which reads pages of a PDF without readable text from their pictures (LIB-4): by page number, those it read; none where there is none. */
     ocr?: (pdf: string, pages: number[], signal?: AbortSignal, onPage?: (read: number) => void) => Promise<Map<number, string>>;
-    /** Starts reading the books of a library's entries in a process of its own, one at a time on a computer (LIB-3); none in tests. */
-    readLibrary?: (entries: string[]) => void;
+    /** Starts reading the books of this computer's library in a process of its own, one at a time on a computer (LIB-3); none in tests. */
+    readLibrary?: () => void;
     /** The folder of the index of the player's books (LIB-3), in their local data, which no profile syncs; none where there is no library. */
     bookIndex?: string;
     /**

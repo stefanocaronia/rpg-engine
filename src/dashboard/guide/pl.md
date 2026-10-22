@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -210,27 +210,27 @@ Gdy Mistrz Gry o coś zapyta, jego baner zostaje na górze, w której części s
 
 ---
 
-## 5. Systemy gry i zasady domowe <!-- icon: dice -->
+## 5. Systemy gier i zasady domowe <!-- icon: dice -->
 
 ### 5.1 Czym jest system gry
 
-To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, czary i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine liczy kartę postaci oraz to, co się zużywa i wraca. Jak działa dana zdolność, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
+To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine liczy kartę postaci oraz to, co zostaje wydane i co wraca. Jak działa dana cecha, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
 
 ### 5.2 Piąta edycja w zestawie
 
-Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 czarów, broń, pancerze, przedmioty magiczne i potwory; rozdziały z zasadami, które Mistrz Gry czyta dokładnie w ich brzmieniu; pełna karta postaci, z wyliczonymi wartościami.
+Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 zaklęć, broń, pancerze, przedmioty magiczne i potwory; rozdziały zasad, które Mistrz Gry czyta w dokładnym brzmieniu; pełna karta postaci, z policzonymi wartościami.
 
-Można też grać treściami, których brakuje w SRD, z posiadanej książki: Mistrz Gry zapisuje je jako strony kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko otwarte treści, ale wiedza Mistrza Gry nie ma takiego ograniczenia.
+Można też grać treściami, których brakuje w SRD, z podręcznika, który posiadasz: Mistrz Gry zapisuje je jako strony Twojej kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko treści otwarte, ale wiedza Mistrza Gry nie ma takiego ograniczenia.
 
-Własne podręczniki mogą stać się biblioteką kampanii. Wystarczy powiedzieć Mistrzowi Gry, gdzie leżą: *[Moje podręczniki są w D:\Books\5e.]*, i zgodzić się w oknie, które pokaże komputer. RPG Engine czyta je jednorazowo, na tym komputerze. Później Mistrz Gry przeszukuje je przy rozstrzyganiu zasad, po SRD, i podaje książkę oraz stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z tekstem, który można zaznaczyć. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w Windows, w kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia podręczników, nigdzie nie wysyła ich tekstu i nie kopiuje go do kampanii.
+Własne podręczniki mogą stać się Twoją biblioteką. Powiedz Mistrzowi Gry, gdzie są: *[Moje podręczniki są w D:\Books\5e.]*, albo dodaj ich folder w Packages › Library i raz zgódź się w oknie, które pokaże komputer. RPG Engine czyta je na tym komputerze. Każda kampania używa folderów, które tam włączysz. Mistrz Gry przeszukuje je, gdy rozstrzyga zasadę, po SRD, i podaje książkę oraz stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z zaznaczalnym tekstem. Zeskanowany PDF jest czytany z obrazów stron, tylko w systemie Windows, przez kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia Twoich podręczników, nigdy nie wysyła ich tekstu w żadne miejsce i nigdy nie kopiuje go do kampanii.
 
 ### 5.3 Zasady domowe i własne dodatki
 
-Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako umowę stołu albo tworzy stronę czy wartość na karcie postaci, jeśli jest potrzebna. Gotowe zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
+Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako ustalenie stołu albo tworzy stronę lub liczbę na karcie postaci, gdy jest potrzebna. Gotowe, spisane zasady domowe można dodać jako pliki tekstowe w folderze `rules` kampanii.
 
-### 5.4 Dodawanie lub importowanie własnego systemu gry
+### 5.4 Dodawanie lub import własnego systemu gry
 
-Jeszcze nie: dziś RPG Engine obsługuje tylko piątą edycję ([Wkrótce](#9-coming-later)).
+Jeszcze nie: obecnie RPG Engine obsługuje tylko piątą edycję ([Wkrótce](#9-coming-later)).
 
 ---
 

@@ -1,7 +1,8 @@
-// The Packages section (D-485, D-486, D-488), in two tabs: Installed first, what is here by kind: the game system, the campaign's adventures with its own export
-// last, the extensions with whether the campaign uses each, the languages; its tab counts the updates and marks what the campaign lacks. Then Add: one card to
-// add a package: the catalog of what npm and GitHub offer first, always open, then a link, an npm name, a folder or a file. One package is worked on at a
-// time; one not ours with code waits for the player's yes in a window of their computer, said in both tabs.
+// The Packages section (D-485, D-486, D-488), in three tabs: Installed first, what is here by kind: the game system, the campaign's adventures with its own
+// export last, the extensions with whether the campaign uses each, the languages; its tab counts the updates and marks what the campaign lacks. Then Add: one
+// card to add a package: the catalog of what npm and GitHub offer first, always open, then a link, an npm name, a folder or a file. Then Library: the folders
+// of the player's books for this campaign alone (D-491 (13)). One work at a time; one not ours with code, or a folder added to the library, waits for the
+// player's yes in a window of their computer, said in every tab.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
@@ -10,14 +11,18 @@ import {
     addSource,
     type Catalog,
     type CatalogEntry,
+    changeLibrary,
     changePackage,
     exportCampaign,
+    type LibraryEntry,
+    type LibraryView,
     type PackageAction,
     type PackageKind,
     type PackageOutcome,
     type PackagesView,
     type PackageWork,
     readCatalog,
+    readLibrary,
     readPackages,
     type ShownAdventure,
     type ShownExtension,
@@ -48,14 +53,20 @@ interface Said
     added?: PackageKind;
 }
 
-/** The page's two tabs (D-488): what is here, first, and what can be added. */
-type PackagesTab = "installed" | "add";
+/** The page's three tabs (D-488, D-491 (13)): what is here, first, what can be added, and the campaign's library. */
+type PackagesTab = "installed" | "add" | "library";
+
+// The tabs in their order, which the arrows follow.
+const tabOrder: PackagesTab[] = ["installed", "add", "library"];
 
 /** A package's work as this page started it, before the server says it: with where it was asked. */
 type Sending = PackageWork & { at: string; };
 
 /** A change that asks first. */
-type Asking = { kind: "adventure"; title: string; } | { kind: "uninstall"; what: "system" | "extension" | "language"; name: string; target: string; at: string; };
+type Asking =
+    | { kind: "adventure"; title: string; }
+    | { kind: "uninstall"; what: "system" | "extension" | "language"; name: string; target: string; at: string; }
+    | { kind: "library"; path: string; name: string; };
 
 /** What a row is given of the page's work: the work under way there, what happened there, and whether another holds the server. */
 interface RowState
@@ -87,7 +98,10 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const known = useRef<Set<string>>();
     const seeing = useRef<PackageKind>();
     const tabs = useRef<HTMLDivElement>(null);
-    const shownTab: PackagesTab = tab === "add" ? "add" : "installed";
+    const shownTab: PackagesTab = tab === "add" || tab === "library" ? tab : "installed";
+    const [library, setLibrary] = useState<LibraryView>();
+    const [libraryProblem, setLibraryProblem] = useState<string>();
+    const libraryBusy = library?.entries.some((entry) => entry.reading > 0) ?? false;
 
     // Only the last reading counts, as after a change made here and the one the game sends.
     const read = (): void => {
@@ -113,8 +127,29 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
         );
     };
 
+    const readShelves = (): void => {
+        void readLibrary().then(
+            (read) => {
+                setLibrary(read);
+                setLibraryProblem(undefined);
+            },
+            (error: unknown) => setLibraryProblem(error instanceof Error ? error.message : String(error)),
+        );
+    };
+
     useEffect(read, [version]);
+    useEffect(readShelves, [version]);
     useEffect(() => askCatalog(false), []);
+
+    // While books are being read in their own process, their counts are read again now and then.
+    useEffect(() => {
+        if (!libraryBusy) {
+            return;
+        }
+
+        const timer = window.setInterval(readShelves, libraryReading);
+        return () => window.clearInterval(timer);
+    }, [libraryBusy]);
 
     // A work another page started, or this one before a reload, changes what is here: the catalog says it again once it ends.
     useEffect(() => {
@@ -145,7 +180,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const work: Sending | undefined = sending ?? (view?.working === undefined ? undefined : { ...view.working, at: workPlace(view.working, view, catalog.read) });
     const busy = work !== undefined;
     // The tab stays as the player chose it, the work's own included: one in the other tab is said at the top of this one.
-    const choose = (chosen: PackagesTab): void => location.replace(sectionAddress("packages", chosen === "add" ? "add" : undefined));
+    const choose = (chosen: PackagesTab): void => location.replace(sectionAddress("packages", chosen === "installed" ? undefined : chosen));
 
     const see = (kind: PackageKind): void => {
         seeing.current = kind;
@@ -179,12 +214,33 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const add = (at: string, source: string): Promise<void> => run(at, "add", source, () => addSource(source), addedText);
     const addTheFile = (file: File): Promise<void> => run("add", "add", file.name, () => addFile(file), addedText);
     const change = (at: string, action: PackageAction, name: string, label: string, after?: string): Promise<void> => run(at, action, name, () => changePackage(action, name), () => doneText(action, label), after);
+    const addToLibrary = (path: string): Promise<void> =>
+        run("library", "library", path, () => changeLibrary("add", path), () => t("The folder is on this computer and in this campaign: its books are read now, then the master searches them."));
+    // One the computer has not leaves the list once taken out: what came of it is said under the field.
+    const useInCampaign = (path: string, use: boolean, away: boolean): Promise<void> =>
+        run(
+            `library:${path}`,
+            "library",
+            path,
+            () => changeLibrary(use ? "add" : "remove", path),
+            () => (use ? t("In this campaign: the master searches its books.") : away ? t("{name} is out of the campaign.", { name: path }) : t("Off in this campaign: it stays on this computer.")),
+            away && !use ? "library" : undefined,
+        );
 
     const confirmed = (asked: Asking): void => {
         setAsking(undefined);
 
         if (asked.kind === "adventure") {
             void run(`adventure:${asked.title}`, "remove", asked.title, () => changePackage("remove", asked.title), () => t("{name} is out of the campaign.", { name: asked.title }), "adventures");
+        } else if (asked.kind === "library") {
+            void run(
+                `library:${asked.path}`,
+                "library",
+                asked.path,
+                () => changeLibrary("forget", asked.path),
+                () => t("Off this computer: the text RPG Engine read of its books is deleted; the books stay where they are."),
+                "library",
+            );
         } else {
             void change(asked.at, "uninstall", asked.target, asked.name, `${asked.what}s`);
         }
@@ -193,7 +249,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
     const moveTab = (event: KeyboardEvent): void => {
         const step = arrowStep(event.key, true);
-        const next = event.key === "Home" ? "installed" : event.key === "End" ? "add" : step === 0 ? undefined : shownTab === "add" ? "installed" : "add";
+        const at = (tabOrder.indexOf(shownTab) + step + tabOrder.length) % tabOrder.length;
+        const next = event.key === "Home" ? tabOrder[0] : event.key === "End" ? tabOrder.at(-1) : step === 0 ? undefined : tabOrder[at];
 
         if (next !== undefined) {
             event.preventDefault();
@@ -207,6 +264,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const languages = view?.languages ?? [];
     const updates = view === undefined ? 0 : updateCount(view, catalog.read);
     const missing = view?.missing.length ?? 0;
+    const away = library?.entries.filter((entry) => !entry.onComputer).length ?? 0;
     const elsewhere = work !== undefined && tabOf(work.at) !== shownTab ? work : undefined;
     const saidElsewhere = said !== undefined && tabOf(said.at) !== shownTab ? said : undefined;
     return (
@@ -239,11 +297,34 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                 >
                     {t("Add")}
                 </button>
+                <button
+                    type="button"
+                    role="tab"
+                    id="packages-tab-library"
+                    aria-label={[t("Library"), ...marksText(0, away)].join(", ")}
+                    aria-selected={shownTab === "library"}
+                    aria-controls={shownTab === "library" ? "packages-panel" : undefined}
+                    tabIndex={shownTab === "library" ? 0 : -1}
+                    onClick={() => choose("library")}
+                >
+                    {t("Library")}
+                    <TabMarks updates={0} missing={away} />
+                </button>
             </div>
             {view !== undefined && (
-                <div class="package-panel" id="packages-panel" role="tabpanel" aria-label={shownTab === "add" ? t("Add") : t("Installed")}>
+                <div class="package-panel" id="packages-panel" role="tabpanel" aria-label={shownTab === "add" ? t("Add") : shownTab === "library" ? t("Library") : t("Installed")}>
                     {elsewhere !== undefined && <WorkNote work={elsewhere} whose={workTitle(elsewhere, catalog.read)} />}
                     {saidElsewhere !== undefined && <SaidNote said={saidElsewhere} />}
+                    {shownTab === "library" && (
+                        <LibraryTab
+                            view={library}
+                            problem={libraryProblem}
+                            state={rowState}
+                            onAdd={(path) => void addToLibrary(path)}
+                            onUse={(path, use, away) => void useInCampaign(path, use, away)}
+                            onForget={(path, name) => setAsking({ kind: "library", path, name })}
+                        />
+                    )}
                     {shownTab === "add" && (
                         <section class="package-card" aria-label={t("Add")}>
                             <div class="package-body">
@@ -372,6 +453,15 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                     </div>
                 </Confirm>
             )}
+            {asking?.kind === "library" && (
+                <Confirm title={t("Take {path} off this computer?", { path: asking.name })} onClose={() => setAsking(undefined)}>
+                    <p>{t("No campaign searches it any more, and the text RPG Engine read of its books is deleted. The books stay where they are.")}</p>
+                    <div class="confirm-buttons">
+                        <button type="button" class="save-button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
+                        <button type="button" class="save-button danger final" onClick={() => confirmed(asking)}>{t("Take off")}</button>
+                    </div>
+                </Confirm>
+            )}
             {asking?.kind === "uninstall" && (
                 <Confirm title={t("Uninstall {name} from this computer?", { name: asking.name })} onClose={() => setAsking(undefined)}>
                     {uninstallText(asking.what)}
@@ -382,6 +472,284 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                 </Confirm>
             )}
         </section>
+    );
+}
+
+// How often the library is read again while its books are being read, for their counts.
+const libraryReading = 5000;
+
+/**
+ * This computer's library (D-491 (13)): said first to be added once to the computer and turned on in each campaign, as packages are, with how many this one
+ * uses; its folders, each with its books read, being read and skipped, whether this campaign uses it, and the bin; then the field that adds a folder or a book.
+ */
+function LibraryTab(
+    { view, problem, state, onAdd, onUse, onForget }: {
+        view: LibraryView | undefined;
+        problem: string | undefined;
+        state(at: string): RowState;
+        onAdd(path: string): void;
+        onUse(path: string, use: boolean, away: boolean): void;
+        onForget(path: string, name: string): void;
+    },
+)
+{
+    const entries = view?.entries ?? [];
+    const used = entries.filter((entry) => entry.used && entry.onComputer).length;
+    // A folder by its name; by its path when another has the same name.
+    const label = (entry: LibraryEntry): string => (entries.filter((other) => shelfName(other.path) === shelfName(entry.path)).length > 1 ? entry.path : shelfName(entry.path));
+    return (
+        <section class="package-card" aria-labelledby="packages-library">
+            <CardHead
+                icon={iconPath("library")}
+                title={<h3 id="packages-library" tabIndex={-1}>{t("Your books")}</h3>}
+                {...(entries.length === 0 ? {} : { note: t("{count} in this campaign", { count: used }) })}
+            />
+            <div class="package-body">
+                <p class="library-scope">
+                    <Icon name="info" />
+                    <span>
+                        <strong>{t("Added once to this computer.")}</strong> {t("Each campaign then turns on its own; the master searches them after the game system, citing the book and the page.")}
+                    </span>
+                </p>
+                {problem !== undefined && <p class="package-said problem" role="alert">{problem}</p>}
+                {view !== undefined && entries.length === 0 && <p class="package-note">{t("None yet: add the folder of your manuals.")}</p>}
+                {entries.length > 0 && (
+                    <ul class="package-list">
+                        {entries.map((entry) => (
+                            <LibraryRow
+                                key={entry.path}
+                                entry={entry}
+                                label={label(entry)}
+                                state={state(`library:${entry.path}`)}
+                                onUse={(use) => onUse(entry.path, use, !entry.onComputer)}
+                                onForget={() => onForget(entry.path, label(entry))}
+                            />
+                        ))}
+                    </ul>
+                )}
+                <LibraryField state={state("library")} onAdd={onAdd} />
+            </div>
+        </section>
+    );
+}
+
+/**
+ * A folder or a book of the library: its name, its path under it, what is read of it, what was skipped with the engine's words; whether this campaign uses it,
+ * as a switch, and the bin that takes it off this computer. One the campaign lists and the computer has not, in red, with Add and Take out of this campaign.
+ */
+function LibraryRow({ entry, label, state, onUse, onForget }: { entry: LibraryEntry; label: string; state: RowState; onUse(use: boolean): void; onForget(): void; })
+{
+    const path = (
+        <bdi dir="ltr" class="library-path">
+            {breakablePath(entry.path)}
+        </bdi>
+    );
+    const name = <bdi>{shelfName(entry.path)}</bdi>;
+
+    if (!entry.onComputer) {
+        return (
+            <PackageRow
+                tile="alert"
+                tone="broken"
+                name={name}
+                about={
+                    <>
+                        {path}
+                        <span class="package-red">{t("Not on this computer: the master does not search it until you add it again.")}</span>
+                    </>
+                }
+                row={`library:${entry.path}`}
+                actions={
+                    <>
+                        <button type="button" class="save-button package-button" aria-label={t("Add {path} again", { path: label })} aria-disabled={state.busy} onClick={() => !state.busy && onUse(true)}>
+                            <Icon name="plus" />
+                            {t("Add")}
+                        </button>
+                        <button
+                            type="button"
+                            class="save-button package-button"
+                            aria-label={t("Take {name} out of this campaign", { name: label })}
+                            aria-disabled={state.busy}
+                            onClick={() => !state.busy && onUse(false)}
+                        >
+                            <Icon name="minus" />
+                            {t("Take out of this campaign")}
+                        </button>
+                    </>
+                }
+            >
+                <WorkNote work={state.work} />
+                <SaidNote said={state.said} />
+            </PackageRow>
+        );
+    }
+
+    return (
+        <PackageRow
+            tile="folder"
+            tone={entry.missing ? "dim" : undefined}
+            name={name}
+            about={path}
+            meta={libraryMeta(entry)}
+            row={`library:${entry.path}`}
+            actions={
+                <>
+                    <label class="package-use">
+                        <input
+                            type="checkbox"
+                            role="switch"
+                            checked={entry.used}
+                            aria-label={t("{path}: in this campaign", { path: label })}
+                            aria-disabled={state.busy}
+                            onClick={(event) => {
+                                event.preventDefault();
+
+                                if (!state.busy) {
+                                    onUse(!entry.used);
+                                }
+                            }}
+                        />
+                        {t("In this campaign")}
+                    </label>
+                    <button
+                        type="button"
+                        class="icon-button package-bin tip-left"
+                        aria-label={t("Take {path} off this computer…", { path: label })}
+                        data-tip={t("Take off this computer…")}
+                        aria-disabled={state.busy}
+                        onClick={() => !state.busy && onForget()}
+                    >
+                        <Icon name="clear" />
+                    </button>
+                </>
+            }
+        >
+            {entry.skipped.length > 0 && (
+                <ul class="library-skipped">
+                    {entry.skipped.map((one) => (
+                        <li key={one.name}>
+                            <bdi>{one.name}</bdi>: {skippedText(one.kind)}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <WorkNote work={state.work} />
+            <SaidNote said={state.said} />
+        </PackageRow>
+    );
+}
+
+/** Why a book was skipped, in the player's words, with what to do. */
+function skippedText(kind: LibraryEntry["skipped"][number]["kind"]): string
+{
+    const texts: Record<typeof kind, string> = {
+        password: t("it asks for a password to open: save a copy without one."),
+        drm: t("it is locked by DRM, which RPG Engine never opens."),
+        stuck: t("it stopped the reader twice: too big or damaged, or kept busy by another program. Close that program, or save the file again."),
+        denied: t("this computer does not let it be read: check who may open it."),
+        broken: t("it does not read: the file is damaged, or is not what its name says."),
+    };
+    return texts[kind];
+}
+
+/** The name a folder or a book of the library goes by: its last part, without a book's kind; a disk's whole path. */
+function shelfName(path: string): string
+{
+    const last = path.replace(/[\\/]+$/, "").split(/[\\/]/).at(-1) ?? "";
+    return last === "" || /^[a-z]:$/i.test(last) ? path : last.replace(/\.(md|txt|pdf|docx|odt|epub|html?)$/i, "");
+}
+
+/** What is read of a folder of the library, in the page's words: its books read and being read, those skipped, or that it is not there now, or holds too many. */
+function libraryMeta(entry: LibraryEntry): string
+{
+    if (entry.missing) {
+        return t("Not there now, as a disk taken out: its books stay known for when it is back.");
+    }
+
+    return [
+        entry.books === 1 ? t("1 book read") : t("{count} books read", { count: entry.books }),
+        entry.reading === 0 ? "" : entry.reading === 1 ? t("1 being read") : t("{count} being read", { count: entry.reading }),
+        entry.skipped.length === 0 ? "" : entry.skipped.length === 1 ? t("1 skipped") : t("{count} skipped", { count: entry.skipped.length }),
+        entry.crowded ? t("more than 300 documents: only the first are read; give the folder of this game's books") : "",
+    ].filter((part) => part !== "").join(" · ");
+}
+
+/** A path that goes to a new line after its separators, as words do, and is copied as it is. */
+function breakablePath(path: string): ComponentChildren
+{
+    return path.split(/(?<=[\\/])/).flatMap((part, index) => (index === 0 ? [part] : [<wbr key={index} />, part]));
+}
+
+/**
+ * The field that adds to the library: a folder or a book written by hand, as the browser gives no folder's path; what to give it, and that the computer asks the
+ * player's yes and never changes the folder. It empties once added.
+ */
+function LibraryField({ state, onAdd }: { state: RowState; onAdd(path: string): void; })
+{
+    const [path, setPath] = useState("");
+    const [empty, setEmpty] = useState(false);
+    const sent = useRef<string>();
+
+    useEffect(() => {
+        if (state.said?.problem === false && sent.current === path) {
+            setPath("");
+        }
+    }, [state.said]);
+
+    const submit = (): void => {
+        const given = path.trim().replace(/^"(.*)"$/, "$1");
+
+        if (state.busy) {
+            return;
+        }
+
+        setEmpty(given === "");
+
+        if (given !== "") {
+            sent.current = path;
+            onAdd(given);
+        }
+    };
+
+    return (
+        <form
+            class="package-add"
+            noValidate
+            onSubmit={(event) => {
+                event.preventDefault();
+                submit();
+            }}
+        >
+            <label class="package-label" for="library-path">{t("A folder or a book of this computer")}</label>
+            <div class="package-add-line">
+                <input
+                    id="library-path"
+                    dir="ltr"
+                    type="text"
+                    enterKeyHint="go"
+                    autocomplete="off"
+                    spellcheck={false}
+                    maxLength={1000}
+                    value={path}
+                    readOnly={state.work !== undefined}
+                    aria-invalid={state.said?.problem === true || empty}
+                    aria-describedby="library-path-about"
+                    placeholder="D:\Books\5e"
+                    onInput={(event) => setPath(event.currentTarget.value)}
+                />
+                <button type="submit" class="save-button package-button" aria-disabled={state.busy}>
+                    <Icon name="plus" />
+                    {t("Add")}
+                </button>
+            </div>
+            <p class="package-note" id="library-path-about">
+                {t("Write or paste its full path: the browser does not give a folder's. Your computer asks your yes in a window, once, and nothing in the folder is ever changed.")}{" "}
+                {t("Text, or PDFs whose text can be selected, read best; a scanned PDF is read from the pictures of its pages, on Windows only, in a few minutes.")}
+            </p>
+            {empty && state.work === undefined && <p class="package-said problem" role="status">{t("Write the path of a folder or a book first.")}</p>}
+            <WorkNote work={state.work} />
+            <SaidNote said={state.said} />
+        </form>
     );
 }
 
@@ -1072,7 +1440,9 @@ function WorkNote({ work, whose }: { work: PackageWork | undefined; whose?: stri
                 <Icon name="window" />
                 <span>
                     {named}
-                    <strong>{t("Answer in the window of your computer.")}</strong> {t("It asks whether code that RPG Engine did not publish may run here. Can't see it? It is behind the browser.")}
+                    <strong>{t("Answer in the window of your computer.")}</strong> {work.action === "library"
+                        ? t("It asks whether RPG Engine may read the documents of that folder. Can't see it? It is behind the browser.")
+                        : t("It asks whether code that RPG Engine did not publish may run here. Can't see it? It is behind the browser.")}
                 </span>
             </div>
         );
@@ -1328,10 +1698,10 @@ function workTitle(work: Sending, catalog: Catalog | undefined): string
     return entry === undefined ? work.name.replace(/^npm:/, "") : entryTitle(entry);
 }
 
-/** The tab of a place of the page: the field and the catalog are Add's, the rest Installed's. */
+/** The tab of a place of the page: the field and the catalog are Add's, the library's field and folders the Library's, the rest Installed's. */
 function tabOf(at: string): PackagesTab
 {
-    return at === "add" || at.startsWith("catalog:") ? "add" : "installed";
+    return at === "add" || at.startsWith("catalog:") ? "add" : at === "library" || at.startsWith("library:") ? "library" : "installed";
 }
 
 // The card of each kind among the installed, by its heading's id.
@@ -1353,6 +1723,10 @@ function workPlace(work: PackageWork, view: PackagesView, catalog: Catalog | und
     const system = view.systems?.find((one) => same(one.name, one.package));
     const language = view.languages?.find((one) => same(one.code, one.package));
     const entry = catalog?.entries.find((one) => same(one.source));
+
+    if (work.action === "library") {
+        return "library";
+    }
 
     if (work.action === "add") {
         return entry !== undefined ? `catalog:${entry.source}` : extension !== undefined ? `extension:${extension}` : "add";
@@ -1379,11 +1753,12 @@ function failure(at: string, action: PackageWork["action"], name: string, outcom
     }
 
     if (outcome.code === "no-window") {
-        return { at, problem: true, text: t("No window for your yes opens on this computer: add it from your terminal, in the campaign's folder."), command: `rpg package install ${name}` };
+        const command = action === "library" ? `rpg config library --add "${name}"` : `rpg package install ${name}`;
+        return { at, problem: true, text: t("No window for your yes opens on this computer: add it from your terminal, in the campaign's folder."), command };
     }
 
     if (outcome.code === "busy") {
-        return { at, problem: true, text: t("One package at a time: wait for the one under way, then try again.") };
+        return { at, problem: true, text: action === "library" ? t("One change at a time: wait for the one under way, then try again.") : t("One package at a time: wait for the one under way, then try again.") };
     }
 
     return { at, problem: true, text: action === "add" ? t("Nothing was added.") : t("Nothing changed."), why: outcome.error };
@@ -1420,6 +1795,7 @@ function workingText(action: PackageWork["action"]): string
         update: t("Updating…"),
         remove: t("Taking it out of the campaign…"),
         uninstall: t("Uninstalling…"),
+        library: t("Changing the library…"),
     };
     return texts[action];
 }

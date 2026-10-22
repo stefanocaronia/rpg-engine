@@ -1,8 +1,8 @@
-// The player's books and their index (D-491, LIB-2, LIB-3): the documents in the folders of a campaign's library, and the text of each kept in a file of its
-// own in the index's folder, once for all their campaigns. The engine reads the books' folders and never writes in them.
+// The player's books and their index (D-491, LIB-2, LIB-3): the documents in the folders of the library, and the text of each kept in a file of its own in
+// the index's folder, once for all their campaigns. The engine reads the books' folders and never writes in them.
 import { createHash } from "node:crypto";
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, type Stats, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { bookLanguage } from "./language.ts";
 
 /** A book as the index holds it, read (LIB-3). */
@@ -96,23 +96,28 @@ export function libraryState(folder: string, entries: string[], scope: LibrarySc
 
 /**
  * Reads the library's files still to read, one at a time, and writes the index of each in `folder`: its text, or why it was skipped (LIB-3, LIB-5); then drops
- * the index of a file that is gone from a folder still there. The folders are looked at again once all were read, so that a book added or changed meanwhile
- * is read too. A book is marked before it is read: one that stopped the reader twice is skipped. Stops when `signal` does.
+ * the index of a file that is gone from a folder still there. The entries, and their folders, are looked at again once all were read, so that a book added or
+ * changed meanwhile is read too. A book is marked before it is read: one that stopped the reader twice is skipped. Stops when `signal` does.
  */
-export async function readLibrary(folder: string, entries: string[], scope: LibraryScope, read: (path: string) => Promise<BookText>, signal?: AbortSignal): Promise<void>
+export async function readLibrary(folder: string, entries: () => string[], scope: LibraryScope, read: (path: string) => Promise<BookText>, signal?: AbortSignal): Promise<void>
 {
     const tried = new Map<string, string>();
     const stopped = (): boolean => signal?.aborted === true;
 
     for (;;) {
         // A file that changes while it is read is read again once it stays as it is, never twice as it was.
-        const next = libraryFiles(entries, scope).found.filter((file) => isWaiting(folder, file) && tried.get(file.path) !== stampOf(file));
+        const next = libraryFiles(entries(), scope).found.filter((file) => isWaiting(folder, file) && tried.get(file.path) !== stampOf(file));
 
         if (next.length === 0 || stopped()) {
             break;
         }
 
         for (const file of next) {
+            // A folder taken off the computer meanwhile is read no further.
+            if (!entries().some((entry) => isWithin(entry, file.path))) {
+                continue;
+            }
+
             // Another reader took the library meanwhile, as one that found this one's mark too old: it goes on alone.
             const holder = libraryReader(folder);
 
@@ -381,8 +386,27 @@ function writeIndex(folder: string, index: BookIndex): void
     const file = indexFile(folder, index.path);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(`${file}.part`, JSON.stringify(index));
-    renameSync(`${file}.part`, file);
+    replaceFile(`${file}.part`, file);
 }
+
+/** Moves a file written whole into its place; again for a moment while another process reads the old one, which Windows refuses. */
+export function replaceFile(written: string, file: string): void
+{
+    for (let attempt = 1;; attempt++) {
+        try {
+            renameSync(written, file);
+            return;
+        } catch (error) {
+            if (attempt >= 20 || !["EPERM", "EBUSY", "EACCES"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+                throw error;
+            }
+
+            Atomics.wait(pause, 0, 0, 10);
+        }
+    }
+}
+
+const pause = new Int32Array(new SharedArrayBuffer(4));
 
 /**
  * Drops the index of each file that is gone from a folder still there, whichever campaign had it, and what a reader stopped half way left; the books of a
@@ -406,9 +430,16 @@ function indexFile(folder: string, path: string): string
 }
 
 /** A path as the same file, however it is written: in any case on Windows, where a path is the same in any case. */
-function pathKey(path: string): string
+export function pathKey(path: string): string
 {
     return process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path);
+}
+
+/** Whether a path is the entry or lies inside it. */
+export function isWithin(entry: string, path: string): boolean
+{
+    const inside = relative(pathKey(entry), pathKey(path));
+    return inside === "" || (inside.split(sep)[0] !== ".." && !isAbsolute(inside));
 }
 
 function lockFile(folder: string): string

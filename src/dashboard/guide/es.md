@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -214,23 +214,23 @@ Cuando el máster te pregunta algo, su aviso se queda arriba, en la sección en 
 
 ### 5.1 Qué es un sistema de juego
 
-Los datos de un juego: su ficha, sus números, sus criaturas, objetos, conjuros y el texto de sus reglas. Cada campaña juega un solo sistema. RPG Engine calcula la ficha y lo que se gasta y se recupera. Cómo funciona una capacidad lo lee el máster en las reglas y lo decide, como en una mesa.
+Son los datos de un juego: su ficha, sus números, sus criaturas, objetos, conjuros y el texto de sus reglas. Cada campaña juega con un solo sistema. RPG Engine calcula la ficha y lo que se gasta y se recupera. Cómo funciona una característica lo lee el máster en las reglas y lo decide, como en una mesa.
 
 ### 5.2 Quinta edición, incluida
 
-Las razas, clases, subclases, un trasfondo y una dote del SRD 5.1; los 319 conjuros, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee según su texto exacto; la ficha completa, ya calculada.
+Las razas, clases, subclases, un trasfondo y una dote del SRD 5.1; los 319 conjuros, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee por su texto exacto; la ficha completa, ya calculada.
 
-También puedes jugar contenido que el SRD no incluye, de un libro que tengas: el máster lo escribe como páginas de tu campaña, y RPG Engine las trata como propias. RPG Engine solo incluye contenido abierto; lo que sabe tu máster no tiene ese límite.
+También puedes jugar contenido que el SRD no incluye, de un libro que tengas: el máster lo escribe como páginas de tu campaña y RPG Engine lo trata como propio. RPG Engine incluye solo contenido abierto; lo que sabe tu máster no tiene ese límite.
 
-Tus propios manuales pueden ser la biblioteca de la campaña: dile al máster dónde están, *[Mis manuales están en D:\Books\5e.]*, y di que sí en la ventana que te muestre tu equipo. RPG Engine los lee una sola vez, en este equipo, y el máster los consulta cuando decide una regla, después del SRD, y cita el libro y la página. Se leen mejor como texto, o como PDF cuyo texto se pueda seleccionar. Un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, en unos minutos y con algunos errores. RPG Engine nunca modifica tus manuales, nunca envía su texto a ningún sitio y nunca lo copia en una campaña.
+Tus propios manuales pueden ser tu biblioteca. Dile al máster dónde están, *[Mis manuales están en D:\Books\5e.]*, o añade su carpeta en Packages › Library, y di que sí en la ventana que muestre tu equipo, una sola vez. RPG Engine los lee en este equipo. Cada campaña usa las carpetas que actives ahí, y el máster las consulta cuando decide una regla, después del SRD, citando el libro y la página. Se leen mejor como texto, o como PDF cuyo texto se pueda seleccionar. Un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, en unos minutos y con algunos errores. RPG Engine nunca modifica tus manuales, nunca envía su texto a ningún sitio y nunca lo copia en una campaña.
 
-### 5.3 Reglas de la casa y tus propias añadiduras
+### 5.3 Reglas de la casa y tus propias adiciones
 
-Pídele al máster: *[Regla de la casa: un 1 natural en un ataque significa que se te cae el arma.]* El máster la guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya tengas escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
+Pídeselo al máster: *[Regla de la casa: un 1 natural en un ataque significa que se te cae el arma.]* El máster la guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya tengas escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
 
 ### 5.4 Añadir o importar tu propio sistema de juego
 
-Todavía no: hoy RPG Engine solo juega quinta edición ([Próximamente](#9-coming-later)).
+Todavía no: hoy RPG Engine solo juega a la quinta edición ([Próximamente](#9-coming-later)).
 
 ---
 

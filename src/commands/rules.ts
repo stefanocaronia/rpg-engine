@@ -6,7 +6,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
-import { libraryAnswer, libraryLines } from "./game-library.ts";
+import { libraryAnswer, libraryLines, systemWordsNamed } from "./game-library.ts";
 import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
 import { campaignSystem, campaignWorld, foreignLanguage } from "./game-world.ts";
 
@@ -76,12 +76,18 @@ export const rules = defineCommand({
         // Or the sections of pages it names, as a class's features: Cleric › Domain Spells, or Domain Spells alone (RUL-6).
         const pageSections = page === undefined ? sectionsNamed(root, context, text) : [];
         const budget = page === undefined && pageSections.length === 0 ? answerWords : answerWordsBesidePage;
-        const found = findRules([...house, ...book], text);
+        // Searched in the campaign's language, the system is searched by its own names too, as its words in that language give them (RUL-8): afferrato, Grappled.
+        const campaignLanguage = readTextSetting(root, "language");
+        const ownNames = system === undefined || campaignLanguage === undefined || /[›>/]/.test(text) ? [] : systemWordsNamed(system, campaignLanguage, text, true).filter((one) => !hasAllWords(text, one.named));
+        const systemNames = ownNames.map((one) => one.named);
+        // A name answers for the system only when its words are the whole search: tiro per colpire is no question about Archery, Tiro.
+        const answering = ownNames.filter((one) => one.whole).map((one) => one.named);
+        const found = findRules([...house, ...book], [text, ...systemNames].join(" "));
         const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
         const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
         const shownTitles = [...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? "");
-        // Then the player's books, fewer of them when the rules have answered: a section shown holds every word searched (LIB-6, LIB-7).
-        const answered = [...houseAnswer.shown, ...systemAnswer.shown].some((shown) => hasAllWords(`${shown.path.join(" ")} ${shown.text}`, text));
+        // Then the player's books, fewer of them when the rules have answered: a section shown holds every word searched, or a name the system gave them (LIB-6, LIB-7).
+        const answered = [...houseAnswer.shown, ...systemAnswer.shown].some((shown) => [text, ...answering].some((searched) => hasAllWords(`${shown.path.join(" ")} ${shown.text}`, searched)));
         const library = libraryAnswer(root, context, system, text, answered);
         return {
             ...common,
@@ -91,6 +97,7 @@ export const rules = defineCommand({
             page,
             pageSections,
             library,
+            systemNames,
         };
     },
 
@@ -112,6 +119,7 @@ export const rules = defineCommand({
             missingSystemLine(result.missingSystem),
             pageLine(result.page),
             sectionsLine(result.pageSections),
+            result.found.shown.length > 0 && result.systemNames.length > 0 ? `${result.system} searched by its own names too: ${result.systemNames.join(", ")}.` : "",
             ...sections,
             others.length === 0 ? "" : `Also: ${others.slice(0, namedSections).join("; ")}. Read one by its heading.`,
             sections.length === 0 && !fromBooks ? notFound(result) : "",

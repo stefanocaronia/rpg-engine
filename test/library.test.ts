@@ -2,13 +2,16 @@
 // the locked files, the search of rules after the system and what it shows. The books here are written for the tests, never a manual's text.
 import { zipSync } from "fflate";
 import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
-import { libraryScope } from "../src/commands/game-library.ts";
+import { libraryEntries, libraryScope, skippedKind } from "../src/commands/game-library.ts";
 import type { Confirmed, Context } from "../src/core/context.ts";
+import { SessionStore } from "../src/core/session-store.ts";
+import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { isReadable, pagesWritten, readDocument } from "../src/documents/index.ts";
-import { bookLanguage, claimLibrary, libraryReader, libraryState, readLibrary, releaseLibrary } from "../src/library/index.ts";
+import { bookLanguage, claimLibrary, dropUnlisted, libraryFolders, libraryReader, libraryState, readLibrary, releaseLibrary, saveLibraryFolders } from "../src/library/index.ts";
 import { findPages, pageExcerpt } from "../src/rules/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -145,12 +148,12 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
         const waiting = libraryState(home, [shelf], libraryScope);
         expect(waiting.books).toEqual([]);
         expect(waiting.waiting.map((path) => path.slice(shelf.length + 1).replaceAll("\\", "/"))).toEqual(["Rules of the Road.md", "old/Rules of the Road.txt"]);
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         const state = libraryState(home, [shelf], libraryScope);
         expect(state.waiting).toEqual([]);
         expect(state.books.map((one) => [one.name, one.language])).toEqual([["Rules of the Road.md", "en"], ["Rules of the Road.txt", undefined]]);
         fileIn(shelf, "old/Rules of the Road.md", "The old rules.");
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(libraryState(home, [shelf], libraryScope).books.map((one) => one.name)).toEqual([
             `Rules of the Road.md (${shelf.split(/[\\/]/).at(-1)})`,
             "Rules of the Road.md (old)",
@@ -159,19 +162,19 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
     });
 
     it("reads a book once, again only when its size or date changes, and drops the index of a book that is gone", async () => {
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(reads).toHaveLength(2);
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(reads).toHaveLength(2);
         const changed = join(shelf, "old", "Rules of the Road.txt");
         writeFileSync(changed, "An older edition of the road's rules, now with its maps and its inns.");
         utimesSync(changed, new Date(), new Date(Date.now() + 5000));
         expect(libraryState(home, [shelf], libraryScope).waiting).toEqual([changed]);
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(reads).toHaveLength(3);
         expect(readdirSync(home).filter((name) => name.endsWith(".json"))).toHaveLength(2);
         rmSync(changed);
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(readdirSync(home).filter((name) => name.endsWith(".json"))).toHaveLength(1);
         // Nothing is ever written in the books' folders.
         expect(readdirSync(shelf).sort()).toEqual([".hidden", "Rules of the Road.md", "campaign", "cover.png", "old"]);
@@ -179,7 +182,7 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
 
     it("keeps a book it cannot read as skipped, with why, and reads it again once it changes", async () => {
         fileIn(shelf, "locked.pdf", lockedPdf());
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         const state = libraryState(home, [shelf], libraryScope);
         expect(state.skipped).toEqual([{ path: join(shelf, "locked.pdf"), why: "locked.pdf asks for a password to open: the engine never opens a locked document." }]);
         expect(state.waiting).toEqual([]);
@@ -208,27 +211,49 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
 
     it("stops reading when another reader took the library meanwhile", async () => {
         writeFileSync(join(home, ".reading"), String(process.ppid));
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         expect(reads).toEqual([]);
     });
 
     it("keeps the books of a folder that is not there now, as a disk taken out, and drops those gone from a folder still there", async () => {
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         const disk = join(makeTempFolder(), "disk");
         fileIn(disk, "Ferries.md", "The ferries run until the first frost.");
-        await readLibrary(home, [disk], libraryScope, reader);
+        await readLibrary(home, () => [disk], libraryScope, reader);
         renameSync(disk, `${disk}-out`);
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         renameSync(`${disk}-out`, disk);
         expect(libraryState(home, [disk], libraryScope).waiting).toEqual([]);
         expect(reads).toHaveLength(3);
     });
 
+    it("reads no further a folder taken off the computer meanwhile, and drops the text of the books in no entry, never of one still in an entry", async () => {
+        let listed = [shelf];
+        await readLibrary(home, () => listed, libraryScope, async (path) => {
+            listed = [];
+            return await reader(path);
+        });
+        expect(reads).toHaveLength(1);
+        const book = join(shelf, "Rules of the Road.md");
+        dropUnlisted(home, [book.toUpperCase()]);
+        expect(libraryState(home, [book], libraryScope).books).toHaveLength(process.platform === "win32" ? 1 : 0);
+        dropUnlisted(home, [`${shelf}x`]);
+        expect(libraryState(home, [book], libraryScope).books).toEqual([]);
+    });
+
+    it("refuses a list of the computer's folders that does not read, never taking it for an empty one", () => {
+        expect(libraryFolders(home)).toEqual([]);
+        saveLibraryFolders(home, [shelf]);
+        expect(libraryFolders(home)).toEqual([shelf]);
+        writeFileSync(join(home, "folders.json"), `{ "folders": ["${shelf.replaceAll("\\", "\\\\")}",] }`);
+        expect(() => libraryFolders(home)).toThrow("does not read: fix it, or delete it and add the folders again");
+    });
+
     it("skips a book that stopped two readers, or that another program kept busy twice, saying how to have it read again", async () => {
         const hanging = () => new Promise<never>(() => undefined);
-        void readLibrary(home, [shelf], libraryScope, hanging);
+        void readLibrary(home, () => [shelf], libraryScope, hanging);
         expect(libraryState(home, [shelf], libraryScope).waiting).toHaveLength(2);
-        void readLibrary(home, [shelf], libraryScope, hanging);
+        void readLibrary(home, () => [shelf], libraryScope, hanging);
         const state = libraryState(home, [shelf], libraryScope);
         expect(state.skipped.map((one) => one.why)).toEqual([
             "Rules of the Road.md could not be read 2 times, too big or broken for the reader, or kept busy by another program: close that program, or save the file again, which has it read again",
@@ -236,19 +261,19 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
         const busy = makeTempFolder();
         fileIn(busy, "Busy.md", "Open elsewhere.");
         const kept = () => Promise.reject(Object.assign(new Error("resource busy"), { code: "EBUSY" }));
-        await readLibrary(home, [busy], libraryScope, kept);
+        await readLibrary(home, () => [busy], libraryScope, kept);
         expect(libraryState(home, [busy], libraryScope)).toMatchObject({ waiting: [join(busy, "Busy.md")], skipped: [] });
-        await readLibrary(home, [busy], libraryScope, kept);
+        await readLibrary(home, () => [busy], libraryScope, kept);
         expect(libraryState(home, [busy], libraryScope).skipped).toHaveLength(1);
         // A file it may not open is no passing trouble: skipped at once, with why.
         const denied = makeTempFolder();
         fileIn(denied, "Denied.md", "Not for you.");
-        await readLibrary(home, [denied], libraryScope, () => Promise.reject(Object.assign(new Error("EACCES: permission denied, open Denied.md"), { code: "EACCES" })));
+        await readLibrary(home, () => [denied], libraryScope, () => Promise.reject(Object.assign(new Error("EACCES: permission denied, open Denied.md"), { code: "EACCES" })));
         expect(libraryState(home, [denied], libraryScope).skipped.map((one) => one.why)).toEqual(["EACCES: permission denied, open Denied.md"]);
     });
 
     it("keeps a book's name while another one is still to read", async () => {
-        await readLibrary(home, [shelf], libraryScope, reader);
+        await readLibrary(home, () => [shelf], libraryScope, reader);
         fileIn(shelf, "old/Rules of the Road.pdf", "not read yet");
         expect(libraryState(home, [shelf], libraryScope).books.map((one) => one.name)).toEqual(["Rules of the Road.md", "Rules of the Road.txt"]);
     });
@@ -331,7 +356,7 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     let home: string;
     let shelf: string;
     let context: Context;
-    let started: string[][];
+    let started: number;
     let asked: string[];
 
     const rpg = (...args: string[]) => runCommandLine(args, context);
@@ -352,7 +377,7 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     {
         // The third page of the PDF has no readable text: an OCR reads it.
         const ocr = () => Promise.resolve(new Map([[3, "IL GUADO\nIl traghettatore chiede una moneta per il guado del fiume, e due a chi lo guarda storto."]]));
-        await readLibrary(home, [shelf], libraryScope, async (path) => {
+        await readLibrary(home, () => [shelf], libraryScope, async (path) => {
             const read = await readDocument(path, { pictures: false, ocr });
             return { parts: read.parts, unreadable: read.unreadable, recognized: read.recognized };
         });
@@ -362,9 +387,9 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         folder = makeTempFolder();
         home = makeTempFolder();
         shelf = makeTempFolder();
-        started = [];
+        started = 0;
         asked = [];
-        context = { ...testContext(folder), bookIndex: home, readLibrary: (entries) => started.push(entries) };
+        context = { ...testContext(folder), bookIndex: home, readLibrary: () => started++ };
         await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
         fileIn(shelf, "Rules of the Road.md", englishBook);
         const regole = [
@@ -378,12 +403,73 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     it("adds a folder from the chat only with the player's yes in a window of their computer, as a full path, and starts reading it", async () => {
         allow("yes");
         const output = await ok("config", "library", "--add", shelf);
-        expect(asked[0]).toContain(`The game master of Guadoscuro asks to read the documents in ${shelf}`);
+        expect(asked[0]).toContain(`RPG Engine asks to read the documents in ${shelf}, to search your books for the rules: for the game master of Guadoscuro, `);
         expect(output).toContain(`library: ${shelf} (0 books read, 2 being read)`);
-        expect(started).toEqual([[shelf]]);
+        expect(started).toBe(1);
+        expect(libraryFolders(home)).toEqual([shelf]);
         // Already there, it asks nothing again.
         await ok("config", "library", "--add", shelf);
         expect(asked).toHaveLength(1);
+    });
+
+    it("takes a path as a full one, without the quotes a copied path has; a relative one only in the player's terminal", async () => {
+        allow("yes");
+        expect((await rpg("config", "library", "--add", "..")).output).toContain(".. is no full path: give the whole path");
+        await ok("config", "library", "--add", `"${shelf}"`);
+        expect(libraryFolders(home)).toEqual([shelf]);
+    });
+
+    it("turns on in another campaign a folder of this computer without asking again; off in one, it stays in the other; off the computer, its text goes", async () => {
+        allow("yes");
+        await ok("config", "library", "--add", shelf);
+        await readShelf();
+        const other = makeTempFolder();
+        const first = folder;
+        context.folder = other;
+        await ok("init", "--name", "Altrove", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+        expect(await ok("config", "library")).toContain(`library: ${shelf} (on this computer, not used here: add turns it on)`);
+        expect(await ok("rules", "falling")).not.toContain("From the player's books");
+        await ok("config", "library", "--add", shelf);
+        expect(asked).toHaveLength(1);
+        expect(await ok("rules", "falling")).toContain("From the player's books");
+        await ok("config", "library", "--remove", shelf);
+        expect(await ok("rules", "falling")).not.toContain("From the player's books");
+        context.folder = first;
+        expect(await ok("rules", "falling")).toContain("From the player's books");
+        // Off the computer: no campaign searches it, and the text read of its books is deleted.
+        expect(readdirSync(home).filter((name) => name !== "folders.json" && name.endsWith(".json"))).toHaveLength(2);
+        await ok("config", "library", "--remove", shelf, "--computer");
+        expect(libraryFolders(home)).toEqual([]);
+        expect(readdirSync(home).filter((name) => name !== "folders.json" && name.endsWith(".json"))).toEqual([]);
+        expect(await ok("config", "library")).toMatch(/^library: \(none\)\n/);
+        expect((await rpg("config", "library", "--remove", shelf, "--computer")).output).toContain("is not in this computer's library, so nothing changed");
+        expect((await rpg("config", "lines", "--remove", "spiders", "--computer")).output).toContain("computer goes only with setting library and remove");
+    });
+
+    it("keeps the books' two excerpts when the system's name was found by one word of a longer search (RUL-8)", async () => {
+        context.terminal = true;
+        fileIn(shelf, "Tiri.md", "TIRO PER COLPIRE\nPer colpire un bersaglio si fa un tiro per colpire con un d20, e si aggiunge il bonus di competenza dell'arma che si usa nel colpo.");
+        fileIn(shelf, "Armi.md", "LE ARMI\nOgni arma dice il dado del danno; il tiro per colpire con un'arma da lancio usa la Forza, quello con un'arma a distanza la Destrezza.");
+        await ok("config", "library", "--add", shelf);
+        await readShelf();
+        const output = await ok("rules", "tiro per colpire");
+        expect(output).toContain("searched by its own names too: Archery");
+        expect(output.match(/^(Tiri|Armi), part \d+:$/gm)).toHaveLength(2);
+    });
+
+    it("adds a book inside a folder the player allowed without asking again", async () => {
+        allow("yes");
+        await ok("config", "library", "--add", shelf);
+        await ok("config", "library", "--add", join(shelf, "Rules of the Road.md"));
+        expect(asked).toHaveLength(1);
+        expect(libraryFolders(home)).toEqual([shelf, join(shelf, "Rules of the Road.md")]);
+    });
+
+    it("never searches a folder a campaign lists that is not in this computer's library, which the player allowed", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), `${readFileSync(join(folder, "campaign.yaml"), "utf8")}library:\n  - ${JSON.stringify(shelf)}\n`);
+        await readShelf();
+        expect(await ok("rules", "falling")).not.toContain("From the player's books");
+        expect(await ok("config", "library")).toContain(`library: ${shelf} (not in this computer's library: add it again, with the player's yes)`);
     });
 
     it("refuses an addition the player does not allow, or when no window can be shown, saying how to add it in their terminal", async () => {
@@ -394,12 +480,12 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         expect(await ok("config", "library")).toMatch(/^library: \(none\)\n/);
     });
 
-    it("adds from the player's terminal without a window, and takes an entry off by any spelling of its path", async () => {
+    it("adds from the player's terminal without a window, and turns an entry off by any spelling of its path", async () => {
         context.terminal = true;
         await ok("config", "library", "--add", shelf);
         expect(asked).toEqual([]);
         await ok("config", "library", "--remove", `${shelf}/`);
-        expect(await ok("config", "library")).toMatch(/^library: \(none\)\n/);
+        expect(await ok("config", "library")).toMatch(/^library: .* \(on this computer, not used here: add turns it on\)\n/);
     });
 
     it("refuses what is not there, a file of a kind it does not read, and a folder inside a campaign", async () => {
@@ -456,9 +542,120 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     it("says how many books are still being read, and starts reading them", async () => {
         context.terminal = true;
         await ok("config", "library", "--add", shelf);
-        started = [];
+        started = 0;
         expect(await ok("rules", "falling")).toContain("Still being read: 2 of the player's books, which a search finds in a few minutes.");
-        expect(started).toEqual([[shelf]]);
+        expect(started).toBe(1);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("library:");
+    });
+});
+
+describe("why a book was skipped, in the player's words (LIB-5)", () => {
+    it.each([
+        ["password", "locked.pdf asks for a password to open: the engine never opens a locked document."],
+        ["drm", "locked.epub is locked by DRM: the engine never opens a locked document."],
+        ["stuck", "Big.pdf could not be read 2 times, too big or broken for the reader, or kept busy by another program: close that program, or save the file again"],
+        ["denied", "EACCES: permission denied, open Denied.md"],
+        ["broken", "Invalid PDF structure."],
+    ])("tells a book skipped for %s", (kind, why) => {
+        expect(skippedKind(why)).toBe(kind);
+    });
+
+    it("gives the dashboard each book skipped with the kind of its why, as the readers said it", async () => {
+        const folder = makeTempFolder();
+        const home = makeTempFolder();
+        const shut = makeTempFolder();
+        const context: Context = { ...testContext(folder), bookIndex: home, terminal: true };
+        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+        fileIn(shut, "locked.pdf", lockedPdf());
+        fileIn(shut, "locked.epub", epub({ "META-INF/rights.xml": "<rights/>" }));
+        fileIn(shut, "broken.pdf", "not a PDF at all");
+        // A name with the words of another why: Passwords.md is no locked book.
+        fileIn(shut, "Passwords.md", "Never read.");
+        expect((await runCommandLine(["config", "library", "--add", shut], context)).exitCode).toBe(0);
+        await readLibrary(home, () => [shut], libraryScope, async (path) => {
+            if (path.endsWith("Passwords.md")) {
+                throw Object.assign(new Error(`EACCES: permission denied, open ${path}`), { code: "EACCES" });
+            }
+
+            const read = await readDocument(path, { pictures: false });
+            return { parts: read.parts, unreadable: read.unreadable, recognized: read.recognized };
+        });
+        const skipped = libraryEntries(folder, context)[0]?.skipped.map((one) => [one.name, one.kind]);
+        expect(skipped).toEqual([["Passwords.md", "denied"], ["broken.pdf", "broken"], ["locked.epub", "drm"], ["locked.pdf", "password"]]);
+    });
+});
+
+describe("the library on the dashboard's Packages page (D-491 (13))", () => {
+    let folder: string;
+    let shelf: string;
+    let session: SessionStore;
+    let dashboard: Dashboard;
+    let port: number;
+    let answer: Confirmed;
+    let asked: string[];
+
+    beforeEach(async () => {
+        folder = makeTempFolder();
+        shelf = makeTempFolder();
+        fileIn(shelf, "Rules of the Road.md", englishBook);
+        asked = [];
+        answer = "yes";
+        const context: Context = {
+            ...testContext(folder),
+            bookIndex: makeTempFolder(),
+            confirm: { ask: (_title, text) => (asked.push(text), Promise.resolve(answer)) },
+        };
+        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+        session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+
+        if (started === undefined) {
+            throw new Error("The dashboard did not start.");
+        }
+
+        dashboard = started;
+        port = Number(new URL(dashboard.url).port);
+    });
+
+    afterEach(async () => {
+        await dashboard.close();
+        session.close();
+    });
+
+    function send(method: string, path: string, body?: unknown): Promise<{ status: number; body: string; }>
+    {
+        const headers = body === undefined ? {} : { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+        return new Promise((done, fail) => {
+            const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+            });
+            sent.on("error", fail);
+            sent.end(body === undefined ? undefined : JSON.stringify(body));
+        });
+    }
+
+    it("lists this computer's library, adds a folder only with the player's yes in a window, never the page's click alone, turns it off and takes it off", async () => {
+        expect(JSON.parse((await send("GET", "/api/library")).body)).toEqual({ entries: [] });
+        answer = "no";
+        const refused = await send("POST", "/api/library", { action: "add", path: shelf });
+        expect([refused.status, JSON.parse(refused.body).code]).toEqual([400, "declined"]);
+        answer = "yes";
+        expect((await send("POST", "/api/library", { action: "add", path: shelf })).status).toBe(202);
+        expect(asked.at(-1)).toContain(`RPG Engine asks to read the documents in ${shelf}, to search your books for the rules: for the game master of Guadoscuro`);
+        const entry = { path: shelf, books: 0, reading: 1, skipped: [], missing: false, crowded: false, onComputer: true };
+        expect(JSON.parse((await send("GET", "/api/library")).body).entries).toEqual([{ ...entry, used: true }]);
+        // Added twice, the master hears once.
+        expect((await send("POST", "/api/library", { action: "add", path: shelf })).status).toBe(202);
+        expect(dashboard.news().lines.filter((line) => line.includes(`The player, on the dashboard, turned on ${shelf} in the campaign's library`))).toHaveLength(1);
+        expect((await send("POST", "/api/library", { action: "remove", path: shelf })).status).toBe(202);
+        expect(JSON.parse((await send("GET", "/api/library")).body).entries).toEqual([{ ...entry, used: false }]);
+        expect((await send("POST", "/api/library", { action: "add", path: shelf })).status).toBe(202);
+        expect(asked).toHaveLength(2);
+        expect((await send("POST", "/api/library", { action: "forget", path: shelf })).status).toBe(202);
+        expect(JSON.parse((await send("GET", "/api/library")).body)).toEqual({ entries: [] });
+        expect((await send("POST", "/api/library", { action: "erase", path: shelf })).status).toBe(400);
     });
 });

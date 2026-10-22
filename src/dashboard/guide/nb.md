@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -214,19 +214,19 @@ Når spilleder spør deg om noe, blir banneret stående øverst, uansett hvilken
 
 ### 5.1 Hva et spillsystem er
 
-Dataene til ett spill: karakterarket, tallene, skapningene, gjenstandene, trylleformlene og regelteksten. Hvert oppdrag i en kampanje spilles med ett system, og hver kampanje har ett system. RPG Engine regner ut karakterarket og hva som brukes og hva som kommer tilbake. Hvordan en egenskap virker, leser spilleder i reglene og avgjør, som ved et bord.
+Dataene til ett spill: karakterarket, tallene, skapningene, gjenstandene, trolldommene og regelteksten. Hver kampanje spiller ett system. RPG Engine regner ut karakterarket og hva som brukes og kommer tilbake. Hvordan en egenskap virker, leser spilleder i reglene og avgjør, som ved et bord.
 
 ### 5.2 Femte utgave, inkludert
 
-Rasene, klassene, subklassene, en bakgrunn og en egenskap (feat) fra SRD 5.1; de 319 trylleformlene, våpnene, rustningene, de magiske gjenstandene og monstrene; regelkapitlene, som spilleder leser etter nøyaktig tekst; og det fullstendige karakterarket, utregnet.
+Rasene, klassene, subklassene, en bakgrunn og en egenskap (feat) fra SRD 5.1. Dessuten de 319 trolldommene, våpnene, rustningene, de magiske gjenstandene og monstrene, regelkapitlene, som spilleder leser ordrett, og det fullstendige karakterarket, utregnet.
 
-Du kan også spille innhold som SRD-en ikke har, fra en bok du eier: spilleder skriver det som sider i kampanjen din, og RPG Engine behandler dem som sine egne. RPG Engine leveres bare med åpent innhold. Det spilleder kan, er ikke begrenset.
+Du kan også spille innhold som SRD-en ikke har, fra en bok du eier. Spilleder skriver det som sider i kampanjen din, og RPG Engine behandler dem som sine egne. RPG Engine leveres bare med åpent innhold. Det spilleder kjenner til, er ikke begrenset.
 
-Dine egne regelbøker kan bli kampanjens bibliotek. Fortell spilleder hvor de er, *[Regelbøkene mine ligger i D:\Books\5e.]*, og si ja i vinduet datamaskinen viser. RPG Engine leser dem én gang, på denne datamaskinen, og spilleder søker i dem når en regel skal avgjøres, etter SRD-en, og oppgir bok og side. De leses best som tekst, eller som PDF-er der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, på noen minutter og med noen feil. RPG Engine endrer aldri regelbøkene dine, sender aldri teksten deres noe sted og kopierer den aldri inn i en kampanje.
+Dine egne håndbøker kan bli biblioteket ditt. Fortell spilleder hvor de er, *[Håndbøkene mine ligger i D:\Books\5e.]*, eller legg til mappen deres i Packages › Library, og si ja i vinduet datamaskinen viser, én gang. RPG Engine leser dem på denne datamaskinen. Hver kampanje bruker mappene du slår på der, og spilleder søker i dem når en regel skal avgjøres, etter SRD-en, og oppgir boken og siden. De leses best som tekst eller som PDF-er der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, på noen minutter og med noen feil. RPG Engine endrer aldri håndbøkene dine, sender aldri teksten deres noe sted og kopierer den aldri inn i en kampanje.
 
 ### 5.3 Husregler og egne tillegg
 
-Spør spilleder: *[Husregel: en naturlig 1 på et angrep betyr at du mister våpenet.]* Spilleder beholder den som en avtale ved bordet, eller skriver en side eller et tall på karakterarket når det trengs. Husregler som allerede er skrevet ut, kan legges som tekstfiler i kampanjens `rules`-mappe.
+Spør spilleder: *[Husregel: en naturlig 1 på et angrep betyr at du mister våpenet.]* Spilleder tar vare på den som en avtale ved bordet, eller skriver en side eller et tall på karakterarket når det trengs. Husregler som allerede er skrevet ut, kan legges som tekstfiler i kampanjens `rules`-mappe.
 
 ### 5.4 Legge til eller importere ditt eget spillsystem
 

@@ -14,6 +14,7 @@ import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
+import { libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
@@ -30,6 +31,7 @@ import { notationParts } from "./dice/index.ts";
 import { verifiedScope } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
+import { samePath } from "./library/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { installedSystems, rollName } from "./systems/index.ts";
@@ -300,8 +302,8 @@ interface Served
     catalog?: { at: number; catalog: Catalog; };
 }
 
-/** What the player does with a package on the page (D-475). */
-type PackageAction = "add" | "update" | "remove" | "uninstall";
+/** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
+type PackageAction = "add" | "update" | "remove" | "uninstall" | "library";
 
 /** Where a package's work on the page is: at work, or waiting for the player's yes in a window of their computer (D-478). */
 type PackagePhase = "working" | "yes";
@@ -427,6 +429,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (request.method === "POST" && path === "/api/library" && origin !== undefined) {
+        await changeLibrary(request, response, served);
+        return;
+    }
+
     // An adventure the player adds from a .zip of their computer, and the campaign exported as one (D-483): files, never code.
     if (request.method === "POST" && path === "/api/add" && origin !== undefined) {
         await addPackage(request, response, served);
@@ -490,6 +497,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/packages") {
         await packagesNow(response, served, url.searchParams.get("npm") === "true");
+        return;
+    }
+
+    if (path === "/api/library") {
+        await libraryNow(response, served);
         return;
     }
 
@@ -865,6 +877,55 @@ async function changePackage(request: IncomingMessage, response: ServerResponse,
 }
 
 /**
+ * This computer's library as the page shows it (D-491 (13)): each entry with its books read, being read and skipped, and whether the campaign uses it; and the
+ * work under way, if any.
+ */
+async function libraryNow(response: ServerResponse, served: Served): Promise<void>
+{
+    try {
+        await served.session.ready();
+        const entries = withFiles(served.session, () => libraryEntries(requireCampaign(served.context.folder), served.context));
+        // Books still to read, as after the computer started again, are read now: the page counts them as they come.
+        startLibraryReading(served.context);
+        sendJson(response, 200, { entries, ...(served.packageWork === undefined ? {} : { working: served.packageWork }) });
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
+ * A folder or a book of the library the player turns on in the campaign on the page, off, or takes off this computer (D-491 (13)), as config does with the
+ * player as who did it: one new to the computer with their yes in a window of their computer, never the page's click (D-477); the books are never touched.
+ * One work at a time, as the packages'.
+ */
+async function changeLibrary(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ action: z.enum(["add", "remove", "forget"]), path: z.string().trim().min(1).max(1000) }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send what to do with which folder: { action: add, remove or forget, path }." });
+        return;
+    }
+
+    const { action } = parsed.data;
+    const path = unquoted(parsed.data.path);
+    await packageWork(response, served, path, "library", async (context) => {
+        const root = requireCampaign(context.folder);
+        const before = libraryEntries(root, context).find((entry) => entry.used && samePath(entry.path, path)) !== undefined;
+        const input = action === "add" ? { add: [path] } : { remove: [path], ...(action === "forget" ? { computer: true } : {}) };
+        await config.run(config.input.parse({ setting: "library", ...input }), context);
+        const after = libraryEntries(root, context).find((entry) => entry.used && samePath(entry.path, path)) !== undefined;
+        // The master hears only of a change to this campaign's library.
+        const news = before === after
+            ? ""
+            : after
+            ? `The player, on the dashboard, turned on ${path} in the campaign's library: rules searches its books once they are read.`
+            : `The player, on the dashboard, turned off ${path} in the campaign's library.`;
+        return { kind: "library", news };
+    });
+}
+
+/**
  * Something the player adds on the page (D-485 (1)): a .zip or a .tgz as the request's body, named by its X-File-Name, or { source }: a link, an npm name or a
  * folder of this computer. The engine tells the kind by what it holds; an adventure is read in memory, a .tgz kept in the player's data folder while npm installs it.
  */
@@ -948,6 +1009,8 @@ async function packageWork(
         ...served.context,
         actor: "player",
         player: undefined,
+        // Never the terminal: a folder new to the library asks the yes in a window (D-477).
+        terminal: undefined,
         ...(confirm === undefined ? {} : {
             confirm: {
                 ask: async (title, text, signal, answers) => {
@@ -961,7 +1024,11 @@ async function packageWork(
     try {
         await served.session.ready();
         const done = await withFiles(served.session, () => work(context));
-        served.events.push(done.news);
+
+        if (done.news !== "") {
+            served.events.push(done.news);
+        }
+
         sendJson(response, 202, { kind: done.kind });
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error), ...(error instanceof YesRefused ? { code: error.code } : {}) });

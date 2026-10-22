@@ -11,6 +11,7 @@ import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
 import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { npmPackages } from "../../src/extensions/index.ts";
+import { readLibraryHere } from "../../src/library-reader.ts";
 import { codexPictures, hostWriter } from "../../src/pictures/index.ts";
 import { inPlay } from "../support.ts";
 
@@ -59,6 +60,9 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
         pictures: codexPictures(),
         writer: hostWriter(() => undefined),
         home: `${demoFolder}-home`,
+        // The library's books indexed in the demo's own folder, read here in the demo's process (D-491 (13)).
+        bookIndex: join(`${demoFolder}-home`, "library"),
+        readLibrary: () => void readLibraryHere(join(`${demoFolder}-home`, "library")),
     };
 
     if (!existsSync(join(demoFolder, "campaign.yaml"))) {

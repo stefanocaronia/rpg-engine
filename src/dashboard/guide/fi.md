@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -214,19 +214,19 @@ Kun pelinjohtaja kysyy sinulta jotain, sen banneri pysyy ylhäällä, missä tah
 
 ### 5.1 Mikä pelijärjestelmä on
 
-Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntöteksti. Jokaisessa kampanjassa pelataan yhtä järjestelmää. RPG Engine laskee hahmolomakkeen ja sen, mitä kuluu ja mitä palautuu. Sen, miten jokin kyky toimii, pelinjohtaja lukee säännöistä ja ratkaisee, kuten pelipöydässä.
+Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mitä kuluu ja mitä palautuu. Pelinjohtaja lukee säännöistä, miten ominaisuus toimii, ja päättää asiasta niin kuin pelipöydässä.
 
 ### 5.2 Viides laitos mukana
 
-SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalta sanamuodolta; täysi hahmolomake laskettuna valmiiksi.
+SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalleen sellaisinaan; täysi hahmolomake laskettuna valmiiksi.
 
-Voit pelata myös sisältöä, jota SRD:ssä ei ole, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee niitä ominaan. RPG Engine sisältää vain avointa sisältöä. Pelinjohtajan tietoja se ei rajoita.
+Voit pelata myös sisältöä, jota SRD:ssä ei ole, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee sitä omanaan. RPG Engine sisältää vain avointa sisältöä, mutta pelinjohtajan tietämys ei rajoitu siihen.
 
-Omat sääntökirjasi voivat toimia kampanjan kirjastona. Kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, ja vastaa myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee kirjat kerran, tällä tietokoneella. Pelinjohtaja hakee niistä, kun se ratkaisee jonkin säännön SRD:n jälkeen, ja mainitsee kirjan ja sivun. Ne luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden teksti on valittavissa. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta kirjojasi, ei lähetä niiden tekstiä minnekään eikä kopioi sitä kampanjaan.
+Omat sääntökirjasi voivat olla kirjastosi. Kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, tai lisää niiden kansio kohdassa Packages › Library ja vastaa kerran myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee kirjat tällä tietokoneella. Jokainen kampanja käyttää kansioita, jotka olet siellä ottanut käyttöön. Pelinjohtaja hakee niistä, kun ratkaisee sääntöä, SRD:n jälkeen, ja mainitsee kirjan ja sivun. Kirjat luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden tekstin voi valita. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta kirjojasi, ei lähetä niiden tekstiä minnekään eikä kopioi sitä kampanjaan.
 
 ### 5.3 Kotisäännöt ja omat lisäykset
 
-Pyydä pelinjohtajaa: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, jos sellainen tarvitaan. Valmiiksi kirjoitetut kotisäännöt voit laittaa tekstitiedostoina kampanjan `rules`-kansioon.
+Pyydä pelinjohtajalta: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, jos sellaista tarvitaan. Valmiiksi kirjoitetut kotisäännöt voi laittaa tekstitiedostoina kampanjan `rules`-kansioon.
 
 ### 5.4 Oman pelijärjestelmän lisääminen tai tuominen
 

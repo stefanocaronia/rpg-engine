@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -214,19 +214,19 @@ Síða á þinni eigin tölvu, opin aðeins í vafra þeirrar tölvu og virk me�
 
 ### 5.1 Hvað leikjakerfi er
 
-Gögn eins leiks: persónublaðið, tölurnar, verur, hlutir, galdrar og reglutexti. Hver herferð notar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og það sem kemur aftur. Sögumaðurinn les í reglunum hvernig eiginleiki virkar og ákveður það, eins og við borðið.
+Gögn eins leiks: persónublað hans, tölur, verur, hlutir, galdrar og reglutexti. Hver herferð spilar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og það sem kemur aftur. Hvernig eiginleiki virkar les sögumaðurinn í reglunum og ákveður, eins og við borðið.
 
 ### 5.2 Fimmta útgáfa, innifalin
 
-Kynþættir, flokkar, undirflokkar, bakgrunnur og kostur (feat) úr SRD 5.1; galdrarnir 319, vopnin, brynjurnar, töfragripirnir og skrímslin; reglukaflarnir, sem sögumaðurinn les eftir nákvæmum texta þeirra; fullt persónublað, útreiknað.
+Kynþættirnir, flokkarnir, undirflokkarnir, bakgrunnur og hæfileiki (feat) úr SRD 5.1; galdrarnir 319, vopnin, brynjurnar, töfragripirnir og skrímslin; reglukaflarnir, sem sögumaðurinn les eftir nákvæmum texta þeirra; allt persónublaðið, útreiknað.
 
-Þú getur líka spilað efni sem vantar í SRD, úr bók sem þú átt: sögumaðurinn skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar þær eins og sínar eigin. RPG Engine fylgir aðeins opið efni. Það sem sögumaðurinn þekkir er ekki takmarkað.
+Þú getur líka spilað efni sem vantar í SRD, úr bók sem þú átt: sögumaðurinn skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar þær eins og sínar eigin. RPG Engine fylgir aðeins opið efni. Þekking sögumannsins er ekki takmörkuð við það.
 
-Þínar eigin handbækur geta verið bókasafn herferðarinnar: segðu sögumanninum hvar þær eru, *[Handbækurnar mínar eru í D:\Books\5e.]*, og svaraðu já í glugganum sem tölvan sýnir. RPG Engine les þær einu sinni, á þessari tölvu, og sögumaðurinn leitar í þeim þegar hann ákveður reglu, eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skrár þar sem hægt er að velja textann. Skönnuð PDF-skrá er lesin út frá myndum af síðunum, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir texta þeirra aldrei neitt og afritar hann aldrei í herferð.
+Þínar eigin handbækur geta orðið bókasafnið þitt. Segðu sögumanninum hvar þær eru: *[Handbækurnar mínar eru í D:\Books\5e.]*, eða bættu möppunni þeirra við í Packages › Library og segðu já í glugganum sem tölvan sýnir, í eitt skipti. RPG Engine les þær á þessari tölvu. Hver herferð notar möppurnar sem þú kveikir á þar, og sögumaðurinn leitar í þeim þegar hann ákveður reglu, á eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skjöl þar sem hægt er að velja textann. PDF-skjal sem er skannað er lesið úr myndum af síðunum, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir texta þeirra aldrei neitt og afritar hann aldrei inn í herferð.
 
 ### 5.3 Húsreglur og þínar eigin viðbætur
 
-Biddu sögumanninn: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaðurinn geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þess þarf. Húsreglur sem þegar eru skrifaðar út geta farið sem textaskrár í `rules` möppu herferðarinnar.
+Biddu sögumanninn: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaðurinn geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þess þarf. Húsreglur sem þegar eru skrifaðar má setja sem textaskrár í `rules` möppu herferðarinnar.
 
 ### 5.4 Að bæta við eða flytja inn eigið leikjakerfi
 

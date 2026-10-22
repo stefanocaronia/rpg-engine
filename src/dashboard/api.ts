@@ -249,7 +249,7 @@ export type PackageAction = "update" | "remove" | "uninstall";
 export interface PackageWork
 {
     name: string;
-    action: "add" | PackageAction;
+    action: "add" | PackageAction | "library";
     phase: "working" | "yes";
 }
 
@@ -355,6 +355,52 @@ async function packageWork(send: () => Promise<Response>): Promise<PackageOutcom
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };
     }
+}
+
+/**
+ * A folder or a book of this computer's library (D-491 (13)): its books read and being read, those skipped and why, whether it is there, whether it holds too
+ * many; whether this campaign uses it, and whether it is on this computer, as one the campaign lists may not be.
+ */
+export interface LibraryEntry
+{
+    path: string;
+    books: number;
+    reading: number;
+    /** Each with the engine's words, and their kind, which the page says in the player's. */
+    skipped: { name: string; why: string; kind: "password" | "drm" | "stuck" | "denied" | "broken"; }[];
+    missing: boolean;
+    crowded: boolean;
+    used: boolean;
+    onComputer: boolean;
+}
+
+/** This computer's library as the page shows it, with the work under way. */
+export interface LibraryView
+{
+    entries: LibraryEntry[];
+    working?: PackageWork;
+}
+
+/** This computer's library, with what this campaign uses, at once. */
+export async function readLibrary(): Promise<LibraryView>
+{
+    const response = await fetch("/api/library");
+    const body = await response.json() as LibraryView | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body;
+}
+
+/**
+ * Turns a folder or a book of this computer on in the campaign's library, adding it to the computer first with the player's yes in a window; off; or takes it
+ * off this computer.
+ */
+export async function changeLibrary(action: "add" | "remove" | "forget", path: string): Promise<PackageOutcome>
+{
+    return await packageWork(() => fetch("/api/library", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, path }) }));
 }
 
 /** Exports the campaign as an adventure, as it was at its start (ADV-7): the address to download its .zip from, or what went wrong. */

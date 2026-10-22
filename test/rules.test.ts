@@ -255,6 +255,19 @@ describe("the rules command (RUL-2, RUL-6, RUL-7)", () => {
         return text.slice(text.indexOf(heading), text.indexOf(next)).trimEnd();
     }
 
+    it("searches the system by its own names too, as its words in the campaign's language give them (RUL-8)", async () => {
+        const output = await ok("rules", "afferrato");
+        expect(output).toMatch(/^5e searched by its own names too: Grappled\.\n\n/);
+        expect(output).toContain("Conditions › Grappled (5e)");
+        // A word the list lacks finds nothing in the system, which says how to search it.
+        expect(await ok("rules", "lotta")).toContain("The system 5e writes its rules in English");
+        // Never by a field's id, as cha for Carisma, which finds Chain Shirt; nor a name the search already says.
+        expect(await ok("rules", "prova di carisma")).not.toContain("searched by its own names too");
+        expect(await ok("rules", "goblin")).not.toContain("searched by its own names too");
+        // Nor by the words a foe's hits are heard in, which name no rule: a terra is no down.
+        expect(await ok("rules", "a terra")).not.toMatch(/searched by its own names too: .*\bdown\b/);
+    });
+
     it("reads only, so that hosts never ask before a search", () => {
         expect(commands.find((command) => command.name === "rules")?.readOnly).toBe(true);
     });

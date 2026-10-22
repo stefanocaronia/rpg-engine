@@ -12,7 +12,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | `src/<module>/` | One job each, behind its `index.ts` (table below) |
 | [src/commands/](../src/commands/) | The commands, and `game-*.ts` helpers that join modules for several commands |
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary |
-| [src/library-reader.ts](../src/library-reader.ts) | `rpg --read-library`, the process that reads the player's books apart, as `rules` and `config` start it |
+| [src/library-reader.ts](../src/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server |
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
 | [systems/](../systems/) | Built-in game systems: [5e](../systems/5e/) |
@@ -115,8 +115,8 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | Events | Planned events, due by date, clock or condition | [triggers/](../src/triggers/), [commands/game-events.ts](../src/commands/game-events.ts) |
 | Environment | A place's `environment` holds for everything inside it | [pages/environment.ts](../src/pages/environment.ts) |
 | Travel | Roads as places with `stops`, positions, travel on and off roads, maps of places | [map/](../src/map/), [grid/](../src/grid/), [commands/travel.ts](../src/commands/travel.ts) |
-| Rules | House rules, then the system's chapters, then the player's books, then precedents | [rules/](../src/rules/), [commands/rules.ts](../src/commands/rules.ts) |
-| Library | The player's books, by the folders a campaign's `library` lists: their text indexed once in the player's local data folder (`library/`, a file for each book), read apart, pages without readable text read by Windows' OCR; searched by `rules`, never written into a campaign | [library/](../src/library/), [documents/](../src/documents/), [commands/game-library.ts](../src/commands/game-library.ts), [library-reader.ts](../src/library-reader.ts) |
+| Rules | House rules, then the system's chapters, searched by the system's own names too when the campaign plays in another language, then the player's books, then precedents | [rules/](../src/rules/), [commands/rules.ts](../src/commands/rules.ts) |
+| Library | The player's books, by the folders added once to this computer (`library/folders.json`) and turned on in each campaign by its `library`, from the command, the chat or the Packages page's Library tab: their text indexed once in the player's local data folder (`library/`, a file for each book), read apart, pages without readable text read by Windows' OCR; searched by `rules`, never written into a campaign | [library/](../src/library/), [documents/](../src/documents/), [commands/game-library.ts](../src/commands/game-library.ts), [library-reader.ts](../src/library-reader.ts) |
 | Problems | What `validate` lists; most never stop other commands | [commands/problems.ts](../src/commands/problems.ts), [pages/check.ts](../src/pages/check.ts) |
 | State checks | What cannot be true together in the party and the open scene, told to the master; read-only | [commands/game-checks.ts](../src/commands/game-checks.ts) |
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions'; in play in Claude Code, `voices.md`, when to call the character agent, an agent that `init` writes in `.claude/agents/` from `character.md` and that reads only `view` with `as` | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
@@ -124,7 +124,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | Adventures | Installed, taken out while the story has not touched them, exported as they were at the start, and made from the player's documents | [adventures/](../src/adventures/), [documents/](../src/documents/), [importer/](../src/importer/), [commands/game-adventures.ts](../src/commands/game-adventures.ts), [commands/import.ts](../src/commands/import.ts) |
 | Languages | A language's translation made by hand, as a package: the dashboard's phrases, its Guide and a system's words, before the translation on the fly | [languages/](../src/languages/), [page-words.ts](../src/page-words.ts) |
 | Catalog | What npm has for every kind of package and the adventures GitHub has by topic, for the Packages page | [commands/game-catalog.ts](../src/commands/game-catalog.ts) |
-| Consent | The player's yes to a package not ours, or to a library folder added from the chat, in a window of their operating system | [confirm/](../src/confirm/) |
+| Consent | The player's yes to a package not ours, or to a library folder new to the computer from the chat or the dashboard, in a window of their operating system | [confirm/](../src/confirm/) |
 | Translation | The dashboard's phrases and a system's words in the campaign's language | [page-words.ts](../src/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |
 
 ### The dashboard

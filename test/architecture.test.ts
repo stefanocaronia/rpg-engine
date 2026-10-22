@@ -54,6 +54,7 @@ describe("architecture", () => {
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",
+            "library/folders.ts",
         ];
         const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));

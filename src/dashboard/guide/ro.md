@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -214,23 +214,23 @@ Când maestrul de joc te întreabă ceva, bannerul lui rămâne sus, indiferent 
 
 ### 5.1 Ce este un sistem de joc
 
-Datele unui joc: fișa, numerele, creaturile, obiectele, vrăjile și textul regulilor. Fiecare campanie folosește un singur sistem. RPG Engine calculează fișa, precum și ce se consumă și ce se reface. Cum funcționează o trăsătură, citește maestrul de joc în reguli și hotărăște, ca la o masă de joc.
+Datele unui singur joc: fișa, numerele, creaturile, obiectele, vrăjile și textul regulilor. Fiecare campanie folosește un singur sistem. RPG Engine calculează fișa, precum și ce se cheltuiește și ce se recuperează. Cum funcționează o abilitate, maestrul de joc citește în reguli și hotărăște, ca la o masă de joc.
 
 ### 5.2 Ediția a cincea, inclusă
 
 Rasele, clasele, subclasele, un background și un feat din SRD 5.1; cele 319 de vrăji, armele, armurile, obiectele magice și monștrii; capitolele de reguli, pe care maestrul de joc le citește după textul lor exact; fișa completă, calculată.
 
-Poți juca și conținut care lipsește din SRD, dintr-o carte pe care o ai: maestrul de joc îl scrie sub formă de pagini ale campaniei tale, iar RPG Engine le tratează ca pe ale sale. RPG Engine include doar conținut deschis; ce știe maestrul tău de joc nu are această limită.
+Poți juca și conținut care lipsește din SRD, dintr-o carte pe care o deții: maestrul de joc îl scrie sub formă de pagini ale campaniei tale, iar RPG Engine le tratează ca pe ale sale. RPG Engine include doar conținut deschis; ce știe maestrul de joc nu are această limită.
 
-Manualele tale pot fi biblioteca campaniei: spune-i maestrului de joc unde sunt, *[Manualele mele sunt în D:\Books\5e.]*, și acceptă în fereastra pe care o arată calculatorul tău. RPG Engine le citește o singură dată, pe acest calculator, iar maestrul de joc le caută când hotărăște o regulă, după SRD, și citează cartea și pagina. Se citesc cel mai bine ca text sau ca PDF-uri al căror text poate fi selectat; un PDF scanat este citit din imaginile paginilor, doar pe Windows, în câteva minute și cu câteva greșeli. RPG Engine nu schimbă niciodată manualele tale, nu trimite nicăieri textul lor și nu îl copiază niciodată într-o campanie.
+Manualele tale pot deveni biblioteca ta: spune-i maestrului de joc unde sunt, *[Manualele mele sunt în D:\Books\5e.]*, sau adaugă folderul lor în Packages › Library și spune da în fereastra pe care o afișează calculatorul tău, o singură dată. RPG Engine le citește pe acest calculator; fiecare campanie folosește folderele pe care le activezi acolo, iar maestrul de joc le caută când hotărăște o regulă, după SRD, citând cartea și pagina. Se citesc cel mai bine ca text sau ca PDF-uri al căror text poate fi selectat; un PDF scanat este citit din imaginile paginilor sale, doar pe Windows, în câteva minute și cu câteva greșeli. RPG Engine nu îți modifică niciodată manualele, nu le trimite textul nicăieri și nu îl copiază niciodată într-o campanie.
 
-### 5.3 Reguli ale casei și adăugirile tale
+### 5.3 Reguli ale casei și completări proprii
 
-Cere-i maestrului de joc: *[Regulă a casei: un 1 natural la un atac înseamnă că îți scapi arma.]* Maestrul o păstrează ca pe o înțelegere a mesei sau scrie o pagină ori un număr al fișei, când este nevoie. Regulile casei deja scrise pot fi puse ca fișiere text în folderul `rules` al campaniei.
+Cere-i maestrului de joc: *[Regulă a casei: un 1 natural la un atac înseamnă că scapi arma.]* Maestrul de joc o păstrează ca pe o înțelegere a mesei sau scrie o pagină ori un număr al fișei, când este nevoie. Regulile casei deja scrise pot fi puse ca fișiere text în folderul `rules` al campaniei.
 
 ### 5.4 Adăugarea sau importul propriului sistem de joc
 
-Încă nu: azi RPG Engine joacă doar ediția a cincea ([Vine mai târziu](#9-coming-later)).
+Încă nu: astăzi RPG Engine joacă doar ediția a cincea ([Vine mai târziu](#9-coming-later)).
 
 ---
 

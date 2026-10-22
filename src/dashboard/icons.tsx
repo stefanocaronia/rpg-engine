@@ -86,6 +86,8 @@ const iconPaths = {
     licence: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 14l2 2 3.5-4",
     // The Packages page (D-486): a file to add, the catalog's search, a language, the window of the computer where the yes is given, more rows.
     file: "M6 3h8l4 4v14H6Z M14 3v4h4 M9 13h6 M9 16.5h6",
+    folder: "M3 5h6.5l2 2.5H21V20H3Z",
+    library: "M4 6h3.5v14.5H4Z M9 3.5h3.5v17H9Z M9 7.5h3.5 M16.5 20.5l3.3-.9-3.4-12.5-3.3.9Z",
     search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M15.5 15.5 20 20",
     language: "M4 5h9 M8.5 3v2 M6 5c.5 3 2.8 5.5 6 7 M11 5c-.6 3-2.5 5.6-5.5 7.3 M12.5 21l4-9 4 9 M14 17.5h5",
     window: "M3 5h18v14H3Z M3 9h18 M6 7h.01 M8.5 7h.01",

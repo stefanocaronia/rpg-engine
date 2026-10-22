@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -214,19 +214,19 @@ Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welk onder
 
 ### 5.1 Wat een spelsysteem is
 
-De gegevens van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en regelteksten. Elke campagne speelt één systeem. RPG Engine rekent het karakterblad uit en houdt bij wat er wordt uitgegeven en wat terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist de spelleider, zoals aan tafel.
+De gegevens van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en de regeltekst. Elke campagne speelt één systeem. RPG Engine rekent het karakterblad uit en houdt bij wat er wordt uitgegeven en wat terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist die, zoals aan een echte speltafel.
 
 ### 5.2 Vijfde editie, inbegrepen
 
-De rassen, klassen, subklassen, een achtergrond en een talent uit de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de regelhoofdstukken, die de spelleider op de exacte tekst naleest; het volledige karakterblad, uitgerekend.
+De rassen, klassen, subklassen, een achtergrond en een talent uit de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de regelhoofdstukken, die de spelleider op hun exacte tekst leest; het volledige karakterblad, uitgerekend.
 
-Je kunt ook inhoud spelen die niet in de SRD staat, uit een boek dat je zelf hebt: de spelleider schrijft die uit als pagina's van je campagne, en RPG Engine behandelt ze als eigen inhoud. RPG Engine levert alleen open inhoud mee. Wat je spelleider kent, is niet beperkt.
+Je kunt ook inhoud spelen die in de SRD ontbreekt, uit een boek dat je zelf hebt: de spelleider schrijft die uit als pagina's van je campagne, en RPG Engine behandelt ze als eigen inhoud. RPG Engine levert alleen open inhoud mee; wat jouw spelleider weet, is niet beperkt.
 
-Je eigen handboeken kunnen de bibliotheek van de campagne worden. Vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, en kies ja in het venster dat je computer toont. RPG Engine leest ze één keer, op deze computer. De spelleider zoekt er daarna in als een regel moet worden bepaald, na de SRD, en noemt het boek en de pagina. Ze lezen het best als tekst, of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen aan de hand van afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt de tekst nergens heen en kopieert die nooit naar een campagne.
+Je eigen handboeken kunnen je bibliotheek zijn. Vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, of voeg hun map toe bij Packages › Library en zeg één keer ja in het venster dat je computer toont. RPG Engine leest ze op deze computer. Elke campagne gebruikt de mappen die je daar aanzet. De spelleider doorzoekt ze als er een regel moet worden beslist, na de SRD, en noemt daarbij het boek en de pagina. Ze lezen het best als tekst, of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen vanaf de afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt hun tekst nergens heen en kopieert die nooit naar een campagne.
 
-### 5.3 Huisregels en je eigen toevoegingen
+### 5.3 Huisregels en je eigen aanvullingen
 
-Vraag het de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart dit als afspraak van de tafel, of schrijft een pagina of een getal van het karakterblad uit als dat nodig is. Huisregels die al uitgeschreven zijn, kun je als tekstbestanden in de map `rules` van de campagne zetten.
+Vraag het de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart die als afspraak van de tafel, of schrijft een pagina of een getal op het karakterblad als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
 
 ### 5.4 Je eigen spelsysteem toevoegen of importeren
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -210,27 +210,27 @@ Když se tě Pán jeskyně na něco zeptá, jeho pruh zůstává nahoře, ať js
 
 ---
 
-## 5. Hry a pravidla <!-- icon: dice -->
+## 5. Herní systémy a domácí pravidla <!-- icon: dice -->
 
 ### 5.1 Co je herní systém
 
-Data jedné hry: její deník postavy, čísla, tvorové, předměty, kouzla a text pravidel. Každá kampaň se hraje v jednom systému. RPG Engine počítá deník postavy i to, co se utratí a co se vrátí. Jak funguje určitá vlastnost, přečte si Pán jeskyně v pravidlech a rozhodne, stejně jako u stolu.
+Data jedné hry: její deník postavy, čísla, tvorové, předměty, kouzla a text pravidel. Každá kampaň hraje jeden systém. RPG Engine vypočítá deník postavy a to, co se utratí a co se vrátí. Jak funguje nějaká schopnost, si přečte Pán jeskyně v pravidlech a rozhodne, stejně jako u stolu.
 
-### 5.2 Pátá edice v balení
+### 5.2 Pátá edice v základu
 
-Rasy, povolání, podpovolání, zázemí a vlastnost z SRD 5.1; 319 kouzel, zbraně, zbroje, magické předměty a příšery; kapitoly pravidel, které Pán jeskyně čte podle jejich přesného znění; úplný deník postavy, vše spočítané.
+Rasy, povolání, podpovolání, zázemí a vlastnost z SRD 5.1; 319 kouzel, zbraně, zbroje, kouzelné předměty a nestvůry; kapitoly pravidel, které Pán jeskyně čte přesně podle textu; celý deník postavy, vypočítaný.
 
-Můžeš hrát i obsah, který v SRD chybí, z knihy, kterou vlastníš: Pán jeskyně ho zapíše jako stránky tvé kampaně a RPG Engine s ním zachází jako s vlastním. RPG Engine obsahuje jen otevřený obsah. To, co zná Pán jeskyně, omezené není.
+Můžeš hrát i obsah, který v SRD chybí, z knihy, kterou vlastníš: Pán jeskyně ho zapíše jako stránky tvé kampaně a RPG Engine s nimi zachází jako s vlastními. RPG Engine dodává jen otevřený obsah. To, co Pán jeskyně zná, omezené není.
 
-Tvé vlastní příručky mohou být knihovnou kampaně. Řekni Pánu jeskyně, kde jsou: *[Moje příručky jsou v D:\Books\5e.]* a v okně, které počítač zobrazí, potvrď souhlas. RPG Engine je přečte jednou, na tomto počítači. Pán jeskyně v nich pak při rozhodování o pravidle hledá, až po SRD, a uvede knihu i stránku. Nejlépe se čtou jako text nebo jako PDF s textem, který lze označit. Naskenované PDF se čte z obrázků stránek, jen ve Windows, několik minut a s drobnými chybami. RPG Engine tvé příručky nikdy nemění, nikam neposílá jejich text a nikdy ho nekopíruje do kampaně.
+Vlastní příručky mohou tvořit tvou knihovnu. Řekni Pánu jeskyně, kde jsou: *[Moje příručky jsou v D:\Books\5e.]* Nebo přidej jejich složku v Packages › Library a jednou potvrď souhlas v okně, které ukáže tvůj počítač. RPG Engine je čte na tomto počítači. Každá kampaň používá složky, které tam zapneš. Pán jeskyně v nich hledá, když rozhoduje o pravidle, po SRD, a uvádí knihu a stranu. Nejlépe se čtou jako text nebo jako PDF s vybíratelným textem. Naskenované PDF se čte z obrázků stránek, jen ve Windows, několik minut a s několika chybami. RPG Engine tvé příručky nikdy nemění, nikam neposílá jejich text a nikdy ho nekopíruje do kampaně.
 
-### 5.3 Vlastní pravidla a úpravy
+### 5.3 Domácí pravidla a vlastní doplňky
 
-Zeptej se Pána jeskyně: *[Vlastní pravidlo: přirozená 1 při útoku znamená, že upustíš zbraň.]* Pán jeskyně si ji zapamatuje jako dohodu u stolu, nebo napíše stránku či číslo do deníku postavy, když je to potřeba. Už sepsaná vlastní pravidla můžeš vložit jako textové soubory do složky `rules` v kampani.
+Požádej Pána jeskyně: *[Domácí pravidlo: přirozená 1 při útoku znamená, že upustíš zbraň.]* Pán jeskyně si ho zapamatuje jako dohodu stolu. Nebo napíše stránku či číslo do deníku postavy, když je to potřeba. Už napsaná domácí pravidla můžeš vložit jako textové soubory do složky `rules` v kampani.
 
 ### 5.4 Přidání nebo import vlastního herního systému
 
-Zatím ne: dnes RPG Engine hraje jen pátou edici ([Připravujeme](#9-coming-later)).
+Zatím ne: dnes RPG Engine hraje jen pátou edici ([Coming later](#9-coming-later)).
 
 ---
 

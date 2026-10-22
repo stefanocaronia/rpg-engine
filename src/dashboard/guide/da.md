@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d 4775a5e9 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 63d60934 16d08ee1 75985e6d ece214f0 8c9f41da 90f04271 f699a840 241f6611 e2839149. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -214,23 +214,23 @@ Når spillederen spørger dig om noget, bliver spillederens banner øverst, uans
 
 ### 5.1 Hvad et spilsystem er
 
-Dataene til ét spil: dets karakterark, dets tal, dets væsner, genstande, besværgelser og regeltekster. Hvert kampagneforløb spiller ét system. RPG Engine regner karakterarket ud og holder styr på, hvad der bruges, og hvad der kommer tilbage. Hvordan en egenskab virker, læser spilleder i reglerne og afgør, ligesom ved et bord.
+Data for ét spil: dets karakterark, tal, væsner, genstande, besværgelser og regeltekst. Hver kampagne spiller ét system. RPG Engine regner karakterarket ud og holder styr på, hvad der bruges, og hvad der kommer tilbage. Hvordan en evne virker, læser spillederen i reglerne og afgør, som ved et bord.
 
-### 5.2 Femte udgave, med i pakken
+### 5.2 Femte udgave, inkluderet
 
-Racerne, klasserne, underklasserne, en baggrund og en egenskab (feat) fra SRD 5.1; de 319 besværgelser, våbnene, rustningerne, de magiske genstande og monstrene; regelkapitlerne, som spilleder læser med den nøjagtige tekst; det fulde karakterark, udregnet.
+Racerne, klasserne, underklasserne, en baggrund og en færdighed (feat) fra SRD 5.1; de 319 besværgelser, våbnene, rustningerne, magiske genstande og monstrene; regelkapitlerne, som spillederen læser i deres præcise ordlyd; det fulde karakterark, udregnet.
 
-Du kan også spille indhold, som SRD'en mangler, fra en bog du ejer: Spilleder skriver det som sider i din kampagne, og RPG Engine behandler dem som sine egne. RPG Engine leveres kun med åbent indhold. Det, din spilleder kender, er ikke begrænset.
+Du kan også spille indhold, som SRD'en mangler, fra en bog, du selv ejer: Spillederen skriver det som sider i din kampagne, og RPG Engine behandler dem som sine egne. RPG Engine leveres kun med åbent indhold. Det, din spilleder kender, er ikke begrænset.
 
-Dine egne regelbøger kan blive kampagnens bibliotek. Fortæl spilleder, hvor de er: *[Mine regelbøger ligger i D:\Books\5e.]* Og sig ja i det vindue, din computer viser. RPG Engine læser dem én gang på denne computer. Spilleder søger i dem, når en regel skal afgøres, efter SRD'en, og angiver bog og side. De læses bedst som tekst eller som PDF'er, hvor teksten kan markeres. En scannet PDF læses ud fra billederne af siderne, kun på Windows, på nogle få minutter og med enkelte fejl. RPG Engine ændrer aldrig dine regelbøger, sender aldrig deres tekst nogen steder hen og kopierer den aldrig ind i en kampagne.
+Dine egne bøger kan blive dit bibliotek. Fortæl spillederen, hvor de er: *[Mine regelbøger ligger i D:\Books\5e.]* Eller tilføj deres mappe i Packages › Library, og sig ja i det vindue, din computer viser, én gang. RPG Engine læser dem på denne computer. Hver kampagne bruger de mapper, du slår til der. Spillederen søger i dem, når en regel skal afgøres, efter SRD'en, og angiver bog og side. De læses bedst som tekst eller som PDF-filer, hvor teksten kan markeres. En scannet PDF læses ud fra billederne af siderne, kun på Windows, på nogle få minutter og med enkelte fejl. RPG Engine ændrer aldrig dine bøger, sender aldrig deres tekst nogen steder hen og kopierer den aldrig ind i en kampagne.
 
 ### 5.3 Husregler og dine egne tilføjelser
 
-Spørg spilleder: *[Husregel: et naturligt 1 på et angreb betyder, at du taber dit våben.]* Spilleder gemmer den som en aftale ved bordet eller skriver en side eller et tal på karakterarket, hvis det er nødvendigt. Husregler, der allerede er skrevet ud, kan lægges som tekstfiler i kampagnens mappe `rules`.
+Spørg spillederen: *[Husregel: et naturligt 1 på et angreb betyder, at du taber dit våben.]* Spillederen gemmer den som en aftale ved bordet, eller skriver en side eller et tal på karakterarket, når det er nødvendigt. Husregler, der allerede er skrevet ud, kan lægges som tekstfiler i kampagnens mappe `rules`.
 
 ### 5.4 Tilføj eller importér dit eget spilsystem
 
-Ikke endnu: i dag spiller RPG Engine kun femte udgave ([Kommer senere](#9-coming-later)).
+Ikke endnu: I dag spiller RPG Engine kun femte udgave ([Kommer senere](#9-coming-later)).
 
 ---
 

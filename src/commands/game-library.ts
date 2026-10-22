@@ -1,14 +1,15 @@
 // The player's library as the commands use it (D-491): the entries config adds, checked and allowed by the player; what config shows of each; and what rules
 // finds in the books, after the game system's rules.
-import { basename, resolve } from "node:path";
+import { basename, isAbsolute, relative, resolve } from "node:path";
 import { campaignFileName, findCampaign, readListSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
 import { documentAt, documentKinds } from "../documents/index.ts";
-import { type LibraryBook, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks } from "../library/index.ts";
+import { dropUnlisted, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../library/index.ts";
 import { findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../rules/index.ts";
 import { systemWords } from "../systems/index.ts";
 import { languageName } from "./game-world.ts";
+import { YesRefused } from "./package.ts";
 
 /** What rules shows of the player's books (LIB-7). */
 export interface LibraryAnswer
@@ -44,12 +45,12 @@ const otherPages = 6;
 const mostTranslations = 6;
 
 /**
- * The entries to add to the library, as full paths (LIB-1): each a folder or a document that is there, outside every campaign; refused otherwise, saying how.
- * From the chat, those not yet in it need the player's yes in a window of their computer (D-478).
+ * The entries to turn on in the campaign's library, as full paths (LIB-1): each a folder or a document that is there, outside every campaign. Those not yet in
+ * this computer's library are added to it first, from the chat with the player's yes in a window of their computer (D-478); each is written as the computer has it.
  */
 export async function libraryAdditions(root: string, context: Context, given: string[]): Promise<string[]>
 {
-    const entries = given.map((entry) => resolve(context.folder, entry.trim()));
+    const entries = given.map((entry) => libraryPath(context, entry));
 
     for (const entry of entries) {
         const found = documentAt(entry);
@@ -73,57 +74,163 @@ export async function libraryAdditions(root: string, context: Context, given: st
         }
     }
 
-    const held = readListSetting(root, "library");
-    const added = entries.filter((entry) => !held.some((other) => samePath(context.platform, other, entry)));
-
-    if (added.length > 0 && context.terminal !== true) {
-        await playerAllows(root, context, added);
-    }
-
-    return entries;
-}
-
-/** The entries to take off the library, each as the list writes it when it holds it by another spelling of its path. */
-export function libraryRemovals(root: string, context: Context, given: string[]): string[]
-{
-    const held = readListSetting(root, "library");
-    return given.map((entry) => held.find((other) => samePath(context.platform, other, resolve(context.folder, entry.trim()))) ?? entry);
-}
-
-/** Each entry of the library as config shows it (LIB-5): its books read, those still being read, those skipped and why, or that it is not there now. */
-export function libraryShown(context: Context, entries: string[]): string[]
-{
-    if (context.bookIndex === undefined) {
-        return entries;
-    }
-
     const index = context.bookIndex;
-    return entries.map((entry) => {
-        const state = libraryState(index, [entry], libraryScope);
+    const added = entries.filter((entry) => computerSpelling(context, entry) === undefined);
+    // A book inside a folder the player allowed needs no yes again.
+    const allowed = index === undefined ? [] : libraryFolders(index);
+    const asked = added.filter((entry) => !allowed.some((folder) => isWithin(folder, entry)));
 
-        if (state.missing.length > 0) {
-            return `${entry} (not there now)`;
-        }
+    if (asked.length > 0 && context.terminal !== true) {
+        await playerAllows(root, context, asked);
+    }
 
-        const skipped = state.skipped.map((one) => `skipped ${basename(one.path)}: ${skippedWhy(one.path, one.why)}`);
-        const crowded = state.crowded.length > 0 ? [`more than ${mostBooks} documents, of which only the first ${mostBooks}: give the folder of this game's books`] : [];
-        const waiting = state.waiting.length > 0 ? [`${state.waiting.length} being read`] : [];
-        const counts = [`${state.books.length} ${state.books.length === 1 ? "book" : "books"} read`, ...waiting, ...skipped, ...crowded];
-        return `${entry} (${counts.join(", ")})`;
+    // Read again after the window: another campaign may have added meanwhile.
+    if (index !== undefined && added.length > 0) {
+        const now = libraryFolders(index);
+        saveLibraryFolders(index, [...now, ...added.filter((entry) => !now.some((other) => samePath(other, entry)))]);
+    }
+
+    return entries.map((entry) => computerSpelling(context, entry) ?? entry);
+}
+
+/**
+ * The entries to turn off in the campaign's library, each as the campaign writes it (LIB-1); with `computer`, they are taken off this computer's library too, with
+ * their books' text, and only those the campaign holds are turned off. Refused for one neither holds.
+ */
+export function libraryRemovals(root: string, context: Context, given: string[], computer: boolean): string[]
+{
+    const held = readListSetting(root, "library");
+    const entries = given.map((entry) => resolve(context.folder, unquoted(entry)));
+    const index = context.bookIndex;
+
+    if (!computer || index === undefined) {
+        return entries.map((entry) => held.find((other) => samePath(other, entry)) ?? entry);
+    }
+
+    const folders = libraryFolders(index);
+    const unknown = entries.find((entry) => ![...folders, ...held].some((other) => samePath(other, entry)));
+
+    if (unknown !== undefined) {
+        throw new Error(`${unknown} is not in this computer's library, so nothing changed. It holds: ${folders.length > 0 ? folders.join("; ") : "nothing"}.`);
+    }
+
+    const remaining = folders.filter((other) => !entries.some((entry) => samePath(other, entry)));
+    saveLibraryFolders(index, remaining);
+    dropUnlisted(index, remaining);
+    return held.filter((other) => entries.some((entry) => samePath(other, entry)));
+}
+
+/** The campaign's library as it is used: the entries it turns on that are in this computer's library, which the player allowed (LIB-1). */
+export function campaignLibrary(root: string, context: Context): string[]
+{
+    return readListSetting(root, "library").filter((entry) => computerSpelling(context, entry) !== undefined);
+}
+
+/**
+ * An entry of the library as config and the dashboard show it (LIB-5, D-491 (13)): its books read and those still being read, those skipped with why, whether
+ * it is there now and whether it holds more than a library takes; whether this campaign uses it, and whether it is in this computer's library.
+ */
+export interface LibraryEntryState
+{
+    path: string;
+    books: number;
+    reading: number;
+    skipped: { name: string; why: string; kind: SkippedKind; }[];
+    missing: boolean;
+    crowded: boolean;
+    used: boolean;
+    onComputer: boolean;
+}
+
+/**
+ * Why a book was skipped, as the dashboard says it in the player's words (LIB-5): a password, DRM, a book that stopped the reader twice, one this computer does
+ * not let be read, or one that does not read, damaged or not what its name says.
+ */
+export type SkippedKind = "password" | "drm" | "stuck" | "denied" | "broken";
+
+/** The kind of why a book was skipped, from the engine's words without the book's name or path, which may hold any word. */
+export function skippedKind(why: string): SkippedKind
+{
+    return /password/i.test(why)
+        ? "password"
+        : /\bDRM\b/.test(why)
+        ? "drm"
+        : /could not be read \d+ times/.test(why)
+        ? "stuck"
+        : /\b(EACCES|EPERM)\b|permission denied/i.test(why)
+        ? "denied"
+        : "broken";
+}
+
+/** This computer's library, each entry with whether the campaign uses it; then the campaign's entries the computer has not, to be added again. */
+export function libraryEntries(root: string, context: Context): LibraryEntryState[]
+{
+    const held = readListSetting(root, "library");
+    const computer = context.bookIndex === undefined ? [] : libraryFolders(context.bookIndex);
+    const away = held.filter((entry) => !computer.some((other) => samePath(other, entry)));
+    return [...computer, ...away].map((entry) => {
+        // One the player has not allowed on this computer is never looked through.
+        const state = context.bookIndex === undefined || away.includes(entry) ? undefined : libraryState(context.bookIndex, [entry], libraryScope);
+        return {
+            path: entry,
+            books: state?.books.length ?? 0,
+            reading: state?.waiting.length ?? 0,
+            skipped: state?.skipped.map((one) => ({ name: relative(entry, one.path) || basename(one.path), why: skippedWhy(one.path, one.why), kind: skippedKind(skippedWhy(one.path, one.why)) })) ?? [],
+            missing: state === undefined ? false : state.missing.length > 0,
+            crowded: state === undefined ? false : state.crowded.length > 0,
+            used: held.some((other) => samePath(other, entry)),
+            onComputer: !away.includes(entry),
+        };
     });
 }
 
-/** Starts reading the library's books still to read, in a process of their own, unless one reads already (LIB-3). */
-export function startLibraryReading(context: Context, entries: string[], state?: LibraryState): void
+/**
+ * The library as config shows it (LIB-5): each entry the campaign uses with its books read, those still being read, those skipped and why, or that it is not
+ * there now; then those of the computer it does not use, which add turns on without asking again.
+ */
+export function libraryShown(root: string, context: Context): string[]
 {
-    if (context.bookIndex === undefined || context.readLibrary === undefined || entries.length === 0) {
+    if (context.bookIndex === undefined) {
+        return readListSetting(root, "library");
+    }
+
+    const entries = libraryEntries(root, context);
+    const used = entries.filter((entry) => entry.used).map((entry) => {
+        if (!entry.onComputer) {
+            return `${entry.path} (not in this computer's library: add it again, with the player's yes)`;
+        }
+
+        if (entry.missing) {
+            return `${entry.path} (not there now)`;
+        }
+
+        const skipped = entry.skipped.map((one) => `skipped ${one.name}: ${one.why}`);
+        const crowded = entry.crowded ? [`more than ${mostBooks} documents, of which only the first ${mostBooks}: give the folder of this game's books`] : [];
+        const waiting = entry.reading > 0 ? [`${entry.reading} being read`] : [];
+        const counts = [`${entry.books} ${entry.books === 1 ? "book" : "books"} read`, ...waiting, ...skipped, ...crowded];
+        return `${entry.path} (${counts.join(", ")})`;
+    });
+    const unused = entries.filter((entry) => !entry.used).map((entry) => `${entry.path} (on this computer, not used here: add turns it on)`);
+    return [...used, ...unused];
+}
+
+/** Starts reading the books of this computer's library still to read, in a process of its own, unless one reads already (LIB-3). */
+export function startLibraryReading(context: Context, state?: LibraryState): void
+{
+    const index = context.bookIndex;
+
+    if (index === undefined || context.readLibrary === undefined) {
         return;
     }
 
-    const now = state ?? libraryState(context.bookIndex, entries, libraryScope);
+    try {
+        const now = state ?? libraryState(index, libraryFolders(index), libraryScope);
 
-    if (now.waiting.length > 0 && libraryReader(context.bookIndex) === undefined) {
-        context.readLibrary(entries);
+        if (now.waiting.length > 0 && libraryReader(index) === undefined) {
+            context.readLibrary();
+        }
+    } catch {
+        // A list that does not read is said by config and the dashboard.
     }
 }
 
@@ -134,19 +241,26 @@ export function startLibraryReading(context: Context, entries: string[], state?:
 export function libraryAnswer(
     root: string,
     context: Context,
-    system: { folder: string; language: string; lengthUnit?: string; } | undefined,
+    system: SearchedSystem & { lengthUnit?: string; } | undefined,
     text: string,
     systemAnswered: boolean,
 ): LibraryAnswer | undefined
 {
-    const entries = readListSetting(root, "library");
+    let entries: string[];
+
+    // A list of the computer that does not read leaves rules the system alone: config and the dashboard say how to fix it.
+    try {
+        entries = campaignLibrary(root, context);
+    } catch {
+        return undefined;
+    }
 
     if (context.bookIndex === undefined || entries.length === 0) {
         return undefined;
     }
 
     const state = libraryState(context.bookIndex, entries, libraryScope);
-    startLibraryReading(context, entries, state);
+    startLibraryReading(context, state);
     const languages = [...new Set(state.books.flatMap((book) => (book.language === undefined ? [] : [book.language])))];
     const base = {
         languages: languages.map(languageName),
@@ -275,19 +389,44 @@ function pageNamed(books: LibraryBook[], text: string): LibraryAnswer["page"]
 }
 
 /** The system's words in the books' languages that a search names (LIB-6): "grapple" finds Afferrato in an Italian book. */
-function translationsOf(system: { folder: string; language: string; }, languages: string[], text: string): string[]
+function translationsOf(system: SearchedSystem, languages: string[], text: string): string[]
 {
-    const found = languages.filter((language) => language !== system.language.split("-")[0]).flatMap((language) => {
-        try {
-            const words = systemWords(system.folder, language);
-            return Object.entries({ ...words?.groups, ...words?.names, ...words?.words })
-                .filter(([english]) => /\p{L}{4}/u.test(english) && hasAllWords(text, english))
-                .map(([, translated]) => translated);
-        } catch {
-            return [];
-        }
-    });
-    return [...new Set(found)].slice(0, mostTranslations);
+    return [...new Set(languages.flatMap((language) => systemWordsNamed(system, language, text, false).map((one) => one.named)))].slice(0, mostTranslations);
+}
+
+/** The game system as its words are searched by: where its words are, its language, and the words a foe's hits are heard in, which name no rule. */
+export interface SearchedSystem
+{
+    folder: string;
+    language: string;
+    combat?: { inWords: string[]; };
+}
+
+/**
+ * The system's words that a search names, from the system's language into another or back (LIB-6, RUL-8): "grapple" gives Afferrato, the system's Italian, for
+ * an Italian book; "afferrato" gives Grappled, for the system. Only words of four letters or more find one; none in the system's own language, and none of the
+ * words a foe's hits are heard in. Each says whether its words are the whole search, as afferrato is, or only part of it, as tiro of tiro per colpire.
+ */
+export function systemWordsNamed(system: SearchedSystem, language: string, text: string, intoSystem: boolean): { named: string; whole: boolean; }[]
+{
+    if (language.split("-")[0] === system.language.split("-")[0]) {
+        return [];
+    }
+
+    try {
+        const words = systemWords(system.folder, language);
+        const heard = (system.combat?.inWords ?? []).map(comparableText);
+        // Not the names, which are of fields by their ids, as cha or str-save.
+        const pairs = Object.entries({ ...words?.groups, ...words?.words }).filter(([own]) => !heard.includes(comparableText(own)));
+        const found = pairs.map(([own, translated]) => (intoSystem ? [translated, own] : [own, translated])).filter(([searched]) => /\p{L}{4}/u.test(searched) && hasAllWords(text, searched));
+        // Grappled and grappled, a name and a word of the same, are one.
+        return found
+            .filter(([, named], at) => found.findIndex(([, other]) => comparableText(other) === comparableText(named)) === at)
+            .slice(0, mostTranslations)
+            .map(([searched, named]) => ({ named, whole: hasAllWords(searched, text) }));
+    } catch {
+        return [];
+    }
 }
 
 /** How a part of a book is cited: "Book, PDF p. 194", or "Book, part 3" for a document without pages. */
@@ -296,22 +435,23 @@ function citeOf(book: SearchedBook & { pdf?: boolean; }, part: number): string
     return `${book.name}, ${book.pdf === true ? "PDF p." : "part"} ${part + 1}`;
 }
 
-/** The player's yes to reading these entries, in a window of their computer: the master cannot give it (D-478). */
+/** The player's yes to reading these entries, once for this computer, in a window of their computer: the master cannot give it (D-478). */
 async function playerAllows(root: string, context: Context, entries: string[]): Promise<void>
 {
     const campaign = readTextSetting(root, "name") ?? basename(root);
-    const question = `The game master of ${campaign} asks to read the documents in ${entries.join(", ")}, to search your books for the rules. `
-        + "Their text stays on this computer, in RPG Engine's own folder, and nothing in those folders is ever changed. Allow it?";
+    const question = `RPG Engine asks to read the documents in ${entries.join(", ")}, to search your books for the rules: for the game master of ${campaign}, `
+        + "and of each campaign where you turn them on. Their text stays on this computer, in RPG Engine's own folder, and nothing in those folders is ever changed. Allow it?";
     const answer = context.confirm === undefined ? "none" : await context.confirm.ask("Your books for the game master", question, context.signal, { yes: "Allow", no: "Do not allow" });
 
     if (answer === "no") {
-        throw new Error("The player did not allow it. Nothing changed: ask again only if they bring it up.");
+        throw new YesRefused("The player did not allow it. Nothing changed: ask again only if they bring it up.", "declined");
     }
 
     if (answer === "none") {
-        throw new Error(
+        throw new YesRefused(
             "Only the player can add a folder to the library, in a window of their computer, and none can be shown here: they can add it in their terminal, "
                 + `in the campaign's folder, with rpg config library ${entries.map((entry) => `--add "${entry}"`).join(" ")}. Nothing changed.`,
+            "no-window",
         );
     }
 }
@@ -335,9 +475,26 @@ function onlyOne<T>(items: T[]): T | undefined
     return items.length === 1 ? items[0] : undefined;
 }
 
-/** The same path however it is written: resolved, and in any case on Windows. */
-function samePath(platform: string, one: string, other: string): boolean
+/** An entry given to add, as a full path: without the quotes a path copied from the file manager has; a relative one only in the player's terminal (LIB-1). */
+function libraryPath(context: Context, given: string): string
 {
-    const key = (path: string): string => (platform === "win32" ? resolve(path).toLowerCase() : resolve(path));
-    return key(one) === key(other);
+    const entry = unquoted(given);
+
+    if (!isAbsolute(entry) && context.terminal !== true) {
+        throw new Error(`${entry} is no full path: give the whole path of a folder of the player's books, or of a book, from its drive or its root. Nothing changed.`);
+    }
+
+    return resolve(context.folder, entry);
+}
+
+/** A path as given, without the quotes of one copied from the file manager. */
+export function unquoted(entry: string): string
+{
+    return entry.trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
+}
+
+/** An entry as this computer's library writes it, by any spelling of its path; none when the computer has not it. */
+function computerSpelling(context: Context, entry: string): string | undefined
+{
+    return context.bookIndex === undefined ? undefined : libraryFolders(context.bookIndex).find((other) => samePath(other, entry));
 }
