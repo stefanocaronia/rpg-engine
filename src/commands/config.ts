@@ -25,6 +25,7 @@ import {
     readCampaignData,
     readSettings,
     readTextSetting,
+    refreshHostFiles,
     requireCampaign,
     rigors,
     saveModes,
@@ -44,6 +45,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
+import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
@@ -232,6 +234,12 @@ function configure(input: ConfigInput, context: Context): ConfigResult
             "Written for Claude Code, Codex and Gemini CLI: it applies from the next chat; in Codex and Gemini CLI only in a folder they trust; an effort picked in the app for one chat wins there.",
             ...unwritten,
         ];
+    }
+
+    // The character agent written or taken away at once, not when the server starts again (D-490).
+    if (input.setting?.trim() === "voices" && input.value !== undefined) {
+        refreshHostFiles(root, hostInstructions(), context.platform);
+        replaced = [...replaced, "Claude Code finds the character agent, or finds it gone, from the next chat."];
     }
 
     // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.

@@ -30,6 +30,7 @@ A playtest plays a scenario as with a real user: an AI master in Claude Code tha
 | `15-lingua-e-lunghezza/` | the campaign of 13 in English (`en/`) and in German (`de/`), three evenings each, the first cut short in the fight: the language, the dashboard's words, a new master resuming mid-fight, continuity |
 | `16-i-controlli/` | the plateau of 11 with Bless kept by Corrado, goblin archers and a bugbear on him: the engine's checks of its state, silent while it is coherent (D-473) |
 | `17-un-avventura-a-meta/` | the party of 11 safe at the inn on the evening of day 6, and an adventure a friend gave the player (`adventure/`, copied beside the campaign): installed, read, its start put into the world, its dates moved, a hook brought into the story (D-483) |
+| `17b-la-sera-del-pozzo/` | the world of 17 on the evening the well is walled up, played once for each value of `voices`: Ermanno questioned, Gisella's promise, and the character agent's calls counted (D-490) |
 | `18-un-libro/` | a new campaign in its setup, and a book the player owns as a PDF, Kipling's «The Man Who Would Be King»: imported from the chat, a start chosen, the world set there, the narration as the book's, session zero with the book's character (D-484, D-489) |
 
 Only scenarios live here, never results or quotes from a dialogue. The results of a run (the filled checklist, the answers to the questionnaire, the numbers to compare between phases) go to the private repo, in `private/project/playtest/<scenario>-<date>.md`, such as `01-guadoscuro-2026-10-04.md`; the transcripts stay in the run's output folder.
@@ -39,7 +40,7 @@ Only scenarios live here, never results or quotes from a dialogue. The results o
 1. Commit everything, and `npm link` once: the run refuses uncommitted changes, builds `dist/` from the commit and checks that the global `rpg` is that build. A run of several sessions checks again before each: while it plays, nothing else may change the checkout, so run it from a worktree of its own when other work goes on there.
 2. Make the campaign as the scenario's `start.md` says, in a folder outside the repo and the home folder, with no `&`: one folder per run, `<runs>\<date>\<n>\`, where `<runs>` is a folder of yours, such as `<runs>\2026-10-03\1\guadoscuro`. The master sees the path, and Claude Code loads the instructions of every folder above it. Every run starts from a new campaign.
 3. Put the output folder next to the campaign, such as `<runs>\2026-10-03\1\results`: a run folder can then be deleted or archived whole.
-4. Try it first on a throwaway campaign and output folder, with `--max 1 --hard 2`.
+4. Try it first on a throwaway campaign and output folder, with `--max 1 --hard 2`; or add `--check` to the command of session 1, which makes every check below, `/context` included, and plays nothing.
 
 ## Run
 
@@ -79,7 +80,7 @@ Before the first turn the run stops unless:
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`; with `--prepared`, no scene opened and no roll;
 - a later session continues the player's chat and the campaign of the session before, which stopped in play (player, hard cap or budget), not on an error or a broken isolation;
 - a run from a save has a new output folder and a new campaign folder, and starts after a session that stopped in play;
-- `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and no custom agents.
+- `/context` (free) lists as memory files, of any type, exactly the campaign's `CLAUDE.md` and `AGENTS.md`, only the `rpg` server, and as custom agents only `rpg-character`, the character agent, which a campaign with `voices: master` lacks (D-490).
 
 At every turn it checks that `rpg` is connected, with the planned model and `dontAsk`; otherwise it stops, and the run is void.
 
@@ -89,7 +90,7 @@ At every turn it checks that `rpg` is connected, with the planned model and `don
 |---|---|
 | `--setting-sources project,local` | none of the developer's settings, `~/.claude/CLAUDE.md`, agents or plugins; the campaign's own settings turn auto memory off, so session 2 starts from the files alone (D-242) |
 | `--strict-mcp-config --mcp-config .mcp.json` | only the `rpg` server, approved without a person |
-| `--permission-mode dontAsk --allowedTools mcp__rpg WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: any other write or command is denied, and the denial recorded |
+| `--permission-mode dontAsk --allowedTools mcp__rpg Agent(rpg-character) WebSearch WebFetch` | all of Claude Code's tools, as for a user, but nobody approves: the character agent is allowed; any other write or command is denied, and the denial recorded |
 | `--settings` with an `Elicitation` hook | the rpg server's buttons (`ask`) go to the AI player, who reads what the master wrote so far and presses one, as in a chat that shows them: [answer-form.mjs](answer-form.mjs); each press is in `dialogue.md` as **Buttons**, and one that fails in `forms-errors.txt` (D-148, D-246) |
 | `--master-host codex` | Codex as the master: `codex exec`, resumed turn by turn, with a Codex home of its own in the output folder (the login and the campaign trusted), so that it reads the campaign's AGENTS.md and `.codex/config.toml`; its events beside each turn (`M3.codex.jsonl`) and, in Claude Code's shape, in the turn's file; no dashboard, as each turn starts a new rpg server; no cost, Codex's tokens instead |
 | `--master-effort`, as `effortLevel` in those settings | the master's effort, when the run asks for one: low to max; Claude Code's own otherwise |

@@ -18,6 +18,7 @@ const usage = [
     '  node playtests/run-playtest.mjs --from <an earlier run\'s session-N folder> --campaign <new folder> --profile <player.md> --out <new folder> --first "<the player\'s first message>" [--prepared <brief.md>] [--max 50]',
     "  node playtests/run-playtest.mjs --profile <player.md> --out <folder> --questionnaire <questionnaire.md>",
     "  Either of the first two may add --dashboard [--moments <moments.yaml>], to play with the dashboard open; --uncommitted, to test the working tree as it is; --master-effort low|medium|high|xhigh|max, the master's effort; and --master-host codex, Codex as the master instead of Claude Code.",
+    "  The first may add --check: the checks before the first turn, /context included, and nothing played.",
 ].join("\n");
 const options = readOptions();
 const repo = fileURLToPath(new URL("..", import.meta.url));
@@ -68,6 +69,14 @@ async function playSession()
 
     checkCampaign(campaign, hostFiles);
     checkRestart(folder, campaign);
+
+    if (options.check) {
+        mkdirSync(out, { recursive: true });
+        checkIsolation(campaign, join(out, "check-context.md"));
+        console.log(`Checked: ${campaign} is ready for session ${options.session}, the master isolated (${join(out, "check-context.md")}). Nothing was played.`);
+        return;
+    }
+
     mkdirSync(join(folder, "turns"), { recursive: true });
     mkdirSync(playerFolder, { recursive: true });
 
@@ -750,6 +759,7 @@ function readOptions()
                 dashboard: { type: "boolean" },
                 moments: { type: "string" },
                 uncommitted: { type: "boolean" },
+                check: { type: "boolean" },
                 "master-model": { type: "string", default: "claude-opus-5-5" },
                 "master-host": { type: "string", default: "claude" },
                 "player-model": { type: "string", default: "claude-sonnet-5-5" },
@@ -771,6 +781,10 @@ function readOptions()
 
         if (values["master-host"] === "codex" && values.dashboard) {
             throw new Error("With --master-host codex each turn starts a new rpg server, so the dashboard would not live from one turn to the next: leave --dashboard out.");
+        }
+
+        if (values.check && (values.from || values.questionnaire || values["master-host"] === "codex")) {
+            throw new Error("--check looks at a campaign made by hand, for Claude Code: leave out --from, --questionnaire and --master-host codex.");
         }
 
         if (values.moments && !values.dashboard) {

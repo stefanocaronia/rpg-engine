@@ -34,6 +34,7 @@ function countSession(folder, before)
     const turnFiles = readdirSync(join(folder, "turns")).filter((name) => /^M\d+\.jsonl$/.test(name)).sort((a, b) => turnNumber(a) - turnNumber(b));
     const turns = turnFiles.map((name) => ({ label: name.replace(".jsonl", ""), events: readLines(join(folder, "turns", name)) }));
     const player = playerMessages(join(folder, "dialogue.md"));
+    const worldPages = pageNames(join(campaignAfter, "world"));
     const counts = {
         turns: turns.length,
         apiRounds: 0,
@@ -42,6 +43,7 @@ function countSession(folder, before)
         turnsWithoutCalls: [],
         toolSearch: [],
         otherTools: [],
+        characterAgent: [],
         denials: [],
         errors: [],
         showWithSecret: 0,
@@ -86,10 +88,12 @@ function countSession(folder, before)
 
     for (const turn of turns) {
         const result = turn.events.find((event) => event.type === "result");
-        const assistant = turn.events.filter((event) => event.type === "assistant");
-        const toolUses = assistant.flatMap((event) => event.message.content.filter((block) => block.type === "tool_use").map((block) => ({ ...block, subagent: Boolean(event.parent_tool_use_id) })));
-        const toolResults = new Map(turn.events.filter((event) => event.type === "user").flatMap((event) => Array.isArray(event.message.content) ? event.message.content : []).filter((block) => block.type === "tool_result").map((block) => [block.tool_use_id, block]));
-        const text = assistant.filter((event) => !event.parent_tool_use_id).flatMap((event) => event.message.content).filter((block) => block.type === "text").map((block) => block.text.trim()).join("\n\n");
+        const assistant = turn.events.filter((event) => event.type === "assistant" && !event.parent_tool_use_id);
+        // The master's own calls: those of the character agent it calls are counted apart (D-490).
+        const toolUses = assistant.flatMap((event) => event.message.content.filter((block) => block.type === "tool_use"));
+        const toolResults = new Map(turn.events.filter((event) => event.type === "user").flatMap(contentOf).filter((block) => block.type === "tool_result").map((block) => [block.tool_use_id, block]));
+        const text = assistant.flatMap((event) => event.message.content).filter((block) => block.type === "text").map((block) => block.text.trim()).join("\n\n");
+        counts.characterAgent.push(...characterCalls(turn, toolUses.filter(isCharacterCall), worldPages));
         counts.apiRounds += result?.num_turns ?? 0;
         counts.callsPerTurn.push({ turn: turn.label, calls: toolUses.length });
 
@@ -121,8 +125,8 @@ function countSession(folder, before)
 
             if (name === "ToolSearch") {
                 counts.toolSearch.push({ turn: turn.label, query: use.input?.query });
-            } else if (!use.name.startsWith("mcp__rpg__")) {
-                counts.otherTools.push({ turn: turn.label, tool: use.name, subagent: use.subagent, input: JSON.stringify(use.input).slice(0, 300) });
+            } else if (!use.name.startsWith("mcp__rpg__") && !isCharacterCall(use)) {
+                counts.otherTools.push({ turn: turn.label, tool: use.name, input: JSON.stringify(use.input).slice(0, 300) });
             }
 
             countRpgCall(counts, turn.label, name, use.input ?? {}, outputText, { eventPages, playerCharacters }, Boolean(output?.is_error));
@@ -342,6 +346,109 @@ function countSheetTools(counts, turn, name, input, output, refused)
     }
 }
 
+/**
+ * The master's calls in a turn to the character agent (D-490): whom it voiced, the name the message begins with; whether its view was theirs; in the background or
+ * not; how long it took and its tokens; whether it answered with Says and Does; the names it said that neither the message nor its view gave it.
+ */
+function characterCalls(turn, calls, worldPages)
+{
+    return calls.map((call) => {
+        const own = turn.events.filter((event) => event.parent_tool_use_id === call.id);
+        const started = systemEvent(turn, "task_started", call.id);
+        const notified = systemEvent(turn, "task_notification", call.id);
+        const returned = turn.events.find((event) => event.type === "user" && !event.parent_tool_use_id && contentOf(event).some((block) => block.tool_use_id === call.id));
+        const result = returned === undefined ? undefined : contentOf(returned).find((block) => block.tool_use_id === call.id);
+        // Its last message is streamed only when it ran in the background: otherwise it comes back whole, in the call's result.
+        const said = textOf(own.filter((event) => event.type === "assistant").flatMap(contentOf));
+        const answer = said || textOf(returned?.tool_use_result?.content ?? []) || (notified?.summary ?? "");
+        const prompt = String(call.input?.prompt ?? "");
+        const uses = own.filter((event) => event.type === "assistant").flatMap(contentOf).filter((block) => block.type === "tool_use");
+        const views = uses.filter((block) => shortName(block.name) === "view");
+        const known = [prompt, ...own.filter((event) => event.type === "user").flatMap(contentOf).filter((block) => block.type === "tool_result").map(resultText)].join("\n");
+        const milliseconds = notified?.usage?.duration_ms ?? returned?.tool_use_result?.totalDurationMs;
+        return {
+            turn: turn.label,
+            who: firstName(prompt),
+            as: views.map((view) => view.input?.as ?? "(none)"),
+            otherCalls: uses.filter((block) => shortName(block.name) !== "view").map((block) => shortName(block.name)),
+            background: started?.is_backgrounded === true || call.input?.run_in_background === true,
+            failed: Boolean(result?.is_error) || (notified !== undefined && notified.status !== "completed") || answer === "",
+            seconds: milliseconds === undefined ? undefined : round(milliseconds / 1000),
+            tokensRead: tokensRead(own, said === "" ? returned?.tool_use_result?.usage : undefined),
+            tokens: notified?.usage?.total_tokens ?? returned?.tool_use_result?.totalTokens,
+            saysAndDoes: /^\W*(Says|Dice)\W*:/im.test(answer) && /^\W*(Does|Fa)\W*:/im.test(answer),
+            unknownNames: unknownNames(answer, known, worldPages),
+            answer: answer.slice(0, 600),
+        };
+    });
+}
+
+/** Whether a tool use is the master calling the character agent (D-490). */
+function isCharacterCall(use)
+{
+    return ["Agent", "Task"].includes(use.name) && use.input?.subagent_type === "rpg-character";
+}
+
+/**
+ * What a call's subagent read over its model calls, cached or not: each message streamed counted once, and `last`, the usage of the message that came back whole.
+ * What it wrote the stream does not tell: its usage is taken as a message begins.
+ */
+function tokensRead(events, last)
+{
+    const messages = new Map(events.filter((event) => event.type === "assistant" && event.message?.usage).map((event) => [event.message.id, event.message.usage]));
+    const usages = [...messages.values(), ...(last === undefined ? [] : [last])];
+    return sum(usages.map((usage) => (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)));
+}
+
+function textOf(blocks)
+{
+    return blocks.filter((block) => block.type === "text").map((block) => block.text).join("\n").trim();
+}
+
+/** The name the master's message to the character agent begins with, as Voices asks: «Ermanno. Sei all'aia…» gives Ermanno. */
+function firstName(prompt)
+{
+    return prompt.trim().match(/^[^.,:;!?\n«"“(—–]+/)?.[0].trim() ?? "";
+}
+
+/** Whether the view was the voiced character's own: `as` the name the message begins with, or its first words, as Lucia for «Lucia la Gazza». */
+function viewIsTheirs(as, who)
+{
+    const [view, name] = [as, who].map((text) => text.toLocaleLowerCase().trim());
+    return view !== "" && (view === name || name.startsWith(`${view} `));
+}
+
+/**
+ * The names an answer says that what the character was given never says: the world's page names, and the capitalized words that do not begin a sentence, such as
+ * a name it made up. Only a hint to read the answer by: a name may be known in other words.
+ */
+function unknownNames(answer, known, worldPages)
+{
+    const knownText = known.toLocaleLowerCase();
+    const pages = worldPages.filter((page) => answer.includes(page));
+    const capitalized = [...answer.matchAll(/\p{Lu}[\p{L}'’]+/gu)].filter((match) => !beginsSentence(answer.slice(0, match.index))).map((match) => match[0]);
+    const labels = ["Says", "Does", "Keeps", "Dice", "Fa", "Tiene"];
+    return [...new Set([...pages, ...capitalized])].filter((name) => !labels.includes(name) && !knownText.includes(name.toLocaleLowerCase()));
+}
+
+/** Whether a word after this text begins a sentence, a line or a quotation. */
+function beginsSentence(before)
+{
+    return /(^|[\n.!?:;…«"“(—–-])[\s*_]*$/.test(before);
+}
+
+/** A system event of Claude Code about a subagent call, such as task_started. */
+function systemEvent(turn, subtype, toolUseId)
+{
+    return turn.events.find((event) => event.type === "system" && event.subtype === subtype && event.tool_use_id === toolUseId);
+}
+
+/** The content blocks of an event's message, or none when its content is a string. */
+function contentOf(event)
+{
+    return Array.isArray(event.message?.content) ? event.message.content : [];
+}
+
 function effectDuration(input)
 {
     if (input.action !== "add") {
@@ -376,6 +483,13 @@ function markdown(details)
         ["Compactions (next two calls)", (s) => s.compactions.map((c) => `${c.turn}: ${c.nextCalls.join(" → ") || "none"}`).join("; ") || "0"],
         ["ToolSearch queries", (s) => s.toolSearch.map((search) => `${search.turn} ${String(search.query).replace(/mcp__rpg__/g, "")}`).join("; ")],
         ["Other tools (non-rpg)", (s) => s.otherTools.length],
+        ["Character agent: calls (in the background, failed); its calls other than view", (s) => characterCallsLine(s.characterAgent)],
+        ["Character agent: calls per turn, median (max); by character", (s) => characterTurnsLine(s.characterAgent, s.callsPerTurn.map((turn) => turn.turn))],
+        ["Character agent: the same character more than once in a turn", (s) => repeatedCalls(s.characterAgent).join(", ") || "0"],
+        ["Character agent: seconds per call, median (max); tokens per call, read over its model calls and Claude Code's count (medians)", (s) => characterCostLine(s.characterAgent)],
+        ["Character agent: view as the name the message begins with; otherwise", (s) => characterViewsLine(s.characterAgent)],
+        ["Character agent: answers with Says and Does", (s) => `${s.characterAgent.filter((call) => call.saysAndDoes).length} of ${s.characterAgent.length}`],
+        ["Character agent: names it said that neither the message nor its view gave it", (s) => s.characterAgent.filter((call) => call.unknownNames.length > 0).map((call) => `${call.turn} ${call.who}: ${call.unknownNames.join(", ")}`).join("; ") || "0"],
         ["Denials", (s) => s.denials.length],
         ["Tool errors", (s) => s.errors.map((error) => `${error.turn} ${error.tool}`).join(", ") || "0"],
         ["show with a secret block", (s) => `${s.showWithSecret} of ${s.shows}`],
@@ -430,6 +544,46 @@ function speedLine(speed)
     const steps = sum(speed.map((turn) => turn.steps));
     const perStep = (value) => (steps === 0 ? 0 : round(sum(speed.map((turn) => turn[value])) / steps));
     return `${median(speed.map((turn) => turn.seconds))} s, ${median(speed.map((turn) => turn.steps))} steps; ${perStep("seconds")} s and ${perStep("calls")} calls a step`;
+}
+
+function characterCallsLine(calls)
+{
+    const others = calls.flatMap((call) => call.otherCalls.map((name) => `${call.turn} ${name}`));
+    return `${calls.length} (${calls.filter((call) => call.background).length}, ${calls.filter((call) => call.failed).length}); ${others.join(", ") || "none"}`;
+}
+
+/** The calls of each master turn, the turns without one included, and how many each character had. */
+function characterTurnsLine(calls, turns)
+{
+    const perTurn = turns.map((turn) => ({ turn, calls: calls.filter((call) => call.turn === turn).length }));
+    return calls.length ? `${median(perTurn.map((turn) => turn.calls))} (${maxOf(perTurn, "calls")}); ${countBy(calls, (call) => call.who || "(no name)")}` : "0";
+}
+
+/** The characters called more than once in one master turn: one moment asked twice, or, with voices important or always, each line they spoke. */
+function repeatedCalls(calls)
+{
+    const byTurn = {};
+
+    for (const call of calls) {
+        const key = `${call.turn} ${call.who || "(no name)"}`;
+        byTurn[key] = (byTurn[key] ?? 0) + 1;
+    }
+
+    return Object.entries(byTurn).filter(([, count]) => count > 1).map(([key, count]) => `${key} ${count}`);
+}
+
+function characterCostLine(calls)
+{
+    const timed = calls.filter((call) => call.seconds !== undefined).map((call) => ({ turn: `${call.turn} ${call.who}`, seconds: call.seconds }));
+    const counted = calls.filter((call) => call.tokens !== undefined).map((call) => call.tokens);
+    return calls.length ? `${median(timed.map((call) => call.seconds))} s (${maxOf(timed, "seconds")}); ${median(calls.map((call) => call.tokensRead))}, ${median(counted)}` : "-";
+}
+
+function characterViewsLine(calls)
+{
+    const theirs = calls.filter((call) => call.as.length > 0 && call.as.every((as) => viewIsTheirs(as, call.who)));
+    const others = calls.filter((call) => !theirs.includes(call)).map((call) => `${call.turn} ${call.who}: ${call.as.length ? `as ${call.as.join(", ")}` : "no view"}`);
+    return `${theirs.length} of ${calls.length}; ${others.join(", ") || "none"}`;
 }
 
 function uniqueDue(due)

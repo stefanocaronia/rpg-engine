@@ -95,12 +95,12 @@ Clean, compact, ordered code that is easy to understand.
 
 ## Colleagues
 
-Nine experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [Crew](https://github.com/stefanocaronia/claude-crew) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), its commands hand the chat over ("voglio parlare con Matteo", "torna Claude"), and it draws the Crew panel. Install it once with `/plugin marketplace add stefanocaronia/claude-crew` and `/plugin install crew@claude-crew`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
+Ten experts review the work and discuss it with the maintainer: subagents with a profile, a memory and a todo. The [Crew](https://github.com/stefanocaronia/claude-crew) plugin runs them: its skill holds the method (hiring and firing, portraits, the round, conversations and meetings), its commands hand the chat over ("voglio parlare con Matteo", "torna Claude"), and it draws the Crew panel. Install it once with `/plugin marketplace add stefanocaronia/claude-crew` and `/plugin install crew@claude-crew`. Each colleague is `.claude/agents/<id>.md`, their profile, and `.claude/agent-memory/<id>/`, with `MEMORY.md`, `todo.md`, their portrait and `notes/`.
 
 | Who | Field | `<id>` |
 |---|---|---|
 | Giulia Ferri | the game master's craft, the instructions | `giulia-ferri` |
-| Andrea Moretti | rules as data, systems, licences | `andrea-moretti` |
+| Andrea Moretti | rules as data and game systems | `andrea-moretti` |
 | Sara Lombardi | game design: the experience, modes and options | `sara-lombardi` |
 | Davide Russo | the player who does not program | `davide-russo` |
 | Elena Galli | AI agents: tools, MCP, instructions, hosts | `elena-galli` |
@@ -108,6 +108,7 @@ Nine experts review the work and discuss it with the maintainer: subagents with 
 | Tommaso Valli | the quality of the narration and how it fits the game; judges it in playtests and corrects the AI's instructions in his field | `tommaso-valli` |
 | Joseph Lanza | the dashboard: UX, graphics and frontend code | `joseph-lanza` |
 | Mei Lin | localization: the dashboard's languages, the glossary of game terms in each, right-to-left and Asian scripts | `mei-lin` |
+| Riccardo Sala | the law: copyright and content licences, the terms of AI providers and hosts, privacy, distribution | `riccardo-sala` |
 
 Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain background in each colleague's color, made by Codex.
 

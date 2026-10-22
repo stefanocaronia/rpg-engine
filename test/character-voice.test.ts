@@ -44,12 +44,13 @@ describe("the character agent (D-490)", () => {
 
     it("is gone when the player wants the master to voice every character, and comes back when they want it again", async () => {
         const path = join(folder, ".claude", "agents", "rpg-character.md");
+        // At once, not when the server starts again.
         await runCommandLine(["config", "voices", "master"], context);
-        refreshHostFiles(folder, hostInstructions(), context.platform);
         expect(existsSync(path)).toBe(false);
         inPlay(folder);
         expect((await runCommandLine(["instructions"], { ...context, host: () => "claude-code", characterAgent: true })).output).not.toContain("## Voices");
         await runCommandLine(["config", "voices", "auto"], context);
+        expect(existsSync(path)).toBe(true);
         const told = (): Promise<string> => runCommandLine(["instructions"], { ...context, host: () => "claude-code", characterAgent: true }).then((result) => result.output);
         expect(await told()).not.toMatch(/at every line they speak/);
         // Always for the main characters, or for everyone, as the player chose: on top of the key moments.
@@ -57,7 +58,5 @@ describe("the character agent (D-490)", () => {
         expect(await told()).toContain("those whose page has `kind: main`, answer through the agent at every line they speak");
         await runCommandLine(["config", "voices", "always"], context);
         expect(await told()).toContain("each one answers through the agent at every line they speak");
-        refreshHostFiles(folder, hostInstructions(), context.platform);
-        expect(existsSync(path)).toBe(true);
     });
 });
