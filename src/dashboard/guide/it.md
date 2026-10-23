@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -203,11 +203,11 @@ Ogni impostazione può cambiare, in chat o nelle **Impostazioni**. Una decisione
 
 Una pagina sul tuo computer, che si apre solo nel browser di quel computer, viva finché la chat è aperta. Quando la chat si chiude mostra *Non collegato*; torna da sola con la chat successiva.
 
-- **Gruppo**: la tua scheda e quelle dei compagni. Clicca un numero per tirarlo; passaci sopra col mouse per vedere da dove viene. Accanto, i tiri.
+- **Gruppo**: la tua scheda e quelle dei compagni. Clicca un numero per tirarlo; passaci sopra col mouse per vedere da dove viene e, quando una freccia segna il suo dado, cosa rende il tiro migliore o peggiore. Accanto, i tiri.
 - **Scena**: dove sei, la sua immagine e la sua mappa, chi c'è, cosa sta succedendo; in uno scontro, i turni e la scheda del tuo personaggio.
 - **Diario**: le missioni, la storia, i diari dei compagni, le tue note.
 - **Mondo**: la mappa del mondo, ciò che il tuo personaggio sa, i documenti trovati e il calendario.
-- **Il vassoio dei dadi**: scegli dadi e modificatore, e lancia.
+- **Il vassoio dei dadi**: scegli dadi e modificatore, e lancia; ×2 raddoppia i dadi, mai il modificatore, come per un colpo critico.
 - **Salvataggi**, **Guida**, **Impostazioni** e **Info**, come icone in fondo alla riga. Le Impostazioni tengono anche le preferenze della pagina: tema, suono dei dadi, set di dadi.
 
 Quando il master ti chiede qualcosa, il suo banner resta in alto, in qualsiasi sezione tu sia.
