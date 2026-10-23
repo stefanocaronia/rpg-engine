@@ -105,11 +105,11 @@ const systemSchema = z.object({
         limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
         coins: z.number().int().positive().optional(),
         weightless: z.string().min(1).optional(),
-        stages: z.record(z.string().min(1), z.string().min(1)).optional(),
+        stages: z.array(z.object({ name: z.string().min(1), when: z.string().min(1) }).strict()).optional(),
     }, {
         error:
             "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing; "
-            + "stages names what a load makes a character, each with the formula that says so above 0, the heaviest last, such as {Encumbered: ceil(load - 5 * str)}",
+            + "stages lists what a load makes a character, the heaviest last, each with when, the formula that says so above 0, such as [{name: Encumbered, when: ceil(load - 5 * str)}]",
     }).strict().optional(),
     travel: travelSchema.optional(),
     grid: gridSchema.optional(),
@@ -847,7 +847,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                     : parseFormula(data.load.limit),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
                 ...(data.load.weightless === undefined ? {} : { weightless: data.load.weightless }),
-                ...(data.load.stages === undefined ? {} : { stages: Object.entries(data.load.stages).map(([name, formula]) => ({ name, formula: parseFormula(formula) })) }),
+                ...(data.load.stages === undefined ? {} : { stages: data.load.stages.map((stage) => ({ name: stage.name, formula: parseFormula(stage.when) })) }),
             },
         }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),

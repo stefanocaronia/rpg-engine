@@ -943,9 +943,16 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
         (field !== undefined && comparableText(value.field) === comparableText(field)) || declared(value.field, "length")
             ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
             : (value.field === "load" || declared(value.field, "weight")) && measures.units === "metric" && pound !== undefined
-            ? { ...value, text: kilograms(value.text) }
+            ? { ...value, text: kilograms(value.text), ...(value.load === undefined ? {} : { load: inKilograms(value.load, pound) }) }
             : value;
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
+}
+
+/** A load's numbers in kilograms, at the system's pound (LOAD-2). */
+function inKilograms(load: NonNullable<SheetValue["load"]>, pound: number): NonNullable<SheetValue["load"]>
+{
+    const kilograms = (weight: number): number => Math.round(weight * pound * 10) / 10;
+    return { ...load, value: kilograms(load.value), ...(load.limit === undefined ? {} : { limit: kilograms(load.limit) }) };
 }
 
 /** The groups of a sheet with the icon of every thing carried, its page's or the kind's it derives from (D-431); the page's name is the engine's, not the page's to show. */

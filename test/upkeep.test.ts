@@ -1,6 +1,6 @@
 // What the party uses up (D-435, D-447; UPK-1, UPK-2, UPK-3): a ration a day outside a settlement under the rigor «rules», the days without food and the exhaustion
 // past them, water as a word, and what burns spent as it is lit.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -218,6 +218,14 @@ describe("what burns", () => {
         await ok("write", "Ettore", "--add", "inventory=[[Oil]] 1");
         expect(await ok("effect", "add", "Ettore", "Hooded Lantern")).toContain("until day 2, 00:00");
         expect(page("characters/Ettore.md")).not.toContain("[[Oil]]");
+    });
+
+    it("shows the party with an effect named as two pages are, which burns nothing", async () => {
+        await ok("effect", "add", "Ettore", "Lume");
+        writeFileSync(join(folder, "world", "Lanterna.md"), "---\naliases: [Lume]\n---\n");
+        writeFileSync(join(folder, "world", "Fiaccola.md"), "---\naliases: [Lume]\n---\n");
+        const party = JSON.parse(await ok("view", "--json")).party as { effects: { name: string; burns?: unknown; }[]; }[];
+        expect(party[0].effects.find((effect) => effect.name === "Lume")).not.toHaveProperty("burns");
     });
 });
 

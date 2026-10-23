@@ -204,9 +204,18 @@ export function burning(system: GameSystem | undefined, world: World, holder: Pa
 /** For an effect named after something that burns (UPK-3), what it spends, by the holder's name for it, as Torcia, and how many of it the holder still carries. */
 export function fuelLeft(system: GameSystem | undefined, world: World, holder: Page, name: string): { fuel: string; left: number; } | undefined
 {
-    const entry = burningEntry(system, world, holder, name);
-    const kind = entry === undefined ? undefined : kindNamed(world, holder, entry[1].spends ?? entry[0]);
-    return kind === undefined ? undefined : { fuel: kind.name, left: heldStacksOfKind(world, holder, kind).reduce((total, held) => total + held.stack.count, 0) };
+    if (Object.keys(system?.burning ?? {}).length === 0) {
+        return undefined;
+    }
+
+    // Only to show: a name two pages share, which a command would refuse, burns nothing here.
+    try {
+        const entry = burningEntry(system, world, holder, name);
+        const kind = entry === undefined ? undefined : kindNamed(world, holder, entry[1].spends ?? entry[0]);
+        return kind === undefined ? undefined : { fuel: kind.name, left: heldStacksOfKind(world, holder, kind).reduce((total, held) => total + held.stack.count, 0) };
+    } catch {
+        return undefined;
+    }
 }
 
 /** Spends one of what burns from what the holder carries (UPK-3), with its line in the log; the line that says it. */
