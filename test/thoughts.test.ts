@@ -99,11 +99,11 @@ describe("whose diary is due (DIA-2)", () => {
     it("names one companion who lived a scene, the one whose last line is oldest, on a new day", async () => {
         await scene("Al pozzo", "Kira", "Bran", "Mira");
         const first = await ok("advance", "--by", "12h");
-        expect(first).toContain("Diary: Bran lived something new since their last lines; at a pause, tonight or at dawn they may write a few: write it yourself in their voice, with thoughts.");
+        expect(first).toContain("Diary: Bran's is due: at this pause, before the story goes on, have them write a few lines on how they took what they lived: write it yourself in their voice, with thoughts.");
         expect(first).not.toContain("Mira lived");
 
         await ok("thoughts", "Bran", "Il pozzo mi mette paura.");
-        expect(await ok("advance", "--by", "1d")).toContain("Diary: Mira lived something new");
+        expect(await ok("advance", "--by", "1d")).toContain("Diary: Mira's is due");
         await ok("thoughts", "Mira", "Kira sa ascoltare.");
         expect(await ok("advance", "--by", "1d")).not.toContain("Diary:");
     });
@@ -113,13 +113,15 @@ describe("whose diary is due (DIA-2)", () => {
         await ok("thoughts", "Mira", "Domani si parte.");
         await ok("scene", "open", "--title", "Il bivacco", "--type", "social", "--with", "Kira", "--with", "Mira");
         expect(await ok("advance", "--by", "2h")).not.toContain("Diary:");
-        expect(await ok("advance", "--by", "12h")).toContain("Diary: Mira lived something new");
+        expect(await ok("advance", "--by", "12h")).toContain("Diary: Mira's is due");
     });
 
     it("asks the character agent where the chat has it and the master does not voice everyone", async () => {
         await scene("Al pozzo", "Kira", "Bran");
         const agent = await runCommandLine(["advance", "--by", "12h"], { ...context, host: () => "claude-code", characterAgent: true });
-        expect(agent.output).toContain(`Diary: Bran lived something new since their last lines; at a pause, tonight or at dawn they may write a few: ask their agent "Write your diary" and keep its Writes line with thoughts.`);
+        expect(agent.output).toContain(
+            `Diary: Bran's is due: at this pause, before the story goes on, have them write a few lines on how they took what they lived: ask their agent "Write your diary" and keep its Writes line with thoughts.`,
+        );
         await ok("config", "voices", "master");
         const master = await runCommandLine(["advance", "--by", "1d"], { ...context, host: () => "claude-code", characterAgent: true });
         expect(master.output).toContain("write it yourself in their voice, with thoughts.");
@@ -130,7 +132,7 @@ describe("whose diary is due (DIA-2)", () => {
         await ok("scene", "leave", "--who", "Bran");
         await ok("scene", "close", "--summary", "Al pozzo.");
         await ok("write", "Mira", "--set", "role=npc");
-        expect(await ok("advance", "--by", "12h")).toContain("Diary: Bran lived something new");
+        expect(await ok("advance", "--by", "12h")).toContain("Diary: Bran's is due");
         await ok("write", "Bran", "--set", "status=dead");
         expect(await ok("advance", "--by", "1d")).not.toContain("Diary:");
     });
@@ -139,15 +141,15 @@ describe("whose diary is due (DIA-2)", () => {
         await ok("thoughts", "Mira", "Uno.");
         await ok("thoughts", "Bran", "Due.");
         await scene("Al pozzo", "Kira", "Bran", "Mira");
-        expect(await ok("advance", "--by", "12h")).toContain("Diary: Mira lived something new");
+        expect(await ok("advance", "--by", "12h")).toContain("Diary: Mira's is due");
         await ok("thoughts", "Mira", "Tre.");
-        expect(await ok("advance", "--by", "1d")).toContain("Diary: Bran lived something new");
+        expect(await ok("advance", "--by", "1d")).toContain("Diary: Bran's is due");
     });
 
     it("is said when a quest ends", async () => {
         await ok("write", "Il pozzo", "--type", "quest", "--set", "status=open");
         await scene("Al pozzo", "Kira", "Mira");
-        expect(await ok("write", "Il pozzo", "--set", "status=done")).toContain("Diary: Mira lived something new");
+        expect(await ok("write", "Il pozzo", "--set", "status=done")).toContain("Diary: Mira's is due");
     });
 });
 

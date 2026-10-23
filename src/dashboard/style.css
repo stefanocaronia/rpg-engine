@@ -4582,7 +4582,7 @@ a {
     align-items: stretch;
 }
 
-/* A box of the line: square at the least, all of one height, what it holds in its middle. */
+/* A box of the line: square at the least, those of a row of one height, what it holds in its middle; taller only to hold what it has, as a list. */
 .line-value {
     --box: 72px;
     display: inline-grid;
@@ -4591,12 +4591,18 @@ a {
     align-items: center;
     gap: 2px;
     min-width: var(--box);
-    height: var(--box);
+    min-height: var(--box);
     padding: 8px 12px;
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: color-mix(in srgb, var(--paper) 50%, transparent);
     text-align: center;
+}
+
+/* A list in a box, as the spells at hand, reads from its start, its label over it. */
+.line-value:has(.chips-block) {
+    justify-items: start;
+    text-align: start;
 }
 
 .line-value > .label {
@@ -9613,6 +9619,9 @@ svg.icon {
     border-radius: var(--radius-l);
     background: var(--panel);
     box-shadow: var(--lift), var(--raise);
+    /* Its width from where it stands, never from what it holds: stretched in the phone's column, whose items start. */
+    container: at-hand / inline-size;
+    align-self: stretch;
 }
 
 .at-hand:has(.death-saves) {
@@ -9622,6 +9631,33 @@ svg.icon {
 /* Its header the card's whole width, as every card's (D-419). */
 .at-hand > .card-head {
     margin: 0 -16px;
+}
+
+/* In a narrow panel, as beside the map, the name keeps its whole width and what the character is goes under it: never the name cut. */
+@container at-hand (max-width: 400px) {
+    .at-hand > .card-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        column-gap: 12px;
+    }
+
+    .at-hand > .card-head > .card-icon {
+        grid-row: 1 / 3;
+    }
+
+    .at-hand > .card-head > h3 {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .at-hand > .card-head > .card-head-note {
+        grid-area: 2 / 2;
+        margin: 0;
+    }
+
+    .at-hand > .card-head > .icon-button {
+        grid-area: 1 / 3 / 3;
+    }
 }
 
 /* The sheet's cards inside it, as its sections. */

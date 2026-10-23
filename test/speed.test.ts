@@ -101,11 +101,18 @@ describe("the speed a sheet works out", () => {
         expect(await stealth()).toBe("2d20kl1+1");
     });
 
-    it("tells the speed worked out in metres to a player who counts in metric (SPD-1)", async () => {
+    it("tells the speed worked out in metres to a player who counts in metric, the written one beside it too, and leaves that out when it says the same (SPD-1)", async () => {
         await ok("config", "units", "metric");
+
+        const walkingShown = async (): Promise<{ text: string; beside?: string; } | undefined> => {
+            const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; text: string; beside?: string; }[]; }[];
+            const value = sheet.flatMap((group) => group.values).find((one) => one.field === "walking");
+            return value === undefined ? undefined : { text: value.text, ...(value.beside === undefined ? {} : { beside: value.beside }) };
+        };
+
+        expect(await walkingShown()).toEqual({ text: "9 m" });
         await wear("Ettore");
-        const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
-        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "walking")?.text).toBe("6 m");
+        expect(await walkingShown()).toEqual({ text: "6 m", beside: "9 m" });
     });
 
     it("tells a weight worked out in kilograms to a player who counts in metric", async () => {

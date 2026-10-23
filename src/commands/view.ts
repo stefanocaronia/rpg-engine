@@ -927,9 +927,18 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const kilograms = (text: string): string => text.replace(/[\d.]+/g, (number) => String(Math.round(Number(number) * (pound ?? 1) * 10) / 10)).replace(/\s*\p{L}[\p{L}.]*\s*$/u, " kg");
     // The speeds the system works out are lengths too (SPD-1).
     const declared = (name: string, wanted: string): boolean => Object.entries(system?.fields ?? {}).some(([key, kind]) => kind === wanted && comparableText(key) === comparableText(name));
+    const inUnits = (text: string): string => lengthsInUnits(text, measures.units, measures.imperial);
+
+    // What is beside a length is told in the same units, as the speed written beside the one worked out, and left out when it says the same.
+    const lengthTold = ({ beside, ...value }: SheetValue): SheetValue => {
+        const text = inUnits(value.text);
+        const shownBeside = beside === undefined ? undefined : inUnits(beside);
+        return { ...value, text, ...(shownBeside === undefined || shownBeside === text ? {} : { beside: shownBeside }) };
+    };
+
     const told = (value: SheetValue): SheetValue =>
         (field !== undefined && comparableText(value.field) === comparableText(field)) || declared(value.field, "length")
-            ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
+            ? lengthTold(value)
             : (value.field === "load" || declared(value.field, "weight")) && measures.units === "metric" && pound !== undefined
             ? { ...value, text: kilograms(value.text) }
             : value;

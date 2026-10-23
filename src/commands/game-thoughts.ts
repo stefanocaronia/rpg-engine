@@ -47,7 +47,7 @@ export function diaryDueLine(root: string, context: Context, world: World): stri
     }
 
     const how = agentVoices(root, context) ? `ask their agent "Write your diary" and keep its Writes line with thoughts` : "write it yourself in their voice, with thoughts";
-    return `Diary: ${page.name} lived something new since their last lines; at a pause, tonight or at dawn they may write a few: ${how}.`;
+    return `Diary: ${page.name}'s is due: at this pause, before the story goes on, have them write a few lines on how they took what they lived: ${how}.`;
 }
 
 /** The companion whose diary is due (DIA-2), or none. */

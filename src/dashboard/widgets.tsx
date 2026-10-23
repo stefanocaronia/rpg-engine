@@ -30,7 +30,7 @@ export function ValueDrawing({ value, label, fields }: { value: SheetValue; labe
             return <Chips value={value} fields={fields} />;
         default:
             // Money as its coins (D-431).
-            return value.coins !== undefined && value.coins.length > 0 ? <Coins coins={value.coins} /> : <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text)}</span>;
+            return value.coins !== undefined && value.coins.length > 0 ? <Coins coins={value.coins} /> : <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text, value.kind)}</span>;
     }
 }
 
@@ -53,7 +53,7 @@ export function Bar({ value, label }: { value: SheetValue; label: string; })
             <span class={share < low ? "bar low" : "bar"} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={current} aria-valuetext={value.text}>
                 <span class="fill" style={{ "--fill": String(share) }} />
             </span>
-            <span class="num">{shownText(value.text)}</span>
+            <span class="num">{shownText(value.text, value.kind)}</span>
         </span>
     );
 }
@@ -64,7 +64,7 @@ export function Progress({ value, label }: { value: SheetValue; label: string; }
     return (
         <span class="progress-line">
             <span class="progress-first">
-                <span class="num">{shownText(value.text)}</span>
+                <span class="num">{shownText(value.text, value.kind)}</span>
                 {besideLabel(value) !== undefined && <span class="progress-next">{shownText(besideLabel(value) ?? "")}</span>}
             </span>
             <ProgressBar value={value} label={label} />
@@ -97,7 +97,7 @@ export function Track({ value, label }: { value: SheetValue; label: string; })
                 <span class="fill" />
                 <span class="zero" />
             </span>
-            <span class="num">{shownText(value.text)}</span>
+            <span class="num">{shownText(value.text, value.kind)}</span>
         </span>
     );
 }

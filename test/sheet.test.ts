@@ -336,7 +336,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         await ok("effect", "add", "Ettore", "Poisoned", "--for", "1h", "--set", "speed=20 ft.");
         await ok("write", "Ettore", "--set", "exhaustion=1", "--set", "inspiration=0");
         expect(await ok("roll", "1d20", "--who", "Ettore")).toContain(
-            "\nEttore has Benedizione, Poisoned, exhaustion 1: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again.",
+            "\nEttore has Benedizione, Poisoned, exhaustion 1: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again; a reroll of one die rolls that die alone and keeps the rest.",
         );
     });
 });

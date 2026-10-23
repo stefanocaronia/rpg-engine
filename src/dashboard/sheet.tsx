@@ -282,7 +282,7 @@ function Tile(props: Line)
             <Changing text={beside ?? value.text}>
                 <span class="big num">{shownText(beside ?? value.text)}</span>
             </Changing>
-            <span class="small num">{beside === undefined ? "" : shownText(value.text)}</span>
+            <span class="small num">{beside === undefined ? "" : shownText(value.text, value.kind)}</span>
             {value.roll && <RollMark roll={value.roll} />}
         </NumberBox>
     );
@@ -297,14 +297,14 @@ function Row(props: Line)
     const beside = besideLabel(value);
     const marks = value.marks === 0 ? null : <span class="marks" aria-label={value.marks === 1 ? t("1 mark") : t("{count} marks", { count: value.marks })}>{"●".repeat(value.marks)}</span>;
     return (
-        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text), beside === undefined ? "" : shownText(beside)].filter((part) => part !== "").join(" ")}>
+        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text, value.kind), beside === undefined ? "" : shownText(beside)].filter((part) => part !== "").join(" ")}>
             <span class="label">
                 {marks}
                 {shownLabel}
             </span>
             <Changing text={value.text}>
                 {value.roll && <RollMark roll={value.roll} />}
-                {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
+                {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text, value.kind)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
             </Changing>
             {beside !== undefined && <span class="beside num" dir={value.levelNeed === undefined ? undefined : "auto"}>{shownText(beside)}</span>}
             {widget === "progress" && <ProgressBar value={value} label={shownLabel} />}
@@ -427,7 +427,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                                     ? words
                                     : <ActName verbs={verbs} item={name} said={`${count(item) === "" ? "" : ` (${count(item)})`}${said}`}>{words}</ActName>}
                             </th>
-                            {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text)}</td>)}
+                            {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text, value.kind)}</td>)}
                         </tr>
                     );
                 })}
@@ -498,7 +498,7 @@ function preview(group: SheetGroup, label: (field: string) => string): string
 {
     if (group.items !== undefined) {
         // The group's own values first, as the money above the things carried: their text alone, as the card is narrow.
-        return [...group.values.map((value) => shownText(value.text)), ...group.items.map((item) => itemName(item.item))].join(" · ");
+        return [...group.values.map((value) => shownText(value.text, value.kind)), ...group.items.map((item) => itemName(item.item))].join(" · ");
     }
 
     return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(besideLabel(value) ?? value.text)}`).join(" · ");
