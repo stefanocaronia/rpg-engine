@@ -2937,6 +2937,13 @@ a {
     color: var(--muted);
 }
 
+/* What the day's upkeep used up, together under its name. */
+.chapter-facts li.fact-upkeep > ul {
+    margin: 2px 0 0;
+    padding-inline-start: 16px;
+    list-style: circle;
+}
+
 /* The game date, once whenever it changes. */
 .chapter-facts li.fact-date {
     margin-block: 6px 2px;
@@ -4600,6 +4607,19 @@ a {
     font-weight: 700;
 }
 
+/* What is written beside a number worked out, as the speed written beside the one that counts now: small, under it. */
+.line-value:has(> .beside) {
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+    min-height: var(--box);
+}
+
+.line-value > .beside {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 .line-value:has(.bar) .bar {
     width: 160px;
     height: 10px;
@@ -4867,7 +4887,8 @@ summary :is(h3, .rolls-title),
    corners at its two ends. A list or a long text comes after, under its own small heading. */
 .rows {
     display: grid;
-    grid-template-columns: fit-content(62%) minmax(0, 1fr) auto;
+    /* The value keeps its own width, 4.5 m whole; the label and what is beside it, as a speed's note, wrap first. */
+    grid-template-columns: fit-content(62%) minmax(min-content, 1fr) fit-content(40%);
 }
 
 .rows > * {
@@ -4897,6 +4918,11 @@ summary :is(h3, .rolls-title),
 .row .num {
     min-width: 2.6ch;
     text-align: end;
+}
+
+/* A value and its unit together: 4.5 m, never broken at a phone's width; what is beside it may wrap. */
+.row > .changing .num {
+    white-space: nowrap;
 }
 
 button.row,
@@ -4940,6 +4966,12 @@ button.row,
 .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .beside {
     grid-area: beside;
     padding-inline-end: 12px;
+}
+
+/* What is beside keeps its own direction, as 40 ft (hover): on a page from right to left its room is on the line's end, its left. */
+[dir="rtl"] .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .beside {
+    padding-right: 0;
+    padding-left: 12px;
 }
 
 /* A value with nothing beside it takes the whole of the value's side. */
@@ -4993,6 +5025,45 @@ button.row,
 
 .row-bar .bar {
     width: 90px;
+}
+
+/* How many a list of bonds holds of the most it may, after its name: 2/3, in the danger's colour past the most. */
+/* Its room on both sides: a number keeps its own direction, so its start is not the label's on a page from right to left. */
+.row-most {
+    margin: 0 8px;
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.row-most.over {
+    color: var(--low);
+}
+
+/* A load past one of the system's stages: the stage's word in the warning's colour before the number, which takes it too. */
+.load-stage {
+    display: inline-block;
+    padding: 1px 8px;
+    border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--rule));
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+    color: var(--warn);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* The stage and the number side by side, the stage above it where the line is narrow. */
+.row.staged > .changing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px 8px;
+    padding-block: 6px;
+}
+
+.row.staged .num {
+    color: var(--warn);
 }
 
 .row-list,
@@ -5620,6 +5691,37 @@ button.row,
 .tile .roll-mark svg.die {
     width: 16px;
     height: 16px;
+}
+
+/* A roll the sheet makes better or worse: an arrow beside its die, up in the party's colour, down in the danger's, both muted when they cancel out; its
+   tooltip says why. Never the colour alone: the arrow's way says it. */
+.roll-mark:is(.better, .worse, .even) {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    opacity: 1;
+}
+
+.roll-mark svg.icon {
+    width: 13px;
+    height: 13px;
+    stroke-width: 2.6;
+}
+
+.roll-mark.better svg.icon {
+    color: var(--ally);
+}
+
+.roll-mark.worse svg.icon {
+    color: var(--low);
+}
+
+.roll-mark.even svg.icon {
+    color: var(--muted);
+}
+
+.roll-mark:is(.better, .worse, .even) svg.die {
+    opacity: 0.7;
 }
 
 :is(button.row, button.tile):is(:hover, :focus-visible) .roll-mark {
@@ -8042,6 +8144,33 @@ svg.icon {
     letter-spacing: 0.08em;
     line-height: 1;
     text-transform: uppercase;
+}
+
+/* The tray's last row: the dice doubled, as a critical hit's damage, beside the number added. */
+.tray-last {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tray-double {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--float);
+    box-shadow: var(--overlay);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tray-double[aria-pressed="true"] {
+    border-color: transparent;
+    background: var(--gold);
+    color: var(--on-gold);
 }
 
 /* The column rises from the button, a chip after the other. */
@@ -12679,6 +12808,22 @@ svg.icon {
     from {
         scale: 0.8;
     }
+}
+
+/* A thing in a list of bonds, as attuned: two rings after its name, in the accent. */
+.item-bond {
+    display: inline-block;
+    margin-inline-start: 0.35em;
+    color: var(--accent);
+    text-indent: 0;
+    vertical-align: -0.15em;
+}
+
+.item-bond svg.icon {
+    display: block;
+    width: 1em;
+    height: 1em;
+    stroke-width: 2;
 }
 
 /* How many of a thing, after its name (D-431). */

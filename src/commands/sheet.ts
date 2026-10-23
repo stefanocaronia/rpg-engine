@@ -177,6 +177,8 @@ export interface SheetItem
     /** That icon, as the dashboard reads a picture; none for text, or a page without one. */
     image?: { file: string; version: number; };
     equipped?: boolean;
+    /** The lists of bonds it is in, as attuned (BND-1). */
+    bonds?: string[];
 }
 
 /**
@@ -199,7 +201,7 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
                 const most = Object.entries(system.bonds).find(([list]) => comparableText(list) === comparableText(entry.field))?.[1].most;
                 return isEmptyField(value) ? [] : [{ ...sheetValue(world, fields, entry.field, value), ...(most === undefined ? {} : { most }) }];
             });
-            const items = carriedRows(world, page, equippedPages(world, page));
+            const items = carriedRows(world, page, { equipped: equippedPages(world, page), bonds: bondedPages(world, system, page) });
             const load = loadValue(world, system, page, fields);
             const shown = [...values, ...(load === undefined ? [] : [load])];
             return shown.length + items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values: shown, ...(items.length === 0 ? {} : { items }) }];
@@ -551,18 +553,23 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
  * What a holder carries, as rows of the sheet (D-431): a stack with its count (STK-1), an item with a story of its own, 1, and below it what it holds, one level deeper, and
  * text as written; marked when equipped. Pages that are elsewhere, or not items, are left out.
  */
-function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, seen = new Set<Page>()): SheetItem[]
+function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bonds: Map<Page, string[]>; }, depth = 0, seen = new Set<Page>()): SheetItem[]
 {
     const field = containerFieldOf(holder.type);
     const stacks = stacksOf(world, holder);
     const shown = new Set<Page>();
-    const row = (item: string, count: string, on: boolean, page?: Page): SheetItem => ({
-        item,
-        ...(page === undefined ? {} : { page: page.name }),
-        values: [{ field: "quantity", text: count, marks: 0 }],
-        ...(depth === 0 ? {} : { depth, inside: holder.name }),
-        ...(on ? { equipped: true } : {}),
-    });
+
+    const row = (item: string, count: string, page?: Page): SheetItem => {
+        const bonds = page === undefined ? undefined : marks.bonds.get(page);
+        return {
+            item,
+            ...(page === undefined ? {} : { page: page.name }),
+            values: [{ field: "quantity", text: count, marks: 0 }],
+            ...(depth === 0 ? {} : { depth, inside: holder.name }),
+            ...(page !== undefined && marks.equipped.includes(page) ? { equipped: true } : {}),
+            ...(bonds === undefined ? {} : { bonds }),
+        };
+    };
 
     return (field === undefined ? [] : textsIn(holder.fields[field])).flatMap((entry): SheetItem[] => {
         const counted = entryKind(world, entry);
@@ -572,13 +579,13 @@ function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, se
             // Two entries of a kind are one stack, shown once (STK-3).
             const first = !shown.has(stack.kind);
             shown.add(stack.kind);
-            return first ? [row(stackName(stack), quantity(stack.count), equipped.includes(stack.kind), stack.kind)] : [];
+            return first ? [row(stackName(stack), quantity(stack.count), stack.kind)] : [];
         }
 
         const read = readEntry(entry);
 
         if (read.shape === "text") {
-            return [row(entry.trim(), "", false)];
+            return [row(entry.trim(), "")];
         }
 
         const page = entryPage(world, read.page);
@@ -588,7 +595,7 @@ function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, se
         }
 
         seen.add(page);
-        return [row(page.name, "", equipped.includes(page), page), ...carriedRows(world, page, equipped, depth + 1, seen)];
+        return [row(page.name, "", page), ...carriedRows(world, page, marks, depth + 1, seen)];
     });
 }
 
@@ -650,6 +657,24 @@ function weightText(weight: number): string
 function quantity(count: number): string
 {
     return count === 1 ? "" : String(count);
+}
+
+/** The pages a character has in each list of bonds of the system, items or kinds, each with the lists it is in, as the attuned (BND-1). */
+function bondedPages(world: World, system: GameSystem, page: Page): Map<Page, string[]>
+{
+    const bonded = new Map<Page, string[]>();
+
+    for (const list of Object.keys(system.bonds)) {
+        for (const name of linksIn(valueNamed(page.fields, list))) {
+            const found = entryPage(world, name);
+
+            if (found !== undefined) {
+                bonded.set(found, [...(bonded.get(found) ?? []), list]);
+            }
+        }
+    }
+
+    return bonded;
 }
 
 /** The pages a character has equipped, items or kinds (CON-12, STK-11). */

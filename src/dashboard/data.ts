@@ -31,7 +31,7 @@ export interface SheetValue
     levelNeed?: { needs: number; level: number; } | { due: number; } | { least: number; level: number; };
     /** For a list of bonds, as the attuned items, the most it may hold. */
     most?: number;
-    /** For the load, what is carried and its limit, and the heaviest of the system's stages it reaches, in the system's words, such as Encumbered. */
+    /** For the load, what is carried and its limit, in the unit its text shows, and the heaviest of the system's stages it reaches, in the system's words, such as Encumbered. */
     load?: { value: number; limit?: number; stage?: string; };
 }
 
@@ -54,7 +54,8 @@ export interface SheetGroup
     name: string;
     icon?: string;
     values: SheetValue[];
-    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; image?: { file: string; version: number; }; }[];
+    /** What a group's items are, as the things carried: each with its values, how deep inside another it is, whether equipped, and the lists of bonds it is in, as attuned. */
+    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; }[];
 }
 
 /** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */

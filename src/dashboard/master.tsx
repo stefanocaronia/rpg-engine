@@ -5,8 +5,8 @@ import type { Moment, Mood } from "./data.ts";
 import { moodLabel } from "./mood.tsx";
 import { t } from "./text.ts";
 
-// A blink lasts this long, every few seconds.
-const blinkLength = 140;
+// A blink lasts this long, every few seconds: the eyes close and open again, each in the style sheet's --quick.
+const blinkLength = 200;
 const blinkEvery = { least: 3500, most: 7000 };
 
 // A moment's face shows this long; one that came longer ago than its freshness was missed, and is not shown late.

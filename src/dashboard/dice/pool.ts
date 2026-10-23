@@ -60,6 +60,24 @@ export function withDropped(dice: ThrownDie[], keeps: Partial<Record<number, Kee
     return dice.map((die, index) => (dropped.has(index) ? { ...die, dropped: true } : die));
 }
 
+/** Which of a kind count, as a notation writes it: 2d20kl1 keeps the lowest of the d20; a kind it says nothing of, all. */
+export function keepsOf(dice: string): Partial<Record<number, Keep>>
+{
+    return Object.fromEntries([...dice.toLowerCase().matchAll(/\d*d(\d+)k([hl])1?/g)].map(([, sides, way]) => [Number(sides), way === "h" ? "highest" : "lowest"]));
+}
+
+/** The total of dice thrown: the faces that count, the dropped ones left out, and the number added. */
+export function keptTotal(dice: ThrownDie[], modifier: number): number
+{
+    return dice.reduce((sum, die) => sum + (die.dropped === true ? 0 : die.value), modifier);
+}
+
+/** The dice doubled, as a critical hit's damage: each die twice, never the number added. */
+export function doubled(pool: number[]): number[]
+{
+    return pool.flatMap((sides) => [sides, sides]);
+}
+
 /** The dice thrown as the chat writes them: each kind's faces in brackets, a dropped one in parentheses, the biggest first, then the modifier. */
 export function diceText(dice: ThrownDie[], modifier: number): string
 {

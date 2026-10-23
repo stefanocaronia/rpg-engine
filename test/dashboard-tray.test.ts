@@ -1,6 +1,6 @@
 // The dice the tray throws by itself (D-284, D-337): which of a kind count, as a notation and as the chat writes them, and the checks they answer (D-330).
 import { describe, expect, it } from "vitest";
-import { diceText, keptOf, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
+import { diceText, doubled, keepsOf, keptOf, keptTotal, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
 import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
 import { sameDice } from "../src/dashboard/labels.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
@@ -36,6 +36,22 @@ describe("which dice of a kind count in the tray (D-337)", () => {
         expect(trayCheck(asked, notation([20, 20], 5, { 20: "highest" }))).toBe(0);
         expect(trayCheck(asked, notation([20, 20], 5, {}))).toBeUndefined();
         expect(sameDice("2d20dl1+5", "2d20kh1+5")).toBe(true);
+    });
+});
+
+describe("a number of the sheet rolled for fun, and the dice doubled", () => {
+    it("keeps of a roll better or worse only the die its notation keeps, as 2d20kl1+3 counts the lowest d20 alone", () => {
+        expect([keepsOf("2d20kl1+3"), keepsOf("2d20kh1-1"), keepsOf("1d20+5"), keepsOf("2d20KH1+1d6")]).toEqual([{ 20: "lowest" }, { 20: "highest" }, {}, { 20: "highest" }]);
+        const two = [{ sides: 20, value: 4 }, { sides: 20, value: 17 }];
+        expect(keptTotal(withDropped(two, keepsOf("2d20kl1+3")), 3)).toBe(7);
+        expect(keptTotal(withDropped(two, keepsOf("2d20kh1+3")), 3)).toBe(20);
+        expect(keptTotal(withDropped(two, keepsOf("2d20+3")), 3)).toBe(24);
+    });
+
+    it("doubles the dice, never the number added, as a critical hit's damage", () => {
+        expect(doubled([8, 6])).toEqual([8, 8, 6, 6]);
+        expect(notation(doubled([8]), 3, {})).toBe("2d8+3");
+        expect(notation(doubled([6, 6, 8]), -1, {})).toBe("2d8+4d6-1");
     });
 });
 

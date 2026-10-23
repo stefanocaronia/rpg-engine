@@ -47,9 +47,12 @@ describe("what the sheet gives the dashboard", () => {
         expect((await value("load")).load?.stage).toBe("Over the limit");
     });
 
-    it("gives the most a list of bonds may hold", async () => {
-        await ok("write", "Ettore", "--add", "attuned=[[Ring of Protection]]");
+    it("gives the most a list of bonds may hold, and marks the things carried that are in it", async () => {
+        await ok("write", "Ettore", "--add", "inventory=[[Ring of Protection|anello]] 1", "--add", "attuned=[[Ring of Protection]]");
         expect(await value("attuned")).toMatchObject({ items: ["Ring of Protection"], most: 3 });
+        const items = (await groups()).flatMap((group) => group.items ?? []);
+        expect(items.find((item) => item.item === "anello")).toMatchObject({ bonds: ["attuned"] });
+        expect(items.find((item) => item.item.toLowerCase().includes("torch"))?.bonds).toBeUndefined();
     });
 
     it("shows the written speed of a mode beside the one worked out, with its note", async () => {
@@ -88,7 +91,7 @@ interface Shown
     load?: { value: number; limit?: number; stage?: string; };
 }
 
-async function groups(): Promise<{ name: string; values: Shown[]; }[]>
+async function groups(): Promise<{ name: string; values: Shown[]; items?: { item: string; bonds?: string[]; }[]; }[]>
 {
     return JSON.parse(await ok("view", "Ettore", "--json")).sheet;
 }

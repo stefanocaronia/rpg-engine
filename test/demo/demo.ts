@@ -216,7 +216,10 @@ const caveMap = [
     "I11 → [[Palude dei Lamenti]]",
 ];
 
-/** Ettore, a cleric of the third level hurt and with a blessing, and Lupa, a wolf at his side, at the inn. */
+/**
+ * Ettore, a cleric of the third level hurt and with a blessing, and Lupa, a wolf at his side, at the inn: under the rigor simulation, so that his chain mail
+ * and his pack make him encumbered, a night at the camp eats a ration, and the torch he lit on the road still burns; attuned to two of three things.
+ */
 async function makeDemo(context: Context): Promise<void>
 {
     const rpg = async (...args: string[]): Promise<void> => {
@@ -229,7 +232,8 @@ async function makeDemo(context: Context): Promise<void>
 
     await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
     inPlay(demoFolder);
-    await rpg("advance", "--to", "day 1, 18:00");
+    await rpg("config", "rigor", "simulation");
+    await rpg("advance", "--to", "day 1, 07:00");
     await rpg(
         "write",
         "Locanda del Guado",
@@ -275,7 +279,10 @@ async function makeDemo(context: Context): Promise<void>
     await rpg("write", "Zaino di Ettore", "--type", "item", "--set", "item=[[Backpack]]", "--add", "contains=[[Rations|razioni]] 5", "--add", "contains=[[Torch|torce]] 6", "--add", "contains=[[Borsa di Ettore]]");
     await rpg("write", "Ettore", "--add", "inventory=[[Mace]] 1", "--add", "inventory=[[Chain Mail]] 1", "--add", "inventory=[[Shield]] 1", "--add", "inventory=[[Zaino di Ettore]]");
     await rpg("write", "Ettore", "--add", "inventory=[[Hempen Rope|corda di canapa]] 1", "--add", "inventory=simbolo sacro d'argento", "--set", "money=15 gp 7 sp");
-    await rpg("write", "Ettore", "--set", "equipped=[[Mace]], [[Chain Mail]], [[Shield]]");
+    // Two things he is attuned to, of three at most (BND-1): a pendant a life cleric would wear, and a ring against the mountains' cold.
+    await rpg("write", "Ettore", "--add", "inventory=[[Periapt of Wound Closure|pendente della chiusura delle ferite]] 1", "--add", "inventory=[[Ring of Warmth|anello del calore]] 1");
+    await rpg("write", "Ettore", "--set", "equipped=[[Mace]], [[Chain Mail]], [[Shield]], [[Periapt of Wound Closure]], [[Ring of Warmth]]");
+    await rpg("write", "Ettore", "--set", "attuned=[[Periapt of Wound Closure]], [[Ring of Warmth]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
 
     // Their portraits (D-408), made once by Codex for the demo and cut to the face.
@@ -363,8 +370,18 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
     for (const stop of ["Strada del Re", "Campo del Viandante", "Strada del Re", "Guadoscuro", "Locanda del Guado"]) {
         await rpg("move", "Ettore", "Lupa", "--to", stop);
 
+        // The evening and the night at the camp, out of any settlement: at midnight Ettore eats a ration from his pack (UPK-1).
         if (stop === "Campo del Viandante") {
+            await rpg("advance", "--to", "day 1, 20:00");
             await scene("La notte al campo", "exploration", "Tracce di carri e un sigillo spezzato accanto al fuoco spento; Lupa fiuta qualcosa verso nord-est.");
+            await rpg("advance", "--to", "day 2, 07:00");
+        }
+
+        // Down to the ford at dusk, in the rain, with a torch lit (UPK-3): it still burns at the inn.
+        if (stop === "Guadoscuro") {
+            await rpg("advance", "--to", "day 2, 17:40");
+            await rpg("effect", "add", "Ettore", "Torch");
+            await rpg("advance", "--to", "day 2, 18:00");
         }
     }
 
@@ -452,7 +469,7 @@ async function makeDemoQuests(rpg: (...args: string[]) => Promise<void>): Promis
     const quest = (name: string, fields: string[], text: string): Promise<void> => rpg("write", name, "--type", "quest", ...fields.flatMap((field) => ["--set", field]), "--text", text);
     await quest(
         "Ritrovare i pellegrini",
-        ["status=open", "kind=main", "giver=Il castellano di Rocca di Vetta", "place=[[Torre dei Sussurri]]", "sigilli=1/3", "clock=2/6", "clock-name=I rapitori lasciano la torre", "deadline=day 3, 06:00"],
+        ["status=open", "kind=main", "giver=Il castellano di Rocca di Vetta", "place=[[Torre dei Sussurri]]", "sigilli=1/3", "clock=2/6", "clock-name=I rapitori lasciano la torre", "deadline=day 4, 06:00"],
         [
             "Sei pellegrini sono spariti sulla Strada del Re, fra la Rocca e Guadoscuro. Chi li ha presi lascia sigilli spezzati.",
             "",

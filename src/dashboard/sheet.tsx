@@ -22,7 +22,7 @@ import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
 import { memberStatus } from "./status.tsx";
 import { StoryBox } from "./story.tsx";
-import { arrowStep, systemWord, t } from "./text.ts";
+import { arrowStep, listText, systemWord, t } from "./text.ts";
 import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
 
 // The cards of the page's text, after the system's groups, the whole width: the player character's story in the player's words, then the rest of the text.
@@ -136,6 +136,8 @@ function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlyS
                     <Changing text={value.text}>
                         <ValueDrawing value={value} label={fieldLabel(value.field, fields)} />
                     </Changing>
+                    {/* What is written beside a number worked out, as the speed written beside the one that counts now. */}
+                    {value.beside !== undefined && widgetOf(value) !== "progress" && <span class="beside num">{shownText(value.beside)}</span>}
                 </span>
             ))}
         </div>
@@ -186,7 +188,7 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
         const parts = explanations?.get(value.field)?.map((part) => shownText(readableIds(part, fields)));
         const answers = answersOf(value);
         const free = value.roll === undefined || answers !== undefined ? undefined : t("Free roll {dice} · not logged", { dice: shownNotation(value.roll.notation) });
-        const lines = [answers === undefined ? undefined : t("Answers the master: {check}", { check: answers.check }), parts?.join(" · "), free].filter((line) => line !== undefined);
+        const lines = [answers === undefined ? undefined : t("Answers the master: {check}", { check: answers.check }), stageLine(value), parts?.join(" · "), oddsLine(value.roll), free].filter((line) => line !== undefined);
         return lines.length === 0 ? undefined : lines.join("\n");
     };
 
@@ -296,14 +298,27 @@ function Row(props: Line)
     const shownLabel = phraseLabel(label);
     const beside = besideLabel(value);
     const marks = value.marks === 0 ? null : <span class="marks" aria-label={value.marks === 1 ? t("1 mark") : t("{count} marks", { count: value.marks })}>{"●".repeat(value.marks)}</span>;
+    // A list of bonds says how many it holds of the most it may, as 2/3; a load the stage it reaches, as Encumbered.
+    const held = value.most === undefined ? undefined : { count: value.items?.length ?? 0, most: value.most };
+    const stage = value.load?.stage === undefined ? undefined : systemText(value.load.stage);
+    const said = [shownLabel, held === undefined ? "" : t("{count} of {most}", held), shownText(value.text), stage ?? "", beside === undefined ? "" : shownText(beside)]
+        .filter((part) => part !== "")
+        .join(" ");
     return (
-        <NumberBox {...props} label={shownLabel} kind={`row row-${widget}`} said={[shownLabel, shownText(value.text), beside === undefined ? "" : shownText(beside)].filter((part) => part !== "").join(" ")}>
+        <NumberBox {...props} label={shownLabel} kind={["row", `row-${widget}`, stage === undefined ? "" : "staged"].filter((name) => name !== "").join(" ")} said={said}>
             <span class="label">
                 {marks}
                 {shownLabel}
+                {held !== undefined && (
+                    <span class={held.count > held.most ? "row-most over num" : "row-most num"}>
+                        <span aria-hidden="true">{`${held.count}/${held.most}`}</span>
+                        <span class="visually-hidden">{t("{count} of {most}", held)}</span>
+                    </span>
+                )}
             </span>
             <Changing text={value.text}>
                 {value.roll && <RollMark roll={value.roll} />}
+                {stage !== undefined && <span class="load-stage" aria-hidden="true">{stage}</span>}
                 {widget === "progress" || widget === "bar" ? <span class="num">{shownText(value.text)}</span> : <ValueDrawing value={value} label={shownLabel} fields={props.fields} />}
             </Changing>
             {beside !== undefined && <span class="beside num" dir={value.levelNeed === undefined ? undefined : "auto"}>{shownText(beside)}</span>}
@@ -349,14 +364,51 @@ function NumberBox({ value, label, fields, tip, tabIndex, onRoll, answers, kind,
         );
 }
 
-/** The die inside a number the system rolls: a click throws it. */
+/** The die inside a number the system rolls, a click throws it; an arrow up when the roll is better, down when worse, both when the two cancel out. */
 function RollMark({ roll }: { roll: SheetRoll; })
 {
+    const odds = oddsOf(roll);
     return (
-        <span class="roll-mark" aria-hidden="true">
+        <span class={odds === undefined ? "roll-mark" : `roll-mark ${odds}`} aria-hidden="true">
             <DieIcon sides={roll.dice[0] ?? 20} />
+            {odds !== undefined && <Icon name={odds} />}
         </span>
     );
+}
+
+/** Whether a roll is better, worse, or both, which cancel out; undefined when nothing changes it. */
+function oddsOf(roll: SheetRoll): "better" | "worse" | "even" | undefined
+{
+    const better = (roll.odds?.better.length ?? 0) > 0;
+    const worse = (roll.odds?.worse.length ?? 0) > 0;
+    return better && worse ? "even" : better ? "better" : worse ? "worse" : undefined;
+}
+
+/** Why a roll is better or worse, in the system's words, for its tooltip: Rolled worse: Poisoned; both, and that they cancel out. */
+function oddsLine(roll: SheetRoll | undefined): string | undefined
+{
+    const odds = roll === undefined ? undefined : oddsOf(roll);
+    const better = listText((roll?.odds?.better ?? []).map(systemText));
+    const worse = listText((roll?.odds?.worse ?? []).map(systemText));
+    return odds === undefined
+        ? undefined
+        : odds === "even"
+        ? t("Better for {better} and worse for {worse}: they cancel out", { better, worse })
+        : odds === "better"
+        ? t("Rolled better: {why}", { why: better })
+        : t("Rolled worse: {why}", { why: worse });
+}
+
+/** The stage a load reaches, for its tooltip: the system's word, and that the master knows what it brings. */
+function stageLine(value: SheetValue): string | undefined
+{
+    return value.load?.stage === undefined ? undefined : t("{stage}, by the weight you carry: the master knows what it brings", { stage: systemText(value.load.stage) });
+}
+
+/** A word of the system, as a load's stage or what makes a roll worse, in the campaign's language. */
+function systemText(word: string): string
+{
+    return systemWord("words", word) ?? word;
 }
 
 /**
@@ -398,9 +450,11 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                     }
 
                     const name = itemName(item.item);
+                    const bonds = (item.bonds ?? []).map((list) => fieldLabel(list, fields));
                     const said = [
                         item.inside === undefined ? undefined : t("in {container}", { container: itemName(item.inside) }),
                         item.equipped === true ? t("Equipped") : undefined,
+                        ...bonds,
                     ].filter((part) => part !== undefined).map((part) => `, ${part}`).join("");
                     const words = (
                         <>
@@ -408,6 +462,12 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                             {marked && <ItemPicture image={item.image} equipped={item.equipped === true} />}
                             <span>{name}</span>
                             {count(item) !== "" && <span class="item-count">{` (${count(item)})`}</span>}
+                            {/* In a list of bonds, as attuned: a mark after its name, the list's name in its tooltip. */}
+                            {bonds.length > 0 && (
+                                <span class="item-bond" data-tip={bonds.join(", ")} aria-hidden="true">
+                                    <Icon name="bond" />
+                                </span>
+                            )}
                             {said !== "" && <span class="visually-hidden">{said}</span>}
                         </>
                     );

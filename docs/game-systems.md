@@ -176,7 +176,7 @@ bonds:
   attuned: {most: 3, needs: attunement, while: equipped, rules: Attunement}
 ```
 
-The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read. With `while`, a bound item gives its bonuses only while in that list too, as a ring worn, and binding one not there says so.
+The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read. With `while`, a bound item gives its bonuses only while in that list too, as a ring worn, and binding one not there says so. On the sheet the list shows how many it holds of `most`, and each thing carried that is in it is marked.
 
 ### at-most
 

@@ -14,7 +14,7 @@ import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
 import { arrowStep, t } from "../text.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
-import { diceText, dieName, type Keep, keptOf, notation, trayDice, withDropped } from "./pool.ts";
+import { diceText, dieName, doubled, type Keep, keepsOf, keptOf, keptTotal, notation, trayDice, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
 import { diceEdgesPref, diceSetPref } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
@@ -91,6 +91,8 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
     const [pool, setPool] = useState<number[]>([]);
     const [keeps, setKeeps] = useState<Partial<Record<number, Keep>>>({});
     const [modifier, setModifier] = useState(0);
+    // The dice doubled, as a critical hit's damage: a free throw alone.
+    const [double, setDouble] = useState(false);
     const [sound, setSound] = usePref(soundPref);
     const [diceSet] = useChoice(diceSetPref);
     const [edges] = useChoice(diceEdgesPref);
@@ -298,8 +300,9 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
     useEffect(() => {
         if (sheetThrow !== undefined) {
             const { roll, label, who } = sheetThrow;
-            const dice = roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) }));
-            const total = dice.reduce((sum, die) => sum + die.value, roll.modifier);
+            // Of a roll better or worse, as 2d20kl1, only the die its notation keeps counts.
+            const dice = withDropped(roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), keepsOf(roll.notation));
+            const total = keptTotal(dice, roll.modifier);
             void throwAndShow(
                 { free: true, title: label, notation: roll.notation, dice, modifier: roll.modifier, total, text: diceText(dice, roll.modifier), ...(who === undefined ? {} : { who }) },
                 lingers.free,
@@ -309,8 +312,10 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
 
     // Only the kinds with two dice or more keep a choice of which count.
     const shownKeeps = keptOf(pool, keeps);
-    // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330).
-    const answering = pool.length === 0 ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier, shownKeeps)));
+    // The dice a throw throws: those chosen, or twice as many.
+    const thrown = double ? doubled(pool) : pool;
+    // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330); dice doubled are a free throw.
+    const answering = pool.length === 0 || double ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier, shownKeeps)));
 
     const throwPool = (): void => {
         // Dice that make a check the master asks answer it: the engine rolls it, and its dice land as for its button. The tray closes, keeping its dice for the
@@ -323,9 +328,9 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         }
 
         // A free throw: the page decides it, as fairly as the browser can, leaving the dice in sight.
-        const dice = withDropped(pool.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), shownKeeps);
-        const total = dice.reduce((sum, die) => sum + (die.dropped === true ? 0 : die.value), modifier);
-        void throwAndShow({ free: true, title: t("Dice"), notation: notation(pool, modifier, shownKeeps), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
+        const dice = withDropped(thrown.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), shownKeeps);
+        const total = keptTotal(dice, modifier);
+        void throwAndShow({ free: true, title: t("Dice"), notation: notation(thrown, modifier, shownKeeps), dice, modifier, total, text: diceText(dice, modifier) }, lingers.free);
     };
 
     const toggleSound = (): void => {
@@ -361,6 +366,7 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         setPool([]);
         setKeeps({});
         setModifier(0);
+        setDouble(false);
         button.current?.focus();
     };
 
@@ -384,8 +390,9 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
             <span class="tray-roll">
                 {t("Roll")}
                 <PoolIcons pool={pool} keeps={shownKeeps} />
-                {modifier !== 0 && <span class="notation">{signed(modifier)}</span>}
-                <span class="visually-hidden">{notation(pool, modifier, shownKeeps)}</span>
+                {double && <span class="notation" dir="ltr">×2</span>}
+                {modifier !== 0 && <span class="notation" dir="ltr">{signed(modifier)}</span>}
+                <span class="visually-hidden">{notation(thrown, modifier, shownKeeps)}</span>
             </span>
         )
         : t("Answer: {check}", { check: answering.check });
@@ -460,17 +467,29 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
                                 );
                             })}
                         </ul>
-                        <div class="tray-modifier">
-                            <button type="button" aria-label={t("Modifier: one less")} data-tip="−1" onClick={() => setModifier(modifier - 1)}>
-                                <Icon name="minus" />
+                        <div class="tray-last">
+                            <button
+                                type="button"
+                                class="tray-double"
+                                aria-pressed={double}
+                                aria-label={t("Double the dice")}
+                                data-tip={t("Twice the dice, the same number added")}
+                                onClick={() => setDouble(!double)}
+                            >
+                                <span dir="ltr">×2</span>
                             </button>
-                            <span class="tray-modifier-value">
-                                <span class="tray-modifier-label">{t("Mod")}</span>
-                                <output aria-live="polite">{signed(modifier)}</output>
-                            </span>
-                            <button type="button" aria-label={t("Modifier: one more")} data-tip="+1" onClick={() => setModifier(modifier + 1)}>
-                                <Icon name="plus" />
-                            </button>
+                            <div class="tray-modifier">
+                                <button type="button" aria-label={t("Modifier: one less")} data-tip="−1" onClick={() => setModifier(modifier - 1)}>
+                                    <Icon name="minus" />
+                                </button>
+                                <span class="tray-modifier-value">
+                                    <span class="tray-modifier-label">{t("Mod")}</span>
+                                    <output aria-live="polite">{signed(modifier)}</output>
+                                </span>
+                                <button type="button" aria-label={t("Modifier: one more")} data-tip="+1" onClick={() => setModifier(modifier + 1)}>
+                                    <Icon name="plus" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

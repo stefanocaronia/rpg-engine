@@ -630,19 +630,44 @@ function Between({ chapter }: { chapter: ShownChapter; })
     );
 }
 
-/** The facts of a chapter, the game date written once whenever it changes, as the days in a chat. */
+/**
+ * The facts of a chapter, the game date written once whenever it changes, as the days in a chat; what the day's upkeep used up together, under its name.
+ */
 function Facts({ facts }: { facts: JournalFact[]; })
 {
     let last: string | undefined;
     return (
         <ul>
-            {facts.flatMap((fact, at) => {
-                const header = fact.date !== undefined && fact.date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(gameDateLabel(fact.date))}</li>] : [];
-                last = fact.date ?? last;
-                return [...header, <li key={at}>{factLabel(fact)}</li>];
+            {factRuns(facts).flatMap(({ facts: run, at }) => {
+                const date = run[0].date;
+                const header = date !== undefined && date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(gameDateLabel(date))}</li>] : [];
+                last = date ?? last;
+                const upkeep = run[0].kind === "counter" && run[0].upkeep === true;
+                return [
+                    ...header,
+                    upkeep
+                        ? (
+                            <li key={at} class="fact-upkeep">
+                                {t("The day's upkeep")}
+                                <ul>{run.map((fact, index) => <li key={index}>{factLabel(fact)}</li>)}</ul>
+                            </li>
+                        )
+                        : <li key={at}>{factLabel(run[0])}</li>,
+                ];
             })}
         </ul>
     );
+}
+
+/** The facts in runs: what the day's upkeep wrote at one date together, any other fact alone; each run with where it starts. */
+function factRuns(facts: JournalFact[]): { facts: JournalFact[]; at: number; }[]
+{
+    const upkeep = (fact: JournalFact | undefined): boolean => fact?.kind === "counter" && fact.upkeep === true;
+    return facts.reduce<{ facts: JournalFact[]; at: number; }[]>((runs, fact, at) => {
+        const open = runs.at(-1);
+        const joins = open !== undefined && upkeep(fact) && upkeep(open.facts[0]) && open.facts[0].date === fact.date;
+        return joins ? [...runs.slice(0, -1), { ...open, facts: [...open.facts, fact] }] : [...runs, { facts: [fact], at }];
+    }, []);
 }
 
 function Star()
