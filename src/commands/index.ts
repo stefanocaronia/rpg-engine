@@ -23,6 +23,7 @@ import { save } from "./save.ts";
 import { scene } from "./scene.ts";
 import { show } from "./show.ts";
 import { status } from "./status.ts";
+import { thoughts } from "./thoughts.ts";
 import { trade } from "./trade.ts";
 import { translate } from "./translate.ts";
 import { travel } from "./travel.ts";
@@ -54,6 +55,7 @@ export const commands: Command<any, any>[] = [
     change,
     effect,
     mood,
+    thoughts,
     advance,
     travel,
     route,

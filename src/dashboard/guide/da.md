@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -113,53 +113,53 @@ Du laver din karakter sammen med spilleder, som ved et bord. Alle valg er dine, 
 
 ## 3. Spil <!-- icon: chat -->
 
-### 3.1 Tal med spillederen
+### 3.1 Tal med spilleder
 
 Skriv, hvad din karakter gør eller siger, med dine egne ord:
 
-> Jeg spørger værten, hvem der ellers kom forbi i aften.
+> Jeg spørger værtshusholderen, hvem der ellers kom forbi i aften.
 
-Uden for historien skriver du i kantede parenteser: *[Hvordan fungerer det at gribe fat i en modstander?]* Spillederen svarer også i kantede parenteser.
+Når du vil tale uden for historien, skriv i kantede parenteser: *[Hvordan virker det at gribe fat i en modstander?]* Spilleder svarer også i kantede parenteser.
 
-Du siger, hvad du prøver. Spillederen siger, hvad der sker. Spillederen bestemmer aldrig for din karakter og taler aldrig om motoren. Du kan spørge, hvordan dashboardet bruges.
+Du siger, hvad du prøver på. Spilleder siger, hvad der sker. Spilleder bestemmer aldrig for din karakter og taler aldrig om motoren. Du kan spørge spilleder, hvordan dashboardet bruges.
 
-**Handl fra dashboardet**: Klik på et navn på dit karakterark, f.eks. et våben, en besværgelse eller noget, du bærer, og derefter på hvem det gælder. Eller klik på en person for at tale med vedkommende. Dashboardet skriver din sætning, *Jeg angriber Hooded Bandit 1 med Mace.*, som du kan ændre, før du trykker **Sig til spillederen**. Spillederen hører det, som var det sagt i chatten, og afgør det som alt andet. Hvor din AI-app ikke selv kan høre det, gør **Kopiér** det klar til at indsætte i chatten.
+**Handl fra dashboardet**: klik på et navn på dit karakterark, for eksempel et våben, en besværgelse eller noget, du bærer. Vælg derefter, hvem det gælder. Du kan også klikke på en person for at tale med vedkommende. Dashboardet skriver din sætning, *Jeg angriber Hooded Bandit 1 med Mace.*, og du kan rette den, før du trykker på **Sig til spillederen**. Spilleder hører den, som var den sagt i chatten, og afgør den som alt andet. Hvis din AI-app ikke selv kan høre den, gør **Kopiér** sætningen klar til at blive sat ind i chatten.
 
 ### 3.2 Slag
 
-Spillederen beder kun om et slag, når udfaldet er usikkert og har betydning, og siger først, hvad der står på spil. Derefter:
+Spilleder beder kun om et slag, når udfaldet er uvist og har betydning, og siger først, hvad der står på spil. Derefter:
 
-- **På dashboardet** viser et banner en knap for hver prøve, f.eks. *Acrobatics +4 · med vantaggio*. Klik på den: Terningerne falder på siden, og spillederen hører resultatet. Du kan også klikke på den linje på dit karakterark, der lyser op, kaste terningerne fra terningbakken eller skrive noget andet i banneret.
-- **Manuelt**, i bannerets hjørne eller under **Indstillinger**: Banneret fortæller dig, hvad du skal slå, og du slår det fra dit karakterark eller terningbakken.
-- **Fysiske terninger**, når terningeindstillingen er sat til fysiske: Du skriver de øjne, du slog, *[Jeg slog 14.]*, og RPG Engine lægger dine modifikatorer til.
+- **På dashboardet** viser et banner en knap for hver prøve, for eksempel *Acrobatics +4 · med fordel*. Klik på den: Terningerne falder på siden, og spilleder hører resultatet. Du kan også klikke på den linje på dit karakterark, der lyser op, kaste terningerne fra terningbakken eller skrive noget andet i banneret.
+- **Manuelt**, i bannerets hjørne eller i **Indstillinger**: Banneret fortæller dig, hvad du skal slå, og du slår det fra dit karakterark eller terningbakken.
+- **Rigtige terninger**, når terningeindstillingen er sat til fysisk: Du skriver de øjne, du slog, *[Jeg slog 14.]*, og RPG Engine lægger dine modifikatorer til.
 
-**Frie slag**: Klik på et hvilket som helst tal på dit karakterark, eller åbn terningbakken, for at slå for sjov. De tæller aldrig, og spillederen ser dem aldrig.
+**Frie slag**: klik på et vilkårligt tal på dit karakterark, eller åbn terningbakken, for at slå for sjov. De tæller aldrig, og spilleder ser dem aldrig.
 
-**Spillederens slag** vises i din slagkolonne, undtagen de hemmelige. Du kan altid spørge *[Var det slag ægte?]*: For et hemmeligt slag giver spillederen et fingeraftryk, der beviser, at det blev slået, før du spurgte.
+**Spillederens slag** vises i din slagkolonne, bortset fra de hemmelige. Du kan altid spørge *[Var det slag ægte?]*: For et hemmeligt slag giver spilleder et fingeraftryk, der beviser, at det blev slået, før du spurgte.
 
 ### 3.3 Scener og kampe
 
-Historien forløber i **scener**: en kamp, en samtale, udforskning, rejse, en hvil. Når hver scene slutter, gemmer spillet af sig selv, og scenen kommer i din dagbog.
+Historien foregår i **scener**: en kamp, en samtale, udforskning, rejse eller en hvile. Ved slutningen af hver scene gemmer spillet automatisk, og scenen kommer ind i din dagbog.
 
-I en kamp fortæller spillederen hver tur, der ikke er din, og stopper, hvor du kan beslutte noget. **Scene** viser øverst, hvis tur det er, og hvem der kommer derefter, og din karakters kort ved siden af kortet. Turrækkefølgen, din gruppes hitpoint og hvor såret fjenderne ser ud, med ord, bliver stående ved siden af siden. Hvis din karakter falder, vises dødsslagene store på siden.
+I en kamp fortæller spilleder om hver tur, der ikke er din, og stopper, hvor du skal beslutte noget. **Scene** viser øverst, hvem der har tur, og hvem der følger, og din karakters kort ved siden af kortet. Rækkefølgen af turene, din gruppes hitpoint og hvor sårede fjenderne ser ud, i ord, står ved siden af siden. Hvis din karakter falder, vises dødsslagene store på siden.
 
-### 3.4 Tid, rejser og verden, der bevæger sig
+### 3.4 Tid, rejser og en verden i bevægelse
 
-RPG Engine holder styr på datoen. Der går ingen tid mellem sessioner. Sig, at I hviler, *Vi tager en lang hvil*, og når spillederen er enig, giver hvilen tilbage, hvad den skal. Ved en kort hvil kan spillederen spørge på dashboardet, hvor mange hit dice du bruger: Slå dem én ad gangen, se hvad hver heler, og stop, når du vil. Sig, hvorhen I går, *Vi tager vejen nordpå mod Rocca*, og RPG Engine regner vejen, afstanden og dagene ud og stopper, når der sker noget undervejs. Penge bliver talt i spillets mønter, byttepenge med.
+RPG Engine holder styr på datoen. Der går ingen tid mellem sessioner. Sig, at I hviler, *Vi tager en lang hvile*, og når spilleder er enig, giver hvilen tilbage, hvad den skal. Ved en kort hvile kan spilleder spørge på dashboardet, hvor mange hit dice du bruger: Slå dem én ad gangen, se hvor meget hver heler, og stop, når du vil. Sig, hvor I tager hen, *Vi følger vejen nordpå mod Rocca*, og RPG Engine regner vejen, afstanden og dagene ud og stopper, når der sker noget undervejs. Penge tælles i spillets mønter, byttepenge med.
 
-Skurke har planer med frister. Hver ny dag rykker spillederen de trusler frem, som tiden har fremmet, og du ser deres tegn, aldrig selve uret.
+Skurke har planer med tidsfrister. Hver ny dag rykker spilleder de trusler frem, som tiden har bragt videre, og du ser deres tegn, aldrig selve uret.
 
 ### 3.5 Kort
 
-**Verden** viser de steder, din karakter kender, vejene imellem dem og det spor, du har gået, med tåge over resten. **Scene** viser kortet over det sted, hvor du er, når der er et, med hvem der står hvor. I en kamp er de felter, du ikke kan nå, tilsløret på din tur. Når spillederen spørger, hvorhen du går, så tryk på et felt eller skriv det, f.eks. *E4*.
+**Verden** viser de steder, din karakter kender, vejene imellem dem og det spor, du har gået, med tåge over resten. **Scene** viser kortet over det sted, hvor du er, hvis der er et, med hvem der står hvor. I en kamp er de felter, du ikke kan nå, tilsløret på din tur. Når spilleder spørger, hvor du flytter hen, så tryk på et felt eller skriv det, for eksempel *E4*.
 
 ### 3.6 Missioner, dagbog og noter
 
-En opgave, din karakter tager på sig, bliver til en mission i **Dagbog** med dens mål, dens frist og det, den måler. Sæt stjerne ved den for at holde den i syne øverst i Scene. Dagbogen fortæller også din **historie**, scene for scene, og gemmer dine **noter**: private, medmindre du **Del**er en, som spillederen hører som det, du tænker, aldrig som et faktum.
+En opgave, din karakter påtager sig, bliver til en mission i **Dagbog** med sine mål, sin tidsfrist og det, den måler. Sæt stjerne på den for at holde den synlig øverst i Scene. Dagbogen fortæller også din **historie**, scene for scene, og gemmer dine **noter**: De er private, medmindre du vælger at **Del** en. Spilleder hører den som det, du tænker, aldrig som et faktum. Under **Følgesvende** kan du læse dine følgesvendes dagbøger: Nu og da, ved slutningen af en dag eller en mission, skriver de nogle linjer om, hvad de tænker og føler.
 
 ### 3.7 Din karakters historie og billede
 
-På dit karakterark har kortet **Beskrivelse** en boks til din karakters historie: Spillederen skriver i den, når du har sagt ja. Til et billede kan du give spillederen en fil (PNG, JPEG, WebP eller SVG, op til 5 MB) og sige, hvor den ligger på din computer, eller du kan få lavet et portræt ([3.11](#311-pictures)): *[Lav et portræt af mig: gråt hår i en fletning, et ar på hagen.]*
+På dit karakterark har kortet **Beskrivelse** et felt til din karakters historie: Spilleder skriver den ind, efter du har sagt ja. Til et billede kan du give spilleder en fil (PNG, JPEG, WebP eller SVG, op til 5 MB) sammen med, hvor den ligger på din computer, eller du kan få lavet et portræt ([3.11](#311-pictures)): *[Lav et portræt af mig: gråt hår i en fletning, et ar på hagen.]*
 
 ### 3.8 Gemte spil og at gå tilbage
 
@@ -177,38 +177,38 @@ Når du er gået tilbage, så **åbn en ny chat**: Den gamle husker det, der ble
 
 ### 3.9 Sessioner: at stoppe og vende tilbage
 
-Stop, når du vil: *[Lad os stoppe her for i aften.]* Alt er allerede gemt i filerne. For at vende tilbage skal du starte din agent i kampagnemappen og skrive *fortsæt*: Spillederen giver dig en kort opsummering og går videre.
+Stop, når du vil: *[Lad os stoppe her for i aften.]* Alt er allerede gemt i filerne. For at vende tilbage skal du starte din agent i kampagnemappen og skrive *fortsæt*: Spilleder giver dig en kort opsummering og går videre.
 
 ### 3.10 Spillederens humør
 
-Robotten øverst på dashboardet er spillederen: Dens ansigt følger historiens tone og afslører aldrig, hvad du endnu ikke ved. Når chatten er lukket, sover den.
+Robotten øverst på dashboardet er spilleder. Dens ansigt følger historiens tone og afslører aldrig, hvad du ikke ved endnu. Når chatten er lukket, sover den.
 
 ### 3.11 Billeder
 
-RPG Engine kan få lavet billeder af de steder, du når, de missioner, du tager, og dem, du møder, som indstillingen **billeder** siger, og din karakters portræt, når du beder om det. Den bruger din egen Codex eller Claude Code, med dit login, på dit abonnement og dets grænser: **Codex** maler dem, ellers tegner **Claude Code** dem. **Indstillinger** viser, om denne computer kan lave dem, og hvordan du sætter det op, hvis ikke. Du kan altid give spillederen et billede, du selv har.
+RPG Engine kan få lavet billeder af de steder, du når frem til, de missioner, du påtager dig, og dem, du møder, som indstillingen **billeder** bestemmer, og din karakters portræt, når du beder om det. Det bruger din egen Codex eller Claude Code, med dit login, på dit abonnement og dets grænser: **Codex** maler dem, ellers tegner **Claude Code** dem. **Indstillinger** viser, om denne computer kan lave dem, og hvordan du sætter det op, hvis ikke. Du kan altid give spilleder et billede, du selv har.
 
-### 3.12 Tryghed: linjer, slør og stop
+### 3.12 Sikkerhed: linjer, slør og stop
 
-**Linjer** optræder aldrig i spillet. **Slør** sker kun uden for scenen. Skriv når som helst *[stop]*: Spillederen dropper straks det indhold og føjer det til dine linjer.
+**Linjer** optræder aldrig i spillet. **Slør** sker kun uden for scenen. Skriv *[stop]* når som helst: Spilleder dropper straks det indhold og føjer det til dine linjer.
 
-### 3.13 Skift mening
+### 3.13 At skifte mening
 
-Enhver indstilling kan ændres, i chatten eller under **Indstillinger**. En afgørelse, spillederen træffer uden bogen, bliver til en **præcedens**, så det samme spørgsmål får det samme svar næste gang.
+Alle indstillinger kan ændres, i chatten eller under **Indstillinger**. En afgørelse, spilleder tager uden reglerne, bliver til en **præcedens**, så det samme spørgsmål får det samme svar næste gang.
 
 ---
 
 ## 4. Dashboardet <!-- icon: party -->
 
-En side på din egen computer, som kun kan åbnes i den computers browser, og som er i live, mens chatten er åben. Når chatten lukker, viser den *Not connected*. Den kommer tilbage af sig selv med den næste chat.
+En side på din egen computer, som kun kan åbnes i den computers browser og er i live, mens chatten er åben. Når chatten lukker, viser den *Not connected*. Den kommer tilbage af sig selv med næste chat.
 
-- **Gruppe**: dit karakterark og dine følgesvendes. Klik på et tal for at slå med det. Hold musen over det for at se, hvor det kommer fra. Ved siden af står slagene.
-- **Scene**: hvor du er, dets billede og kort, hvem der er der, og hvad der sker. I en kamp vises turene og din karakters kort.
-- **Dagbog**: missioner, historien, dine noter.
+- **Gruppe**: dit karakterark og dine følgesvendes. Klik på et tal for at slå det. Hold musen over det for at se, hvor det kommer fra. Ved siden af står slagene.
+- **Scene**: hvor du er, dens billede og kort, hvem der er der, og hvad der sker. I en kamp ser du turene og din karakters kort.
+- **Dagbog**: missioner, historien, dine følgesvendes dagbøger, dine noter.
 - **Verden**: verdenskortet, som din karakter kender det.
 - **Terningbakken**: vælg terninger og en modifikator, og kast.
-- **Gemte spil**, **Hjælp**, **Indstillinger** og **Om** som ikoner for enden af rækken. Indstillinger rummer også sidens egne præferencer: tema, terningelyd, terningesæt.
+- **Gemte spil**, **Hjælp**, **Indstillinger** og **Om** som ikoner for enden af rækken. Indstillinger rummer også sidens egne valg: tema, terningelyd, terningesæt.
 
-Når spillederen spørger dig om noget, bliver spillederens banner øverst, uanset hvilken sektion du er i.
+Når spilleder spørger dig om noget, bliver banneret stående øverst, uanset hvilken sektion du er i.
 
 ---
 

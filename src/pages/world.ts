@@ -195,19 +195,20 @@ export function pagesWithName(world: World, name: string): Page[]
 }
 
 const namesByWorld = new WeakMap<World, Map<string, Page[]>>();
+const aliasesByWorld = new WeakMap<World, Map<string, Page[]>>();
 
 /** The pages of the campaign with this name, else the one page with it among its aliases, as a renamed page under its old name (D-417); none when two pages share the alias. */
 export function pagesWithNameOrAlias(world: World, name: string): Page[]
 {
     const named = pagesWithName(world, name);
-    const aliased = named.length > 0 ? [] : withAlias(world.pages, name);
+    const aliased = named.length > 0 ? [] : pagesWithAlias(world, name);
     return named.length > 0 ? named : aliased.length === 1 ? aliased : [];
 }
 
 /** The pages of the campaign, but `page`, that have `name` among their aliases. */
 export function otherPagesWithAlias(world: World, page: Page, name: string): Page[]
 {
-    return withAlias(world.pages, name).filter((other) => other !== page);
+    return pagesWithAlias(world, name).filter((other) => other !== page);
 }
 
 /** The page of the campaign at this path, from an index built once for each world (D-194). */
@@ -447,7 +448,7 @@ export function pageNamed(world: World, name: string): Page | undefined
         return page;
     }
 
-    const aliased = withAlias(world.pages, name);
+    const aliased = pagesWithAlias(world, name);
 
     if (aliased.length > 1) {
         throw new Error(`${name} is an alias of ${aliased.map((other) => other.name).join(" and ")}: give the page's own name.`);
@@ -556,6 +557,26 @@ function readPages(root: string, system?: string): { pages: Page[]; problems: st
 
     pages.sort((first, second) => (first.path < second.path ? -1 : 1));
     return { pages, problems };
+}
+
+/** The pages of the campaign that have `name` among their aliases, in the world's order: from an index built once for each world, as pagesWithName's. */
+function pagesWithAlias(world: World, name: string): Page[]
+{
+    let aliases = aliasesByWorld.get(world);
+
+    if (aliases === undefined) {
+        aliases = new Map();
+
+        for (const page of world.pages) {
+            for (const key of new Set(textsIn(page.fields.aliases).map((alias) => comparableText(alias.trim())))) {
+                aliases.set(key, [...(aliases.get(key) ?? []), page]);
+            }
+        }
+
+        aliasesByWorld.set(world, aliases);
+    }
+
+    return aliases.get(comparableText(name.trim())) ?? [];
 }
 
 /** The pages that have `name` among their aliases. */

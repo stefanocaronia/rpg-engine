@@ -1,11 +1,12 @@
 // The Journal section (D-367, D-369, D-371, D-384, D-388): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the ones the player follows, the main one until they choose, shown
-// small beside the page, or in Scene and Combat on a narrow screen; the story by its scenes, as chapters, the last first, each with what the diary tells of it; and the player's own notes.
+// small beside the page, or in Scene and Combat on a narrow screen; the story by its scenes, as chapters, the last first, each with what the diary tells of it; the companions'
+// diaries (D-497); and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, readJournal } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
-import type { JournalFact, ShownChapter, ShownQuest } from "./data.ts";
+import type { JournalFact, ShownChapter, ShownQuest, ShownThought } from "./data.ts";
 import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
@@ -18,14 +19,31 @@ import { useChoice, useKeptText } from "./prefs.ts";
 import { arrowStep, t } from "./text.ts";
 
 // The tab the player last chose, kept in this browser.
-const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "notes"] } as const;
+const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "companions", "notes"] } as const;
 
 export function JournalView({ version, campaign }: { version: number; campaign?: string; })
 {
     const journal = useJournal(version);
-    const [tab, setTab] = useChoice(tabChoice);
+    const [chosen, setTab] = useChoice(tabChoice);
     const [followed, setFollowed] = useFollowed(campaign, journal.read?.quests);
     const tabs = useRef<HTMLDivElement>(null);
+    // The companions' tab only once one of them has written: a diary no one keeps shows nothing.
+    const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts.length ?? 0) > 0);
+    const tab = (shown as string[]).includes(chosen) ? chosen : tabChoice.initial;
+
+    // On a phone the tabs may scroll sideways: the chosen one is brought into the row, and the page itself never moves.
+    useEffect(() => {
+        const row = tabs.current;
+        const chosenTab = row?.querySelector<HTMLElement>(`#journal-tab-${tab}`);
+
+        if (row === null || chosenTab === null || chosenTab === undefined) {
+            return;
+        }
+
+        const rowBox = row.getBoundingClientRect();
+        const tabBox = chosenTab.getBoundingClientRect();
+        row.scrollLeft += Math.min(0, tabBox.left - rowBox.left) + Math.max(0, tabBox.right - rowBox.right);
+    }, [tab, shown.length]);
 
     // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
     const move = (event: KeyboardEvent): void => {
@@ -36,7 +54,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
         }
 
         event.preventDefault();
-        const next = tabChoice.values[(tabChoice.values.indexOf(tab as "quests") + step + tabChoice.values.length) % tabChoice.values.length];
+        const next = shown[(shown.indexOf(tab as "quests") + step + shown.length) % shown.length];
         setTab(next);
         tabs.current?.querySelector<HTMLElement>(`#journal-tab-${next}`)?.focus();
     };
@@ -45,7 +63,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
         <section class="journal" aria-labelledby="journal-title">
             <PageHead section="journal" id="journal-title" />
             <div class="journal-tabs" role="tablist" aria-label={t("Journal")} ref={tabs} onKeyDown={move}>
-                {tabChoice.values.map((value) => (
+                {shown.map((value) => (
                     <button
                         key={value}
                         type="button"
@@ -64,6 +82,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
                 {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} now={journal.read.now} />}
+                {journal.read !== undefined && tab === "companions" && <Diaries thoughts={journal.read.thoughts} />}
                 {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">{t("The journal starts with the player character.")}</p>}
             </div>
@@ -545,6 +564,59 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
     );
 }
 
+/** The companions' diaries, the last line first, all of them or one companion's (D-497): each line with who wrote it and when, in their own words. */
+function Diaries({ thoughts }: { thoughts: ShownThought[]; })
+{
+    const [who, setWho] = useState<string | undefined>(undefined);
+    const chips = useRef<HTMLDivElement>(null);
+    // By name, so a chip never moves when its companion writes again.
+    const writers = [...new Set(thoughts.map((thought) => thought.who))].toSorted((first, second) => first.localeCompare(second));
+    const chosen = who !== undefined && writers.includes(who) ? who : undefined;
+    const lines = thoughts.filter((thought) => chosen === undefined || thought.who === chosen);
+
+    // The chips are one stop of Tab; the arrows go along them, as in the catalog of Packages.
+    const chipKey = (event: KeyboardEvent): void => {
+        const buttons = [...chips.current?.querySelectorAll("button") ?? []];
+        const at = buttons.indexOf(event.target as HTMLButtonElement);
+        const step = arrowStep(event.key, true);
+
+        if (step !== 0 && at >= 0) {
+            event.preventDefault();
+            const to = buttons[(at + step + buttons.length) % buttons.length];
+            to?.focus();
+            to?.click();
+        }
+    };
+
+    const chip = (one: string | undefined) => (
+        <button type="button" key={one ?? ""} aria-pressed={chosen === one} tabIndex={chosen === one ? 0 : -1} onClick={() => setWho(one)}>
+            {one ?? t("All")}
+        </button>
+    );
+
+    return (
+        <div class="diaries">
+            {writers.length > 1 && (
+                <div class="package-chips" role="group" aria-label={t("Companions")} ref={chips} onKeyDown={chipKey}>
+                    {chip(undefined)}
+                    {writers.map(chip)}
+                </div>
+            )}
+            <ol class="diary-lines">
+                {lines.map((thought, index) => (
+                    <li key={index}>
+                        <p class="diary-when">
+                            <b>{thought.who}</b>
+                            {thought.date !== undefined && <span>{phraseLabel(gameDateLabel(thought.date))}</span>}
+                        </p>
+                        <blockquote>{thought.text}</blockquote>
+                    </li>
+                ))}
+            </ol>
+        </div>
+    );
+}
+
 /** The picture of a chapter's place, or the mark of its kind on the map's paper, as Saves has them; nothing for a place with neither (D-384). */
 function ChapterPicture({ chapter }: { chapter: ShownChapter; })
 {
@@ -687,5 +759,5 @@ function plainText(text: string): string
 /** A tab's name in the page's language. */
 function tabName(tab: string): string
 {
-    return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : t("Notes");
+    return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : tab === "companions" ? t("Companions") : t("Notes");
 }

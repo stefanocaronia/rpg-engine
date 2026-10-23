@@ -1484,6 +1484,31 @@ a {
     color: var(--accent);
 }
 
+/* Four tabs in a long language do not fit a phone: they scroll sideways instead of widening the page, the ring of the focus drawn inside the row. */
+.journal-tabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.journal-tabs button {
+    flex: none;
+    white-space: nowrap;
+}
+
+.journal-tabs button:focus-visible {
+    outline-offset: -2px;
+}
+
+@media (max-width: 600px) {
+    .journal-tabs {
+        gap: 2px;
+    }
+
+    .journal-tabs button {
+        padding: 0 10px;
+    }
+}
+
 .journal-none,
 .journal-problem {
     margin: 0;
@@ -1497,6 +1522,42 @@ a {
 .quest-log {
     display: grid;
     gap: var(--gap);
+}
+
+.diaries {
+    display: grid;
+    gap: 8px;
+}
+
+/* A line no longer than a book's on a wide screen. */
+.diary-lines {
+    display: grid;
+    gap: 14px;
+    max-width: 72ch;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.diary-when {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 0 0 4px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.diary-when b {
+    color: var(--ink);
+}
+
+.diary-lines blockquote {
+    margin: 0;
+    padding-block: 2px;
+    padding-inline-start: 12px;
+    border-inline-start: 3px solid var(--rule);
+    overflow-wrap: anywhere;
 }
 
 .quest-group {

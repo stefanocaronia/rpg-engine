@@ -25,8 +25,9 @@ import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-mood
 import { type Measures, measuresOf } from "./game-roads.ts";
 import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
+import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game-thoughts.ts";
 import { calendarDayOf, readPresent } from "./game-time.ts";
-import { questText, type ShownChapter, shownJournal, type ShownQuest, type StoryFact } from "./game-view-journal.ts";
+import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
@@ -157,6 +158,8 @@ export type ViewResult =
         discovered: string[];
         /** "day 3, 19:05 · Ambush at Mill Ford: Four orcs ambushed the party.": the scenes they were in. */
         lived: string[];
+        /** A companion's last lines of their diary, with their dates (DIA-3); none for anyone else. */
+        thoughts?: string[];
     }
     /** The world map as the player character knows it (VIEW-7). */
     | ({ kind: "map"; } & ShownMap)
@@ -165,7 +168,7 @@ export type ViewResult =
     /** The setup (D-370): the mode, the campaign's name and whether it is still its folder's, what the next mode still needs, and the setup's questions. */
     | { kind: "setup"; mode: Mode; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
     /** The journal (D-367): the quests the player character knows, and the story by scenes. */
-    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
     | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "unknown"; text: string; };
@@ -265,6 +268,8 @@ export const view = defineCommand({
                 kind: "journal",
                 ...(present === undefined ? {} : { now: formatGameDate(present) }),
                 ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
+                // The companions' diaries, the last line first (DIA-4).
+                thoughts: thoughtsIn(root, world).reverse().map((one) => ({ who: known(one.page.name) ?? "someone", ...(one.date === undefined ? {} : { date: one.date }), text: one.text })),
             };
         }
 
@@ -420,6 +425,7 @@ export const view = defineCommand({
                 return [
                     ...(result.quests.length === 0 ? ["No quests yet."] : result.quests.map(questText)),
                     ...result.chapters.map((chapter) => `${chapter.title ?? "Between scenes"}${chapter.date === undefined ? "" : `, ${chapter.date}`}${chapter.summary === undefined ? "" : `: ${chapter.summary}`}`),
+                    ...result.thoughts.map((thought) => `${thought.who}'s diary${thought.date === undefined ? "" : `, ${thought.date}`}: ${thought.text}`),
                 ].join("\n");
             case "saves":
                 return [
@@ -497,6 +503,7 @@ function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory"; }>
         known,
         discovered: discoveredSecrets(world, knowledge).map((secret) => `${secret.page}#${secret.name}: ${secret.text.replace(/\s*\n\s*/g, " ")}`),
         lived: scenesLivedBy(root, world, self).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.title}${one.summary === "" ? "" : `: ${one.summary}`}`),
+        ...(self.fields.role === "companion" ? { thoughts: thoughtsIn(root, world, self).slice(-thoughtsShown).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.text}`) } : {}),
     };
 }
 
@@ -515,7 +522,15 @@ function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): string
         list("Known", result.known),
         list("Discovered", result.discovered),
         list("Lived", result.lived),
+        result.thoughts === undefined ? "" : thoughtsText(result.thoughts),
     ].filter((block) => block !== "").join("\n\n");
+}
+
+/** A companion's last lines of their diary, and what to write in it (DIA-3). */
+function thoughtsText(lines: string[]): string
+{
+    const rule = `When you write in it: ${thoughtsRule}.`;
+    return lines.length === 0 ? `Your diary: nothing yet. ${rule}` : `Your diary, the last lines:\n${lines.map((line) => `- ${line}`).join("\n")}\n${rule}`;
 }
 
 /** The character a character agent's view is for (VIEW-10), by name or alias; stops the command for any other page. */

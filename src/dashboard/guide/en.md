@@ -154,7 +154,7 @@ Villains have plans with deadlines. Each new day the master moves the threats th
 
 ### 3.6 Quests, journal and notes
 
-A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. The Journal also tells your **story**, scene by scene, and keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact.
+A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. The Journal also tells your **story**, scene by scene, and keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
 
 ### 3.7 Your character's story and picture
 
@@ -202,7 +202,7 @@ A page on your own computer, open only in that computer's browser, live while th
 
 - **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
-- **Journal**: quests, the story, your notes.
+- **Journal**: quests, the story, your companions' diaries, your notes.
 - **World**: the world map as your character knows it.
 - **The dice tray**: choose dice and a modifier, and throw.
 - **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set.

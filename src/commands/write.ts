@@ -88,6 +88,7 @@ import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
 import { logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
 import { deathNotes, isPlayerDead } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
+import { diaryDueLine } from "./game-thoughts.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
@@ -308,7 +309,9 @@ export const write = defineCommand({
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
         const opened = newQuestNotes(existing, page);
         const picture = opened.length === 0 ? undefined : questPictureNote(root, context, now, page);
-        const quest = changed ? [...questEndNotes(context, system, existing, page), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])] : [];
+        // A quest that ends is a time to write a diary (DIA-2).
+        const diary = changed && questEnds(existing, page) ? diaryDueLine(root, context, now) : "";
+        const quest = changed ? [...questEndNotes(context, system, existing, page), ...(diary === "" ? [] : [diary]), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])] : [];
 
         // The story tells a quest taken, done or failed (D-369).
         if (changed) {
@@ -1167,14 +1170,19 @@ function listsWithoutComputed(world: World, target: Page | undefined, lists: Rec
 /** The part quest-ends when a quest is done or failed, such as the experience the story gives (D-233), once in a chat (D-97). */
 function questEndNotes(context: Context, system: GameSystem | undefined, existing: Page | undefined, page: Page): string[]
 {
-    const ended = (candidate: Page | undefined): boolean => ["done", "failed"].includes(String(candidate?.fields.status));
-
-    if (page.type !== "quest" || !ended(page) || ended(existing)) {
+    if (!questEnds(existing, page)) {
         return [];
     }
 
     const part = situationPart("quest-ends", context, system);
     return part === "" ? [] : [`${page.name} is ${String(page.fields.status)}. ${part}`];
+}
+
+/** Whether this write ends a quest: done or failed now, and not before. */
+function questEnds(existing: Page | undefined, page: Page): boolean
+{
+    const ended = (candidate: Page | undefined): boolean => ["done", "failed"].includes(String(candidate?.fields.status));
+    return page.type === "quest" && ended(page) && !ended(existing);
 }
 
 /** Items written in a list where the parts of the classes already put them, as a domain's spell in prepared: always there, they do not count with the rest (PRO-7). */

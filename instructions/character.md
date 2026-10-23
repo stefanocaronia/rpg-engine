@@ -11,3 +11,5 @@ Does: what you choose or do, in one line: yourself only, never what others do or
 Keeps: what you hide, or think and leave unsaid, in one line, if anything
 
 No narration, no rolls, no rules.
+
+When the message asks for your diary, answer one line only, Writes: your few words, as your view says of your diary.

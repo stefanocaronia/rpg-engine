@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -155,7 +155,7 @@ I cattivi hanno piani con scadenze. A ogni giorno nuovo il master fa avanzare le
 
 ### 3.6 Missioni, diario e note
 
-Un incarico che il tuo personaggio accetta diventa una missione nel **Diario**, con i suoi obiettivi, la scadenza e ciò che misura; con la stella la tieni in vista in cima a Scena. Il Diario racconta anche la tua **storia**, scena per scena, e tiene le tue **note**: private, a meno che tu non ne **condivida** una, che il master sente come ciò che pensi, mai come un fatto.
+Un incarico che il tuo personaggio accetta diventa una missione nel **Diario**, con i suoi obiettivi, la scadenza e ciò che misura; con la stella la tieni in vista in cima a Scena. Il Diario racconta anche la tua **storia**, scena per scena, e tiene le tue **note**: private, a meno che tu non ne **condivida** una, che il master sente come ciò che pensi, mai come un fatto. In **Compagni** leggi i diari dei tuoi compagni: ogni tanto, alla fine di una giornata o di una missione, scrivono qualche riga di ciò che pensano e sentono.
 
 ### 3.7 La storia e l'immagine del tuo personaggio
 
@@ -203,7 +203,7 @@ Una pagina sul tuo computer, che si apre solo nel browser di quel computer, viva
 
 - **Gruppo**: la tua scheda e quelle dei compagni. Clicca un numero per tirarlo; passaci sopra col mouse per vedere da dove viene. Accanto, i tiri.
 - **Scena**: dove sei, la sua immagine e la sua mappa, chi c'è, cosa sta succedendo; in uno scontro, i turni e la scheda del tuo personaggio.
-- **Diario**: le missioni, la storia, le tue note.
+- **Diario**: le missioni, la storia, i diari dei compagni, le tue note.
 - **Mondo**: la mappa del mondo come la conosce il tuo personaggio.
 - **Il vassoio dei dadi**: scegli dadi e modificatore, e lancia.
 - **Salvataggi**, **Guida**, **Impostazioni** e **Info**, come icone in fondo alla riga. Le Impostazioni tengono anche le preferenze della pagina: tema, suono dei dadi, set di dadi.

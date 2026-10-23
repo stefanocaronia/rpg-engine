@@ -285,6 +285,15 @@ Read-only: no. Positional parameters: `who`, `mood`.
 - `mood` (`"neutral" | "happy" | "delighted" | "curious" | "focused" | "determined" | "worried" | "surprised" | "afraid" | "sad" | "angry" | "disgusted" | "mischievous"`, required): the mood: neutral, happy, delighted, curious, focused, determined, worried, surprised, afraid, sad, angry, disgusted, mischievous
 - `moment` (`boolean`, optional): yours only: show it for a few seconds, then go back to your mood, which stays as it is
 
+### thoughts
+
+Write a few lines in a companion's diary, when an output says it is due or after a moment that changed them, in their voice: how they took what happened, whom they trust or fear now, what they mean to do; never what happened, which the log keeps, and nothing they hide from the others.
+
+Read-only: no. Positional parameters: `page`, `text`.
+
+- `page` (`string`, required): the companion's page
+- `text` (`string`, required): their lines, at most 200 characters
+
 ### advance
 
 Let time pass in the story, whenever it does, before you narrate it: by a duration or to a later game date.

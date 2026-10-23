@@ -424,7 +424,7 @@ export type View =
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
-    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; }
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; }
     | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; left?: string[]; }
     | { kind: "unknown"; text: string; };
 
@@ -463,6 +463,14 @@ export interface ShownQuest
     picture?: { file: string; version: number; };
     placePicture?: { file: string; version: number; };
     placeKind?: string;
+}
+
+/** A line of a companion's diary (D-497): who wrote it, when in the game, and what. */
+export interface ShownThought
+{
+    who: string;
+    date?: string;
+    text: string;
 }
 
 /** A scene as a chapter of the story (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */

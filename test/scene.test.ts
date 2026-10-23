@@ -408,7 +408,12 @@ describe("rpg scene leave, and the reminder in advance", () => {
         await ok("advance", "--to", "day 1, 18:00");
         await ok("scene", "open", "--title", "Alla locanda", "--type", "social");
         expect(await ok("advance", "--by", "30m")).toBe("day 1, 18:00 → day 1, 18:30.");
-        expect(await ok("advance", "--by", "8h")).toBe("day 1, 18:30 → day 2, 02:30.\nA scene is still open: Alla locanda (since day 1, 18:00). Close it if this time ends it.");
+        // A companion in the open scene has lived something new: their diary is due on the new day (DIA-2).
+        expect(await ok("advance", "--by", "8h")).toBe([
+            "day 1, 18:30 → day 2, 02:30.",
+            "A scene is still open: Alla locanda (since day 1, 18:00). Close it if this time ends it.",
+            "Diary: Lena lived something new since their last lines; at a pause, tonight or at dawn they may write a few: write it yourself in their voice, with thoughts.",
+        ].join("\n"));
         await ok("scene", "close", "--summary", "Ennio dorme.");
         expect(await ok("advance", "--by", "2h")).toBe("day 2, 02:30 → day 2, 04:30.");
     });

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -119,73 +119,73 @@ Schrijf wat je personage doet of zegt, in je eigen woorden:
 
 > Ik vraag de herbergier wie er vanavond nog meer langskwam.
 
-Wil je buiten het verhaal iets zeggen, schrijf het dan tussen rechte haken: *[Hoe werkt grijpen?]* De spelleider antwoordt ook tussen haken.
+Wil je buiten het verhaal om iets zeggen? Schrijf het tussen rechte haken: *[Hoe werkt grijpen?]* De spelleider antwoordt ook tussen haken.
 
-Jij zegt wat je probeert. De spelleider zegt wat er gebeurt. De spelleider beslist nooit voor je personage en praat nooit over de engine. Je kunt de spelleider vragen hoe je het dashboard gebruikt.
+Jij zegt wat je probeert; de spelleider zegt wat er gebeurt. De spelleider beslist nooit voor je personage en praat nooit over de engine. Je kunt de spelleider vragen hoe je het dashboard gebruikt.
 
-**Handelen vanaf het dashboard**: klik op een naam op je karakterblad, zoals een wapen, een spreuk of iets wat je bij je hebt, en dan op wie het geldt. Of klik op iemand om mee te praten. Het dashboard schrijft je zin, *Ik val Gemaskerde bandiet 1 aan met Strijdkolf.*, die je kunt aanpassen voordat je op **Zeg het tegen de spelleider** klikt. De spelleider hoort het alsof je het in de chat zei en beslist erover zoals over al het andere. Kan je AI-app het niet zelf horen, dan maakt **Kopiëren** de zin klaar om in de chat te plakken.
+**Handelen vanaf het dashboard**: klik op een naam op je karakterblad, zoals een wapen, een spreuk of iets wat je bij je draagt, en kies dan voor wie het is. Of klik op iemand om mee te praten. Het dashboard schrijft je zin, *Ik val Hooded Bandit 1 aan met Mace.*, en die kun je aanpassen voordat je op **Zeg het tegen de spelleider** klikt. De spelleider hoort het alsof je het in de chat zei en beslist erover zoals bij elke andere zin. Kan je AI-app het niet zelf horen? Dan maakt **Kopiëren** de zin klaar om in de chat te plakken.
 
 ### 3.2 Worpen
 
-De spelleider vraagt alleen om een worp als de uitkomst onzeker is en ertoe doet, en zegt eerst wat er op het spel staat. Dan:
+De spelleider vraagt alleen om een worp als de uitkomst onzeker is en ertoe doet. Eerst zegt de spelleider wat er op het spel staat. Daarna:
 
-- **Op het dashboard** toont een banner een knop voor elke proef, zoals *Acrobatiek +4 · met vantaggio*. Klik erop: de dobbelstenen vallen op de pagina en de spelleider hoort de uitkomst. Je kunt ook op de regel van je karakterblad klikken die oplicht, de dobbelstenen uit de dobbelbak gooien, of iets anders in de banner schrijven.
+- **Op het dashboard** staat in een banner een knop voor elke proef, zoals *Acrobatics +4 · met vantaggio*. Klik erop: de dobbelstenen vallen op de pagina en de spelleider hoort de uitkomst. Je kunt ook klikken op de regel van je karakterblad die oplicht, de dobbelstenen uit de dobbelbak gooien, of iets anders in de banner schrijven.
 - **Met de hand**, in de hoek van de banner of in **Instellingen**: de banner zegt wat je moet gooien, en je gooit het vanaf je karakterblad of uit de dobbelbak.
-- **Fysieke dobbelstenen**, als de instelling voor dobbelstenen op fysiek staat: je schrijft de ogen die je gooide, *[Ik gooide een 14.]*, en RPG Engine telt je modifiers erbij.
+- **Echte dobbelstenen**, als de dobbelstenen op fysiek staan: je schrijft op wat je gooide, *[Ik gooide een 14.]*, en RPG Engine telt je modifiers erbij op.
 
-**Vrije worpen**: klik op een willekeurig getal op je karakterblad, of open de dobbelbak, om voor de lol te gooien. Ze tellen nooit mee en de spelleider ziet ze nooit.
+**Vrije worpen**: klik op een willekeurig getal op je karakterblad, of open de dobbelbak, om voor de lol te gooien. Ze tellen nooit mee en de spelleider ziet ze niet.
 
-**De worpen van de spelleider** staan in je worpenkolom, behalve de geheime. Je kunt altijd vragen *[Was die worp echt?]*: bij een geheime worp geeft de spelleider een vingerafdruk die bewijst dat de worp is gedaan vóór je vroeg.
+**De worpen van de spelleider** staan in je worpkolom, behalve de geheime. Je kunt altijd vragen: *[Was die worp echt?]* Bij een geheime worp geeft de spelleider een vingerafdruk. Die bewijst dat de worp is gedaan voordat je het vroeg.
 
 ### 3.3 Scènes en gevechten
 
-Het verhaal verloopt in **scènes**: een gevecht, een gesprek, verkennen, reizen, rust. Aan het eind van elke scène slaat het spel zichzelf op, en de scène komt in je dagboek.
+Het verhaal verloopt in **scènes**: een gevecht, een gesprek, verkennen, reizen, een rust. Aan het einde van elke scène slaat het spel zichzelf op, en de scène komt in je dagboek.
 
-In een gevecht vertelt de spelleider elke beurt die niet van jou is, en stopt waar jij kunt beslissen. De **Scène** toont bovenaan wie aan de beurt is en wie daarna komt, en de kaart van je personage naast de kaart. De volgorde van de beurten, de levenspunten van je groep en hoe gewond de vijanden eruitzien, in woorden, staan naast de pagina. Gaat je personage neer, dan verschijnen de dodelijke tiri salvezza groot op de pagina.
+In een gevecht vertelt de spelleider elke beurt die niet van jou is, en stopt waar jij kunt beslissen. De **Scène** toont bovenaan wie aan de beurt is en wie daarna komt, en de kaart van je personage naast de kaart. De volgorde van de beurten, de hitpoints van je groep en hoe gewond de vijanden eruitzien, in woorden, blijven naast de pagina staan. Als je personage neervalt, verschijnen de death saves groot op de pagina.
 
 ### 3.4 Tijd, reizen en de wereld die verder gaat
 
-RPG Engine houdt de datum bij. Tussen sessies verstrijkt geen tijd. Zeg dat je rust, *We nemen een lange rust*, en zodra de spelleider akkoord gaat, geeft de rust terug wat hij moet teruggeven. Bij een korte rust kan de spelleider op het dashboard vragen hoeveel hitdobbelstenen je uitgeeft: gooi ze een voor een, zie wat elk herstelt, en stop wanneer je wilt. Zeg waarheen je gaat, *We volgen de weg naar het noorden naar Rocca*, en RPG Engine rekent de route, de afstand en de dagen uit, en stopt als er onderweg iets gebeurt. Geld wordt geteld in de munten van het spel, wisselgeld inbegrepen.
+RPG Engine houdt de datum bij. Tussen sessies verstrijkt er geen tijd. Zeg dat je rust, *We nemen een lange rust*, en zodra de spelleider akkoord gaat, geeft de rust terug wat hij moet geven. Bij een korte rust kan de spelleider op het dashboard vragen hoeveel hit dice je uitgeeft. Gooi ze één voor één, zie wat elke worp geneest en stop wanneer je wilt. Zeg waar je heen gaat, *We nemen de weg naar het noorden, naar Rocca*, en RPG Engine rekent de route, de afstand en de dagen uit. Onderweg stopt het als er iets gebeurt. Geld wordt geteld in de munten van het spel, wisselgeld inbegrepen.
 
-Schurken hebben plannen met deadlines. Elke nieuwe dag laat de spelleider de bedreigingen vorderen die de tijd heeft opgeschoven, en jij ziet hun tekenen, nooit de klok zelf.
+Schurken hebben plannen met deadlines. Elke nieuwe dag laat de spelleider de dreigingen vorderen die de tijd heeft opgeschoven. Jij ziet de tekenen ervan, nooit de klok zelf.
 
 ### 3.5 Kaarten
 
-**Wereld** toont de plaatsen die je personage kent, de wegen ertussen en het pad dat je liep, met mist over de rest. **Scène** toont de kaart van de plek waar je bent, als die er is, met wie waar staat. In een gevecht zijn op jouw beurt de vakjes die je niet kunt bereiken gesluierd. Vraagt de spelleider waarheen je gaat, tik dan op een vakje of schrijf het op, zoals *E4*.
+**Wereld** toont de plaatsen die je personage kent, de wegen ertussen en het pad dat je liep, met mist over de rest. **Scène** toont de kaart van de plaats waar je bent, als die er is, met wie waar staat. In een gevecht zijn op jouw beurt de vakjes die je niet kunt bereiken gesluierd. Vraagt de spelleider waar je heen gaat? Tik op een vakje, of schrijf het op, zoals *E4*.
 
 ### 3.6 Missies, dagboek en notities
 
-Een taak die je personage op zich neemt, wordt een missie in het **Dagboek**, met de doelen, de deadline en wat het meet. Geef er een ster aan om hem bovenaan Scène in beeld te houden. Het Dagboek vertelt ook je **verhaal**, scène voor scène, en bewaart je **notities**: privé, tenzij je er een **Delen** laat. De spelleider hoort die als wat jij denkt, nooit als een feit.
+Een taak die je personage aanneemt wordt een missie in het **Dagboek**, met de doelen, de deadline en wat die meet. Geef de missie een ster om hem bovenaan in Scène in beeld te houden. Het Dagboek vertelt ook je **verhaal**, scène voor scène, en bewaart je **notities**. Die zijn privé, tenzij je er een **Delen** laat, en dan hoort de spelleider het als wat je denkt, nooit als een feit. Onder **Metgezellen** lees je de dagboeken van je metgezellen. Af en toe, aan het einde van een dag of een missie, schrijven ze een paar regels over wat ze denken en voelen.
 
-### 3.7 Het verhaal en de afbeelding van je personage
+### 3.7 Het verhaal en het portret van je personage
 
-Op je karakterblad heeft de kaart **Beschrijving** een vak voor het verhaal van je personage: de spelleider schrijft het erin, nadat je ja hebt gezegd. Voor een afbeelding geef je de spelleider een bestand (PNG, JPEG, WebP of SVG, tot 5 MB) met waar het op je computer staat, of laat je een portret maken ([3.11](#311-pictures)): *[Maak een portret van me: grijs haar in een vlecht, een litteken op de kin.]*
+Op je karakterblad heeft de kaart **Beschrijving** een vak voor het verhaal van je personage. De spelleider schrijft het erin nadat jij ja hebt gezegd. Voor een afbeelding geef je de spelleider een bestand (PNG, JPEG, WebP of SVG, tot 5 MB) met waar het op je computer staat. Of laat een portret maken ([3.11](#311-pictures)): *[Maak een portret van me: grijs haar in een vlecht, een litteken op de kin.]*
 
 ### 3.8 Opgeslagen spellen en teruggaan
 
-RPG Engine slaat de hele campagne op aan het eind van elke scène. De instelling **Opgeslagen spellen** bepaalt de rest:
+RPG Engine slaat de hele campagne op aan het einde van elke scène. De instelling **opslaan** bepaalt de rest:
 
-| Opgeslagen spellen | Opslaan wanneer je wilt | Teruggaan |
+| Opslaan | Opslaan wanneer je wilt | Teruggaan |
 |---|---|---|
 | **permadeath** | nee | nooit |
 | **checkpoint** | nee | naar het laatste opgeslagen spel, alleen als je personage sterft |
 | **vrij** | ja | naar elk opgeslagen spel |
 
-In elke modus kun je **opnieuw beginnen**, vanaf het begin van het spel of vanaf sessie nul. Doe dat in de chat of bij **Opgeslagen spellen**.
+In elke modus kun je **opnieuw beginnen**, vanaf het begin van het spel of vanaf sessie nul. Doe dat in de chat of in **Opgeslagen spellen**.
 
-Open na het teruggaan **een nieuwe chat**: de oude onthoudt wat ongedaan is gemaakt. Schrijf *verder* in de nieuwe chat en druk dan bij Opgeslagen spellen op **Ik heb een nieuwe chat geopend**.
+Open na het teruggaan **een nieuwe chat**: de oude chat onthoudt wat ongedaan is gemaakt. Schrijf *verder* in de nieuwe chat en druk dan in Opgeslagen spellen op **Ik heb een nieuwe chat geopend**.
 
 ### 3.9 Sessies: stoppen en terugkomen
 
-Stop wanneer je wilt: *[Laten we er voor vanavond mee ophouden.]* Alles is al opgeslagen in de bestanden. Om terug te komen start je je agent in de campagnemap en schrijf je *verder*: de spelleider geeft een korte samenvatting en gaat door.
+Stop wanneer je wilt: *[Laten we er voor vanavond mee ophouden.]* Alles is al opgeslagen in de bestanden. Om terug te komen start je je agent in de campagnemap en schrijf je *verder*. De spelleider geeft je een korte samenvatting en gaat door.
 
 ### 3.10 De stemming van de spelleider
 
-De robot bovenaan het dashboard is de spelleider: zijn gezicht volgt de toon van het verhaal en verraadt nooit wat je nog niet weet. Als de chat gesloten is, slaapt hij.
+De robot bovenaan het dashboard is de spelleider. Het gezicht volgt de toon van het verhaal en verraadt nooit wat je nog niet weet. Als de chat gesloten is, slaapt de robot.
 
 ### 3.11 Afbeeldingen
 
-RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missies die je aanneemt en wie je ontmoet, zoals de instelling **Afbeeldingen** zegt, en het portret van je personage als je erom vraagt. Het gebruikt je eigen Codex of Claude Code, met jouw login, binnen jouw abonnement en de grenzen daarvan: **Codex** schildert ze, anders tekent **Claude Code** ze. **Instellingen** zegt of deze computer ze kan maken, en zo niet, hoe je dat instelt. Je kunt de spelleider altijd een eigen afbeelding geven.
+RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missies die je aanneemt en de mensen die je ontmoet, zoals de instelling **afbeeldingen** bepaalt. Ook maakt het het portret van je personage als je erom vraagt. Het gebruikt je eigen Codex of Claude Code, met jouw login, binnen jouw abonnement en de limieten ervan: **Codex** schildert ze, anders tekent **Claude Code** ze. **Instellingen** zegt of deze computer ze kan maken, en zo niet, hoe je dat instelt. Je kunt de spelleider altijd een eigen afbeelding geven.
 
 ### 3.12 Veiligheid: grenzen, sluiers en stop
 
@@ -193,20 +193,20 @@ RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missi
 
 ### 3.13 Van gedachten veranderen
 
-Elke instelling kan veranderen, in de chat of in **Instellingen**. Een uitspraak die de spelleider zonder het regelboek doet, wordt een **precedent**, zodat dezelfde vraag de volgende keer hetzelfde antwoord krijgt.
+Elke instelling kan veranderen, in de chat of in **Instellingen**. Een beslissing die de spelleider neemt zonder het regelboek wordt een **precedent**, zodat dezelfde vraag de volgende keer hetzelfde antwoord krijgt.
 
 ---
 
 ## 4. Het dashboard <!-- icon: party -->
 
-Een pagina op je eigen computer, alleen te openen in de browser van die computer, live zolang de chat open is. Als de chat sluit, staat er *Not connected*. Met de volgende chat komt de pagina vanzelf terug.
+Een pagina op je eigen computer, alleen te openen in de browser van die computer, en live zolang de chat open is. Als de chat sluit, toont de pagina *Niet verbonden*. Bij de volgende chat komt hij vanzelf terug.
 
-- **Groep**: jouw karakterblad en dat van je metgezellen. Klik op een getal om het te gooien; houd de muis erboven om te zien waar het vandaan komt. Ernaast staan de worpen.
-- **Scène**: waar je bent, met afbeelding en kaart, wie er zijn en wat er gebeurt. In een gevecht zie je de beurten en de kaart van je personage.
-- **Dagboek**: missies, het verhaal, je notities.
+- **Groep**: jouw karakterblad en dat van je metgezellen. Klik op een getal om te gooien. Beweeg de muis erover om te zien waar het vandaan komt. Ernaast staan de worpen.
+- **Scène**: waar je bent, de afbeelding en kaart ervan, wie er is en wat er gebeurt. In een gevecht zie je de beurten en de kaart van je personage.
+- **Dagboek**: missies, het verhaal, de dagboeken van je metgezellen, je notities.
 - **Wereld**: de wereldkaart zoals je personage die kent.
 - **De dobbelbak**: kies dobbelstenen en een modifier, en gooi.
-- **Opgeslagen spellen**, **Help**, **Instellingen** en **Over**, als pictogrammen aan het eind van de rij. Instellingen bevat ook de eigen voorkeuren van de pagina: thema, dobbelgeluid, dobbelset.
+- **Opgeslagen spellen**, **Help**, **Instellingen** en **Over**, als pictogrammen aan het einde van de rij. Instellingen bevat ook de eigen voorkeuren van de pagina: thema, dobbelgeluid, dobbelsteenset.
 
 Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welk onderdeel je ook bent.
 

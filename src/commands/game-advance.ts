@@ -8,6 +8,7 @@ import { endedByDate, endEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./game-events.ts";
 import { readOpenScene } from "./game-scene.ts";
+import { diaryDueLine } from "./game-thoughts.ts";
 import { calendarDayOf, newDatedLogEntry } from "./game-time.ts";
 import { dailyUpkeep } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -41,6 +42,8 @@ export interface TimePassed
     newDays: number;
     clocks: string[];
     newDayPart: string;
+    /** The companion whose diary is due on a new day, and how (DIA-2). */
+    diary?: string;
     /** What the party used up at each midnight passed, under the rigor «rules» (UPK-1, UPK-2). */
     upkeep?: string[];
     /** The day of the calendar reached, when the campaign has one (TIM-8): 15 April, spring. */
@@ -56,7 +59,7 @@ const sceneReminderMinutes = 60;
 
 /**
  * Lets `wanted` minutes pass from `now` (TIM-5), stopping at the first planned event whose date comes (TIM-6): writes the new date and a public line with `why`,
- * ends the effects whose time came (EFF-8), and says the clocks to move on a new day (EVT-8).
+ * ends the effects whose time came (EFF-8), and says the clocks to move on a new day (EVT-8) and whose diary is due (DIA-2).
  */
 export function passTime(root: string, context: Context, world: World, now: GameDate, wanted: number, why: string | undefined, requested: string): TimePassed
 {
@@ -91,7 +94,8 @@ export function passTime(root: string, context: Context, world: World, now: Game
     // A new day with clocks to move is the world's turn: its part of the instructions says how (EVT-8, D-134).
     const newDayPart = result.clocks.length === 0 ? "" : situationPart("new-day", context, campaignSystem(root, context));
     const upkeep = passed > 0 ? dailyUpkeep(root, context, campaignSystem(root, context), result.newDays) : [];
-    return { ...result, ended, around, newDayPart, ...(upkeep.length === 0 ? {} : { upkeep }) };
+    const diary = result.newDays > 0 ? diaryDueLine(root, context, world) : "";
+    return { ...result, ended, around, newDayPart, ...(upkeep.length === 0 ? {} : { upkeep }), ...(diary === "" ? {} : { diary }) };
 }
 
 /**
@@ -110,6 +114,7 @@ export function passedLines(result: TimePassed, then: string): string[]
         clocksLine(result.newDays, result.to, result.clocks),
         result.newDayPart,
         ...(result.upkeep ?? []),
+        result.diary ?? "",
         ...(result.extensionLines ?? []),
         result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,
         skippedPagesNote(result.skipped),

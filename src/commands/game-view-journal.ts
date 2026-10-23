@@ -49,6 +49,14 @@ export interface ShownChapter
     facts: JournalFact[];
 }
 
+/** A line of a companion's diary as the journal shows it (DIA-4): who wrote it, as the character knows them, when in the game, and what. */
+export interface ShownThought
+{
+    who: string;
+    date?: string;
+    text: string;
+}
+
 /**
  * A fact of the story as the journal tells it (VIEW-9), as data the dashboard writes in its language, with its game date: who and where as the character knows
  * them, someone, creature and somewhere for those it does not (D-254); an effect with its end, and the line status gives it.
