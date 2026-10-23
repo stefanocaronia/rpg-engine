@@ -245,7 +245,7 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
                     aria-label={t("Add to {setting}", { setting: settingLabel(setting.name) })}
                     onInput={(event) => setItem(event.currentTarget.value)}
                 />
-                <button type="submit" class="setting-button" disabled={item.trim() === ""}>{t("Add")}</button>
+                <button type="submit" class="button" disabled={item.trim() === ""}>{t("Add")}</button>
             </form>
         </div>
     );
@@ -305,11 +305,11 @@ function TextSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
         >
             {(setting.most ?? 0) > 100 ? <textarea rows={2} {...attributes} /> : <input type="text" {...attributes} />}
             <span class="setting-text-buttons">
-                <button type="submit" class="setting-button" disabled={said === saved}>{t("Save")}</button>
+                <button type="submit" class="button" disabled={said === saved}>{t("Save")}</button>
                 {saved !== "" && (
                     <button
                         type="button"
-                        class="setting-button"
+                        class="button"
                         aria-label={t("Clear {setting}", { setting: settingLabel(setting.name) })}
                         onClick={() => {
                             setText("");

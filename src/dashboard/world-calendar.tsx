@@ -71,7 +71,7 @@ export function CalendarTab({ calendar }: { calendar: ShownCalendar; })
                 <CardHead icon={iconPath("calendar")} title={<h3 id="calendar-month-title" class="calendar-month-name">{month === undefined ? t("The days of the story") : calendarMonthLabel(month.name, month.year)}</h3>}>
                     {month !== undefined && (
                         <span class="calendar-steps">
-                            {(offset !== 0 || chosen !== calendar.today) && <button type="button" class="save-button quiet" onClick={backToday}>{t("Today")}</button>}
+                            {(offset !== 0 || chosen !== calendar.today) && <button type="button" class="button quiet" onClick={backToday}>{t("Today")}</button>}
                             <button type="button" class="icon-button calendar-back" aria-label={t("Previous month")} data-tip={t("Previous month")} onClick={() => setOffset(offset - 1)}>
                                 <Icon name="fold" />
                             </button>

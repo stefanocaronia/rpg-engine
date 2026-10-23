@@ -54,7 +54,7 @@ export function LoreTab({ world, version, open, onMap }: { world: WorldView; ver
                 )}
                 {found.length === 0 && (
                     <p class="browse-none" role="status">
-                        {t("Nothing your character knows matches “{search}”.", { search })} <button type="button" class="save-button quiet" onClick={() => setSearch("")}>{t("Clear the search")}</button>
+                        {t("Nothing your character knows matches “{search}”.", { search })} <button type="button" class="button quiet" onClick={() => setSearch("")}>{t("Clear the search")}</button>
                     </p>
                 )}
                 {groups.map((part) => (
@@ -200,7 +200,7 @@ function Browse({ open, explicit, back, backLabel, children }: { open?: string |
     return (
         <div class={explicit ? "browse open" : "browse"} ref={box}>
             {explicit && (
-                <a class="browse-back save-button quiet" href={back}>
+                <a class="browse-back button quiet" href={back}>
                     <Icon name="fold" />
                     {backLabel}
                 </a>
@@ -261,13 +261,13 @@ function LoreReader({ entry, version, link, onMap, focus }: { entry: KnownEntry;
             {(onMap !== undefined || entry.companion) && (
                 <p class="reader-actions">
                     {onMap !== undefined && (
-                        <a class="save-button package-button" href={onMap}>
+                        <a class="button package-button" href={onMap}>
                             <Icon name="world" />
                             {t("Show on the map")}
                         </a>
                     )}
                     {entry.companion && (
-                        <a class="save-button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
+                        <a class="button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
                             <Icon name="party" />
                             {t("Open the sheet")}
                         </a>

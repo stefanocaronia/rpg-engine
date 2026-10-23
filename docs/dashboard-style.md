@@ -79,7 +79,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 **Card.** `<details class="group">` with `CardHeader`: its icon (20 px, stroked in the accent), its title, a preview while closed, the chevron. It stays as the player left it (`useOpen`); on a phone cards start closed but the first. A card that is always open is a `<section class="card">` with `CardHead` and its `.card-body`. No card inside a card: inside one, sections under small headings.
 
-**Buttons.** A button of words is `.save-button`, 38 px tall (44 on touch): `.gold` for the one main action of a view, `.quiet` (accent words, no border) for a secondary one, `.danger` (red edge) for one that loses something, full red at its last step. A button of an icon is `.icon-button` (40 px), always with `aria-label` and the same words in `data-tip`; `.tonal` (48 px, raised) when it floats over the page. What goes somewhere is a link (`<a href>`); what does something is a button.
+**Buttons.** A button of words is `.button`, 38 px tall (44 on touch): `.gold` for the one main action of a view, `.quiet` (accent words, no border) for a secondary one, `.danger` (red edge) for one that loses something, full red at its last step. A button of an icon is `.icon-button` (40 px), always with `aria-label` and the same words in `data-tip`; `.tonal` (48 px, raised) when it floats over the page. What goes somewhere is a link (`<a href>`); what does something is a button.
 
 **Chips.** A thing in a list is a chip (`.chips li`: the accent at 11%, `--radius-s`). A filter is a row of pill chips (`.package-chips`, `aria-pressed`, a muted count after the name): one Tab stop, arrows, Home and End along it. A search is a field with its magnifier inside (`.package-search`) that filters as it is typed. Two to five values of one setting are a `.segmented` control.
 
@@ -125,7 +125,6 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 5. Not in line yet
 
-- Three copies of the button of words: `.setup-button` and `.setting-button` become `.save-button`, which takes a name of its own (`.button`).
 - Tabs: Journal and Packages draw their own tab rows; they move to `PageTabs`. Packages does not scroll on a phone; Journal has no Home and End.
 - Font sizes outside the scale (0.7, 0.75, 0.78, 0.82, 0.875, 0.88, 0.9, 0.92, 0.95, 1.02, 1.05rem, and sizes in px) and weights 450, 500, 550, 750, 800, 900.
 - Nine eyebrows, each its own size, weight and spacing, to become `.eyebrow`.

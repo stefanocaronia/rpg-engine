@@ -169,6 +169,69 @@ h3,
     padding: 12px 16px 16px;
 }
 
+/* A button of words: gold for the one main action of a view, quiet for a secondary one, danger for one that loses something. */
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.button svg.icon {
+    width: 18px;
+    height: 18px;
+}
+
+.button.gold {
+    border-color: transparent;
+    background: var(--gold);
+    color: var(--on-gold);
+}
+
+.button.quiet {
+    border-color: transparent;
+    background: transparent;
+    color: var(--accent);
+}
+
+.button.danger {
+    border-color: var(--low);
+    color: var(--low);
+}
+
+.button.danger:not(:disabled):hover {
+    background: color-mix(in srgb, var(--low) 10%, var(--float));
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+    border-color: var(--rule);
+    background: var(--float);
+    color: var(--muted);
+    cursor: default;
+}
+
+.button.quiet:disabled,
+.button.quiet[aria-disabled="true"] {
+    border-color: transparent;
+    background: transparent;
+}
+
+@media (pointer: coarse) {
+    .button {
+        min-height: var(--target);
+    }
+}
+
 button {
     font: inherit;
     color: inherit;
@@ -1040,23 +1103,6 @@ a {
     cursor: default;
 }
 
-.setting-button {
-    height: 38px;
-    padding: 0 14px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-m);
-    background: var(--float);
-    color: var(--ink);
-    font: inherit;
-    font-weight: 650;
-    cursor: pointer;
-}
-
-.setting-button:disabled {
-    color: var(--muted);
-    cursor: default;
-}
-
 /* Where fingers touch, every control as tall as a finger. */
 @media (pointer: coarse) {
     .segmented button {
@@ -1070,8 +1116,7 @@ a {
 
     .setting-list input,
     .setting-text input,
-    .language-choice input,
-    .setting-button {
+    .language-choice input {
         height: var(--target);
     }
 }
@@ -1283,44 +1328,9 @@ a {
     font-style: italic;
 }
 
-.save-card > .save-button {
+.save-card > .button {
     margin: 0 14px 12px;
     justify-self: start;
-}
-
-.save-button {
-    min-height: 38px;
-    padding: 0 14px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-m);
-    background: var(--float);
-    color: var(--ink);
-    font: inherit;
-    font-weight: 650;
-    cursor: pointer;
-}
-
-.save-button.gold {
-    border-color: transparent;
-    background: var(--gold);
-    color: var(--on-gold);
-}
-
-.save-button.danger {
-    border-color: var(--low);
-    color: var(--low);
-}
-
-.save-button.danger:not(:disabled):hover {
-    background: color-mix(in srgb, var(--low) 10%, var(--float));
-}
-
-.save-button:disabled,
-.save-button[aria-disabled="true"] {
-    border-color: var(--rule);
-    background: var(--float);
-    color: var(--muted);
-    cursor: default;
 }
 
 .saves-over {
@@ -1367,7 +1377,7 @@ a {
         padding: 8px 12px 4px;
     }
 
-    .save-card > .save-button {
+    .save-card > .button {
         margin: 0 12px 10px;
     }
 }
@@ -1403,7 +1413,7 @@ a {
 }
 
 /* The last step of a question that loses something: the button full, apart from Cancel. */
-.confirm .save-button.danger.final:not(:disabled) {
+.confirm .button.danger.final:not(:disabled) {
     border-color: var(--low);
     background: var(--low);
     color: light-dark(#ffffff, var(--on-gold));
@@ -1488,7 +1498,6 @@ a {
 }
 
 @media (pointer: coarse) {
-    .save-button,
     .saves-make input,
     .confirm-name input {
         min-height: var(--target);
@@ -2096,15 +2105,7 @@ a {
     font-size: 0.9rem;
 }
 
-.player-notes-head .save-button,
-.note-foot .save-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.player-notes-head svg.icon,
-.note-foot .save-button svg.icon {
+.player-notes-head svg.icon {
     width: 18px;
     height: 18px;
 }
@@ -2238,12 +2239,6 @@ a {
     display: none;
 }
 
-.save-button.quiet {
-    border-color: transparent;
-    background: transparent;
-    color: var(--accent);
-}
-
 .note-remove {
     display: inline-flex;
     align-items: center;
@@ -2252,11 +2247,6 @@ a {
 }
 
 @media (pointer: coarse) {
-    .note-foot .save-button,
-    .player-notes-head .save-button {
-        min-height: var(--target);
-    }
-
     .note-foot .icon-button {
         width: var(--target);
         height: var(--target);
@@ -2274,12 +2264,6 @@ a {
 
 .story-box.editing {
     display: grid;
-}
-
-.story-box .save-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .story-box svg.icon {
@@ -3014,7 +2998,7 @@ a {
     letter-spacing: 0;
 }
 
-.setup-name.editing .setup-button {
+.setup-name.editing .button {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     font-size: 1rem;
 }
@@ -3279,43 +3263,6 @@ a {
     border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
 }
 
-.setup-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    padding: 0 16px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-m);
-    background: var(--float);
-    color: var(--ink);
-    font: inherit;
-    font-weight: 650;
-    cursor: pointer;
-}
-
-.setup-button svg.icon {
-    width: 18px;
-    height: 18px;
-}
-
-.setup-button.gold {
-    border-color: transparent;
-    background: var(--gold);
-    color: var(--on-gold);
-}
-
-.setup-button.quiet {
-    border-color: transparent;
-    background: transparent;
-    color: var(--accent);
-}
-
-.setup-button:disabled {
-    color: var(--muted);
-    cursor: default;
-}
-
 /* Each dot is drawn at 12 pixels in a target of 24; where the player is, a wider pill. */
 .setup-dots {
     display: flex;
@@ -3386,7 +3333,6 @@ a {
         height: 30px;
     }
 
-    .setup-button,
     .setup-list input {
         min-height: var(--target);
     }
@@ -10007,7 +9953,7 @@ svg.icon {
     color: var(--muted);
 }
 
-.browse-none .save-button {
+.browse-none .button {
     margin-inline-start: 4px;
 }
 
@@ -12985,7 +12931,7 @@ svg.icon {
     outline-offset: 0;
 }
 
-.package-add-line .save-button {
+.package-add-line .button {
     min-height: 40px;
 }
 
@@ -13283,20 +13229,12 @@ svg.icon {
 }
 
 .package-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     white-space: nowrap;
 }
 
 .package-button.accent:not([aria-disabled="true"]) {
     border-color: var(--accent);
     color: var(--accent);
-}
-
-.package-button svg.icon {
-    width: 18px;
-    height: 18px;
 }
 
 .package-bin {

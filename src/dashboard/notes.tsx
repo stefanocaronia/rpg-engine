@@ -71,7 +71,7 @@ export function Notes({ version }: { version: number; })
         <div class="player-notes">
             <div class="player-notes-head">
                 <p class="player-notes-about">{t("Names, clues, what you suspect. The master does not read them: share one when you want them to know.")}</p>
-                <button ref={newNote} type="button" class="save-button gold" onClick={add} disabled={notes === undefined}>
+                <button ref={newNote} type="button" class="button gold" onClick={add} disabled={notes === undefined}>
                     <Icon name="plus" /> {t("New note")}
                 </button>
             </div>
@@ -294,8 +294,8 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                             }}
                         >
                             {t("Delete it?")}
-                            <button ref={keepButton} type="button" class="save-button" onClick={keep}>{t("Keep")}</button>
-                            <button type="button" class="save-button danger" onClick={() => void remove()}>{t("Delete")}</button>
+                            <button ref={keepButton} type="button" class="button" onClick={keep}>{t("Keep")}</button>
+                            <button type="button" class="button danger" onClick={() => void remove()}>{t("Delete")}</button>
                         </span>
                     )
                     : (
@@ -314,18 +314,18 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
                             </span>
                             {waiting
                                 ? (
-                                    <button type="button" class="save-button note-share" aria-label={t("Take it back from the master")} onClick={() => void unshare()}>
+                                    <button type="button" class="button note-share" aria-label={t("Take it back from the master")} onClick={() => void unshare()}>
                                         <Icon name="undo" /> {t("Take it back")}
                                     </button>
                                 )
                                 : shared !== undefined
                                 ? (
-                                    <button type="button" class="save-button note-share" aria-label={t("Share it again with the master")} disabled={empty} onClick={() => void share()}>
+                                    <button type="button" class="button note-share" aria-label={t("Share it again with the master")} disabled={empty} onClick={() => void share()}>
                                         <Icon name="send" /> {t("Share again")}
                                     </button>
                                 )
                                 : (
-                                    <button type="button" class="save-button note-share" aria-label={t("Share with the master")} data-tip={t("Share with the master")} disabled={empty} onClick={() => void share()}>
+                                    <button type="button" class="button note-share" aria-label={t("Share with the master")} data-tip={t("Share with the master")} disabled={empty} onClick={() => void share()}>
                                         <Icon name="send" /> {t("Share")}
                                     </button>
                                 )}
