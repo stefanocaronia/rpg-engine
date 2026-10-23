@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -38,43 +38,43 @@ I dag spiller RPG Engine ét spilsystem, **femte udgave**, fra det frie System R
 ### 2.1 Det skal du bruge
 
 - En computer med Windows, macOS eller Linux og en webbrowser.
-- **Node.js 22** eller nyere, fra [nodejs.org](https://nodejs.org). Den leverer `npm`, som installerer RPG Engine.
-- En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. Sådan åbner du en i en mappe: Højreklik på mappen og vælg **Åbn i Terminal** (Windows) eller **Tjenester > Ny terminal i mappen** (macOS).
-- En **AI-agent** til spillederen ([2.4](#24-connect-your-ai)), med den **største model**, den tilbyder: En lille model lader sig lettere overtale til at afsløre hemmeligheder eller bøje reglerne.
+- **Node.js 22** eller nyere fra [nodejs.org](https://nodejs.org). Den leverer `npm`, som installerer RPG Engine.
+- En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. Du åbner en terminal i en mappe ved at højreklikke på mappen og vælge **Åbn i Terminal** (Windows) eller **Tjenester > Ny terminal ved mappe** (macOS).
+- En **AI-agent** til spilleder ([2.4](#24-connect-your-ai)) med den **største model**, den tilbyder: en lille model lader sig lettere overtale til at afsløre hemmeligheder eller bøje reglerne.
 
-### 2.2 Installér
+### 2.2 Installer
 
 ```text
 npm install -g rpg-engine
 ```
 
-`rpg --version` tjekker, at det lykkedes. Du bruger `rpg` én gang pr. kampagne, når du opretter den. Derefter starter din agent selv RPG Engine.
+`rpg --version` viser, om det lykkedes. Du bruger `rpg` én gang pr. kampagne for at oprette den. Derefter starter din agent selv RPG Engine.
 
 ### 2.3 Opret en kampagne
 
-Åbn en terminal i den mappe, hvor du gemmer dine spil ([2.1](#21-what-you-need) viser, hvordan):
+Åbn en terminal i den mappe, hvor du har dine spil ([2.1](#21-what-you-need) viser hvordan):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Det laver mappen `The Salt Isles` med en ny kampagne i. Gå ind i den med `cd "The Salt Isles"`. Husk, hvor den ligger: Du vender tilbage hertil hver gang, du spiller. Alt det andet vælger du senere, i chatten eller på dashboardet. `rpg init --help` viser de valg, du kan træffe nu, f.eks. `--language it` eller `--difficulty hard`.
+Det opretter mappen `The Salt Isles` med en ny kampagne i. Gå ind i den med `cd "The Salt Isles"`. Husk, hvor den ligger: du vender tilbage hhertil, hver gang du spiller. Alt det andet vælger du senere, i chatten eller på dashboardet. `rpg init --help` viser de muligheder, du kan vælge allerede nu, for eksempel `--language it` eller `--difficulty hard`.
 
-Spillederen kan ikke oprette en kampagne for dig: Før `init` fortæller intet din agent, hvor RPG Engine er.
+Spilleder kan ikke oprette en kampagne for dig: før `init` fortæller intet din agent, hvor RPG Engine er.
 
 ### 2.4 Forbind din AI
 
-Spillederen kører i en **AI-agent**: en AI-app, i terminalen eller på skrivebordet, som kan arbejde med filerne på din computer, f.eks. Claude Code eller Codex. En almindelig chat som claude.ai eller ChatGPT eller en app på telefonen er ikke nok: Spillederen skal kunne nå kampagnens filer på din computer. Hver agent kræver sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Du installerer den én gang fra dens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Spilleder kører i en **AI-agent**: en AI-app i terminalen eller på skrivebordet, som kan arbejde med filerne på din computer, for eksempel Claude Code eller Codex. En almindelig chat som claude.ai eller ChatGPT eller en app på telefonen rækker ikke: spilleder skal kunne nå kampagnens filer på din computer. Hver agent kræver sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Du installerer den én gang fra dens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: Skriv `claude` i kampagnemappen. Når den spørger, om du stoler på mappen, så vælg **Yes, I trust this folder**. Pas på: Det svar, der er valgt på forhånd, er *No, exit*. Kampagnen har også en lille hook, `rpg --listen`, som spørgsmålet ikke viser: Den fortæller straks spillederen, når du handler fra dashboardet.
-- **Codex**: Skriv `codex` i kampagnemappen, og svar ja, når den spørger, om du stoler på mappen. Tjek i dens desktop-app under indstillinger, at hukommelser er slået fra for spillets chats.
-- **En anden agent**: Start den i kampagnemappen og giv den MCP-serveren `rpg mcp`. RPG Engine er en standard MCP-server: Enhver agent, der understøtter MCP, kan være spilleder, også lokale.
+- **Claude Code**: skriv `claude` i kampagnemappen. Når den spørger, om du stoler på mappen, så vælg **Yes, I trust this folder**. Pas på: det svar, der er valgt på forhånd, er *No, exit*. Kampagnen har også en lille hook, `rpg --listen`, som spørgsmålet ikke viser: den fortæller straks spilleder, når du handler fra dashboardet.
+- **Codex**: skriv `codex` i kampagnemappen, og sig ja, når den spørger, om du stoler på mappen. I dens desktop-app skal du under indstillinger tjekke, at hukommelser er slået fra for spillets chats.
+- **En anden agent**: start den i kampagnemappen, og giv den MCP-serveren `rpg mcp`. RPG Engine er en standard MCP-server: enhver agent, der understøtter MCP, kan være spilleder, også lokale.
 
-Vi spiller og tester med **Claude Code**. **Codex** er forbundet og afprøvet, men der er endnu ikke spillet en hel kampagne med den. Kampagnen slår agentens egen hukommelse fra: Spillet bor i dets filer, så et gemt spil virkelig fører dig tilbage.
+Vi spiller og tester med **Claude Code**. **Codex** er forbundet og kontrolleret, men der er endnu ikke spillet en hel kampagne med den. Kampagnen slår agentens egen hukommelse fra: spillet bor i dets filer, så et gemt spil virkelig går tilbage i tiden.
 
 ### 2.5 Den første chat
 
-Skriv hvad som helst, f.eks. *Hej! Lad os starte.* I sit første svar i hver chat giver spillederen dig **linket til dit dashboard**, noget i retning af `http://127.0.0.1:4750`. Åbn det, og hav det ved siden af chatten.
+Skriv hvad som helst, for eksempel *Hej! Lad os starte.* I sit første svar i hver chat giver spilleder dig **linket til dit dashboard**, noget i stil med `http://127.0.0.1:4750`: åbn det, og hav det ved siden af chatten.
 
 Mellem spillederens beskeder viser din agent de værktøjer, den bruger. Åbn ikke deres detaljer (i Claude Code ctrl+o), for de kan vise hemmeligheder.
 
@@ -82,32 +82,32 @@ En ny kampagne gennemgår tre trin, som vises øverst på dashboardet: **1 Indst
 
 ### 2.6 Indstillinger: vælg, hvordan du spiller
 
-Spillederen spørger kun om det, der stadig mangler, få spørgsmål ad gangen. Dashboardets trin **Indstillinger** viser de samme spørgsmål som kort. Skriv "du bestemmer", så vælger spillederen. Alt kan ændres senere, i chatten eller under **Indstillinger**.
+Spilleder spørger kun om det, der stadig mangler, nogle få spørgsmål ad gangen. Dashboardets trin **Indstillinger** viser de samme spørgsmål som kort. Skriv "du bestemmer", så vælger spilleder. Alt kan ændres senere, i chatten eller under **Indstillinger**.
 
 | Indstilling | Hvad den bestemmer | Værdier |
 |---|---|---|
-| **Mentor** | Hvor meget spillederen lærer dig om reglerne | fra, hints, tutorial |
-| **Sværhedsgrad** | Hvor hård verden er | historie, let, normal, svær, brutal |
-| **Dødelighed** | Hvad det betyder at falde i en kamp | fortællende (dø aldrig), episk (kun når det batter), terninger |
-| **Gemte spil** | Hvornår du må gå tilbage | permadeath, checkpoint, fri ([3.8](#38-saves-and-going-back)) |
-| **Strenghed** | Hvor nøje mad, lys og rejser følger reglerne | glat, regler, simulation |
-| **Terninger** | Hvem der slår dine terninger | digitale, fysiske |
-| **Enheder** | Afstande og vægt | metrisk, imperial |
-| **Stemmer** | Hvem der taler for de karakterer, du møder: i nøglescener selve karakteren, som kun ved, hvad den ved, som spillederen vælger; altid spillederen; eller altid karakteren, for de vigtigste eller for alle, langsommere og dyrere, hvor din AI-app kan | auto, spilleder, vigtige, altid |
-| **Følgesvende** | Hvem der rejser med dig | ingen, lavet sammen med dig, lavet af spillederen, mødt i spillet |
-| **Billeder** | Billeder af steder, missioner og dem, du møder | ingen, på forespørgsel, nye steder, missioner og dem, du møder ([3.11](#311-pictures)) |
+| **Mentor** | Hvor meget spilleder lærer dig reglerne | off, hints, tutorial |
+| **Sværhedsgrad** | Hvor hård verden er | story, easy, normal, hard, brutal |
+| **Dødelighed** | Hvad det betyder at falde i en kamp | narrative (aldrig død), epic (kun når det batter), dice |
+| **Gemte spil** | Hvornår du må gå tilbage | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
+| **Strenghed** | Hvor nøje mad, lys og rejser følger reglerne | smooth, rules, simulation |
+| **Terninger** | Hvem der slår dine terninger | digital, physical |
+| **Enheder** | Afstande og vægt | metric, imperial |
+| **Karakterstemmer** | Hvem der taler for de karakterer, du møder, fra spilleder til karaktererne: altid spilleder; i de afgørende øjeblikke selve karakteren, som kun ved det, den ved, efter spillederens valg; eller altid karakteren, for de vigtigste eller for alle, langsommere og dyrere, hvor din AI-app kan | the master, sometimes, main characters, everyone |
+| **Følgesvende** | Hvem der rejser med dig | none, made with you, made by the master, met in play |
+| **Billeder** | Billeder af steder, missioner og dem, du møder | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Linjer** og **Slør** | Hvad der aldrig optræder, og hvad der kun sker uden for scenen | lister |
 | **Sprog** | Spillets og dashboardets sprog | alle |
 
 Femte udgave tilføjer **udvikling**: erfaringspoint eller milepæle.
 
-Uden en skrevet verden spørger spillederen også om en **præmis** (genre, tone, nogle få elementer, med dine ord) og om **forberedelsen**: Bygger verden løbende, mens I spiller, eller helt fra start.
+Uden en skrevet verden spørger spilleder også om en **præmis** (genre, tone, nogle få elementer, med dine ord) og om **forberedelsen**: bygge verden undervejs, mens du spiller, eller det hele i starten.
 
-**Spillederens stil** bliver aldrig spurgt om, men du kan ændre den i chatten eller under **Indstillinger**: **prosaen** (jævn, litterær, pulp, tør), de **historier**, den finder på (situationer, buer, afsnit, mysterium), en forfatter at **skrive som**, eller hvad som helst andet **med dine ord**.
+**Spillederens stil** spørges der aldrig om, men du kan ændre den i chatten eller under **Indstillinger**: **prosaen** (jævn, litterær, pulp, tør), de **historier**, den finder på (situationer, forløb, episoder, mysterium), en forfatter at **skrive som**, eller hvad som helst andet **med dine ord**.
 
 ### 2.7 Session nul: din karakter
 
-Du laver din karakter sammen med spillederen, som ved et bord. Alle valg er dine, medmindre du beder spillederen træffe dem: Kom med en fuld idé, en vag eller slet ingen. Spillederen fortæller, hvordan evnepoint bliver lavet, før der slås med en eneste terning. Din historie er aldrig et krav. Giver du en, skriver spillederen den med dine ord. Bagefter beder spillederen om et billede af din karakter ([3.7](#37-your-characters-story-and-picture)). RPG Engine regner karakterarket ud: Du laver aldrig regnestykkerne.
+Du laver din karakter sammen med spilleder, som ved et bord. Alle valg er dine, medmindre du beder spilleder træffe dem: kom med en fuld idé, en vag en eller slet ingenting. Spilleder fortæller dig, hvordan evnepoint bestemmes, før der slås med nogen terning. Din historie er aldrig et krav. Giver du en, skriver spilleder den med dine ord. Derefter beder spilleder om et billede af din karakter ([3.7](#37-your-characters-story-and-picture)). RPG Engine regner karakterarket ud: du laver aldrig regnestykkerne.
 
 ---
 

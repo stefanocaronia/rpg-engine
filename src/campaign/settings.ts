@@ -99,7 +99,7 @@ export const diceWays = ["digital", "physical"] as const;
  * Who voices the characters (D-490), where the AI app has subagents: a character as a subagent of its own at key moments, the master chooses (auto); the master
  * always; always for the companions and the main characters; always for everyone.
  */
-export const voiceWays = ["auto", "master", "important", "always"] as const;
+export const voiceWays = ["master", "auto", "important", "always"] as const;
 
 export { unitSystems };
 
@@ -175,8 +175,9 @@ export const settingsSchema = z.object({
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     voices: z.enum(voiceWays).optional().describe(
-        "who voices the characters, where the AI app has subagents: auto (at key moments, as the master chooses, a character answers as a subagent of its own, knowing only what it knows), "
-            + "master (the master, always), important (always a subagent for the companions and the characters with kind main), always (always a subagent, for everyone); unset, auto",
+        "who voices the characters, where the AI app has subagents, from the master to the characters: master (the master, always), auto (at key moments, as the master chooses, "
+            + "a character answers as a subagent of its own, knowing only what it knows), important (always a subagent for the companions and the characters with kind main), "
+            + "always (always a subagent, for everyone); unset, auto",
     ),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     // Checked by the time module against the calendar (TIM-8).

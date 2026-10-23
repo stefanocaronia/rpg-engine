@@ -92,7 +92,7 @@ The master asks only what is still missing, a few questions at a time; the dashb
 | **Rigor** | How closely food, light and travel follow the rules | smooth, rules, simulation |
 | **Dice** | Who rolls your dice | digital, physical |
 | **Units** | Distances and weights | metric, imperial |
-| **Voices** | Who speaks for the characters you meet: at key moments the character themselves, knowing only what they know, as the master chooses; the master always; or always the character, for the main ones or for everyone, slower and costlier, where your AI app can | auto, master, important, always |
+| **Character voices** | Who speaks for the characters you meet, from the master to the characters: the master always; at key moments the character themselves, knowing only what they know, as the master chooses; or always the character, for the main ones or for everyone, slower and costlier, where your AI app can | the master, sometimes, main characters, everyone |
 | **Companions** | Who travels with you | none, made with you, made by the master, met in play |
 | **Pictures** | Pictures of places, quests and those you meet | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Lines** and **Veils** | What never appears, and what happens only off screen | lists |

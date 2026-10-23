@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -38,9 +38,9 @@ RPG Engine dnes hraje jeden herní systém, **pátou edici**, podle volně dostu
 ### 2.1 Co potřebuješ
 
 - Počítač s Windows, macOS nebo Linuxem a webový prohlížeč.
-- **Node.js 22** nebo novější z [nodejs.org](https://nodejs.org). Přináší `npm`, kterým se RPG Engine instaluje.
-- **Terminál**: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a vybereš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS).
-- **AI agent** pro Pána jeskyně ([2.4](#24-connect-your-ai)) s **největším modelem**, který nabízí: malý model se dá snáz přemluvit, aby prozradil tajemství nebo ohnul pravidla.
+- **Node.js 22** nebo novější, z [nodejs.org](https://nodejs.org). Přináší `npm`, kterým se instaluje RPG Engine.
+- **Terminál**: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a zvolíš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS).
+- **AI agent** pro Pána jeskyně ([2.4](#24-connect-your-ai)) s **největším modelem**, který nabízí: malý model se snáze nechá přemluvit k prozrazení tajemství nebo k ohnutí pravidel.
 
 ### 2.2 Instalace
 
@@ -48,66 +48,66 @@ RPG Engine dnes hraje jeden herní systém, **pátou edici**, podle volně dostu
 npm install -g rpg-engine
 ```
 
-Příkaz `rpg --version` ověří, že se instalace povedla. Příkaz `rpg` použiješ jednou pro každou kampaň, abys ji vytvořil(a) – přesněji: jen při jejím vytvoření. Potom už RPG Engine spouští tvůj agent sám.
+Příkaz `rpg --version` ověří, že instalace proběhla. Příkaz `rpg` použiješ jednou pro každou kampaň, když ji vytváříš. Potom už RPG Engine spouští tvůj agent sám.
 
 ### 2.3 Vytvoření kampaně
 
-Otevři terminál ve složce, kam ukládáš své hry ([2.1](#21-what-you-need) říká jak):
+Otevři terminál ve složce, kam ukládáš své hry ([2.1](#21-what-you-need) říká, jak na to):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Vznikne složka `The Salt Isles` s novou kampaní. Přejdi do ní příkazem `cd "The Salt Isles"`. Zapamatuj si, kde leží: budeš se do ní vracet při každé hře. Všechno ostatní si zvolíš později, v chatu nebo na dashboardu. Příkaz `rpg init --help` vypíše volby, kterými si můžeš něco zvolit hned, například `--language it` nebo `--difficulty hard`.
+Tím vznikne složka `The Salt Isles` s novou kampaní. Přejdi do ní příkazem `cd "The Salt Isles"`. Zapamatuj si, kde leží: vracíš se do ní při každé hře. Vše ostatní zvolíš později, v chatu nebo na dashboardu. Příkaz `rpg init --help` vypíše volby, kterými můžeš některé věci určit hned, například `--language it` nebo `--difficulty hard`.
 
-Pán jeskyně ti kampaň vytvořit nemůže: před příkazem `init` agentovi nic neříká, kde RPG Engine je.
+Pán jeskyně kampaň za tebe vytvořit nemůže: před příkazem `init` nic neříká tvému agentovi, kde RPG Engine najde.
 
 ### 2.4 Připojení AI
 
-Pán jeskyně běží v **AI agentovi**: AI aplikaci v terminálu nebo na ploše, která umí pracovat se soubory v tvém počítači, například Claude Code nebo Codex. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu nestačí: Pán jeskyně musí mít přístup k souborům kampaně v tvém počítači. Každý agent potřebuje vlastní tarif a přihlášení: Claude Code placený tarif Claude, Codex přihlášení do ChatGPT. Agenta nainstaluješ jednou, z jeho vlastní stránky: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Pán jeskyně běží v **AI agentovi**: je to AI aplikace, v terminálu nebo na ploše, která umí pracovat se soubory v tvém počítači, například Claude Code nebo Codex. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu, nestačí: Pán jeskyně se musí dostat k souborům kampaně v tvém počítači. Každý agent potřebuje vlastní tarif a přihlášení: Claude Code placený tarif Claude, Codex přihlášení do ChatGPT. Nainstaluješ ho jednou, z jeho vlastní stránky: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: ve složce kampaně napiš `claude`. Když se zeptá, zda složce důvěřuješ, zvol **Yes, I trust this folder**. Pozor, předvolená odpověď je *No, exit*. Kampaň má také malý hák, `rpg --listen`, který otázka neukazuje: okamžitě dá Pánu jeskyně vědět, když jednáš z dashboardu.
-- **Codex**: ve složce kampaně napiš `codex` a na otázku, zda složce důvěřuješ, odpověz ano. V jeho desktopové aplikaci zkontroluj v nastavení, že jsou paměti pro chaty hry vypnuté.
-- **Jiný agent**: spusť ho ve složce kampaně a dej mu server MCP `rpg mcp`. RPG Engine je standardní server MCP: Pánem jeskyně může být každý agent, který MCP podporuje, včetně lokálních.
+- **Claude Code**: ve složce kampaně napiš `claude`. Když se zeptá, jestli složce důvěřuješ, zvol **Yes, I trust this folder**. Pozor, předvolená odpověď je *No, exit*. Kampaň má také malý hook, `rpg --listen`, který otázka neukazuje: okamžitě sdělí Pánu jeskyně, když něco uděláš na dashboardu.
+- **Codex**: ve složce kampaně napiš `codex` a na otázku, jestli složce důvěřuješ, odpověz ano. V jeho desktopové aplikaci zkontroluj v nastavení, že jsou paměti pro chaty hry vypnuté.
+- **Jiný agent**: spusť ho ve složce kampaně a připoj k němu server MCP `rpg mcp`. RPG Engine je standardní server MCP: Pánem jeskyně může být každý agent, který MCP podporuje, i lokální.
 
-Hrajeme a testujeme s **Claude Code**. **Codex** je připojený a ověřený, ale celá kampaň se s ním zatím nehrála. Kampaň vypíná vlastní paměť agenta: hra žije v jeho souborech, takže návrat k uložené hře opravdu vrací zpět.
+Hrajeme a testujeme s **Claude Code**. **Codex** je připojený a ověřený, ale zatím se s ním neodehrála celá kampaň. Kampaň vypíná vlastní paměť agenta: hra žije v jeho souborech, aby návrat k uložené hře opravdu vrátil zpět.
 
 ### 2.5 První chat
 
-Napiš cokoli, třeba *Ahoj! Začněme.* V první odpovědi každého chatu ti Pán jeskyně dá **odkaz na tvůj dashboard**, něco jako `http://127.0.0.1:4750`. Otevři ho a měj ho vedle chatu.
+Napiš cokoli, třeba *Ahoj! Pojďme začít.* Ve své první odpovědi v každém chatu ti Pán jeskyně dá **odkaz na tvůj dashboard**, něco jako `http://127.0.0.1:4750`. Otevři ho a měj ho vedle chatu.
 
-Mezi zprávami Pána jeskyně ukazuje agent nástroje, které používá. Neotvírej jejich podrobnosti (v Claude Code ctrl+o), mohou prozradit tajemství.
+Mezi zprávami Pána jeskyně ukazuje tvůj agent nástroje, které používá. Neotvírej jejich podrobnosti (v Claude Code ctrl+o), mohou odhalit tajemství.
 
-Nová kampaň prochází třemi fázemi, které vidíš nahoře na dashboardu: **1 Nastavení** (jak chceš hrát), **2 Nulté sezení** (vytvoříš postavu, přímo ve hře), **3 Hra**.
+Nová kampaň prochází třemi fázemi, které jsou vidět nahoře na dashboardu: **1 Nastavení** (jak chceš hrát), **2 Nulté sezení** (vytváříš postavu, přímo ve hře), **3 Hra**.
 
 ### 2.6 Nastavení: jak chceš hrát
 
-Pán jeskyně se ptá jen na to, co ještě chybí, po několika otázkách najednou. Krok **Nastavení** na dashboardu ukazuje tytéž otázky jako karty. Napiš „rozhodni ty“ a Pán jeskyně zvolí sám. Všechno se dá později změnit, v chatu nebo v **Nastavení**.
+Pán jeskyně se ptá jen na to, co ještě chybí, vždy na několik otázek najednou. Krok **Nastavení** na dashboardu ukazuje stejné otázky jako karty. Napiš „rozhodni ty“ a Pán jeskyně vybere. Vše se dá později změnit, v chatu nebo v **Nastavení**.
 
 | Nastavení | O čem rozhoduje | Hodnoty |
 |---|---|---|
-| **Mentor** | Jak moc tě Pán jeskyně učí pravidla | off, hints, tutorial |
-| **Obtížnost** | Jak tvrdý je svět | story, easy, normal, hard, brutal |
-| **Smrtelnost** | Co znamená padnout v boji | narrative (nikdy nezemřeš), epic (jen když na tom záleží), dice |
-| **Uložené hry** | Kdy se můžeš vrátit zpět | permadeath, checkpoint, free ([3.8](#38-saves-and-going-back)) |
-| **Přísnost** | Jak přísně se řídí jídlo, světlo a cestování pravidly | smooth, rules, simulation |
-| **Kostky** | Kdo hází tvými kostkami | digital, physical |
-| **Jednotky** | Vzdálenosti a váhy | metric, imperial |
-| **Voices** | Kdo mluví za postavy, které potkáš: v klíčových chvílích sama postava, která ví jen to, co ví ona, podle volby Pána jeskyně; vždy Pán jeskyně; nebo vždy postava, u hlavních nebo u všech, pomaleji a dráž, tam, kde to tvá AI aplikace umí | auto, master, important, always |
-| **Společníci** | Kdo s tebou cestuje | none, made with you, made by the master, met in play |
-| **Obrázky** | Obrázky míst, úkolů a těch, které potkáš | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
-| **Hranice** a **Závoje** | Co se ve hře nikdy neobjeví a co se děje jen mimo scénu | seznamy |
+| **Mentor** | Jak moc tě Pán jeskyně učí pravidla | vypnuto, rady, výuka |
+| **Obtížnost** | Jak těžký je svět | příběh, snadná, normální, těžká, brutální |
+| **Smrtelnost** | Co znamená pád v boji | vyprávěcí (nikdy nezemřeš), epická (jen když na tom záleží), kostky |
+| **Uložené hry** | Kdy se můžeš vrátit | trvalá smrt, kontrolní bod, volně ([3.8](#38-saves-and-going-back)) |
+| **Přísnost** | Jak přesně se dodržují pravidla pro jídlo, světlo a cestování | plynulá, pravidla, simulace |
+| **Kostky** | Kdo hází tvými kostkami | digitální, fyzické |
+| **Jednotky** | Vzdálenosti a váhy | metrické, imperiální |
+| **Hlasy postav** | Kdo mluví za postavy, které potkáš, od Pána jeskyně po samotné postavy: vždy Pán jeskyně; v klíčových chvílích sama postava, která ví jen to, co ví ona, podle volby Pána jeskyně; nebo vždy postava, u hlavních nebo u všech, pomaleji a dráž, pokud to tvoje AI aplikace umí | Pán jeskyně, občas, hlavní postavy, všechny |
+| **Společníci** | Kdo s tebou cestuje | nikdo, vytvoření s tebou, vytvoření Pánem jeskyně, potkání ve hře |
+| **Obrázky** | Obrázky míst, úkolů a postav, které potkáš | žádné, na požádání, nová místa, úkoly a postavy, které potkáš ([3.11](#311-pictures)) |
+| **Hranice** a **Závoje** | Co se nikdy neobjeví a co se děje jen mimo scénu | seznamy |
 | **Jazyk** | Jazyk hry a dashboardu | libovolný |
 
 Pátá edice přidává **postup**: zkušenostní body nebo milníky.
 
-Pokud nemáš napsaný svět, Pán jeskyně se zeptá také na **premisu** (žánr, tón, pár prvků, tvými slovy) a na **přípravu**: tvořit svět za chodu, jak hraješ, nebo celý na začátku.
+Pokud nemáš napsaný svět, Pán jeskyně se zeptá také na **předpoklad** (žánr, tón, několik prvků, tvými slovy) a na **přípravu**: vytvářet svět za pochodu, jak hra postupuje, nebo celý na začátku.
 
-Na **Styl Pána jeskyně** se Pán jeskyně neptá, ale můžeš ho změnit v chatu nebo v **Nastavení**: **próza** (plain, literary, pulp, wry), **příběhy**, které vymýšlí (situations, arcs, episodes, mystery), autor, podle kterého má **psát**, nebo cokoli jiného **tvými slovy**.
+Na **Styl Pána jeskyně** se Pán jeskyně nikdy neptá, ale můžeš ho změnit v chatu nebo v **Nastavení**: **próza** (prostá, literární, pulp, ironická), **příběhy**, které vymýšlí (situace, oblouky, epizody, záhada), autor, **podle něhož psát**, nebo cokoli jiného **tvými slovy**.
 
-### 2.7 Nulté sezení: tvá postava
+### 2.7 Nulté sezení: tvoje postava
 
-Postavu vytváříš s Pánem jeskyně, jako u stolu. Každá volba je tvoje, pokud nepožádáš Pána jeskyně, aby ji udělal za tebe: přijď s hotovou představou, s vágní, nebo s ničím. Pán jeskyně ti řekne, jak se tvoří vlastnosti, ještě než se hodí první kostka. Příběh postavy není povinný. Pokud nějaký dáš, Pán jeskyně ho zapíše tvými slovy. Potom se Pán jeskyně zeptá na obrázek tvé postavy ([3.7](#37-your-characters-story-and-picture)). Deník postavy sestaví RPG Engine: nikdy nic nepočítáš.
+Postavu vytváříš s Pánem jeskyně, jako u stolu. Každá volba je tvoje, pokud Pána jeskyně nepožádáš, aby ji udělal on: přijď s hotovou představou, s mlhavou, nebo s ničím. Pán jeskyně ti řekne, jak se tvoří hodnoty vlastností, ještě než se hodí první kostkou. Příběh postavy není nutný. Pokud nějaký dáš, Pán jeskyně ho napíše tvými slovy. Potom Pán jeskyně požádá o obrázek tvé postavy ([3.7](#37-your-characters-story-and-picture)). RPG Engine spočítá deník postavy: žádné výpočty nedělᬠsám.
 
 ---
 

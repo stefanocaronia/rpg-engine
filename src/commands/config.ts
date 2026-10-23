@@ -73,7 +73,7 @@ export const config = defineCommand({
         + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
         + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
         + "dice, who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values). units: metric or imperial. "
-        + "voices, who voices the characters where your app has subagents: auto (a subagent at key moments, as you choose), master (you, always), "
+        + "voices, who voices the characters where your app has subagents: master (you, always), auto (a subagent at key moments, as you choose), "
         + "important (always a subagent for the companions and the characters with kind main), always (always a subagent); unset, auto. "
         + "companions: none, made with the player or made by the master in session zero, or met in play. "
         + "Without a written world: premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start). "
@@ -375,8 +375,8 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         about: "who speaks for the characters you meet",
         values: voiceWays,
         means: {
-            auto: "at key moments, as the master chooses, the character themselves, knowing only what they know, where your AI app can",
             master: "the master, always",
+            auto: "at key moments, as the master chooses, the character themselves, knowing only what they know, where your AI app can",
             important: "always the character themselves for your companions and the main characters, the others only at key moments: slower answers, and more of your plan",
             always: "always the character themselves, for everyone: much slower answers, and much more of your plan",
         },

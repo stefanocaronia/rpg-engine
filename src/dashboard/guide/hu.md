@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb df1364a2 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 8fd6b933 75985e6d ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -37,10 +37,10 @@ Az RPG Engine ma egyetlen játékrendszert játszik: az **ötödik kiadást**, a
 
 ### 2.1 Amire szükséged van
 
-- Egy Windows, macOS vagy Linux rendszerű számítógép és egy böngésző.
-- **Node.js 22** vagy újabb, a [nodejs.org](https://nodejs.org) oldalról. Ezzel együtt jön az `npm`, amely telepíti az RPG Enginet.
-- Egy **terminál**: Windowson a Terminal vagy a PowerShell, macOS-en a Terminal. Ha egy mappában akarsz terminált nyitni, kattints a mappára jobb gombbal, és válaszd a **Megnyitás Terminálban** (Windows) vagy a **Szolgáltatások > Új terminál a mappánál** (macOS) menüpontot.
-- Egy **AI-ügynök** a mesélőnek ([2.4](#24-connect-your-ai)), a hozzá elérhető **legnagyobb modellel**: egy kis modellt könnyebb rávenni titkok elárulására vagy a szabályok kijátszására.
+- Egy számítógép Windows, macOS vagy Linux rendszerrel, és egy webböngésző.
+- **Node.js 22** vagy újabb, a [nodejs.org](https://nodejs.org) oldalról. Ezzel jön az `npm`, amely telepíti az RPG Enginet.
+- Egy **terminál**: Windowson a Terminal vagy a PowerShell, macOS-en a Terminal. Ha egy mappában akarsz terminált nyitni, kattints a mappára jobb gombbal, és válaszd a **Megnyitás a Terminalban** (Windows) vagy a **Szolgáltatások > Új terminál a mappához** (macOS) lehetőséget.
+- Egy **AI-ügynök** a mesélőnek ([2.4](#24-connect-your-ai)), a hozzá elérhető **legnagyobb modellel**: egy kis modellt könnyebb rávenni a titkok kiadására vagy a szabályok kijátszására.
 
 ### 2.2 Telepítés
 
@@ -48,66 +48,66 @@ Az RPG Engine ma egyetlen játékrendszert játszik: az **ötödik kiadást**, a
 npm install -g rpg-engine
 ```
 
-Az `rpg --version` parancs megmutatja, hogy sikerült-e. Az `rpg` parancsot kampányonként egyszer használod, a létrehozáshoz; utána az ügynököd magától elindítja az RPG Enginet.
+Az `rpg --version` parancs megmutatja, hogy sikerült-e. Az `rpg` parancsot kampányonként egyszer használod, a létrehozáshoz. Ezután az ügynököd magától elindítja az RPG Enginet.
 
 ### 2.3 Kampány létrehozása
 
-Nyiss egy terminált abban a mappában, ahol a játékaidat tartod ([2.1](#21-what-you-need) leírja, hogyan):
+Nyiss egy terminált abban a mappában, ahol a játékaidat tartod (a [2.1](#21-what-you-need) leírja, hogyan):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Ez létrehozza a `The Salt Isles` mappát egy új kampánnyal. Lépj be a `cd "The Salt Isles"` paranccsal. Jegyezd meg, hol van: minden játékalkalommal ide térsz vissza. Mindent mást később választasz ki, a csevegésben vagy a dashboardon. Az `rpg init --help` felsorolja a lehetőségeket, amelyeket már most megadhatsz, például `--language it` vagy `--difficulty hard`.
+Ez létrehozza a `The Salt Isles` mappát egy új kampánnyal. Lépj be a `cd "The Salt Isles"` paranccsal. Jegyezd meg, hol van: minden játékalkalommal ide térsz vissza. Mindent másról később döntesz, a chaten vagy a vezérlőpulton. Az `rpg init --help` felsorolja a lehetőségeket, amelyeket már most megadhatsz, például `--language it` vagy `--difficulty hard`.
 
-A mesélő nem tud kampányt létrehozni helyetted: az `init` előtt semmi sem mondja meg az ügynöködnek, hol van az RPG Engine.
+A mesélő nem tud kampányt létrehozni neked: az `init` előtt semmi sem mondja meg az ügynöködnek, hol van az RPG Engine.
 
-### 2.4 Az AI összekapcsolása
+### 2.4 Az AI csatlakoztatása
 
-A mesélő egy **AI-ügynökben** fut: ez egy AI-alkalmazás, terminálban vagy asztali gépen, amely tud dolgozni a számítógéped fájljaival, például a Claude Code vagy a Codex. Egy egyszerű csevegő, mint a claude.ai vagy a ChatGPT, vagy egy telefonos alkalmazás nem elég: a mesélőnek el kell érnie a kampány fájljait a számítógépeden. Minden ügynökhöz saját előfizetés és bejelentkezés kell: a Claude Code-hoz fizetős Claude-csomag, a Codexhez ChatGPT-fiók. Egyszer kell telepítened, a saját oldaláról: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+A mesélő egy **AI-ügynökben** fut. Ez egy AI-alkalmazás a terminálban vagy az asztalon, amely a számítógéped fájljaival is tud dolgozni, például a Claude Code vagy a Codex. Egy sima chat, például a claude.ai vagy a ChatGPT, illetve egy telefonos alkalmazás nem elég: a mesélőnek el kell érnie a kampány fájljait a számítógépeden. Minden ügynökhöz saját csomag és bejelentkezés kell: a Claude Code-hoz fizetős Claude-csomag, a Codexhez ChatGPT-bejelentkezés. Egyszer kell telepítened, a saját oldaláról: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
 
-- **Claude Code**: a kampány mappájában írd be: `claude`. Amikor megkérdezi, megbízol-e a mappában, válaszd a **Yes, I trust this folder** lehetőséget; vigyázz, az alapból kijelölt válasz a *No, exit*. A kampányhoz tartozik egy kis hook is, az `rpg --listen`, amelyet a kérdés nem mutat: ez azonnal szól a mesélőnek, ha a dashboardon cselekszel.
-- **Codex**: a kampány mappájában írd be: `codex`, és mondj igent, amikor megkérdezi, megbízol-e a mappában. Az asztali alkalmazásában ellenőrizd a beállításokban, hogy a játék csevegéseinél ki vannak-e kapcsolva az emlékek.
-- **Másik ügynök**: indítsd el a kampány mappájában, és add meg neki az `rpg mcp` MCP-szervert. Az RPG Engine szabványos MCP-szerver: bármelyik ügynök lehet a mesélő, amely támogatja az MCP-t, a helyi ügynökök is.
+- **Claude Code**: a kampány mappájában írd be: `claude`. Amikor megkérdezi, megbízol-e a mappában, válaszd a **Yes, I trust this folder** lehetőséget. Vigyázz, az előre kijelölt válasz a *No, exit*. A kampányban van egy kis hook is, az `rpg --listen`, amelyet a kérdés nem mutat: azonnal szól a mesélőnek, ha a vezérlőpulton cselekszel.
+- **Codex**: a kampány mappájában írd be: `codex`, és mondj igent, amikor megkérdezi, megbízol-e a mappában. Az asztali alkalmazásában ellenőrizd a beállításokban, hogy a memóriák ki vannak kapcsolva a játék chatjeinél.
+- **Másik ügynök**: indítsd el a kampány mappájában, és add meg neki az `rpg mcp` MCP-szervert. Az RPG Engine szabványos MCP-szerver: bármelyik MCP-t támogató ügynök lehet a mesélő, a helyiek is.
 
-A **Claude Code**-dal játszunk és tesztelünk; a **Codex** csatlakoztatva és ellenőrizve van, de még egy teljes kampányt sem játszottunk végig vele. A kampány kikapcsolja az ügynök saját memóriáját: a játék a fájljaiban él, így egy mentéshez való visszatérés tényleg visszavisz.
+**Claude Code-dal** játszunk és tesztelünk. A **Codex** csatlakoztatva és ellenőrizve van, de még nem játszottunk vele végig egy kampányt. A kampány kikapcsolja az ügynök saját memóriáját: a játék a fájljaiban él, így egy mentéshez való visszatérés tényleg visszavisz.
 
-### 2.5 Az első csevegés
+### 2.5 Az első chat
 
-Írj bármit, például: *Szia! Kezdjük el.* A mesélő minden csevegés első válaszában megadja a **dashboard linkjét**, valami ilyesmit: `http://127.0.0.1:4750`. Nyisd meg, és tartsd a csevegés mellett.
+Írj bármit, például: *Szia! Kezdjünk bele.* A mesélő minden chat első válaszában megadja a **vezérlőpultod linkjét**, valami ilyesmit: `http://127.0.0.1:4750`. Nyisd meg, és tartsd a chat mellett.
 
-A mesélő üzenetei között az ügynököd megmutatja az általa használt eszközöket. Ne nyisd meg a részleteiket (Claude Code-ban ctrl+o), mert titkokat tartalmazhatnak.
+A mesélő üzenetei között az ügynököd megmutatja az általa használt eszközöket. Ne nyisd meg a részleteiket (Claude Code-ban ctrl+o), mert titkokat mutathatnak.
 
-Egy új kampány három szakaszon megy át, ezeket a dashboard tetején látod: **1 Beállítások** (hogyan szeretnél játszani), **2 Nulladik alkalom** (elkészíted a karaktered, játék közben), **3 Játék**.
+Egy új kampány három szakaszon megy végig, ezek a vezérlőpult tetején látszanak: **1 Beállítások** (hogyan akarsz játszani), **2 Nulladik alkalom** (megalkotod a karaktered, játékban), **3 Játék**.
 
 ### 2.6 Beállítások: hogyan játszol
 
-A mesélő csak azt kérdezi, ami még hiányzik, egyszerre néhány kérdést. A dashboard **Beállítások** lépése ugyanezeket a kérdéseket kártyákon mutatja. Írd, hogy „te döntesz", és a mesélő választ. Minden megváltoztatható később, a csevegésben vagy a **Beállítások** között.
+A mesélő csak azt kérdezi, ami még hiányzik, egyszerre néhány kérdést. A vezérlőpult **Beállítások** lépése ugyanezeket a kérdéseket kártyákon mutatja. Írd be, hogy „döntsd el te", és a mesélő választ. Minden megváltoztatható később, a chaten vagy a **Beállítások** között.
 
-| Beállítás | Miről dönt | Értékek |
+| Beállítás | Mit dönt el | Értékek |
 |---|---|---|
 | **Mentor** | Mennyire tanítja a mesélő a szabályokat | ki, tippek, bemutató |
-| **Nehézség** | Mennyire kemény a világ | mese, könnyű, normál, nehéz, könyörtelen |
-| **Halálosság** | Mit jelent, ha elesel egy harcban | elbeszélő (soha nem halsz meg), epikus (csak ha számít), kockák |
-| **Mentések** | Mikor mehetsz vissza | permadeath, checkpoint, szabad ([3.8](#38-saves-and-going-back)) |
-| **Szigor** | Mennyire követi szorosan a szabályokat az étel, a fény és az utazás | gördülékeny, szabályok, szimuláció |
+| **Nehézség** | Milyen kemény a világ | mese, könnyű, normál, nehéz, brutális |
+| **Halálosság** | Mit jelent a harcban elesni | elbeszélő (soha nem halsz meg), epikus (csak ha számít), kockák |
+| **Mentések** | Mikor mehetsz vissza | permahalál, ellenőrzőpont, szabad ([3.8](#38-saves-and-going-back)) |
+| **Szigor** | Mennyire követik szigorúan a szabályokat az étel, a fény és az utazás | gördülékeny, szabályok, szimuláció |
 | **Kockák** | Ki dobja a kockáidat | digitális, fizikai |
 | **Mértékegységek** | Távolságok és súlyok | metrikus, birodalmi |
-| **Hangok** | Ki beszél a megismert szereplők helyett: a döntő pillanatokban maga a szereplő, csak azt tudva, amit ő tud, ahogy a mesélő választja; mindig a mesélő; vagy mindig maga a szereplő, a fontosaknál vagy mindenkinél, lassabban és drágábban, ahol az AI-alkalmazásod képes rá | auto, mesélő, fontos, mindig |
-| **Társak** | Ki utazik veled | senki, veled közösen készített, a mesélő készítette, játék közben megismert |
-| **Képek** | Képek a helyszínekről, küldetésekről és a megismert szereplőkről | nincs, kérésre, új helyszínek, küldetések és megismert szereplők ([3.11](#311-pictures)) |
+| **Karakterhangok** | Ki beszél a megismert karakterek helyett: a mesélő a karakterekről; mindig a mesélő; kulcspillanatokban maga a karakter, csak azt tudva, amit ő tud, ahogy a mesélő választja; vagy mindig a karakter, a fontosaknál vagy mindenkinél, lassabban és drágábban, ahol az AI-alkalmazásod tudja | a mesélő, néha, fontos karakterek, mindenki |
+| **Társak** | Ki utazik veled | senki, veled közösen alkotott, a mesélő alkotta, játékban megismert |
+| **Képek** | Képek a helyszínekről, küldetésekről és a megismert karakterekről | nincs, kérésre, új helyszínek, küldetések és megismert karakterek ([3.11](#311-pictures)) |
 | **Határok** és **Fátylak** | Ami soha nem jelenik meg, és ami csak a színfalak mögött történik | listák |
-| **Nyelv** | A játék és a dashboard nyelve | bármelyik |
+| **Nyelv** | A játék és a vezérlőpult nyelve | bármelyik |
 
-Az ötödik kiadás hozzáteszi a **fejlődést**: tapasztalati pontok vagy mérföldkövek.
+Az ötödik kiadás hozzáadja a **fejlődést**: tapasztalati pontokat vagy mérföldköveket.
 
-Ha nincs megírt világ, a mesélő egy **alapötletet** is kérdez (műfaj, hangulat, néhány elem, a saját szavaiddal), és az **előkészítést**: a világot menet közben építi fel, vagy az elején, egyszerre.
+Ha nincs megírt világ, a mesélő egy **alaphelyzetet** is kérdez (műfaj, hangvétel, néhány elem, a te szavaiddal), és a **felkészülést**: a világot menet közben építi fel, ahogy haladtok, vagy az egészet az elején.
 
-**A mesélő stílusát** a mesélő sosem kérdezi, de megváltoztathatod a csevegésben vagy a **Beállítások** között: a **próza** (egyszerű, irodalmi, pulp, szarkasztikus), a kitalált **történetek** (helyzetek, ívek, epizódok, rejtély), egy szerző, akihez hasonlóan **írjon**, vagy bármi más a **saját szavaiddal**.
+**A mesélő stílusát** sosem kérdezi, de megváltoztathatod a chaten vagy a **Beállítások** között: a **próza** (egyszerű, irodalmi, pulp, szárazon szellemes), az általa kitalált **történetek** (helyzetek, ívek, epizódok, rejtély), egy szerző, akihez hasonlóan **írjon**, vagy bármi más, **a te szavaiddal**.
 
 ### 2.7 Nulladik alkalom: a karaktered
 
-A karaktered a mesélővel készíted el, mint az asztalnál. Minden választás a tiéd, hacsak nem kéred meg a mesélőt, hogy döntsön helyetted: jöhetsz kész ötlettel, homályos elképzeléssel, vagy üres kézzel. A mesélő elmondja, hogyan készülnek a képességpontok, még mielőtt bármelyik kockát eldobnád. A történeted sosem kötelező; ha adsz egyet, a mesélő a te szavaiddal írja le. Ezután a mesélő képet kér a karakteredről ([3.7](#37-your-characters-story-and-picture)). Az RPG Engine kiszámolja a karakterlapot: neked sosem kell számolnod.
+A karaktered a mesélővel együtt alkotod meg, mint az asztalnál. Minden döntés a tiéd, hacsak nem kéred meg a mesélőt, hogy döntsön helyetted: jöhetsz kész ötlettel, homályossal vagy semmivel. A mesélő elmondja, hogyan készülnek a képességpontok, még mielőtt bármelyik kockát eldobnád. A karaktered története sosem kötelező. Ha adsz egyet, a mesélő a te szavaiddal írja le. Ezután a mesélő képet kér a karakteredről ([3.7](#37-your-characters-story-and-picture)). Az RPG Engine kiszámolja a karakterlapot: te sosem számolsz.
 
 ---
 
